@@ -762,9 +762,15 @@ static void dw_mci_submit_data(struct dw_mci *host, struct mmc_data *data)
 
 	if (card && mmc_card_sdio(card)) {
 		unsigned int rxwmark_val, msize_val, i;
-		unsigned int msize[8] = {1, 4, 8, 16, 32, 64, 128, 256};
-
-		for (i = 1; sizeof(msize) / sizeof(unsigned int); i++) {
+// +++
+/* mod by insignal */
+#if defined(CONFIG_MMC_NEXELL) || defined(CONFIG_MMC_NEXELL_MODULE)
+		unsigned int msize[] = {1, 4, 8, 16};
+#else
+		unsigned int msize[] = {1, 4, 8, 16, 32, 64, 128, 256};
+#endif
+// ---
+		for (i = 1; ARRAY_SIZE(msize) > i; i++) {
 			if ((data->blksz / 4) % msize[i] == 0)
 				continue;
 			else
@@ -2310,6 +2316,7 @@ static int __devinit dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 	slot->id = id;
 	slot->mmc = mmc;
 	slot->host = host;
+	host->slot[id] = slot;	/* add by jhkim */
 
 	mmc->ops = &dw_mci_ops;
 	mmc->f_min = DIV_ROUND_UP(host->bus_hz, 510);
@@ -2588,7 +2595,7 @@ int __devinit dw_mci_probe(struct dw_mci *host)
 	}
 	clk_enable(host->cclk);
 
-	host->bus_hz = host->pdata->bus_hz;
+	host->bus_hz = (host->pdata->bus_hz)/2;	/* modify by jhkim, input clock is clock gen/2 */
 	host->max_bus_hz = host->pdata->max_bus_hz;
 	host->quirks = host->pdata->quirks;
 
@@ -2654,8 +2661,16 @@ int __devinit dw_mci_probe(struct dw_mci *host)
 		fifo_size = host->pdata->fifo_depth;
 	}
 	host->fifo_depth = fifo_size;
+// +++
+/* mod by insignal */
+#if defined(CONFIG_MMC_NEXELL) || defined(CONFIG_MMC_NEXELL_MODULE)
+	host->fifoth_val = ((0x2 << 28) | ((fifo_size/2 - 1) << 16) |
+			((fifo_size/2) << 0));
+#else
 	host->fifoth_val = ((0x4 << 28) | ((fifo_size/4 - 1) << 16) |
 			((fifo_size/2) << 0));
+#endif
+// ---
 	mci_writel(host, FIFOTH, host->fifoth_val);
 
 	/* disable clock to CIU */
@@ -2715,6 +2730,12 @@ int __devinit dw_mci_probe(struct dw_mci *host)
 	mci_writel(host, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER |
 		   SDMMC_INT_TXDR | SDMMC_INT_RXDR |
 		   DW_MCI_ERROR_FLAGS | SDMMC_INT_CD);
+
+	/* add by jhkim: disalbe internal card detection */
+	if (host->pdata->cd_type == DW_MCI_CD_EXTERNAL ||
+		host->pdata->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)
+		mci_writel(host, INTMASK, mci_readl(host, INTMASK) & ~SDMMC_INT_CD);
+
 	mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE); /* Enable mci interrupt */
 
 	dev_info(&host->dev, "DW MMC controller at irq %d, "
@@ -2835,6 +2856,9 @@ int dw_mci_suspend(struct dw_mci *host)
 	if (host->vmmc)
 		regulator_disable(host->vmmc);
 
+	if (host->pdata->suspend)
+		host->pdata->suspend(host);
+
 	return 0;
 }
 EXPORT_SYMBOL(dw_mci_suspend);
@@ -2842,6 +2866,9 @@ EXPORT_SYMBOL(dw_mci_suspend);
 int dw_mci_resume(struct dw_mci *host)
 {
 	int i, ret;
+
+	if (host->pdata->resume)
+		host->pdata->resume(host);
 
 	if (host->vmmc)
 		regulator_enable(host->vmmc);
@@ -2861,6 +2888,12 @@ int dw_mci_resume(struct dw_mci *host)
 	mci_writel(host, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER |
 		   SDMMC_INT_TXDR | SDMMC_INT_RXDR |
 		   DW_MCI_ERROR_FLAGS | SDMMC_INT_CD);
+
+	/* add by jhkim: disalbe internal card detection */
+	if (host->pdata->cd_type == DW_MCI_CD_EXTERNAL ||
+		host->pdata->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)
+		mci_writel(host, INTMASK, mci_readl(host, INTMASK) & ~SDMMC_INT_CD);
+
 	mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE);
 
 	for (i = 0; i < host->num_slots; i++) {

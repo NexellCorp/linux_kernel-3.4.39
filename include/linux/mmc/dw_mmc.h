@@ -308,6 +308,11 @@ struct dw_mci_board {
 	struct dw_mci_dma_ops *dma_ops;
 	struct dma_pdata *data;
 	struct block_settings *blk_settings;
+	/*
+	 * add by jhkim
+	 */
+	void (*suspend)(struct dw_mci *host);
+	void (*resume)(struct dw_mci *host);
 };
 
 #endif /* LINUX_MMC_DW_MMC_H */
