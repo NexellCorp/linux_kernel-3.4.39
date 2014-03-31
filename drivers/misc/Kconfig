@@ -4,6 +4,8 @@
 
 menu "Misc devices"
 
+source "drivers/misc/haptic/Kconfig"
+
 config SENSORS_LIS3LV02D
 	tristate
 	depends on INPUT
