@@ -1010,6 +1010,28 @@ config ARCH_ZYNQ
 	select USE_OF
 	help
 	  Support for Xilinx Zynq ARM Cortex A9 Platform
+
+config ARCH_NXP4330
+	bool "Nexell NXP4330D/Q"
+	select ARCH_CPU_NEXELL
+	select CPU_V7
+	select ARM_AMBA
+	select ARM_GIC
+	select ARM_VIC
+	select HAVE_SMP
+	select MIGHT_HAVE_CACHE_L2X0
+	select ARCH_HAS_CPUFREQ
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ZONE_DMA
+	select HAVE_MACH_CLKDEV
+	select NEED_MACH_MEMORY_H
+	select NEED_MACH_IO_H
+	select ARCH_REQUIRE_GPIOLIB
+	select ARM_PATCH_PHYS_VIRT
+	help
+	  Support for nexell NXP4330 dual/quard core (ARM Cortex A9) platform
+
 endchoice
 
 #
@@ -1127,6 +1149,10 @@ source "arch/arm/plat-versatile/Kconfig"
 source "arch/arm/mach-vt8500/Kconfig"
 
 source "arch/arm/mach-w90x900/Kconfig"
+
+if ARCH_NXP4330
+source "arch/arm/mach-nxp4330/Kconfig"
+endif
 
 # Definitions to make life easier
 config ARCH_ACORN

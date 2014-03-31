@@ -329,6 +329,14 @@ choice
 		  For more details about semihosting, please see
 		  chapter 8 of DUI0203I_rvct_developer_guide.pdf from ARM Ltd.
 
+	config DEBUG_NX_UART
+		depends on ARCH_CPU_NEXELL
+		bool "Kernel low-level debugging Nexell UART"
+		help
+		  Say Y here if you want the debug print routines to direct
+		  their output to DEBUG UARTn. The port must have been initialised
+		  by the boot-loader before use.
+
 endchoice
 
 config EARLY_PRINTK
