@@ -76,3 +76,36 @@ config ARM_EXYNOS5250_CPUFREQ
 	help
 	  This adds the CPUFreq driver for Samsung EXYNOS5250
 	  SoC.
+
+config ARM_NXP4330_CPUFREQ
+	bool "NXP4330 CPU Frequency scaling support"
+	depends on ARCH_CPU_NEXELL
+	default y
+	help
+	  This adds the CPUFreq driver for Nexell NXP4330
+	  SoC.
+config ARM_NXP4330_CPUFREQ_DEBUG
+	bool "Dynamic Frequency scaling debug message"
+	depends on ARM_NXP4330_CPUFREQ
+	default n
+
+choice
+	prompt "Select CPU PLL device"
+	depends on ARM_NXP4330_CPUFREQ
+	default NXP4330_CPUFREQ_PLL_1
+
+config NXP4330_CPUFREQ_PLL_0
+	bool "PLL 0"
+
+config NXP4330_CPUFREQ_PLL_1
+	bool "PLL 1"
+
+endchoice
+
+config NXP4330_CPUFREQ_PLLDEV
+	int
+	default 0 if NXP4330_CPUFREQ_PLL_0
+	default 1 if NXP4330_CPUFREQ_PLL_1
+	default 2 if NXP4330_CPUFREQ_PLL_2
+	default 3 if NXP4330_CPUFREQ_PLL_3
+
