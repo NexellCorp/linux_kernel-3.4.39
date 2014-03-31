@@ -1376,6 +1376,38 @@ config SENSORS_MC13783_ADC
         help
           Support for the A/D converter on MC13783 and MC13892 PMIC.
 
+config SENSORS_MMA7660
+	tristate "Freescale MMA7660FC 3-Axis Accelerometer"
+	depends on I2C
+	default n
+	help
+		Say Y here to enable the accelerometer.
+
+		If unsure, say N.
+
+config SENSORS_STK831X
+	tristate "Lex Hsieh / Sensortek STK831X 3-Axis Accelerometer"
+	depends on I2C
+	default n
+	help
+		Say Y here to enable the accelerometer.
+		If unsure, say N.
+
+choice
+	prompt "Select STK831X"
+	depends on SENSORS_STK831X
+	default SENSORS_STK8312
+
+config	SENSORS_STK8312
+	bool "Sensor STK8312"
+
+config	SENSORS_STK8313
+	bool "Sensor STK8313"
+
+endchoice
+
+source drivers/hwmon/bosch/Kconfig
+
 if ACPI
 
 comment "ACPI drivers"
