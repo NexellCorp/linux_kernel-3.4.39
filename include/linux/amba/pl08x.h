@@ -99,6 +99,12 @@ struct pl08x_phy_chan {
 	spinlock_t lock;
 	int signal;
 	struct pl08x_dma_chan *serving;
+	/* for sleep mode, by jhkim */
+	dma_addr_t src_addr;
+	dma_addr_t dst_addr;
+	unsigned int lli;
+	unsigned int control;
+	unsigned int config;
 };
 
 /**
@@ -140,6 +146,9 @@ struct pl08x_txd {
 	 * trigger this txd.  Other registers are in llis_va[0].
 	 */
 	u32 ccfg;
+
+	/* for cyclic, by jhkim */
+	bool cyclic;
 };
 
 /**
