@@ -1,0 +1,59 @@
+#
+# Copyright 2009 Nexell.
+#
+# Configuration options for the NXP4330
+
+config PLAT_NXP4330
+	bool
+	default y
+
+#
+# Select Board
+#
+
+comment "Board features"
+
+choice
+    prompt "Platform board"
+    default PLAT_NXP4330_LYNX
+
+	config PLAT_NXP4330_LYNX
+		bool "LYNX: Android MID board"
+		help
+   	 		Support for the android MID (Lynx) board.
+
+	config PLAT_NXP4330_VTK
+		bool "VTK: Validation Kit board"
+		help
+   	 		Support for the validation kit board.
+
+	config PLAT_NXP4330_SMARTBOX
+		bool "SMARTBOX: Android Smart Box"
+		help
+   	 		Support for the android smart box board.
+
+	config PLAT_NXP4330_PYXIS
+		bool "PYXIS: Android Pyxis board"
+		help
+   	 		Support for the android pysix tablet board.
+	
+	config PLAT_NXP4330_MORPHEUS
+		bool "MORPHEUS: Android morpheus board"
+		help
+   	 		Support for the android morpheus board.
+
+	config PLAT_NXP4330_SECRET
+		bool "SECRET: Android secret board"
+		help
+   	 		Support for the android secret board.
+
+endchoice
+
+#
+# Board dependent configure
+#
+
+if PLAT_NX4330_LYNX
+source "arch/arm/plat-nxp4330/lynx/Kconfig"
+endif
+
