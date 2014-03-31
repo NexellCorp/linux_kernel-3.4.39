@@ -861,4 +861,30 @@ config TOUCHSCREEN_TPS6507X
 	  To compile this driver as a module, choose M here: the
 	  module will be called tps6507x_ts.
 
+config TOUCHSCREEN_FT5X0X
+	tristate "FocalTech ft5x0x touchscreen"
+	depends on I2C
+	default n
+	help
+	  Say Y here if you have the FocalTech ft5x0x touchscreen.
+
+	  If unsure, say N.
+
+config FT5X0X_MULTITOUCH
+	bool "FocalTech ft5x0x touchscreen multi-touch support"
+	depends on TOUCHSCREEN_FT5X0X
+	default n
+	help
+	  Say Y here To enable multitouch on Focaltech Touchscreens(required for most).
+	  If unsure, say N.
+
+config TOUCHSCREEN_AW5306
+	tristate "AWINIC aw5306 touchscreen"
+	depends on I2C
+	default n
+	help
+	  Say Y here if you have the AWINIC aw5306 touchscreen.
+
+	  If unsure, say N.
+
 endif

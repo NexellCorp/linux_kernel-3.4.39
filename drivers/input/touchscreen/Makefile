@@ -71,3 +71,5 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_MAINSTONE)	+= mainstone-wm97xx.o
 obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)	+= zylonite-wm97xx.o
 obj-$(CONFIG_TOUCHSCREEN_W90X900)	+= w90p910_ts.o
 obj-$(CONFIG_TOUCHSCREEN_TPS6507X)	+= tps6507x-ts.o
+obj-$(CONFIG_TOUCHSCREEN_FT5X0X)	+= ft5x0x_ts.o
+obj-$(CONFIG_TOUCHSCREEN_AW5306)	+= aw5306_ts.o aw5306_userpara.o libs/libaw5306.obj
