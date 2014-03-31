@@ -514,4 +514,54 @@ config GPIO_TPS65910
 	help
 	  Select this option to enable GPIO driver for the TPS65910
 	  chip family.
+
+config GPIO_NEXELL
+	bool "Nexell GPIO"
+	depends on ARCH_CPU_NEXELL
+	help
+	  Select this option to enable GPIO driver for the Nexell
+	  chip family.
+
+config GPIO_NEXELL_GROUP_A
+	bool "GPIO A (  0 ~  31)"
+	depends on GPIO_NEXELL
+	help
+	  Select this option to enable GPIO driver for the Nexell
+	  chip family.
+
+config GPIO_NEXELL_GROUP_B
+	bool "GPIO B ( 32 ~  63)"
+	depends on GPIO_NEXELL
+	help
+	  Select this option to enable GPIO driver for the Nexell
+	  chip family.
+
+config GPIO_NEXELL_GROUP_C
+	bool "GPIO C ( 64 ~  95)"
+	depends on GPIO_NEXELL
+	help
+	  Select this option to enable GPIO driver for the Nexell
+	  chip family.
+
+config GPIO_NEXELL_GROUP_D
+	bool "GPIO D ( 96 ~ 127)"
+	depends on GPIO_NEXELL
+	help
+	  Select this option to enable GPIO driver for the Nexell
+	  chip family.
+
+config GPIO_NEXELL_GROUP_E
+	bool "GPIO E (128 ~ 159)"
+	depends on GPIO_NEXELL
+	help
+	  Select this option to enable GPIO driver for the Nexell
+	  chip family.
+
+config GPIO_NEXELL_GROUP_ALV
+	bool "GPIO ALIVE (160 ~ )"
+	depends on GPIO_NEXELL
+	help
+	  Select this option to enable GPIO driver for the Nexell
+	  chip family.
+
 endif
