@@ -1709,7 +1709,6 @@ static struct dw_mci_board _dwmci1_data = {
 						MMC_CAP_NONREMOVABLE |
 						MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
 						MMC_CAP_ERASE | MMC_CAP_HW_RESET,
-	.caps2			= MMC_CAP2_PACKED_WR,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
 	.sdr_timing		= 0x03020001,

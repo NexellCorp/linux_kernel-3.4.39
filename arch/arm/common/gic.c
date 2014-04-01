@@ -698,7 +698,11 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
 	 * Find out how many interrupts are supported.
 	 * The GIC only supports up to 1020 interrupt sources.
 	 */
+#ifdef CONFIG_ARCH_NXP4330
+	gic_irqs = 0;
+#else
 	gic_irqs = readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_CTR) & 0x1f;
+#endif
 	gic_irqs = (gic_irqs + 1) * 32;
 	if (gic_irqs > 1020)
 		gic_irqs = 1020;

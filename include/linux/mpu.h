@@ -9,17 +9,7 @@
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
-*
 */
-
-/**
- *  @addtogroup  DRIVERS
- *  @brief       Hardware drivers.
- *
- *  @{
- *      @file    mpu.h
- *      @brief   mpu definition
- */
 
 #ifndef __MPU_H_
 #define __MPU_H_
@@ -72,8 +62,11 @@ enum ext_slave_id {
 	COMPASS_ID_MMC314X,
 	COMPASS_ID_HSCDTD002B,
 	COMPASS_ID_HSCDTD004A,
+	COMPASS_ID_MLX90399,
+	COMPASS_ID_AK09911,
 
-	PRESSURE_ID_BMA085,
+	PRESSURE_ID_BMP085,
+	PRESSURE_ID_BMP280,
 };
 
 #define INV_PROD_KEY(ver, rev) (ver * 100 + rev)
@@ -103,6 +96,16 @@ struct mpu_platform_data {
 	__u16 secondary_i2c_addr;
 	__s8 secondary_orientation[9];
 	__u8 key[16];
+	enum secondary_slave_type aux_slave_type;
+	enum ext_slave_id aux_slave_id;
+	__u16 aux_i2c_addr;
+
+#ifdef CONFIG_DTS_INV_MPU_IIO
+	int (*power_on)(struct mpu_platform_data *);
+	int (*power_off)(struct mpu_platform_data *);
+	struct regulator *vdd_ana;
+	struct regulator *vdd_i2c;
+#endif
 };
 
 #endif	/* __MPU_H_ */
