@@ -2447,10 +2447,23 @@ config FB_PUV3_UNIGFX
 	  Choose this option if you want to use the Unigfx device as a
 	  framebuffer device. Without the support of PCI & AGP.
 
+config FB_NEXELL
+	tristate "Nexell framebuffer support"
+	depends on FB && ARCH_CPU_NEXELL
+	select FB_CFB_FILLRECT
+	select FB_CFB_COPYAREA
+	select FB_CFB_IMAGEBLIT
+	select NEXELL_SOC_DISP
+	---help---
+	  Frame buffer driver for the built-in display controller in the Nexell Co.
+	  Nexell processor.
+	  Say Y here to enable support for the display adaptor.
+
 source "drivers/video/omap/Kconfig"
 source "drivers/video/omap2/Kconfig"
 source "drivers/video/exynos/Kconfig"
 source "drivers/video/backlight/Kconfig"
+source "drivers/video/nexell/Kconfig"
 
 if VT
 	source "drivers/video/console/Kconfig"

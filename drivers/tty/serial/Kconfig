@@ -1360,4 +1360,46 @@ config SERIAL_EFM32_UART_CONSOLE
 	depends on SERIAL_EFM32_UART=y
 	select SERIAL_CORE_CONSOLE
 
+config SERIAL_NEXELL_UART0
+	bool "PL011 serial port 0"
+	depends on SERIAL_AMBA_PL011
+		default y
+
+config SERIAL_NEXELL_UART0_DMA
+	bool "Use DMA"
+	depends on SERIAL_NEXELL_UART0=y && SERIAL_AMBA_PL011
+
+config SERIAL_NEXELL_UART1
+	bool "PL011 serial port 1"
+	depends on SERIAL_AMBA_PL011
+		default n
+
+config SERIAL_NEXELL_UART1_DMA
+	bool "Use DMA"
+	depends on SERIAL_NEXELL_UART1=y && SERIAL_AMBA_PL011
+
+config SERIAL_NEXELL_UART2
+	bool "PL011 serial port 2"
+	depends on SERIAL_AMBA_PL011
+		default n
+
+config SERIAL_NEXELL_UART2_DMA
+	bool "Use DMA"
+	depends on SERIAL_NEXELL_UART2=y && SERIAL_AMBA_PL011
+
+config SERIAL_NEXELL_UART3
+	bool "PL011 serial port 3"
+	depends on SERIAL_AMBA_PL011
+		default n
+
+config SERIAL_NEXELL_UART4
+	bool "PL011 serial port 4"
+	depends on SERIAL_NEXELL || SERIAL_AMBA_PL011
+		default n
+
+config SERIAL_NEXELL_UART5
+	bool "PL011 serial port 5"
+	depends on SERIAL_AMBA_PL011
+		default n
+
 endmenu

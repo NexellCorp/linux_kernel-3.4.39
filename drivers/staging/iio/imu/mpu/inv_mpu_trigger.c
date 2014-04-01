@@ -9,18 +9,7 @@
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
-*
 */
-
-/**
- *  @addtogroup  DRIVERS
- *  @brief       Hardware drivers.
- *
- *  @{
- *      @file    inv_mpu_trigger.c
- *      @brief   A sysfs device driver for Invensense devices
- *      @details This file is part of inv mpu iio driver code
- */
 
 #include <linux/module.h>
 #include <linux/init.h>
@@ -37,21 +26,19 @@
 #include <linux/miscdevice.h>
 #include <linux/spinlock.h>
 
-#include "../../iio.h"
-#include "../../sysfs.h"
-#include "../../trigger.h"
+#include "iio.h"
+#include "sysfs.h"
+#include "trigger.h"
+
 #include "inv_mpu_iio.h"
 
-/**
- * inv_mpu_data_rdy_trigger_set_state() set datardy interrupt state
- **/
+/*
+ * inv_mpu_data_rdy_trigger_set_state() set data ready interrupt state
+ */
 static int inv_mpu_data_rdy_trigger_set_state(struct iio_trigger *trig,
 						bool state)
 {
-	struct iio_dev *indio_dev = trig->private_data;
-
-	dev_dbg(&indio_dev->dev, "%s (%d)\n", __func__, state);
-	return set_inv_enable(indio_dev, state);
+	return 0;
 }
 
 static const struct iio_trigger_ops inv_mpu_trigger_ops = {
@@ -62,7 +49,7 @@ static const struct iio_trigger_ops inv_mpu_trigger_ops = {
 int inv_mpu_probe_trigger(struct iio_dev *indio_dev)
 {
 	int ret;
-	struct inv_mpu_iio_s *st = iio_priv(indio_dev);
+	struct inv_mpu_state *st = iio_priv(indio_dev);
 
 	st->trig = iio_allocate_trigger("%s-dev%d",
 					indio_dev->name,
@@ -85,12 +72,9 @@ int inv_mpu_probe_trigger(struct iio_dev *indio_dev)
 
 void inv_mpu_remove_trigger(struct iio_dev *indio_dev)
 {
-	struct inv_mpu_iio_s *st = iio_priv(indio_dev);
+	struct inv_mpu_state *st = iio_priv(indio_dev);
 
 	iio_trigger_unregister(st->trig);
 	iio_free_trigger(st->trig);
 }
-/**
- *  @}
- */
 

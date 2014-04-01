@@ -265,6 +265,30 @@ config SPI_PL022
 	  This selects the ARM(R) AMBA(R) PrimeCell PL022 SSP
 	  controller. If you have an embedded system with an AMBA(R)
 	  bus and a PL022 controller, say Y or M here.
+	  
+config SPI_PL022_PORT0
+	bool "port 0"
+	depends on SPI_PL022
+
+config USE_DMA_PORT0
+	bool "use dma mode port 0"
+	depends on SPI_PL022
+
+config SPI_PL022_PORT1
+	bool "port 1"
+	depends on SPI_PL022
+
+config USE_DMA_PORT1
+	bool "use dma mode port 2"
+	depends on SPI_PL022
+
+config SPI_PL022_PORT2
+	bool "port 2"
+	depends on SPI_PL022
+
+config USE_DMA_PORT2
+	bool "use dma mode port 2"
+	depends on SPI_PL022
 
 config SPI_PPC4xx
 	tristate "PPC4xx SPI Controller"

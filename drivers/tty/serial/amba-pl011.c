@@ -1783,12 +1783,13 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
 {
 	struct uart_amba_port *uap = amba_ports[co->index];
 	unsigned int status, old_cr, new_cr;
-	unsigned long flags;
+//	unsigned long flags;	// del by jhkim
 	int locked = 1;
 
 	clk_enable(uap->clk);
 
-	local_irq_save(flags);
+// del by jhkim
+//	local_irq_save(flags);
 	if (uap->port.sysrq)
 		locked = 0;
 	else if (oops_in_progress)
@@ -1817,7 +1818,9 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
 
 	if (locked)
 		spin_unlock(&uap->port.lock);
-	local_irq_restore(flags);
+
+// del by jhkim
+//	local_irq_restore(flags);
 
 	clk_disable(uap->clk);
 }

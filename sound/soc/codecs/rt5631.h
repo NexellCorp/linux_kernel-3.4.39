@@ -1,5 +1,18 @@
-#ifndef __RTCODEC5631_H__
-#define __RTCODEC5631_H__
+/*
+ * rt5631.h  --  RT5631 ALSA SoC audio driver
+ *
+ * Copyright 2011 Realtek Microelectronics
+ * Author: flove <flove@realtek.com>
+ *
+ * Eplus is Dist. Korea, you can contact rooney (rooney@eplus.co.kr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#ifndef __RT5631_H__
+#define __RT5631_H__
 
 
 #define RT5631_RESET				0x00
@@ -13,7 +26,7 @@
 #define RT5631_ADC_CTRL_1			0x12
 #define RT5631_ADC_REC_MIXER			0x14
 #define RT5631_ADC_CTRL_2			0x16
-#define RT5631_VDAC_DIG_VOL			0x18
+//#define RT5631_VDAC_DIG_VOL			0x18    //for ALC5631V
 #define RT5631_OUTMIXER_L_CTRL			0x1A
 #define RT5631_OUTMIXER_R_CTRL			0x1C
 #define RT5631_AXO1MIXER_CTRL			0x1E
@@ -25,7 +38,7 @@
 #define RT5631_SPK_MONO_OUT_CTRL		0x2A
 #define RT5631_SPK_MONO_HP_OUT_CTRL		0x2C
 #define RT5631_SDP_CTRL				0x34
-#define RT5631_MONO_SDP_CTRL			0x36
+//#define RT5631_MONO_SDP_CTRL			0x36		//for ALC5631V
 #define RT5631_STEREO_AD_DA_CLK_CTRL		0x38
 #define RT5631_PWR_MANAG_ADD1		0x3A
 #define RT5631_PWR_MANAG_ADD2		0x3B
@@ -34,6 +47,7 @@
 #define RT5631_GEN_PUR_CTRL_REG		0x40
 #define RT5631_GLOBAL_CLK_CTRL			0x42
 #define RT5631_PLL_CTRL				0x44
+//#define RT5631_PLL2_CTRL			0x46		//for ALC5631V
 #define RT5631_INT_ST_IRQ_CTRL_1		0x48
 #define RT5631_INT_ST_IRQ_CTRL_2		0x4A
 #define RT5631_GPIO_CTRL			0x4C
@@ -72,6 +86,9 @@
 #define RT5631_EQ_HPF_GAIN			0x0f
 #define RT5631_EQ_PRE_VOL_CTRL			0x11
 #define RT5631_EQ_POST_VOL_CTRL		0x12
+#define RT5631_AVC_REG1			0x21
+#define RT5631_AVC_REG2			0x22
+#define RT5631_ALC_REG3				0x23
 #define RT5631_TEST_MODE_CTRL			0x39
 #define RT5631_CP_INTL_REG2			0x45
 #define RT5631_ADDA_MIXER_INTL_REG3		0x52
@@ -205,8 +222,8 @@
 #define RT5631_M_OUTMIXR_AXO2MIX_BIT			6
 
 /* Micphone Input Control 2(0x22) */
-#define RT5631_MIC_BIAS_90_PRECNET_AVDD 1
-#define RT5631_MIC_BIAS_75_PRECNET_AVDD 2
+#define RT5631_MIC_BIAS_90_PRECNET_AVDD 		1
+#define RT5631_MIC_BIAS_75_PRECNET_AVDD 		2
 
 #define RT5631_MIC1_BOOST_CTRL_MASK			(0xf << 12)
 #define RT5631_MIC1_BOOST_CTRL_BYPASS		(0x0 << 12)
@@ -386,7 +403,7 @@
 #define RT5631_SDP_I2S_DF_PCM_A			(0x2)
 #define RT5631_SDP_I2S_DF_PCM_B			(0x3)
 
-/* Stereo AD/DA Clock Control(0x38h) */
+/* Stereo AD/DA Clock Control(0x38) */
 #define RT5631_I2S_PRE_DIV_MASK			(0x7 << 13)
 #define RT5631_I2S_PRE_DIV_1				(0x0 << 13)
 #define RT5631_I2S_PRE_DIV_2				(0x1 << 13)
@@ -396,27 +413,41 @@
 #define RT5631_I2S_PRE_DIV_32				(0x5 << 13)
 /* CLOCK RELATIVE OF BCLK AND LCRK */
 #define RT5631_I2S_LRCK_SEL_N_BCLK_MASK		(0x1 << 12)
-#define RT5631_I2S_LRCK_SEL_64_BCLK			(0x0 << 12) /* 64FS */
-#define RT5631_I2S_LRCK_SEL_32_BCLK			(0x1 << 12) /* 32FS */
-
+#define RT5631_I2S_LRCK_SEL_64_BCLK			(0x0 << 12)
+#define RT5631_I2S_LRCK_SEL_32_BCLK			(0x1 << 12)
 #define RT5631_DAC_OSR_SEL_MASK			(0x3 << 10)
 #define RT5631_DAC_OSR_SEL_128FS			(0x3 << 10)
 #define RT5631_DAC_OSR_SEL_64FS			(0x3 << 10)
 #define RT5631_DAC_OSR_SEL_32FS			(0x3 << 10)
 #define RT5631_DAC_OSR_SEL_16FS			(0x3 << 10)
-
 #define RT5631_ADC_OSR_SEL_MASK			(0x3 << 8)
 #define RT5631_ADC_OSR_SEL_128FS			(0x3 << 8)
 #define RT5631_ADC_OSR_SEL_64FS			(0x3 << 8)
 #define RT5631_ADC_OSR_SEL_32FS			(0x3 << 8)
 #define RT5631_ADC_OSR_SEL_16FS			(0x3 << 8)
+#define RT5631_ADDA_FILTER_CLK_SEL_MASK		(0x1 << 7)
+#define RT5631_ADDA_FILTER_CLK_SEL_256FS		(0x0 << 7)
+#define RT5631_ADDA_FILTER_CLK_SEL_384FS		(0x1 << 7)
 
-#define RT5631_ADDA_FILTER_CLK_SEL_256FS		(0 << 7) /* 256FS */
-#define RT5631_ADDA_FILTER_CLK_SEL_384FS		(1 << 7) /* 384FS */
+#define RT5631_I2S_PRE_DIV2_MASK			(0x7 << 4)
+#define RT5631_I2S_PRE_DIV2_1				(0x0 << 4)
+#define RT5631_I2S_PRE_DIV2_2				(0x1 << 4)
+#define RT5631_I2S_PRE_DIV2_4				(0x2 << 4)
+#define RT5631_I2S_PRE_DIV2_8				(0x3 << 4)
+#define RT5631_I2S_PRE_DIV2_16				(0x4 << 4)
+#define RT5631_I2S_PRE_DIV2_32				(0x5 << 4)
+#define RT5631_I2S_LRCK_SEL_N_BCLK2_MASK		(0x1 << 3)
+#define RT5631_I2S_LRCK_SEL_64_BCLK2			(0x0 << 3)
+#define RT5631_I2S_LRCK_SEL_32_BCLK2			(0x1 << 3)
+#define RT5631_ADDA_FILTER_CLK2_SEL_MASK		(0x1 << 2)
+#define RT5631_ADDA_FILTER_CLK2_SEL_256FS		(0x0 << 2)
+#define RT5631_ADDA_FILTER_CLK2_SEL_384FS		(0x1 << 2)
 
 /* Power managment addition 1 (0x3A) */
 #define RT5631_PWR_MAIN_I2S_EN			(0x1 << 15)
 #define RT5631_PWR_MAIN_I2S_BIT			15
+#define RT5631_PWR_VOICE_I2S_EN			(0x1 << 14)
+#define RT5631_PWR_VOICE_I2S_BIT			14
 #define RT5631_PWR_CLASS_D				(0x1 << 12)
 #define RT5631_PWR_CLASS_D_BIT			12
 #define RT5631_PWR_ADC_L_CLK				(0x1 << 11)
@@ -433,6 +464,10 @@
 #define RT5631_PWR_DAC_L_TO_MIXER_BIT		6
 #define RT5631_PWR_DAC_R_TO_MIXER			(0x1 << 5)
 #define RT5631_PWR_DAC_R_TO_MIXER_BIT		5
+#define RT5631_PWR_VDAC_CLK				(0x1 << 4)
+#define RT5631_PWR_VDAC_CLK_BIT			4
+#define RT5631_PWR_VDAC_TO_MIXER			(0x1 << 3)
+#define RT5631_PWR_VDAC_TO_MIXER_BIT			3
 
 /* Power managment addition 2 (0x3B) */
 #define RT5631_PWR_OUTMIXER_L				(0x1 << 15)
@@ -528,34 +563,52 @@
 #define RT5631_STEREO_ADC_HI_PASS_FILT_EN		(0x1 << 10)
 /* Select ADC Wind Filter Clock type */
 #define RT5631_ADC_WIND_FILT_MASK			(0x3 << 4)
-#define RT5631_ADC_WIND_FILT_8_16_32K			(0x0 << 4) /*8/16/32k*/
-#define RT5631_ADC_WIND_FILT_11_22_44K		(0x1 << 4) /*11/22/44k*/
-#define RT5631_ADC_WIND_FILT_12_24_48K		(0x2 << 4) /*12/24/48k*/
+#define RT5631_ADC_WIND_FILT_8_16_32K			(0x0 << 4)
+#define RT5631_ADC_WIND_FILT_11_22_44K		(0x1 << 4)
+#define RT5631_ADC_WIND_FILT_12_24_48K		(0x2 << 4)
 #define RT5631_ADC_WIND_FILT_EN			(0x1 << 3)
 /* SelectADC Wind Filter Corner Frequency */
-#define RT5631_ADC_WIND_CNR_FREQ_MASK	(0x7 << 0)
-#define RT5631_ADC_WIND_CNR_FREQ_82_113_122	(0x0 << 0) /* 82/113/122 Hz */
-#define RT5631_ADC_WIND_CNR_FREQ_102_141_153 (0x1 << 0) /* 102/141/153 Hz */
-#define RT5631_ADC_WIND_CNR_FREQ_131_180_156 (0x2 << 0) /* 131/180/156 Hz */
-#define RT5631_ADC_WIND_CNR_FREQ_163_225_245 (0x3 << 0) /* 163/225/245 Hz */
-#define RT5631_ADC_WIND_CNR_FREQ_204_281_306 (0x4 << 0) /* 204/281/306 Hz */
-#define RT5631_ADC_WIND_CNR_FREQ_261_360_392 (0x5 << 0) /* 261/360/392 Hz */
-#define RT5631_ADC_WIND_CNR_FREQ_327_450_490 (0x6 << 0) /* 327/450/490 Hz */
-#define RT5631_ADC_WIND_CNR_FREQ_408_563_612 (0x7 << 0) /* 408/563/612 Hz */
+#define RT5631_ADC_WIND_CNR_FREQ_MASK		(0x7 << 0)
+#define RT5631_ADC_WIND_CNR_FREQ_82_113_122 	(0x0 << 0)
+#define RT5631_ADC_WIND_CNR_FREQ_102_141_153 	(0x1 << 0)
+#define RT5631_ADC_WIND_CNR_FREQ_131_180_156 	(0x2 << 0)
+#define RT5631_ADC_WIND_CNR_FREQ_163_225_245 	(0x3 << 0)
+#define RT5631_ADC_WIND_CNR_FREQ_204_281_306 	(0x4 << 0)
+#define RT5631_ADC_WIND_CNR_FREQ_261_360_392 	(0x5 << 0)
+#define RT5631_ADC_WIND_CNR_FREQ_327_450_490 	(0x6 << 0)
+#define RT5631_ADC_WIND_CNR_FREQ_408_563_612 	(0x7 << 0)
 
 /* Global Clock Control Register(0x42) */
 #define RT5631_SYSCLK_SOUR_SEL_MASK			(0x3 << 14)
 #define RT5631_SYSCLK_SOUR_SEL_MCLK			(0x0 << 14)
 #define RT5631_SYSCLK_SOUR_SEL_PLL			(0x1 << 14)
 #define RT5631_SYSCLK_SOUR_SEL_PLL_TCK		(0x2 << 14)
-
 #define RT5631_PLLCLK_SOUR_SEL_MASK			(0x3 << 12)
 #define RT5631_PLLCLK_SOUR_SEL_MCLK			(0x0 << 12)
 #define RT5631_PLLCLK_SOUR_SEL_BCLK			(0x1 << 12)
 #define RT5631_PLLCLK_SOUR_SEL_VBCLK			(0x2 << 12)
-
 #define RT5631_PLLCLK_PRE_DIV1				(0x0 << 11)
 #define RT5631_PLLCLK_PRE_DIV2				(0x1 << 11)
+
+#define RT5631_ADCR_FUN_MASK				(0x1 << 8)
+#define RT5631_ADCR_FUN_SFT				8
+#define RT5631_ADCR_FUN_ADC				(0x0 << 8)
+#define RT5631_ADCR_FUN_VADC				(0x1 << 8)
+
+#define RT5631_SYSCLK2_SOUR_SEL_MASK			(0x3 << 6)
+#define RT5631_SYSCLK2_SOUR_SEL_MCLK			(0x0 << 6)
+#define RT5631_SYSCLK2_SOUR_SEL_PLL2			(0x1 << 6)
+#define RT5631_PLLCLK2_SOUR_SEL_MASK			(0x3 << 4)
+#define RT5631_PLLCLK2_SOUR_SEL_MCLK			(0x0 << 4)
+#define RT5631_PLLCLK2_SOUR_SEL_BCLK			(0x1 << 4)
+#define RT5631_PLLCLK2_SOUR_SEL_VBCLK			(0x2 << 4)
+#define RT5631_PLLCLK2_PRE_DIV1			(0x0 << 3)
+#define RT5631_PLLCLK2_PRE_DIV2			(0x1 << 3)
+
+#define RT5631_VDAC_CLK_SOUR_MASK			(0x1)
+#define RT5631_VDAC_CLK_SOUR_SFT			0
+#define RT5631_VDAC_CLK_SOUR_SCLK1			(0x0)
+#define RT5631_VDAC_CLK_SOUR_SCLK2			(0x1)
 
 /* PLL Control(0x44) */
 #define RT5631_PLL_CTRL_M_VAL(m)			((m)&0xf)
@@ -564,13 +617,13 @@
 
 /* Internal Status and IRQ Control2(0x4A) */
 #define RT5631_ADC_DATA_SEL_MASK			(0x3 << 14)
+#define RT5631_ADC_DATA_SEL_SHIFT			14
 #define RT5631_ADC_DATA_SEL_Disable			(0x0 << 14)
 #define RT5631_ADC_DATA_SEL_MIC1			(0x1 << 14)
 #define RT5631_ADC_DATA_SEL_MIC1_SHIFT		14
 #define RT5631_ADC_DATA_SEL_MIC2			(0x2 << 14)
 #define RT5631_ADC_DATA_SEL_MIC2_SHIFT		15
-#define RT5631_ADC_DATA_SEL_STO			(0x3 << 14)
-#define RT5631_ADC_DATA_SEL_SHIFT			14
+#define RT5631_ADC_DATA_SEL_SWAP			(0x3 << 14)
 
 /* GPIO Pin Configuration(0x4C) */
 #define RT5631_GPIO_PIN_FUN_SEL_MASK			(0x1 << 15)
@@ -668,15 +721,15 @@
 #define RT5631_PSEUDO_STEREO_EN			(0x1 << 13)
 #define RT5631_STEREO_EXPENSION_EN			(0x1 << 12)
 /* 3D gain parameter */
-#define RT5631_GAIN_3D_PARA_MASK		(0x3 << 6)
-#define RT5631_GAIN_3D_PARA_1_00		(0x0 << 6) /* 3D gain 1.0 */
-#define RT5631_GAIN_3D_PARA_1_50		(0x1 << 6) /* 3D gain 1.5 */
-#define RT5631_GAIN_3D_PARA_2_00		(0x2 << 6) /* 3D gain 2.0 */
+#define RT5631_GAIN_3D_PARA_MASK			(0x3 << 6)
+#define RT5631_GAIN_3D_PARA_1_00			(0x0 << 6)
+#define RT5631_GAIN_3D_PARA_1_50			(0x1 << 6)
+#define RT5631_GAIN_3D_PARA_2_00			(0x2 << 6)
 /* 3D ratio parameter */
-#define RT5631_RATIO_3D_MASK			(0x3 << 4)
-#define RT5631_RATIO_3D_0_0			(0x0 << 4) /* 3D ratio 0.0 */
-#define RT5631_RATIO_3D_0_66			(0x1 << 4) /* 3D ratio 0.66 */
-#define RT5631_RATIO_3D_1_0			(0x2 << 4) /* 3D ratio 1.0 */
+#define RT5631_RATIO_3D_MASK				(0x3 << 4)
+#define RT5631_RATIO_3D_0_0				(0x0 << 4)
+#define RT5631_RATIO_3D_0_66				(0x1 << 4)
+#define RT5631_RATIO_3D_1_0				(0x2 << 4)
 /* select samplerate for all pass filter */
 #define RT5631_APF_FUN_SLE_MASK			(0x3 << 0)
 #define RT5631_APF_FUN_SEL_48K				(0x3 << 0)
@@ -697,5 +750,34 @@
 #define RT5631_EN_HW_EQ_BP1				(0x1 << 1)
 #define RT5631_EN_HW_EQ_LPF				(0x1 << 0)
 
+enum {
+	RT5631_AIF1,
+	RT5631_AIF2,
+	RT5631_AIFS,
+};
 
-#endif /* __RTCODEC5631_H__ */
+enum {
+	RT5631_SCLK1,
+	RT5631_SCLK2,
+	RT5631_SCLKS,
+};
+
+enum {
+	RT5631_PLL1,
+	RT5631_PLL2,
+	RT5631_PLLS,
+};
+
+enum {
+	RT5631_PLL_S_MCLK,
+	RT5631_PLL_S_BCLK,
+	RT5631_PLL_S_VBCLK,
+};
+
+#define RT5631_NO_JACK		BIT(0)
+#define RT5631_HEADSET_DET	BIT(1)
+#define RT5631_HEADPHO_DET	BIT(2)
+
+int rt5631_headset_detect(struct snd_soc_codec *codec, int jack_insert);
+
+#endif /* __RT5631_H__ */

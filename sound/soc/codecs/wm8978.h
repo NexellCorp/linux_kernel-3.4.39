@@ -67,8 +67,6 @@
 #define WM8978_OUT3_MIXER_CONTROL		0x38
 #define WM8978_OUT4_MIXER_CONTROL		0x39
 
-#define WM8978_MAX_REGISTER			0x39
-
 #define WM8978_CACHEREGNUM			58
 
 /* Clock divider Id's */
@@ -80,6 +78,47 @@ enum wm8978_clk_id {
 enum wm8978_sysclk_src {
 	WM8978_PLL,
 	WM8978_MCLK
+};
+
+
+enum playback_path  { PLAYBACK_OFF, RCV, SPK, HP, BT,DUAL, RING_SPK, RING_HP, RING_BT,RING_DUAL};
+enum mic_path  	  { MAIN,HP_MIC,SUB, MIC_OFF};
+enum power_state	  { CODEC_OFF, CODEC_ON};
+enum state			  {OFF, ON};
+enum voice_call	  {CALL_OFF,CALL_RCV,CALL_SPK,CALL_HP,CALL_BT};
+//AUDIO PATH relative
+typedef enum {
+	AUDIO_OUT_PATH_HEADPHONE,
+	AUDIO_OUT_PATH_SPEAKER,
+	AUDIO_OUT_PATH_UNKNOWN
+}audio_out_path_type;
+
+typedef void (*select_route)(struct snd_soc_codec *);
+typedef void (*select_mic_route)(struct snd_soc_codec *);
+
+/* codec private data */
+struct wm8978_priv {
+	enum snd_soc_control_type control_type;
+	void *control_data;
+	unsigned int f_pllout;
+	unsigned int f_mclk;
+	unsigned int f_256fs;
+	unsigned int f_opclk;
+	int mclk_idx;
+	enum wm8978_sysclk_src sysclk;
+	unsigned int codec_playback_state;
+	unsigned int codec_mic_state;
+	unsigned int voice_call_state;
+	select_route *universal_playback_path;
+	select_route *universal_voicecall_path;
+	select_mic_route *universal_mic_path;
+};
+
+
+
+struct wm8978_reg_map{
+	u16 reg;
+	u16 value;
 };
 
 #endif	/* __WM8978_H__ */

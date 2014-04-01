@@ -252,6 +252,7 @@ struct pl022_ssp_controller {
 	void *dma_rx_param;
 	void *dma_tx_param;
 	int autosuspend_delay;
+	void (* init)(int ch); /* bok add function*/
 	bool rt;
 };
 

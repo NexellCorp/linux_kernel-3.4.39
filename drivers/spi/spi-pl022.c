@@ -40,6 +40,10 @@
 #include <linux/dma-mapping.h>
 #include <linux/scatterlist.h>
 #include <linux/pm_runtime.h>
+#include <mach/soc.h>
+#include <mach/platform.h>
+#include <mach/devices.h>
+
 
 /*
  * This macro is used to define some register default values.
@@ -489,11 +493,9 @@ static void giveback(struct pl022 *pl022)
 	pl022->cur_transfer = NULL;
 	pl022->cur_chip = NULL;
 	spi_finalize_current_message(pl022->master);
-
 	/* disable the SPI/SSP operation */
 	writew((readw(SSP_CR1(pl022->virtbase)) &
 		(~SSP_CR1_MASK_SSE)), SSP_CR1(pl022->virtbase));
-
 }
 
 /**
@@ -1008,10 +1010,11 @@ static int configure_dma(struct pl022 *pl022)
 
 	/* Fill in the scatterlists for the RX+TX buffers */
 	setup_dma_scatter(pl022, pl022->rx,
-			  pl022->cur_transfer->len, &pl022->sgt_rx);
+		  pl022->cur_transfer->len, &pl022->sgt_rx);
+	msleep(1);//bok add
 	setup_dma_scatter(pl022, pl022->tx,
-			  pl022->cur_transfer->len, &pl022->sgt_tx);
-
+		  pl022->cur_transfer->len, &pl022->sgt_tx);
+	msleep(1);//bok add
 	/* Map DMA buffers */
 	rx_sglen = dma_map_sg(rxchan->device->dev, pl022->sgt_rx.sgl,
 			   pl022->sgt_rx.nents, DMA_FROM_DEVICE);
@@ -1023,7 +1026,7 @@ static int configure_dma(struct pl022 *pl022)
 	if (!tx_sglen)
 		goto err_tx_sgmap;
 
-	/* Send both scatterlists */
+			/* Send both scatterlists */
 	rxdesc = dmaengine_prep_slave_sg(rxchan,
 				      pl022->sgt_rx.sgl,
 				      rx_sglen,
@@ -1387,7 +1390,9 @@ static void do_interrupt_dma_transfer(struct pl022 *pl022)
 		return;
 	}
 	/* If we're using DMA, set up DMA here */
-	if (pl022->cur_chip->enable_dma) {
+
+	if (pl022->cur_chip->enable_dma && pl022->cur_transfer->len >= 4 ) {		//bok add
+//	if (pl022->cur_chip->enable_dma) {
 		/* Configure DMA transfer */
 		if (configure_dma(pl022)) {
 			dev_dbg(&pl022->adev->dev,
@@ -1402,6 +1407,7 @@ err_config_dma:
 	writew((readw(SSP_CR1(pl022->virtbase)) | SSP_CR1_MASK_SSE),
 	       SSP_CR1(pl022->virtbase));
 	writew(irqflags, SSP_IMSC(pl022->virtbase));
+
 }
 
 static void do_polling_transfer(struct pl022 *pl022)
@@ -2054,6 +2060,9 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
 	       adev->res.start, pl022->virtbase);
 
 	pl022->clk = clk_get(&adev->dev, NULL);
+	
+	platform_info->init(master->bus_num);		/*bok add func */
+
 	if (IS_ERR(pl022->clk)) {
 		status = PTR_ERR(pl022->clk);
 		dev_err(&adev->dev, "could not retrieve SSP/SPI bus clock\n");

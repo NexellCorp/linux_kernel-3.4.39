@@ -18,7 +18,7 @@
 #include <linux/delay.h>
 #include <linux/pm.h>
 #include <linux/i2c.h>
-#include <linux/regmap.h>
+#include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
@@ -30,80 +30,147 @@
 
 #include "wm8978.h"
 
-static const struct reg_default wm8978_reg_defaults[] = {
-	{ 1, 0x0000 },
-	{ 2, 0x0000 },
-	{ 3, 0x0000 },
-	{ 4, 0x0050 },
-	{ 5, 0x0000 },
-	{ 6, 0x0140 },
-	{ 7, 0x0000 },
-	{ 8, 0x0000 },
-	{ 9, 0x0000 },
-	{ 10, 0x0000 },
-	{ 11, 0x00ff },
-	{ 12, 0x00ff },
-	{ 13, 0x0000 },
-	{ 14, 0x0100 },
-	{ 15, 0x00ff },
-	{ 16, 0x00ff },
-	{ 17, 0x0000 },
-	{ 18, 0x012c },
-	{ 19, 0x002c },
-	{ 20, 0x002c },
-	{ 21, 0x002c },
-	{ 22, 0x002c },
-	{ 23, 0x0000 },
-	{ 24, 0x0032 },
-	{ 25, 0x0000 },
-	{ 26, 0x0000 },
-	{ 27, 0x0000 },
-	{ 28, 0x0000 },
-	{ 29, 0x0000 },
-	{ 30, 0x0000 },
-	{ 31, 0x0000 },
-	{ 32, 0x0038 },
-	{ 33, 0x000b },
-	{ 34, 0x0032 },
-	{ 35, 0x0000 },
-	{ 36, 0x0008 },
-	{ 37, 0x000c },
-	{ 38, 0x0093 },
-	{ 39, 0x00e9 },
-	{ 40, 0x0000 },
-	{ 41, 0x0000 },
-	{ 42, 0x0000 },
-	{ 43, 0x0000 },
-	{ 44, 0x0033 },
-	{ 45, 0x0010 },
-	{ 46, 0x0010 },
-	{ 47, 0x0100 },
-	{ 48, 0x0100 },
-	{ 49, 0x0002 },
-	{ 50, 0x0001 },
-	{ 51, 0x0001 },
-	{ 52, 0x0039 },
-	{ 53, 0x0039 },
-	{ 54, 0x0039 },
-	{ 55, 0x0039 },
-	{ 56, 0x0001 },
-	{ 57, 0x0001 },
+//#define DEBUG
+#ifdef DEBUG
+#define pr_debug(arg...) 	printk(arg)
+#endif
+/* wm8978 register cache. Note that register 0 is not included in the cache. */
+static u16 wm8978_reg[WM8978_CACHEREGNUM] = {
+
+#if 0
+	0x0000,0x005d,0x01bc,0x00ef, /* 0x00...0x03 */
+	0x0010,0x0001,0x0000,0x0000, /* 0x04...0x07 */
+	0x0000,0x0000,0x000c,0x01ff, /* 0x08...0x0b */
+	0x01ff,0x0000,0x0108,0x01ff, /* 0x0c...0x0f */
+	0x01ff,0x0000,0x012c,0x002c, /* 0x10...0x13 */
+	0x002c,0x002c,0x010d,0x0000, /* 0x14...0x17 */
+	0x0032,0x0000,0x0000,0x0000, /* 0x18...0x1b */
+	0x0000,0x0000,0x0000,0x0000, /* 0x1c...0x1f */
+	0x0138,0x007b,0x0032,0x0000, /* 0x20...0x23 */
+	0x0018,0x000c,0x0093,0x00e9, /* 0x24...0x27 */
+	0x0000,0x0000,0x0000,0x0000, /* 0x28...0x2b */
+	0x0133,0x01a8,0x01a8,0x0170, /* 0x2c...0x2f */
+	0x0170,0x000f,0x01fd,0x01fd, /* 0x30...0x33 */
+	0x0132,0x0132,0x013f,0x013f, /* 0x34...0x37 */
+	0x0005,0x0001,				 /* 0x38...0x3b */
+#else
+	0x0000, 0x0000, 0x0000, 0x0000,	/* 0x00...0x03 */
+	0x0050, 0x0000, 0x0140, 0x0000,	/* 0x04...0x07 */
+	0x0000, 0x0000, 0x000c, 0x00ff,	/* 0x08...0x0b */
+	0x00ff, 0x0000, 0x0108, 0x00ff,	/* 0x0c...0x0f */
+	0x00ff, 0x0000, 0x012c, 0x002c,	/* 0x10...0x13 */
+	0x002c, 0x002c, 0x010d, 0x0000,	/* 0x14...0x17 */
+	0x0032, 0x0000, 0x0000, 0x0000,	/* 0x18...0x1b */
+	0x0000, 0x0000, 0x0000, 0x0000,	/* 0x1c...0x1f */
+	0x0138, 0x007b, 0x0032, 0x0000,	/* 0x20...0x23 */
+	0x0018, 0x000c, 0x0093, 0x00e9,	/* 0x24...0x27 */
+	0x0000, 0x0000, 0x0000, 0x0000,	/* 0x28...0x2b */
+	0x0033, 0x0090, 0x0090, 0x0177,	/* 0x2c...0x2f */
+	0x0177, 0x000f, 0x01e1, 0x01e1,	/* 0x30...0x33 */
+	0x0035, 0x0035, 0x0039, 0x0039,	/* 0x34...0x37 */
+	0x0001,	0x0001,			/* 0x38...0x3b */
+#endif
 };
 
-static bool wm8978_volatile(struct device *dev, unsigned int reg)
-{
-	return reg == WM8978_RESET;
-}
 
-/* codec private data */
-struct wm8978_priv {
-	struct regmap *regmap;
-	unsigned int f_pllout;
-	unsigned int f_mclk;
-	unsigned int f_256fs;
-	unsigned int f_opclk;
-	int mclk_idx;
-	enum wm8978_sysclk_src sysclk;
+/* wm8978 register cache. Note that register 0 is not included in the cache. */
+static u16 wm8978_reg_702[WM8978_CACHEREGNUM] = {
+#if 0
+	0x0000, 0x0000, 0x0000, 0x0000,	/* 0x00...0x03 */
+	0x0050, 0x0000, 0x0140, 0x0000,	/* 0x04...0x07 */
+
+	0x0000, 0x0000, 0x000c, 0x01ff,	/* 0x08...0x0b */
+	0x01ff, 0x0000, 0x0108, 0x00ff,	/* 0x0c...0x0f */
+
+	0x00ff, 0x0000, 0x0138, 0x0138,	/* 0x10...0x13 */
+	0x0030, 0x002c, 0x0028, 0x0000,	/* 0x14...0x17 */
+
+	0x0032, 0x005c, 0x0000, 0x0000,	/* 0x18...0x1b */
+	0x0000, 0x0000, 0x0000, 0x0000,	/* 0x1c...0x1f */
+	0x0138, 0x000b, 0x0032, 0x001f,	/* 0x20...0x23 */
+	0x0018, 0x000c, 0x0093, 0x00e9,	/* 0x24...0x27 */
+	0x0000, 0x000f, 0x0000, 0x001f,	/* 0x28...0x2b */
+	0x0033, 0x0090, 0x0090, 0x0177,	/* 0x2c...0x2f */
+	0x0177, 0x003f, 0x01e1, 0x01e1,	/* 0x30...0x33 */
+	0x0035, 0x0035, 0x0039, 0x0039,	/* 0x34...0x37 */
+	0x0001,	0x0001,			/* 0x38...0x3b */
+#endif
+#if 1
+0x0000, 0x0000, 0x0000, 0x0000, /* 0x00...0x03 */
+0x0050, 0x0000, 0x0140, 0x0000, /* 0x04...0x07 */
+
+0x0000, 0x0000, 0x000c, 0x01e0, /* 0x08...0x0b */	/* DAC VOL 0xB, 0xC */
+0x01e0, 0x0000, 0x0100, 0x01ff, /* 0x0c...0x0f */	/* 0x01f6, 0x0000, 0x0108, 0x00ff : jhkim, INPUT BOOST(OxF, 0x10) */
+
+0x01ff, 0x0000, 0x012c, 0x002c, /* 0x10...0x13 */	/* 0x00ff, 0x0000, 0x0138, 0x0138 : jhkim */
+0x002c, 0x002c, 0x002c, 0x0000, /* 0x14...0x17 */	/* 0x0030, 0x002c, 0x0028, 0x0000 : jhkim */
+
+0x0032, 0x0000, 0x0000, 0x0000, /* 0x18...0x1b */	/* 0x0032, 0x005c, 0x0000, 0x0000 : jhkim */
+0x0000, 0x0000, 0x0000, 0x0000, /* 0x1c...0x1f */
+0x0038, 0x000b, 0x0032, 0x0000, /* 0x20...0x23 */	/* 0x0138, 0x000b, 0x0032, 0x001f : jhkim */
+0x0018, 0x000c, 0x0093, 0x00e9, /* 0x24...0x27 */
+0x0000, 0x0000, 0x0000, 0x0000, /* 0x28...0x2b */	/* 0x0000, 0x000f, 0x0000, 0x001f : jhkim */
+0x0033, 0x0190, 0x0190, 0x0100, /* 0x2c...0x2f */	/* 0x0033, 0x0090, 0x0090, 0x0177 : jhkim */
+0x0100, 0x0002, 0x01e1, 0x01e1, /* 0x30...0x33 */	/* 0x0100, 0x0002, 0x0001, 0x0001 : jhkim: prevent automute status */
+0x0039, 0x0039, 0x0039, 0x0039, /* 0x34...0x37 */
+0x0001, 0x0001, 				/* 0x38...0x3b */
+#endif
+
+};
+
+static struct wm8978_reg_map wm8978_call_rcv_reg[]={
+	{0x00,0x000},{0x01,0x1ff},{0x02,0x1fc},{0x03,0x1fc},
+	{0x04,0x090},{0x05,0x000},{0x06,0x000},{0x07,0x000},
+	{0x08,0x000},{0x09,0x000},{0x0a,0x000},{0x0b,0x1ff},
+	{0x0c,0x1ff},{0x0d,0x000},{0x0e,0x1ff},{0x0f,0x1ff},
+	{0x10,0x1ff},{0x11,0x000},{0x12,0x12c},{0x13,0x02c},
+	{0x14,0x02c},{0x15,0x02c},{0x16,0x02c},{0x17,0x000},
+	{0x18,0x032},{0x19,0x000},{0x1a,0x000},{0x1b,0x000},
+	{0x1c,0x000},{0x1d,0x000},{0x1e,0x000},{0x1f,0x000},
+	{0x20,0x038},{0x21,0x00b},{0x22,0x032},{0x23,0x000},
+	{0x24,0x008},{0x25,0x00c},{0x26,0x093},{0x27,0x0e9},
+	{0x28,0x000},{0x29,0x000},{0x2a,0x000},{0x2b,0x000},
+	{0x2c,0x033},{0x2d,0x1ab},{0x2e,0x1ab},{0x2f,0x000},
+	{0x30,0x000},{0x31,0x00a},{0x32,0x1e1},{0x33,0x1e1},
+	{0x34,0x13f},{0x35,0x13f},{0x36,0x135},{0x37,0x135},
+	{0x38,0x005},{0x39,0x000},
+};
+static struct wm8978_reg_map wm8978_call_rcv_hp[]={
+
+	/*{0x00,0x0000}{0x01,0x001d},{0x02,0x0180},{0x03,0x006f},//0x00 - 0x03
+	{0x04,0x0010},{0x05,0x0000},{0x06,0x0000},{0x07,0x0000},//0x04- 0x07
+	{0x08,0x0000},{0x09,0x0000},{0x0a,0x0000},{0x0b,0x01ff},//0x08-0xb
+	{0x0c,0x01ff},{0x0d,0x0000},{0x0e,0x0100},{0x0f,0x01ff},//0xc-0xf
+	{0x10,0x01ff},{0x11,0x0000},{0x12,0x012c},{0x13,0x002c},//0x10-0x13
+	{0x14,0x002c},{0x15,0x002c},{0x16,0x002c},{0x17,0x0000},*///0x14-0x17
+	/*
+	{0x18,0x0032},{0x19,0x0000},{0x1a,0x0000},{0x1b,0x0000},//0x18-0x1b
+	{0x1c,0x0000},{0x1d,0x0000},{0x1e,0x0000},{0x1f,0x0000},//0x1c-0x1f
+	{0x20,0x0038},{0x21,0x000b},{0x22,0x0032},{0x23,0x0000},//0x20-0x23
+	{0x24,0x0018},{0x25,0x0000},{0x26,0x0000},{0x27,0x0000},//0x24-0x27
+	{0x28,0x0000},{0x29,0x0000},{0x2a,0x0000},{0x2b,0x0000},//0x28-0x2b
+	{0x2c,0x0033},{0x2d,0x01d0},{0x2e,0x01d0},{0x2f,0x0100},//0x2c-0x2f  //jerry
+	{0x30,0x0100},{0x31,0x0002},{0x32,0x01e1},{0x33,0x01e1},//0x30-0x33
+	{0x34,0x012e},{0x35,0x012e},{0x36,0x0139},{0x37,0x0139},//0x34-0x37 	//jerry
+	{0x38,0x0001},{0x39,0x0001},		 //0x38-0x39
+	*/
+#if 0
+ {0x00,0x000},{0x01,0x0dd},{0x02,0x1bc},{0x03,0x1ef},//0x00 - 0x03
+/*{0x04,0x010},{0x05,0x000},{0x06,0x000},{0x07,0x000},//0x04- 0x07
+{0x08,0x000},{0x09,0x000},{0x0a,0x000},{0x0b,0x1ff},//0x08-0xb
+{0x0c,0x1ff},{0x0d,0x000},{0x0e,0xfff},{0x0f,0xfff},//0xc-0xf
+{0x10,0xfff},{0x11,0x000},{0x12,0x12c},{0x13,0x02c},//0x10-0x13
+{0x14,0x02c},{0x15,0x02c},{0x16,0x10d},{0x17,0x000},//0x14-0x17
+{0x18,0x032},{0x19,0x000},{0x1a,0x000},{0x1b,0x000},//0x18-0x1b
+{0x1c,0x000},{0x1d,0x000},{0x1e,0x000},{0x1f,0x000},//0x1c-0x1f
+{0x20,0x038},{0x21,0x00b},{0x22,0x032},{0x23,0x000},//0x20-0x23
+{0x24,0x008},{0x25,0x00c},{0x26,0x093},{0x27,0x0e9},//0x24-0x27
+{0x28,0x000},{0x29,0x000},{0x2a,0x000},{0x2b,0x110},//0x28-0x2b
+{0x2c,0x030},{0x2d,0x1ad},{0x2e,0x1ad},{0x2f,0x000},//0x2c-0x2f  //jerry
+{0x30,0x000},{0x31,0x002},{0x32,0x1e1},{0x33,0x1e1},//0x30-0x33
+{0x34,0x13f},{0x35,0x13f},{0x36,0x13c},{0x37,0x13c},//0x34-0x37 	//jerry
+{0x38,0x008},{0x39,0x004}, */			 //0x38-0x39
+#endif
 };
 
 static const char *wm8978_companding[] = {"Off", "NC", "u-law", "A-law"};
@@ -116,6 +183,7 @@ static const char *wm8978_eq4[] = {"1.8kHz", "2.4kHz", "3.2kHz", "4.1kHz"};
 static const char *wm8978_eq5[] = {"5.3kHz", "6.9kHz", "9kHz", "11.7kHz"};
 static const char *wm8978_alc3[] = {"ALC", "Limiter"};
 static const char *wm8978_alc1[] = {"Off", "Right", "Left", "Both"};
+static struct snd_soc_codec * wm8978_codec;
 
 static const SOC_ENUM_SINGLE_DECL(adc_compand, WM8978_COMPANDING_CONTROL, 1,
 				  wm8978_companding);
@@ -139,202 +207,338 @@ static const DECLARE_TLV_DB_SCALE(inpga_tlv, -1200, 75, 0);
 static const DECLARE_TLV_DB_SCALE(spk_tlv, -5700, 100, 0);
 static const DECLARE_TLV_DB_SCALE(boost_tlv, -1500, 300, 1);
 static const DECLARE_TLV_DB_SCALE(limiter_tlv, 0, 100, 0);
+#define ARRAYSIZE(a)		(sizeof(a)/sizeof(a[0]))
+static const char *voicecall_path[] = { "OFF", "RCV", "SPK", "HP","HP_NO_MIC", "BT", };
+static const struct soc_enum path_control_enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(voicecall_path),voicecall_path),
+ };
+
+static void wm8978_call_off(struct snd_soc_codec *codec)
+{
+	pr_debug("%s",__FUNCTION__);
+	return;
+}
+static void wm8978_call_rcv(struct snd_soc_codec *codec)
+{
+	int i=0;
+	pr_debug("%s",__FUNCTION__);
+ 	 for(i=0;i<ARRAYSIZE(wm8978_call_rcv_reg);i++)
+			snd_soc_write(codec,wm8978_call_rcv_reg[i].reg,wm8978_call_rcv_reg[i].value);
+	return;
+}
+static void wm8978_call_spk(struct snd_soc_codec *codec)
+{
+	pr_debug("%s",__FUNCTION__);
+	return;
+
+}
+static void wm8978_call_hp(struct snd_soc_codec *codec)
+{
+
+	int i=0;
+	pr_debug("%s",__FUNCTION__);
+ 	for(i=0;i<ARRAYSIZE(wm8978_call_rcv_hp);i++)
+			snd_soc_write(codec,wm8978_call_rcv_hp[i].reg,wm8978_call_rcv_hp[i].value);
+	return;
+}
+
+static void wm8978_call_hp_no_mic(struct snd_soc_codec *codec)
+{
+	pr_debug("%s",__FUNCTION__);
+	return;
+
+}
+
+static void wm8978_call_bt(struct snd_soc_codec *codec)
+{
+	pr_debug("%s",__FUNCTION__);
+	return;
+
+}
+
+
+static select_route uj_wm8978_voice_call_path[]={
+//	"OFF", 				"RCV",			"SPK", 			"HP",		 "HP_NO_MIC", 			"BT"
+	wm8978_call_off,wm8978_call_rcv,wm8978_call_spk,wm8978_call_hp,wm8978_call_hp_no_mic,wm8978_call_bt,
+};
+
+static int wm8978_get_voice_call(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+
+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+	struct wm8978_priv *wm8978 = snd_soc_codec_get_drvdata(codec);
+	ucontrol->value.integer.value[0]=wm8978->voice_call_state;
+	pr_debug("%s:%ld\n", __FUNCTION__, ucontrol->value.integer.value[0]);
+	return 0;
+
+}
+
+static int wm8978_set_voice_call(struct snd_kcontrol *kcontrol,struct snd_ctl_elem_value *ucontrol)
+{
+		struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+		int path_num=ucontrol->value.integer.value[0];
+	 	uj_wm8978_voice_call_path[path_num](codec);
+	return 0;
+}
 
 static const struct snd_kcontrol_new wm8978_snd_controls[] = {
 
-	SOC_SINGLE("Digital Loopback Switch",
+	SOC_SINGLE("Digital_Loopback_Switch",
 		WM8978_COMPANDING_CONTROL, 0, 1, 0),
 
-	SOC_ENUM("ADC Companding", adc_compand),
-	SOC_ENUM("DAC Companding", dac_compand),
+	SOC_ENUM("ADC_Companding", adc_compand),
+	SOC_ENUM("DAC_Companding", dac_compand),
 
-	SOC_DOUBLE("DAC Inversion Switch", WM8978_DAC_CONTROL, 0, 1, 1, 0),
+	SOC_DOUBLE("DAC_Inversion_Switch", WM8978_DAC_CONTROL, 0, 1, 1, 0),
 
-	SOC_DOUBLE_R_TLV("PCM Volume",
+	SOC_DOUBLE_R_TLV("PCM_Volume",
 		WM8978_LEFT_DAC_DIGITAL_VOLUME, WM8978_RIGHT_DAC_DIGITAL_VOLUME,
 		0, 255, 0, digital_tlv),
 
-	SOC_SINGLE("High Pass Filter Switch", WM8978_ADC_CONTROL, 8, 1, 0),
-	SOC_SINGLE("High Pass Cut Off", WM8978_ADC_CONTROL, 4, 7, 0),
-	SOC_DOUBLE("ADC Inversion Switch", WM8978_ADC_CONTROL, 0, 1, 1, 0),
+	SOC_SINGLE("High_Pass_Filter_Switch", WM8978_ADC_CONTROL, 8, 1, 0),
+	SOC_SINGLE("High_Pass_Cut_Off", WM8978_ADC_CONTROL, 4, 7, 0),
+	SOC_DOUBLE("ADC_Inversion_Switch", WM8978_ADC_CONTROL, 0, 1, 1, 0),
 
-	SOC_DOUBLE_R_TLV("ADC Volume",
+	SOC_DOUBLE_R_TLV("ADC_Volume",
 		WM8978_LEFT_ADC_DIGITAL_VOLUME, WM8978_RIGHT_ADC_DIGITAL_VOLUME,
 		0, 255, 0, digital_tlv),
 
-	SOC_ENUM("Equaliser Function", eqmode),
-	SOC_ENUM("EQ1 Cut Off", eq1),
-	SOC_SINGLE_TLV("EQ1 Volume", WM8978_EQ1,  0, 24, 1, eq_tlv),
+	SOC_ENUM("Equaliser_Function", eqmode),
+	SOC_ENUM("EQ1_Cut_Off", eq1),
+	SOC_SINGLE_TLV("EQ1_Volume", WM8978_EQ1,  0, 24, 1, eq_tlv),
 
-	SOC_ENUM("Equaliser EQ2 Bandwith", eq2bw),
-	SOC_ENUM("EQ2 Cut Off", eq2),
-	SOC_SINGLE_TLV("EQ2 Volume", WM8978_EQ2,  0, 24, 1, eq_tlv),
+	SOC_ENUM("Equaliser_EQ2_Bandwith", eq2bw),
+	SOC_ENUM("EQ2_Cut_Off", eq2),
+	SOC_SINGLE_TLV("EQ2_Volume", WM8978_EQ2,  0, 24, 1, eq_tlv),
+	SOC_SINGLE_TLV("EQ2_Volume_False", WM8978_EQ2,  0, 24, 1, eq_tlv),//add by jerry
 
-	SOC_ENUM("Equaliser EQ3 Bandwith", eq3bw),
-	SOC_ENUM("EQ3 Cut Off", eq3),
-	SOC_SINGLE_TLV("EQ3 Volume", WM8978_EQ3,  0, 24, 1, eq_tlv),
+	SOC_ENUM("Equaliser_EQ3_Bandwith", eq3bw),
+	SOC_ENUM("EQ3_Cut_Off", eq3),
+	SOC_SINGLE_TLV("EQ3_Volume", WM8978_EQ3,  0, 24, 1, eq_tlv),
 
-	SOC_ENUM("Equaliser EQ4 Bandwith", eq4bw),
-	SOC_ENUM("EQ4 Cut Off", eq4),
-	SOC_SINGLE_TLV("EQ4 Volume", WM8978_EQ4,  0, 24, 1, eq_tlv),
+	SOC_ENUM("Equaliser_EQ4_Bandwith", eq4bw),
+	SOC_ENUM("EQ4_Cut_Off", eq4),
+	SOC_SINGLE_TLV("EQ4_Volume", WM8978_EQ4,  0, 24, 1, eq_tlv),
 
-	SOC_ENUM("EQ5 Cut Off", eq5),
-	SOC_SINGLE_TLV("EQ5 Volume", WM8978_EQ5, 0, 24, 1, eq_tlv),
+	SOC_ENUM("EQ5_Cut_Off", eq5),
+	SOC_SINGLE_TLV("EQ5_Volume", WM8978_EQ5, 0, 24, 1, eq_tlv),
 
-	SOC_SINGLE("DAC Playback Limiter Switch",
+	SOC_SINGLE("DAC_Playback_Limiter_Switch",
 		WM8978_DAC_LIMITER_1, 8, 1, 0),
-	SOC_SINGLE("DAC Playback Limiter Decay",
+	SOC_SINGLE("DAC_Playback_Limiter_Decay",
 		WM8978_DAC_LIMITER_1, 4, 15, 0),
-	SOC_SINGLE("DAC Playback Limiter Attack",
+	SOC_SINGLE("DAC_Playback_Limiter_Attack",
 		WM8978_DAC_LIMITER_1, 0, 15, 0),
 
-	SOC_SINGLE("DAC Playback Limiter Threshold",
+	SOC_SINGLE("DAC_Playback_Limiter_Threshold",
 		WM8978_DAC_LIMITER_2, 4, 7, 0),
-	SOC_SINGLE_TLV("DAC Playback Limiter Volume",
+	SOC_SINGLE_TLV("DAC_Playback_Limiter_Volume",
 		WM8978_DAC_LIMITER_2, 0, 12, 0, limiter_tlv),
 
-	SOC_ENUM("ALC Enable Switch", alc1),
-	SOC_SINGLE("ALC Capture Min Gain", WM8978_ALC_CONTROL_1, 0, 7, 0),
-	SOC_SINGLE("ALC Capture Max Gain", WM8978_ALC_CONTROL_1, 3, 7, 0),
+	SOC_ENUM("ALC_Enable_Switch", alc1),
+	SOC_SINGLE("ALC_Capture_Min_Gain", WM8978_ALC_CONTROL_1, 0, 7, 0),
+	SOC_SINGLE("ALC_Capture_Max_Gain", WM8978_ALC_CONTROL_1, 3, 7, 0),
 
-	SOC_SINGLE("ALC Capture Hold", WM8978_ALC_CONTROL_2, 4, 10, 0),
-	SOC_SINGLE("ALC Capture Target", WM8978_ALC_CONTROL_2, 0, 15, 0),
+	SOC_SINGLE("ALC_Capture_Hold", WM8978_ALC_CONTROL_2, 4, 10, 0),
+	SOC_SINGLE("ALC_Capture_Target", WM8978_ALC_CONTROL_2, 0, 15, 0),
 
-	SOC_ENUM("ALC Capture Mode", alc3),
-	SOC_SINGLE("ALC Capture Decay", WM8978_ALC_CONTROL_3, 4, 10, 0),
-	SOC_SINGLE("ALC Capture Attack", WM8978_ALC_CONTROL_3, 0, 10, 0),
+	SOC_ENUM("ALC_Capture_Mode", alc3),
+	SOC_SINGLE("ALC_Capture_Decay", WM8978_ALC_CONTROL_3, 4, 10, 0),
+	SOC_SINGLE("ALC_Capture_Attack", WM8978_ALC_CONTROL_3, 0, 10, 0),
 
-	SOC_SINGLE("ALC Capture Noise Gate Switch", WM8978_NOISE_GATE, 3, 1, 0),
-	SOC_SINGLE("ALC Capture Noise Gate Threshold",
+	SOC_SINGLE("ALC_Capture_Noise_Gate_Switch", WM8978_NOISE_GATE, 3, 1, 0),
+	SOC_SINGLE("ALC_Capture_Noise_Gate_Threshold",
 		WM8978_NOISE_GATE, 0, 7, 0),
 
-	SOC_DOUBLE_R("Capture PGA ZC Switch",
+//urbetter
+	SOC_SINGLE("Capture_LRC_POLARITY", WM8978_AUDIO_INTERFACE, 7, 1, 0),
+	SOC_SINGLE("DAC_LRC_SWAP", WM8978_AUDIO_INTERFACE, 3, 1, 0),
+//	SOC_SINGLE_EXT("Voice_Call_Path",0,0,0,0,NULL,wm8978_set_voice_call),
+	SOC_ENUM_EXT("Voice_Call_Path",path_control_enum[0],wm8978_get_voice_call,wm8978_set_voice_call),
+	SOC_DOUBLE_R("AUX_TO_MIX", WM8978_LEFT_MIXER_CONTROL,WM8978_RIGHT_MIXER_CONTROL, 5, 1, 0),
+	SOC_DOUBLE_R("DAC_TO_MIX", WM8978_LEFT_MIXER_CONTROL,WM8978_RIGHT_MIXER_CONTROL, 0, 1, 0),
+	SOC_DOUBLE_R("BYP_TO_MIX", WM8978_LEFT_MIXER_CONTROL,WM8978_RIGHT_MIXER_CONTROL, 1, 1, 0),
+	SOC_DOUBLE_R_TLV("AUX_MIXER_Volume",WM8978_LEFT_MIXER_CONTROL, WM8978_RIGHT_MIXER_CONTROL,6, 7, 0, NULL),
+	SOC_DOUBLE_R_TLV("BYP_MIXER_Volume",WM8978_LEFT_MIXER_CONTROL, WM8978_RIGHT_MIXER_CONTROL,2, 7, 0, NULL),
+
+	SOC_SINGLE("AUX_MIXER_Volume_L", WM8978_LEFT_MIXER_CONTROL,6,7,0),
+	SOC_SINGLE("AUX_MIXER_Volume_R", WM8978_RIGHT_MIXER_CONTROL,6,7,0),
+
+	SOC_SINGLE("BYP_MIXER_Volume_L", WM8978_LEFT_MIXER_CONTROL,2, 7,0),
+	SOC_SINGLE("BYP_MIXER_Volume_R", WM8978_LEFT_MIXER_CONTROL,2, 7,0),
+
+
+	SOC_SINGLE("INVROUT2", WM8978_BEEP_CONTROL,4, 1,0),
+	SOC_SINGLE("SPK_BOOT", WM8978_OUTPUT_CONTROL,2, 1,0),
+	SOC_SINGLE("SPK_BOOT_702", WM8978_OUTPUT_CONTROL,0, 63,0),//add by eking
+
+	SOC_SINGLE("HPL_MUTE", WM8978_LOUT1_HP_CONTROL,6, 1,0),
+	SOC_SINGLE("HPR_MUTE", WM8978_ROUT1_HP_CONTROL,6, 1,0),
+
+	SOC_SINGLE("SPKL_MUTE", WM8978_LOUT2_SPK_CONTROL,6, 1,0),
+	SOC_SINGLE("SPKR_MUTE", WM8978_ROUT2_SPK_CONTROL,6, 1,0),
+//voice
+	SOC_SINGLE("INPUTBOOSTL_SWITCH", WM8978_POWER_MANAGEMENT_2,4, 1,0),
+	SOC_SINGLE("INPUTBOOSTR_SWITCH", WM8978_POWER_MANAGEMENT_2,5, 1,0),
+	SOC_SINGLE("INPUTPGAL_SWITCH", WM8978_POWER_MANAGEMENT_2,2, 1,0),
+	SOC_SINGLE("INPUTPGAR_SWITCH", WM8978_POWER_MANAGEMENT_2,3, 1,0),
+	SOC_SINGLE("OUT3MIXER_SWITCH", WM8978_POWER_MANAGEMENT_1,6, 1,0),
+	SOC_SINGLE("OUT3POWER_SWITCH", WM8978_POWER_MANAGEMENT_3,7, 1,0),
+
+
+	SOC_SINGLE("BUFIOEN", WM8978_POWER_MANAGEMENT_3,2, 1,0),
+	SOC_SINGLE("DCBUFEN", WM8978_POWER_MANAGEMENT_3,8, 1,0),
+    SOC_SINGLE("DAC_AUTO_MUTE", WM8978_DAC_CONTROL,2, 1,0),
+
+	 //spkcall
+	SOC_SINGLE("BYPL_TO_OUT3", WM8978_OUT3_MIXER_CONTROL,2, 1,0),
+	SOC_DOUBLE_R("MIC_IN_SWITCH", WM8978_LEFT_INP_PGA_CONTROL,WM8978_RIGHT_INP_PGA_CONTROL, 6, 1,1),
+//hpcall
+	SOC_SINGLE("OUT4MIXER_ENABLE", WM8978_POWER_MANAGEMENT_1,7, 1,0),
+	SOC_SINGLE("OUT3MIXER_ENABLE", WM8978_POWER_MANAGEMENT_1,6, 1,0),
+    SOC_SINGLE("OUT4_ENABLE", WM8978_POWER_MANAGEMENT_3,8, 1,0),
+	SOC_SINGLE("OUT3_ENABLE", WM8978_POWER_MANAGEMENT_3,7, 1,0),
+
+	SOC_SINGLE("BYPR_TO_OUT4", WM8978_OUT4_MIXER_CONTROL,2, 1,0),
+	SOC_SINGLE("OUT4_TO_OUT3", WM8978_OUT3_MIXER_CONTROL,3, 1,0),
+
+	SOC_DOUBLE_R("Capture_PGA_ZC_Switch",
 		WM8978_LEFT_INP_PGA_CONTROL, WM8978_RIGHT_INP_PGA_CONTROL,
 		7, 1, 0),
+//capture
 
+	SOC_SINGLE("Mic_Bias", WM8978_POWER_MANAGEMENT_1, 4, 1,0),
+
+	SOC_SINGLE("Mic_VSEL", WM8978_INPUT_CONTROL, 8, 1,0),
 	/* OUT1 - Headphones */
-	SOC_DOUBLE_R("Headphone Playback ZC Switch",
+	SOC_DOUBLE_R("Headphone_Playback_ZC_Switch",
 		WM8978_LOUT1_HP_CONTROL, WM8978_ROUT1_HP_CONTROL, 7, 1, 0),
 
-	SOC_DOUBLE_R_TLV("Headphone Playback Volume",
+	SOC_DOUBLE_R_TLV("Headphone_Playback_Volume",
 		WM8978_LOUT1_HP_CONTROL, WM8978_ROUT1_HP_CONTROL,
 		0, 63, 0, spk_tlv),
 
 	/* OUT2 - Speakers */
-	SOC_DOUBLE_R("Speaker Playback ZC Switch",
+	SOC_DOUBLE_R("Speaker_Playback_ZC_Switch",
 		WM8978_LOUT2_SPK_CONTROL, WM8978_ROUT2_SPK_CONTROL, 7, 1, 0),
 
-	SOC_DOUBLE_R_TLV("Speaker Playback Volume",
+	SOC_DOUBLE_R_TLV("Speaker_Playback_Volume",
 		WM8978_LOUT2_SPK_CONTROL, WM8978_ROUT2_SPK_CONTROL,
 		0, 63, 0, spk_tlv),
 
 	/* OUT3/4 - Line Output */
-	SOC_DOUBLE_R("Line Playback Switch",
+	SOC_DOUBLE_R("Line_Playback_Switch",
 		WM8978_OUT3_MIXER_CONTROL, WM8978_OUT4_MIXER_CONTROL, 6, 1, 1),
 
 	/* Mixer #3: Boost (Input) mixer */
-	SOC_DOUBLE_R("PGA Boost (+20dB)",
+	SOC_DOUBLE_R("PGA_Boost_(+20dB)",
 		WM8978_LEFT_ADC_BOOST_CONTROL, WM8978_RIGHT_ADC_BOOST_CONTROL,
 		8, 1, 0),
-	SOC_DOUBLE_R_TLV("L2/R2 Boost Volume",
+	SOC_DOUBLE_R_TLV("L2/R2_Boost_Volume",
 		WM8978_LEFT_ADC_BOOST_CONTROL, WM8978_RIGHT_ADC_BOOST_CONTROL,
 		4, 7, 0, boost_tlv),
-	SOC_DOUBLE_R_TLV("Aux Boost Volume",
+	SOC_DOUBLE_R_TLV("Aux_Boost_Volume",
 		WM8978_LEFT_ADC_BOOST_CONTROL, WM8978_RIGHT_ADC_BOOST_CONTROL,
 		0, 7, 0, boost_tlv),
 
 	/* Input PGA volume */
-	SOC_DOUBLE_R_TLV("Input PGA Volume",
+	SOC_DOUBLE_R_TLV("Input_PGA_Volume",
 		WM8978_LEFT_INP_PGA_CONTROL, WM8978_RIGHT_INP_PGA_CONTROL,
 		0, 63, 0, inpga_tlv),
 
 	/* Headphone */
-	SOC_DOUBLE_R("Headphone Switch",
+	SOC_DOUBLE_R("Headphone_Switch",
 		WM8978_LOUT1_HP_CONTROL, WM8978_ROUT1_HP_CONTROL, 6, 1, 1),
 
 	/* Speaker */
-	SOC_DOUBLE_R("Speaker Switch",
+	SOC_DOUBLE_R("Speaker_Switch",
 		WM8978_LOUT2_SPK_CONTROL, WM8978_ROUT2_SPK_CONTROL, 6, 1, 1),
 
 	/* DAC / ADC oversampling */
-	SOC_SINGLE("DAC 128x Oversampling Switch", WM8978_DAC_CONTROL,
+	SOC_SINGLE("DAC_128x_Oversampling Switch", WM8978_DAC_CONTROL,
 		   5, 1, 0),
-	SOC_SINGLE("ADC 128x Oversampling Switch", WM8978_ADC_CONTROL,
+	SOC_SINGLE("ADC_128x_Oversampling Switch", WM8978_ADC_CONTROL,
 		   5, 1, 0),
 };
 
 /* Mixer #1: Output (OUT1, OUT2) Mixer: mix AUX, Input mixer output and DAC */
 static const struct snd_kcontrol_new wm8978_left_out_mixer[] = {
-	SOC_DAPM_SINGLE("Line Bypass Switch", WM8978_LEFT_MIXER_CONTROL, 1, 1, 0),
-	SOC_DAPM_SINGLE("Aux Playback Switch", WM8978_LEFT_MIXER_CONTROL, 5, 1, 0),
-	SOC_DAPM_SINGLE("PCM Playback Switch", WM8978_LEFT_MIXER_CONTROL, 0, 1, 0),
+	SOC_DAPM_SINGLE("Line_Bypass_Switch", WM8978_LEFT_MIXER_CONTROL, 1, 1, 0),
+	SOC_DAPM_SINGLE("Aux_Playback_Switch", WM8978_LEFT_MIXER_CONTROL, 5, 1, 0),
+	SOC_DAPM_SINGLE("PCM_Playback_Switch", WM8978_LEFT_MIXER_CONTROL, 0, 1, 0),
 };
 
 static const struct snd_kcontrol_new wm8978_right_out_mixer[] = {
-	SOC_DAPM_SINGLE("Line Bypass Switch", WM8978_RIGHT_MIXER_CONTROL, 1, 1, 0),
-	SOC_DAPM_SINGLE("Aux Playback Switch", WM8978_RIGHT_MIXER_CONTROL, 5, 1, 0),
-	SOC_DAPM_SINGLE("PCM Playback Switch", WM8978_RIGHT_MIXER_CONTROL, 0, 1, 0),
+	SOC_DAPM_SINGLE("Line_Bypass_Switch", WM8978_RIGHT_MIXER_CONTROL, 1, 1, 0),
+	SOC_DAPM_SINGLE("Aux_Playback_Switch", WM8978_RIGHT_MIXER_CONTROL, 5, 1, 0),
+	SOC_DAPM_SINGLE("PCM_Playback_Switch", WM8978_RIGHT_MIXER_CONTROL, 0, 1, 0),
 };
 
 /* OUT3/OUT4 Mixer not implemented */
 
 /* Mixer #2: Input PGA Mute */
 static const struct snd_kcontrol_new wm8978_left_input_mixer[] = {
-	SOC_DAPM_SINGLE("L2 Switch", WM8978_INPUT_CONTROL, 2, 1, 0),
-	SOC_DAPM_SINGLE("MicN Switch", WM8978_INPUT_CONTROL, 1, 1, 0),
-	SOC_DAPM_SINGLE("MicP Switch", WM8978_INPUT_CONTROL, 0, 1, 0),
+	SOC_DAPM_SINGLE("L2_Switch", WM8978_INPUT_CONTROL, 2, 1, 0),
+	SOC_DAPM_SINGLE("MicN_Switch", WM8978_INPUT_CONTROL, 1, 1, 0),
+	SOC_DAPM_SINGLE("MicP_Switch", WM8978_INPUT_CONTROL, 0, 1, 0),
 };
 static const struct snd_kcontrol_new wm8978_right_input_mixer[] = {
-	SOC_DAPM_SINGLE("R2 Switch", WM8978_INPUT_CONTROL, 6, 1, 0),
-	SOC_DAPM_SINGLE("MicN Switch", WM8978_INPUT_CONTROL, 5, 1, 0),
-	SOC_DAPM_SINGLE("MicP Switch", WM8978_INPUT_CONTROL, 4, 1, 0),
+	SOC_DAPM_SINGLE("R2_Switch", WM8978_INPUT_CONTROL, 6, 1, 0),
+	SOC_DAPM_SINGLE("MicN_Switch", WM8978_INPUT_CONTROL, 5, 1, 0),
+	SOC_DAPM_SINGLE("MicP_Switch", WM8978_INPUT_CONTROL, 4, 1, 0),
 };
 
 static const struct snd_soc_dapm_widget wm8978_dapm_widgets[] = {
-	SND_SOC_DAPM_DAC("Left DAC", "Left HiFi Playback",
+	SND_SOC_DAPM_DAC("Left_DAC", "HiFi_Playback",
 			 WM8978_POWER_MANAGEMENT_3, 0, 0),
-	SND_SOC_DAPM_DAC("Right DAC", "Right HiFi Playback",
+	SND_SOC_DAPM_DAC("Right_DAC", "HiFi_Playback",
 			 WM8978_POWER_MANAGEMENT_3, 1, 0),
-	SND_SOC_DAPM_ADC("Left ADC", "Left HiFi Capture",
+	SND_SOC_DAPM_ADC("Left_ADC", "HiFi_Capture",
 			 WM8978_POWER_MANAGEMENT_2, 0, 0),
-	SND_SOC_DAPM_ADC("Right ADC", "Right HiFi Capture",
+	SND_SOC_DAPM_ADC("Right_ADC", "HiFi_Capture",
 			 WM8978_POWER_MANAGEMENT_2, 1, 0),
 
 	/* Mixer #1: OUT1,2 */
-	SOC_MIXER_ARRAY("Left Output Mixer", WM8978_POWER_MANAGEMENT_3,
+	SOC_MIXER_ARRAY("Left_Output_Mixer", WM8978_POWER_MANAGEMENT_3,
 			2, 0, wm8978_left_out_mixer),
-	SOC_MIXER_ARRAY("Right Output Mixer", WM8978_POWER_MANAGEMENT_3,
+	SOC_MIXER_ARRAY("Right_Output_Mixer", WM8978_POWER_MANAGEMENT_3,
 			3, 0, wm8978_right_out_mixer),
 
-	SOC_MIXER_ARRAY("Left Input Mixer", WM8978_POWER_MANAGEMENT_2,
+	SOC_MIXER_ARRAY("Left_Input_Mixer", WM8978_POWER_MANAGEMENT_2,
 			2, 0, wm8978_left_input_mixer),
-	SOC_MIXER_ARRAY("Right Input Mixer", WM8978_POWER_MANAGEMENT_2,
+	SOC_MIXER_ARRAY("Right_Input_Mixer", WM8978_POWER_MANAGEMENT_2,
 			3, 0, wm8978_right_input_mixer),
 
-	SND_SOC_DAPM_PGA("Left Boost Mixer", WM8978_POWER_MANAGEMENT_2,
+	SND_SOC_DAPM_PGA("Left_Boost_Mixer", WM8978_POWER_MANAGEMENT_2,
 			 4, 0, NULL, 0),
-	SND_SOC_DAPM_PGA("Right Boost Mixer", WM8978_POWER_MANAGEMENT_2,
+	SND_SOC_DAPM_PGA("Right_Boost_Mixer", WM8978_POWER_MANAGEMENT_2,
 			 5, 0, NULL, 0),
 
-	SND_SOC_DAPM_PGA("Left Capture PGA", WM8978_LEFT_INP_PGA_CONTROL,
+	SND_SOC_DAPM_PGA("Left_Capture_PGA", WM8978_LEFT_INP_PGA_CONTROL,
 			 6, 1, NULL, 0),
-	SND_SOC_DAPM_PGA("Right Capture PGA", WM8978_RIGHT_INP_PGA_CONTROL,
+	SND_SOC_DAPM_PGA("Right_Capture_PGA", WM8978_RIGHT_INP_PGA_CONTROL,
 			 6, 1, NULL, 0),
 
-	SND_SOC_DAPM_PGA("Left Headphone Out", WM8978_POWER_MANAGEMENT_2,
+	SND_SOC_DAPM_PGA("Left_Headphone_Out", WM8978_POWER_MANAGEMENT_2,
 			 7, 0, NULL, 0),
-	SND_SOC_DAPM_PGA("Right Headphone Out", WM8978_POWER_MANAGEMENT_2,
+	SND_SOC_DAPM_PGA("Right_Headphone_Out", WM8978_POWER_MANAGEMENT_2,
 			 8, 0, NULL, 0),
 
-	SND_SOC_DAPM_PGA("Left Speaker Out", WM8978_POWER_MANAGEMENT_3,
+	SND_SOC_DAPM_PGA("Left_Speaker_Out", WM8978_POWER_MANAGEMENT_3,
 			 6, 0, NULL, 0),
-	SND_SOC_DAPM_PGA("Right Speaker Out", WM8978_POWER_MANAGEMENT_3,
+	SND_SOC_DAPM_PGA("Right_Speaker_Out", WM8978_POWER_MANAGEMENT_3,
 			 5, 0, NULL, 0),
 
-	SND_SOC_DAPM_MIXER("OUT4 VMID", WM8978_POWER_MANAGEMENT_3,
+	SND_SOC_DAPM_MIXER("OUT4_VMID", WM8978_POWER_MANAGEMENT_3,
 			   8, 0, NULL, 0),
 
-	SND_SOC_DAPM_MICBIAS("Mic Bias", WM8978_POWER_MANAGEMENT_1, 4, 0),
+#if (1)
+	SND_SOC_DAPM_MICBIAS("Mic_Bias", WM8978_POWER_MANAGEMENT_1, 4, 0),
+#else
+	/* enable micbias */
+	SND_SOC_DAPM_MICBIAS("Mic_Bias", WM8978_POWER_MANAGEMENT_1, 4, 1),
+#endif
 
 	SND_SOC_DAPM_INPUT("LMICN"),
 	SND_SOC_DAPM_INPUT("LMICP"),
@@ -352,51 +556,51 @@ static const struct snd_soc_dapm_widget wm8978_dapm_widgets[] = {
 
 static const struct snd_soc_dapm_route wm8978_dapm_routes[] = {
 	/* Output mixer */
-	{"Right Output Mixer", "PCM Playback Switch", "Right DAC"},
-	{"Right Output Mixer", "Aux Playback Switch", "RAUX"},
-	{"Right Output Mixer", "Line Bypass Switch", "Right Boost Mixer"},
+	{"Right_Output_Mixer", "PCM_Playback_Switch", "Right_DAC"},
+	{"Right_Output_Mixer", "Aux_Playback_Switch", "RAUX"},
+	{"Right_Output_Mixer", "Line_Bypass_Switch", "Right_Boost_Mixer"},
 
-	{"Left Output Mixer", "PCM Playback Switch", "Left DAC"},
-	{"Left Output Mixer", "Aux Playback Switch", "LAUX"},
-	{"Left Output Mixer", "Line Bypass Switch", "Left Boost Mixer"},
+	{"Left_Output_Mixer", "PCM_Playback_Switch", "Left_DAC"},
+	{"Left_Output_Mixer", "Aux_Playback_Switch", "LAUX"},
+	{"Left_Output_Mixer", "Line_Bypass_Switch", "Left_Boost_Mixer"},
 
 	/* Outputs */
-	{"Right Headphone Out", NULL, "Right Output Mixer"},
-	{"RHP", NULL, "Right Headphone Out"},
+	{"Right_Headphone_Out", NULL, "Right_Output_Mixer"},
+	{"RHP", NULL, "Right_Headphone_Out"},
 
-	{"Left Headphone Out", NULL, "Left Output Mixer"},
-	{"LHP", NULL, "Left Headphone Out"},
+	{"Left_Headphone_Out", NULL, "Left_Output_Mixer"},
+	{"LHP", NULL, "Left_Headphone_Out"},
 
-	{"Right Speaker Out", NULL, "Right Output Mixer"},
-	{"RSPK", NULL, "Right Speaker Out"},
+	{"Right_Speaker_Out", NULL, "Right_Output_Mixer"},
+	{"RSPK", NULL, "Right_Speaker_Out"},
 
-	{"Left Speaker Out", NULL, "Left Output Mixer"},
-	{"LSPK", NULL, "Left Speaker Out"},
+	{"Left_Speaker_Out", NULL, "Left_Output_Mixer"},
+	{"LSPK", NULL, "Left_Speaker_Out"},
 
 	/* Boost Mixer */
-	{"Right ADC", NULL, "Right Boost Mixer"},
+	{"Right_ADC", NULL, "Right_Boost_Mixer"},
 
-	{"Right Boost Mixer", NULL, "RAUX"},
-	{"Right Boost Mixer", NULL, "Right Capture PGA"},
-	{"Right Boost Mixer", NULL, "R2"},
+	{"Right_Boost_Mixer", NULL, "RAUX"},
+	{"Right_Boost_Mixer", NULL, "Right_Capture_PGA"},
+	{"Right_Boost_Mixer", NULL, "R2"},
 
-	{"Left ADC", NULL, "Left Boost Mixer"},
+	{"Left_ADC", NULL, "Left_Boost_Mixer"},
 
-	{"Left Boost Mixer", NULL, "LAUX"},
-	{"Left Boost Mixer", NULL, "Left Capture PGA"},
-	{"Left Boost Mixer", NULL, "L2"},
+	{"Left_Boost_Mixer", NULL, "LAUX"},
+	{"Left_Boost_Mixer", NULL, "Left_Capture_PGA"},
+	{"Left_Boost_Mixer", NULL, "L2"},
 
 	/* Input PGA */
-	{"Right Capture PGA", NULL, "Right Input Mixer"},
-	{"Left Capture PGA", NULL, "Left Input Mixer"},
+	{"Right_Capture_PGA", NULL, "Right_Input_Mixer"},
+	{"Left_Capture_PGA", NULL, "Left_Input_Mixer"},
 
-	{"Right Input Mixer", "R2 Switch", "R2"},
-	{"Right Input Mixer", "MicN Switch", "RMICN"},
-	{"Right Input Mixer", "MicP Switch", "RMICP"},
+	{"Right_Input_Mixer", "R2_Switch", "R2"},
+	{"Right_Input_Mixer", "MicN_Switch", "RMICN"},
+	{"Right_Input_Mixer", "MicP_Switch", "RMICP"},
 
-	{"Left Input Mixer", "L2 Switch", "L2"},
-	{"Left Input Mixer", "MicN Switch", "LMICN"},
-	{"Left Input Mixer", "MicP Switch", "LMICP"},
+	{"Left_Input_Mixer", "L2_Switch", "L2"},
+	{"Left_Input_Mixer", "MicN_Switch", "LMICN"},
+	{"Left_Input_Mixer", "MicP_Switch", "LMICP"},
 };
 
 /* PLL divisors */
@@ -783,7 +987,7 @@ static int wm8978_hw_params(struct snd_pcm_substream *substream,
 		wm8978->mclk_idx = -1;
 		f_sel = wm8978->f_mclk;
 	} else {
-		if (!wm8978->f_opclk) {
+		if (!wm8978->f_pllout) {
 			/* We only enter here, if OPCLK is not used */
 			int ret = wm8978_configure_pll(codec);
 			if (ret < 0)
@@ -847,15 +1051,36 @@ static int wm8978_mute(struct snd_soc_dai *dai, int mute)
 {
 	struct snd_soc_codec *codec = dai->codec;
 
-	dev_dbg(codec->dev, "%s: %d\n", __func__, mute);
+	pr_debug("%s: %d\n", __func__, mute);
 
-	if (mute)
-		snd_soc_update_bits(codec, WM8978_DAC_CONTROL, 0x40, 0x40);
-	else
+	if (mute){
+		/* HP */
+		snd_soc_update_bits(codec, WM8978_LOUT1_HP_CONTROL, 0x40, 0x40);
+	 	snd_soc_update_bits(codec, WM8978_ROUT1_HP_CONTROL, 0x40, 0x40);
+		/* SPK */
+		snd_soc_update_bits(codec, WM8978_LOUT2_SPK_CONTROL, 0x40, 0x40);
+	 	snd_soc_update_bits(codec, WM8978_ROUT2_SPK_CONTROL, 0x40, 0x40);
+	 	snd_soc_update_bits(codec, WM8978_DAC_CONTROL, 0x40, 0x40);
+	} else {
+		/* HP */
+		snd_soc_update_bits(codec, WM8978_LOUT1_HP_CONTROL, 0x40, 0x0);
+		snd_soc_update_bits(codec, WM8978_ROUT1_HP_CONTROL, 0x40, 0x0);
+		/* SPK */
+		snd_soc_update_bits(codec, WM8978_LOUT2_SPK_CONTROL, 0x40, 0x0);
+		snd_soc_update_bits(codec, WM8978_ROUT2_SPK_CONTROL, 0x40, 0x0);
 		snd_soc_update_bits(codec, WM8978_DAC_CONTROL, 0x40, 0);
-
+	}
 	return 0;
 }
+void wm8978_set_bias(int flag)
+{
+
+	if (flag)
+		snd_soc_update_bits(wm8978_codec,0x01,0x10,0x10);
+	else
+		snd_soc_update_bits(wm8978_codec,0x01,0x10,0);
+}
+EXPORT_SYMBOL(wm8978_set_bias);
 
 static int wm8978_set_bias_level(struct snd_soc_codec *codec,
 				 enum snd_soc_bias_level level)
@@ -883,10 +1108,12 @@ static int wm8978_set_bias_level(struct snd_soc_codec *codec,
 		snd_soc_write(codec, WM8978_POWER_MANAGEMENT_1, power1);
 		break;
 	case SND_SOC_BIAS_OFF:
+		#if 0
 		/* Preserve PLL - OPCLK may be used by someone */
 		snd_soc_update_bits(codec, WM8978_POWER_MANAGEMENT_1, ~0x20, 0);
 		snd_soc_write(codec, WM8978_POWER_MANAGEMENT_2, 0);
 		snd_soc_write(codec, WM8978_POWER_MANAGEMENT_3, 0);
+		#endif
 		break;
 	}
 
@@ -896,29 +1123,36 @@ static int wm8978_set_bias_level(struct snd_soc_codec *codec,
 	return 0;
 }
 
-#define WM8978_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE | \
-	SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S32_LE)
+static int wm8978_startup(struct snd_pcm_substream *substream,struct snd_soc_dai *dai)
+{
+	return 0;
+}
 
-static const struct snd_soc_dai_ops wm8978_dai_ops = {
+static struct snd_soc_dai_ops wm8978_dai_ops = {
 	.hw_params	= wm8978_hw_params,
 	.digital_mute	= wm8978_mute,
 	.set_fmt	= wm8978_set_dai_fmt,
 	.set_clkdiv	= wm8978_set_dai_clkdiv,
 	.set_sysclk	= wm8978_set_dai_sysclk,
+	.startup	= wm8978_startup,
 };
 
 /* Also supports 12kHz */
+#define WM8978_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE | \
+	SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S32_LE)
+
+
 static struct snd_soc_dai_driver wm8978_dai = {
-	.name = "wm8978-hifi",
+	.name = "wm8978_codec",
 	.playback = {
-		.stream_name = "Playback",
+		.stream_name = "HiFi_Playback",
 		.channels_min = 1,
 		.channels_max = 2,
 		.rates = SNDRV_PCM_RATE_8000_48000,
 		.formats = WM8978_FORMATS,
 	},
 	.capture = {
-		.stream_name = "Capture",
+		.stream_name = "HiFi_Capture",
 		.channels_min = 1,
 		.channels_max = 2,
 		.rates = SNDRV_PCM_RATE_8000_48000,
@@ -929,23 +1163,31 @@ static struct snd_soc_dai_driver wm8978_dai = {
 
 static int wm8978_suspend(struct snd_soc_codec *codec)
 {
-	struct wm8978_priv *wm8978 = snd_soc_codec_get_drvdata(codec);
-
 	wm8978_set_bias_level(codec, SND_SOC_BIAS_OFF);
 	/* Also switch PLL off */
 	snd_soc_write(codec, WM8978_POWER_MANAGEMENT_1, 0);
-
-	regcache_mark_dirty(wm8978->regmap);
-
 	return 0;
 }
 
 static int wm8978_resume(struct snd_soc_codec *codec)
 {
 	struct wm8978_priv *wm8978 = snd_soc_codec_get_drvdata(codec);
+	int i;
+	u16 *cache = codec->reg_cache;
 
 	/* Sync reg_cache with the hardware */
-	regcache_sync(wm8978->regmap);
+	for (i = 0; i < ARRAY_SIZE(wm8978_reg); i++) {
+		if (i == WM8978_RESET)
+			continue;
+#if (0)
+		/*
+		 * remove to restore hw register after hw reset (jhkim)
+		 */
+		if (cache[i] != wm8978_reg[i])
+#endif
+			snd_soc_write(codec, i, cache[i]);
+	}
+
 
 	wm8978_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 
@@ -978,6 +1220,7 @@ static const int update_reg[] = {
 static int wm8978_probe(struct snd_soc_codec *codec)
 {
 	struct wm8978_priv *wm8978 = snd_soc_codec_get_drvdata(codec);
+	u16 *cache = codec->reg_cache;
 	int ret = 0, i;
 
 	/*
@@ -985,8 +1228,8 @@ static int wm8978_probe(struct snd_soc_codec *codec)
 	 * default hardware setting
 	 */
 	wm8978->sysclk = WM8978_PLL;
-	codec->control_data = wm8978->regmap;
-	ret = snd_soc_codec_set_cache_io(codec, 7, 9, SND_SOC_REGMAP);
+	codec->control_data = wm8978->control_data;
+	ret = snd_soc_codec_set_cache_io(codec, 7, 9, SND_SOC_I2C);
 	if (ret < 0) {
 		dev_err(codec->dev, "Failed to set cache I/O: %d\n", ret);
 		return ret;
@@ -1000,8 +1243,23 @@ static int wm8978_probe(struct snd_soc_codec *codec)
 	for (i = 0; i < ARRAY_SIZE(update_reg); i++)
 		snd_soc_update_bits(codec, update_reg[i], 0x100, 0x100);
 
-	wm8978_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+	/* Reset the codec */
+	ret = snd_soc_write(codec, WM8978_RESET, 0);
+	if (ret < 0) {
+		dev_err(codec->dev, "Failed to issue reset\n");
+		return ret;
+	}
 
+	/* cache data to hw add by jhkim */
+	for (i = 0; i < ARRAY_SIZE(wm8978_reg); i++) {
+		if (i == WM8978_RESET)
+			continue;
+		snd_soc_write(codec, i, cache[i]);
+	}
+
+	wm8978_codec=codec;
+
+	wm8978_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 	return 0;
 }
 
@@ -1018,6 +1276,9 @@ static struct snd_soc_codec_driver soc_codec_dev_wm8978 = {
 	.suspend =	wm8978_suspend,
 	.resume =	wm8978_resume,
 	.set_bias_level = wm8978_set_bias_level,
+	.reg_cache_size = ARRAY_SIZE(wm8978_reg),
+	.reg_word_size = sizeof(u16),
+	.reg_cache_default = wm8978_reg,
 
 	.controls = wm8978_snd_controls,
 	.num_controls = ARRAY_SIZE(wm8978_snd_controls),
@@ -1027,66 +1288,35 @@ static struct snd_soc_codec_driver soc_codec_dev_wm8978 = {
 	.num_dapm_routes = ARRAY_SIZE(wm8978_dapm_routes),
 };
 
-static const struct regmap_config wm8978_regmap_config = {
-	.reg_bits = 7,
-	.val_bits = 9,
-
-	.max_register = WM8978_MAX_REGISTER,
-	.volatile_reg = wm8978_volatile,
-
-	.cache_type = REGCACHE_RBTREE,
-	.reg_defaults = wm8978_reg_defaults,
-	.num_reg_defaults = ARRAY_SIZE(wm8978_reg_defaults),
-};
-
 static __devinit int wm8978_i2c_probe(struct i2c_client *i2c,
 				      const struct i2c_device_id *id)
 {
 	struct wm8978_priv *wm8978;
 	int ret;
 
-	wm8978 = devm_kzalloc(&i2c->dev, sizeof(struct wm8978_priv),
-			      GFP_KERNEL);
+	wm8978 = kzalloc(sizeof(struct wm8978_priv), GFP_KERNEL);
 	if (wm8978 == NULL)
 		return -ENOMEM;
 
-	wm8978->regmap = regmap_init_i2c(i2c, &wm8978_regmap_config);
-	if (IS_ERR(wm8978->regmap)) {
-		ret = PTR_ERR(wm8978->regmap);
-		dev_err(&i2c->dev, "Failed to allocate regmap: %d\n", ret);
-		return ret;
-	}
-
 	i2c_set_clientdata(i2c, wm8978);
+	wm8978->control_data = i2c;
 
-	/* Reset the codec */
-	ret = regmap_write(wm8978->regmap, WM8978_RESET, 0);
-	if (ret != 0) {
-		dev_err(&i2c->dev, "Failed to issue reset: %d\n", ret);
-		goto err;
+	if (1) {
+		memcpy(wm8978_reg, wm8978_reg_702, sizeof(wm8978_reg_702));
+	//	wm8978_reg[10] = 0x000c;	// reg 0x000a
+	//  wm8978_reg[49] = 0x005f;    // reg 0x0031 [5] [6]//cross-coupling
 	}
-
 	ret = snd_soc_register_codec(&i2c->dev,
 			&soc_codec_dev_wm8978, &wm8978_dai, 1);
-	if (ret != 0) {
-		dev_err(&i2c->dev, "Failed to register CODEC: %d\n", ret);
-		goto err;
-	}
-
-	return 0;
-
-err:
-	regmap_exit(wm8978->regmap);
+	if (ret < 0)
+		kfree(wm8978);
 	return ret;
 }
 
 static __devexit int wm8978_i2c_remove(struct i2c_client *client)
 {
-	struct wm8978_priv *wm8978 = i2c_get_clientdata(client);
-
 	snd_soc_unregister_codec(&client->dev);
-	regmap_exit(wm8978->regmap);
-
+	kfree(i2c_get_clientdata(client));
 	return 0;
 }
 
@@ -1108,13 +1338,7 @@ static struct i2c_driver wm8978_i2c_driver = {
 
 static int __init wm8978_modinit(void)
 {
-	int ret = 0;
-	ret = i2c_add_driver(&wm8978_i2c_driver);
-	if (ret != 0) {
-		printk(KERN_ERR "Failed to register WM8978 I2C driver: %d\n",
-		       ret);
-	}
-	return ret;
+	return i2c_add_driver(&wm8978_i2c_driver);
 }
 module_init(wm8978_modinit);
 

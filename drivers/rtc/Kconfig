@@ -1097,4 +1097,11 @@ config RTC_DRV_LOONGSON1
 	  This driver can also be built as a module. If so, the module
 	  will be called rtc-ls1x.
 
+config RTC_DRV_NXP
+   tristate "Nexell RTC"
+   depends on ARCH_CPU_NEXELL
+   help
+     Driver for the internal RTC (Realtime Clock) module found on
+     NEXELL processor.
+
 endif # RTC_CLASS
