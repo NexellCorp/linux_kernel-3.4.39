@@ -9,6 +9,7 @@ obj-y        := dvb-core/	\
 		ttusb-budget/	\
 		b2c2/		\
 		bt8xx/		\
+		dvb-soc/	\
 		dvb-usb/	\
 		pluto2/		\
 		siano/		\
