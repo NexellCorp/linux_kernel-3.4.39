@@ -1253,6 +1253,19 @@ struct v4l2_querymenu {
 #define V4L2_CID_GAMMA			(V4L2_CID_BASE+16)
 #define V4L2_CID_WHITENESS		(V4L2_CID_GAMMA) /* Deprecated */
 #define V4L2_CID_EXPOSURE		(V4L2_CID_BASE+17)
+/* psw0523 add for android exposure value */
+enum v4l2_exposure {
+    V4L2_EXPOSURE_MINUS_4 = 0,
+    V4L2_EXPOSURE_MINUS_3,
+    V4L2_EXPOSURE_MINUS_2,
+    V4L2_EXPOSURE_MINUS_1,
+    V4L2_EXPOSURE_0,
+    V4L2_EXPOSURE_PLUS_1,
+    V4L2_EXPOSURE_PLUS_2,
+    V4L2_EXPOSURE_PLUS_3,
+    V4L2_EXPOSURE_PLUS_4,
+    V4L2_EXPOSURE_MAX
+};
 #define V4L2_CID_AUTOGAIN		(V4L2_CID_BASE+18)
 #define V4L2_CID_GAIN			(V4L2_CID_BASE+19)
 #define V4L2_CID_HFLIP			(V4L2_CID_BASE+20)
@@ -1268,6 +1281,7 @@ enum v4l2_power_line_frequency {
 	V4L2_CID_POWER_LINE_FREQUENCY_50HZ	= 1,
 	V4L2_CID_POWER_LINE_FREQUENCY_60HZ	= 2,
 	V4L2_CID_POWER_LINE_FREQUENCY_AUTO	= 3,
+    V4L2_CID_POWER_LINE_FREQUENCY_MAX,
 };
 #define V4L2_CID_HUE_AUTO			(V4L2_CID_BASE+25)
 #define V4L2_CID_WHITE_BALANCE_TEMPERATURE	(V4L2_CID_BASE+26)
@@ -1287,6 +1301,7 @@ enum v4l2_colorfx {
 	V4L2_COLORFX_GRASS_GREEN = 7,
 	V4L2_COLORFX_SKIN_WHITEN = 8,
 	V4L2_COLORFX_VIVID = 9,
+    V4L2_COLORFX_MAX,
 };
 #define V4L2_CID_AUTOBRIGHTNESS			(V4L2_CID_BASE+32)
 #define V4L2_CID_BAND_STOP_FILTER		(V4L2_CID_BASE+33)
@@ -1304,8 +1319,48 @@ enum v4l2_colorfx {
 
 #define V4L2_CID_ALPHA_COMPONENT		(V4L2_CID_BASE+41)
 
+/* psw0523 add for android scene mode */
+#define V4L2_CID_SCENE_MODE             (V4L2_CID_BASE+42)
+//enum v4l2_scene_mode {
+    //v4l2_scene_mode_auto = 0,
+    //v4l2_scene_mode_action,
+    //v4l2_scene_mode_portrait,
+    //v4l2_scene_mode_landscape,
+    //v4l2_scene_mode_night,
+    //v4l2_scene_mode_night_portrait,
+    //v4l2_scene_mode_theatre,
+    //v4l2_scene_mode_beach,
+    //v4l2_scene_mode_snow,
+    //v4l2_scene_mode_sunset,
+    //v4l2_scene_mode_steadyphoto,
+    //v4l2_scene_mode_fireworks,
+    //v4l2_scene_mode_sports,
+    //v4l2_scene_mode_party,
+    //v4l2_scene_mode_candlelight,
+    //v4l2_scene_mode_barcode,
+    //v4l2_scene_mode_hdr,
+    //v4l2_scene_mode_max,
+//};
+
+/* psw0523 add for camera preview/capture mode switch */
+#define V4L2_CID_RUNNING_MODE           (V4L2_CID_BASE+43)
+enum v4l2_running_mode {
+     V4L2_RUNNING_PREVIEW = 0,
+     V4L2_RUNNING_CAPTURE
+};
+
+/* psw0523 add for android white balance preset */
+#define V4L2_CID_WHITE_BALANCE_PRESET	(V4L2_CID_BASE+44)
+enum v4l2_wb_preset {
+	V4L2_WHITE_BALANCE_AUTO = 0,
+	V4L2_WHITE_BALANCE_SUNNY,
+	V4L2_WHITE_BALANCE_CLOUDY,
+	V4L2_WHITE_BALANCE_TUNGSTEN,
+	V4L2_WHITE_BALANCE_FLUORESCENT,
+	V4L2_WHITE_BALANCE_MAX,
+};
 /* last CID + 1 */
-#define V4L2_CID_LASTP1                         (V4L2_CID_BASE+42)
+#define V4L2_CID_LASTP1                         (V4L2_CID_BASE+45)
 
 /*  MPEG-class control IDs defined by V4L2 */
 #define V4L2_CID_MPEG_BASE 			(V4L2_CTRL_CLASS_MPEG | 0x900)

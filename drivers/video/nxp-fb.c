@@ -552,9 +552,7 @@ static int nxp_fb_setup_ion(struct nxp_fb_dma_buf_data *d)
         return -EINVAL;
     }
 
-    d->ion_client = ion_client_create(ion_dev,
-            ION_HEAP_NXP_CONTIG_MASK,
-            "nxp-fb");
+    d->ion_client = ion_client_create(ion_dev, "nxp-fb");
     if (IS_ERR(d->ion_client)) {
         pr_err("%s Error: ion_client_create()\n", __func__);
         return -EINVAL;
@@ -565,19 +563,15 @@ static int nxp_fb_setup_ion(struct nxp_fb_dma_buf_data *d)
 
 static int nxp_fb_map_ion_handle(struct nxp_fb_device *fb_dev,
         struct dma_buf_context *ctx,
-        struct ion_handle *ion_handle, int fd)
+        struct ion_handle *ion_handle, struct dma_buf *buf)
 {
     int ret = 0;
 
-    ctx->dma_buf = dma_buf_get(fd);
-    if (IS_ERR_OR_NULL(ctx->dma_buf)) {
-        pr_err("%s Error: dma_buf_get(%d)\n", __func__, fd);
-        return -EINVAL;
-    }
+    ctx->dma_buf = buf;
 
     ctx->attachment = dma_buf_attach(ctx->dma_buf, fb_dev->dev);
     if (IS_ERR_OR_NULL(ctx->attachment)) {
-        pr_err("%s Error: dma_buf_attach()\n", __func__);
+        pr_err("%s Error: fail to dma_buf_attach()\n", __func__);
         ret = -EINVAL;
         goto err_attachment;
     }
@@ -592,20 +586,18 @@ static int nxp_fb_map_ion_handle(struct nxp_fb_device *fb_dev,
 
     ctx->dma_addr = sg_phys(ctx->sg_table->sgl);
     ctx->virt     = sg_virt(ctx->sg_table->sgl);
-	ctx->ion_handle = ion_handle;
+    ctx->ion_handle = ion_handle;
 
-	dma_buf_put(ctx->dma_buf);	/* derease file count */
+    dma_buf_put(ctx->dma_buf);	/* decrease file count */
 
-    printk(KERN_INFO "%s.%d: dma addr = 0x%x, fd[%d]\n",
-    	DEV_NAME_FB, fb_dev->device_id, ctx->dma_addr, fd);
+    printk(KERN_INFO "%s.%d: dma addr = 0x%x, buf[0x%08x]\n",
+        DEV_NAME_FB, fb_dev->device_id, ctx->dma_addr, buf);
     return 0;
 
 err_map_attachment:
     dma_buf_detach(ctx->dma_buf, ctx->attachment);
     ctx->attachment = NULL;
 err_attachment:
-    dma_buf_put(ctx->dma_buf);
-    ctx->dma_buf = NULL;
     return ret;
 }
 
@@ -636,9 +628,8 @@ static void nxp_fb_free_dma_buf(struct nxp_fb_device *fb_dev,
 static int nxp_fb_ion_alloc_mem(struct nxp_fb_device *fb_dev)
 {
     int ret;
-    int fd;
+    struct dma_buf *buf;
     unsigned int size;
-    struct file *file;
     struct ion_handle *handle;
     struct nxp_fb_dma_buf_data *d = &fb_dev->dma_buf_data;
     struct dma_buf_context *ctx;
@@ -655,34 +646,24 @@ static int nxp_fb_ion_alloc_mem(struct nxp_fb_device *fb_dev)
             return -ENOMEM;
         }
 
-        fd = ion_share_dma_buf(d->ion_client, handle);
-        if (fd < 0) {
-            pr_err("%s Error: ion_share_dma_buf()\n", __func__);
+        buf = ion_share_dma_buf(d->ion_client, handle);
+        if (IS_ERR_OR_NULL(buf)) {
+            pr_err("%s Error: fail to ion_share_dma_buf()\n", __func__);
             ret = -EINVAL;
             goto err_share_dma_buf;
         }
 
-        ret = nxp_fb_map_ion_handle(fb_dev, ctx, handle, fd);
+        ret = nxp_fb_map_ion_handle(fb_dev, ctx, handle, buf);
         if (ret) {
             pr_err("%s Error: nxp_fb_map_ion_handle()\n", __func__);
             goto err_map;
         }
-		/* Free FD */
-        {
-	       	struct fdtable *fdt = files_fdtable(current->files);
-	     // struct file *file = fcheck_files(current->files, fd);
-        	rcu_assign_pointer(fdt->fd[fd], NULL);		/* release filep */
-	     //	atomic_long_dec_and_test(&file->f_count);	/* decrease f_count */
-		    put_unused_fd(fd);							/* clear open flag */
-       	}
-		ctx->user_fd = -1;
+        ctx->user_fd = -1;
     }
     return 0;
 
 err_map:
-    file = fget(fd);
-    fput(file);
-    fput(file);
+    dma_buf_put(buf);
 err_share_dma_buf:
     ion_free(d->ion_client, handle);
 
@@ -1074,11 +1055,7 @@ static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                 break;
             }
             DBGOUT("%s: NXPFB_GET_FB_FD index(%d)\n", __func__, index);
-#if 0
-            fd = dma_buf_fd(d->context[index].dma_buf, 0);
-#else
             fd = ion_share_dma_buf(d->ion_client, d->context[index].ion_handle);
-#endif
             if (fd < 0) {
                 printk("%s NXPFB_GET_FB_FD failed: Fail to dma_buf_fd()\n", __func__);
                 ret = -EINVAL;

@@ -479,7 +479,7 @@ static struct regulator_consumer_supply nxe2000_ldo8_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy0_3.3V", NULL),
 };
 static struct regulator_consumer_supply nxe2000_ldo9_supply_0[] = {
-	REGULATOR_SUPPLY("vdumy1_3.3V", NULL),
+	REGULATOR_SUPPLY("vcam_3.3V", NULL),
 };
 static struct regulator_consumer_supply nxe2000_ldo10_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy2_1.2V", NULL),
@@ -802,6 +802,7 @@ static void camera_power_control(int enable)
 {
     struct regulator *cam_io_28V = NULL;
     struct regulator *cam_core_18V = NULL;
+    struct regulator *cam_io_33V = NULL;
 
     if (enable && camera_power_enabled)
         return;
@@ -820,17 +821,26 @@ static void camera_power_control(int enable)
         return;
     }
 
+    cam_io_33V = regulator_get(NULL, "vcam_3.3V");
+    if (IS_ERR(cam_io_33V)) {
+        printk(KERN_ERR "%s: failed to regulator_get() for vcam_3.3V", __func__);
+        return;
+    }
+
     printk("%s: %d\n", __func__, enable);
     if (enable) {
         regulator_enable(cam_core_18V);
         regulator_enable(cam_io_28V);
+        regulator_enable(cam_io_33V);
     } else {
+        regulator_disable(cam_io_33V);
         regulator_disable(cam_io_28V);
         regulator_disable(cam_core_18V);
     }
 
     regulator_put(cam_io_28V);
     regulator_put(cam_core_18V);
+    regulator_put(cam_io_33V);
 
     camera_power_enabled = enable ? true : false;
 }

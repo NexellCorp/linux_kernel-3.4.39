@@ -1,0 +1,38 @@
+if VIDEO_NXP_OUT
+
+config NXP_OUT_RESOLUTION_CONVERTER
+    bool "Enable out resolution converter"
+	select NEXELL_DISPLAY_RESCONV
+    default n
+    ---help---
+      Say y here to enable v4l2 resolution converter
+
+config NXP_OUT_HDMI
+    bool "Enable out HDMI"
+    default n
+    ---help---
+      Say y here to enable v4l2 hdmi
+
+if NXP_OUT_HDMI
+choice
+    prompt "HDMI Audio Interface"
+    default NXP_HDMI_AUDIO_SPDIF
+
+config NXP_HDMI_AUDIO_SPDIF
+    depends on NXP_OUT_HDMI
+    bool "SPDIF"
+
+config NXP_HDMI_AUDIO_I2S
+    depends on NXP_OUT_HDMI
+    bool "I2S"
+endchoice
+
+config NXP_HDMI_USE_HDCP
+    bool "HDMI use HDCP block"
+    default n
+    ---help---
+      Say y here to enable hdcp module
+
+endif
+
+endif

@@ -243,6 +243,18 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
 		"Vivid",
 		NULL
 	};
+    /* psw0523 add for camera exposure */
+    static const char * const camera_exposure[] = {
+         "Minus_4",
+         "Minus_3",
+         "Minus_2",
+         "Minus_1",
+         "Zero",
+         "Plus_1",
+         "Plus_2",
+         "Plus_3",
+         "Plus_4",
+    };
 	static const char * const tune_preemphasis[] = {
 		"No Preemphasis",
 		"50 Microseconds",
@@ -438,6 +450,9 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
 		return mpeg4_profile;
 	case V4L2_CID_JPEG_CHROMA_SUBSAMPLING:
 		return jpeg_chroma_subsampling;
+    /* psw0523 add for camera exposure */
+    case V4L2_CID_EXPOSURE:
+        return camera_exposure;
 
 	default:
 		return NULL;
@@ -688,6 +703,8 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
 	case V4L2_CID_MPEG_VIDEO_H264_8X8_TRANSFORM:
 	case V4L2_CID_MPEG_VIDEO_H264_VUI_SAR_ENABLE:
 	case V4L2_CID_MPEG_VIDEO_MPEG4_QPEL:
+    /* psw0523 add for android */
+    case V4L2_CID_RUNNING_MODE:
 		*type = V4L2_CTRL_TYPE_BOOLEAN;
 		*min = 0;
 		*max = *step = 1;
@@ -720,7 +737,12 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
 	case V4L2_CID_MPEG_STREAM_VBI_FMT:
 	case V4L2_CID_EXPOSURE_AUTO:
 	case V4L2_CID_COLORFX:
-	case V4L2_CID_TUNE_PREEMPHASIS:
+    /* psw0523 add for android scene mode */
+    case V4L2_CID_SCENE_MODE:
+    /* psw0523 add for android white balance preset */
+    case V4L2_CID_WHITE_BALANCE_PRESET:
+    case V4L2_CID_EXPOSURE:
+    case V4L2_CID_TUNE_PREEMPHASIS:
 	case V4L2_CID_FLASH_LED_MODE:
 	case V4L2_CID_FLASH_STROBE_SOURCE:
 	case V4L2_CID_MPEG_VIDEO_HEADER_MODE:

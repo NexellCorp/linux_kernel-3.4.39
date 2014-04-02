@@ -87,6 +87,16 @@ config  VIDEOBUF2_ION
 	  Internal memory management for Video Buffer 2 by ION
 endchoice
 
+config VIDEOBUF2_ION_NXP
+    bool "Video Buffer2 ION helper for NXP"
+    depends on ION_NXP
+    select VIDEOBUF2_CORE
+    select VIDEOBUF2_MEMOPS
+    help
+      Internal memory management for Video Buffer2 by ION
+
+source "drivers/media/video/nexell/Kconfig"
+
 #
 # Multimedia Video device configuration
 #
@@ -567,6 +577,55 @@ config VIDEO_NOON010PC30
 	depends on I2C && VIDEO_V4L2 && EXPERIMENTAL && VIDEO_V4L2_SUBDEV_API
 	---help---
 	  This driver supports NOON010PC30 CIF camera from Siliconfile
+
+config VIDEO_S5K4ECGX
+    tristate "S5K4ECGX 5M pixel camera sensor support"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+      This driver supports s5k4ecgx Soc camera module
+
+config VIDEO_S5K4ECGX_DEBUG
+    bool "S5K4ECGX camera sensor debugging"
+    depends on VIDEO_S5K4ECGX
+    default n
+    ---help---
+      Enable extra debug messages for S5K4ECGX camera driver
+
+config VIDEO_S5K5CAGX
+    tristate "S5K5CAGX 3M pixel camera sensor support"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+      This driver supports s5k5cagx SoC camera module.
+
+config VIDEO_SP2518
+    tristate "SP2518 2M pixel camera sensor support"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+      This driver supports SuperPix SP2518 SoC camera module.
+
+config VIDEO_SP2518_FIXED_FRAMERATE
+    bool "use fixed framerate"
+    depends on VIDEO_SP2518
+    ---help---
+      if this option on, framerate is fixed 30frame, else variable 8-12frame
+
+config VIDEO_SP0A19
+    tristate "SP0A19 0.3M pixel camera sensor support"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+      This driver supports SuperPix SP0A19 SoC camera module.
+
+config VIDEO_SP0838
+    tristate "SP0838 0.3M pixel camera sensor support"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+      This driver supports SuperPix SP0838 SoC camera module.
+
+config VIDEO_SP0838_FIXED_FRAMERATE
+    bool "use fixed framerate"
+    depends on VIDEO_SP0838
+    ---help---
+      if this option on, framerate is fixed 15frame, else variable 8-10frame
 
 config VIDEO_S5K4E5
         tristate "S5K4E5 sensor support"

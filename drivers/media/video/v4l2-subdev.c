@@ -293,6 +293,13 @@ static long subdev_do_ioctl(struct file *file, unsigned int cmd, void *arg)
 		return v4l2_subdev_call(sd, pad, enum_frame_interval, subdev_fh,
 					fie);
 	}
+
+    /* psw0523 add for hdmi s_dv_preset */
+    case VIDIOC_S_DV_PRESET: {
+        struct v4l2_dv_preset *p = arg;
+        /* printk("%s: VIDIOC_S_DV_PRESET val %d\n", __func__, p->preset); */
+        return v4l2_subdev_call(sd, video, s_dv_preset, p);
+    }
 #endif
 	default:
 		return v4l2_subdev_call(sd, core, ioctl, cmd, arg);
