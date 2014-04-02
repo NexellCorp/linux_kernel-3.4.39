@@ -21,6 +21,7 @@
 #include <linux/blkdev.h>
 #include <linux/pagemap.h>
 #include <linux/export.h>
+#include <linux/dma-mapping.h>
 #include <asm/unaligned.h>
 
 #include <linux/usb/composite.h>
@@ -338,6 +339,26 @@ static int ffs_mutex_lock(struct mutex *mutex, unsigned nonblock)
 static char *ffs_prepare_buffer(const char * __user buf, size_t len)
 	__attribute__((warn_unused_result, nonnull));
 
+
+/* DMA alloc functions ******************************************************/
+
+#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
+void *__ffs_dma_alloc(uint32_t size, dma_addr_t *dma_addr)
+{
+	void *buf = dma_alloc_coherent(NULL, (size_t)size, dma_addr, GFP_KERNEL);
+	if (!buf) {
+		return NULL;
+	}
+
+	memset(buf, 0, (size_t)size);
+	return buf;
+}
+
+void __ffs_dma_free(uint32_t size, void *virt_addr, dma_addr_t dma_addr)
+{
+	dma_free_coherent(NULL, size, virt_addr, dma_addr);
+}
+#endif
 
 /* Control file aka ep0 *****************************************************/
 
@@ -750,6 +771,9 @@ static ssize_t ffs_epfile_io(struct file *file,
 {
 	struct ffs_epfile *epfile = file->private_data;
 	struct ffs_ep *ep;
+#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
+	dma_addr_t dma_addr;
+#endif
 	char *data = NULL;
 	ssize_t ret;
 	int halt;
@@ -790,7 +814,11 @@ first_try:
 
 		/* Allocate & copy */
 		if (!halt && !data) {
+#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
+			data = __ffs_dma_alloc(len, &dma_addr);
+#else
 			data = kzalloc(len, GFP_KERNEL);
+#endif
 			if (unlikely(!data))
 				return -ENOMEM;
 
@@ -834,6 +862,9 @@ first_try:
 		req->complete = ffs_epfile_io_complete;
 		req->buf      = data;
 		req->length   = len;
+#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
+		req->dma      = dma_addr;
+#endif
 
 		ret = usb_ep_queue(ep->ep, req, GFP_ATOMIC);
 
@@ -854,7 +885,12 @@ first_try:
 
 	mutex_unlock(&epfile->mutex);
 error:
-	kfree(data);
+	if (data)
+#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
+		__ffs_dma_free(len, data, dma_addr);
+#else
+		kfree(data);
+#endif
 	return ret;
 }
 

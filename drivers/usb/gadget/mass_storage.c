@@ -102,7 +102,12 @@ static int msg_thread_exits(struct fsg_common *common)
 	return 0;
 }
 
+// psw0523 fix
+#ifdef CONFIG_PM
+static int msg_do_config(struct usb_configuration *c)
+#else
 static int __init msg_do_config(struct usb_configuration *c)
+#endif
 {
 	static const struct fsg_operations ops = {
 		.thread_exits = msg_thread_exits,
@@ -139,7 +144,12 @@ static struct usb_configuration msg_config_driver = {
 
 /****************************** Gadget Bind ******************************/
 
+// psw0523 fix
+#ifdef CONFIG_PM
+static int msg_bind(struct usb_composite_dev *cdev)
+#else
 static int __init msg_bind(struct usb_composite_dev *cdev)
+#endif
 {
 	int status;
 

@@ -198,6 +198,12 @@ config USB_EHCI_S5P
        help
 	 Enable support for the S5P SOC's on-chip EHCI controller.
 
+config USB_EHCI_NXP4330
+       boolean "NXP4330 EHCI support"
+       depends on USB_EHCI_HCD && ARCH_NXP4330
+       help
+	 Enable support for the NEXELL NXP4330's on-chip EHCI controller.
+
 config USB_EHCI_MV
 	bool "EHCI support for Marvell on-chip controller"
 	depends on USB_EHCI_HCD && (ARCH_PXA || ARCH_MMP)
@@ -397,6 +403,12 @@ config USB_OHCI_EXYNOS
 	depends on USB_OHCI_HCD && ARCH_EXYNOS
 	help
 	 Enable support for the Samsung Exynos SOC's on-chip OHCI controller.
+
+config USB_OHCI_NXP4330
+	boolean "OHCI support for NEXELL NXP4330"
+	depends on USB_OHCI_HCD && ARCH_NXP4330
+	help
+	 Enable support for the NEXELL NXP4330's on-chip OHCI controller.
 
 config USB_CNS3XXX_OHCI
 	bool "Cavium CNS3XXX OHCI Module"
@@ -602,6 +614,24 @@ config USB_HWA_HCD
 
 	  To compile this driver a module, choose M here: the module
 	  will be called "hwa-hc".
+
+config USB_DWCOTG
+	tristate "Synopsis DWC host support"
+	depends on USB 
+	help
+	  The Synopsis DWC controller is a dual-role
+	  host/peripheral/OTG ("On The Go") USB controllers.
+
+	  Enable this option to support this IP in host controller mode.
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the 
+	  modules built will be called dwc_otg and dwc_common_port.
+
+config USB_CONNECT_NXP_DRV
+	bool "Nexell USB connect driver for UBC & OTG"
+	depends on USB_DWCOTG
+	default n
 
 config USB_IMX21_HCD
        tristate "i.MX21 HCD support"

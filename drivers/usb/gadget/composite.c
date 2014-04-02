@@ -20,6 +20,7 @@
 
 #include <linux/usb/composite.h>
 #include <asm/unaligned.h>
+#include <linux/wakelock.h>
 
 /*
  * The code in this file is utility code, used to build a gadget driver
@@ -64,6 +65,10 @@ module_param(iSerialNumber, charp, 0);
 MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
 
 static char composite_manufacturer[50];
+#if defined(CONFIG_ARCH_NXP4330)
+static bool usb_config_wake_lock_held;
+static struct wake_lock usb_config_wake_lock;
+#endif
 
 /*-------------------------------------------------------------------------*/
 /**
@@ -570,6 +575,14 @@ static void device_qual(struct usb_composite_dev *cdev)
 }
 
 /*-------------------------------------------------------------------------*/
+#if defined(CONFIG_ARCH_NXP4330)
+void nxp_wake_lock_timeout(void)
+{
+	if (usb_config_wake_lock_held == true)
+		wake_lock_timeout(&usb_config_wake_lock, 1*HZ);
+}
+EXPORT_SYMBOL(nxp_wake_lock_timeout);
+#endif
 
 static void reset_config(struct usb_composite_dev *cdev)
 {
@@ -584,6 +597,10 @@ static void reset_config(struct usb_composite_dev *cdev)
 		bitmap_zero(f->endpoints, 32);
 	}
 	cdev->config = NULL;
+
+#if defined(CONFIG_ARCH_NXP4330)
+	wake_lock_timeout(&usb_config_wake_lock, 1*HZ);
+#endif
 }
 
 static int set_config(struct usb_composite_dev *cdev,
@@ -605,6 +622,11 @@ static int set_config(struct usb_composite_dev *cdev,
 				 */
 				if (cdev->config)
 					reset_config(cdev);
+
+#if defined(CONFIG_ARCH_NXP4330)
+				wake_lock(&usb_config_wake_lock);
+#endif
+
 				result = 0;
 				break;
 			}
@@ -1376,6 +1398,13 @@ composite_unbind(struct usb_gadget *gadget)
 	 */
 	WARN_ON(cdev->config);
 
+#if defined(CONFIG_ARCH_NXP4330)
+	if (usb_config_wake_lock_held == true) {
+		wake_lock_destroy(&usb_config_wake_lock);
+		usb_config_wake_lock_held = false;
+	}
+#endif
+
 	while (!list_empty(&cdev->configs)) {
 		struct usb_configuration	*c;
 		c = list_first_entry(&cdev->configs,
@@ -1499,6 +1528,13 @@ static int composite_bind(struct usb_gadget *gadget)
 	status = device_create_file(&gadget->dev, &dev_attr_suspended);
 	if (status)
 		goto fail;
+
+#if defined(CONFIG_ARCH_NXP4330)
+	if (usb_config_wake_lock_held == false) {
+		wake_lock_init(&usb_config_wake_lock, WAKE_LOCK_SUSPEND, "usb_config_wake_lock");
+		usb_config_wake_lock_held = true;
+	}
+#endif
 
 	INFO(cdev, "%s ready\n", composite->name);
 	return 0;
@@ -1635,6 +1671,11 @@ void usb_composite_unregister(struct usb_composite_driver *driver)
 	if (composite != driver)
 		return;
 	usb_gadget_unregister_driver(&composite_driver);
+	// psw0523 add
+#ifdef CONFIG_PM
+	composite = NULL;
+#endif
+	// end psw0523
 }
 
 /**

@@ -28,6 +28,8 @@
 #include <linux/usb/composite.h>
 #include <linux/usb/gadget.h>
 
+#include <mach/platform.h>
+
 #include "gadget_chips.h"
 
 /*
@@ -88,11 +90,11 @@ struct android_usb_function {
 	void (*disable)(struct android_usb_function *);
 
 	int (*bind_config)(struct android_usb_function *,
-			   struct usb_configuration *);
+				struct usb_configuration *);
 
 	/* Optional: called when the configuration is removed */
 	void (*unbind_config)(struct android_usb_function *,
-			      struct usb_configuration *);
+				struct usb_configuration *);
 	/* Optional: handle ctrl requests before the device is configured */
 	int (*ctrlrequest)(struct android_usb_function *,
 					struct usb_composite_dev *,
@@ -175,6 +177,11 @@ static void android_work(struct work_struct *data)
 	char **uevent_envp = NULL;
 	unsigned long flags;
 
+    /* psw0523 add for dwc otg */
+#ifdef CONFIG_USB_DWCOTG
+    if (!cdev) return;
+#endif
+
 	spin_lock_irqsave(&cdev->lock, flags);
 	if (cdev->config)
 		uevent_envp = configured;
@@ -210,6 +217,10 @@ static void android_disable(struct android_dev *dev)
 {
 	struct usb_composite_dev *cdev = dev->cdev;
 
+	if ((cdev == NULL) || (cdev->gadget == NULL)) {
+		return;
+	}
+
 	if (dev->disable_depth++ == 0) {
 		usb_gadget_disconnect(cdev->gadget);
 		/* Cancel pending control requests */
@@ -241,6 +252,7 @@ static void ffs_function_cleanup(struct android_usb_function *f)
 {
 	functionfs_cleanup();
 	kfree(f->config);
+	f->config = NULL;
 }
 
 static void ffs_function_enable(struct android_usb_function *f)
@@ -393,6 +405,7 @@ static void adb_function_cleanup(struct android_usb_function *f)
 {
 	adb_cleanup();
 	kfree(f->config);
+	f->config = NULL;
 }
 
 static int
@@ -440,14 +453,13 @@ static void adb_ready_callback(void)
 	struct android_dev *dev = _android_dev;
 	struct adb_data *data = adb_function.config;
 
-	mutex_lock(&dev->mutex);
-
 	data->opened = true;
 
-	if (data->enabled)
+	if (data->enabled && dev) {
+		mutex_lock(&dev->mutex);
 		android_enable(dev);
-
-	mutex_unlock(&dev->mutex);
+		mutex_unlock(&dev->mutex);
+	}
 }
 
 static void adb_closed_callback(void)
@@ -455,14 +467,13 @@ static void adb_closed_callback(void)
 	struct android_dev *dev = _android_dev;
 	struct adb_data *data = adb_function.config;
 
-	mutex_lock(&dev->mutex);
-
 	data->opened = false;
 
-	if (data->enabled)
+	if (data->enabled) {
+		mutex_lock(&dev->mutex);
 		android_disable(dev);
-
-	mutex_unlock(&dev->mutex);
+		mutex_unlock(&dev->mutex);
+	}
 }
 
 
@@ -819,6 +830,7 @@ static int mass_storage_function_init(struct android_usb_function *f,
 	common = fsg_common_init(NULL, cdev, &config->fsg);
 	if (IS_ERR(common)) {
 		kfree(config);
+		config = NULL;
 		return PTR_ERR(common);
 	}
 
@@ -827,6 +839,7 @@ static int mass_storage_function_init(struct android_usb_function *f,
 				"lun");
 	if (err) {
 		kfree(config);
+		config = NULL;
 		return err;
 	}
 
@@ -935,6 +948,7 @@ static int audio_source_function_init(struct android_usb_function *f,
 static void audio_source_function_cleanup(struct android_usb_function *f)
 {
 	kfree(f->config);
+	f->config = NULL;
 }
 
 static int audio_source_function_bind_config(struct android_usb_function *f,
@@ -1005,6 +1019,14 @@ static int android_init_functions(struct android_usb_function **functions,
 	int index = 0;
 
 	for (; (f = *functions++); index++) {
+		// psw0523 add for PM
+#ifdef CONFIG_PM
+		if (f->dev_name) {
+			continue;
+		}
+#endif
+		// end psw0523
+
 		f->dev_name = kasprintf(GFP_KERNEL, "f_%s", f->name);
 		f->dev = device_create(android_class, dev->dev,
 				MKDEV(0, index), f, f->dev_name);
@@ -1041,6 +1063,7 @@ err_out:
 	device_destroy(android_class, f->dev->devt);
 err_create:
 	kfree(f->dev_name);
+	f->dev_name = NULL;
 	return err;
 }
 
@@ -1054,6 +1077,7 @@ static void android_cleanup_functions(struct android_usb_function **functions)
 		if (f->dev) {
 			device_destroy(android_class, f->dev->devt);
 			kfree(f->dev_name);
+			f->dev_name = NULL;
 		}
 
 		if (f->cleanup)
@@ -1518,6 +1542,63 @@ static int android_create_device(struct android_dev *dev)
 	return 0;
 }
 
+// psw0523 add for gadget
+#ifdef CONFIG_PM
+static int s_android_gadget_enabled = false;
+
+int android_gadget_init(void)
+{
+	struct android_dev *dev = _android_dev;
+	struct usb_composite_dev *cdev = dev->cdev;
+
+	PM_DBGOUT("g_android [%d] ++ %s\n", __LINE__, __func__);
+
+#if 0
+	dev->disable_depth = 1;
+	dev->functions = supported_functions;
+	INIT_LIST_HEAD(&dev->enabled_functions);
+	INIT_WORK(&dev->work, android_work);
+#endif
+	mutex_init(&dev->mutex);
+
+	/* Override composite driver functions */
+	composite_driver.setup = android_setup;
+	composite_driver.disconnect = android_disconnect;
+
+	usb_composite_probe(&android_usb_driver, android_bind);
+
+	if (s_android_gadget_enabled) {
+		cdev->desc.idVendor = device_desc.idVendor;
+		cdev->desc.idProduct = device_desc.idProduct;
+		cdev->desc.bcdDevice = device_desc.bcdDevice;
+		cdev->desc.bDeviceClass = device_desc.bDeviceClass;
+		cdev->desc.bDeviceSubClass = device_desc.bDeviceSubClass;
+		cdev->desc.bDeviceProtocol = device_desc.bDeviceProtocol;
+		android_enable(dev);
+		dev->enabled = true;
+	}
+
+	PM_DBGOUT("g_android [%d] -- %s\n", __LINE__, __func__);
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(android_gadget_init);
+
+void android_gadget_cleanup(void)
+{
+	struct android_dev *dev = _android_dev;
+
+	s_android_gadget_enabled = dev->enabled;
+	if (s_android_gadget_enabled) {
+		android_disable(dev);
+		dev->enabled = false;
+		while(work_busy(&dev->work));
+	}
+
+	usb_composite_unregister(&android_usb_driver);
+}
+EXPORT_SYMBOL_GPL(android_gadget_cleanup);
+#endif
 
 static int __init init(void)
 {
@@ -1542,6 +1623,7 @@ static int __init init(void)
 	if (err) {
 		class_destroy(android_class);
 		kfree(dev);
+		dev = NULL;
 		return err;
 	}
 
@@ -1551,7 +1633,16 @@ static int __init init(void)
 	composite_driver.setup = android_setup;
 	composite_driver.disconnect = android_disconnect;
 
-	return usb_composite_probe(&android_usb_driver, android_bind);
+	err = usb_composite_probe(&android_usb_driver, android_bind);
+	if (err)
+		return err;
+
+	/*
+	 * Calling usb_gadget_disconnect here. As we will call
+	 * usb_gadget_connect only when config is ready.
+	 */
+	usb_gadget_disconnect(dev->cdev->gadget);
+	return err;
 }
 module_init(init);
 

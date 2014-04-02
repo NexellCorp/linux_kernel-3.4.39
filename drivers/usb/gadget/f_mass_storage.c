@@ -1688,8 +1688,11 @@ static int finish_reply(struct fsg_common *common)
 			if (!start_in_transfer(common, bh))
 				rc = -EIO;
 			common->next_buffhd_to_fill = bh->next;
+	// psw0523 fix
+#if 0
 			if (common->can_stall)
 				rc = halt_bulk_in_endpoint(common->fsg);
+#endif
 		}
 		break;
 
