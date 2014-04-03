@@ -67,6 +67,7 @@
 #define DEV_NAME_ADC            "nxp-adc"
 #define DEV_NAME_CPUFREQ        "nxp-cpufreq"
 #define DEV_NAME_USBOTG         "nxp-otg"
+#define DEV_NAME_RFKILL         "nxp-rfkill"
 
 /*
  *  Frame buffer platform data and display controller
@@ -248,5 +249,55 @@ struct nxp_mp2ts_plat_data {
     int ts_dma_size[3];
 };
 
-#endif    /* __DEVICES_H__ */
+/*
+ *  rfkill platform data
+ */
+#include <linux/rfkill.h>
+struct rfkill_gpio {
+	char *power_name;
+    int module;
+    int gpio;
+    int initlevel;
+    int invert;			/* 0: high active, 1: low active */
+    int delay_ms;
+    int enabled;
+    struct notifier_block nb;
+	struct delayed_work delay_work;
+};
 
+struct rfkill_vcc {
+	char *supply_name;
+    char *device_name;
+    int module;
+    int delay_ms;
+    struct regulator *vcc;
+    int enabled;
+    struct notifier_block nb;
+    struct delayed_work delay_work;
+};
+
+#define	RFKILL_INIT_SET		(1<<0)
+#define	RFKILL_INIT_ON		(1<<1)
+#define	RFKILL_INIT_OFF		(1<<2)
+
+struct rfkill_dev_data {
+	/* rfkill config */
+	char *supply_name;		/* if regulator regulaotr's supply_name,  if module module's name, */
+	char *module_name;
+	int power_vcc;			/* set 1 if vcc power, set 0 if gpio power */
+    int module;
+    int gpio;
+    unsigned int initval;
+    int invert;			/* 0: high active, 1: low active */
+    int delay_ms;
+};
+
+struct nxp_rfkill_plat_data {
+    char *name;             /* the name for the rfkill switch */
+    enum rfkill_type type;  /* the type as specified in rfkill.h */
+    struct rfkill_dev_data *rf_dev;
+    int rf_dev_num;
+    int support_suspend;
+};
+
+#endif    /* __DEVICES_H__ */
