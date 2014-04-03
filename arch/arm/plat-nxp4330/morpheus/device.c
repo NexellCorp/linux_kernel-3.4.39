@@ -24,6 +24,7 @@
 #include <linux/types.h>
 #include <linux/platform_device.h>
 #include <linux/power_supply.h>
+#include <linux/irq.h>
 
 /* nexell soc headers */
 #include <mach/platform.h>
@@ -599,6 +600,7 @@ static struct nxe2000_platform_data nxe2000_platform = {
 	.num_subdevs		= ARRAY_SIZE(nxe2000_devs_dcdc),
 	.subdevs			= nxe2000_devs_dcdc,
 	.irq_base			= NXE2000_IRQ_BASE,
+	.irq_type			= IRQ_TYPE_EDGE_FALLING,
 	.gpio_base			= NXE2000_GPIO_BASE,
 	.gpio_init_data		= nxe2000_gpio_data,
 	.num_gpioinit_data	= ARRAY_SIZE(nxe2000_gpio_data),

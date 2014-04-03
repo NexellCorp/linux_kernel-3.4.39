@@ -701,7 +701,11 @@ static int nxe2000_i2c_probe(struct i2c_client *client,
 //	ret = pdata->init_port(client->irq);
 
 	if (client->irq) {
-		ret = nxe2000_irq_init(nxe2000, gpio_to_irq(client->irq), pdata->irq_base);
+		nxe2000->irq_base       = pdata->irq_base;
+		nxe2000->chip_irq       = gpio_to_irq(client->irq);
+		nxe2000->chip_irq_type  = pdata->irq_type;
+
+		ret = nxe2000_irq_init(nxe2000);
 		if (ret) {
 			dev_err(&client->dev, "IRQ init failed: %d\n", ret);
 			goto err_irq_init;

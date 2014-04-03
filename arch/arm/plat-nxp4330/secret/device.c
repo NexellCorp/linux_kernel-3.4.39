@@ -24,8 +24,9 @@
 #include <linux/types.h>
 #include <linux/platform_device.h>
 #include <linux/power_supply.h>
-
+#include <linux/irq.h>
 #include <linux/amba/pl022.h>
+
 /* nexell soc headers */
 #include <mach/platform.h>
 #include <mach/devices.h>
@@ -676,7 +677,7 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 		.ch_vrchg		= 0xFF,	/* VRCHG	= 0 - 4 (3.85v, 3.90v, 3.95v, 4.00v, 4.10v) */
 		.ch_vbatovset	= 0xFF,	/* VBATOVSET	= 0 or 1 (0 : 4.38v(up)/3.95v(down) 1: 4.53v(up)/4.10v(down)) */
 		.ch_ichg 		= 0x07,	/* ICHG		= 0 - 0x1D (100mA - 3000mA) */
-		.ch_ilim_adp 	= 0x0E,	/* ILIM_ADP	= 0 - 0x1D (100mA - 3000mA) */
+		.ch_ilim_adp 	= 0x18,	/* ILIM_ADP	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_usb 	= 0x04,	/* ILIM_USB	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_icchg		= 0x03,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
 		.fg_target_vsys	= 3000,	/* This value is the target one to DSOC=0% */
@@ -785,6 +786,7 @@ static struct nxe2000_platform_data nxe2000_platform = {
 	.num_subdevs		= ARRAY_SIZE(nxe2000_devs_dcdc),
 	.subdevs			= nxe2000_devs_dcdc,
 	.irq_base			= NXE2000_IRQ_BASE,
+	.irq_type			= IRQ_TYPE_EDGE_RISING,
 	.gpio_base			= NXE2000_GPIO_BASE,
 	.gpio_init_data		= nxe2000_gpio_data,
 	.num_gpioinit_data	= ARRAY_SIZE(nxe2000_gpio_data),

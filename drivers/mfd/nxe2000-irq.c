@@ -322,7 +322,7 @@ static int nxe2000_irq_set_wake(struct irq_data *irq_data, unsigned int on)
 #define nxe2000_irq_set_wake NULL
 #endif
 
-static irqreturn_t nxe2000_irq(int irq, void *data)
+static irqreturn_t nxe2000_irq_isr(int irq, void *data)
 {
 	struct nxe2000 *nxe2000 = data;
 	u8 int_sts[MAX_INTERRUPT_MASKS];
@@ -447,13 +447,12 @@ static struct irq_chip nxe2000_irq_chip = {
 	.irq_set_wake = nxe2000_irq_set_wake,
 };
 
-int nxe2000_irq_init(struct nxe2000 *nxe2000, int irq,
-				int irq_base)
+int nxe2000_irq_init(struct nxe2000 *nxe2000)
 {
 	int i, ret;
 	u8 reg_data = 0;
 
-	if (!irq_base) {
+	if (!nxe2000->irq_base) {
 		dev_warn(nxe2000->dev, "No interrupt support on IRQ base\n");
 		return -EINVAL;
 	}
@@ -534,8 +533,6 @@ int nxe2000_irq_init(struct nxe2000 *nxe2000, int irq,
 		}
 	}
 
-	nxe2000->irq_base = irq_base;
-	nxe2000->chip_irq = irq;
 
 	for (i = 0; i < NXE2000_NR_IRQS; i++) {
 		int __irq = i + nxe2000->irq_base;
@@ -548,15 +545,15 @@ int nxe2000_irq_init(struct nxe2000 *nxe2000, int irq,
 #endif
 	}
 
-	ret = request_threaded_irq(irq, NULL, nxe2000_irq,
-			IRQ_TYPE_EDGE_FALLING|IRQF_DISABLED|IRQF_ONESHOT,
+	ret = request_threaded_irq(nxe2000->chip_irq, NULL, nxe2000_irq_isr,
+			nxe2000->chip_irq_type|IRQF_DISABLED|IRQF_ONESHOT,
 						"nxe2000", nxe2000);
 	if (ret < 0)
 		dev_err(nxe2000->dev, "Error in registering interrupt "
 				"error: %d\n", ret);
 	if (!ret) {
 		device_init_wakeup(nxe2000->dev, 1);
-		enable_irq_wake(irq);
+		enable_irq_wake(nxe2000->chip_irq);
 	}
 
 	return ret;
