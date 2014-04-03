@@ -253,28 +253,6 @@ struct nxp_mp2ts_plat_data {
  *  rfkill platform data
  */
 #include <linux/rfkill.h>
-struct rfkill_gpio {
-	char *power_name;
-    int module;
-    int gpio;
-    int initlevel;
-    int invert;			/* 0: high active, 1: low active */
-    int delay_ms;
-    int enabled;
-    struct notifier_block nb;
-	struct delayed_work delay_work;
-};
-
-struct rfkill_vcc {
-	char *supply_name;
-    char *device_name;
-    int module;
-    int delay_ms;
-    struct regulator *vcc;
-    int enabled;
-    struct notifier_block nb;
-    struct delayed_work delay_work;
-};
 
 #define	RFKILL_INIT_SET		(1<<0)
 #define	RFKILL_INIT_ON		(1<<1)
