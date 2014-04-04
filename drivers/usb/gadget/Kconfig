@@ -134,6 +134,12 @@ choice
 #
 # Integrated controllers
 #
+config USB_GADGET_DWCOTG
+    tristate "DESIGNWARE USB OTG Device Controller"
+    depends on USB_DWCOTG
+    select USB_GADGET_DUALSPEED
+    help
+       Designware USB OTG device controller driver
 
 config USB_AT91
 	tristate "Atmel AT91 USB Device Port"
