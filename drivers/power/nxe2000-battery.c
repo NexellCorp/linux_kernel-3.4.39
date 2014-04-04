@@ -3099,7 +3099,8 @@ static int set_otg_power_control(struct nxe2000_battery_info *info, int otg_dev_
 		gpio_set_value(info->gpio_otg_vbus, 1);
 
 		val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
-			| (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
+			| (0x1 << NXE2000_POS_CHGCTL1_SUSPEND)
+			| (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
 	}
 
 	ret = nxe2000_write(info->dev->parent, NXE2000_REG_CHGCTL1, val);
@@ -3326,6 +3327,9 @@ static void charger_irq_work(struct work_struct *work)
 			else
 			{
 				uint8_t val2;
+
+				val = (info->ch_icchg << 6) + info->ch_ichg;
+				nxe2000_write(info->dev->parent, CHGISET_REG, val);
 
 				val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
 					| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN)
@@ -4152,20 +4156,20 @@ static int nxe2000_batt_get_prop(struct power_supply *psy,
 #ifdef KOOK_UBC_CHECK
 		if (otg_id && (status & 0xC0))
 		{
-			if ((info->input_power_type == INPUT_POWER_TYPE_UBC)
-				|| (info->input_power_type == INPUT_POWER_TYPE_ADP_UBC_LINKED))
-			{
-				if (psy->type == POWER_SUPPLY_TYPE_MAINS)
-					val->intval = (info->extif_type == EXTIF_TYPE_DCP ? 1 : 0);
-				else if (psy->type == POWER_SUPPLY_TYPE_USB)
-					val->intval = (info->extif_type == EXTIF_TYPE_SDP ? 1 : 0);
-			}
-			else
+			if ((info->input_power_type == INPUT_POWER_TYPE_ADP)
+				|| ((info->input_power_type == INPUT_POWER_TYPE_ADP_UBC) && (status & 0x40)))
 			{
 				if (psy->type == POWER_SUPPLY_TYPE_MAINS)
 					val->intval = (status & 0x40 ? 1 : 0);
 				else if (psy->type == POWER_SUPPLY_TYPE_USB)
 					val->intval = (status & 0x80 ? 1 : 0);
+			}
+			else
+			{
+				if (psy->type == POWER_SUPPLY_TYPE_MAINS)
+					val->intval = (info->extif_type == EXTIF_TYPE_DCP ? 1 : 0);
+				else if (psy->type == POWER_SUPPLY_TYPE_USB)
+					val->intval = (info->extif_type == EXTIF_TYPE_SDP ? 1 : 0);
 			}
 		}
 #else	// #ifdef KOOK_UBC_CHECK
