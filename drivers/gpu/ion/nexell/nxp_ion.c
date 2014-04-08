@@ -217,8 +217,25 @@ static void _ion_heap_destroy(struct ion_heap *heap)
     }
 }
 
+static int ion_sync_from_device(struct ion_client *client, int fd)
+{
+    struct dma_buf *dmabuf;
+    struct ion_buffer *buffer;
+
+    /*printk("%s: fd %d\n", __func__, fd);*/
+    dmabuf = dma_buf_get(fd);
+    if (IS_ERR(dmabuf))
+        return PTR_ERR(dmabuf);
+
+    buffer = dmabuf->priv;
+
+    dma_sync_sg_for_cpu(NULL, buffer->sg_table->sgl, buffer->sg_table->nents, DMA_FROM_DEVICE);
+    dma_buf_put(dmabuf);
+
+    return 0;
+}
 /* custom ioctl */
-static long nxp_ion_custom_ioctl(struct ion_client *client, 
+static long nxp_ion_custom_ioctl(struct ion_client *client,
         unsigned int cmd, unsigned long arg)
 {
     int ret = 0;
@@ -248,6 +265,14 @@ static long nxp_ion_custom_ioctl(struct ion_client *client,
             dma_buf_put(dmabuf);
         }
         break;
+    case NXP_ION_SYNC_FROM_DEVICE:
+        {
+            struct ion_fd_data data;
+            if (copy_from_user(&data, (void __user *)arg, sizeof(struct ion_fd_data)))
+                return -EFAULT;
+            ion_sync_from_device(client, data.fd);
+            break;
+        }
     default:
         return -EINVAL;
     }
@@ -279,7 +304,7 @@ static int nxp_ion_probe(struct platform_device *pdev)
 
     heaps = kzalloc(sizeof(struct ion_heap *) * pdata->nr, GFP_KERNEL);
     if (!heaps) {
-        pr_err("%s error: fail to kzalloc struct ion_heap(size: %d)\n", 
+        pr_err("%s error: fail to kzalloc struct ion_heap(size: %d)\n",
                 __func__, sizeof(struct ion_heap *) * pdata->nr);
         ion_device_destroy(ion_dev);
         return -ENOMEM;

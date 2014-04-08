@@ -14,6 +14,7 @@ enum {
 /* for private ioctl */
 /* cmd */
 #define NXP_ION_GET_PHY_ADDR        1
+#define NXP_ION_SYNC_FROM_DEVICE    2
 /* arg */
 struct nxp_ion_physical {
     int ion_buffer_fd;  /* input */
