@@ -40,15 +40,9 @@
 #define pr_debug(msg...)
 */
 
-#if (1)
-#define ERROUT(msg...)		{ printk(KERN_ERR "i2c: " msg); }
-#else
-#define ERROUT(msg...)		do {} while (0)
-#endif
-
-#define	DEF_I2C_RATE		(100000)	/* wait 50 msec */
-#define DEF_RETRY_COUNT		(1)
-#define	DEF_WAIT_ACK		(200)		/* wait 50 msec */
+#define	I2C_CLOCK_RATE		(100000)	/* wait 50 msec */
+#define TRANS_RETRY_CNT		(1)
+#define	WAIT_ACK_TIME		(100)		/* wait 50 msec */
 
 const static int i2c_gpio [][2] = {
 	{ (PAD_GPIO_D + 2), (PAD_GPIO_D + 3) },
@@ -79,13 +73,17 @@ struct nxp_i2c_hw {
 	void *base_addr;
 };
 
+#define	I2C_TRANS_RUN		(1<<0)
+#define	I2C_TRANS_DONE		(1<<1)
+#define	I2C_TRANS_ERR		(1<<2)
+
 struct nxp_i2c_param {
 	struct nxp_i2c_hw hw;
 	struct mutex  lock;
 	wait_queue_head_t wait_q;
-	unsigned int condition;	
+	unsigned int condition;
 	unsigned long rate;
-	int	no_stop_mod;
+	int	no_stop;
 	u8	pre_data;
 	int	request_ack;
 	int	timeout;
@@ -94,10 +92,13 @@ struct nxp_i2c_param {
 	struct i2c_msg *msg;
 	struct clk *clk;
 	int	trans_count;
-	int	trans_done;
 	int	trans_mode;
-	int run_state;
-	int preempt_flag;
+	int polling;
+	int runing;
+	unsigned int trans_status;
+	/* test */
+	int irq_count;
+	int thd_count;
 };
 
 /*
@@ -131,36 +132,42 @@ struct nxp_i2c_param {
 #define STOP_DAT_REL_POS	1  /* only slave transmode */
 #define STOP_CLK_REL_POS	0  /* only master transmode */
 
+#define _SETDATA(p, d)		(((struct i2c_register *)p)->IDSR = d)
+#define _GETDATA(p)			(((struct i2c_register *)p)->IDSR)
+#define _BUSOFF(p)			(((struct i2c_register *)p)->ICSR & ~(1<<ICSR_OUT_ENB_POS))
+#define _ACKSTAT(p)			(((struct i2c_register *)p)->ICSR & (1<<ICSR_ACK_REV_POS))
+#define _ARBITSTAT(p)		(((struct i2c_register *)p)->ICSR & (1<<ICSR_ARI_STA_POS))
+#define _INTSTAT(p)			(((struct i2c_register *)p)->ICCR & (1<<ICCR_IRQ_PND_POS))
+
 static inline void i2c_start_dev(struct nxp_i2c_param *par)
 {
 	unsigned int base = (unsigned int)par->hw.base_addr;
 	unsigned int ICSR = 0, ICCR = 0;
-	
+
 	ICSR = readl(base+I2C_ICSR_OFFS);
-	ICSR  =  (1<<ICSR_OUT_ENB_POS);	
+	ICSR  =  (1<<ICSR_OUT_ENB_POS);
 	writel(ICSR, (base+I2C_ICSR_OFFS));
 
-	writel(par->pre_data, (base+I2C_IDSR_OFFS));				
+	writel(par->pre_data, (base+I2C_IDSR_OFFS));
 
 	ICCR = readl(base+I2C_ICCR_OFFS);
-	ICCR &= ~(1<<ICCR_ACK_ENB_POS);	
-	ICCR |=  (1<<ICCR_IRQ_ENB_POS);			
+	ICCR &= ~(1<<ICCR_ACK_ENB_POS);
+	ICCR |=  (1<<ICCR_IRQ_ENB_POS);
 	writel(ICCR, (base+I2C_ICCR_OFFS));
-	ICSR  =  ( par->trans_mode << ICSR_MOD_SEL_POS) | (1<<ICSR_SIG_GEN_POS) | (1<<ICSR_OUT_ENB_POS);	
+	ICSR  =  ( par->trans_mode << ICSR_MOD_SEL_POS) | (1<<ICSR_SIG_GEN_POS) | (1<<ICSR_OUT_ENB_POS);
 	writel(ICSR, (base+I2C_ICSR_OFFS));
 }
 
-static inline void i2c_trans_data(unsigned int base, unsigned int ack, int last)
+static inline void i2c_trans_dev(unsigned int base, unsigned int ack, int stop)
 {
 	unsigned int ICCR = 0, STOP = 0;
-	
+
 	ICCR = readl(base+I2C_ICCR_OFFS);
 	ICCR &= ~(1<<ICCR_ACK_ENB_POS);
 	ICCR |= ack << ICCR_ACK_ENB_POS;
-	
+
 	writel(ICCR, (base+I2C_ICCR_OFFS));
-	if(last)
-	{
+	if (stop) {
 		STOP  = readl(base+I2C_STOP_OFFS);
 		STOP |= 1<<STOP_ACK_GEM_POS;
 		writel(STOP, base+I2C_STOP_OFFS);
@@ -170,42 +177,42 @@ static inline void i2c_trans_data(unsigned int base, unsigned int ack, int last)
 	ICCR  &=  ( ~ (1 <<ICCR_IRQ_PND_POS ) | (~ (1 << ICCR_IRQ_PND_POS)));
     ICCR  |=  1<<ICCR_IRQ_CLR_POS;
     ICCR  |=  1<<ICCR_IRQ_ENB_POS;
-	writel(ICCR, (base+I2C_ICCR_OFFS));	
+	writel(ICCR, (base+I2C_ICCR_OFFS));
 }
-
-//#define	I2C_STOP_IN_ISR
 
 static inline void i2c_stop_dev(struct nxp_i2c_param *par, int nostop, int read)
 {
 	unsigned int base = (unsigned int)par->hw.base_addr;
 	unsigned int ICSR = 0, ICCR = 0, STOP = 0;
 
-	if(!nostop) {
+	if (!nostop) {
 		gpio_request(par->hw.sda_io,NULL);		 //gpio_Request
 		gpio_direction_output(par->hw.sda_io,0); //SDA LOW
 		udelay(1);
-		
+
 		STOP = (1<<STOP_CLK_REL_POS);
-		writel(STOP, (base+I2C_STOP_OFFS));	
+		writel(STOP, (base+I2C_STOP_OFFS));
 		ICSR= readl(base+I2C_ICSR_OFFS);
-		ICSR &= ~(1<<ICSR_OUT_ENB_POS);	
-		ICSR = par->trans_mode << ICSR_MOD_SEL_POS;	
+		ICSR &= ~(1<<ICSR_OUT_ENB_POS);
+		ICSR = par->trans_mode << ICSR_MOD_SEL_POS;
 		writel(ICSR, (base+I2C_ICSR_OFFS));
-	
+
 		ICCR = (1<<ICCR_IRQ_CLR_POS);
-		writel(ICCR, (base+I2C_ICCR_OFFS));	
+		writel(ICCR, (base+I2C_ICCR_OFFS));
 		udelay(1);
 		gpio_set_value(par->hw.sda_io,1);			//STOP Signal Gen
-		
+
 		nxp_soc_gpio_set_io_func(par->hw.sda_io, 1);
 	} else {
-//		ICSR= readl(base+I2C_ICSR_OFFS);
-		ICSR &= ~(1<<ICSR_OUT_ENB_POS);	
-		ICSR = par->trans_mode << ICSR_MOD_SEL_POS;	
+		/*
+		ICSR  = readl(base+I2C_ICSR_OFFS);
+		ICSR &= ~(1<<ICSR_OUT_ENB_POS);
+		*/
+		ICSR  = par->trans_mode << ICSR_MOD_SEL_POS;
 		writel(ICSR, (base+I2C_ICSR_OFFS));
-	
+
 		ICCR = (1<<ICCR_IRQ_CLR_POS);
-		writel(ICCR, (base+I2C_ICCR_OFFS));	
+		writel(ICCR, (base+I2C_ICCR_OFFS));
 	}
 }
 
@@ -219,7 +226,7 @@ static inline void i2c_wait_dev(struct nxp_i2c_param *par, int wait)
 		if ( !(ICSR & (1<<ICSR_BUS_BUSY_POS)) &&  !(ICSR & (1<<ICSR_ARI_STA_POS)) )
 			break;
 	    mdelay(1);
-	}while(wait-- > 0);
+	} while (wait-- > 0);
 }
 
 static inline void i2c_bus_off(struct nxp_i2c_param *par)
@@ -227,42 +234,29 @@ static inline void i2c_bus_off(struct nxp_i2c_param *par)
 	unsigned int base = (unsigned int)par->hw.base_addr;
 	unsigned int ICSR = 0;
 
-	ICSR &= ~(1<<ICSR_OUT_ENB_POS);	
+	ICSR &= ~(1<<ICSR_OUT_ENB_POS);
 	writel(ICSR, (base+I2C_ICSR_OFFS));
 }
-
-
-#define I2C_SET_DATA(p,dat) (((struct i2c_register *)p)->IDSR = dat)
-#define I2C_GET_DATA(p)	(((struct i2c_register *)p)->IDSR)
-#define I2C_BUS_OFF(p)	(((struct i2c_register *)p)->ICSR & ~(1<<ICSR_OUT_ENB_POS))
-#define I2C_ACK_STAT(p)	(((struct i2c_register *)p)->ICSR & (1<<ICSR_ACK_REV_POS))
-#define I2C_ARB_STAT(p)	(((struct i2c_register *)p)->ICSR & (1<<ICSR_ARI_STA_POS))
-#define I2C_INT_STAT(p)	(((struct i2c_register *)p)->ICCR & (1<<ICCR_IRQ_PND_POS))
 
 /*
  * 	Hardware I2C
  */
-
 static inline void	i2c_set_clock(struct nxp_i2c_param *par, int enable)
 {
 	int cksrc = (par->hw.clksrc == 16) ?  0 : 1;
 	int ckscl = par->hw.clkscale;
 	unsigned int base = (unsigned int)par->hw.base_addr;
 	unsigned int ICCR = 0, ICSR = 0;
-	
+
 	pr_debug("%s: i2c.%d, src:%d, scale:%d, %s\n",
 		__func__,  par->hw.port, cksrc, ckscl, enable?"on":"off");
-	
-	if (enable)		
-	{
+
+	if (enable)	{
 		ICCR  = readl(base+I2C_ICCR_OFFS);
 		ICCR &=  ~( 0x0f | 1 << ICCR_CLK_SRC_POS);
 		ICCR |=  ((cksrc << ICCR_CLK_SRC_POS) | (ckscl-1));
-
 		writel(ICCR,(base+I2C_ICCR_OFFS));
-	}
-	else
-	{
+	} else {
 		ICSR  = readl(base+I2C_ICSR_OFFS);
 		ICSR &= ~(1<<ICSR_OUT_ENB_POS);
 		writel(ICSR, (base+I2C_ICSR_OFFS));
@@ -271,25 +265,24 @@ static inline void	i2c_set_clock(struct nxp_i2c_param *par, int enable)
 
 static inline int i2c_wait_busy(struct nxp_i2c_param *par)
 {
+	void *base = par->hw.base_addr;
 	int wait = 500;
 	int ret = 0;
-	void *base = par->hw.base_addr;
 
-	pr_debug("%s(i2c.%d, nostop:%d)\n", __func__, par->hw.port, par->no_stop_mod);
+	pr_debug("%s(i2c.%d, nostop:%d)\n", __func__, par->hw.port, par->no_stop);
 
 	/* busy status check*/
 	i2c_wait_dev(par, wait);
 
-
 	if (0 > wait) {
 		printk(KERN_ERR "Fail, i2c.%d is busy, arbitration %s ...\n",
-			par->hw.port, I2C_ARB_STAT(base)?"busy":"free");
+			par->hw.port, _ARBITSTAT(base)?"busy":"free");
 		ret = -1;
 	}
 	return ret;
 }
 
-static irqreturn_t i2c_trans_irq(int irqno, void *dev_id)
+static irqreturn_t i2c_irq_thread(int irqno, void *dev_id)
 {
 	struct nxp_i2c_param *par = dev_id;
 	struct i2c_msg *msg = par->msg;
@@ -298,41 +291,43 @@ static irqreturn_t i2c_trans_irq(int irqno, void *dev_id)
 	int len = msg->len;
 	int cnt = par->trans_count;
 
+	par->thd_count++;
+
 	/* Arbitration Check. */
-	if((I2C_ARB_STAT((void *)base) != 0 ) ) {
-		ERROUT("Fail,i2c.%d  addr [0x%02x] Arbitraion [0x%02x], trans %2d:%2d\n",
-			par->hw.port,(msg->addr<<1), par->pre_data, cnt, len);
-		par->trans_done = 0;
-		goto __end_trans;
-	}
-
-	if (par->request_ack && (I2C_ACK_STAT ((void *)base))) {
-		ERROUT("Fail, i2c.%d addr [0x%02x] no ack data [0x%02x], trans %2d:%2d \n",
+	if ((_ARBITSTAT((void *)base) != 0)) {
+		pr_err("Fail, arbit i2c.%d  addr [0x%02x] data[0x%02x], trans[%2d:%2d]\n",
 			par->hw.port, (msg->addr<<1), par->pre_data, cnt, len);
-		goto __end_trans;
+		par->trans_status = I2C_TRANS_ERR;
+		goto __irq_end;
 	}
 
-	if (!par->trans_done) {
+	if (par->request_ack && _ACKSTAT((void *)base)) {
+		pr_err("Fail, noack i2c.%d addr [0x%02x] data[0x%02x], trans[%2d:%2d]\n",
+			par->hw.port, (msg->addr<<1), par->pre_data, cnt, len);
+		par->trans_status = I2C_TRANS_ERR;
+		goto __irq_end;
+	}
+
+	if (I2C_TRANS_RUN == par->trans_status) {
 		if (flags & I2C_M_RD) {
 			int ack  = (len == cnt + 1) ? 0: 1;
 			int last = (len == cnt + 1) ? 1: 0;
 
 			par->request_ack = 0;
 			if (0 == cnt) {
-				i2c_trans_data(base, ack, 0);	/* first: address */ 
+				i2c_trans_dev(base, ack, 0);	/* first: address */
 				par->trans_count += 1;
-				return IRQ_HANDLED;	/* next: data read */
-				}
+				return IRQ_HANDLED;
+			}
 
-			msg->buf[cnt - 1] = I2C_GET_DATA((void *)base);
+			msg->buf[cnt - 1] = _GETDATA((void *)base);
 
 			if (len == par->trans_count) {
-				par->trans_done = 1;
-				goto __end_trans;
+				par->trans_status = I2C_TRANS_DONE;
+				goto __irq_end;
 			} else {
-				i2c_trans_data(base, ack, last);
+				i2c_trans_dev(base, ack, last);
 				par->trans_count += 1;
-
 				return IRQ_HANDLED;
 			}
 		} else {
@@ -340,82 +335,95 @@ static irqreturn_t i2c_trans_irq(int irqno, void *dev_id)
 			par->request_ack = (msg->flags & I2C_M_IGNORE_NAK) ? 0 : 1;
 			par->trans_count += 1;
 
-			if (len == par->trans_count) 
-				par->trans_done = 1;
+			if (len == par->trans_count)
+				par->trans_status = I2C_TRANS_DONE;
 
-			I2C_SET_DATA((void *)base, msg->buf[cnt]);
-			i2c_trans_data(base, 0, par->trans_done?1:0);
+			_SETDATA((void *)base, msg->buf[cnt]);
+			i2c_trans_dev(base, 0, par->trans_status == I2C_TRANS_DONE ? 1 : 0);
 
 			return IRQ_HANDLED;
 		}
 	}
 
-__end_trans:
-	i2c_stop_dev(par, par->no_stop_mod, (flags&I2C_M_RD ? 0 : 1));
-	
+__irq_end:
+	i2c_stop_dev(par, par->no_stop, (flags & I2C_M_RD ? 0 : 1));
+
 	par->condition = 1;
 	wake_up(&par->wait_q);
+
 	return IRQ_HANDLED;
 }
-static irqreturn_t i2c_irq(int irqno, void *dev_id)
+
+static irqreturn_t i2c_irq_handler(int irqno, void *dev_id)
 {
 	struct nxp_i2c_param *par = dev_id;
     unsigned int ICCR = 0;
 	unsigned int base = (unsigned int)par->hw.base_addr;
-	if (!par->run_state)
+
+	par->irq_count++;
+
+	if (!par->runing) {
+		pr_err("************ I2C.%d IRQ NO RUN ************\n", par->hw.port);
 		return IRQ_NONE;
-	if( par->preempt_flag == 1){
-		i2c_trans_irq( irqno,dev_id);
+	}
+
+	if (par->polling) {
+		pr_err("************ I2C.%d IRQ POLLING ************\n", par->hw.port);
+		i2c_irq_thread( irqno,dev_id);
 		return IRQ_HANDLED;
 	}
 
 	ICCR  = readl((base+I2C_ICCR_OFFS));
-	ICCR  &=  ( ~ (1 <<ICCR_IRQ_PND_POS ) | (~ (1 << ICCR_IRQ_ENB_POS)));
-	ICCR  |=  1<<ICCR_IRQ_CLR_POS;
+	ICCR  &= ( ~ (1 <<ICCR_IRQ_PND_POS ) | (~ (1 << ICCR_IRQ_ENB_POS)));
+	ICCR  |= 1<<ICCR_IRQ_CLR_POS;
+
 	writel(ICCR, (base+I2C_ICCR_OFFS));
 
 	return IRQ_WAKE_THREAD;
 }
-static int i2c_wait_end(struct nxp_i2c_param *par)
+
+static int i2c_trans_done(struct nxp_i2c_param *par)
 {
 	void *base = par->hw.base_addr;
-	int tout, ret = -1;
 	struct i2c_msg *msg = par->msg;
+	int wait, timeout, ret = 0;
 
-	if(!preempt_count()){
-		tout = wait_event_timeout(par->wait_q, par->condition,
-					msecs_to_jiffies(par->timeout));\
+	par->condition = 0;
+
+	if (!par->polling) {
+		wait = msg->len * msecs_to_jiffies(par->timeout);
+		timeout = wait_event_timeout(par->wait_q, par->condition, wait);
 	} else {
-	tout = par->timeout;
-	while(tout--)
-	{
-		mdelay(1);
-		if(par->trans_done)
-		break;
+		wait = par->timeout/10;
+		while (wait--) {
+			if (I2C_TRANS_DONE == par->trans_status ||
+			    I2C_TRANS_ERR == par->trans_status) {
+			   	par->condition = 1;
+				break;
+			}
+			mdelay(10);
 		}
 	}
 
-	if (par->condition)
-		ret = 0;
-
-	if (0 > ret) {
-		ERROUT("Fail, i2c.%d addr=0x%02x , %02x irq condition (%d), pend (%s), arbitration (%s)\n",
-			par->hw.port, (par->msg->addr<<1), msg->buf[0],par->condition, I2C_INT_STAT(base)?"yes":"no",
-		I2C_ARB_STAT(base)?"busy":"free");
-		i2c_stop_dev(par, 0, 0);
+	if (par->condition) { /* done or error */
+		if (I2C_TRANS_ERR == par->trans_status)
+			ret = -1;
+	} else {
+		pr_err("Fail, i2c.%d %s [0x%02x] cond(%d) pend(%s) arbit(%s) mod(%s) tran(%d:%d,%d:%d) wait(%dms)\n",
+			par->hw.port, (msg->flags&I2C_M_RD)?"R":"W", (par->msg->addr<<1),
+			par->condition, _INTSTAT(base)?"yes":"no", _ARBITSTAT(base)?"busy":"free",
+			par->polling?"polling":"irq", par->trans_count, msg->len,
+			par->irq_count,	par->thd_count, par->timeout);
+		ret = -1;
 	}
 
-	if (!par->trans_done)
+	if (0 > ret)
 		i2c_stop_dev(par, 0, 0);
-	
-	par->condition = 0;
-	if (0 >ret )
-		return -1;
 
-	return (par->trans_done ? 0 : -1);
+	return ret;
 }
 
-static inline int i2c_trans_run(struct nxp_i2c_param *par, struct i2c_msg *msg)
+static inline int i2c_trans_data(struct nxp_i2c_param *par, struct i2c_msg *msg)
 {
 	u32 mode;
 	u8  addr;
@@ -425,7 +433,6 @@ static inline int i2c_trans_run(struct nxp_i2c_param *par, struct i2c_msg *msg)
 			par->hw.port, (msg->addr<<1), msg->flags);
 		return -1;
 	}
-
 	if (msg->flags & I2C_M_RD) {
 		addr =  msg->addr << 1 | 1;
 		mode = I2C_TXRXMODE_MASTER_RX;
@@ -443,15 +450,16 @@ static inline int i2c_trans_run(struct nxp_i2c_param *par, struct i2c_msg *msg)
 	par->pre_data = addr;
 	par->request_ack = (msg->flags & I2C_M_IGNORE_NAK ) ? 0 : 1;
 	par->trans_count = 0;
-	par->trans_done  = 0;
-	par->trans_mode  = mode;
+	par->trans_mode = mode;
+	par->trans_status = I2C_TRANS_RUN;
 
 	i2c_start_dev(par);
+
 	/* wait for end transfer */
-	return i2c_wait_end(par);
+	return i2c_trans_done(par);
 }
 
-static int nxp_i2c_transfer_hw(struct nxp_i2c_param *par, struct i2c_msg *msg, int num)
+static int nxp_i2c_transfer(struct nxp_i2c_param *par, struct i2c_msg *msg, int num)
 {
 	int ret = -EAGAIN;
 
@@ -463,8 +471,7 @@ static int nxp_i2c_transfer_hw(struct nxp_i2c_param *par, struct i2c_msg *msg, i
 	if (0 > i2c_wait_busy(par))
 		goto err_i2c;
 
-	/* transfer */
-	if (0 > i2c_trans_run(par, msg))
+	if (0 > i2c_trans_data(par, msg))
 		goto err_i2c;
 
 	ret = msg->len;
@@ -490,29 +497,31 @@ static int nxp_i2c_algo_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, 
 	int len = 0;
 	int  (*transfer_i2c)(struct nxp_i2c_param *, struct i2c_msg *, int) = NULL;
 
-	/* lock par */
-	if(!preempt_count())
-		mutex_lock(&par->lock);
-	else 
-		par->preempt_flag = 1;
+	par->polling = 1;
 
-	transfer_i2c = nxp_i2c_transfer_hw;
-	par->run_state = 1;
+	/* lock */
+	if (!preempt_count()) {
+		mutex_lock(&par->lock);
+		par->polling = 0;
+	}
+
+	transfer_i2c = nxp_i2c_transfer;
+	par->runing = 1;
+	par->irq_count = 0;
+	par->thd_count = 0;
+
 	pr_debug("\n %s(msg num:%d)\n", __func__, num);
 
-	par->no_stop_mod = 1;
 	for ( ; j > 0; j--, tmsg++) {
+		par->no_stop = (1 == j ? 0 : 1);
 		len = tmsg->len;
-		if (1 == j)
-			par->no_stop_mod = 0;
 
 		/* transfer */
 		for (i = adapter->retries; i > 0; i--) {
 			ret = transfer_i2c(par, tmsg, num);
 			if (ret == len)
 				break;
-
-			ERROUT("i2c.%d addr 0x%02x (try:%d)\n",
+			pr_err("i2c.%d addr 0x%02x (try:%d)\n",
 				par->hw.port, tmsg->addr<<1, adapter->retries-i+1);
 		}
 
@@ -521,18 +530,18 @@ static int nxp_i2c_algo_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, 
 			break;
 	}
 
-	par->run_state = 0;
-	par->preempt_flag = 0;
-	/* unlock par */
-	if(!preempt_count())
+	par->runing = 1;
+	par->polling = 0;
+
+	if (!preempt_count())
 		mutex_unlock(&par->lock);
 
-	/* ok */
 	if (ret == len)
 		return num;
 
 	pr_err("Error: i2c.%d, addr:%02x, trans len:%d(%d), try:%d\n",
 		par->hw.port, (msgs->addr<<1), ret, len, adapter->retries);
+
 	return ret;
 }
 
@@ -565,10 +574,9 @@ static int	nxp_i2c_set_param(struct nxp_i2c_param *par, struct platform_device *
 	par->hw.base_addr = (void*)IO_ADDRESS(plat->base_addr);
 	par->hw.scl_io = plat->gpio->scl_pin ? plat->gpio->scl_pin : i2c_gpio[plat->port][0];
 	par->hw.sda_io = plat->gpio->sda_pin ? plat->gpio->sda_pin : i2c_gpio[plat->port][1];
-	par->no_stop_mod = 0;
-	par->timeout = DEF_WAIT_ACK;
-	par->rate =	plat->rate ? plat->rate : DEF_I2C_RATE;
-	par->preempt_flag = 0;
+	par->no_stop = 0;
+	par->timeout = WAIT_ACK_TIME;
+	par->rate =	plat->rate ? plat->rate : I2C_CLOCK_RATE;
 	nxp_soc_gpio_set_io_func(par->hw.scl_io, 1);
 	nxp_soc_gpio_set_io_func(par->hw.sda_io, 1);
 
@@ -618,12 +626,13 @@ static int	nxp_i2c_set_param(struct nxp_i2c_param *par, struct platform_device *
 		DEV_NAME_I2C, par->hw.port, rate/t_src/t_div,
 		rate, par->hw.clksrc, par->hw.clkscale-1, par->timeout);
 
-	ret = request_threaded_irq(par->hw.irqno, i2c_irq,i2c_trans_irq, IRQF_DISABLED|IRQF_SHARED , DEV_NAME_I2C, par);
+	ret = request_threaded_irq(par->hw.irqno, i2c_irq_handler,	i2c_irq_thread,
+				IRQF_DISABLED|IRQF_SHARED , DEV_NAME_I2C, par);
 	if (ret)
 		printk(KERN_ERR "Fail, i2c.%d request irq %d ...\n", par->hw.port, par->hw.irqno);
 
 	i2c_bus_off(par);
-	
+
 	clk_enable(clk);
 
 	return ret;
@@ -656,7 +665,7 @@ static int nxp_i2c_probe(struct platform_device *pdev)
 	par->adapter.algo 		= &nxp_i2c_algo;
 	par->adapter.algo_data = par;
 	par->adapter.dev.parent= &pdev->dev;
-	par->adapter.retries 	= DEF_RETRY_COUNT;
+	par->adapter.retries 	= TRANS_RETRY_CNT;
 
 	ret = i2c_add_numbered_adapter(&par->adapter);
 	if (ret) {
