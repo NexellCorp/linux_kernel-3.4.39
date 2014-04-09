@@ -167,26 +167,31 @@ static void nxp_pcm_dma_complete(void *arg)
 {
 	struct snd_pcm_substream *substream = arg;
 	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
-
-#if (0)
 	long ts = prtd->time_stamp_ms;
 	long new = ktime_to_ms(ktime_get());
 	long period_ms = prtd->period_time_ms;
-	if (((new-ts) > (period_ms + 2)) || ((period_ms - 2)> (new-ts)))
-		printk("PCM DMA %ldms (%ldms)\n", new-ts, period_ms);
+	int over_samples = (new - ts)/period_ms;
+	int i;
+
+	if (0 == over_samples)
+		over_samples = 1;
+
 	prtd->time_stamp_ms = new;
-#endif
+
 
 	/*
-		pr_debug("snd pcm: %s complete offset = %8d (preiodbytes=%d)\n",
-		STREAM_STR(substream->stream), prtd->offset, snd_pcm_lib_period_bytes(substream));
+		pr_debug("snd pcm: %s complete offset = %8d (preiodbytes=%d) over samples = %d\n",
+		STREAM_STR(substream->stream), prtd->offset,
+		snd_pcm_lib_period_bytes(substream), over_samples);
 	*/
-	prtd->offset += snd_pcm_lib_period_bytes(substream);
-	if (prtd->offset >= snd_pcm_lib_buffer_bytes(substream))
-		prtd->offset = 0;
+	for (i = 0; over_samples > i; i++) {
+		prtd->offset += snd_pcm_lib_period_bytes(substream);
+		if (prtd->offset >= snd_pcm_lib_buffer_bytes(substream))
+			prtd->offset = 0;
 
-	nxp_pcm_file_mem_write(substream);
-	snd_pcm_period_elapsed(substream);
+		nxp_pcm_file_mem_write(substream);
+		snd_pcm_period_elapsed(substream);
+	}
 }
 
 static int nxp_pcm_dma_request_channel(void *runtime_data, int stream)
