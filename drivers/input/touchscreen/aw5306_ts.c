@@ -61,9 +61,7 @@ static struct i2c_client   *this_client;
 static int Resume_Init   = 0;
 static int Resume_NoInit = 0;
 
-///////////////////////////////////////////////
-#define SCREEN_MAX_X			800		//1280//1024//800
-#define SCREEN_MAX_Y			1280	//800//600//480
+
 #define PRESS_MAX				255
 
 #define MAX_CONTACTS 			5       //lizhen
@@ -88,6 +86,12 @@ struct AW5306_ts_data {
 	struct timer_list touch_timer;
 	int open_count;
 	int init_stat;
+
+	int max_x;
+	int max_y;
+	char x_invert_flag;
+	char y_invert_flag;
+	char xy_exchange_flag;
 };
 
 static unsigned char suspend_flag=0; //0: sleep out; 1: sleep in
@@ -99,6 +103,9 @@ extern STRUCTCALI 	AW_Cali;
 extern STRUCTBASE	AW_Base;
 extern short		adbDiff[NUM_TX][NUM_RX];
 extern short		AWDeltaData[32];
+
+extern 			AW5306_UCF Default_UCF;
+extern unsigned char 	cpfreq;
 
 int AW_nvram_read(char *filename, char *buf, ssize_t len, int offset)
 {
@@ -292,8 +299,8 @@ static int AW5306_read_data(void)
 {
 	struct AW5306_ts_data *ts = i2c_get_clientdata(this_client);
 	struct ts_event *event = &ts->event;
-	 int Pevent;
-    int i = 0;
+	int Pevent;
+    	int i = 0;
 
 	AW5306_TouchProcess();
 	event->touch_point = AW5306_GetPointNum();
@@ -302,8 +309,17 @@ static int AW5306_read_data(void)
 		event->press[i] = 0;
 
 	for (i = 0; event->touch_point > i;i++) {
-		AW5306_GetPoint(&event->x[i], &event->y[i], &event->touch_ID[i], &Pevent, i);
-		event->y[i] = SCREEN_MAX_Y - event->y[i];	/* Invert Y */
+		if(ts->xy_exchange_flag)
+			AW5306_GetPoint(&event->y[i], &event->x[i], &event->touch_ID[i], &Pevent, i);
+		else
+               		AW5306_GetPoint(&event->x[i], &event->y[i], &event->touch_ID[i], &Pevent, i);
+
+		if(ts->x_invert_flag)
+			event->x[i] = ts->max_x - event->x[i];	/* Invert X */
+
+		if(ts->y_invert_flag)
+               		event->y[i] = ts->max_y - event->y[i];  /* Invert Y */
+
 		event->press[i] = 1;
 		pr_point("[P.%d] x=%4d, y=%4d\n", i, event->x[i], event->y[i]);
 	}
@@ -813,6 +829,7 @@ static int AW5306_ts_resume(struct i2c_client *client)
 static int
 AW5306_ts_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
+	struct aw5306_plat_data *plat = client->dev.platform_data;
 	struct AW5306_ts_data *ts;
 	struct input_dev *input;
 	int err = 0;
@@ -829,6 +846,22 @@ AW5306_ts_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	if (!ts)	{
 		err = -ENOMEM;
 		goto exit_alloc_data_failed;
+	}
+
+	if (plat) {
+		memcpy(&Default_UCF, &plat->default_UCF, sizeof(AW5306_UCF));
+		cpfreq = plat->cpfreq;
+		ts->max_x = plat->max_x;
+		ts->max_y = plat->max_y;
+		ts->x_invert_flag = plat->x_invert_flag;
+		ts->y_invert_flag = plat->y_invert_flag;
+		ts->xy_exchange_flag = plat->xy_exchange_flag;
+	} else {
+		ts->max_x = 800;
+		ts->max_y = 1280;
+		ts->x_invert_flag = 0;
+		ts->y_invert_flag = 1;
+		ts->xy_exchange_flag = 0;
 	}
 
 	AW5306_ts_power();
@@ -862,8 +895,8 @@ AW5306_ts_probe(struct i2c_client *client, const struct i2c_device_id *id)
 #ifdef CONFIG_AW5306_MULTITOUCH
     set_bit(EV_ABS, input->evbit);
 
-    input_set_abs_params(input, ABS_MT_POSITION_X , 0, SCREEN_MAX_X-1, 0, 0);
-    input_set_abs_params(input, ABS_MT_POSITION_Y , 0, SCREEN_MAX_Y-1, 0, 0);
+    input_set_abs_params(input, ABS_MT_POSITION_X , 0, ts->max_x-1, 0, 0);
+    input_set_abs_params(input, ABS_MT_POSITION_Y , 0, ts->max_y-1, 0, 0);
     input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, PRESS_MAX, 0, 0);
 	input_set_abs_params(input, ABS_MT_PRESSURE, 0, 255, 0, 0);
 #else

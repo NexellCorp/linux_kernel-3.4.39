@@ -85,6 +85,17 @@ typedef struct {
 
 }AW5306_UCF;
 
+struct aw5306_plat_data
+{
+	AW5306_UCF default_UCF;
+	unsigned char cpfreq;
+	int max_x;
+	int max_y;
+	char x_invert_flag;
+	char y_invert_flag;
+	char xy_exchange_flag;
+};
+
 void AW5306_User_Init(void);
 void AW5306_User_Cfg1(void);
 #endif
