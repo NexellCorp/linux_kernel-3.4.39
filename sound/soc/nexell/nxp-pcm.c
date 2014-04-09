@@ -167,17 +167,16 @@ static void nxp_pcm_dma_complete(void *arg)
 {
 	struct snd_pcm_substream *substream = arg;
 	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
-	long ts = prtd->time_stamp_ms;
-	long new = ktime_to_ms(ktime_get());
-	long period_ms = prtd->period_time_ms;
-	int over_samples = (new - ts)/period_ms;
+	long long ts = prtd->time_stamp_ms;
+	long long new = ktime_to_ms(ktime_get());
+	long long period_ms = prtd->period_time_ms;
+	int over_samples = div64_s64((new - ts), period_ms);
 	int i;
 
 	if (0 == over_samples)
 		over_samples = 1;
 
 	prtd->time_stamp_ms = new;
-
 
 	/*
 		pr_debug("snd pcm: %s complete offset = %8d (preiodbytes=%d) over samples = %d\n",
@@ -427,7 +426,7 @@ static int nxp_pcm_hw_params(struct snd_pcm_substream *substream,
 	pr_debug("buffer_size =%6d, period_size =%6d, periods=%2d, rate=%6d\n",
 		params_buffer_size(params),	params_period_size(params),
 		params_periods(params), params_rate(params));
-	pr_debug("buffer_bytes=%6d, period_bytes=%6d, periods=%2d, period_time=%3d ms\n",
+	pr_debug("buffer_bytes=%6d, period_bytes=%6d, periods=%2d, period_time=%3lld ms\n",
 		prtd->buffer_bytes, prtd->period_bytes, prtd->periods, prtd->period_time_ms);
 	return 0;
 }
