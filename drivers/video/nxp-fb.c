@@ -591,7 +591,7 @@ static int nxp_fb_map_ion_handle(struct nxp_fb_device *fb_dev,
     dma_buf_put(ctx->dma_buf);	/* decrease file count */
 
     printk(KERN_INFO "%s.%d: dma addr = 0x%x, buf[0x%08x]\n",
-        DEV_NAME_FB, fb_dev->device_id, ctx->dma_addr, buf);
+        DEV_NAME_FB, fb_dev->device_id, ctx->dma_addr, (uint)buf);
     return 0;
 
 err_map_attachment:
@@ -1055,7 +1055,7 @@ static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                 break;
             }
             DBGOUT("%s: NXPFB_GET_FB_FD index(%d)\n", __func__, index);
-            fd = ion_share_dma_buf(d->ion_client, d->context[index].ion_handle);
+            fd = (int)ion_share_dma_buf(d->ion_client, d->context[index].ion_handle);
             if (fd < 0) {
                 printk("%s NXPFB_GET_FB_FD failed: Fail to dma_buf_fd()\n", __func__);
                 ret = -EINVAL;

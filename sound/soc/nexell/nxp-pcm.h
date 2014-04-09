@@ -33,7 +33,7 @@ struct nxp_pcm_runtime_data {
 	int period_bytes;
 	int periods;
 	int buffer_bytes;
-	int period_time_ms;
+	long long period_time_ms;
 	unsigned int offset;
 	/* DMA param */
 	struct dma_chan  *dma_chan;

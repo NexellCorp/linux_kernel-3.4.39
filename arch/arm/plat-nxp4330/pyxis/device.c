@@ -527,7 +527,7 @@ NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1600000, 1, -1);	/* 1.6V DDR */
 NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1600000, 1,  8);	/* 1.6V SYS */
 
-NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V GPS */
+NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 0,  2);	/* 3.3V GPS */
 NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 0, 0, 1800000, 0,  2);	/* 1.8V CAM1 */
 NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.8V SYS1 */
 NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.9V SYS */
@@ -1268,6 +1268,35 @@ static struct dw_mci_board _dwmci1_data = {
 #endif
 
 #endif /* CONFIG_MMC_DW */
+
+/*------------------------------------------------------------------------------
+ * RFKILL driver
+ */
+#if defined(CONFIG_RFKILL_NEXELL)
+
+struct rfkill_dev_data  rfkill_dev_data =
+{
+	.supply_name 	= "vgps_3.3V",	// vwifi_3.3V, vgps_3.3V
+	.module_name 	= "wlan",
+	.power_vcc		= 1,
+	.initval		= RFKILL_INIT_SET | RFKILL_INIT_OFF,
+};
+
+struct nxp_rfkill_plat_data rfkill_plat_data = {
+	.name		= "WiFi-Rfkill",
+	.type		= RFKILL_TYPE_WLAN,
+	.rf_dev		= &rfkill_dev_data,
+    .rf_dev_num	= 1,
+};
+
+static struct platform_device rfkill_device = {
+	.name			= DEV_NAME_RFKILL,
+	.dev			= {
+		.platform_data	= &rfkill_plat_data,
+	}
+};
+#endif	/* CONFIG_RFKILL_NEXELL */
+
 /*------------------------------------------------------------------------------
  * register board platform devices
  */
@@ -1358,6 +1387,11 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_SENSORS_STK831X) || defined(CONFIG_SENSORS_STK831X_MODULE)
 	printk("plat: add g-sensor stk831x\n");
 	i2c_register_board_info(STK831X_I2C_BUS, &stk831x_i2c_bdi, 1);
+#endif
+
+#if defined(CONFIG_RFKILL_NEXELL)
+    printk("plat: add device rfkill\n");
+    platform_device_register(&rfkill_device);
 #endif
 
 	/* END */
