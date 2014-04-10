@@ -200,6 +200,8 @@
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
  */
+#define CFG_SW_UBC_ENABLE						(1)
+
 #define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)
 #define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_D + 21)
 #define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)

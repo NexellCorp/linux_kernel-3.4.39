@@ -377,23 +377,35 @@ void nxe2000_power_off(void)
 	/* set rapid timer 300 min */
 	ret = __nxe2000_read(nxe2000_i2c_client,
 						TIMSET_REG, &reg_val);
+	if (ret < 0)
+		ret = __nxe2000_read(nxe2000_i2c_client,
+							TIMSET_REG, &reg_val);
 
 	reg_val |= 0x03;
 
 	ret = __nxe2000_write(nxe2000_i2c_client,
 						TIMSET_REG, reg_val);
 	if (ret < 0)
+		ret = __nxe2000_write(nxe2000_i2c_client,
+							TIMSET_REG, reg_val);
+	if (ret < 0)
 		dev_err(&nxe2000_i2c_client->dev, 
 				"Error in writing the TIMSET_Reg\n");
 
 	/* Disable all Interrupt */
-	__nxe2000_write(nxe2000_i2c_client, NXE2000_INTC_INTEN, 0);
+	ret = __nxe2000_write(nxe2000_i2c_client, NXE2000_INTC_INTEN, 0);
+	if (ret < 0)
+		ret = __nxe2000_write(nxe2000_i2c_client, NXE2000_INTC_INTEN, 0);
 
 	/* Not repeat power ON after power off(Power Off/N_OE) */
-	__nxe2000_write(nxe2000_i2c_client, NXE2000_PWR_REP_CNT, 0x0);
+	ret = __nxe2000_write(nxe2000_i2c_client, NXE2000_PWR_REP_CNT, 0x0);
+	if (ret < 0)
+		ret = __nxe2000_write(nxe2000_i2c_client, NXE2000_PWR_REP_CNT, 0x0);
 
 	/* Power OFF */
-	__nxe2000_write(nxe2000_i2c_client, NXE2000_PWR_SLP_CNT, 0x1);
+	ret = __nxe2000_write(nxe2000_i2c_client, NXE2000_PWR_SLP_CNT, 0x1);
+	if (ret < 0)
+		ret = __nxe2000_write(nxe2000_i2c_client, NXE2000_PWR_SLP_CNT, 0x1);
 
 	if (backup_pm_power_off)
 		backup_pm_power_off();
