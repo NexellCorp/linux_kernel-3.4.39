@@ -52,8 +52,9 @@ static struct board_suspend_ops board_ops = {
 static int __init board_suspend_init(void)
 {
 	DBGOUT("%s\n", __func__);
-
+	/*
 	nxp_board_suspend_register(&board_ops);
+	*/
 	return 0;
 }
 postcore_initcall(board_suspend_init);
