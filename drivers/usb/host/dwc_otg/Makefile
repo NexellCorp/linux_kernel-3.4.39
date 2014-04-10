@@ -18,7 +18,7 @@ endif
 # Use one of the following flags to compile the software in host-only or
 # device-only mode.
 #EXTRA_CFLAGS	+= -DDWC_HOST_ONLY
-EXTRA_CFLAGS	+= -DDWC_DEVICE_ONLY
+#EXTRA_CFLAGS	+= -DDWC_DEVICE_ONLY
 
 EXTRA_CFLAGS	+= -Dlinux -DDWC_HS_ELECT_TST
 #EXTRA_CFLAGS	+= -DDWC_EN_ISOC
