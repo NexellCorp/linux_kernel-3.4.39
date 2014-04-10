@@ -1440,7 +1440,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
 	struct mmc_command *cmd = NULL;
 	enum dw_mci_state state;
 	enum dw_mci_state prev_state;
-	u32 status, ctrl;
+	u32 status, ctrl __attribute__((unused));
 
 	spin_lock(&host->lock);
 
@@ -2172,7 +2172,7 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 		struct mmc_host *mmc = slot->mmc;
 		struct mmc_request *mrq;
 		int present;
-		u32 ctrl;
+		/* u32 ctrl; */
 
 		present = dw_mci_get_cd(mmc);
 		while (present != slot->last_detect_state) {
@@ -2673,6 +2673,9 @@ int __devinit dw_mci_probe(struct dw_mci *host)
 // ---
 	mci_writel(host, FIFOTH, host->fifoth_val);
 
+	/* ADD SD/EMMC Clock Shifting by Youngbok Park */
+	mci_writel(host, CLKCTRL, host->pdata->clk_dly);
+
 	/* disable clock to CIU */
 	mci_writel(host, CLKENA, 0);
 	mci_writel(host, CLKSRC, 0);
@@ -2910,6 +2913,7 @@ int dw_mci_resume(struct dw_mci *host)
 		if (ret < 0)
 			return ret;
 	}
+
 	return 0;
 }
 EXPORT_SYMBOL(dw_mci_resume);

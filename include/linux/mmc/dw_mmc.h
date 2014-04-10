@@ -277,6 +277,10 @@ struct dw_mci_board {
 	u8 clk_smpl;
 	bool tuned;
 
+	/*
+	 * add by Youngbok Park
+	 */
+	u32 clk_dly;
 	/* cd_type: Type of Card Detection method (see cd_types enum above) */
 	enum dw_mci_cd_types cd_type;
 

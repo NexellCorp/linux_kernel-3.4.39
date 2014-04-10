@@ -55,6 +55,7 @@
 #define SDMMC_BUFADDR		0x098
 #define SDMMC_CLKSEL		0x09c
 #define SDMMC_CDTHRCTL		0x100
+#define SDMMC_CLKCTRL		0x114 /*add by YoungbokPark */
 #define SDMMC_DATA(x)		(x)
 
 /*
