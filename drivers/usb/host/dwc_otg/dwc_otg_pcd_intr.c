@@ -45,6 +45,9 @@ extern void complete_xiso_ep(dwc_otg_pcd_ep_t * ep);
 
 #define DEBUG_EP0
 
+static int s_ep0state;
+
+
 /**
  * This function updates OTG.
  */
@@ -110,6 +113,33 @@ static inline void print_ep0_state(dwc_otg_pcd_t * pcd)
 	DWC_DEBUGPL(DBG_ANY, "%s(%d)\n", str, pcd->ep0state);
 #endif
 }
+
+static inline void save_ep0_state(dwc_otg_pcd_t * pcd)
+{
+	switch (pcd->ep0state) {
+	case EP0_IDLE:
+	case EP0_IN_DATA_PHASE:
+	case EP0_OUT_DATA_PHASE:
+	case EP0_IN_STATUS_PHASE:
+	case EP0_OUT_STATUS_PHASE:
+		s_ep0state = 1;
+		break;
+	default:
+		s_ep0state = 0;
+	}
+}
+
+int dwc_otg_pcd_get_ep0_state(void)
+{
+	return s_ep0state;
+}
+EXPORT_SYMBOL(dwc_otg_pcd_get_ep0_state);
+
+void dwc_otg_pcd_clear_ep0_state(void)
+{
+	s_ep0state = 0;
+}
+EXPORT_SYMBOL(dwc_otg_pcd_clear_ep0_state);
 
 /**
  * This function calculate the size of the payload in the memory 
@@ -3318,6 +3348,7 @@ static void handle_ep0(dwc_otg_pcd_t * pcd)
 #ifdef DEBUG_EP0
 	print_ep0_state(pcd);
 #endif
+	save_ep0_state(pcd);
 }
 
 /**

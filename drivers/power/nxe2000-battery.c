@@ -197,6 +197,13 @@ struct nxe2000_battery_info {
 	struct delayed_work	displayed_work;
 	struct delayed_work	charge_stable_work;
 	struct delayed_work	changed_work;
+#if (CFG_SW_UBC_ENABLE == 1)
+	struct delayed_work	sw_ubc_work;
+	bool				flag_set_ilimit;
+	int					is_sdp_type;
+	int					pre_pmic_vbus_state;
+	int					pmic_vbuschk_count;
+#endif
 #ifdef KOOK_UBC_CHECK
 	struct delayed_work	get_charger_work;
 	int					chg_work_recheck_count;
@@ -292,6 +299,9 @@ extern void otg_phy_suspend(void);
 
 extern void otg_clk_enable(void);
 extern void otg_clk_disable(void);
+
+extern int  dwc_otg_pcd_get_ep0_state(void);
+extern void dwc_otg_pcd_clear_ep0_state(void);
 #endif
 
 static int Battery_Type(void)
@@ -1914,6 +1924,53 @@ static void nxe2000_changed_work(struct work_struct *work)
 	return;
 }
 
+#if (CFG_SW_UBC_ENABLE == 1)
+static void nxe2000_sw_ubc_work(struct work_struct *work)
+{
+	struct nxe2000_battery_info *info = container_of(work,
+		struct nxe2000_battery_info, sw_ubc_work.work);
+	uint8_t val = 0;
+	int is_sdp_type;
+	int pmic_vbus;
+	int ret;
+
+	power_supply_changed(&info->battery);
+
+	pmic_vbus = gpio_get_value(info->gpio_pmic_vbus);
+
+	info->pre_pmic_vbus_state = pmic_vbus;
+	info->is_sdp_type = dwc_otg_pcd_get_ep0_state();
+
+	ret = nxe2000_read(info->dev->parent, NXE2000_REG_REGISET2, &val);
+	if (ret < 0) {
+		dev_err(info->dev, "Can't read NXE2000_REG_REGISET2 register. : %d\n", ret);
+		goto recheck_ubc;
+	}
+
+	if (val != 0xEE)
+		info->flag_set_ilimit = false;
+
+	if (pmic_vbus && !info->flag_set_ilimit && !info->is_sdp_type) {
+		val = 0xEE;
+		ret = nxe2000_write(info->dev->parent, NXE2000_REG_REGISET2, val);
+		if (ret < 0) {
+			dev_err(info->dev, "Can't write NXE2000_REG_REGISET2 register. : %d\n", ret);
+		}
+
+		info->flag_set_ilimit = true;
+	}
+
+recheck_ubc:
+	if (info->pmic_vbuschk_count) {
+		info->pmic_vbuschk_count--;
+		queue_delayed_work(info->monitor_wqueue,
+					&info->sw_ubc_work, msecs_to_jiffies(1000));
+	}
+
+	return;
+}
+#endif
+
 #ifdef KOOK_UBC_CHECK
 static void nxe2000_get_charger_work(struct work_struct *work)
 {
@@ -1949,14 +2006,14 @@ static void nxe2000_get_charger_work(struct work_struct *work)
 
 		val2 = (val & 0x0c) >> 2;
 		if (val2 != 2) {		/* Check GC_DET */
-			dev_err(info->dev, "GC_DET is not completedr\n");
+			dev_err(info->dev, "GC_DET is not completed\n");
 			goto set_recheck;
 		}
 
 		val2 = (val & 0x80) >> 7;
 		if (val2 == 0) {		/* Check DCD_TIMEOUT */
 			dev_info(info->dev, "GC Detection is completed\n");
-//			goto out;
+//			goto set_recheck;
 		}
 
 		/* Check the port type */
@@ -2059,7 +2116,7 @@ static void nxe2000_get_charger_work(struct work_struct *work)
 		nxe2000_read(info->dev->parent, EXTIF_PCHGDET_REG, &val);
 		val2 = (val & 0x0c) >> 2;
 		if (val2 != 2) {		/* Check PC_DET */
-			dev_err(info->dev, "PC_DET is not completedr\n");
+			dev_err(info->dev, "PC_DET is not completed\n");
 			goto set_recheck;
 		}
 
@@ -2108,6 +2165,7 @@ static void nxe2000_get_charger_work(struct work_struct *work)
 	otg_clk_enable();
 #endif
 
+	info->chg_extif = 0;
 	info->chg_work_recheck_count = 0;
 
 	mutex_unlock(&info->lock);
@@ -2375,7 +2433,6 @@ static int nxe2000_factory_mode(struct nxe2000_battery_info *info)
 
 	/* Rapid to Complete State change disable */
 	ret = nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, 0x40);
-
 	if (ret < 0) {
 		dev_err(info->dev, "Error in writing the control register\n");
 		return ret;
@@ -2609,13 +2666,13 @@ static int nxe2000_set_OCV_table(struct nxe2000_battery_info *info)
 	val_temp = val;
 	val	&= 0x0F; //clear bit 4-7
 	val	|= 0x10; //set bit 4
-	
+
 	ret = nxe2000_write_bank1(info->dev->parent, 0xDC, val);
 	if (ret < 0) {
 		dev_err(info->dev, "batterry initialize error\n");
 		goto err;
 	}
-	
+
 	ret = nxe2000_read_bank1(info->dev->parent, 0xDC, &val2);
 	if (ret < 0) {
 		dev_err(info->dev, "batterry initialize error\n");
@@ -2641,13 +2698,13 @@ static int nxe2000_set_OCV_table(struct nxe2000_battery_info *info)
 		dev_err(info->dev, "batterry initialize error\n");
 		goto err;
 		}
-	
+
 		ret = nxe2000_read_bank1(info->dev->parent, 0xD3, &val2);
 		if (ret < 0) {
 			dev_err(info->dev, "batterry initialize error\n");
 			goto err;
 		}
-		
+
 		available_cap_ori = val2 + (val << 8);
 		available_cap = battery_init_para[info->num][23]
 						+ (battery_init_para[info->num][22] << 8);
@@ -2659,7 +2716,7 @@ static int nxe2000_set_OCV_table(struct nxe2000_battery_info *info)
 				dev_err(info->dev, "batterry initialize error\n");
 				return ret;
 			}
-			
+
 			for (i = 0; i < 6; i++) {
 				ret = nxe2000_write_bank1(info->dev->parent, 0xD4+i, battery_init_para[info->num][24+i]);
 				if (ret < 0) {
@@ -2883,7 +2940,7 @@ static int nxe2000_init_charger(struct nxe2000_battery_info *info)
 
 		//debug messeage
 	err = nxe2000_read(info->dev->parent, BATSET1_REG,&val);
-	
+
 	/* BATSET1_REG(0xBA) setting */
 	err = nxe2000_read(info->dev->parent, BATSET1_REG, &val);
 	if (err < 0) {
@@ -2899,10 +2956,10 @@ static int nxe2000_init_charger(struct nxe2000_battery_info *info)
 	} else { /* Keep OTP value */
 		val2 = (val & 0x10);
 	}
-	
+
 		/* keep bit 0-3 and bit 5-7 */
 	val = (val & 0xEF);
-	
+
 	val = val + val2;
 
 	err = nxe2000_write(info->dev->parent, BATSET1_REG, val);
@@ -2913,11 +2970,11 @@ static int nxe2000_init_charger(struct nxe2000_battery_info *info)
 	}
 		//debug messeage
 	err = nxe2000_read(info->dev->parent, BATSET1_REG,&val);
-	
+
 		//debug messeage
 	err = nxe2000_read(info->dev->parent, BATSET2_REG,&val);
 
-	
+
 	/* BATSET2_REG(0xBB) setting */
 	err = nxe2000_read(info->dev->parent, BATSET2_REG, &val);
 	if (err < 0) {
@@ -2949,7 +3006,7 @@ static int nxe2000_init_charger(struct nxe2000_battery_info *info)
 	err = nxe2000_write(info->dev->parent, BATSET2_REG, val);
 	if (err < 0) {
 		dev_err(info->dev, "Error in writing NXE2000_RE_CHARGE_VOLTAGE %d\n",
-									 err);
+								 err);
 		goto free_device;
 	}
 
@@ -3081,34 +3138,73 @@ free_device:
 static int set_otg_power_control(struct nxe2000_battery_info *info, int otg_dev_mode)
 {
 	int ret = 0;
-	uint8_t val = 0;
+	uint8_t pwr_path;
+	uint8_t clr_val = 0;
+	uint8_t set_val = 0;
+
+	clr_val = (0x1 << NXE2000_POS_CHGCTL1_CHGP);
+
+	set_val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
+			| (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN)
+			| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN)
+			| (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
+
+	ret= nxe2000_read(info->dev->parent, CHGSTATE_REG, &pwr_path);
+	if (ret < 0)
+		ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &pwr_path);
+
+	clr_val = 0;
+	set_val = 0;
 
 	if (otg_dev_mode)
 	{
 		/* OTG POWER OFF */
 		gpio_set_value(info->gpio_otg_vbus, 0);
 
-		val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
-			| (0x1 << NXE2000_POS_CHGCTL1_CHGP)
-			| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN)
-			| (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
+		clr_val = (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN)
+				| (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
+
+		set_val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
+				| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN)
+				| (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
+
+		if ((info->input_power_type == INPUT_POWER_TYPE_ADP)
+			|| ((info->input_power_type == INPUT_POWER_TYPE_ADP_UBC) && (pwr_path & 0x40)))
+		{
+			clr_val |= (0x1 << NXE2000_POS_CHGCTL1_CHGP);
+		}
+		else
+		{
+			set_val |= (0x1 << NXE2000_POS_CHGCTL1_CHGP);
+		}
 	}
 	else
 	{
 		/* OTG POWER ON */
 		gpio_set_value(info->gpio_otg_vbus, 1);
 
-		val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
-			| (0x1 << NXE2000_POS_CHGCTL1_SUSPEND)
-			| (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
+		set_val |= (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
+		set_val |= (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
+
+		if ((info->input_power_type == INPUT_POWER_TYPE_ADP)
+			|| ((info->input_power_type == INPUT_POWER_TYPE_ADP_UBC) && (pwr_path & 0x40)))
+		{
+			clr_val = (0x1 << NXE2000_POS_CHGCTL1_CHGP)
+					| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN);
+		}
+		else
+		{
+			set_val |= (0x1 << NXE2000_POS_CHGCTL1_CHGP);
+		}
 	}
 
-	ret = nxe2000_write(info->dev->parent, NXE2000_REG_CHGCTL1, val);
-	if (ret < 0) {
-		dev_err(info->dev,
-			 "%s(): Error in set CHGCTL1 reg SUSPEND %d\n",
-			__func__, ret);
-	}
+	ret = nxe2000_set_bits(info->dev->parent, NXE2000_REG_CHGCTL1, set_val);
+	if (ret < 0)
+		ret = nxe2000_set_bits(info->dev->parent, NXE2000_REG_CHGCTL1, set_val);
+
+	ret = nxe2000_clr_bits(info->dev->parent, NXE2000_REG_CHGCTL1, clr_val);
+	if (ret < 0)
+		ret = nxe2000_clr_bits(info->dev->parent, NXE2000_REG_CHGCTL1, clr_val);
 
 	return ret;
 }
@@ -3314,8 +3410,10 @@ static void charger_irq_work(struct work_struct *work)
 				val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
 					| (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
 
-				if (otg_dev_mode == 0)
+				if (otg_dev_mode == 0) {
 					val |= (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
+					val |=	(0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
+				}
 
 				nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
 
@@ -3326,7 +3424,7 @@ static void charger_irq_work(struct work_struct *work)
 #endif
 			else
 			{
-				uint8_t val2;
+				uint8_t pwr_path;
 
 				val = (info->ch_icchg << 6) + info->ch_ichg;
 				nxe2000_write(info->dev->parent, CHGISET_REG, val);
@@ -3334,24 +3432,32 @@ static void charger_irq_work(struct work_struct *work)
 				val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
 					| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN)
 					| (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
-
-				if (otg_dev_mode == 0)
-					val |= (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
-				nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
-
-				nxe2000_read(info->dev->parent, CHGSTATE_REG, &val2);
-
-				if (val2 & 0x40)
-				{
-					val = (0x1 << NXE2000_POS_CHGCTL1_CHGP)
-						| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN);
-					nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, val);
+				if (otg_dev_mode == 0) {
+					val |=	(0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
+					val |=	(0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
 				}
-				else if (val2 & 0x80)
+
+				ret = nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
+				if (ret < 0)
+					ret = nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
+
+				ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &pwr_path);
+				if (ret < 0)
+					ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &pwr_path);
+
+				if (pwr_path & 0x40)
 				{
-					val = (0x1 << NXE2000_POS_CHGCTL1_CHGP)
-						| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN);
-					nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, val);
+					val = (0x1 << NXE2000_POS_CHGCTL1_CHGP);
+					ret = nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, val);
+					if (ret < 0)
+						ret = nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, val);
+				}
+				else if (pwr_path & 0x80)
+				{
+					val = (0x1 << NXE2000_POS_CHGCTL1_CHGP);
+					ret = nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, val);
+					if (ret < 0)
+						ret = nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, val);
 				}
 
 				info->ubc_check_count = 0;
@@ -3365,33 +3471,41 @@ static void charger_irq_work(struct work_struct *work)
 
 			if (info->input_power_type == INPUT_POWER_TYPE_ADP_UBC)
 			{
-				uint8_t val2;
+				uint8_t pwr_path;
 
 				val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
 					| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN)
 					| (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
-
-				if (otg_dev_mode == 0)
+				if (otg_dev_mode == 0) {
 					val |= (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
-				nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
+					val |= (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
+				}
 
-				nxe2000_read(info->dev->parent, CHGSTATE_REG, &val2);
+				ret = nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
+				if (ret < 0)
+					ret = nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
 
-				if (val2 & 0x40)
+				ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &pwr_path);
+				if (ret < 0)
+					ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &pwr_path);
+
+				if (pwr_path & 0x40)
 				{
-					val = (0x1 << NXE2000_POS_CHGCTL1_CHGP)
-						| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN);
-					nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, val);
+					val = (0x1 << NXE2000_POS_CHGCTL1_CHGP);
+					ret = nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, val);
+					if (ret < 0)
+						ret = nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, val);
 
 					info->ubc_check_count = 0;
 
 					return;
 				}
-				else if (val2 & 0x80)
+				else if (pwr_path & 0x80)
 				{
-					val = (0x1 << NXE2000_POS_CHGCTL1_CHGP)
-						| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN);
-					nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, val);
+					val = (0x1 << NXE2000_POS_CHGCTL1_CHGP);
+					ret = nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, val);
+					if (ret < 0)
+						ret = nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, val);
 				}
 			}
 			break;
@@ -3404,6 +3518,10 @@ static void charger_irq_work(struct work_struct *work)
 	}
 
 /* ======================================================= */
+
+#if (CFG_SW_UBC_ENABLE == 1)
+	return;
+#endif
 
 	if ( pmic_vbus && otg_dev_mode )
 	{
@@ -3567,7 +3685,6 @@ static irqreturn_t charger_usb_isr(int irq, void *battery_info)
 	struct nxe2000_battery_info *info = battery_info;
 
 	info->chg_ctr |= 0x02;
-	
 	queue_work(info->workqueue, &info->irq_work);
 
 	info->soca->dischg_state = 0;
@@ -3594,6 +3711,18 @@ static irqreturn_t charger_adp_isr(int irq, void *battery_info)
 
 	return IRQ_HANDLED;
 }
+
+#if (CFG_SW_UBC_ENABLE == 1)
+static irqreturn_t sw_ubc_isr(int irq, void *battery_info)
+{
+	struct nxe2000_battery_info *info = battery_info;
+	dwc_otg_pcd_clear_ep0_state();
+	info->pmic_vbuschk_count    = 3;
+	info->flag_set_ilimit       = false;
+	queue_delayed_work(info->monitor_wqueue, &info->sw_ubc_work, msecs_to_jiffies(1000));
+	return IRQ_HANDLED;
+}
+#endif
 
 static irqreturn_t otgid_det_isr(int irq, void *battery_info)
 {
@@ -4166,10 +4295,17 @@ static int nxe2000_batt_get_prop(struct power_supply *psy,
 			}
 			else
 			{
+#if (CFG_SW_UBC_ENABLE == 1)
+				if (psy->type == POWER_SUPPLY_TYPE_MAINS)
+					val->intval = (!info->is_sdp_type ? 1 : 0);
+				else if (psy->type == POWER_SUPPLY_TYPE_USB)
+					val->intval = (info->is_sdp_type ? 1 : 0);
+#else
 				if (psy->type == POWER_SUPPLY_TYPE_MAINS)
 					val->intval = (info->extif_type == EXTIF_TYPE_DCP ? 1 : 0);
 				else if (psy->type == POWER_SUPPLY_TYPE_USB)
 					val->intval = (info->extif_type == EXTIF_TYPE_SDP ? 1 : 0);
+#endif
 			}
 		}
 #else	// #ifdef KOOK_UBC_CHECK
@@ -4234,6 +4370,7 @@ static int nxe2000_batt_get_prop(struct power_supply *psy,
 			nxe2000_power_lowbat--;
 			break;
 		}
+
 		if (info->entry_factory_mode){
 			val->intval = 100;
 			info->capacity = 100;
@@ -4563,6 +4700,24 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 					nxe2000_get_charger_work);
 #endif
 
+	/* for SW UBC. */
+#if (CFG_SW_UBC_ENABLE == 1)
+	if (info->gpio_pmic_vbus > -1) {
+		nxp_soc_gpio_set_int_enable(info->gpio_pmic_vbus, 0);
+
+		ret = request_irq(gpio_to_irq(info->gpio_pmic_vbus), sw_ubc_isr,
+						IRQ_TYPE_EDGE_BOTH, "sw_ubc_monitor", info);
+		if (ret < 0) {
+			dev_err(&pdev->dev,
+				"Can't get CHG_INT IRQ for chrager: %d\n", ret);
+			goto out;
+		}
+
+		INIT_DELAYED_WORK_DEFERRABLE(&info->sw_ubc_work,
+						nxe2000_sw_ubc_work);
+	}
+#endif
+
 	/* Supported for OTG VBUS. */
 	if (info->gpio_otg_usbid > -1) {
 		nxp_soc_gpio_set_int_enable(info->gpio_otg_usbid, 0);
@@ -4721,13 +4876,13 @@ static int __devexit nxe2000_battery_remove(struct platform_device *pdev)
 		if (ret < 0)
 			dev_err(info->dev, "Error in clr FG EN\n");
 	}
-	
+
 	/* set rapid timer 300 min */
 	err = nxe2000_set_bits(info->dev->parent, TIMSET_REG, 0x03);
 	if (err < 0) {
 		dev_err(info->dev, "Error in writing the control register\n");
 	}
-	
+
 	free_irq(charger_irq + NXE2000_IRQ_FONCHGINT, &info);
 	free_irq(charger_irq + NXE2000_IRQ_FCHGCMPINT, &info);
 	free_irq(charger_irq + NXE2000_IRQ_FVUSBDETSINT, &info);
@@ -4790,11 +4945,60 @@ static int nxe2000_battery_suspend(struct device *dev)
 	nxe2000_power_suspend_status	= 1;
 	nxe2000_power_resume_status     = 0;
 
-	otg_id = gpio_get_value(info->gpio_otg_usbid);
+#if (CFG_SW_UBC_ENABLE == 1)
+	nxp_soc_gpio_set_int_enable(info->gpio_pmic_vbus, 0);
+	nxp_soc_gpio_clr_int_pend(info->gpio_pmic_vbus);
+#endif
 
-	/* OTG POWER OFF */
-	gpio_set_value(info->gpio_otg_vbus, 0);
-	mdelay(2000);
+	otg_id = gpio_get_value(info->gpio_otg_usbid);
+	if (info->input_power_type == INPUT_POWER_TYPE_ADP)
+	{
+		val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
+			| (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN)
+			| (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
+
+		if (otg_id == 0)
+			val |= (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
+
+		nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
+	}
+	else
+	{
+		uint8_t pwr_path;
+
+		val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
+			| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN)
+			| (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
+		if (otg_id == 0) {
+			val |=	(0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
+			val |=	(0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
+		}
+
+		ret = nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, val);
+		if (ret < 0)
+			ret = nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, val);
+
+		ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &pwr_path);
+		if (ret < 0)
+			ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &pwr_path);
+
+		if (pwr_path & 0x80)
+		{
+			val = (0x1 << NXE2000_POS_CHGCTL1_CHGP)
+				| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN);
+			ret = nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, val);
+			if (ret < 0)
+				ret = nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, val);
+		}
+		else if (pwr_path & 0x40)
+		{
+			val = (0x1 << NXE2000_POS_CHGCTL1_CHGP)
+				| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN);
+			ret = nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, val);
+			if (ret < 0)
+				ret = nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, val);
+		}
+	}
 
 #ifdef ENABLE_MASKING_INTERRUPT_IN_SLEEP
 	nxe2000_clr_bits(dev->parent, NXE2000_INTC_INTEN, CHG_INT);
@@ -4838,13 +5042,13 @@ static int nxe2000_battery_suspend(struct device *dev)
 							 &is_charging, true);
 		if (ret < 0)
 			dev_err(info->dev, "Read cc_sum Error !!-----\n");
-			
+
 		if (info->soca->status != NXE2000_SOCA_STABLE) {
 			info->soca->cc_delta
 				 = (is_charging == true) ? cc_cap : -cc_cap;
 
 			displayed_soc_temp
-			       = info->soca->displayed_soc + info->soca->cc_delta;
+				 = info->soca->displayed_soc + info->soca->cc_delta;
 			displayed_soc_temp = min(10000, displayed_soc_temp);
 			displayed_soc_temp = max(0, displayed_soc_temp);
 			info->soca->displayed_soc = displayed_soc_temp;
@@ -4916,15 +5120,26 @@ static int nxe2000_battery_suspend(struct device *dev)
 /*	flush_work(&info->irq_work); */
 #endif
 
+#if (CFG_SW_UBC_ENABLE == 1)
+	cancel_delayed_work(&info->sw_ubc_work);
+#endif
+
 #ifdef CONFIG_SUSPEND_IDLE
-	nxe2000_clr_bits(info->dev->parent, 0x91, 0x10);    // GPIO4 : Low
+	ret = nxe2000_clr_bits(info->dev->parent, 0x91, 0x10);    // GPIO4 : Low
+	if (ret < 0)
+		ret = nxe2000_clr_bits(info->dev->parent, 0x91, 0x10);
 #else
-	nxe2000_clr_bits(info->dev->parent, 0x90, 0x10);    // GPIO4 : Input
+	ret = nxe2000_clr_bits(info->dev->parent, 0x90, 0x10);    // GPIO4 : Input
+	if (ret < 0)
+		ret = nxe2000_clr_bits(info->dev->parent, 0x90, 0x10);
 #endif
 
 	ret = nxe2000_write(info->dev->parent, FG_CTRL_REG, 0x40);
 	if (ret < 0)
 		ret = nxe2000_write(info->dev->parent, FG_CTRL_REG, 0x40);
+
+	/* OTG POWER OFF */
+	gpio_set_value(info->gpio_otg_vbus, 0);
 
 	PM_DBGOUT("PMU: -- %s\n", __func__);
 
@@ -4951,9 +5166,13 @@ static int nxe2000_battery_resume(struct device *dev)
 	info->low_battery_flag		= 0;
 
 #ifdef CONFIG_SUSPEND_IDLE
-	nxe2000_set_bits(info->dev->parent, 0x91, 0x10);    // GPIO4 : High
+	ret = nxe2000_set_bits(info->dev->parent, 0x91, 0x10);    // GPIO4 : High
+	if (ret < 0)
+		ret = nxe2000_set_bits(info->dev->parent, 0x91, 0x10);
 #else
-	nxe2000_set_bits(info->dev->parent, 0x90, 0x10);    // GPIO4 : Output
+	ret = nxe2000_set_bits(info->dev->parent, 0x90, 0x10);    // GPIO4 : Output
+	if (ret < 0)
+		ret = nxe2000_set_bits(info->dev->parent, 0x90, 0x10);
 #endif
 
 	nxe2000_init_battery(info);
@@ -5064,6 +5283,8 @@ static int nxe2000_battery_resume(struct device *dev)
 
 	power_supply_changed(&info->battery);
 	queue_delayed_work(info->monitor_wqueue, &info->displayed_work, HZ);
+	reset_FG_process(info);
+	info->soca->status = NXE2000_SOCA_FG_RESET;
 
 	if (NXE2000_SOCA_UNSTABLE == info->soca->status) {
 		info->soca->stable_count = 10;
@@ -5100,18 +5321,20 @@ static int nxe2000_battery_resume(struct device *dev)
 
 	nxe2000_power_suspend_status    = 0;
 
-	reset_FG_process(info);
-	info->soca->status = NXE2000_SOCA_FG_RESET;
-
 	info->ubc_check_count	= 1;
 	info->chg_ctr			= 0x03;
 	queue_work(info->workqueue, &info->irq_work);
 
-	otg_id = gpio_get_value(info->gpio_otg_usbid);
-	if (otg_id)
-		set_otg_power_control(info, 1);
-	else
-		set_otg_power_control(info, 0);
+	queue_delayed_work(info->monitor_wqueue, &info->otgid_detect_work, msecs_to_jiffies(20));
+
+#if (CFG_SW_UBC_ENABLE == 1)
+	dwc_otg_pcd_clear_ep0_state();
+	info->pmic_vbuschk_count    = 3;
+	info->flag_set_ilimit       = false;
+	queue_delayed_work(info->monitor_wqueue, &info->sw_ubc_work, msecs_to_jiffies(1000));
+
+	nxp_soc_gpio_set_int_enable(info->gpio_pmic_vbus, 1);
+#endif
 
 	PM_DBGOUT("PMU: -- %s\n", __func__);
 
