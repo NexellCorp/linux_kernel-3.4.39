@@ -33,7 +33,6 @@ struct nxp_pcm_runtime_data {
 	int period_bytes;
 	int periods;
 	int buffer_bytes;
-	long long period_time_ms;
 	unsigned int offset;
 	/* DMA param */
 	struct dma_chan  *dma_chan;
@@ -42,7 +41,8 @@ struct nxp_pcm_runtime_data {
 	unsigned int mem_area;
 	long mem_len;
 	unsigned int mem_offs;
-	long time_stamp_ms;
+	long long period_time_us;
+	long long time_stamp_us;
 };
 
 #define	STREAM_STR(dir)	(SNDRV_PCM_STREAM_PLAYBACK == dir ? "playback" : "capture ")

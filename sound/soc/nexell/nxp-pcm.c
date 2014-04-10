@@ -167,17 +167,21 @@ static void nxp_pcm_dma_complete(void *arg)
 {
 	struct snd_pcm_substream *substream = arg;
 	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
-	long long ts = prtd->time_stamp_ms;
-	long long new = ktime_to_ms(ktime_get());
-	long long period_ms = prtd->period_time_ms;
-	int over_samples = div64_s64((new - ts), period_ms);
+	long long ts  = prtd->time_stamp_us;
+	long long new = ktime_to_us(ktime_get());
+	long long period_us = prtd->period_time_us;
+	int over_samples = div64_s64((new - ts), period_us);
 	int i;
 
 	if (0 == over_samples)
 		over_samples = 1;
 
-	prtd->time_stamp_ms = new;
+	prtd->time_stamp_us = new;
 
+	/*
+		if (over_samples > 1)
+			printk("[pcm overs :%d]\n", over_samples);
+	*/
 	/*
 		pr_debug("snd pcm: %s complete offset = %8d (preiodbytes=%d) over samples = %d\n",
 		STREAM_STR(substream->stream), prtd->offset,
@@ -271,7 +275,7 @@ static int nxp_pcm_dma_prepare_and_submit(struct snd_pcm_substream *substream)
 	struct dma_chan *chan = prtd->dma_chan;
 	struct dma_async_tx_descriptor *desc;
 	enum dma_transfer_direction direction;
-	int period_time_ms;
+	int period_time_us;
 
     if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
         direction = DMA_MEM_TO_DEV;
@@ -299,11 +303,11 @@ static int nxp_pcm_dma_prepare_and_submit(struct snd_pcm_substream *substream)
 	/*
 	 * debug msg
 	 */
-	period_time_ms = (1000 / ((runtime->rate)/runtime->period_size));
+	period_time_us = (1000000 / ((runtime->rate)/runtime->period_size));
 	pr_debug("%s: %s\n", __func__, STREAM_STR(substream->stream));
 	pr_debug("buffer_bytes=%6d, period_bytes=%6d, periods=%2d, rate=%6d, period_time=%3d ms\n",
 		snd_pcm_lib_buffer_bytes(substream), snd_pcm_lib_period_bytes(substream),
-		runtime->periods, runtime->rate, period_time_ms);
+		runtime->periods, runtime->rate, period_time_us/1000);
 	return 0;
 }
 
@@ -319,7 +323,7 @@ static int nxp_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 		if (ret)
 			return ret;
 		dma_async_issue_pending(prtd->dma_chan);
-		prtd->time_stamp_ms = ktime_to_ms(ktime_get());
+		prtd->time_stamp_us = ktime_to_us(ktime_get());
 		break;
 
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -414,7 +418,7 @@ static int nxp_pcm_hw_params(struct snd_pcm_substream *substream,
 	prtd->periods = params_periods(params);
 	prtd->period_bytes = params_period_bytes(params);
 	prtd->buffer_bytes = params_buffer_bytes(params);
-	prtd->period_time_ms = 1000/(params_rate(params)/params_period_size(params));
+	prtd->period_time_us = 1000000/(params_rate(params)/params_period_size(params));
 
 	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
 	nxp_pcm_file_mem_allocate(DUMP_DMA_PATH, substream, params);
@@ -426,8 +430,8 @@ static int nxp_pcm_hw_params(struct snd_pcm_substream *substream,
 	pr_debug("buffer_size =%6d, period_size =%6d, periods=%2d, rate=%6d\n",
 		params_buffer_size(params),	params_period_size(params),
 		params_periods(params), params_rate(params));
-	pr_debug("buffer_bytes=%6d, period_bytes=%6d, periods=%2d, period_time=%3lld ms\n",
-		prtd->buffer_bytes, prtd->period_bytes, prtd->periods, prtd->period_time_ms);
+	pr_debug("buffer_bytes=%6d, period_bytes=%6d, periods=%2d, period_time=%3lld us\n",
+		prtd->buffer_bytes, prtd->period_bytes, prtd->periods, prtd->period_time_us);
 	return 0;
 }
 
