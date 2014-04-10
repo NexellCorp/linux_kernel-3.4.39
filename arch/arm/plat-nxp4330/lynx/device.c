@@ -418,272 +418,6 @@ void __init nxp_reserve_mem(void)
 /*------------------------------------------------------------------------------
  * PMIC platform device
  */
-#if defined(CONFIG_REGULATOR_NXE1999)
-
-#include <linux/i2c.h>
-#include <nxe1999.h>
-#include <linux/regulator/machine.h>
-
-#define NXE2000_I2C_BUS		0
-#define NXE2000_I2C_ADDR	0x64
-#define NXE2000_I2C_LEN		1
-#define NXE2000_IRQ			(PAD_GPIO_ALV + 4)
-
-
-/* NXE2000 regulators */
-#define REGULATOR_CSM(_ldo, _name)  \
-    static struct regulator_consumer_supply _ldo##_supply[] __initdata = {  \
-        REGULATOR_SUPPLY(_name, NULL),  \
-    }
-
-#define REGULATOR_INIT(_ldo, _name, _min_uV, _max_uV, _always_on, _ops_mask, _disabled) \
-    static struct regulator_init_data nxp4330_##_ldo##_data __initdata = {  \
-        .constraints = {                        \
-            .name           = _name,            \
-            .min_uV         = _min_uV,          \
-            .max_uV         = _max_uV,          \
-            .always_on      = _always_on,       \
-            .boot_on        = _always_on,       \
-            .apply_uV       = 1,                \
-            .valid_ops_mask = _ops_mask,        \
-            .state_mem      = {                 \
-                .disabled   = (_disabled == -1 ? 0 : _disabled),    \
-                .enabled    = (_disabled == -1 ? 0 : !(_disabled)), \
-            },  \
-        },      \
-        .num_consumer_supplies = ARRAY_SIZE(_ldo##_supply), \
-        .consumer_supplies = _ldo##_supply,                \
-    }
-
-REGULATOR_CSM(ldo1, "vgps_3.3V");
-REGULATOR_INIT(ldo1, "VGPS_3.3V", 3300000, 3300000, 0,
-        REGULATOR_CHANGE_STATUS, 1);
-
-REGULATOR_CSM(ldo2, "vcam1_1.8V");
-REGULATOR_INIT(ldo2, "VCAM1_1.8V", 1800000, 1800000, 0,
-        REGULATOR_CHANGE_STATUS, 1);
-
-REGULATOR_CSM(ldo3, "vsys1_1.8V");
-REGULATOR_INIT(ldo3, "VSYS1_1.8V", 1800000, 1800000, 1,
-        REGULATOR_CHANGE_STATUS, 1);
-
-REGULATOR_CSM(ldo4, "vsys_1.9V");
-REGULATOR_INIT(ldo4, "VSYS_1.9V", 1900000, 1900000, 1,
-        REGULATOR_CHANGE_STATUS, 1);
-
-REGULATOR_CSM(ldo5, "vcam_2.8V");
-REGULATOR_INIT(ldo5, "VCAM_2.8V", 2800000, 2800000, 0,
-        REGULATOR_CHANGE_STATUS, 1);
-
-REGULATOR_CSM(ldo6, "valive_3.3V");
-REGULATOR_INIT(ldo6, "VALIVE_3.3V", 3300000, 3300000, 1,
-        REGULATOR_CHANGE_STATUS, 1);
-
-REGULATOR_CSM(ldo7, "vvid_2.8V");
-REGULATOR_INIT(ldo7, "VVID_2.8V", 2800000, 2800000, 0,
-        REGULATOR_CHANGE_STATUS, 1);
-
-REGULATOR_CSM(ldo8, "vwifi_3.3V");
-REGULATOR_INIT(ldo8, "VWIFI_3.3V", 3300000, 3300000, 0,
-        REGULATOR_CHANGE_STATUS, 1);
-
-REGULATOR_CSM(ldo9, "vhub_3.3V");
-REGULATOR_INIT(ldo9, "VHUB_3.3V", 3300000, 3300000, 0,
-        REGULATOR_CHANGE_STATUS, 1);
-
-REGULATOR_CSM(ldo10, "vhsic_1.2V");
-REGULATOR_INIT(ldo10, "VHSIC_1.2V", 1200000, 1200000, 0,
-        REGULATOR_CHANGE_STATUS, 1);
-
-REGULATOR_CSM(ldortc1, "valive_1.8V");
-REGULATOR_INIT(ldortc1, "VALIVE_1.8V", 1800000, 1800000, 1,
-        REGULATOR_CHANGE_STATUS, 1);
-
-REGULATOR_CSM(ldortc2, "valive_1.0V");
-REGULATOR_INIT(ldortc2, "VALIVE_1.0V", 1000000, 1000000, 1,
-        REGULATOR_CHANGE_STATUS, 1);
-
-/* BUCK */
-REGULATOR_CSM(buck1, "vdd_arm_1.3V");
-REGULATOR_CSM(buck2, "vdd_core_1.1V");
-REGULATOR_CSM(buck3, "vdd_sys_3.3V");
-REGULATOR_CSM(buck4, "vdd_ddr_1.6V");
-REGULATOR_CSM(buck5, "vdd_sys_1.6V");
-
-static struct regulator_init_data nxp4330_buck1_data __initdata = {
-    .constraints    = {
-        .name       = "VDD_ARM_1.3V",
-        .min_uV     = 1300000,
-        .max_uV     = 1300000,
-        .valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
-        .apply_uV   = 1,
-        .always_on  = 1,
-        .boot_on    = 1,
-    },
-    .num_consumer_supplies  = ARRAY_SIZE(buck1_supply),
-    .consumer_supplies      = buck1_supply,
-};
-
-static struct regulator_init_data nxp4330_buck2_data __initdata = {
-    .constraints    = {
-        .name       = "VDD_CORE_1.1V",
-        .min_uV     = 1100000,
-        .max_uV     = 1100000,
-        .valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
-        .apply_uV   = 1,
-        .always_on  = 1,
-        .boot_on    = 1,
-    },
-    .num_consumer_supplies  = ARRAY_SIZE(buck2_supply),
-    .consumer_supplies      = buck2_supply,
-};
-
-static struct regulator_init_data nxp4330_buck3_data __initdata = {
-    .constraints    = {
-        .name       = "VDD_SYS_3.3V",
-        .min_uV     = 3300000,
-        .max_uV     = 3300000,
-        .valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
-        .apply_uV   = 1,
-        .always_on  = 1,
-        .boot_on    = 1,
-    },
-    .num_consumer_supplies  = ARRAY_SIZE(buck3_supply),
-    .consumer_supplies      = buck3_supply,
-};
-
-static struct regulator_init_data nxp4330_buck4_data __initdata = {
-    .constraints    = {
-        .name       = "VDD_DDR_1.6V",
-        .min_uV     = 1600000,
-        .max_uV     = 1600000,
-        .valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
-        .apply_uV   = 1,
-        .always_on  = 1,
-        .boot_on    = 1,
-    },
-    .num_consumer_supplies  = ARRAY_SIZE(buck4_supply),
-    .consumer_supplies      = buck4_supply,
-};
-
-static struct regulator_init_data nxp4330_buck5_data __initdata = {
-    .constraints    = {
-        .name       = "VDD_SYS_1.6V",
-        .min_uV     = 1600000,
-        .max_uV     = 1600000,
-        .valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
-        .apply_uV   = 1,
-        .always_on  = 1,
-        .boot_on    = 1,
-    },
-    .num_consumer_supplies  = ARRAY_SIZE(buck5_supply),
-    .consumer_supplies      = buck5_supply,
-};
-
-static struct nxe2000_regulator_data nxp4330_regulators[] __initdata = {
-    { NXE2000_LDO1,     &nxp4330_ldo1_data },
-    { NXE2000_LDO2,     &nxp4330_ldo2_data },
-    { NXE2000_LDO3,     &nxp4330_ldo3_data },
-    { NXE2000_LDO4,     &nxp4330_ldo4_data },
-    { NXE2000_LDO5,     &nxp4330_ldo5_data },
-    { NXE2000_LDO6,     &nxp4330_ldo6_data },
-    { NXE2000_LDO7,     &nxp4330_ldo7_data },
-    { NXE2000_LDO8,     &nxp4330_ldo8_data },
-    { NXE2000_LDO9,     &nxp4330_ldo9_data },
-    { NXE2000_LDO10,    &nxp4330_ldo10_data },
-    { NXE2000_LDORTC1,  &nxp4330_ldortc1_data },
-    { NXE2000_LDORTC2,  &nxp4330_ldortc2_data },
-    { NXE2000_BUCK1,    &nxp4330_buck1_data },
-    { NXE2000_BUCK2,    &nxp4330_buck2_data },
-    { NXE2000_BUCK3,    &nxp4330_buck3_data },
-    { NXE2000_BUCK4,    &nxp4330_buck4_data },
-    { NXE2000_BUCK5,    &nxp4330_buck5_data },
-};
-
-#if 0
-#define CFG_GPIO_OTG_USBID_DET		(PAD_GPIO_B + 30)
-#define CFG_GPIO_OTG_VBUS_DET		(PAD_GPIO_B + 28)
-#define CFG_GPIO_PMIC_VUSB_DET		(PAD_GPIO_ALV + 2)
-#define CFG_GPIO_PMIC_LOWBAT_DET	(PAD_GPIO_ALV + 3)	/* Critical low battery detect */
-#endif
-
-static struct nxe2000_pdata nxp4330_nxe2000_pdata __initdata = {
-    .gpio_eint          = NXE2000_IRQ,
-    .irq_base           = IRQ_SYSTEM_END,
-    .wakeup             = 1,
-
-    .num_regulators     = ARRAY_SIZE(nxp4330_regulators),
-    .regulators         = nxp4330_regulators,
-
-    .gpio_otg_usbid     = CFG_GPIO_OTG_USBID_DET,
-    .gpio_otg_vbus      = CFG_GPIO_OTG_VBUS_DET,
-    .gpio_pmic_vbus     = CFG_GPIO_PMIC_VUSB_DET,
-    .gpio_pmic_lowbat   = CFG_GPIO_PMIC_LOWBAT_DET,
-
-    .have_battery       = 1,
-    .rdstate_periodic   = 1000,             /* milisecond */
-
-    .slp_prio_buck[0]   = 12,   // 0 ~ 14, off => 15
-    .slp_prio_buck[1]   = 14,   // for suspend mode.
-    .slp_prio_buck[2]   = 2,
-    .slp_prio_buck[3]   = 0xF,
-    .slp_prio_buck[4]   = 8,
-
-    .slp_prio_ldo[0]    = 0,    // 0 ~ 14, off => 15
-    .slp_prio_ldo[1]    = 0,
-    .slp_prio_ldo[2]    = 6,
-    .slp_prio_ldo[3]    = 6,
-    .slp_prio_ldo[4]    = 0,
-    .slp_prio_ldo[5]    = 0xF,
-    .slp_prio_ldo[6]    = 4,
-    .slp_prio_ldo[7]    = 0,
-    .slp_prio_ldo[8]    = 0,
-    .slp_prio_ldo[9]    = 10,
-
-    /* power-supply shutoff */
-    .slp_prio_pso[0]    = 0xF,  // 0 ~ 14, off => 15
-    .slp_prio_pso[1]    = 0xF,
-    .slp_prio_pso[2]    = 0xF,
-    .slp_prio_pso[3]    = 0xF,
-    .slp_prio_pso[4]    = 1,
-
-    .slp_buck_vol[0]    = 1300000,      /* 1.3V ARM */
-    .slp_buck_vol[1]    = 1100000,      /* 1.1V CORE */
-    .slp_buck_vol[2]    = 3300000,      /* 3.3V SYS */
-    .slp_buck_vol[3]    = 1600000,      /* 1.6V DDR */
-    .slp_buck_vol[4]    = 1600000,      /* 1.6V SYS */
-
-    .slp_ldo_vol[0]     = 3300000,      /* 3.3V GPS */
-    .slp_ldo_vol[1]     = 1800000,      /* 1.8V CAM1 */
-    .slp_ldo_vol[2]     = 1800000,      /* 1.8V SYS1 */
-    .slp_ldo_vol[3]     = 1900000,      /* 1.9V SYS */
-    .slp_ldo_vol[4]     = 2800000,      /* 2.8V CAM */
-    .slp_ldo_vol[5]     = 3300000,      /* 3.3V ALIVE */
-    .slp_ldo_vol[6]     = 2800000,      /* 2.8V VID */
-    .slp_ldo_vol[7]     = 3300000,      /* 3.3V WIFI */
-    .slp_ldo_vol[8]     = 3300000,      /* 3.3V HUB */
-    .slp_ldo_vol[9]     = 1200000,      /* 1.2V HSIC */
-
-    .bat_max_uV         = 4200000,      /* 4.2V */
-    .bat_min_uV         = 3400000,      /* 3.4V */
-    .bat_low_uV         = 3600000,      /* 3.6V */
-
-    .adp_ilim_current   = 1500000,      /* 1.5A */
-    .adp_chg_current    = 800000,       /* 800mA */
-
-    .usb_ilim_current   = 500000,       /* 500mA */
-    .usb_chg_current    = 500000,       /* 500mA */
-};
-
-static struct i2c_board_info nxe2000_i2c_pmic_devs[] __initdata = {
-    {
-        I2C_BOARD_INFO("nxe2000", NXE2000_I2C_ADDR >> 1),
-        .platform_data  = &nxp4330_nxe2000_pdata,
-        .irq            = PB_PIO_IRQ(NXE2000_IRQ),
-    },
-};
-#endif	/* CONFIG_REGULATOR_NXE1999  */
-
 #if defined(CONFIG_REGULATOR_NXE2000)
 
 #include <linux/i2c.h>
@@ -807,7 +541,7 @@ NXE2000_PDATA_INIT(ldo4,     0, 1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.9V
 NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  1);	/* 2.8V VCAM */
 NXE2000_PDATA_INIT(ldo6,     0, 1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
 NXE2000_PDATA_INIT(ldo7,     0, 1000000, 3500000, 1, 0, 2800000, 1,  4);	/* 2.8V VID */
-NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 1,  2);	/* 3.3V WIFI */
+NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 0,  2);	/* 3.3V WIFI */
 NXE2000_PDATA_INIT(ldo9,     0, 1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V HUB */
 NXE2000_PDATA_INIT(ldo10,    0, 1000000, 3500000, 1, 0, 1200000, 0,  0);	/* 1.2V HSIC */
 NXE2000_PDATA_INIT(ldortc1,  0, 1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
@@ -1010,172 +744,6 @@ static struct i2c_board_info __initdata nxe2000_regulators[] = {
 	},
 };
 #endif  /* CONFIG_REGULATOR_NXE2000 */
-
-#if defined(CONFIG_REGULATOR_NXE1100)
-
-#include <linux/i2c.h>
-#include <nxe1100.h>
-#include <linux/regulator/machine.h>
-
-#define NXE1100_I2C_BUS		0
-#define NXE1100_I2C_ADDR	0x64
-#define NXE1100_I2C_LEN		1
-#define NXE1100_IRQ			(PAD_GPIO_B + 26)
-
-
-/* NXE1100 regulators */
-static struct regulator_init_data __initdata nxp4330_ldo1_data = {
-	.constraints	= {
-		.name		= "VGPS_3.3V",
-		.min_uV		= 3300000,
-		.max_uV		= 3300000,
-		.apply_uV	= 1,
-//		.always_on	= 1,
-	},
-};
-
-static struct regulator_init_data __initdata nxp4330_ldo2_data = {
-	.constraints	= {
-		.name		= "VWIFI_3.3V",
-		.min_uV		= 3300000,
-		.max_uV		= 3300000,
-		.apply_uV	= 1,
-//		.always_on	= 1,
-	},
-};
-
-static struct regulator_init_data __initdata nxp4330_ldo3_data = {
-	.constraints	= {
-		.name		= "VCAM_2.8V",
-		.min_uV		= 2800000,
-		.max_uV		= 2800000,
-		.apply_uV	= 1,
-		.always_on	= 1,
-	},
-};
-
-static struct regulator_init_data __initdata nxp4330_ldo4_data = {
-	.constraints	= {
-		.name		= "VHUB_3.3V",
-		.min_uV		= 3300000,
-		.max_uV		= 3300000,
-		.apply_uV	= 1,
-		.always_on	= 1,
-	},
-};
-
-static struct regulator_init_data __initdata nxp4330_ldo5_data = {
-	.constraints	= {
-		.name		= "VHSIC_1.2V",
-		.min_uV		= 1200000,
-		.max_uV		= 1200000,
-		.apply_uV	= 1,
-		.always_on	= 1,
-	},
-};
-
-/* BUCK */
-static struct regulator_consumer_supply __initdata nxe1100_buck1_csm[] = {
-	REGULATOR_SUPPLY("vddarm", NULL),
-};
-
-static struct regulator_consumer_supply __initdata nxe1100_buck2_csm[] = {
-	REGULATOR_SUPPLY("vddcore", NULL),
-};
-
-static struct regulator_init_data __initdata nxp4330_buck1_data = {
-	.constraints	= {
-		.name		= "VARM_1.1V",
-		.min_uV		= 1100000,
-		.max_uV		= 1100000,
-		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
-					  REGULATOR_CHANGE_STATUS,
-		.apply_uV	= 1,
-		.always_on	= 1,
-		.state_mem	= {
-			.enabled = 1,
-		},
-	},
-	.num_consumer_supplies	= ARRAY_SIZE(nxe1100_buck1_csm),
-	.consumer_supplies	= nxe1100_buck1_csm,
-};
-
-static struct regulator_init_data __initdata nxp4330_buck2_data = {
-	.constraints	= {
-		.name		= "VCORE_1.0V",
-		.min_uV		= 1000000,
-		.max_uV		= 1000000,
-		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
-					  REGULATOR_CHANGE_STATUS,
-		.apply_uV	= 1,
-		.always_on	= 1,
-		.state_mem	= {
-			.enabled = 1,
-		},
-	},
-	.num_consumer_supplies	= ARRAY_SIZE(nxe1100_buck2_csm),
-	.consumer_supplies	= nxe1100_buck2_csm,
-};
-
-static struct regulator_init_data __initdata nxp4330_buck3_data = {
-	.constraints	= {
-		.name		= "VRAM_1.5V",
-		.min_uV		= 1500000,
-		.max_uV		= 1500000,
-		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
-					  REGULATOR_CHANGE_STATUS,
-		.apply_uV	= 1,
-		.always_on	= 1,
-		.state_mem	= {
-			.enabled = 1,
-		},
-	},
-};
-
-static struct nxe1100_regulator_data __initdata nxp4330_regulators[] = {
-	{ NXE1100_LDO1,  &nxp4330_ldo1_data },
-	{ NXE1100_LDO2,  &nxp4330_ldo2_data },
-	{ NXE1100_LDO3,  &nxp4330_ldo3_data },
-	{ NXE1100_LDO4,  &nxp4330_ldo4_data },
-	{ NXE1100_LDO5,  &nxp4330_ldo5_data },
-	{ NXE1100_BUCK1, &nxp4330_buck1_data },
-	{ NXE1100_BUCK2, &nxp4330_buck2_data },
-	{ NXE1100_BUCK3, &nxp4330_buck3_data },
-};
-
-static struct nxe1100_pdata __initdata nxp4330_nxe1100_pdata = {
-	.gpio_eint			= NXE1100_IRQ,
-	.irq_base			= IRQ_SYSTEM_END,
-	.wakeup 			= 1,
-
-	.num_regulators		= ARRAY_SIZE(nxp4330_regulators),
-	.regulators			= nxp4330_regulators,
-
-	.have_battery		= 0,
-	.rdstate_periodic	= 1000,			/* milisecond */
-
-	.buck1_set			= 0,			/* TODO */
-	.buck2_set			= 0,			/* TODO */
-	.buck_voltage[0]	= 1100000,		/* 1.1V */
-	.buck_voltage[1]	= 1000000,		/* 1.0V */
-	.buck_voltage[2]	= 1500000,		/* 1.5V */
-	.batt_volt_max		= 4200000,		/* 4.2V */
-	.batt_volt_min		= 3300000,		/* 3.3V */
-	.batt_cap_level		= POWER_SUPPLY_CAPACITY_LEVEL_NORMAL,
-
-	.adp_ilim_current	= 2500000,		/* 2.5A */  /* Limit of total current   */
-	.usb_ilim_current	= 1500000,		/* 1.5A */
-	.chg_current		= 1000000,		/* 1.0A */
-};
-
-static struct i2c_board_info __initdata nxe1100_i2c_pmic_devs[] = {
-	{
-		I2C_BOARD_INFO("nxe1100", NXE1100_I2C_ADDR >> 1),
-		.platform_data	= &nxp4330_nxe1100_pdata,
-		.irq			= PB_PIO_IRQ(NXE1100_IRQ),
-	},
-};
-#endif	/* CONFIG_REGULATOR_NXE1100 */
 
 /*------------------------------------------------------------------------------
  * MPEGTS platform device
@@ -1686,11 +1254,10 @@ static int _dwmci0_get_cd(u32 slot_id)
 
 static struct dw_mci_board _dwmci0_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION | DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 70 * 1000 * 1000,
+	.bus_hz			= 100 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
-//	.sdr_timing		= 0x03020001,
-//	.ddr_timing		= 0x03030002,
+	.clk_dly		= CFG_SDMMC0_CLK_DELAY,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
 	.init			= _dwmci0_init,
 	.get_ro			= _dwmci_get_ro,
@@ -1713,12 +1280,39 @@ static struct dw_mci_board _dwmci1_data = {
 						MMC_CAP_ERASE | MMC_CAP_HW_RESET,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-	.sdr_timing		= 0x03020001,
-	.ddr_timing		= 0x03030002,
 };
 #endif
 
 #endif /* CONFIG_MMC_DW */
+
+/*------------------------------------------------------------------------------
+ * RFKILL driver
+ */
+#if defined(CONFIG_RFKILL_NEXELL)
+
+struct rfkill_dev_data  rfkill_dev_data =
+{
+	.supply_name 	= "vwifi_3.3V",	// vwifi_3.3V, vgps_3.3V
+	.module_name 	= "wlan",
+	.power_vcc		= 1,
+	.initval		= RFKILL_INIT_SET | RFKILL_INIT_OFF,
+};
+
+struct nxp_rfkill_plat_data rfkill_plat_data = {
+	.name		= "WiFi-Rfkill",
+	.type		= RFKILL_TYPE_WLAN,
+	.rf_dev		= &rfkill_dev_data,
+    .rf_dev_num	= 1,
+};
+
+static struct platform_device rfkill_device = {
+	.name			= DEV_NAME_RFKILL,
+	.dev			= {
+		.platform_data	= &rfkill_plat_data,
+	}
+};
+#endif	/* CONFIG_RFKILL_NEXELL */
+
 /*------------------------------------------------------------------------------
  * register board platform devices
  */
@@ -1820,6 +1414,12 @@ void __init nxp_board_devices_register(void)
     spi_register_board_info(spi_plat_board, ARRAY_SIZE(spi_plat_board));
     printk("plat: register spidev\n");
 #endif
+
+#if defined(CONFIG_RFKILL_NEXELL)
+    printk("plat: add device rfkill\n");
+    platform_device_register(&rfkill_device);
+#endif
+
 	/* END */
 	printk("\n");
 }
