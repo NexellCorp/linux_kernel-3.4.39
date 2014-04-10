@@ -1272,12 +1272,6 @@ void dwc_otg_core_init(dwc_otg_core_if_t * core_if)
 	DWC_DEBUGPL(DBG_CIL, "Rx FIFO SZ=%d\n", core_if->rx_fifo_size);
 	DWC_DEBUGPL(DBG_CIL, "NP Tx FIFO SZ=%d\n",
 		    core_if->nperio_tx_fifo_size);
-#else
-    // psw0523 debugging
-	printk("Total FIFO SZ=%d\n", core_if->total_fifo_size);
-	printk("Rx FIFO SZ=%d\n", core_if->rx_fifo_size);
-	printk("NP Tx FIFO SZ=%d\n",
-		    core_if->nperio_tx_fifo_size);
 #endif
 
 	/* This programming sequence needs to happen in FS mode before any other
@@ -1432,9 +1426,6 @@ void dwc_otg_core_init(dwc_otg_core_if_t * core_if)
 	}
 	
 	ahbcfg.b.dmaenable = core_if->dma_enable;
-    // psw0523 debugging
-    //printk("ahbcfg: 0x%x\n", ahbcfg.d32);
-    // end psw0523
 	DWC_WRITE_REG32(&global_regs->gahbcfg, ahbcfg.d32);
 
 	core_if->en_multiple_tx_fifo = core_if->hwcfg4.b.ded_fifo_en;
@@ -1767,10 +1758,6 @@ void dwc_otg_core_dev_init(dwc_otg_core_if_t * core_if)
 #ifdef DEBUG
 			DWC_DEBUGPL(DBG_CIL, "initial gnptxfsiz=%08x\n",
 				    DWC_READ_REG32(&global_regs->gnptxfsiz));
-#else
-            // psw0523 debugging
-			printk("initial gnptxfsiz=%08x\n",
-				    DWC_READ_REG32(&global_regs->gnptxfsiz));
 #endif
 
 #ifdef DWC_UTE_CFI
@@ -1787,10 +1774,6 @@ void dwc_otg_core_dev_init(dwc_otg_core_if_t * core_if)
 #ifdef DEBUG
 			DWC_DEBUGPL(DBG_CIL, "new gnptxfsiz=%08x\n",
 				    DWC_READ_REG32(&global_regs->gnptxfsiz));
-#else
-            // psw0523 debugging
-			printk("new gnptxfsiz=%08x\n",
-				    DWC_READ_REG32(&global_regs->gnptxfsiz));
 #endif
 			txfifosize.b.startaddr =
 			    nptxfifosize.b.startaddr + nptxfifosize.b.depth;
@@ -1803,12 +1786,6 @@ void dwc_otg_core_dev_init(dwc_otg_core_if_t * core_if)
 #ifdef DEBUG
 				DWC_DEBUGPL(DBG_CIL,
 					    "initial dtxfsiz[%d]=%08x\n",
-					    i,
-					    DWC_READ_REG32(&global_regs->dtxfsiz
-							   [i]));
-#else
-                // psw0523 debugging
-				printk("initial dtxfsiz[%d]=%08x\n",
 					    i,
 					    DWC_READ_REG32(&global_regs->dtxfsiz
 							   [i]));
@@ -1827,12 +1804,6 @@ void dwc_otg_core_dev_init(dwc_otg_core_if_t * core_if)
 #ifdef DEBUG
 				DWC_DEBUGPL(DBG_CIL,
 					    "new dtxfsiz[%d]=%08x\n",
-					    i,
-					    DWC_READ_REG32(&global_regs->dtxfsiz
-							   [i]));
-#else
-                // psw0523 debugging
-				printk("new dtxfsiz[%d]=%08x\n",
 					    i,
 					    DWC_READ_REG32(&global_regs->dtxfsiz
 							   [i]));
@@ -2891,9 +2862,6 @@ void dwc_otg_hc_start_transfer(dwc_otg_core_if_t * core_if, dwc_hc_t * hc)
 		} else {
 			dma_addr = ((unsigned long)hc->xfer_buff & 0xffffffff);
 		}
-        // psw0523 debugging
-        //printk("%s: dma_addr(0x%x)\n", __func__, dma_addr);
-        // end psw0523
 		DWC_WRITE_REG32(&hc_regs->hcdma, dma_addr);
 	}
 
@@ -2923,15 +2891,6 @@ void dwc_otg_hc_start_transfer(dwc_otg_core_if_t * core_if, dwc_hc_t * hc)
 
 	hc->xfer_started = 1;
 	hc->requests++;
-
-    // psw0523 debugging
-#if 0
-    if (hc->ep_type == DWC_OTG_EP_TYPE_ISOC && hcchar.b.chen == 1) {
-        printk("chnum(%d), hcchar(0x%x), hcdma(0x%x), hctsiz(0x%x)\n",
-                hc->hc_num, hcchar.d32, hc->xfer_buff, hctsiz.d32);
-    }
-#endif
-    // end psw0523
 
 	if (!core_if->dma_enable && !hc->ep_is_in && hc->xfer_len > 0) {
 		/* Load OUT packet into the appropriate Tx FIFO. */
@@ -4036,8 +3995,6 @@ void dwc_otg_ep_start_transfer(dwc_otg_core_if_t * core_if, dwc_ep_t * ep)
 		 */
 		if (core_if->core_params->dev_out_nak) {
 			if (ep->type == DWC_OTG_EP_TYPE_BULK) {
-                // psw0523 debugging
-                printk("dev_out_nak!!!\n");
 				core_if->ep_xfer_info[ep->num].core_if = core_if;
 				core_if->ep_xfer_info[ep->num].ep = ep;
 				core_if->ep_xfer_info[ep->num].state = 1;
