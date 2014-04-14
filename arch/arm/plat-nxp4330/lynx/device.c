@@ -1233,6 +1233,11 @@ static int _dwmci_get_ro(u32 slot_id)
 	return 0;
 }
 
+void _dwmci_late_resume(struct dw_mci *host)
+{
+	    nxp_key_power_event();
+}
+
 #ifdef CONFIG_MMC_NEXELL_CH0
 static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 {
@@ -1258,16 +1263,19 @@ static int _dwmci0_get_cd(u32 slot_id)
 
 static struct dw_mci_board _dwmci0_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION | DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 100 * 1000 * 1000,
+	.bus_hz			= 70 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
-	.clk_dly		= CFG_SDMMC0_CLK_DELAY,
+#if defined (CFG_SDMMC0_CLK_DELAY)
+	.clk_dly        = CFG_SDMMC0_CLK_DELAY,
+#endif
 	.cd_type		= DW_MCI_CD_EXTERNAL,
 	.init			= _dwmci0_init,
 	.get_ro			= _dwmci_get_ro,
 	.get_cd			= _dwmci0_get_cd,
 	.ext_cd_init	= _dwmci_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
+	.late_resume    = _dwmci_late_resume,
 };
 #endif
 
@@ -1277,7 +1285,7 @@ static struct dw_mci_board _dwmci1_data = {
 						DW_MCI_QUIRK_HIGHSPEED |
 						DW_MMC_QUIRK_HW_RESET_PW |
 						DW_MCI_QUIRK_NO_DETECT_EBIT,
-	.bus_hz			= 100 * 1000 * 1000,
+	.bus_hz			= 80 * 1000 * 1000,
 	.caps			= MMC_CAP_UHS_DDR50 |
 						MMC_CAP_NONREMOVABLE |
 						MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |

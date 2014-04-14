@@ -197,6 +197,10 @@
  */
 #define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
 
+#define	CFG_SDMMC0_CLK_DELAY_SAMPLE				(0<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+#define	CFG_SDMMC0_CLK_DELAY_DRIVE				(3<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+#define	CFG_SDMMC0_CLK_DELAY				    (CFG_SDMMC0_CLK_DELAY_SAMPLE | CFG_SDMMC0_CLK_DELAY_DRIVE)
+
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
  */
@@ -216,8 +220,8 @@
 /* Wakeup Source : ALIVE [0~7] */
 #define CFG_PWR_WAKEUP_SRC_ALIVE0				CTRUE					/* KEY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE0				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE1				CFALSE
-#define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_FALLINGEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE1				CTRUE
+#define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_BOTHEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE2				CTRUE					/* PMIC - VUSB*/
 #define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE3				CTRUE					/* PMIC - CRITICAL LOW BATTERY */
