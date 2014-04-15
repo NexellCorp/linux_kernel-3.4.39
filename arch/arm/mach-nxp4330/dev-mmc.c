@@ -132,6 +132,9 @@ static void __dwmci_resume(struct dw_mci *host)
 
 	PM_DBGOUT("%s: dw_mmc.%d, %d\n", __func__, dev->id, brd->bus_hz);
 	__dwmci_initialize(dev->id, brd->bus_hz);
+
+	if (brd->late_resume)
+		brd->late_resume(host);
 }
 
 #define NXP_DWMCI_PLAT_RES(_ch)		\
@@ -258,6 +261,9 @@ void __init nxp_mmc_add_device(int ch, struct dw_mci_board *mci)
 	NXP_DWMCI_ITEM_CHECK(mci, dst, data);
 	NXP_DWMCI_ITEM_CHECK(mci, dst, blk_settings);
 	NXP_DWMCI_ITEM_CHECK(mci, dst, clk_dly);
+	NXP_DWMCI_ITEM_CHECK(mci, dst, suspend);
+	NXP_DWMCI_ITEM_CHECK(mci, dst, resume);
+	NXP_DWMCI_ITEM_CHECK(mci, dst, late_resume);
 
 	printk("plat: add device sdmmc [%d]\n", ch);
     platform_device_register(dwmci_devices[id]);
