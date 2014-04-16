@@ -1233,9 +1233,9 @@ static int _dwmci_get_ro(u32 slot_id)
 	return 0;
 }
 
-void _dwmci_late_resume(struct dw_mci *host)
+static void _dwmci0_late_resume(struct dw_mci *host)
 {
-	    nxp_key_power_event();
+	return 0;
 }
 
 #ifdef CONFIG_MMC_NEXELL_CH0
@@ -1275,7 +1275,6 @@ static struct dw_mci_board _dwmci0_data = {
 	.get_cd			= _dwmci0_get_cd,
 	.ext_cd_init	= _dwmci_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
-	.late_resume    = _dwmci_late_resume,
 };
 #endif
 
