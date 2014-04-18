@@ -260,13 +260,11 @@ struct nxp_mp2ts_plat_data {
 
 struct rfkill_dev_data {
 	/* rfkill config */
-	char *supply_name;		/* if regulator regulaotr's supply_name,  if module module's name, */
-	char *module_name;
-	int power_vcc;			/* set 1 if vcc power, set 0 if gpio power */
-    int module;
+	char *supply_name;		/* set regulator name */
+	char *module_name;		/* set module driver name */
     int gpio;
     unsigned int initval;
-    int invert;			/* 0: high active, 1: low active */
+    int invert;				/* 0: high active, 1: low active */
     int delay_ms;
 };
 
@@ -276,6 +274,7 @@ struct nxp_rfkill_plat_data {
     struct rfkill_dev_data *rf_dev;
     int rf_dev_num;
     int support_suspend;
+    int (*set_block)(void *data, bool blocked);
 };
 
 #endif    /* __DEVICES_H__ */

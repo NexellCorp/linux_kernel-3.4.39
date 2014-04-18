@@ -32,9 +32,25 @@
 #define	pr_debug	printk
 */
 
+#if defined CONFIG_MODULES
+#define	MODULE_IN	 MODULE_STATE_COMING	/* (1): first insmod */
+#define	MODULE_LIV	 MODULE_STATE_LIVE		/* (0): after insmod */
+#define	MODULE_DEL	 MODULE_STATE_GOING		/* (2): rmmod  */
+#else
+#define	MODULE_IN	 1						/* (1): first insmod */
+#define	MODULE_LIV	 0						/* (0): after insmod */
+#define	MODULE_DEL	 2						/* (2): rmmod  */
+#endif
+
+#define	NOT_GPIO	(-1)
+
+static const char *gpio_name[] = { "GPIOA", "GPIOB", "GPIOC", "GPIOD", "GPIOE", "ALIVE" };
+#define	GPIO_GROUP(n)	(gpio_name[n/32])
+#define	GPIO_BITNR(n)	(n&0x1F)
+
 struct nxp_rfkill_dev {
 	/* rfkill config */
-	int power_vcc;		/* set 1 if vcc power, set 0 if gpio power */
+	int power_supply;		/* set 1 if vcc power, set 0 if gpio power */
 	char supply_name[32];
 	char module_name[32];
     int gpio;
@@ -58,12 +74,9 @@ struct nxp_rfkill_data {
     struct list_head head;
     int initstatus;
     int support_suspend;
+    struct nxp_rfkill_plat_data *pdata;
 };
 
-#define	MODULE_IN	 MODULE_STATE_COMING	/* (1): first insmod */
-#define	MODULE_LIV	 MODULE_STATE_LIVE		/* (0): after insmod */
-#define	MODULE_DEL	 MODULE_STATE_GOING		/* (2): rmmod  */
-#define	NOT_GPIO	(-1)
 /*
  * /sys/class/rfkill/rfkillN/state
  */
@@ -81,25 +94,33 @@ static int nxp_rfkill_set_block(void *data, bool blocked)
 				container_of(list, struct nxp_rfkill_dev, link);
 
 		pr_info("rfkill: %s [%s] set_block %d %s:%s\n",
-			rf_data->name, rfdev->supply_name,
-			blocked, blocked?"Off":"On",
+			rf_data->name, rfdev->power_supply?rfdev->supply_name:"io",
+			blocked, blocked?"Off":"On ",
 			rfdev->enabled?"Enabled":"Disabled");
 
 		if (blocked) {
 			/* OFF */
-			if (rfdev->power_vcc) {
-				if (regulator_is_enabled(rfdev->vcc))
+			if (rfdev->vcc) {
+				if (regulator_is_enabled(rfdev->vcc)) {
+					pr_info("rfkill: %s supply %s disable\n", rf_data->name, rfdev->supply_name);
 					regulator_disable(rfdev->vcc);
+				}
 			} else {
+				pr_info("rfkill: %s power %s.%d disable\n", rf_data->name,
+					GPIO_GROUP(rfdev->gpio), GPIO_BITNR(rfdev->gpio));
 				gpio_set_value(rfdev->gpio, rfdev->invert ? 1 : 0);
 			}
 			rfdev->enabled = false;
 		} else {
 			/* ON */
-			if (rfdev->power_vcc) {
-				if (!regulator_is_enabled(rfdev->vcc))
+			if (rfdev->vcc) {
+				if (!regulator_is_enabled(rfdev->vcc)) {
+					pr_info("rfkill: %s supply %s enable\n", rf_data->name, rfdev->supply_name);
 					regulator_enable(rfdev->vcc);
+				}
 			} else {
+				pr_info("rfkill: %s power %s.%d enable\n", rf_data->name,
+					GPIO_GROUP(rfdev->gpio), GPIO_BITNR(rfdev->gpio));
 				gpio_set_value(rfdev->gpio, rfdev->invert ? 0 : 1);
 			}
 			rfdev->enabled = true;
@@ -120,30 +141,34 @@ static int nxp_rfkill_module_notify(struct notifier_block *self, unsigned long v
 	if (MODULE_IN != val && MODULE_DEL != val)
 		return 0;
 
-	pr_info("rfkill: notify mod [%s] %s - %s:%s (%lu)\n",
-		mod->name, rfdev->supply_name, val==MODULE_IN?"ON":"OFF",
-		rfdev->enabled?"enabled":"disabled", val);
+	pr_debug("rfkill: notify mod [%s] %s - %s:%s (%lu)\n",
+		mod->name, rfdev->power_supply?rfdev->supply_name:"io",
+		val==MODULE_IN?"ON ":"OFF", rfdev->enabled?"enabled":"disabled", val);
 
 	if (MODULE_IN == val) {	/* power on */
 
-		if (rfdev->power_vcc) {
+		if (rfdev->vcc) {
 			if (!regulator_is_enabled(rfdev->vcc)) {
-				pr_info("rfkill: supply %s enable\n", rfdev->supply_name);
+				pr_info("rfkill: %s supply %s enable\n", mod->name, rfdev->supply_name);
 				regulator_enable(rfdev->vcc);
 			}
 		} else {
+			pr_info("rfkill: %s power %s.%d enable\n", mod->name,
+				GPIO_GROUP(rfdev->gpio), GPIO_BITNR(rfdev->gpio));
 			gpio_set_value(rfdev->gpio, rfdev->invert ? 0 : 1);
 		}
 
 		rfdev->enabled = true;
 	} else {	/* power off */
 
-		if (rfdev->power_vcc) {
+		if (rfdev->vcc) {
 			if (regulator_is_enabled(rfdev->vcc)) {
-				pr_info("rfkill: supply %s disable\n", rfdev->supply_name);
+				pr_info("rfkill: %s supply %s disable\n", mod->name, rfdev->supply_name);
 				regulator_disable(rfdev->vcc);
 			}
 		} else {
+			pr_info("rfkill: %s power %s.%d disable\n", mod->name,
+				GPIO_GROUP(rfdev->gpio), GPIO_BITNR(rfdev->gpio));
 			gpio_set_value(rfdev->gpio, rfdev->invert ? 1 : 0);
 		}
 
@@ -157,6 +182,9 @@ struct rfkill_ops nxp_rfkill_ops = {
 	.set_block 	= nxp_rfkill_set_block,
 };
 
+struct rfkill_ops nxp_rfkill_user_ops = {
+};
+
 static void nxp_rfkill_free(struct nxp_rfkill_data *rf_data)
 {
 	struct nxp_rfkill_dev *rfdev = rf_data->rf_dev;
@@ -166,7 +194,7 @@ static void nxp_rfkill_free(struct nxp_rfkill_data *rf_data)
 	pr_debug("rfkill: %s free \n", rf_data->name);
 	list_for_each_prev(list, head) {
 		rfdev = container_of(list, struct nxp_rfkill_dev, link);
-		if (rfdev->power_vcc) {
+		if (rfdev->vcc) {
 			if (rfdev->vcc)
 				regulator_put(rfdev->vcc);
 		} else {
@@ -198,18 +226,17 @@ static int nxp_rfkill_setup(struct nxp_rfkill_data *rf_data, struct platform_dev
 			goto err_dev_alloc;
 		}
 
-		rfdev->power_vcc = pldev->power_vcc;
 		rfdev->gpio = pldev->gpio;
 		rfdev->initval = pldev->initval;
 		rfdev->invert = pldev->invert;
 		rfdev->delay_ms = pldev->delay_ms;
 		INIT_LIST_HEAD(&rfdev->link);
 
-		strcpy(rfdev->supply_name, pldev->supply_name);
 		if (pldev->module_name)
 			strcpy(rfdev->module_name, pldev->module_name);
 
-		if (rfdev->power_vcc) {
+		if (pldev->supply_name) {
+			strcpy(rfdev->supply_name, pldev->supply_name);
 			vcc = regulator_get_exclusive(&pdev->dev, rfdev->supply_name);
 			if (IS_ERR(vcc)) {
 				pr_err("rfkill: Cannot get regulator for %s supply %s\n",
@@ -235,12 +262,12 @@ static int nxp_rfkill_setup(struct nxp_rfkill_data *rf_data, struct platform_dev
 			}
 			rfdev->enabled = regulator_is_enabled(vcc) ? true : false;
 			rfdev->vcc = vcc;	/* set regulator */
-
+			rfdev->power_supply = 1;
 		} else {
-			ret = gpio_request(rfdev->gpio, rfdev->supply_name);
+			ret = gpio_request(rfdev->gpio, rf_data->name);
 			if (0 > ret) {
 				pr_err("rfkill: Cannot get gpio for %s supply %s\n",
-					pdata->name, rfdev->supply_name);
+					pdata->name, rf_data->name);
 				rfdev->gpio = NOT_GPIO;
 				continue;
 			}
@@ -258,7 +285,7 @@ static int nxp_rfkill_setup(struct nxp_rfkill_data *rf_data, struct platform_dev
 			ret = gpio_get_value(rfdev->gpio);
 			ret = rfdev->invert ? !ret : ret;
 			if (ret) {
-				pr_info("rfkill:%s Power gpio already enabled\n", rfdev->supply_name);
+				pr_info("rfkill:%s Power gpio already enabled\n", rf_data->name);
 				rfdev->enabled = true;
 			}
 		}
@@ -270,7 +297,7 @@ static int nxp_rfkill_setup(struct nxp_rfkill_data *rf_data, struct platform_dev
 		}
 
 		list_add_tail(&rfdev->link, &rf_data->head);
-		pr_info("rfkill: %s [%s]\n", rfdev->supply_name, rfdev->power_vcc?"regulator":"power io");
+		pr_debug("rfkill: %s [%s]\n", rf_data->name, rfdev->vcc?"regulator":"power switch");
 	}
 	return 0;
 
@@ -295,7 +322,7 @@ static int nxp_rfkill_suspend(struct platform_device *pdev, pm_message_t state)
 		struct nxp_rfkill_dev *rfdev =
 			container_of(list, struct nxp_rfkill_dev, link);
 		if (rfdev->enabled) {
-			if (rfdev->power_vcc) {
+			if (rfdev->vcc) {
 				if (regulator_is_enabled(rfdev->vcc))
 					regulator_disable(rfdev->vcc);
 			} else {
@@ -321,7 +348,7 @@ static int nxp_rfkill_resume(struct platform_device *pdev)
 		struct nxp_rfkill_dev *rfdev =
 			container_of(list, struct nxp_rfkill_dev, link);
 		if (rfdev->enabled) {
-			if (rfdev->power_vcc) {
+			if (rfdev->vcc) {
 				if (!regulator_is_enabled(rfdev->vcc))
 					regulator_enable(rfdev->vcc);
 			} else {
@@ -338,7 +365,11 @@ static int __devinit nxp_rfkill_probe(struct platform_device *pdev)
 	struct nxp_rfkill_plat_data *pdata = pdev->dev.platform_data;
 	struct nxp_rfkill_data *rf_data;
 	struct rfkill *rfkill;
+	struct rfkill_ops *rf_ops;
+	void *ops_data;
 	int ret = 0;
+
+	pr_debug("\n%s (name=%s, id=%d)\n", __func__, dev_name(&pdev->dev), pdev->id);
 
 	if (pdata == NULL) {
 		pr_err("rfkill: no platform data\n");
@@ -356,8 +387,19 @@ static int __devinit nxp_rfkill_probe(struct platform_device *pdev)
 	if (rf_data == NULL)
 		return -ENOMEM;
 
-	rfkill = rfkill_alloc(pdata->name, &pdev->dev,
-						pdata->type, &nxp_rfkill_ops, rf_data);
+	/*
+	 * replace set_block ops and rfkill private data
+	 */
+	if (pdata->set_block) {
+		rf_ops = &nxp_rfkill_user_ops;
+		rf_ops->set_block = pdata->set_block;
+		ops_data = (void*)pdata;
+	} else {
+		rf_ops = &nxp_rfkill_ops;
+		ops_data = rf_data;
+	}
+
+	rfkill = rfkill_alloc(pdata->name, &pdev->dev, pdata->type, rf_ops, ops_data);
 	if (rfkill == NULL) {
 		ret = -ENOMEM;
 		goto err_rfkill_alloc;
@@ -366,6 +408,7 @@ static int __devinit nxp_rfkill_probe(struct platform_device *pdev)
 	rf_data->rfkill = rfkill;
 	rf_data->name = pdata->name;
 	rf_data->support_suspend = pdata->support_suspend;
+
 	INIT_LIST_HEAD(&rf_data->head);
 
 	if (0 > nxp_rfkill_setup(rf_data, pdev))
@@ -380,7 +423,7 @@ static int __devinit nxp_rfkill_probe(struct platform_device *pdev)
 	rf_data->initstatus = 1;
 	platform_set_drvdata(pdev, rf_data);
 
-	pr_info("rfkill: %s probed\n", pdata->name);
+	pr_info("rfkill: rfkill.%d %s probed\n", pdev->id, pdata->name);
 	return 0;
 
 err_rfkill_register:
