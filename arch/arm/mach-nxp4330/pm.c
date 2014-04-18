@@ -152,6 +152,7 @@ static int suspend_machine(void)
 		}
 	}
 
+	NX_ALIVE_SetInputEnable32(mask_bits);
 	NX_ALIVE_SetDetectEnable32(mask_bits);
 	NX_ALIVE_SetInterruptEnable32(mask_bits);
 
