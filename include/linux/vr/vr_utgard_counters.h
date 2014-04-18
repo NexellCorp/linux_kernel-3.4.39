@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2007-2012 ARM Limited
+ * (C) COPYRIGHT 2007-2013 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -11,13 +11,11 @@
 #ifndef _VR_UTGARD_COUNTERS_H_
 #define _VR_UTGARD_COUNTERS_H_
 
-typedef struct
-{
+typedef struct {
 	void *unused;
 } vr_cinstr_counter_info;
 
-typedef enum
-{
+typedef enum {
 	VR_CINSTR_COUNTER_SOURCE_EGL      =     0,
 	VR_CINSTR_COUNTER_SOURCE_OPENGLES =  1000,
 	VR_CINSTR_COUNTER_SOURCE_OPENVG   =  2000,
@@ -41,8 +39,7 @@ typedef enum
 #define VR_CINSTR_PP_LAST_COUNTER (VR_CINSTR_COUNTER_SOURCE_PP + 999)
 
 
-typedef enum
-{
+typedef enum {
 	/* EGL counters */
 
 	VR_CINSTR_EGL_BLIT_TIME                                            = VR_CINSTR_COUNTER_SOURCE_EGL + 0,
@@ -154,7 +151,7 @@ typedef enum
 	/* Last counter in the VG set */
 	VR_CINSTR_VG_MAX_COUNTER                                           = VR_CINSTR_COUNTER_SOURCE_OPENVG + 51,
 
-	/* VR GP counters */
+	/* Vr GP counters */
 
 	VR_CINSTR_GP_DEPRECATED_0                                          = VR_CINSTR_COUNTER_SOURCE_GP + 0,
 	VR_CINSTR_GP_ACTIVE_CYCLES_GP                                      = VR_CINSTR_COUNTER_SOURCE_GP + 1,
@@ -192,7 +189,7 @@ typedef enum
 	VR_CINSTR_GP_ACTIVE_CYCLES_PLBU_TILE_ITERATOR                      = VR_CINSTR_COUNTER_SOURCE_GP + 33,
 	VR_CINSTR_GP_JOB_COUNT                                             = VR_CINSTR_COUNTER_SOURCE_GP + 900,
 
-	/* VR PP counters */
+	/* Vr PP counters */
 
 	VR_CINSTR_PP_ACTIVE_CLOCK_CYCLES_COUNT                             = VR_CINSTR_COUNTER_SOURCE_PP + 0,
 	VR_CINSTR_PP_TOTAL_CLOCK_CYCLES_COUNT_REMOVED                      = VR_CINSTR_COUNTER_SOURCE_PP + 1,
@@ -250,10 +247,10 @@ typedef enum
 	VR_CINSTR_PP_TEXTURE_CACHE_HIT_COUNT                               = VR_CINSTR_COUNTER_SOURCE_PP + 53,
 	VR_CINSTR_PP_TEXTURE_CACHE_MISS_COUNT                              = VR_CINSTR_COUNTER_SOURCE_PP + 54,
 	VR_CINSTR_PP_TEXTURE_CACHE_CONFLICT_MISS_COUNT                     = VR_CINSTR_COUNTER_SOURCE_PP + 55,
-	VR_CINSTR_PP_PALETTE_CACHE_HIT_COUNT                               = VR_CINSTR_COUNTER_SOURCE_PP + 56, /* VR 200 only */
-	VR_CINSTR_PP_PALETTE_CACHE_MISS_COUNT                              = VR_CINSTR_COUNTER_SOURCE_PP + 57, /* VR 200 only */
-	VR_CINSTR_PP_COMPRESSED_TEXTURE_CACHE_HIT_COUNT                    = VR_CINSTR_COUNTER_SOURCE_PP + 56, /* VR 400 class only */
-	VR_CINSTR_PP_COMPRESSED_TEXTURE_CACHE_MISS_COUNT                   = VR_CINSTR_COUNTER_SOURCE_PP + 57, /* VR 400 class only */
+	VR_CINSTR_PP_PALETTE_CACHE_HIT_COUNT                               = VR_CINSTR_COUNTER_SOURCE_PP + 56, /* Vr 200 only */
+	VR_CINSTR_PP_PALETTE_CACHE_MISS_COUNT                              = VR_CINSTR_COUNTER_SOURCE_PP + 57, /* Vr 200 only */
+	VR_CINSTR_PP_COMPRESSED_TEXTURE_CACHE_HIT_COUNT                    = VR_CINSTR_COUNTER_SOURCE_PP + 56, /* Vr 400 class only */
+	VR_CINSTR_PP_COMPRESSED_TEXTURE_CACHE_MISS_COUNT                   = VR_CINSTR_COUNTER_SOURCE_PP + 57, /* Vr 400 class only */
 	VR_CINSTR_PP_LOAD_STORE_CACHE_HIT_COUNT                            = VR_CINSTR_COUNTER_SOURCE_PP + 58,
 	VR_CINSTR_PP_LOAD_STORE_CACHE_MISS_COUNT                           = VR_CINSTR_COUNTER_SOURCE_PP + 59,
 	VR_CINSTR_PP_PROGRAM_CACHE_HIT_COUNT                               = VR_CINSTR_COUNTER_SOURCE_PP + 60,
