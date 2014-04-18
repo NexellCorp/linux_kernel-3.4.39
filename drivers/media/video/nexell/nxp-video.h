@@ -14,7 +14,9 @@ struct nxp_video_format {
     char *name;
     u32   pixelformat;
     u32   mbus_code;
-    u16   num_planes;
+    u32   num_planes;
+    u32   num_sw_planes;
+    bool  is_separated;
 };
 
 struct nxp_video_frame {
@@ -29,7 +31,7 @@ struct nxp_video_buffer;
 typedef int (*nxp_video_buf_done)(struct nxp_video_buffer *);
 
 struct nxp_video_buffer {
-    struct list_head list; 
+    struct list_head list;
     int consumer_index; /* consumer increment this field after consuming */
     dma_addr_t dma_addr[NXP_VIDEO_MAX_PLANES];
     u32 stride[NXP_VIDEO_MAX_PLANES];
@@ -56,7 +58,7 @@ enum nxp_video_type {
 
 enum nxp_buffer_consumer_type {
     /* vq type: V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE */
-    NXP_BUFFER_CONSUMER_SINK = 0, 
+    NXP_BUFFER_CONSUMER_SINK = 0,
     /* vq type: V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE */
     NXP_BUFFER_CONSUMER_SOURCE,
     NXP_BUFFER_CONSUMER_INVALID
@@ -86,12 +88,12 @@ struct nxp_video {
     struct nxp_video_frame frame[2];
 
     /* buffer consumer */
-    int (*register_buffer_consumer)(struct nxp_video *, 
+    int (*register_buffer_consumer)(struct nxp_video *,
             struct nxp_buffer_consumer *,
             enum nxp_buffer_consumer_type);
-    void (*unregister_buffer_consumer)(struct nxp_video *, 
+    void (*unregister_buffer_consumer)(struct nxp_video *,
             struct nxp_buffer_consumer *,
-            enum nxp_buffer_consumer_type); 
+            enum nxp_buffer_consumer_type);
 
     /* lock for consumer list */
     spinlock_t lock_consumer;
