@@ -220,7 +220,7 @@ MACHINE_START(NXP4330, CFG_SYS_CPU_NAME)
 	.handle_irq 	=  gic_handle_irq,
 	.timer			= &nxp_cpu_sys_timer,
 	.init_machine	=  cpu_init_machine,
-#ifdef CONFIG_CMA
+#if defined CONFIG_CMA && defined CONFIG_ION
     .reserve        = cpu_mem_reserve,
 #endif
 MACHINE_END
