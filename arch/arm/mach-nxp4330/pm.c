@@ -154,7 +154,6 @@ static int suspend_machine(void)
 
 	NX_ALIVE_SetDetectEnable32(mask_bits);
 	NX_ALIVE_SetInterruptEnable32(mask_bits);
-	NX_ALIVE_SetOutputValue32(mask_bits);
 
 	/* disable alarm wakeup */
 #if !(PM_RTC_WAKE)
