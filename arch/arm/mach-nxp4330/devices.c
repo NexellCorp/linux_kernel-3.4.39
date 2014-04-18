@@ -36,7 +36,7 @@
 #include <mach/platform.h>
 #include <mach/devices.h>
 #include <mach/soc.h>
-#include <vr/vr_utgard.h>
+#include <linux/vr/vr_utgard.h>
 
 /*------------------------------------------------------------------------------
  * Serial platform device
@@ -510,9 +510,6 @@ static struct platform_device *gpio_devices[] = {
 #define VR_MEM_SIZE 	(VR_MEM_SIZE_DEFAULT + CFG_MEM_PHY_DMAZONE_SIZE)
 #endif
 #if defined( CONFIG_ION_NXP_CONTIGHEAP_SIZE )
-#ifdef  VR_MEM_SIZE
-#undef  VR_MEM_SIZE
-#endif
 #define VR_MEM_SIZE 	(VR_MEM_SIZE_DEFAULT - (CONFIG_ION_NXP_CONTIGHEAP_SIZE * 1024))
 #endif
 
@@ -530,11 +527,16 @@ static struct vr_gpu_device_data vr_gpu_data =
 	.utilization_interval = 1000, /* ms */
 	.utilization_handler =
 #endif
+	/* PMU power domain confituration */
+	/* Mali Dynamic power domain configuration in sequence from 0-11
+	 *  GP  PP0 PP1  PP2  PP3  PP4  PP5  PP6  PP7, L2$0 L2$1 L2$2
+	 */
+	.pmu_domain_config = {0x1, 0x2, 0x4, 0x4, 0x4, 0x8, 0x8, 0x8, 0x8, 0x1, 0x2, 0x8},
 };
 
 static struct resource vr_gpu_resources[] =
 {
-	VR_GPU_RESOURCES_VR_MP2_PMU(PHY_BASEADDR_VR, NXP4330_DTK_3D_IRQ,
+	VR_GPU_RESOURCES_VR400_MP2_PMU(PHY_BASEADDR_VR, NXP4330_DTK_3D_IRQ,
 			NXP4330_DTK_3D_IRQ, NXP4330_DTK_3D_IRQ, NXP4330_DTK_3D_IRQ,
 			NXP4330_DTK_3D_IRQ, NXP4330_DTK_3D_IRQ)
 };
@@ -543,9 +545,12 @@ static struct platform_device vr_gpu_device =
 {
 	.name = VR_GPU_NAME_UTGARD,
 	.id = 0,
-	.num_resources = ARRAY_SIZE(vr_gpu_resources),
-	.resource = vr_gpu_resources,
+	.dev.coherent_dma_mask = DMA_BIT_MASK(32),
+
 	.dev.platform_data = &vr_gpu_data,
+
+	.num_resources = ARRAY_SIZE(vr_gpu_resources),	
+	.resource = vr_gpu_resources,
 };
 
 /*------------------------------------------------------------------------------
@@ -1338,9 +1343,9 @@ void __init nxp_cpu_devices_register(void)
     platform_device_register(&vr_gpu_device);
 #ifdef CONFIG_PM_RUNTIME
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37))
-    pm_runtime_set_autosuspend_delay(&(vr_gpu_device.dev), 1000);
-    pm_runtime_use_autosuspend(&(vr_gpu_device.dev));
+		pm_runtime_set_autosuspend_delay(&(vr_gpu_device.dev), 1000);
+		pm_runtime_use_autosuspend(&(vr_gpu_device.dev));
 #endif
-    pm_runtime_enable(&(vr_gpu_device.dev));
+		pm_runtime_enable(&(vr_gpu_device.dev));
 #endif
 }

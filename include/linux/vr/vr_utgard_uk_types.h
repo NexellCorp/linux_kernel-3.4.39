@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2008-2012 ARM Limited
+ * (C) COPYRIGHT 2008-2013 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -17,9 +17,19 @@
 #define __VR_UTGARD_UK_TYPES_H__
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
+
+/* Iteration functions depend on these values being consecutive. */
+#define VR_UK_TIMELINE_GP   0
+#define VR_UK_TIMELINE_PP   1
+#define VR_UK_TIMELINE_SOFT 2
+#define VR_UK_TIMELINE_MAX  3
+
+typedef struct {
+	u32 points[VR_UK_TIMELINE_MAX];
+	s32 sync_fd;
+} _vr_uk_fence_t;
 
 /**
  * @addtogroup uddapi Unified Device Driver (UDD) APIs
@@ -40,14 +50,13 @@ extern "C"
  * for each U/K call.
  *
  * @see _vr_uk_functions */
-typedef enum
-{
-    _VR_UK_CORE_SUBSYSTEM,      /**< Core Group of U/K calls */
-    _VR_UK_MEMORY_SUBSYSTEM,    /**< Memory Group of U/K calls */
-    _VR_UK_PP_SUBSYSTEM,        /**< Fragment Processor Group of U/K calls */
-    _VR_UK_GP_SUBSYSTEM,        /**< Vertex Processor Group of U/K calls */
+typedef enum {
+	_VR_UK_CORE_SUBSYSTEM,      /**< Core Group of U/K calls */
+	_VR_UK_MEMORY_SUBSYSTEM,    /**< Memory Group of U/K calls */
+	_VR_UK_PP_SUBSYSTEM,        /**< Fragment Processor Group of U/K calls */
+	_VR_UK_GP_SUBSYSTEM,        /**< Vertex Processor Group of U/K calls */
 	_VR_UK_PROFILING_SUBSYSTEM, /**< Profiling Group of U/K calls */
-    _VR_UK_PMM_SUBSYSTEM,       /**< Power Management Module Group of U/K calls */
+	_VR_UK_PMM_SUBSYSTEM,       /**< Power Management Module Group of U/K calls */
 	_VR_UK_VSYNC_SUBSYSTEM,     /**< VSYNC Group of U/K calls */
 } _vr_uk_subsystem_t;
 
@@ -57,58 +66,63 @@ typedef enum
  * An ordered pair of numbers selected from
  * ( \ref _vr_uk_subsystem_t,\ref  _vr_uk_functions) will uniquely identify the
  * U/K call across all groups of functions, and all functions. */
-typedef enum
-{
+typedef enum {
 	/** Core functions */
 
-    _VR_UK_OPEN                    = 0, /**< _vr_ukk_open() */
-    _VR_UK_CLOSE,                       /**< _vr_ukk_close() */
-    _VR_UK_WAIT_FOR_NOTIFICATION,       /**< _vr_ukk_wait_for_notification() */
-    _VR_UK_GET_API_VERSION,             /**< _vr_ukk_get_api_version() */
-    _VR_UK_POST_NOTIFICATION,           /**< _vr_ukk_post_notification() */
-	_VR_UK_GET_USER_SETTING,       /**< _vr_ukk_get_user_setting() *//**< [out] */
-	_VR_UK_GET_USER_SETTINGS,       /**< _vr_ukk_get_user_settings() *//**< [out] */
-	_VR_UK_STREAM_CREATE,           /**< _vr_ukk_stream_create() */
-	_VR_UK_FENCE_VALIDATE,          /**< _vr_ukk_fence_validate() */
+	_VR_UK_OPEN                    = 0, /**< _vr_ukk_open() */
+	_VR_UK_CLOSE,                       /**< _vr_ukk_close() */
+	_VR_UK_WAIT_FOR_NOTIFICATION,       /**< _vr_ukk_wait_for_notification() */
+	_VR_UK_GET_API_VERSION,             /**< _vr_ukk_get_api_version() */
+	_VR_UK_POST_NOTIFICATION,           /**< _vr_ukk_post_notification() */
+	_VR_UK_GET_USER_SETTING,            /**< _vr_ukk_get_user_setting() *//**< [out] */
+	_VR_UK_GET_USER_SETTINGS,           /**< _vr_ukk_get_user_settings() *//**< [out] */
+	_VR_UK_REQUEST_HIGH_PRIORITY,       /**< _vr_ukk_request_high_priority() */
+	_VR_UK_TIMELINE_GET_LATEST_POINT,   /**< _vr_ukk_timeline_get_latest_point() */
+	_VR_UK_TIMELINE_WAIT,               /**< _vr_ukk_timeline_wait() */
+	_VR_UK_TIMELINE_CREATE_SYNC_FENCE,  /**< _vr_ukk_timeline_create_sync_fence() */
+	_VR_UK_SOFT_JOB_START,              /**< _vr_ukk_soft_job_start() */
+	_VR_UK_SOFT_JOB_SIGNAL,             /**< _vr_ukk_soft_job_signal() */
 
 	/** Memory functions */
 
-    _VR_UK_INIT_MEM                = 0,    /**< _vr_ukk_init_mem() */
-    _VR_UK_TERM_MEM,                       /**< _vr_ukk_term_mem() */
-    _VR_UK_GET_BIG_BLOCK,                  /**< _vr_ukk_get_big_block() */
-    _VR_UK_FREE_BIG_BLOCK,                 /**< _vr_ukk_free_big_block() */
-    _VR_UK_MAP_MEM,                        /**< _vr_ukk_mem_mmap() */
-    _VR_UK_UNMAP_MEM,                      /**< _vr_ukk_mem_munmap() */
-    _VR_UK_QUERY_MMU_PAGE_TABLE_DUMP_SIZE, /**< _vr_ukk_mem_get_mmu_page_table_dump_size() */
-    _VR_UK_DUMP_MMU_PAGE_TABLE,            /**< _vr_ukk_mem_dump_mmu_page_table() */
-    _VR_UK_ATTACH_DMA_BUF,                 /**< _vr_ukk_attach_dma_buf() */
-    _VR_UK_RELEASE_DMA_BUF,                /**< _vr_ukk_release_dma_buf() */
-    _VR_UK_DMA_BUF_GET_SIZE,               /**< _vr_ukk_dma_buf_get_size() */
-    _VR_UK_ATTACH_UMP_MEM,                 /**< _vr_ukk_attach_ump_mem() */
-    _VR_UK_RELEASE_UMP_MEM,                /**< _vr_ukk_release_ump_mem() */
-    _VR_UK_MAP_EXT_MEM,                    /**< _vr_uku_map_external_mem() */
-    _VR_UK_UNMAP_EXT_MEM,                  /**< _vr_uku_unmap_external_mem() */
-    _VR_UK_VA_TO_VR_PA,                  /**< _vr_uku_va_to_vr_pa() */
+	_VR_UK_INIT_MEM                = 0,    /**< _vr_ukk_init_mem() */
+	_VR_UK_TERM_MEM,                       /**< _vr_ukk_term_mem() */
+	_VR_UK_GET_BIG_BLOCK,                  /**< _vr_ukk_get_big_block() */
+	_VR_UK_FREE_BIG_BLOCK,                 /**< _vr_ukk_free_big_block() */
+	_VR_UK_MAP_MEM,                        /**< _vr_ukk_mem_mmap() */
+	_VR_UK_UNMAP_MEM,                      /**< _vr_ukk_mem_munmap() */
+	_VR_UK_QUERY_MMU_PAGE_TABLE_DUMP_SIZE, /**< _vr_ukk_mem_get_mmu_page_table_dump_size() */
+	_VR_UK_DUMP_MMU_PAGE_TABLE,            /**< _vr_ukk_mem_dump_mmu_page_table() */
+	_VR_UK_ATTACH_DMA_BUF,                 /**< _vr_ukk_attach_dma_buf() */
+	_VR_UK_RELEASE_DMA_BUF,                /**< _vr_ukk_release_dma_buf() */
+	_VR_UK_DMA_BUF_GET_SIZE,               /**< _vr_ukk_dma_buf_get_size() */
+	_VR_UK_ATTACH_UMP_MEM,                 /**< _vr_ukk_attach_ump_mem() */
+	_VR_UK_RELEASE_UMP_MEM,                /**< _vr_ukk_release_ump_mem() */
+	_VR_UK_MAP_EXT_MEM,                    /**< _vr_uku_map_external_mem() */
+	_VR_UK_UNMAP_EXT_MEM,                  /**< _vr_uku_unmap_external_mem() */
+	_VR_UK_VA_TO_VR_PA,                  /**< _vr_uku_va_to_vr_pa() */
+	_VR_UK_MEM_WRITE_SAFE,                 /**< _vr_uku_mem_write_safe() */
 
-    /** Common functions for each core */
+	/** Common functions for each core */
 
-    _VR_UK_START_JOB           = 0,     /**< Start a Fragment/Vertex Processor Job on a core */
-    _VR_UK_GET_NUMBER_OF_CORES,         /**< Get the number of Fragment/Vertex Processor cores */
-    _VR_UK_GET_CORE_VERSION,            /**< Get the Fragment/Vertex Processor version compatible with all cores */
+	_VR_UK_START_JOB           = 0,     /**< Start a Fragment/Vertex Processor Job on a core */
+	_VR_UK_GET_NUMBER_OF_CORES,         /**< Get the number of Fragment/Vertex Processor cores */
+	_VR_UK_GET_CORE_VERSION,            /**< Get the Fragment/Vertex Processor version compatible with all cores */
 
-    /** Fragment Processor Functions  */
+	/** Fragment Processor Functions  */
 
-    _VR_UK_PP_START_JOB            = _VR_UK_START_JOB,            /**< _vr_ukk_pp_start_job() */
-    _VR_UK_GET_PP_NUMBER_OF_CORES  = _VR_UK_GET_NUMBER_OF_CORES,  /**< _vr_ukk_get_pp_number_of_cores() */
-    _VR_UK_GET_PP_CORE_VERSION     = _VR_UK_GET_CORE_VERSION,     /**< _vr_ukk_get_pp_core_version() */
-    _VR_UK_PP_DISABLE_WB,                                           /**< _vr_ukk_pp_job_disable_wb() */
+	_VR_UK_PP_START_JOB            = _VR_UK_START_JOB,            /**< _vr_ukk_pp_start_job() */
+	_VR_UK_GET_PP_NUMBER_OF_CORES  = _VR_UK_GET_NUMBER_OF_CORES,  /**< _vr_ukk_get_pp_number_of_cores() */
+	_VR_UK_GET_PP_CORE_VERSION     = _VR_UK_GET_CORE_VERSION,     /**< _vr_ukk_get_pp_core_version() */
+	_VR_UK_PP_DISABLE_WB,                                           /**< _vr_ukk_pp_job_disable_wb() */
+	_VR_UK_PP_AND_GP_START_JOB,                                     /**< _vr_ukk_pp_and_gp_start_job() */
 
-    /** Vertex Processor Functions  */
+	/** Vertex Processor Functions  */
 
-    _VR_UK_GP_START_JOB            = _VR_UK_START_JOB,            /**< _vr_ukk_gp_start_job() */
-    _VR_UK_GET_GP_NUMBER_OF_CORES  = _VR_UK_GET_NUMBER_OF_CORES,  /**< _vr_ukk_get_gp_number_of_cores() */
-    _VR_UK_GET_GP_CORE_VERSION     = _VR_UK_GET_CORE_VERSION,     /**< _vr_ukk_get_gp_core_version() */
-    _VR_UK_GP_SUSPEND_RESPONSE,                                     /**< _vr_ukk_gp_suspend_response() */
+	_VR_UK_GP_START_JOB            = _VR_UK_START_JOB,            /**< _vr_ukk_gp_start_job() */
+	_VR_UK_GET_GP_NUMBER_OF_CORES  = _VR_UK_GET_NUMBER_OF_CORES,  /**< _vr_ukk_get_gp_number_of_cores() */
+	_VR_UK_GET_GP_CORE_VERSION     = _VR_UK_GET_CORE_VERSION,     /**< _vr_ukk_get_gp_core_version() */
+	_VR_UK_GP_SUSPEND_RESPONSE,                                     /**< _vr_ukk_gp_suspend_response() */
 
 	/** Profiling functions */
 
@@ -129,9 +143,8 @@ typedef enum
  *
  * @see _vr_ukk_get_system_info_size()
  */
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 size;                       /**< [out] size of buffer necessary to hold system information data, in bytes */
 } _vr_uk_get_system_info_size_s;
 
@@ -144,7 +157,7 @@ typedef struct
  * Used when returning the version number read from a core
  *
  * Its format is that of the 32-bit Version register for a particular core.
- * Refer to the "VR200 and VRGP2 3D Graphics Processor Technical Reference
+ * Refer to the "Vr200 and VrGP2 3D Graphics Processor Technical Reference
  * Manual", ARM DDI 0415C, for more information.
  */
 typedef u32 _vr_core_version;
@@ -157,8 +170,7 @@ typedef u32 _vr_core_version;
  *
  * The 'raw' mode is reserved for future expansion.
  */
-typedef enum _vr_driver_mode
-{
+typedef enum _vr_driver_mode {
 	_VR_DRIVER_MODE_RAW = 1,    /**< Reserved for future expansion */
 	_VR_DRIVER_MODE_NORMAL = 2  /**< Normal mode of operation */
 } _vr_driver_mode;
@@ -166,12 +178,11 @@ typedef enum _vr_driver_mode
 /** @brief List of possible cores
  *
  * add new entries to the end of this enum */
-typedef enum _vr_core_type
-{
-	_VR_GP2 = 2,                /**< VRGP2 Programmable Vertex Processor */
-	_VR_200 = 5,                /**< VR200 Programmable Fragment Processor */
-	_VR_400_GP = 6,             /**< VR400 Programmable Vertex Processor */
-	_VR_400_PP = 7,             /**< VR400 Programmable Fragment Processor */
+typedef enum _vr_core_type {
+	_VR_GP2 = 2,                /**< VrGP2 Programmable Vertex Processor */
+	_VR_200 = 5,                /**< Vr200 Programmable Fragment Processor */
+	_VR_400_GP = 6,             /**< Vr400 Programmable Vertex Processor */
+	_VR_400_PP = 7,             /**< Vr400 Programmable Fragment Processor */
 	/* insert new core here, do NOT alter the existing values */
 } _vr_core_type;
 
@@ -188,8 +199,7 @@ typedef enum _vr_core_type
  *
  * @see _vr_mem_info
  */
-typedef enum _vr_bus_usage
-{
+typedef enum _vr_bus_usage {
 
 	_VR_PP_READABLE   = (1<<0),  /** Readable by the Fragment Processor */
 	_VR_PP_WRITEABLE  = (1<<1),  /** Writeable by the Fragment Processor */
@@ -202,24 +212,23 @@ typedef enum _vr_bus_usage
 	_VR_MMU_WRITEABLE = _VR_PP_WRITEABLE | _VR_GP_WRITEABLE, /** Writeable by the MMU (including all cores behind it) */
 } _vr_bus_usage;
 
-typedef enum vr_memory_cache_settings
-{
+typedef enum vr_memory_cache_settings {
 	VR_CACHE_STANDARD 			= 0,
 	VR_CACHE_GP_READ_ALLOCATE     = 1,
 } vr_memory_cache_settings ;
 
 
-/** @brief Information about the VR Memory system
+/** @brief Information about the Vr Memory system
  *
  * Information is stored in a linked list, which is stored entirely in the
  * buffer pointed to by the system_info member of the
  * _vr_uk_get_system_info_s arguments provided to _vr_ukk_get_system_info()
  *
- * Each element of the linked list describes a single VR Memory bank.
+ * Each element of the linked list describes a single Vr Memory bank.
  * Each allocation can only come from one bank, and will not cross multiple
  * banks.
  *
- * On VR-MMU systems, there is only one bank, which describes the maximum
+ * On Vr-MMU systems, there is only one bank, which describes the maximum
  * possible address range that could be allocated (which may be much less than
  * the available physical memory)
  *
@@ -234,16 +243,13 @@ typedef enum vr_memory_cache_settings
  * _VR_PP_READABLE clear. However, it would be incorrect to use a framebuffer
  * where _VR_PP_WRITEABLE is clear.
  */
-typedef struct _vr_mem_info
-{
+typedef struct _vr_mem_info {
 	u32 size;                     /**< Size of the memory bank in bytes */
 	_vr_bus_usage flags;        /**< Capabilitiy flags of the memory */
 	u32 maximum_order_supported;  /**< log2 supported size */
 	u32 identifier;               /* vr_memory_cache_settings cache_settings; */
 	struct _vr_mem_info * next; /**< Next List Link */
 } _vr_mem_info;
-
-
 
 /** @} */ /* end group _vr_uk_core */
 
@@ -266,23 +272,21 @@ typedef struct _vr_mem_info
  * - copy the @c cookie value from the @c _vr_uk_gp_job_suspended_s notification;
  * this is an identifier for the suspended job
  * - set @c arguments[0] and @c arguments[1] to zero if you abort the job. If
- * you resume it, @c argument[0] should specify the VR start address for the new
- * heap and @c argument[1] the VR end address of the heap.
+ * you resume it, @c argument[0] should specify the Vr start address for the new
+ * heap and @c argument[1] the Vr end address of the heap.
  * - pass in the user-kernel context @c ctx that was returned from _vr_ukk_open()
  *
  */
-typedef enum _vrgp_job_suspended_response_code
-{
+typedef enum _vrgp_job_suspended_response_code {
 	_VRGP_JOB_ABORT,                  /**< Abort the Vertex Processor job */
 	_VRGP_JOB_RESUME_WITH_NEW_HEAP    /**< Resume the Vertex Processor job with a new heap */
 } _vrgp_job_suspended_response_code;
 
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 cookie;                     /**< [in] cookie from the _vr_uk_gp_job_suspended_s notification */
 	_vrgp_job_suspended_response_code code; /**< [in] abort or resume response code, see \ref _vrgp_job_suspended_response_code */
-	u32 arguments[2];               /**< [in] 0 when aborting a job. When resuming a job, the VR start and end address for a new heap to resume the job with */
+	u32 arguments[2];               /**< [in] 0 when aborting a job. When resuming a job, the Vr start and end address for a new heap to resume the job with */
 } _vr_uk_gp_suspend_response_s;
 
 /** @} */ /* end group _vr_uk_gp_suspend_response_s */
@@ -291,16 +295,14 @@ typedef struct
  * @{ */
 
 /** @brief Status indicating the result of starting a Vertex or Fragment processor job */
-typedef enum
-{
-    _VR_UK_START_JOB_STARTED,                         /**< Job started */
-    _VR_UK_START_JOB_NOT_STARTED_DO_REQUEUE           /**< Job could not be started at this time. Try starting the job again */
+typedef enum {
+	_VR_UK_START_JOB_STARTED,                         /**< Job started */
+	_VR_UK_START_JOB_NOT_STARTED_DO_REQUEUE           /**< Job could not be started at this time. Try starting the job again */
 } _vr_uk_start_job_status;
 
 /** @brief Status indicating the result of the execution of a Vertex or Fragment processor job  */
 
-typedef enum
-{
+typedef enum {
 	_VR_UK_JOB_STATUS_END_SUCCESS         = 1<<(16+0),
 	_VR_UK_JOB_STATUS_END_OOM             = 1<<(16+1),
 	_VR_UK_JOB_STATUS_END_ABORT           = 1<<(16+2),
@@ -368,42 +370,36 @@ typedef enum
  * you may be able to resolve this by providing more memory and resuming the job.
  *
  */
-typedef struct
-{
-    void *ctx;                          /**< [in,out] user-kernel context (trashed on output) */
-    u32 user_job_ptr;                   /**< [in] identifier for the job in user space, a @c vr_gp_job_info* */
-    u32 priority;                       /**< [in] job priority. A lower number means higher priority */
-    u32 frame_registers[VRGP2_NUM_REGS_FRAME]; /**< [in] core specific registers associated with this job */
-    u32 perf_counter_flag;              /**< [in] bitmask indicating which performance counters to enable, see \ref _VR_PERFORMANCE_COUNTER_FLAG_SRC0_ENABLE and related macro definitions */
-    u32 perf_counter_src0;              /**< [in] source id for performance counter 0 (see ARM DDI0415A, Table 3-60) */
-    u32 perf_counter_src1;              /**< [in] source id for performance counter 1 (see ARM DDI0415A, Table 3-60) */
+typedef struct {
+	void *ctx;                          /**< [in,out] user-kernel context (trashed on output) */
+	u32 user_job_ptr;                   /**< [in] identifier for the job in user space, a @c vr_gp_job_info* */
+	u32 priority;                       /**< [in] job priority. A lower number means higher priority */
+	u32 frame_registers[VRGP2_NUM_REGS_FRAME]; /**< [in] core specific registers associated with this job */
+	u32 perf_counter_flag;              /**< [in] bitmask indicating which performance counters to enable, see \ref _VR_PERFORMANCE_COUNTER_FLAG_SRC0_ENABLE and related macro definitions */
+	u32 perf_counter_src0;              /**< [in] source id for performance counter 0 (see ARM DDI0415A, Table 3-60) */
+	u32 perf_counter_src1;              /**< [in] source id for performance counter 1 (see ARM DDI0415A, Table 3-60) */
 	u32 frame_builder_id;               /**< [in] id of the originating frame builder */
 	u32 flush_id;                       /**< [in] flush id within the originating frame builder */
+	_vr_uk_fence_t fence;             /**< [in] fence this job must wait on */
+	u32 *timeline_point_ptr;            /**< [in,out] pointer to location where point on gp timeline for this job will be written */
 } _vr_uk_gp_start_job_s;
 
 #define _VR_PERFORMANCE_COUNTER_FLAG_SRC0_ENABLE (1<<0) /**< Enable performance counter SRC0 for a job */
 #define _VR_PERFORMANCE_COUNTER_FLAG_SRC1_ENABLE (1<<1) /**< Enable performance counter SRC1 for a job */
+#define _VR_PERFORMANCE_COUNTER_FLAG_HEATMAP_ENABLE (1<<2) /**< Enable per tile (aka heatmap) generation with for a job (using the enabled counter sources) */
 
 /** @} */ /* end group _vr_uk_gpstartjob_s */
 
-typedef struct
-{
-    u32 user_job_ptr;               /**< [out] identifier for the job in user space */
-    _vr_uk_job_status status;     /**< [out] status of finished job */
-    u32 heap_current_addr;          /**< [out] value of the GP PLB PL heap start address register */
-    u32 perf_counter0;              /**< [out] value of perfomance counter 0 (see ARM DDI0415A) */
-    u32 perf_counter1;              /**< [out] value of perfomance counter 1 (see ARM DDI0415A) */
+typedef struct {
+	u32 user_job_ptr;               /**< [out] identifier for the job in user space */
+	_vr_uk_job_status status;     /**< [out] status of finished job */
+	u32 heap_current_addr;          /**< [out] value of the GP PLB PL heap start address register */
+	u32 perf_counter0;              /**< [out] value of performance counter 0 (see ARM DDI0415A) */
+	u32 perf_counter1;              /**< [out] value of performance counter 1 (see ARM DDI0415A) */
 } _vr_uk_gp_job_finished_s;
 
-typedef enum _vrgp_job_suspended_reason
-{
-	_VRGP_JOB_SUSPENDED_OUT_OF_MEMORY  /**< Polygon list builder unit (PLBU) has run out of memory */
-} _vrgp_job_suspended_reason;
-
-typedef struct
-{
+typedef struct {
 	u32 user_job_ptr;                    /**< [out] identifier for the job in user space */
-	_vrgp_job_suspended_reason reason; /**< [out] reason why the job stalled */
 	u32 cookie;                          /**< [out] identifier for the core in kernel space on which the job stalled */
 } _vr_uk_gp_job_suspended_s;
 
@@ -423,8 +419,7 @@ typedef struct
 
 /** Flag for _vr_uk_pp_start_job_s */
 #define _VR_PP_JOB_FLAG_NO_NOTIFICATION (1<<0)
-#define _VR_PP_JOB_FLAG_BARRIER         (1<<1)
-#define _VR_PP_JOB_FLAG_FENCE           (1<<2)
+#define _VR_PP_JOB_FLAG_IS_WINDOW_SURFACE (1<<1)
 
 /** @defgroup _vr_uk_ppstartjob_s Fragment Processor Start Job
  * @{ */
@@ -470,59 +465,98 @@ typedef struct
  * driver shutdown.
  *
  */
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
-    u32 user_job_ptr;               /**< [in] identifier for the job in user space */
-    u32 priority;                   /**< [in] job priority. A lower number means higher priority */
-    u32 frame_registers[_VR_PP_MAX_FRAME_REGISTERS];         /**< [in] core specific registers associated with first sub job, see ARM DDI0415A */
-    u32 frame_registers_addr_frame[_VR_PP_MAX_SUB_JOBS - 1]; /**< [in] ADDR_FRAME registers for sub job 1-7 */
-    u32 frame_registers_addr_stack[_VR_PP_MAX_SUB_JOBS - 1]; /**< [in] ADDR_STACK registers for sub job 1-7 */
-    u32 wb0_registers[_VR_PP_MAX_WB_REGISTERS];
-    u32 wb1_registers[_VR_PP_MAX_WB_REGISTERS];
-    u32 wb2_registers[_VR_PP_MAX_WB_REGISTERS];
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+	u32 user_job_ptr;               /**< [in] identifier for the job in user space */
+	u32 priority;                   /**< [in] job priority. A lower number means higher priority */
+	u32 frame_registers[_VR_PP_MAX_FRAME_REGISTERS];         /**< [in] core specific registers associated with first sub job, see ARM DDI0415A */
+	u32 frame_registers_addr_frame[_VR_PP_MAX_SUB_JOBS - 1]; /**< [in] ADDR_FRAME registers for sub job 1-7 */
+	u32 frame_registers_addr_stack[_VR_PP_MAX_SUB_JOBS - 1]; /**< [in] ADDR_STACK registers for sub job 1-7 */
+	u32 wb0_registers[_VR_PP_MAX_WB_REGISTERS];
+	u32 wb1_registers[_VR_PP_MAX_WB_REGISTERS];
+	u32 wb2_registers[_VR_PP_MAX_WB_REGISTERS];
 	u32 dlbu_registers[_VR_DLBU_MAX_REGISTERS]; /**< [in] Dynamic load balancing unit registers */
 	u32 num_cores;                      /**< [in] Number of cores to set up (valid range: 1-4) */
-    u32 perf_counter_flag;              /**< [in] bitmask indicating which performance counters to enable, see \ref _VR_PERFORMANCE_COUNTER_FLAG_SRC0_ENABLE and related macro definitions */
-    u32 perf_counter_src0;              /**< [in] source id for performance counter 0 (see ARM DDI0415A, Table 3-60) */
-    u32 perf_counter_src1;              /**< [in] source id for performance counter 1 (see ARM DDI0415A, Table 3-60) */
+	u32 perf_counter_flag;              /**< [in] bitmask indicating which performance counters to enable, see \ref _VR_PERFORMANCE_COUNTER_FLAG_SRC0_ENABLE and related macro definitions */
+	u32 perf_counter_src0;              /**< [in] source id for performance counter 0 (see ARM DDI0415A, Table 3-60) */
+	u32 perf_counter_src1;              /**< [in] source id for performance counter 1 (see ARM DDI0415A, Table 3-60) */
 	u32 frame_builder_id;               /**< [in] id of the originating frame builder */
 	u32 flush_id;                       /**< [in] flush id within the originating frame builder */
 	u32 flags;                          /**< [in] See _VR_PP_JOB_FLAG_* for a list of avaiable flags */
-	s32 fence;                          /**< [in,out] Fence to wait on / fence that will be signalled on job completion, if _VR_PP_JOB_FLAG_FENCE is set */
-	s32 stream;                         /**< [in] Steam identifier */
+	u32 tilesx;                         /**< [in] number of tiles in the x direction (needed for heatmap generation */
+	u32 tilesy;                         /**< [in] number of tiles in y direction (needed for reading the heatmap memory) */
+	u32 heatmap_mem;                    /**< [in] memory address to store counter values per tile (aka heatmap) */
+	u32 num_memory_cookies;             /**< [in] number of memory cookies attached to job */
+	u32 *memory_cookies;                /**< [in] memory cookies attached to job  */
+	_vr_uk_fence_t fence;             /**< [in] fence this job must wait on */
+	u32 *timeline_point_ptr;            /**< [in,out] pointer to location where point on pp timeline for this job will be written */
 } _vr_uk_pp_start_job_s;
+
+typedef struct {
+	void *ctx;                          /**< [in,out] user-kernel context (trashed on output) */
+	_vr_uk_gp_start_job_s *gp_args;   /**< [in,out] GP uk arguments (see _vr_uk_gp_start_job_s) */
+	_vr_uk_pp_start_job_s *pp_args;   /**< [in,out] PP uk arguments (see _vr_uk_pp_start_job_s) */
+} _vr_uk_pp_and_gp_start_job_s;
+
 /** @} */ /* end group _vr_uk_ppstartjob_s */
 
-typedef struct
-{
-    u32 user_job_ptr;                          /**< [out] identifier for the job in user space */
-    _vr_uk_job_status status;                /**< [out] status of finished job */
-    u32 perf_counter0[_VR_PP_MAX_SUB_JOBS];  /**< [out] value of perfomance counter 0 (see ARM DDI0415A), one for each sub job */
-    u32 perf_counter1[_VR_PP_MAX_SUB_JOBS];  /**< [out] value of perfomance counter 1 (see ARM DDI0415A), one for each sub job */
+typedef struct {
+	u32 user_job_ptr;                          /**< [out] identifier for the job in user space */
+	_vr_uk_job_status status;                /**< [out] status of finished job */
+	u32 perf_counter0[_VR_PP_MAX_SUB_JOBS];  /**< [out] value of perfomance counter 0 (see ARM DDI0415A), one for each sub job */
+	u32 perf_counter1[_VR_PP_MAX_SUB_JOBS];  /**< [out] value of perfomance counter 1 (see ARM DDI0415A), one for each sub job */
+	u32 perf_counter_src0;
+	u32 perf_counter_src1;
 } _vr_uk_pp_job_finished_s;
+
+typedef struct {
+	u32 number_of_enabled_cores;               /**< [out] the new number of enabled cores */
+} _vr_uk_pp_num_cores_changed_s;
+
+
 
 /**
  * Flags to indicate write-back units
  */
-typedef enum
-{
+typedef enum {
 	_VR_UK_PP_JOB_WB0 = 1,
 	_VR_UK_PP_JOB_WB1 = 2,
 	_VR_UK_PP_JOB_WB2 = 4,
 } _vr_uk_pp_job_wbx_flag;
 
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
-    u32 fb_id;                      /**< [in] Frame builder ID of job to disable WB units for */
-    u32 flush_id;                   /**< [in] Flush ID of job to disable WB units for */
-    _vr_uk_pp_job_wbx_flag wbx;   /**< [in] write-back units to disable */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+	u32 fb_id;                      /**< [in] Frame builder ID of job to disable WB units for */
+	u32 wb0_memory;
+	u32 wb1_memory;
+	u32 wb2_memory;
 } _vr_uk_pp_disable_wb_s;
 
 
 /** @} */ /* end group _vr_uk_pp */
 
+/** @defgroup _vr_uk_soft_job U/K Soft Job
+ * @{ */
+
+typedef struct {
+	void *ctx;                          /**< [in,out] user-kernel context (trashed on output) */
+	u32 type;                           /**< [in] type of soft job */
+	u32 user_job;                       /**< [in] identifier for the job in user space */
+	u32 *job_id_ptr;                    /**< [in,out] pointer to location where job id will be written */
+	_vr_uk_fence_t fence;             /**< [in] fence this job must wait on */
+	u32 point;                          /**< [out] point on soft timeline for this job */
+} _vr_uk_soft_job_start_s;
+
+typedef struct {
+	u32 user_job;                       /**< [out] identifier for the job in user space */
+} _vr_uk_soft_job_activated_s;
+
+typedef struct {
+	void *ctx;                          /**< [in,out] user-kernel context (trashed on output) */
+	u32 job_id;                         /**< [in] id for soft job */
+} _vr_uk_soft_job_signal_s;
+
+/** @} */ /* end group _vr_uk_soft_job */
 
 /** @addtogroup _vr_uk_core U/K Core
  * @{ */
@@ -540,17 +574,18 @@ typedef struct
  *
  * @see _vr_uk_wait_for_notification_s
  */
-typedef enum
-{
+typedef enum {
 	/** core notifications */
 
 	_VR_NOTIFICATION_CORE_SHUTDOWN_IN_PROGRESS =  (_VR_UK_CORE_SUBSYSTEM << 16) | 0x20,
 	_VR_NOTIFICATION_APPLICATION_QUIT =           (_VR_UK_CORE_SUBSYSTEM << 16) | 0x40,
 	_VR_NOTIFICATION_SETTINGS_CHANGED =           (_VR_UK_CORE_SUBSYSTEM << 16) | 0x80,
+	_VR_NOTIFICATION_SOFT_ACTIVATED =             (_VR_UK_CORE_SUBSYSTEM << 16) | 0x100,
 
 	/** Fragment Processor notifications */
 
 	_VR_NOTIFICATION_PP_FINISHED =                (_VR_UK_PP_SUBSYSTEM << 16) | 0x10,
+	_VR_NOTIFICATION_PP_NUM_CORE_CHANGE =         (_VR_UK_PP_SUBSYSTEM << 16) | 0x20,
 
 	/** Vertex Processor notifications */
 
@@ -570,8 +605,7 @@ typedef enum
  *
  *
  */
-typedef enum
-{
+typedef enum {
 	_VR_UK_USER_SETTING_SW_EVENTS_ENABLE = 0,
 	_VR_UK_USER_SETTING_COLORBUFFER_CAPTURE_ENABLED,
 	_VR_UK_USER_SETTING_DEPTHBUFFER_CAPTURE_ENABLED,
@@ -605,8 +639,7 @@ extern const char *_vr_uk_user_setting_descriptions[];
 
 /** @brief struct to hold the value to a particular setting as seen in the kernel space
  */
-typedef struct
-{
+typedef struct {
 	_vr_uk_user_setting_t setting;
 	u32 value;
 } _vr_uk_settings_changed_s;
@@ -629,7 +662,7 @@ typedef struct
  * _vr_uk_wait_for_notification() calls should be made.
  *     - In this case, the value of the data union member is undefined.
  *     - This is used to indicate to the user space client that it should close
- * the connection to the VR Device Driver.
+ * the connection to the Vr Device Driver.
  * - type == _VR_NOTIFICATION_PP_FINISHED
  *    - The notification data is of type _vr_uk_pp_job_finished_s. It contains the user_job_ptr
  * identifier used to start the job with, the job status, the number of milliseconds the job took to render,
@@ -654,16 +687,15 @@ typedef struct
  *     - The reason member of gp_job_suspended is set to _VRGP_JOB_SUSPENDED_OUT_OF_MEMORY
  * when the polygon list builder unit has run out of memory.
  */
-typedef struct
-{
+typedef struct {
 	void *ctx;                       /**< [in,out] user-kernel context (trashed on output) */
 	_vr_uk_notification_type type; /**< [out] Type of notification available */
-	union
-	{
+	union {
 		_vr_uk_gp_job_suspended_s gp_job_suspended;/**< [out] Notification data for _VR_NOTIFICATION_GP_STALLED notification type */
 		_vr_uk_gp_job_finished_s  gp_job_finished; /**< [out] Notification data for _VR_NOTIFICATION_GP_FINISHED notification type */
 		_vr_uk_pp_job_finished_s  pp_job_finished; /**< [out] Notification data for _VR_NOTIFICATION_PP_FINISHED notification type */
 		_vr_uk_settings_changed_s setting_changed;/**< [out] Notification data for _VR_NOTIFICAATION_SETTINGS_CHANGED notification type */
+		_vr_uk_soft_job_activated_s soft_job_activated; /**< [out] Notification data for _VR_NOTIFICATION_SOFT_ACTIVATED notification type */
 	} data;
 } _vr_uk_wait_for_notification_s;
 
@@ -672,9 +704,8 @@ typedef struct
  * Posts the specified notification to the notification queue for this application.
  * This is used to send a quit message to the callback thread.
  */
-typedef struct
-{
-    void *ctx;                       /**< [in,out] user-kernel context (trashed on output) */
+typedef struct {
+	void *ctx;                       /**< [in,out] user-kernel context (trashed on output) */
 	_vr_uk_notification_type type; /**< [in] Type of notification to post */
 } _vr_uk_post_notification_s;
 
@@ -708,7 +739,7 @@ typedef struct
  * The 16bit integer is stored twice in a 32bit integer
  * For example, for version 1 the value would be 0x00010001
  */
-#define _VR_API_VERSION 19
+#define _VR_API_VERSION 401
 #define _VR_UK_API_VERSION _MAKE_VERSION_ID(_VR_API_VERSION)
 
 /**
@@ -732,9 +763,8 @@ typedef u32 _vr_uk_api_version;
  * interface is compatible with the kernel-side interface, since future versions
  * of the interface may be backwards compatible.
  */
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	_vr_uk_api_version version;   /**< [in,out] API version of user-side interface. */
 	int compatible;                 /**< [out] @c 1 when @version is compatible, @c 0 otherwise */
 } _vr_uk_get_api_version_s;
@@ -750,20 +780,23 @@ typedef struct
  * All settings are given reference to the context pointed to by the ctx pointer.
  *
  */
-typedef struct
-{
+typedef struct {
 	void *ctx;                       /**< [in,out] user-kernel context (trashed on output) */
 	u32 settings[_VR_UK_USER_SETTING_MAX]; /**< [out] The values for all settings */
 } _vr_uk_get_user_settings_s;
 
 /** @brief struct to hold the value of a particular setting from the user space within a given context
  */
-typedef struct
-{
+typedef struct {
 	void *ctx;                       /**< [in,out] user-kernel context (trashed on output) */
 	_vr_uk_user_setting_t setting; /**< [in] setting to get */
 	u32 value;                       /**< [out] value of setting */
 } _vr_uk_get_user_setting_s;
+
+/** @brief Arguments for _vr_ukk_request_high_priority() */
+typedef struct {
+	void *ctx;                       /**< [in,out] user-kernel context (trashed on output) */
+} _vr_uk_request_high_priority_s;
 
 /** @} */ /* end group _vr_uk_core */
 
@@ -771,26 +804,11 @@ typedef struct
 /** @defgroup _vr_uk_memory U/K Memory
  * @{ */
 
-/** @brief Arguments for _vr_ukk_init_mem(). */
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
-	u32 vr_address_base;          /**< [out] start of VR address space */
-	u32 memory_size;                /**< [out] total VR address space available */
-} _vr_uk_init_mem_s;
-
-/** @brief Arguments for _vr_ukk_term_mem(). */
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
-} _vr_uk_term_mem_s;
-
 /** Flag for _vr_uk_map_external_mem_s, _vr_uk_attach_ump_mem_s and _vr_uk_attach_dma_buf_s */
 #define _VR_MAP_EXTERNAL_MAP_GUARD_PAGE (1<<0)
 
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 phys_addr;                  /**< [in] physical address */
 	u32 size;                       /**< [in] size */
 	u32 vr_address;               /**< [in] vr address to map the physical memory to */
@@ -799,16 +817,14 @@ typedef struct
 	u32 cookie;                     /**< [out] identifier for mapped memory object in kernel space  */
 } _vr_uk_map_external_mem_s;
 
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 cookie;                     /**< [out] identifier for mapped memory object in kernel space  */
 } _vr_uk_unmap_external_mem_s;
 
 /** @note This is identical to _vr_uk_map_external_mem_s above, however phys_addr is replaced by memory descriptor */
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 mem_fd;                     /**< [in] Memory descriptor */
 	u32 size;                       /**< [in] size */
 	u32 vr_address;               /**< [in] vr address to map the physical memory to */
@@ -817,23 +833,20 @@ typedef struct
 	u32 cookie;                     /**< [out] identifier for mapped memory object in kernel space  */
 } _vr_uk_attach_dma_buf_s;
 
-typedef struct
-{
+typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 mem_fd;                     /**< [in] Memory descriptor */
 	u32 size;                       /**< [out] size */
 } _vr_uk_dma_buf_get_size_s;
 
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 cookie;                     /**< [in] identifier for mapped memory object in kernel space  */
 } _vr_uk_release_dma_buf_s;
 
 /** @note This is identical to _vr_uk_map_external_mem_s above, however phys_addr is replaced by secure_id */
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 secure_id;                  /**< [in] secure id */
 	u32 size;                       /**< [in] size */
 	u32 vr_address;               /**< [in] vr address to map the physical memory to */
@@ -842,9 +855,8 @@ typedef struct
 	u32 cookie;                     /**< [out] identifier for mapped memory object in kernel space  */
 } _vr_uk_attach_ump_mem_s;
 
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 cookie;                     /**< [in] identifier for mapped memory object in kernel space  */
 } _vr_uk_release_ump_mem_s;
 
@@ -869,27 +881,33 @@ typedef struct
  * va is updated to be page aligned, and size is updated to be a non-zero
  * multiple of the system's pagesize.
  */
-typedef struct
-{
+typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	void *va;                       /**< [in,out] Virtual address of the start of the range */
 	u32 pa;                         /**< [out] Physical base address of the range */
 	u32 size;                       /**< [in,out] Size of the range, in bytes. */
 } _vr_uk_va_to_vr_pa_s;
 
+/**
+ * @brief Arguments for _vr_uk[uk]_mem_write_safe()
+ */
+typedef struct {
+	void *ctx;        /**< [in,out] user-kernel context (trashed on output) */
+	const void *src;  /**< [in]     Pointer to source data */
+	void *dest;       /**< [in]     Destination Vr buffer */
+	u32 size;         /**< [in,out] Number of bytes to write/copy on input, number of bytes actually written/copied on output */
+} _vr_uk_mem_write_safe_s;
 
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 size;                       /**< [out] size of MMU page table information (registers + page tables) */
 } _vr_uk_query_mmu_page_table_dump_size_s;
 
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 size;                       /**< [in] size of buffer to receive mmu page table information */
-    void *buffer;                   /**< [in,out] buffer to receive mmu page table information */
-    u32 register_writes_size;       /**< [out] size of MMU register dump */
+	void *buffer;                   /**< [in,out] buffer to receive mmu page table information */
+	u32 register_writes_size;       /**< [out] size of MMU register dump */
 	u32 *register_writes;           /**< [out] pointer within buffer where MMU register dump is stored */
 	u32 page_table_dump_size;       /**< [out] size of MMU page table dump */
 	u32 *page_table_dump;           /**< [out] pointer within buffer where MMU page table dump is stored */
@@ -907,10 +925,10 @@ typedef struct
  * - Upon successful return from _vr_ukk_get_pp_number_of_cores(), @c number_of_cores
  * will contain the number of Fragment Processor cores in the system.
  */
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
-    u32 number_of_cores;            /**< [out] number of Fragment Processor cores in the system */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+	u32 number_of_total_cores;      /**< [out] Total number of Fragment Processor cores in the system */
+	u32 number_of_enabled_cores;    /**< [out] Number of enabled Fragment Processor cores */
 } _vr_uk_get_pp_number_of_cores_s;
 
 /** @brief Arguments for _vr_ukk_get_pp_core_version()
@@ -919,10 +937,9 @@ typedef struct
  * - Upon successful return from _vr_ukk_get_pp_core_version(), @c version contains
  * the version that all Fragment Processor cores are compatible with.
  */
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
-    _vr_core_version version;     /**< [out] version returned from core, see \ref _vr_core_version  */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+	_vr_core_version version;     /**< [out] version returned from core, see \ref _vr_core_version  */
 } _vr_uk_get_pp_core_version_s;
 
 /** @} */ /* end group _vr_uk_pp */
@@ -937,10 +954,9 @@ typedef struct
  * - Upon successful return from _vr_ukk_get_gp_number_of_cores(), @c number_of_cores
  * will contain the number of Vertex Processor cores in the system.
  */
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
-    u32 number_of_cores;            /**< [out] number of Vertex Processor cores in the system */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+	u32 number_of_cores;            /**< [out] number of Vertex Processor cores in the system */
 } _vr_uk_get_gp_number_of_cores_s;
 
 /** @brief Arguments for _vr_ukk_get_gp_core_version()
@@ -949,33 +965,28 @@ typedef struct
  * - Upon successful return from _vr_ukk_get_gp_core_version(), @c version contains
  * the version that all Vertex Processor cores are compatible with.
  */
-typedef struct
-{
-    void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
-    _vr_core_version version;     /**< [out] version returned from core, see \ref _vr_core_version */
+typedef struct {
+	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
+	_vr_core_version version;     /**< [out] version returned from core, see \ref _vr_core_version */
 } _vr_uk_get_gp_core_version_s;
 
-typedef struct
-{
+typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 limit;                      /**< [in,out] The desired limit for number of events to record on input, actual limit on output */
 } _vr_uk_profiling_start_s;
 
-typedef struct
-{
+typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 event_id;                   /**< [in] event id to register (see  enum vr_profiling_events for values) */
 	u32 data[5];                    /**< [in] event specific data */
 } _vr_uk_profiling_add_event_s;
 
-typedef struct
-{
+typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 count;                      /**< [out] The number of events sampled */
 } _vr_uk_profiling_stop_s;
 
-typedef struct
-{
+typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 index;                      /**< [in] which index to get (starting at zero) */
 	u64 timestamp;                  /**< [out] timestamp of event */
@@ -983,8 +994,7 @@ typedef struct
 	u32 data[5];                    /**< [out] event specific data */
 } _vr_uk_profiling_get_event_s;
 
-typedef struct
-{
+typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 } _vr_uk_profiling_clear_s;
 
@@ -997,16 +1007,16 @@ typedef struct
 /** @brief Arguments to _vr_ukk_mem_mmap()
  *
  * Use of the phys_addr member depends on whether the driver is compiled for
- * VR-MMU or nonMMU:
+ * Vr-MMU or nonMMU:
  * - in the nonMMU case, this is the physical address of the memory as seen by
- * the CPU (which may be a constant offset from that used by VR)
- * - in the MMU case, this is the VR Virtual base address of the memory to
+ * the CPU (which may be a constant offset from that used by Vr)
+ * - in the MMU case, this is the Vr Virtual base address of the memory to
  * allocate, and the particular physical pages used to back the memory are
  * entirely determined by _vr_ukk_mem_mmap(). The details of the physical pages
  * are not reported to user-space for security reasons.
  *
  * The cookie member must be stored for use later when freeing the memory by
- * calling _vr_ukk_mem_munmap(). In the VR-MMU case, the cookie is secure.
+ * calling _vr_ukk_mem_munmap(). In the Vr-MMU case, the cookie is secure.
  *
  * The ukk_private word must be set to zero when calling from user-space. On
  * Kernel-side, the  OS implementation of the U/K interface can use it to
@@ -1015,13 +1025,12 @@ typedef struct
  * will communicate its own ukk_private word through the ukk_private member
  * here. The common code itself will not inspect or modify the ukk_private
  * word, and so it may be safely used for whatever purposes necessary to
- * integrate VR Memory handling into the OS.
+ * integrate Vr Memory handling into the OS.
  *
  * The uku_private member is currently reserved for use by the user-side
  * implementation of the U/K interface. Its value must be zero.
  */
-typedef struct
-{
+typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	void *mapping;                  /**< [out] Returns user-space virtual address for the mapping */
 	u32 size;                       /**< [in] Size of the requested mapping */
@@ -1042,8 +1051,7 @@ typedef struct
  * An error will be returned if an attempt is made to unmap only part of the
  * originally obtained range, or to unmap more than was originally obtained.
  */
-typedef struct
-{
+typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	void *mapping;                  /**< [in] The mapping returned from mmap call */
 	u32 size;                       /**< [in] The size passed to mmap call */
@@ -1059,8 +1067,7 @@ typedef struct
  * These events are reported when DDK starts to wait for vsync and when the
  * vsync has occured and the DDK can continue on the next frame.
  */
-typedef enum _vr_uk_vsync_event
-{
+typedef enum _vr_uk_vsync_event {
 	_VR_UK_VSYNC_EVENT_BEGIN_WAIT = 0,
 	_VR_UK_VSYNC_EVENT_END_WAIT
 } _vr_uk_vsync_event;
@@ -1068,8 +1075,7 @@ typedef enum _vr_uk_vsync_event
 /** @brief Arguments to _vr_ukk_vsync_event()
  *
  */
-typedef struct
-{
+typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	_vr_uk_vsync_event event;     /**< [in] VSYNCH event type */
 } _vr_uk_vsync_event_report_s;
@@ -1083,8 +1089,7 @@ typedef struct
  *
  * Values recorded for each of the software counters during a single renderpass.
  */
-typedef struct
-{
+typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32* counters;                  /**< [in] The array of counter values */
 	u32  num_counters;              /**< [in] The number of elements in counters array */
@@ -1092,34 +1097,29 @@ typedef struct
 
 /** @} */ /* end group _vr_uk_sw_counters_report */
 
-/** @defgroup _vr_uk_stream U/K VR stream module
+/** @defgroup _vr_uk_timeline U/K Vr Timeline
  * @{ */
 
-/** @brief Create stream
- */
-typedef struct
-{
+typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
-	int fd;                         /**< [out] file descriptor describing stream */
-} _vr_uk_stream_create_s;
+	u32 timeline;                   /**< [in] timeline id */
+	u32 point;                      /**< [out] latest point on timeline */
+} _vr_uk_timeline_get_latest_point_s;
 
-/** @brief Destroy stream
-*/
-typedef struct
-{
+typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
-	int fd;                         /**< [in] file descriptor describing stream */
-} _vr_uk_stream_destroy_s;
+	_vr_uk_fence_t fence;         /**< [in] fence */
+	u32 timeout;                    /**< [in] timeout (0 for no wait, -1 for blocking) */
+	u32 status;                     /**< [out] status of fence (1 if signaled, 0 if timeout) */
+} _vr_uk_timeline_wait_s;
 
-/** @brief Check fence validity
- */
-typedef struct
-{
+typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
-	int fd;                         /**< [in] file descriptor describing fence */
-} _vr_uk_fence_validate_s;
+	_vr_uk_fence_t fence;         /**< [in] vr fence to create linux sync fence from */
+	s32 sync_fd;                    /**< [out] file descriptor for new linux sync fence */
+} _vr_uk_timeline_create_sync_fence_s;
 
-/** @} */ /* end group _vr_uk_stream */
+/** @} */ /* end group _vr_uk_timeline */
 
 /** @} */ /* end group u_k_api */
 

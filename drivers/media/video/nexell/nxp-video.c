@@ -35,36 +35,73 @@ static struct nxp_video_format supported_formats[] = {
         .pixelformat = V4L2_PIX_FMT_YUYV,
         .mbus_code   = V4L2_MBUS_FMT_YUYV8_2X8,
         .num_planes  = 1,
+        .num_sw_planes = 1,
+        .is_separated = false,
+    }, {
+        /* yuv 420 1 plane, 12bit per pixel */
+        .name        = "YUV 4:2:0 separated 1-planar, YCbYCr",
+        .pixelformat = V4L2_PIX_FMT_YUV420,
+        .mbus_code   = V4L2_MBUS_FMT_YUYV8_1_5X8,
+        .num_planes  = 1,
+        .num_sw_planes = 3,
+        .is_separated = false,
+    }, {
+        /* yuv 422 1 plane, 16bit per pixel */
+        .name        = "YUV 4:2:2 separated 1-planar, Y/CbCr",
+        .pixelformat = V4L2_PIX_FMT_NV16,
+        .mbus_code   = V4L2_MBUS_FMT_YUYV8_1_5X8,
+        .num_planes  = 1,
+        .num_sw_planes = 3,
+        .is_separated = false,
+    }, {
+        /* yuv 420 1 plane, 12bit per pixel */
+        .name        = "YUV 4:2:0 separated 1-planar, Y/CrCb",
+        .pixelformat = V4L2_PIX_FMT_NV21,
+        .mbus_code   = V4L2_MBUS_FMT_YUYV8_1_5X8,
+        .num_planes  = 1,
+        .num_sw_planes = 2,
+        .is_separated = false,
     }, {
         /* yuv 420 separated 3 plane, 12bit per pixel */
         .name        = "YUV 4:2:0 separated 3-planar, YCbYCr",
         .pixelformat = V4L2_PIX_FMT_YUV420M,
         .mbus_code   = V4L2_MBUS_FMT_YUYV8_1_5X8,
         .num_planes  = 3,
+        .num_sw_planes = 3,
+        .is_separated = true,
+
     }, {
         /* yuv 422 separated 3 plane, 16bit per pixel */
         .name        = "YUV 4:2:2 separated 3-planar, YCbYCr",
         .pixelformat = V4L2_PIX_FMT_YUV422P,
         .mbus_code   = V4L2_MBUS_FMT_YUYV8_1X16,
         .num_planes  = 3,
+        .num_sw_planes = 3,
+        .is_separated = true,
     }, {
         /* yuv 444 separated 3 plane, 24bit per pixel */
         .name        = "YUV 4:4:4 separated 3-planar, YCbYCr",
         .pixelformat = V4L2_PIX_FMT_YUV444,
         .mbus_code   = V4L2_MBUS_FMT_YUV8_1X24,
         .num_planes  = 3,
+        .num_sw_planes = 3,
+        .is_separated = true,
     }, {
         /* rgb 565 */
         .name        = "RGB 565",
         .pixelformat = V4L2_PIX_FMT_RGB565,
         .mbus_code   = V4L2_MBUS_FMT_RGB565_2X8_LE,
         .num_planes  = 1,
+        .num_sw_planes = 1,
+        .is_separated = false,
     }, {
         /* rgb 8888 */
         .name        = "RGB 32",
         .pixelformat = V4L2_PIX_FMT_RGB32,
         .mbus_code   = V4L2_MBUS_FMT_XRGB8888_4X8_LE,
         .num_planes  = 1,
+        .num_sw_planes = 1,
+        .is_separated = false,
     }
 };
 
@@ -90,8 +127,8 @@ _find_format(u32 pixelformat, int index)
 static int
 _set_plane_size(struct nxp_video_frame *frame, unsigned int sizes[])
 {
-    u32 y_size = frame->width * frame->height;
-    u32 y_stride = frame->width;
+    u32 y_size = ALIGN(frame->width, 16) * ALIGN(frame->height, 16);
+    u32 y_stride = ALIGN(frame->width, 16);
 
     switch (frame->format.pixelformat) {
     case V4L2_PIX_FMT_YUYV:
@@ -100,11 +137,28 @@ _set_plane_size(struct nxp_video_frame *frame, unsigned int sizes[])
         break;
 
     case V4L2_PIX_FMT_YUV420M:
+    case V4L2_PIX_FMT_YUV420:
         frame->size[0] = sizes[0] = y_size;
-        frame->size[1] = frame->size[2] = sizes[1] = sizes[2] = y_size >> 2;
+        frame->size[1] = sizes[1] =
+        frame->size[2] = sizes[2] = ALIGN(y_stride >> 1, 16) * ALIGN(frame->height >> 1, 16);
 
         frame->stride[0] = y_stride;
-        frame->stride[1] = frame->stride[2] = y_stride >> 1;
+        frame->stride[1] = frame->stride[2] = ALIGN(y_stride >> 1, 16);
+        break;
+
+    case V4L2_PIX_FMT_NV16:
+        frame->size[0] = sizes[0] =
+        frame->size[1] = sizes[1] = y_size;
+
+        frame->stride[0] = frame->stride[1] = y_stride;
+        break;
+
+    case V4L2_PIX_FMT_NV21:
+        frame->size[0] = sizes[0] = y_size;
+        frame->size[1] = y_stride * ALIGN(frame->height >> 1, 16);
+
+        frame->stride[0] = y_stride;
+        frame->stride[1] = y_stride;
         break;
 
     case V4L2_PIX_FMT_YUV422P:
@@ -112,7 +166,7 @@ _set_plane_size(struct nxp_video_frame *frame, unsigned int sizes[])
         frame->size[1] = frame->size[2] = sizes[1] = sizes[2] = y_size >> 1;
 
         frame->stride[0] = y_stride;
-        frame->stride[1] = frame->stride[2] = y_stride >> 1;
+        frame->stride[1] = frame->stride[2] = ALIGN(y_stride >> 1, 16);
         break;
 
     case V4L2_PIX_FMT_YUV444:
@@ -123,13 +177,13 @@ _set_plane_size(struct nxp_video_frame *frame, unsigned int sizes[])
         break;
 
     case V4L2_PIX_FMT_RGB565:
-        frame->size[0] = sizes[0] = y_size << 1;
-        frame->stride[0] = y_stride << 1;
+        frame->size[0] = sizes[0] = (frame->width * frame->height) << 1;
+        frame->stride[0] = frame->width << 1;
         break;
 
     case V4L2_PIX_FMT_RGB32:
-        frame->size[0] = sizes[0] = y_size << 2;
-        frame->stride[0] = y_stride << 2;
+        frame->size[0] = sizes[0] = (frame->width * frame->height) << 2;
+        frame->stride[0] = (frame->width) << 2;
         break;
 
     default:
@@ -176,18 +230,24 @@ _fill_nxp_video_buffer(struct nxp_video_buffer *buf, struct vb2_buffer *vb)
     u32 type = vb->vb2_queue->type;
     struct nxp_video *me = vb->vb2_queue->drv_priv;
     struct nxp_video_frame *frame;
+    bool is_separated;
 
     if (type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
         frame = &me->frame[0];
     else
         frame = &me->frame[1];
 
-    for (i = 0; i < frame->format.num_planes; ++i) {
-        buf->dma_addr[i] = plane_addr(vb, i);
+    is_separated = frame->format.is_separated;
+    for (i = 0; i < frame->format.num_sw_planes; i++) {
+        if (i == 0 || is_separated)
+            buf->dma_addr[i] = plane_addr(vb, i);
+        else
+            buf->dma_addr[i] = buf->dma_addr[i-1] + frame->size[i-1];
         buf->stride[i] = frame->stride[i];
         pr_debug("[BUF plane %d] addr(0x%x), s(%d)\n",
                 i, buf->dma_addr[i], buf->stride[i]);
     }
+
     buf->consumer_index = 0;
     return 0;
 }
@@ -647,6 +707,8 @@ static int nxp_video_set_format(struct file *file, void *fh,
     frame->format.pixelformat = format->pixelformat;
     frame->format.mbus_code   = format->mbus_code;
     frame->format.num_planes  = format->num_planes;
+    frame->format.num_sw_planes  = format->num_sw_planes;
+    frame->format.is_separated  = format->is_separated;
     frame->width  = pix->width;
     frame->height = pix->height;
 
