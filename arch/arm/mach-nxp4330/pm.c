@@ -127,8 +127,9 @@ static int suspend_machine(void)
 	};
 
 	u32 rtc = IO_ADDRESS(PHY_BASEADDR_RTC);
-	int ret = 0, i = 0;
+	int ret = 0, i = 0, n = 0;
 	int mask_bits = 0;
+	CBOOL MODE;
 
 	lldebugout("%s\n", __func__);
 
@@ -144,9 +145,12 @@ static int suspend_machine(void)
 
 		mask_bits |= pads[i][0] ? (1 << i) : 0;
 
-		if (pads[i][1] < PWR_DECT_BOTHEDGE)
-			NX_ALIVE_SetDetectMode(pads[i][1], i, CTRUE);
-		else {  /* both edge */
+		if (pads[i][1] < PWR_DECT_BOTHEDGE) {
+			for (n = 0; PWR_DECT_BOTHEDGE > n; n++) {
+				MODE = (n == pads[i][1]) ? CTRUE : CFALSE;
+				NX_ALIVE_SetDetectMode(n, i, MODE);
+			}
+		} else {  /* both edge */
 			NX_ALIVE_SetDetectMode(PWR_DECT_FALLINGEDGE, i, CTRUE);
 			NX_ALIVE_SetDetectMode(PWR_DECT_RISINGEDGE , i, CTRUE);
 		}
@@ -210,9 +214,9 @@ static int resume_machine(void)
 	__wake_event_bits = status & ((1<<WAKE_EVENT_NUM) - 1);
 
 	/* reset machine */
-    nxp_cpu_base_init();
-    if (board_suspend && board_suspend->poweron)
-        board_suspend->poweron();
+	nxp_cpu_base_init();
+	if (board_suspend && board_suspend->poweron)
+		board_suspend->poweron();
 
 	return 0;
 }
