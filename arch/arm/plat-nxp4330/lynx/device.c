@@ -1233,11 +1233,6 @@ static int _dwmci_get_ro(u32 slot_id)
 	return 0;
 }
 
-static void _dwmci0_late_resume(struct dw_mci *host)
-{
-	return 0;
-}
-
 #ifdef CONFIG_MMC_NEXELL_CH0
 static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 {
@@ -1305,7 +1300,6 @@ struct rfkill_dev_data  rfkill_dev_data =
 {
 	.supply_name 	= "vwifi_3.3V",	// vwifi_3.3V, vgps_3.3V
 	.module_name 	= "wlan",
-	.power_vcc		= 1,
 	.initval		= RFKILL_INIT_SET | RFKILL_INIT_OFF,
 };
 
