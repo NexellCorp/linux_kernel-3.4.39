@@ -317,6 +317,7 @@ struct dw_mci_board {
 	 */
 	void (*suspend)(struct dw_mci *host);
 	void (*resume)(struct dw_mci *host);
+	void (*late_resume)(struct dw_mci *host);
 };
 
 #endif /* LINUX_MMC_DW_MMC_H */

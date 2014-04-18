@@ -541,7 +541,11 @@ NXE2000_PDATA_INIT(ldo4,     0, 1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.9V
 NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  1);	/* 2.8V VCAM */
 NXE2000_PDATA_INIT(ldo6,     0, 1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
 NXE2000_PDATA_INIT(ldo7,     0, 1000000, 3500000, 1, 0, 2800000, 1,  4);	/* 2.8V VID */
+#if defined(CONFIG_RFKILL_NEXELL)
 NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 0,  2);	/* 3.3V WIFI */
+#else
+NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 1,  2);	/* 3.3V WIFI */
+#endif
 NXE2000_PDATA_INIT(ldo9,     0, 1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V HUB */
 NXE2000_PDATA_INIT(ldo10,    0, 1000000, 3500000, 1, 0, 1200000, 0,  0);	/* 1.2V HSIC */
 NXE2000_PDATA_INIT(ldortc1,  0, 1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
@@ -1229,6 +1233,11 @@ static int _dwmci_get_ro(u32 slot_id)
 	return 0;
 }
 
+static void _dwmci0_late_resume(struct dw_mci *host)
+{
+	return 0;
+}
+
 #ifdef CONFIG_MMC_NEXELL_CH0
 static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 {
@@ -1254,10 +1263,12 @@ static int _dwmci0_get_cd(u32 slot_id)
 
 static struct dw_mci_board _dwmci0_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION | DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 100 * 1000 * 1000,
+	.bus_hz			= 70 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
-	.clk_dly		= CFG_SDMMC0_CLK_DELAY,
+#if defined (CFG_SDMMC0_CLK_DELAY)
+	.clk_dly        = CFG_SDMMC0_CLK_DELAY,
+#endif
 	.cd_type		= DW_MCI_CD_EXTERNAL,
 	.init			= _dwmci0_init,
 	.get_ro			= _dwmci_get_ro,
@@ -1273,7 +1284,7 @@ static struct dw_mci_board _dwmci1_data = {
 						DW_MCI_QUIRK_HIGHSPEED |
 						DW_MMC_QUIRK_HW_RESET_PW |
 						DW_MCI_QUIRK_NO_DETECT_EBIT,
-	.bus_hz			= 100 * 1000 * 1000,
+	.bus_hz			= 80 * 1000 * 1000,
 	.caps			= MMC_CAP_UHS_DDR50 |
 						MMC_CAP_NONREMOVABLE |
 						MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |

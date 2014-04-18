@@ -795,9 +795,9 @@ static struct pl022_ssp_controller ssp2_platform_data = {
 
 static struct amba_device spi1_device = {
     .dev = {
-	        .init_name          = "ssp-pl022",
+	        .init_name          = "ssp-pl022.2",
 	        .coherent_dma_mask  = 0x000fffffUL,
-	        .platform_data      = &ssp0_platform_data,
+	        .platform_data      = &ssp2_platform_data,
 	        .id = 1,
 		   },
 	.res = {
@@ -806,7 +806,7 @@ static struct amba_device spi1_device = {
 	        .flags = IORESOURCE_MEM,
 		    },
 
-	.irq = {IRQ_PHY_SSP1 },
+	.irq = {IRQ_PHY_SSP2 },
 	.periphid = 0x00041022,                     /* ST-Ericsson modified id */
 };
 #endif

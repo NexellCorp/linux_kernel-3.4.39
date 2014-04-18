@@ -70,7 +70,9 @@ struct save_alive {
 	unsigned long  detmod[6];
 	unsigned long  detenb;
 	unsigned long  irqenb;
-	unsigned long  output;
+	unsigned long  outenb;
+	unsigned long  outval;
+	unsigned long  pullen;
 };
 
 struct pm_saved_regs {
@@ -126,33 +128,37 @@ static int suspend_machine(void)
 
 	u32 rtc = IO_ADDRESS(PHY_BASEADDR_RTC);
 	int ret = 0, i = 0, n = 0;
-	CBOOL IRQ, MODE;
+	int mask_bits = 0;
+	CBOOL MODE;
 
 	lldebugout("%s\n", __func__);
 
 	NX_ALIVE_SetWriteEnable(CTRUE);
-	NX_ALIVE_ClearInterruptPendingAll();
 	NX_ALIVE_ClearWakeUpStatus();
 
 	/*
 	 * set wakeup device
 	 */
 	for (i = 0; 8 > i; i++) {
-		IRQ = pads[i][0] ? CTRUE : CFALSE;
-		NX_ALIVE_SetDetectEnable(i, IRQ);
-		NX_ALIVE_SetInterruptEnable(i, IRQ);
-		NX_ALIVE_SetOutputValue(i, IRQ?CTRUE:CFALSE);
-		for (n = 0; 6 > n; n++) {
-			MODE = (CTRUE == pads[i][0] && n == pads[i][1]) ? CTRUE : CFALSE;
-			NX_ALIVE_SetDetectMode(n, i, MODE);
-		}
+		if ((pads[i][0] == CFALSE) || (pads[i][1] > PWR_DECT_BOTHEDGE))
+			continue;
 
-		/* both edge */
-		if (CTRUE == pads[i][0] && PWR_DECT_BOTHEDGE == pads[i][1]) {
+		mask_bits |= pads[i][0] ? (1 << i) : 0;
+
+		if (pads[i][1] < PWR_DECT_BOTHEDGE) {
+			for (n = 0; PWR_DECT_BOTHEDGE > n; n++) {
+				MODE = (n == pads[i][1]) ? CTRUE : CFALSE;
+				NX_ALIVE_SetDetectMode(n, i, MODE);
+			}
+		} else {  /* both edge */
 			NX_ALIVE_SetDetectMode(PWR_DECT_FALLINGEDGE, i, CTRUE);
 			NX_ALIVE_SetDetectMode(PWR_DECT_RISINGEDGE , i, CTRUE);
 		}
 	}
+
+	NX_ALIVE_SetInputEnable32(mask_bits);
+	NX_ALIVE_SetDetectEnable32(mask_bits);
+	NX_ALIVE_SetInterruptEnable32(mask_bits);
 
 	/* disable alarm wakeup */
 #if !(PM_RTC_WAKE)
@@ -165,17 +171,17 @@ static int suspend_machine(void)
 	/*
 	 * wakeup from board.
 	 */
-    if (board_suspend && board_suspend->poweroff)
-       ret = board_suspend->poweroff();
+	if (board_suspend && board_suspend->poweroff)
+		ret = board_suspend->poweroff();
 
-	if (ret)
+	if (ret < 0)
 		return ret;
 
 	/*
 	 * check wakeup event(alive, alarm)
 	 * before enter sleep mode
 	 */
-	if (NX_ALIVE_GetInterruptPending32())
+	if (NX_ALIVE_GetInterruptPending32() & mask_bits)
 		return -EINVAL;
 
 	if (readl(rtc + RTC_ALARM_INTPND) &
@@ -208,9 +214,9 @@ static int resume_machine(void)
 	__wake_event_bits = status & ((1<<WAKE_EVENT_NUM) - 1);
 
 	/* reset machine */
-    nxp_cpu_base_init();
-    if (board_suspend && board_suspend->poweron)
-        board_suspend->poweron();
+	nxp_cpu_base_init();
+	if (board_suspend && board_suspend->poweron)
+		board_suspend->poweron();
 
 	return 0;
 }
@@ -441,25 +447,26 @@ static void suspend_gpio(suspend_state_t stat)
 			for (j = 0; j < 10; j++)
 				gpio->reg_val[j] = readl(base+0x40+(j<<2));
 
-
 			writel((-1UL), (base+0x14));	/* clear pend */
 		}
 	} else {
 		for (i = 0; size > i; i++, gpio++, base += 0x1000) {
-
+#ifndef CONFIG_SUSPEND_IDLE
 			for (j = 0; j < 10; j++)
 				writel(gpio->reg_val[j], (base+0x40+(j<<2)));
+#endif
 
 			writel(gpio->output, (base+0x04));
-			writel(gpio->data  , (base+0x00));
+			writel(gpio->data,   (base+0x00));
 			writel(gpio->alfn[0],(base+0x20));
 			writel(gpio->alfn[1],(base+0x24));
 			writel(gpio->mode[0],(base+0x08));
 			writel(gpio->mode[1],(base+0x0C)),
 			writel(gpio->mode[2],(base+0x28));
-			writel(gpio->mask, (base+0x10));
-			writel(gpio->mask, (base+0x3C));
-			writel((-1UL), (base+0x14));	/* clear pend */
+			writel(gpio->mask,   (base+0x10));
+			writel(gpio->mask,   (base+0x3C));
+
+			writel((-1UL),       (base+0x14));	/* clear pend */
 		}
 	}
 }
@@ -477,18 +484,33 @@ static void suspend_alive(suspend_state_t stat)
 
 		alive->detenb = readl(base + 0x54);
 		alive->irqenb = readl(base + 0x60);
-		alive->output = readl(base + 0x7C);
+		alive->outenb = readl(base + 0x7C);
+		alive->outval = readl(base + 0x94);
+		alive->pullen = readl(base + 0x88);
 	} else {
+		if (alive->outenb != readl(base + 0x7C)) {
+			writel((-1UL), base + 0x74);		/* reset */
+			writel(alive->outenb, base + 0x78);	/* set */
+		}
+		if (alive->outval != readl(base + 0x94)) {
+			writel((-1UL), base + 0x8C);		/* reset */
+			writel(alive->outval, base + 0x90);	/* set */
+		}
+		if (alive->pullen != readl(base + 0x88)) {
+			writel((-1UL), base + 0x80);		/* reset */
+			writel(alive->pullen, base + 0x84);	/* set */
+		}
+
+		writel((-1UL), base + 0x4C);			/* reset */
+		writel((-1UL), base + 0x58);			/* reset */
+
 		for (i = 0; 6 > i; i++) {
 			writel((-1UL), base + (i*0x0C) + 0x04);			/* reset */
 			writel(alive->detmod[i], base + (i*0x0C) + 0x08);	/* set */
 		}
-		writel((-1UL), base + 0x4C);		/* reset */
-		writel((-1UL), base + 0x58);		/* reset */
-		writel((-1UL), base + 0x74);		/* reset */
+
 		writel(alive->detenb, base + 0x50);	/* set */
 		writel(alive->irqenb, base + 0x5C);	/* set */
-		writel(alive->output, base + 0x78);	/* set */
 	}
 }
 
@@ -503,7 +525,7 @@ static int __powerdown(unsigned long arg)
 	int ret = suspend_machine();
 	int i;
 	if (0 == ret) {
-		for(i=0; ARRAY_SIZE(sramsave) > i; i++)
+		for(i = 0; ARRAY_SIZE(sramsave) > i; i++)
 			sramptr[i] = sramsave[i];
 	}
 
@@ -514,7 +536,7 @@ static int __powerdown(unsigned long arg)
 	flush_cache_all();
 	outer_flush_all();
 
-	if (ret)
+	if (ret < 0)
 		return ret;	/* wake up */
 
 #ifdef CONFIG_SUSPEND_IDLE

@@ -526,8 +526,11 @@ NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1, 14);	/* 1.1V
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1600000, 1, -1);	/* 1.6V DDR */
 NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1600000, 1,  8);	/* 1.6V SYS */
-
+#if defined(CONFIG_RFKILL_NEXELL)
+NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 0,  2);	/* 3.3V GPS */
+#else
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 1,  2);	/* 3.3V GPS */
+#endif
 NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 0, 0, 1800000, 0,  2);	/* 1.8V CAM1 */
 NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.8V SYS1 */
 NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.9V SYS */
@@ -1195,17 +1198,21 @@ static struct spi_board_info spi_plat_board[] __initdata = {
  * DW MMC board config
  */
 #if defined(CONFIG_MMC_DW)
-int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
+static int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
 {
 	return 0;
 }
 
-int _dwmci_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
+static int _dwmci_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
 {
 	return 0;
 }
 
 static int _dwmci_get_ro(u32 slot_id)
+{
+	return 0;
+}
+static void _dwmci0_late_resume(struct dw_mci *host)
 {
 	return 0;
 }
@@ -1241,6 +1248,10 @@ static struct dw_mci_board _dwmci0_data = {
 //	.sdr_timing		= 0x03020001,
 //	.ddr_timing		= 0x03030002,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
+#if defined (CFG_SDMMC0_CLK_DELAY)
+	  .clk_dly        = CFG_SDMMC0_CLK_DELAY,
+#endif
+
 	.init			= _dwmci0_init,
 	.get_ro         = _dwmci_get_ro,
 	.get_cd			= _dwmci0_get_cd,
