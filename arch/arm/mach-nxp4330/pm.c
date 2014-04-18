@@ -486,19 +486,19 @@ static void suspend_alive(suspend_state_t stat)
 	} else {
 		if (alive->outenb != readl(base + 0x7C)) {
 			writel((-1UL), base + 0x74);		/* reset */
-			writel(alive->outenb, base + 0x78); /* set */
+			writel(alive->outenb, base + 0x78);	/* set */
 		}
-		if (alive->outval = readl(base + 0x94)) {
+		if (alive->outval != readl(base + 0x94)) {
 			writel((-1UL), base + 0x8C);		/* reset */
-			writel(alive->outval, base + 0x90); /* set */
+			writel(alive->outval, base + 0x90);	/* set */
 		}
-		if (alive->pullen = readl(base + 0x88)) {
+		if (alive->pullen != readl(base + 0x88)) {
 			writel((-1UL), base + 0x80);		/* reset */
-			writel(alive->pullen, base + 0x84); /* set */
+			writel(alive->pullen, base + 0x84);	/* set */
 		}
 
-		writel((-1UL), base + 0x4C);		/* reset */
-		writel((-1UL), base + 0x58);		/* reset */
+		writel((-1UL), base + 0x4C);			/* reset */
+		writel((-1UL), base + 0x58);			/* reset */
 
 		for (i = 0; 6 > i; i++) {
 			writel((-1UL), base + (i*0x0C) + 0x04);			/* reset */
