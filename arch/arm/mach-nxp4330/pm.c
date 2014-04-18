@@ -70,6 +70,9 @@ struct save_alive {
 	unsigned long  detmod[6];
 	unsigned long  detenb;
 	unsigned long  irqenb;
+	unsigned long  outenb;
+	unsigned long  outval;
+	unsigned long  pullen;
 };
 
 struct pm_saved_regs {
@@ -477,7 +480,23 @@ static void suspend_alive(suspend_state_t stat)
 
 		alive->detenb = readl(base + 0x54);
 		alive->irqenb = readl(base + 0x60);
+		alive->outenb = readl(base + 0x7C);
+		alive->outval = readl(base + 0x94);
+		alive->pullen = readl(base + 0x88);
 	} else {
+		if (alive->outenb != readl(base + 0x7C)) {
+			writel((-1UL), base + 0x74);		/* reset */
+			writel(alive->outenb, base + 0x78); /* set */
+		}
+		if (alive->outval = readl(base + 0x94)) {
+			writel((-1UL), base + 0x8C);		/* reset */
+			writel(alive->outval, base + 0x90); /* set */
+		}
+		if (alive->pullen = readl(base + 0x88)) {
+			writel((-1UL), base + 0x80);		/* reset */
+			writel(alive->pullen, base + 0x84); /* set */
+		}
+
 		writel((-1UL), base + 0x4C);		/* reset */
 		writel((-1UL), base + 0x58);		/* reset */
 
