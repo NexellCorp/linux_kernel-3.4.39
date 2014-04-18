@@ -124,7 +124,7 @@ static int suspend_machine(void)
 	};
 
 	u32 rtc = IO_ADDRESS(PHY_BASEADDR_RTC);
-	int ret = 0, i = 0, n = 0;
+	int ret = 0, i = 0;
 	int mask_bits = 0;
 
 	lldebugout("%s\n", __func__);
