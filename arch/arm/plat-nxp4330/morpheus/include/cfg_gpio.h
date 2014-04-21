@@ -231,8 +231,6 @@
 #define PAD_GPIOALV3    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
 #define PAD_GPIOALV4    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
 #define PAD_GPIOALV5    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
-#define PAD_GPIOALV6    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_OFF)				//
-#define PAD_GPIOALV7    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_OFF)				//
 
 #endif	/* __CFG_GPIO_H__ */
 
