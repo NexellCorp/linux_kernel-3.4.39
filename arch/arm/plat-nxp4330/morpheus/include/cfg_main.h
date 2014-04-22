@@ -165,9 +165,15 @@
 /*------------------------------------------------------------------------------
  * 	SDHC
  */
-//#define CFG_SDMMC0_DETECT_IO					(PAD_GPIO_C + 7)	/* external cd */
 #define CFG_SDMMC2_DETECT_IO					(PAD_GPIO_C + 7)	/* external cd */
 
+#define	CFG_SDMMC0_CLK_DELAY_SAMPLE				(0<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+#define	CFG_SDMMC0_CLK_DELAY_DRIVE				(0<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+//#define	CFG_SDMMC0_CLK_DELAY				    (CFG_SDMMC0_CLK_DELAY_SAMPLE | CFG_SDMMC0_CLK_DELAY_DRIVE)
+
+#define	CFG_SDMMC2_CLK_DELAY_SAMPLE				(0<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+#define	CFG_SDMMC2_CLK_DELAY_DRIVE				(0<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+//#define	CFG_SDMMC2_CLK_DELAY				    (CFG_SDMMC1_CLK_DELAY_SAMPLE | CFG_SDMMC1_CLK_DELAY_DRIVE)
 /*------------------------------------------------------------------------------
  *  MPEGTSIF
  */
@@ -220,10 +226,6 @@
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE6				CFALSE
-#define CFG_PWR_WAKEUP_MOD_ALIVE6				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE7				CFALSE
-#define CFG_PWR_WAKEUP_MOD_ALIVE7				PWR_DECT_FALLINGEDGE
 
 //------------------------------------------------------------------------------
 // Static Bus #0 ~ #9, NAND, IDE configuration

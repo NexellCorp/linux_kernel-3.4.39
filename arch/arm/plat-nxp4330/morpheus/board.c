@@ -146,8 +146,8 @@ static void bd_alive_init(void)
 	U32 gpio;
 
 	const U32 pads[] = {
-	PAD_GPIOALV0, PAD_GPIOALV1,  PAD_GPIOALV2, PAD_GPIOALV3,
-	PAD_GPIOALV4, PAD_GPIOALV5,  PAD_GPIOALV6, PAD_GPIOALV7
+	PAD_GPIOALV0, PAD_GPIOALV1, PAD_GPIOALV2,
+	PAD_GPIOALV3, PAD_GPIOALV4, PAD_GPIOALV5
 	};
 
 	index = sizeof(pads)/sizeof(pads[0]);
