@@ -137,6 +137,14 @@ _set_plane_size(struct nxp_video_frame *frame, unsigned int sizes[])
         break;
 
     case V4L2_PIX_FMT_YUV420M:
+        frame->size[0] = sizes[0] = frame->width * frame->height;
+        frame->size[1] = sizes[1] =
+        frame->size[2] = sizes[2] = frame->size[0] >> 2;
+
+        frame->stride[0] = frame->width;
+        frame->stride[1] = frame->width >> 1;
+        break;
+
     case V4L2_PIX_FMT_YUV420:
         frame->size[0] = sizes[0] = y_size;
         frame->size[1] = sizes[1] =
