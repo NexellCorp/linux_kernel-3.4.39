@@ -15,7 +15,10 @@
 #endif
 #include <linux/uaccess.h>
 
+#include "mma7660.h"
+
 #include "mma7660_xyz_filter.h"
+
 
 // device info
 #define SENSOR_NAME					"mma7660"
@@ -795,6 +798,7 @@ static int mma7660_probe(struct i2c_client *client,
 	struct input_dev *dev;
 	int cfg_position;
 	int cfg_calibration[3];
+	struct mma7660_private_data *pdata;
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
 		printk(KERN_INFO "i2c_check_functionality error\n");
@@ -822,7 +826,11 @@ static int mma7660_probe(struct i2c_client *client,
 		goto kfree_exit;
 	}
 #else
-	cfg_position = -3;
+	pdata = client->dev.platform_data;
+	if(pdata)
+		cfg_position = pdata->position;
+	else
+		cfg_position = -3;
 #endif
 	atomic_set(&data->position, cfg_position);
 	atomic_set(&data->calibrated, 0);

@@ -559,6 +559,13 @@ config VIDEO_MT9V032
 	  This is a Video4Linux2 sensor-level driver for the Micron
 	  MT9V032 752x480 CMOS sensor.
 
+config VIDEO_MT9D111_CAM
+    tristate "Micron MT9D111 sensor support(nexell work)"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+	  This is a Video4Linux2 sensor-level driver for the Micron
+	  MT9D111 1600x1200 CMOS sensor.
+
 config VIDEO_TCM825X
 	tristate "TCM825x camera sensor support"
 	depends on I2C && VIDEO_V4L2
@@ -609,6 +616,12 @@ config VIDEO_SP2518_FIXED_FRAMERATE
     ---help---
       if this option on, framerate is fixed 30frame, else variable 8-12frame
 
+config VIDEO_GC2035
+    tristate "GC2035 2M pixel camera sensor support"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+      This driver supports SuperPix GC2035 SoC camera module.
+
 config VIDEO_SP0A19
     tristate "SP0A19 0.3M pixel camera sensor support"
     depends on I2C && VIDEO_V4L2
@@ -620,6 +633,12 @@ config VIDEO_SP0838
     depends on I2C && VIDEO_V4L2
     ---help---
       This driver supports SuperPix SP0838 SoC camera module.
+
+config VIDEO_GC0308
+    tristate "GC0308 0.3M pixel camera sensor support"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+      This driver supports GC0308 SoC camera module.
 
 config VIDEO_SP0838_FIXED_FRAMERATE
     bool "use fixed framerate"

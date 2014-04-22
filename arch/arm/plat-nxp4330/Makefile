@@ -19,6 +19,10 @@ ifeq ($(CONFIG_PLAT_NXP4330_PYXIS),y)
 PLATBOARD :=pyxis
 endif
 
+ifeq ($(CONFIG_PLAT_NXP4330_W7),y)
+PLATBOARD :=w7
+endif
+
 ifeq ($(CONFIG_PLAT_NXP4330_MORPHEUS),y)
 PLATBOARD :=morpheus
 endif

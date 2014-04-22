@@ -36,6 +36,11 @@ choice
 		bool "PYXIS: Android Pyxis board"
 		help
    	 		Support for the android pysix tablet board.
+
+	config PLAT_NXP4330_W7
+		bool "w7: Android w7 board"
+		help
+   	 		Support for the android w7 tablet board.
 	
 	config PLAT_NXP4330_MORPHEUS
 		bool "MORPHEUS: Android morpheus board"
