@@ -10,9 +10,11 @@ extern struct platform_device nxp_device_ion;
 
 void __init nxp_ion_set_platdata(void)
 {
-    struct ion_platform_data *pdata;
-    pdata = kzalloc(sizeof(struct ion_platform_data) 
-            + 5 * sizeof(struct ion_platform_heap), GFP_KERNEL);
+	struct ion_platform_data *pdata;
+
+	pdata = kzalloc(sizeof(struct ion_platform_data), GFP_KERNEL);
+	pdata->heaps = kzalloc(5 * sizeof(struct ion_platform_heap), GFP_KERNEL);
+
     if (pdata) {
         pdata->nr = 3;
         pdata->heaps[0].type = ION_HEAP_TYPE_SYSTEM;

@@ -31,69 +31,6 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-
-/*------------------------------------------------------------------------------
- * DW MMC (Synopsys DesignWare Memory Card Interface)
- */
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ)
-
-static unsigned long dfs_freq_table[][2] = {
-//	{ 1000000, 1200 },
-//	{  900000, 1200 },
-	{  800000, 1200 },
-	{  780000, 1200 },
-	{  760000, 1200 },
-	{  740000, 1200 },
-	{  720000, 1200 },
-	{  562000, 1200 },
-	{  533000, 1200 },
-	{  490000, 1200 },
-	{  470000, 1200 },
-	{  460000, 1200 },
-	{  450000, 1200 },
-	{  440000, 1200 },
-	{  430000, 1200 },
-	{  420000, 1200 },
-	{  410000, 1200 },
-	{  400000, 1200 },
-	{  399000, 1200 },
-	{  390000, 1200 },
-	{  384000, 1200 },
-	{  350000, 1200 },
-	{  330000, 1200 },
-	{  300000, 1200 },
-	{  266000, 1200 },
-	{  250000, 1200 },
-	{  220000, 1200 },
-	{  200000, 1200 },
-	{  166000, 1200 },
-	{  147500, 1200 },
-	{  133000, 1200 },
-	{  125000, 1200 },
-	{  100000, 1200 },
-};
-
-struct nxp_cpufreq_plat_data dfs_plat_data = {
-	.pll_dev	   	= CONFIG_NXP4330_CPUFREQ_PLLDEV,
-	.freq_table	   	= dfs_freq_table,
-	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-#if (0)
-	.max_cpufreq   	= 700000,
-	.max_retention 	=  5000,
-	.rest_cpufreq  	= 500000,
-	.rest_retention = 20000,
-#endif
-};
-
-static struct platform_device dfs_plat_device = {
-	.name			= DEV_NAME_CPUFREQ,
-	.dev			= {
-		.platform_data	= &dfs_plat_data,
-	}
-};
-
-#endif
-
 /*------------------------------------------------------------------------------
  * Network DM9000
  */
@@ -146,12 +83,8 @@ static struct nxp_fb_plat_data fb0_plat_data = {
 	.bitperpixel	= CFG_DISP_PRI_SCREEN_PIXEL_BYTE * 8,
 	.x_resol		= CFG_DISP_PRI_RESOL_WIDTH,
 	.y_resol		= CFG_DISP_PRI_RESOL_HEIGHT,
-	#ifdef CONFIG_ANDROID
-	.buffers		= 3,
 	.skip_pan_vsync	= 1,
-	#else
-	.buffers		= 2,
-	#endif
+	.buffers		= 1,
 	.lcd_with_mm	= CFG_DISP_PRI_LCD_WIDTH_MM,	/* 152.4 */
 	.lcd_height_mm	= CFG_DISP_PRI_LCD_HEIGHT_MM,	/* 91.44 */
 };
@@ -267,6 +200,8 @@ void __init nxp_reserve_mem(void)
             .name = "ion",
 #ifdef CONFIG_ION_NXP_CONTIGHEAP_SIZE
             .size = CONFIG_ION_NXP_CONTIGHEAP_SIZE * SZ_1K,
+#else
+			.size = 0,
 #endif
             {
                 .alignment = PAGE_SIZE,
@@ -281,7 +216,9 @@ void __init nxp_reserve_mem(void)
         "ion-nxp=ion;"
         "nx_vpu=ion;";
 
+#ifdef CONFIG_ION_NXP_CONTIGHEAP_SIZE
     printk("%s: reserve CMA: size %d\n", __func__, CONFIG_ION_NXP_CONTIGHEAP_SIZE * SZ_1K);
+#endif
     nxp_cma_region_reserve(regions, map);
 }
 #endif
@@ -823,11 +760,6 @@ static struct platform_device nxp_v4l2_dev = {
 void __init nxp_board_devices_register(void)
 {
 	printk("[Register board platform devices]\n");
-
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ)
-	printk("plat: add dynamic frequency (pll.%d)\n", dfs_plat_data.pll_dev);
-	platform_device_register(&dfs_plat_device);
-#endif
 
 #if defined (CONFIG_FB_NEXELL)
 	printk("plat: add framebuffer\n");
