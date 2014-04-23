@@ -131,7 +131,7 @@ static void wm8976_shutdown(struct snd_pcm_substream *substream)
 		snd_soc_update_bits(codec, WM8978_POWER_MANAGEMENT_1, 0x10, 0x00);	// MICBIASEN
 
     if (stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pio_direction_output(AUDIO_AMP_POWER, 0);
+		gpio_direction_output(AUDIO_AMP_POWER, 0);
 }
 
 static int wm8976_suspend_pre(struct snd_soc_card *card)
