@@ -1402,4 +1402,12 @@ config SERIAL_NEXELL_UART5
 	depends on SERIAL_AMBA_PL011
 		default n
 
-endmenu
+config SERIAL_NEXELL_RESUME_WORK
+	bool "Set to reduce resume time from suspend (PL011)"
+	depends on SERIAL_AMBA_PL011
+		default n
+	help
+	  Use delay work function to save resume time when resume. but 
+	  could be lost resume log message
+	
+endmenu 

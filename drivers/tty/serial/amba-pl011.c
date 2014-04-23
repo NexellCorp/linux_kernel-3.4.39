@@ -171,6 +171,7 @@ struct uart_amba_port {
 	struct pl011_dmarx_data dmarx;
 	struct pl011_dmatx_data	dmatx;
 #endif
+	struct delayed_work	resume_work;	/* add by jhkim */
 };
 
 /*
@@ -1788,8 +1789,11 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
 
 	clk_enable(uap->clk);
 
-// del by jhkim
-//	local_irq_save(flags);
+#if (0)
+	// del by jhkim
+	local_irq_save(flags);
+#endif
+
 	if (uap->port.sysrq)
 		locked = 0;
 	else if (oops_in_progress)
@@ -1819,8 +1823,10 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
 	if (locked)
 		spin_unlock(&uap->port.lock);
 
-// del by jhkim
-//	local_irq_restore(flags);
+#if (0)
+	// del by jhkim
+	local_irq_restore(flags);
+#endif
 
 	clk_disable(uap->clk);
 }
@@ -1928,6 +1934,15 @@ static struct uart_driver amba_reg = {
 	.cons			= AMBA_CONSOLE,
 };
 
+#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NEXELL_RESUME_WORK)
+static void pl011_resume_work(struct work_struct *work)
+{
+	struct uart_amba_port *uap = container_of(work,
+					struct uart_amba_port, resume_work.work);
+	uart_resume_port(&amba_reg, &uap->port);
+}
+#endif
+
 static int pl011_probe(struct amba_device *dev, const struct amba_id *id)
 {
 	struct uart_amba_port *uap;
@@ -1978,6 +1993,11 @@ static int pl011_probe(struct amba_device *dev, const struct amba_id *id)
 	uap->port.flags = UPF_BOOT_AUTOCONF;
 	uap->port.line = i;
 	pl011_dma_probe(uap);
+
+	/* add by jhkim for fast resume */
+#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NEXELL_RESUME_WORK)
+	INIT_DELAYED_WORK(&uap->resume_work, pl011_resume_work);
+#endif
 
 	/* Ensure interrupts from this UART are masked and cleared */
 	writew(0, uap->port.membase + UART011_IMSC);
@@ -2034,16 +2054,31 @@ static int pl011_suspend(struct amba_device *dev, pm_message_t state)
 	return uart_suspend_port(&amba_reg, &uap->port);
 }
 
+#define	UART_RESUME_WORK_DELAY	(400)		/* wait for end resume_console */
+
 static int pl011_resume(struct amba_device *dev)
 {
 	struct uart_amba_port *uap = amba_get_drvdata(dev);
+#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NEXELL_RESUME_WORK)
+	struct amba_pl011_data *plat = uap->port.dev->platform_data;
 
 	if (!uap)
 		return -EINVAL;
 
+	if (plat->init)
+		plat->init();
+
+	schedule_delayed_work(&uap->resume_work,
+			msecs_to_jiffies(UART_RESUME_WORK_DELAY));
+	return 0;
+#else
+	if (!uap)
+		return -EINVAL;
+
 	return uart_resume_port(&amba_reg, &uap->port);
-}
 #endif
+}
+#endif	/* CONFIG_PM */
 
 static struct amba_id pl011_ids[] = {
 	{
