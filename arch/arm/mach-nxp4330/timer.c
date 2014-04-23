@@ -36,9 +36,9 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-
+/*
 #define pr_debug 	printk
-
+*/
 
 #define	TIMER_CLOCK_SOURCE_HZ	(10*1000000)	/* 1MHZ */
 #define	TIMER_CLOCK_EVENT_HZ	(10*1000000)	/* 1MHZ */
