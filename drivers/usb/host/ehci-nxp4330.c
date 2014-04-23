@@ -72,6 +72,9 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 	struct usb_hcd *hcd;
 	struct ehci_hcd *ehci;
 	struct resource *res;
+#if defined( CONFIG_USB_HSIC_NXP4330 )
+	__u32 __iomem	*hsic_status_reg;
+#endif
 	int irq;
 	int err;
 
@@ -115,6 +118,15 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 		goto fail_io;
 	}
 
+#if defined( CONFIG_USB_HSIC_NXP4330 )
+	hsic_status_reg = ioremap(0xC00300B0, SZ_4);
+	if (!hsic_status_reg) {
+		dev_err(&pdev->dev, "Failed to remap I/O memory\n");
+		err = -ENOMEM;
+		goto fail_io;
+	}
+#endif
+
 	irq = platform_get_irq(pdev, 0);
 	if (!irq) {
 		dev_err(&pdev->dev, "Failed to get IRQ\n");
@@ -138,6 +150,10 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 	ehci->caps = hcd->regs;
 	ehci->regs = hcd->regs +
 		HC_LENGTH(ehci, readl(&ehci->caps->hc_capbase));
+
+#if defined( CONFIG_USB_HSIC_NXP4330 )
+	ehci->hsic_status_reg = hsic_status_reg;
+#endif
 
 	/* DMA burst Enable */
 //	writel(EHCI_INSNREG00_ENABLE_DMA_BURST, EHCI_INSNREG00(hcd->regs));

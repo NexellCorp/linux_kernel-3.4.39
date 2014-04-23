@@ -1,11 +1,11 @@
 /*
  * This confidential and proprietary software may be used only as
- * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2008-2013 ARM Limited
+ * authorised by a licensing agreement from NEXELL Limited
+ * (C) COPYRIGHT 2008-2013 NEXELL Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
- * by a licensing agreement from ARM Limited.
+ * by a licensing agreement from NEXELL Limited.
  */
 
 /**
@@ -158,7 +158,7 @@ typedef struct {
  *
  * Its format is that of the 32-bit Version register for a particular core.
  * Refer to the "Vr200 and VrGP2 3D Graphics Processor Technical Reference
- * Manual", ARM DDI 0415C, for more information.
+ * Manual", NEXELL DDI 0415C, for more information.
  */
 typedef u32 _vr_core_version;
 
@@ -332,7 +332,7 @@ typedef enum {
  * to two performance counters. Set the corresponding bit in @c perf_counter_flag
  * to enable them. @c perf_counter_src0 and @c perf_counter_src1 specify
  * the source of what needs to get counted (e.g. number of vertex loader
- * cache hits). For source id values, see ARM DDI0415A, Table 3-60.
+ * cache hits). For source id values, see NEXELL DDI0415A, Table 3-60.
  * - pass in the user-kernel context @c ctx that was returned from _vr_ukk_open()
  *
  * When @c _vr_ukk_gp_start_job() returns @c _VR_OSK_ERR_OK, status contains the
@@ -376,8 +376,8 @@ typedef struct {
 	u32 priority;                       /**< [in] job priority. A lower number means higher priority */
 	u32 frame_registers[VRGP2_NUM_REGS_FRAME]; /**< [in] core specific registers associated with this job */
 	u32 perf_counter_flag;              /**< [in] bitmask indicating which performance counters to enable, see \ref _VR_PERFORMANCE_COUNTER_FLAG_SRC0_ENABLE and related macro definitions */
-	u32 perf_counter_src0;              /**< [in] source id for performance counter 0 (see ARM DDI0415A, Table 3-60) */
-	u32 perf_counter_src1;              /**< [in] source id for performance counter 1 (see ARM DDI0415A, Table 3-60) */
+	u32 perf_counter_src0;              /**< [in] source id for performance counter 0 (see NEXELL DDI0415A, Table 3-60) */
+	u32 perf_counter_src1;              /**< [in] source id for performance counter 1 (see NEXELL DDI0415A, Table 3-60) */
 	u32 frame_builder_id;               /**< [in] id of the originating frame builder */
 	u32 flush_id;                       /**< [in] flush id within the originating frame builder */
 	_vr_uk_fence_t fence;             /**< [in] fence this job must wait on */
@@ -394,8 +394,8 @@ typedef struct {
 	u32 user_job_ptr;               /**< [out] identifier for the job in user space */
 	_vr_uk_job_status status;     /**< [out] status of finished job */
 	u32 heap_current_addr;          /**< [out] value of the GP PLB PL heap start address register */
-	u32 perf_counter0;              /**< [out] value of performance counter 0 (see ARM DDI0415A) */
-	u32 perf_counter1;              /**< [out] value of performance counter 1 (see ARM DDI0415A) */
+	u32 perf_counter0;              /**< [out] value of performance counter 0 (see NEXELL DDI0415A) */
+	u32 perf_counter1;              /**< [out] value of performance counter 1 (see NEXELL DDI0415A) */
 } _vr_uk_gp_job_finished_s;
 
 typedef struct {
@@ -440,7 +440,7 @@ typedef struct {
  * to two performance counters. Set the corresponding bit in @c perf_counter_flag
  * to enable them. @c perf_counter_src0 and @c perf_counter_src1 specify
  * the source of what needs to get counted (e.g. number of vertex loader
- * cache hits). For source id values, see ARM DDI0415A, Table 3-60.
+ * cache hits). For source id values, see NEXELL DDI0415A, Table 3-60.
  * - pass in the user-kernel context in @c ctx that was returned from _vr_ukk_open()
  *
  * When _vr_ukk_pp_start_job() returns @c _VR_OSK_ERR_OK, @c status contains the
@@ -469,7 +469,7 @@ typedef struct {
 	void *ctx;                      /**< [in,out] user-kernel context (trashed on output) */
 	u32 user_job_ptr;               /**< [in] identifier for the job in user space */
 	u32 priority;                   /**< [in] job priority. A lower number means higher priority */
-	u32 frame_registers[_VR_PP_MAX_FRAME_REGISTERS];         /**< [in] core specific registers associated with first sub job, see ARM DDI0415A */
+	u32 frame_registers[_VR_PP_MAX_FRAME_REGISTERS];         /**< [in] core specific registers associated with first sub job, see NEXELL DDI0415A */
 	u32 frame_registers_addr_frame[_VR_PP_MAX_SUB_JOBS - 1]; /**< [in] ADDR_FRAME registers for sub job 1-7 */
 	u32 frame_registers_addr_stack[_VR_PP_MAX_SUB_JOBS - 1]; /**< [in] ADDR_STACK registers for sub job 1-7 */
 	u32 wb0_registers[_VR_PP_MAX_WB_REGISTERS];
@@ -478,8 +478,8 @@ typedef struct {
 	u32 dlbu_registers[_VR_DLBU_MAX_REGISTERS]; /**< [in] Dynamic load balancing unit registers */
 	u32 num_cores;                      /**< [in] Number of cores to set up (valid range: 1-4) */
 	u32 perf_counter_flag;              /**< [in] bitmask indicating which performance counters to enable, see \ref _VR_PERFORMANCE_COUNTER_FLAG_SRC0_ENABLE and related macro definitions */
-	u32 perf_counter_src0;              /**< [in] source id for performance counter 0 (see ARM DDI0415A, Table 3-60) */
-	u32 perf_counter_src1;              /**< [in] source id for performance counter 1 (see ARM DDI0415A, Table 3-60) */
+	u32 perf_counter_src0;              /**< [in] source id for performance counter 0 (see NEXELL DDI0415A, Table 3-60) */
+	u32 perf_counter_src1;              /**< [in] source id for performance counter 1 (see NEXELL DDI0415A, Table 3-60) */
 	u32 frame_builder_id;               /**< [in] id of the originating frame builder */
 	u32 flush_id;                       /**< [in] flush id within the originating frame builder */
 	u32 flags;                          /**< [in] See _VR_PP_JOB_FLAG_* for a list of avaiable flags */
@@ -503,8 +503,8 @@ typedef struct {
 typedef struct {
 	u32 user_job_ptr;                          /**< [out] identifier for the job in user space */
 	_vr_uk_job_status status;                /**< [out] status of finished job */
-	u32 perf_counter0[_VR_PP_MAX_SUB_JOBS];  /**< [out] value of perfomance counter 0 (see ARM DDI0415A), one for each sub job */
-	u32 perf_counter1[_VR_PP_MAX_SUB_JOBS];  /**< [out] value of perfomance counter 1 (see ARM DDI0415A), one for each sub job */
+	u32 perf_counter0[_VR_PP_MAX_SUB_JOBS];  /**< [out] value of perfomance counter 0 (see NEXELL DDI0415A), one for each sub job */
+	u32 perf_counter1[_VR_PP_MAX_SUB_JOBS];  /**< [out] value of perfomance counter 1 (see NEXELL DDI0415A), one for each sub job */
 	u32 perf_counter_src0;
 	u32 perf_counter_src1;
 } _vr_uk_pp_job_finished_s;
