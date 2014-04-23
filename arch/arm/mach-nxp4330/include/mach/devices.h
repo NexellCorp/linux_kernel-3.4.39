@@ -265,7 +265,8 @@ struct rfkill_dev_data {
     int gpio;
     unsigned int initval;
     int invert;				/* 0: high active, 1: low active */
-    int delay_ms;
+    int delay_time_on;			/* ms */
+    int delay_time_off;			/* ms */
 };
 
 struct nxp_rfkill_plat_data {
@@ -275,6 +276,8 @@ struct nxp_rfkill_plat_data {
     int rf_dev_num;
     int support_suspend;
     int (*set_block)(void *data, bool blocked);
+    int (*suspend)(struct platform_device *pdev, pm_message_t state);
+    int (*resume)(struct platform_device *pdev);
 };
 
 #endif    /* __DEVICES_H__ */

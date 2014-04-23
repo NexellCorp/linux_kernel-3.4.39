@@ -21,6 +21,7 @@
  * MA 02111-1307 USA
  */
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/types.h>
 #include <linux/platform_device.h>
 #include <linux/power_supply.h>
@@ -1301,6 +1302,7 @@ struct rfkill_dev_data  rfkill_dev_data =
 	.supply_name 	= "vwifi_3.3V",	// vwifi_3.3V, vgps_3.3V
 	.module_name 	= "wlan",
 	.initval		= RFKILL_INIT_SET | RFKILL_INIT_OFF,
+    .delay_time_off	= 1000,
 };
 
 struct nxp_rfkill_plat_data rfkill_plat_data = {
