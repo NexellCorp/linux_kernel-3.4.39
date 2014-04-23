@@ -1205,7 +1205,7 @@ static int bmg_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	int err = 0;
 	struct bmg_client_data *client_data = NULL;
 
-	dev_info(&client->dev, "function entrance");
+	dev_info(&client->dev, "bmg160_driver.c - bmg_probe() : function entrance");
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
 		dev_err(&client->dev, "i2c_check_functionality error!");
@@ -1294,8 +1294,12 @@ static int bmg_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	client_data->fifo_count = 0;
 
 	/* now it's power on which is considered as resuming from suspend */
+//sj0817.kang -----------------	
+//	err = BMG_CALL_API(set_mode)(
+//			BMG_VAL_NAME(MODE_SUSPEND));
 	err = BMG_CALL_API(set_mode)(
-			BMG_VAL_NAME(MODE_SUSPEND));
+			BMG_VAL_NAME(MODE_NORMAL));
+
 
 	if (err < 0)
 		goto exit_err_sysfs;
@@ -1339,7 +1343,7 @@ static int bmg_pre_suspend(struct i2c_client *client)
 	int err = 0;
 	struct bmg_client_data *client_data =
 		(struct bmg_client_data *)i2c_get_clientdata(client);
-	dev_info(&client->dev, "function entrance");
+	dev_info(&client->dev, "bmg160_driver.c - bmg_pre_suspend() : function entrance");
 
 	mutex_lock(&client_data->mutex_enable);
 	if (client_data->enable) {
@@ -1357,7 +1361,7 @@ static int bmg_post_resume(struct i2c_client *client)
 	struct bmg_client_data *client_data =
 		(struct bmg_client_data *)i2c_get_clientdata(client);
 
-	dev_info(&client->dev, "function entrance");
+	dev_info(&client->dev, "bmg160_driver.c - Start::bmg_post_resume() : function entrance");
 	mutex_lock(&client_data->mutex_enable);
 	if (client_data->enable) {
 		schedule_delayed_work(&client_data->work,
@@ -1365,6 +1369,7 @@ static int bmg_post_resume(struct i2c_client *client)
 					atomic_read(&client_data->delay)));
 	}
 	mutex_unlock(&client_data->mutex_enable);
+	dev_info(&client->dev, "bmg160_driver.c - End::bmg_post_resume() : function entrance");
 
 	return err;
 }
@@ -1379,7 +1384,7 @@ static void bmg_early_suspend(struct early_suspend *handler)
 	struct i2c_client *client = client_data->client;
 
     PM_DBGOUT("+%s\n", __func__);
-	dev_info(&client->dev, "function entrance");
+	dev_info(&client->dev, "bmg160_driver.c - bmg_early_suspend() : function entrance");
 
 	mutex_lock(&client_data->mutex_op_mode);
 	if (client_data->enable) {
@@ -1401,7 +1406,7 @@ static void bmg_late_resume(struct early_suspend *handler)
 	struct i2c_client *client = client_data->client;
 
     PM_DBGOUT("+%s\n", __func__);
-	dev_info(&client->dev, "function entrance");
+	dev_info(&client->dev, "bmg160_driver.c - bmg_late_resume() : function entrance");
 
 	mutex_lock(&client_data->mutex_op_mode);
 
@@ -1423,7 +1428,7 @@ static int bmg_suspend(struct i2c_client *client, pm_message_t mesg)
 
     PM_DBGOUT("+%s\n", __func__);
 
-	dev_info(&client->dev, "function entrance");
+	dev_info(&client->dev, "bmg160_driver.c - bmg_suspend() : function entrance");
 
 	mutex_lock(&client_data->mutex_op_mode);
 	if (client_data->enable) {
@@ -1444,7 +1449,7 @@ static int bmg_resume(struct i2c_client *client)
 		(struct bmg_client_data *)i2c_get_clientdata(client);
 
     PM_DBGOUT("+%s\n", __func__);
-	dev_info(&client->dev, "function entrance");
+	dev_info(&client->dev, "bmg160_driver.c - bmg_resume() : function entrance");
 
 	mutex_lock(&client_data->mutex_op_mode);
 

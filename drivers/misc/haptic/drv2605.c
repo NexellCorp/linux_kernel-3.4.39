@@ -257,6 +257,23 @@ static const unsigned char LRA_init_sequence[] = {
 };
 #endif
 
+
+static void WriteLog(/*char* pcLevel, */const char* pcFunctionName, unsigned int unLineNumber, const char* cFormat, ...)
+{
+#define BUFFER_MAX	512
+
+	va_list args;
+	char cBuffer[BUFFER_MAX] = {0, };
+
+	va_start(args, cFormat);
+	vsnprintf(cBuffer, BUFFER_MAX, cFormat, args);
+	va_end(args);
+
+	printk(KERN_INFO"[%s/%s:%d] %s\r\n", DEVICE_NAME, pcFunctionName, unLineNumber, cBuffer);
+}
+#define LOG_INFO(...)	WriteLog( __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define LOG_ERR(...)	WriteLog(KERN_ERR, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
 static void drv260x_write_reg_val(const unsigned char* data, unsigned int size)
 {
     int i = 0;
@@ -636,8 +653,36 @@ static ssize_t drv260x_read(struct file* filp, char* buff, size_t length, loff_t
     return 1;
 }
 
+static const char g_cCommandName[][50] = {
+	"?????",
+	"HAPTIC_CMDID_PLAY_SINGLE_EFFECT",
+	"HAPTIC_CMDID_PLAY_EFFECT_SEQUENCE",
+	"HAPTIC_CMDID_PLAY_TIMED_EFFECT",
+	"HAPTIC_CMDID_GET_DEV_ID",
+	"HAPTIC_CMDID_RUN_DIAG",
+	"HAPTIC_CMDID_AUDIOHAPTIC_ENABLE",
+	"HAPTIC_CMDID_AUDIOHAPTIC_DISABLE",
+	"HAPTIC_CMDID_AUDIOHAPTIC_GETSTATUS",
+	"!!!!!!"
+};
+static char g_cCommandStop[] = "HAPTIC_CMDID_STOP";
+
 static ssize_t drv260x_write(struct file* filp, const char* buff, size_t len, loff_t* off)
 {
+	char* pTemp = NULL;
+	LOG_INFO("");
+{
+int ii=0;
+for(ii=0;ii<len;ii++)
+{
+	printk(KERN_INFO"  %d : 0x%02x\r\n", ii, buff[ii]);
+}
+}
+	if((0 < buff[0]) && (buff[0] <= HAPTIC_CMDID_AUDIOHAPTIC_GETSTATUS)) pTemp = g_cCommandName[buff[0]];
+	else if(buff[0] == HAPTIC_CMDID_STOP) pTemp = g_cCommandStop;
+	else pTemp = g_cCommandName[HAPTIC_CMDID_AUDIOHAPTIC_GETSTATUS+1];
+	LOG_INFO("  Command : %s", pTemp);
+
     mutex_lock(&vibdata.lock);
     hrtimer_cancel(&vibdata.timer);
 

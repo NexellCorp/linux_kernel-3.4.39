@@ -62,3 +62,6 @@ if PLAT_NX4330_LYNX
 source "arch/arm/plat-nxp4330/lynx/Kconfig"
 endif
 
+if PLAT_NXP4330_SECRET
+source "arch/arm/plat-nxp4330/secret/Kconfig"
+endif
