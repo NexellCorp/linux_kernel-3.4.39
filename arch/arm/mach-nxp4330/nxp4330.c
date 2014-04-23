@@ -33,6 +33,7 @@
 /* nexell soc headers */
 #include <mach/platform.h>
 #include <mach/devices.h>
+#include <mach/pm.h>
 
 #if (0)	/* default on */
 #define DBGOUT(msg...)		{ printk("cpu: " msg); }
@@ -67,8 +68,10 @@ static void cpu_base_init(void)
 
 	/*
 	 * NOTE> ALIVE Power Gate must enable for RTC register access.
+     * 		 must be clear wfi jump address
 	 */
 	NX_ALIVE_SetWriteEnable(CTRUE);
+	__raw_writel(0xFFFFFFFF, SCR_ARM_SECOND_BOOT);
 
 	/*
 	 * NOTE> Control for ACP register access.
@@ -150,6 +153,7 @@ void nxp_cpu_shutdown(void)
 	}
 
 	printk(KERN_INFO "cpu.%d shutdown ...\n", cur);
+	NX_ALIVE_SetWriteEnable(CFALSE);		/* close alive gate */
 	NX_ALIVE_SetVDDPWRON(CFALSE, CFALSE);	/* Core power down */
 }
 
@@ -160,6 +164,7 @@ void nxp_cpu_reset(char str, const char *cmd)
 	if (nxp_board_reset)
 		nxp_board_reset(str, cmd);
 
+	NX_ALIVE_SetWriteEnable(CFALSE);	/* close alive gate */
     NX_CLKPWR_SetSoftwareResetEnable(CTRUE);
     NX_CLKPWR_DoSoftwareReset();
 }
