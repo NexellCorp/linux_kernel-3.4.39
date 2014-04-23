@@ -101,7 +101,12 @@ extern int   nxp_check_pm_wakeup_alive(int alive_no);
 extern void  nxp_key_power_event(void);
 
 /* low level debug message */
-void lldebugout(const char *fmt, ...);
+void  lldebugout(const char *fmt, ...);
+void  lltime_start(void);
+void  lltime_stop(void);
+void  lltime_reset(void);
+ulong lltime_get(void);
+
 
 /* system stop */
 #ifndef halt

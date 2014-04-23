@@ -41,7 +41,7 @@
 #define	SCR_CRC_LEN_READ		(SCR_ALIVE_BASE + 0xD8)
 
 #define SUSPEND_SIGNATURE		(0x50575200)	/* PWR (ASCII) */
-#define	SUSPEND_SAVE_SIZE		(1024*1024)		/* (_etext - _stext) */
+#define	SUSPEND_SAVE_SIZE		(128*1024)		/* (_etext - _stext) */
 
 struct board_suspend_ops {
 	int  (*valid)		(suspend_state_t state);	/* before driver suspend */
