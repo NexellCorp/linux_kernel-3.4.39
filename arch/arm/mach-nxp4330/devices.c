@@ -821,6 +821,9 @@ static struct amba_device spi1_device = {
 #include <mach/ehci.h>
 #include <mach/usb-phy.h>
 
+extern int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on);
+
+
 /* USB EHCI Host Controller registration */
 
 static struct resource nxp4330_ehci_resource[] = {
@@ -831,6 +834,7 @@ static struct resource nxp4330_ehci_resource[] = {
 struct nxp4330_ehci_platdata nxp4330_ehci_plat_data = {
     .phy_init = nxp_usb_phy_init,
     .phy_exit = nxp_usb_phy_exit,
+    .hsic_phy_pwr_on = nxp_hsic_phy_pwr_on,
 };
 
 static u64 nxp4330_ehci_dmamask = DMA_BIT_MASK(32);

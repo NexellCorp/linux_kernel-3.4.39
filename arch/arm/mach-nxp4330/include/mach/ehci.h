@@ -14,6 +14,7 @@
 struct nxp4330_ehci_platdata {
 	int (*phy_init)(struct platform_device *pdev, int type);
 	int (*phy_exit)(struct platform_device *pdev, int type);
+	int (*hsic_phy_pwr_on)(struct platform_device *pdev, bool on);
 };
 
 

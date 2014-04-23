@@ -170,12 +170,12 @@ config USB_EHCI_MSM
 	  has an external PHY.
 
 config USB_EHCI_TEGRA
-       boolean "NVIDIA Tegra HCD support"
-       depends on USB_EHCI_HCD && ARCH_TEGRA
-       select USB_EHCI_ROOT_HUB_TT
-       help
-         This driver enables support for the internal USB Host Controllers
-         found in NVIDIA Tegra SoCs. The controllers are EHCI compliant.
+	boolean "NVIDIA Tegra HCD support"
+	depends on USB_EHCI_HCD && ARCH_TEGRA
+	select USB_EHCI_ROOT_HUB_TT
+	---help---
+	  This driver enables support for the internal USB Host Controllers
+	  found in NVIDIA Tegra SoCs. The controllers are EHCI compliant.
 
 config USB_EHCI_HCD_PPC_OF
 	bool "EHCI support for PPC USB controller on OF platform bus"
@@ -193,16 +193,22 @@ config USB_EHCI_SH
 	  If you use the PCI EHCI controller, this option is not necessary.
 
 config USB_EHCI_S5P
-       boolean "S5P EHCI support"
-       depends on USB_EHCI_HCD && PLAT_S5P
-       help
-	 Enable support for the S5P SOC's on-chip EHCI controller.
+	boolean "S5P EHCI support"
+	depends on USB_EHCI_HCD && PLAT_S5P
+	---help---
+	  Enable support for the S5P SOC's on-chip EHCI controller.
 
 config USB_EHCI_NXP4330
-       boolean "NXP4330 EHCI support"
-       depends on USB_EHCI_HCD && ARCH_NXP4330
-       help
-	 Enable support for the NEXELL NXP4330's on-chip EHCI controller.
+	boolean "NXP4330 EHCI support"
+	depends on USB_EHCI_HCD && ARCH_NXP4330
+	---help---
+	  Enable support for the NEXELL NXP4330's on-chip EHCI controller.
+
+config USB_HSIC_NXP4330
+	boolean "NXP4330 HSIC support"
+	depends on USB_EHCI_NXP4330 && ARCH_NXP4330
+	---help---
+	  Enable support for the NEXELL NXP4330's on-chip HSIC controller.
 
 config USB_EHCI_MV
 	bool "EHCI support for Marvell on-chip controller"

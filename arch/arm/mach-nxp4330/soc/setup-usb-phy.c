@@ -29,6 +29,21 @@
 #define SOC_PA_TIEOFF		PHY_BASEADDR_TIEOFF
 #define	SOC_VA_TIEOFF		IO_ADDRESS(SOC_PA_TIEOFF)
 
+#define HOST_SS_BUS_WIDTH16			(1)
+#define HOST_SS_ENA_INCR16			(0x1 << 25)
+#define HOST_SS_ENA_INCR8			(0x1 << 26)
+#define HOST_SS_ENA_INCR4			(0x1 << 27)
+#define HOST_SS_ENA_INCRX_ALIGN		(0x1 << 28)
+#define HOST_SS_DMA_BURST_MASK	\
+	(HOST_SS_ENA_INCR16 | HOST_SS_ENA_INCR8 |	\
+	 HOST_SS_ENA_INCR4 | HOST_SS_ENA_INCRX_ALIGN)
+
+#define EHCI_SS_ENABLE_DMA_BURST	\
+	(HOST_SS_ENA_INCR16 | HOST_SS_ENA_INCR8 |	\
+	 HOST_SS_ENA_INCR4 | HOST_SS_ENA_INCRX_ALIGN)
+#define OHCI_SS_ENABLE_DMA_BURST	\
+	(HOST_SS_ENA_INCR4 | HOST_SS_ENA_INCRX_ALIGN)
+
 
 int nxp_usb_phy_init(struct platform_device *pdev, int type)
 {
@@ -37,42 +52,7 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 	if (!pdev)
 		return -EINVAL;
 
-	if( type == NXP_USB_PHY_HOST )
-	{
-		// 1. Release common reset of host controller
-		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<24), SOC_VA_RSTCON + 0x04);			// reset on
-		udelay(1);
-		writel(readl(SOC_VA_RSTCON + 0x04) |  (1<<24), SOC_VA_RSTCON + 0x04);			// reset off
-
-		// 2. Program AHB Burst type
-		//writel(readl(SOC_VA_TIEOFF + 0x1c) & ~(7<<25), SOC_VA_TIEOFF + 0x1c);
-		writel(readl(SOC_VA_TIEOFF + 0x1c) |  (7<<25), SOC_VA_TIEOFF + 0x1c);		// INCR16
-		//writel(readl(SOC_VA_TIEOFF + 0x1c) |  (6<<25), SOC_VA_TIEOFF + 0x1c);		// INCR8
-		//writel(readl(SOC_VA_TIEOFF + 0x1c) |  (4<<25), SOC_VA_TIEOFF + 0x1c);		// INCR4
-
-		// 3. Select word interface and enable word interface selection
-		//writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<25), SOC_VA_TIEOFF + 0x14);
-		writel(readl(SOC_VA_TIEOFF + 0x14) |  (3<<25), SOC_VA_TIEOFF + 0x14);		// 2'b01 8bit, 2'b11 16bit word
-
-		//writel(readl(SOC_VA_TIEOFF + 0x24) & ~(3<<8), SOC_VA_TIEOFF + 0x24);
-		writel(readl(SOC_VA_TIEOFF + 0x24) |  (3<<8), SOC_VA_TIEOFF + 0x24);		// 2'b01 8bit, 2'b11 16bit word
-
-		// 4. POR of PHY
-		writel(readl(SOC_VA_TIEOFF + 0x20) & ~(3<<7), SOC_VA_TIEOFF + 0x20);
-		writel(readl(SOC_VA_TIEOFF + 0x20) |  (1<<7), SOC_VA_TIEOFF + 0x20);
-
-		// Wait clock of PHY - about 40 micro seconds
-		udelay(100); // 40us delay need.
-
-		// 5. Release utmi reset
-		//writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<20), SOC_VA_TIEOFF + 0x14);
-		writel(readl(SOC_VA_TIEOFF + 0x14) |  (3<<20), SOC_VA_TIEOFF + 0x14);
-
-		//6. Release ahb reset of EHCI, OHCI
-		//writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<17), SOC_VA_TIEOFF + 0x14);
-		writel(readl(SOC_VA_TIEOFF + 0x14) |  (7<<17), SOC_VA_TIEOFF + 0x14);
-	}
-	else if( type == NXP_USB_PHY_OTG )
+	if( type == NXP_USB_PHY_OTG )
 	{
 		u32 temp;
 
@@ -85,8 +65,11 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 		writel(readl(SOC_VA_TIEOFF + 0x30) & ~(3<<0), SOC_VA_TIEOFF + 0x30);
 
 		// 3. Select word interface and enable word interface selection
-		//writel(readl(SOC_VA_TIEOFF + 0x38) & ~(3<<8), SOC_VA_TIEOFF + 0x38);
+#if (HOST_SS_BUS_WIDTH16 == 1)
 		writel(readl(SOC_VA_TIEOFF + 0x38) |  (3<<8), SOC_VA_TIEOFF + 0x38);        // 2'b01 8bit, 2'b11 16bit word
+#else
+		writel(readl(SOC_VA_TIEOFF + 0x38) & ~(3<<8), SOC_VA_TIEOFF + 0x38);
+#endif
 
 		// 4. Select VBUS
 		temp    = readl(SOC_VA_TIEOFF + 0x34);
@@ -110,6 +93,64 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 		writel(temp, SOC_VA_TIEOFF + 0x34);
 		udelay(1); // 10 clock need
 	}
+	else
+	{
+		u32 temp1, temp2, temp3;
+
+		// 1. Release common reset of host controller
+		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<24), SOC_VA_RSTCON + 0x04);			// reset on
+		udelay(1);
+		writel(readl(SOC_VA_RSTCON + 0x04) |  (1<<24), SOC_VA_RSTCON + 0x04);			// reset off
+
+		// 2. Program AHB Burst type
+		temp1 = readl(SOC_VA_TIEOFF + 0x1C) & ~HOST_SS_DMA_BURST_MASK;
+		if (type == NXP_USB_PHY_OHCI)
+			writel(temp1 | OHCI_SS_ENABLE_DMA_BURST, SOC_VA_TIEOFF + 0x1C);
+		else
+			writel(temp1 | EHCI_SS_ENABLE_DMA_BURST, SOC_VA_TIEOFF + 0x1C);
+
+		// 3. Select word interface and enable word interface selection
+		temp1 = readl(SOC_VA_TIEOFF + 0x14) | (3<<25);	// 2'b01 8bit, 2'b11 16bit word
+		temp2 = readl(SOC_VA_TIEOFF + 0x24) | (3<<8);	// 2'b01 8bit, 2'b11 16bit word
+		temp3 = readl(SOC_VA_TIEOFF + 0x2C) | (3<<12);	// 2'b01 8bit, 2'b11 16bit word
+#if (HOST_SS_BUS_WIDTH16 == 0)
+		temp1 &= ~(2<<25);
+		temp2 &= ~(2<<8);
+		temp3 &= ~(2<<12);
+#endif
+
+		writel(temp1, SOC_VA_TIEOFF + 0x14);
+		writel(temp2, SOC_VA_TIEOFF + 0x24);
+		if (type == NXP_USB_PHY_HSIC)
+			writel(temp3, SOC_VA_TIEOFF + 0x2C);
+
+		// 4. POR of PHY
+		writel(readl(SOC_VA_TIEOFF + 0x20) & ~(3<<7), SOC_VA_TIEOFF + 0x20);
+		writel(readl(SOC_VA_TIEOFF + 0x20) |  (1<<7), SOC_VA_TIEOFF + 0x20);
+
+		// Wait clock of PHY - about 40 micro seconds
+		udelay(100); // 40us delay need.
+
+		if (type == NXP_USB_PHY_HSIC) {
+			// Set HSIC mode
+			writel(readl(SOC_VA_TIEOFF + 0x14) |  (3<<23), SOC_VA_TIEOFF + 0x14);
+
+			// POR of HSIC PHY
+			writel(readl(SOC_VA_TIEOFF + 0x28) & ~(3<<18), SOC_VA_TIEOFF + 0x28);
+			writel(readl(SOC_VA_TIEOFF + 0x28) |  (1<<18), SOC_VA_TIEOFF + 0x28);
+
+			// Wait clock of PHY - about 40 micro seconds
+			udelay(100); // 40us delay need.
+		}
+
+		// 5. Release utmi reset
+		//writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<20), SOC_VA_TIEOFF + 0x14);
+		writel(readl(SOC_VA_TIEOFF + 0x14) |  (3<<20), SOC_VA_TIEOFF + 0x14);
+
+		//6. Release ahb reset of EHCI, OHCI
+		//writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<17), SOC_VA_TIEOFF + 0x14);
+		writel(readl(SOC_VA_TIEOFF + 0x14) |  (7<<17), SOC_VA_TIEOFF + 0x14);
+	}
 
 	PM_DBGOUT("-- %s\n", __func__);
 
@@ -123,29 +164,7 @@ int nxp_usb_phy_exit(struct platform_device *pdev, int type)
 	if (!pdev)
 		return -EINVAL;
 
-	if (type == NXP_USB_PHY_HOST)
-	{
-#if 0
-		// EHCI, OHCI reset on
-		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<24), SOC_VA_RSTCON + 0x04);
-#else
-		// EHCI, OHCI reset on
-		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<24), SOC_VA_RSTCON + 0x04);
-
-		// 6. Release ahb reset of EHCI, OHCI
-		writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<17), SOC_VA_TIEOFF + 0x14);
-
-		// 5. Release utmi reset
-		writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<20), SOC_VA_TIEOFF + 0x14);
-
-		// 4. POR of PHY
-		writel(readl(SOC_VA_TIEOFF + 0x20) |  (3<<7), SOC_VA_TIEOFF + 0x20);
-
-		// EHCI, OHCI reset on
-//		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<24), SOC_VA_RSTCON + 0x04);
-#endif
-	}
-	else if( type == NXP_USB_PHY_OTG )
+	if( type == NXP_USB_PHY_OTG )
 	{
 		u32 temp;
 
@@ -162,6 +181,38 @@ int nxp_usb_phy_exit(struct platform_device *pdev, int type)
 
 		// OTG reset on
 		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<25), SOC_VA_RSTCON + 0x04);
+	}
+	else
+	{
+#if 0
+		// EHCI, OHCI reset on
+		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<24), SOC_VA_RSTCON + 0x04);
+#else
+		// EHCI, OHCI reset on
+		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<24), SOC_VA_RSTCON + 0x04);
+
+		// 6. Release ahb reset of EHCI, OHCI
+		writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<17), SOC_VA_TIEOFF + 0x14);
+
+		// 5. Release utmi reset
+		writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<20), SOC_VA_TIEOFF + 0x14);
+
+		// 4. POR of PHY
+		writel(readl(SOC_VA_TIEOFF + 0x20) |  (3<<7), SOC_VA_TIEOFF + 0x20);
+		if (type == NXP_USB_PHY_HSIC) {
+			// Set HSIC mode
+			writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<23), SOC_VA_TIEOFF + 0x14);
+
+			// POR of HSIC PHY
+			writel(readl(SOC_VA_TIEOFF + 0x28) |  (3<<18), SOC_VA_TIEOFF + 0x28);
+
+			// Wait clock of PHY - about 40 micro seconds
+			udelay(100); // 40us delay need.
+		}
+
+		// EHCI, OHCI reset on
+//		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<24), SOC_VA_RSTCON + 0x04);
+#endif
 	}
 
 	PM_DBGOUT("-- %s\n", __func__);

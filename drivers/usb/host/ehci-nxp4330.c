@@ -122,8 +122,17 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 		goto fail;
 	}
 
-	if (pdata->phy_init)
-		pdata->phy_init(pdev, NXP_USB_PHY_HOST);
+#if defined( CONFIG_USB_HSIC_NXP4330 )
+	if (pdata && pdata->phy_init)
+		pdata->phy_init(pdev, NXP_USB_PHY_HSIC);
+
+	if (pdata && pdata->hsic_phy_pwr_on)
+		pdata->hsic_phy_pwr_on(pdev, TRUE);
+#else
+
+	if (pdata && pdata->phy_init)
+		pdata->phy_init(pdev, NXP_USB_PHY_EHCI);
+#endif
 
 	ehci = hcd_to_ehci(hcd);
 	ehci->caps = hcd->regs;
@@ -176,9 +185,16 @@ static int __devexit nxp_ehci_remove(struct platform_device *pdev)
 
 	usb_remove_hcd(hcd);
 
-	if (pdata && pdata->phy_exit) {
-		pdata->phy_exit(pdev, NXP_USB_PHY_HOST);
-	}
+#if defined( CONFIG_USB_HSIC_NXP4330 )
+	if (pdata && pdata->phy_exit)
+		pdata->phy_exit(pdev, NXP_USB_PHY_HSIC);
+
+	if (pdata && pdata->hsic_phy_pwr_on)
+		pdata->hsic_phy_pwr_on(pdev, FALSE);
+#else
+	if (pdata && pdata->phy_exit)
+		pdata->phy_exit(pdev, NXP_USB_PHY_EHCI);
+#endif
 
 	iounmap(hcd->regs);
 
@@ -236,8 +252,16 @@ static int nxp_ehci_suspend(struct device *dev)
 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
 	spin_unlock_irqrestore(&ehci->lock, flags);
 
+#if defined( CONFIG_USB_HSIC_NXP4330 )
 	if (pdata && pdata->phy_exit)
-		pdata->phy_exit(pdev, NXP_USB_PHY_HOST);
+		pdata->phy_exit(pdev, NXP_USB_PHY_HSIC);
+
+	if (pdata && pdata->hsic_phy_pwr_on)
+		pdata->hsic_phy_pwr_on(pdev, FALSE);
+#else
+	if (pdata && pdata->phy_exit)
+		pdata->phy_exit(pdev, NXP_USB_PHY_EHCI);
+#endif
 
 	return rc;
 }
@@ -253,8 +277,17 @@ static int nxp_ehci_resume(struct device *dev)
 	if (nxp_ehci->phy)
 		return 0;
 
+#if defined( CONFIG_USB_HSIC_NXP4330 )
 	if (pdata && pdata->phy_init)
-		pdata->phy_init(pdev, NXP_USB_PHY_HOST);
+		pdata->phy_init(pdev, NXP_USB_PHY_HSIC);
+
+	if (pdata && pdata->hsic_phy_pwr_on)
+		pdata->hsic_phy_pwr_on(pdev, TRUE);
+#else
+
+	if (pdata && pdata->phy_init)
+		pdata->phy_init(pdev, NXP_USB_PHY_EHCI);
+#endif
 
 	/* DMA burst Enable */
 //	writel(EHCI_INSNREG00_ENABLE_DMA_BURST, EHCI_INSNREG00(hcd->regs));

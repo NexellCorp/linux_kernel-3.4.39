@@ -12,8 +12,10 @@
 #define __PLAT_USB_OTG_PHY_H __FILE__
 
 enum nxp_usb_phy_type {
-    NXP_USB_PHY_OTG,
-    NXP_USB_PHY_HOST,
+	NXP_USB_PHY_OTG,
+	NXP_USB_PHY_OHCI,
+	NXP_USB_PHY_EHCI,
+	NXP_USB_PHY_HSIC,
 };
 
 extern int  nxp_usb_phy_init(struct platform_device *pdev, int type);

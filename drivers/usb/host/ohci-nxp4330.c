@@ -160,7 +160,7 @@ static int __devinit nxp_ohci_probe(struct platform_device *pdev)
 	else
 #endif
 	if (pdata->phy_init)
-		pdata->phy_init(pdev, NXP_USB_PHY_HOST);
+		pdata->phy_init(pdev, NXP_USB_PHY_OHCI);
 
 	ohci = hcd_to_ohci(hcd);
 	ohci_hcd_init(ohci);
