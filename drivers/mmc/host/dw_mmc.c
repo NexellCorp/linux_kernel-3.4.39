@@ -39,6 +39,8 @@
 
 #include "dw_mmc.h"
 
+#define	MMC_RESUME_WORK_QUEUE
+
 /* Common flag combinations */
 #define DW_MCI_DATA_ERROR_FLAGS	(SDMMC_INT_DTO | SDMMC_INT_DCRC | \
 				 SDMMC_INT_HTO | SDMMC_INT_SBE  | \
@@ -2275,6 +2277,28 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 	}
 }
 
+#ifdef MMC_RESUME_WORK_QUEUE
+static void dw_mci_work_resume_card(struct work_struct *work)
+{
+	struct dw_mci *host = container_of(work, struct dw_mci, resume_work);
+	int i = 0;
+	dev_info(&host->dev, " resume card\n");
+
+	for (i = 0; i < host->num_slots; i++) {
+		struct dw_mci_slot *slot = host->slot[i];
+		if (!slot)
+			continue;
+
+		if (slot->mmc->pm_flags & MMC_PM_KEEP_POWER) {
+			dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
+			dw_mci_setup_bus(slot, 1);
+		}
+
+		mmc_resume_host(host->slot[i]->mmc);
+	}
+}
+#endif
+
 static void dw_mci_notify_change(struct platform_device *dev, int state)
 {
 	struct dw_mci *host = platform_get_drvdata(dev);
@@ -2661,16 +2685,14 @@ int __devinit dw_mci_probe(struct dw_mci *host)
 		fifo_size = host->pdata->fifo_depth;
 	}
 	host->fifo_depth = fifo_size;
-// +++
+
 /* mod by insignal */
 #if defined(CONFIG_MMC_NEXELL) || defined(CONFIG_MMC_NEXELL_MODULE)
-	host->fifoth_val = ((0x2 << 28) | ((fifo_size/2 - 1) << 16) |
-			((fifo_size/2) << 0));
+	host->fifoth_val = ((0x2 << 28) | ((fifo_size/2 - 1) << 16) | ((fifo_size/2) << 0));
 #else
-	host->fifoth_val = ((0x4 << 28) | ((fifo_size/4 - 1) << 16) |
-			((fifo_size/2) << 0));
+	host->fifoth_val = ((0x4 << 28) | ((fifo_size/4 - 1) << 16) | ((fifo_size/2) << 0));
 #endif
-// ---
+
 	mci_writel(host, FIFOTH, host->fifoth_val);
 
 	/* ADD SD/EMMC Clock Shifting by Youngbok Park */
@@ -2686,6 +2708,13 @@ int __devinit dw_mci_probe(struct dw_mci *host)
 	if (!dw_mci_card_workqueue)
 		goto err_dmaunmap;
 	INIT_WORK(&host->card_work, dw_mci_work_routine_card);
+
+	/*
+	 * add by jhkim to save resume time
+	 */
+#ifdef MMC_RESUME_WORK_QUEUE
+	INIT_WORK(&host->resume_work, dw_mci_work_resume_card);
+#endif
 
 	setup_timer(&host->timer, dw_mci_timeout_timer, (unsigned long)host);
 
@@ -2868,7 +2897,10 @@ EXPORT_SYMBOL(dw_mci_suspend);
 
 int dw_mci_resume(struct dw_mci *host)
 {
-	int i, ret;
+	int ret = 0;
+#ifndef MMC_RESUME_WORK_QUEUE
+	int i;
+#endif
 
 	if (host->pdata->resume)
 		host->pdata->resume(host);
@@ -2899,6 +2931,10 @@ int dw_mci_resume(struct dw_mci *host)
 
 	mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE);
 
+	/*
+ 	 * call delayed work to save resume time
+ 	 */
+#ifndef MMC_RESUME_WORK_QUEUE
 	for (i = 0; i < host->num_slots; i++) {
 		struct dw_mci_slot *slot = host->slot[i];
 		if (!slot)
@@ -2913,6 +2949,9 @@ int dw_mci_resume(struct dw_mci *host)
 		if (ret < 0)
 			return ret;
 	}
+#else
+	queue_work(dw_mci_card_workqueue, &host->resume_work);
+#endif
 
 	return 0;
 }

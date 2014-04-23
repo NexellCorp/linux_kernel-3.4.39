@@ -151,6 +151,7 @@ struct dw_mci {
 	u32			dir_status;
 	struct tasklet_struct	tasklet;
 	struct work_struct	card_work;
+	struct work_struct	resume_work;	/* add by jhkim */
 	unsigned long		pending_events;
 	unsigned long		completed_events;
 	enum dw_mci_state	state;
