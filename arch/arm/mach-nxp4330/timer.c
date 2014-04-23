@@ -71,6 +71,20 @@
 
 int __timer_sys_mux_val = 0;
 int __timer_sys_scl_val = 0;
+int __timer_sys_clk_clr = 0;
+
+#if	  (CFG_TIMER_SYS_TICK_CH == 0)
+#define	TIMER_SYS_CLKGEN		IO_ADDRESS(PHY_BASEADDR_CLKGEN14)
+#elif (CFG_TIMER_SYS_TICK_CH == 1)
+#define	TIMER_SYS_CLKGEN		IO_ADDRESS(PHY_BASEADDR_CLKGEN0)
+#elif (CFG_TIMER_SYS_TICK_CH == 2)
+#define	TIMER_SYS_CLKGEN		IO_ADDRESS(PHY_BASEADDR_CLKGEN1)
+#elif (CFG_TIMER_SYS_TICK_CH == 3)
+#define	TIMER_SYS_CLKGEN		IO_ADDRESS(PHY_BASEADDR_CLKGEN2)
+#endif
+#define	CLKGEN_ENB		(0x0)
+#define	CLKGEN_CLR		(0x4)
+
 
 static inline void timer_reset(int ch)
 {
@@ -297,7 +311,7 @@ static int __init timer_source_init(int ch)
 
 	__timer_sys_mux_val = info->tmmux;
 	__timer_sys_scl_val = info->prescale;
-
+	__timer_sys_clk_clr = readl(TIMER_SYS_CLKGEN + CLKGEN_CLR);
 	printk("timer.%d: source, %9lu(HZ:%d), mult:%u\n", ch, info->rate, HZ, cs->mult);
  	return 0;
 }
