@@ -23,8 +23,7 @@
 /*
  * enumeration at end of resume sequence for fast resume
  */
-#define	EHCI_RESUME_WORK_QUEUE
-#define	EHCI_RESUME_WORK_QUEUE_DELAY	(200)	/* wait for end usb resume sequence */
+#define	EHCI_WORK_QUEUE_DELAY	(1000)	/* wait for end usb resume sequence */
 
 #define EHCI_INSNREG00(base)			(base + 0x90)
 #define EHCI_INSNREG00_ENA_INCR16		(0x1 << 25)
@@ -40,8 +39,9 @@ struct nxp_ehci_hcd {
 	struct usb_hcd *hcd;
 	struct clk *clk;
 	struct usb_phy *phy;
-#ifdef EHCI_RESUME_WORK_QUEUE
+#ifdef CONFIG_USB_EHCI_NXP4330_RESUME_WORK
 	struct delayed_work	resume_work;
+	int delay_time;
 	unsigned char backup_state[256];
 #endif
 };
@@ -77,7 +77,7 @@ static const struct hc_driver nxp_ehci_hc_driver = {
 	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
 };
 
-#ifdef EHCI_RESUME_WORK_QUEUE
+#ifdef CONFIG_USB_EHCI_NXP4330_RESUME_WORK
 #include "../core/usb.h"
 
 static void nxp_ehci_resume_work(struct work_struct *work);
@@ -241,7 +241,11 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 	/*
 	 * add by jhkim to save resume time
 	 */
-#ifdef EHCI_RESUME_WORK_QUEUE
+#ifdef CONFIG_USB_EHCI_NXP4330_RESUME_WORK
+	nxp_ehci->delay_time = pdata->resume_delay_time;
+	if (100 > nxp_ehci->delay_time)
+		nxp_ehci->delay_time = EHCI_WORK_QUEUE_DELAY;
+
 	INIT_DELAYED_WORK(&nxp_ehci->resume_work, nxp_ehci_resume_work);
 #endif
 	return 0;
@@ -346,7 +350,7 @@ static int nxp_ehci_suspend(struct device *dev)
 	return rc;
 }
 
-#ifdef EHCI_RESUME_WORK_QUEUE
+#ifdef CONFIG_USB_EHCI_NXP4330_RESUME_WORK
 static void nxp_ehci_resume_work(struct work_struct *work)
 {
 	struct nxp_ehci_hcd *nxp_ehci = container_of(work, struct nxp_ehci_hcd, resume_work.work);
@@ -426,7 +430,7 @@ static void nxp_ehci_resume_work(struct work_struct *work)
 
 static int nxp_ehci_resume(struct device *dev)
 {
-#ifndef EHCI_RESUME_WORK_QUEUE
+#ifndef CONFIG_USB_EHCI_NXP4330_RESUME_WORK
 	struct nxp_ehci_hcd *nxp_ehci = dev_get_drvdata(dev);
 	struct usb_hcd *hcd = nxp_ehci->hcd;
 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
@@ -497,7 +501,7 @@ static int nxp_ehci_resume(struct device *dev)
 
 	nxp_ehci_resume_previous(udev, nxp_ehci->backup_state, &step);
 	schedule_delayed_work(&nxp_ehci->resume_work,
-				msecs_to_jiffies(EHCI_RESUME_WORK_QUEUE_DELAY));
+				msecs_to_jiffies(nxp_ehci->delay_time));
 #endif
 	return 0;
 }
