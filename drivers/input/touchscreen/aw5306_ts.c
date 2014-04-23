@@ -92,6 +92,8 @@ struct AW5306_ts_data {
 	char x_invert_flag;
 	char y_invert_flag;
 	char xy_exchange_flag;
+
+	struct work_struct	resume_work;
 };
 
 static unsigned char suspend_flag=0; //0: sleep out; 1: sleep in
@@ -719,6 +721,33 @@ static int AW5306_create_sysfs(struct i2c_client *client)
 }
 #endif
 
+static void AW5306_ts_work_resume(struct work_struct *work)
+{
+	struct AW5306_ts_data *ts = container_of(work, struct AW5306_ts_data, resume_work);
+	PM_DBGOUT("+%s (flag=%d, opend=%d)\n", __func__, suspend_flag, ts->open_count);
+
+	gpio_direction_output(TOUCH_RESET_PIN, 1);
+	msleep(1);
+	gpio_direction_output(TOUCH_RESET_PIN, 0);
+	msleep(30);
+
+	if (suspend_flag != 0 && ts->open_count) {
+	    msleep(50);
+		AW5306_User_Cfg1();
+		msleep(50);
+		AW5306_TP_Reinit();
+
+		tp_idlecnt = 0;
+		tp_SlowMode = 0;
+		suspend_flag = 0;
+		Resume_NoInit = 0;
+		Resume_Init = 0;
+		ts->touch_timer.expires = jiffies + 10;
+		add_timer(&ts->touch_timer);
+	}
+	PM_DBGOUT("-%s\n", __func__);
+}
+
 static int AW5306_ts_open(struct input_dev *dev)
 {
 	struct AW5306_ts_data * ts = input_get_drvdata(dev);
@@ -796,28 +825,7 @@ static int AW5306_ts_resume(struct i2c_client *client)
 {
 #ifndef CONFIG_SUSPEND_IDLE
 	struct AW5306_ts_data *ts = i2c_get_clientdata(this_client);
-	PM_DBGOUT("+%s (flag=%d, opend=%d)\n", __func__, suspend_flag, ts->open_count);
-
-	gpio_direction_output(TOUCH_RESET_PIN, 1);
-	msleep(1);
-	gpio_direction_output(TOUCH_RESET_PIN, 0);
-	msleep(30);
-
-	if (suspend_flag != 0 && ts->open_count) {
-	    msleep(50);
-		AW5306_User_Cfg1();
-		msleep(50);
-		AW5306_TP_Reinit();
-
-		tp_idlecnt = 0;
-		tp_SlowMode = 0;
-		suspend_flag = 0;
-		Resume_NoInit = 0;
-		Resume_Init = 0;
-		ts->touch_timer.expires = jiffies + 10;
-		add_timer(&ts->touch_timer);
-	}
-	PM_DBGOUT("-%s\n", __func__);
+	schedule_work(&ts->resume_work);
 #endif
 	return 0;
 }
@@ -952,6 +960,7 @@ AW5306_ts_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	input_set_drvdata(input, ts);
 #endif
 
+	INIT_WORK(&ts->resume_work, AW5306_ts_work_resume);
 	pr_debug("-%s\n", __func__);
 	return 0;
 

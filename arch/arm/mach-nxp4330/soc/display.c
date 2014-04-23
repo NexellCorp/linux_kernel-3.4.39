@@ -147,6 +147,7 @@ struct disp_control_info {
 	int 	module;							/* 0: primary, 1: secondary */
 	int		irqno;
 	int 	active_notify;
+	int		cond_notify;
 	unsigned int 		condition;
 	struct kobject   * 	kobj;
 	struct work_struct 	work;
@@ -440,12 +441,17 @@ static void disp_syncgen_irq_work(struct work_struct *work)
 	info = container_of(work, struct disp_control_info, work);
 	RET_ASSERT(info);
 
+	if (!info->cond_notify) 
+		return;
+
 	pdev = info->proc_dev;
 	module = info->module;
 	sprintf(path, "vsync.%d", module);
 
 	/* check select with exceptfds */
 	sysfs_notify(info->kobj, NULL, path);
+
+	info->cond_notify = 0;
 }
 
 static irqreturn_t	disp_syncgen_irqhandler(int irq, void *desc)
@@ -458,6 +464,7 @@ static irqreturn_t	disp_syncgen_irqhandler(int irq, void *desc)
 	wake_up_interruptible(&info->wait_queue);
 
 	if (info->active_notify) {
+		info->cond_notify = 1;
 		info->time_stamp = ktime_get();
 		schedule_work(&info->work);
 	}
@@ -772,7 +779,6 @@ static void disp_syncgen_resume(struct disp_process_dev *pdev)
 	int mlc_len = sizeof(struct NX_MLC_RegisterSet);
 	int dpc_len = sizeof(struct NX_DPC_RegisterSet);
 	int module = info->module;
-	int wait = info->wait_time * 10;
 	int i = 0;
 
 	PM_DBGOUT("%s display.%d (MLC:%s, DPC:%s)\n",
@@ -806,7 +812,7 @@ static void disp_syncgen_resume(struct disp_process_dev *pdev)
 		NX_DPC_SetClockDivisorEnable(module, CTRUE);
 
 		/* wait sync */
-		DISP_WAIT_POLL_VSYNC(module, wait);
+	//	DISP_WAIT_POLL_VSYNC(module, info->wait_time * 10);
 		disp_syncgen_irqenable(module, 1);	/* enable interrupt */
 	}
 }

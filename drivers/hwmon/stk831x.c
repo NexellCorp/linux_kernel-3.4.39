@@ -219,7 +219,7 @@ struct stk831x_data
 		atomic_t				fir_en;
 		struct data_filter		fir;
 #endif
-
+	struct work_struct	resume_work;
 };
 
 
@@ -2240,6 +2240,30 @@ static struct attribute_group stk831x_attribute_group = {
 };
 
 
+static void STK831X_work_resume(struct work_struct *work)
+{
+	struct stk831x_data *stk = container_of(work, struct stk831x_data, resume_work);
+#ifdef STK_RESUME_RE_INIT
+	int error;
+#endif
+
+	printk(KERN_INFO "%s\n", __func__);
+#ifdef STK_RESUME_RE_INIT
+	error = STK831X_Init(stk, this_client);
+	if (error)
+	{
+		printk(KERN_ERR "%s:stk831x initialization failed\n", __func__);
+		return;
+	}
+	stk->first_enable = true;
+#endif
+	if(stk->re_enable)
+	{
+		stk->re_enable = false;
+		STK831X_SetEnable(stk, 1);
+	}
+}
+
 static int stk831x_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int error;
@@ -2342,6 +2366,8 @@ static int stk831x_probe(struct i2c_client *client, const struct i2c_device_id *
 
 	/* add by jhkim, default enable */
 	STK831X_SetEnable(stk, 1);
+
+	INIT_WORK(&stk->resume_work, STK831X_work_resume);
 	printk(KERN_INFO "stk831x probe successfully (delay:%dms)\n", atomic_read(&stk->delay1));
 	return 0;
 
@@ -2897,12 +2923,13 @@ static int stk831x_resume(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct stk831x_data *stk = i2c_get_clientdata(client);
-#ifdef STK_RESUME_RE_INIT
+#if (0)
+	#ifdef STK_RESUME_RE_INIT
 	int error;
-#endif
+	#endif
 
 	printk(KERN_INFO "%s\n", __func__);
-#ifdef STK_RESUME_RE_INIT
+	#ifdef STK_RESUME_RE_INIT
 	error = STK831X_Init(stk, this_client);
 	if (error)
 	{
@@ -2910,13 +2937,17 @@ static int stk831x_resume(struct device *dev)
 		return error;
 	}
 	stk->first_enable = true;
-#endif
+	#endif
 	if(stk->re_enable)
 	{
 		stk->re_enable = false;
 		STK831X_SetEnable(stk, 1);
 
 	}
+#else
+	schedule_work(&stk->resume_work);
+#endif
+
 	return 0;
 }
 
