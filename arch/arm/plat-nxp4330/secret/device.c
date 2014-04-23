@@ -32,9 +32,6 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-/*------------------------------------------------------------------------------
- * DW MMC (Synopsys DesignWare Memory Card Interface)
- */
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
@@ -348,7 +345,7 @@ struct nxp_snd_dai_plat_data i2s_dai_data = {
 	.sample_rate	= 48000,
 	.hp_jack 		= {
 		.support    	= 1,
-		.detect_io		= PAD_GPIO_C + 15,
+		.detect_io		= CFG_IO_MCU_HP_DET,
 		.detect_level	= 0,
 	},
 };
@@ -384,7 +381,7 @@ static struct i2c_board_info micom_i2c_bdi = {
 
 static struct bosch_sensor_specific bss_bma2x2 = {
 	.name = "bma2x2",
-	.place = 0,
+	.place = 5,
 };
 
 #define	BMA2X2_I2C_BUS		(2)
@@ -409,7 +406,7 @@ static struct i2c_board_info bma2x2_i2c_bdi = {
 
 static struct bosch_sensor_specific bss_bmg160 = {
 	.name = "bmg160",
-	.place = 0,
+	.place = 5,
 };
 
 static struct i2c_board_info bmg160_i2c_bdi = {
@@ -490,7 +487,7 @@ void __init nxp_reserve_mem(void)
 
 #define NXE2000_I2C_BUS		(0)
 #define NXE2000_I2C_ADDR	(0x64 >> 1)
-#define NXE2000_IRQ			(PAD_GPIO_ALV + 4)
+#define NXE2000_IRQ			CFG_GPIO_PMIC_INTR
 
 #define PMC_CTRL			0x0
 #define PMC_CTRL_INTR_LOW	(1 << 17)
@@ -540,21 +537,36 @@ static struct regulator_consumer_supply nxe2000_ldo6_supply_0[] = {
 static struct regulator_consumer_supply nxe2000_ldo7_supply_0[] = {
 	REGULATOR_SUPPLY("vvid_3.3V", NULL),
 };
+#ifdef CONFIG_SECRET_2ND_BOARD
+static struct regulator_consumer_supply nxe2000_ldo8_supply_0[] = {
+	REGULATOR_SUPPLY("vdumy3", NULL),
+};
+#else
 static struct regulator_consumer_supply nxe2000_ldo8_supply_0[] = {
 	REGULATOR_SUPPLY("vaudio_3.3V", NULL),
 };
+#endif
 static struct regulator_consumer_supply nxe2000_ldo9_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy1", NULL),
 };
 static struct regulator_consumer_supply nxe2000_ldo10_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy2", NULL),
 };
+#ifdef CONFIG_SECRET_2ND_BOARD
+static struct regulator_consumer_supply nxe2000_ldortc1_supply_0[] = {
+	REGULATOR_SUPPLY("vdumy4", NULL),
+};
+static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
+	REGULATOR_SUPPLY("vdumy5", NULL),
+};
+#else
 static struct regulator_consumer_supply nxe2000_ldortc1_supply_0[] = {
 	REGULATOR_SUPPLY("valive_1.8V", NULL),
 };
 static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	REGULATOR_SUPPLY("valive_1.0V", NULL),
 };
+#endif
 
 
 #define NXE2000_PDATA_INIT(_name, _sname, _minuv, _maxuv, _always_on, _boot_on, \
@@ -598,12 +610,20 @@ NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.8V
 NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
 NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V VID */
+#ifdef CONFIG_SECRET_2ND_BOARD
+NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
+#else
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V AUDIO */
+#endif
 NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
+#ifdef CONFIG_SECRET_2ND_BOARD
+NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
+NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
+#else
 NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
 NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
-
+#endif
 
 /*-------- if nxe2000 RTC exists -----------*/
 #ifdef CONFIG_NXE2000_RTC
@@ -676,7 +696,7 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 		.ch_vfchg		= 0x03,	/* VFCHG	= 0 - 4 (4.05v, 4.10v, 4.15v, 4.20v, 4.35v) */
 		.ch_vrchg		= 0x03,	/* VRCHG	= 0 - 4 (3.85v, 3.90v, 3.95v, 4.00v, 4.10v) */
 		.ch_vbatovset	= 0xFF,	/* VBATOVSET	= 0 or 1 (0 : 4.38v(up)/3.95v(down) 1: 4.53v(up)/4.10v(down)) */
-		.ch_ichg 		= 0x07,	/* ICHG		= 0 - 0x1D (100mA - 3000mA) */
+		.ch_ichg 		= 0x0E,	/* ICHG		= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_adp 	= 0x18,	/* ILIM_ADP	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_usb 	= 0x04,	/* ILIM_USB	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_icchg		= 0x03,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
@@ -812,6 +832,9 @@ static struct i2c_board_info __initdata nxe2000_regulators[] = {
 #include <mach/nxp-v4l2-platformdata.h>
 #include <mach/soc.h>
 
+static struct nxp_capture_platformdata capture_plat_data[] = {
+    { 0, NULL, 0, },
+};
 
 /* out platformdata */
 static struct i2c_board_info hdmi_edid_i2c_boardinfo = {
@@ -867,6 +890,7 @@ static struct nxp_out_platformdata out_plat_data = {
 };
 
 static struct nxp_v4l2_platformdata v4l2_plat_data = {
+    .captures = &capture_plat_data[0],
     .out = &out_plat_data,
 };
 
@@ -894,6 +918,45 @@ static struct dw_mci_board _dwmci0_data = {
 					  MMC_CAP_NONREMOVABLE |
 			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
 				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
+	//.caps2			= MMC_CAP2_PACKED_WR,
+	.desc_sz		= 4,
+	.detect_delay_ms= 200,
+	.sdr_timing		= 0x01010001,
+	.ddr_timing		= 0x03030002,
+};
+#endif
+
+#ifdef CONFIG_MMC_NEXELL_CH1
+static struct dw_mci_board _dwmci1_data = {
+	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
+				  	  DW_MCI_QUIRK_HIGHSPEED |
+				  	  DW_MMC_QUIRK_HW_RESET_PW |
+				      DW_MCI_QUIRK_NO_DETECT_EBIT,
+	.bus_hz			= 100 * 1000 * 1000,
+	.caps			= MMC_CAP_UHS_DDR50 |
+					  MMC_CAP_NONREMOVABLE |
+			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
+				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
+	//.caps2			= MMC_CAP2_PACKED_WR,
+	.desc_sz		= 4,
+	.detect_delay_ms= 200,
+	.sdr_timing		= 0x01010001,
+	.ddr_timing		= 0x03030002,
+};
+#endif
+
+#ifdef CONFIG_MMC_NEXELL_CH2
+static struct dw_mci_board _dwmci2_data = {
+	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
+				  	  DW_MCI_QUIRK_HIGHSPEED |
+				  	  DW_MMC_QUIRK_HW_RESET_PW |
+				      DW_MCI_QUIRK_NO_DETECT_EBIT,
+	.bus_hz			= 100 * 1000 * 1000,
+	.caps			= MMC_CAP_UHS_DDR50 |
+					  MMC_CAP_NONREMOVABLE |
+			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
+				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
+	//.caps2			= MMC_CAP2_PACKED_WR,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
 	.sdr_timing		= 0x01010001,
@@ -936,6 +999,12 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_MMC_DW)
 	#ifdef CONFIG_MMC_NEXELL_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
+	#endif
+	#ifdef CONFIG_MMC_NEXELL_CH1
+	nxp_mmc_add_device(1, &_dwmci1_data);
+	#endif
+	#ifdef CONFIG_MMC_NEXELL_CH2
+	nxp_mmc_add_device(2, &_dwmci2_data);
 	#endif
 #endif
 

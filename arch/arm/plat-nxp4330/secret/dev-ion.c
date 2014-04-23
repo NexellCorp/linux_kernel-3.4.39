@@ -3,6 +3,7 @@
 #include <linux/ion.h>
 #include <linux/nxp_ion.h>
 #include <linux/slab.h>
+#include <linux/version.h>
 #include <mach/ion.h>
 
 /* platform device is defined in mach/device.c */
@@ -11,8 +12,14 @@ extern struct platform_device nxp_device_ion;
 void __init nxp_ion_set_platdata(void)
 {
     struct ion_platform_data *pdata;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,39))
+    pdata = kzalloc(sizeof(struct ion_platform_data), GFP_KERNEL);
+    pdata->heaps = kzalloc(5 * sizeof(struct ion_platform_heap), GFP_KERNEL);
+#else
     pdata = kzalloc(sizeof(struct ion_platform_data) 
             + 5 * sizeof(struct ion_platform_heap), GFP_KERNEL);
+#endif
+
     if (pdata) {
         pdata->nr = 3;
         pdata->heaps[0].type = ION_HEAP_TYPE_SYSTEM;
