@@ -13,10 +13,18 @@
 
 #include <linux/clk.h>
 #include <linux/platform_device.h>
+#include <linux/regulator/consumer.h>
 
 #include <mach/devices.h>
 #include <mach/ehci.h>
 #include <mach/usb-phy.h>
+#include <mach/soc.h>
+
+/*
+ * enumeration at end of resume sequence for fast resume
+ */
+#define	EHCI_RESUME_WORK_QUEUE
+#define	EHCI_RESUME_WORK_QUEUE_DELAY	(200)	/* wait for end usb resume sequence */
 
 #define EHCI_INSNREG00(base)			(base + 0x90)
 #define EHCI_INSNREG00_ENA_INCR16		(0x1 << 25)
@@ -32,6 +40,10 @@ struct nxp_ehci_hcd {
 	struct usb_hcd *hcd;
 	struct clk *clk;
 	struct usb_phy *phy;
+#ifdef EHCI_RESUME_WORK_QUEUE
+	struct delayed_work	resume_work;
+	unsigned char backup_state[256];
+#endif
 };
 
 static const struct hc_driver nxp_ehci_hc_driver = {
@@ -64,6 +76,52 @@ static const struct hc_driver nxp_ehci_hc_driver = {
 
 	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
 };
+
+#ifdef EHCI_RESUME_WORK_QUEUE
+#include "../core/usb.h"
+
+static void nxp_ehci_resume_work(struct work_struct *work);
+
+static void nxp_ehci_resume_previous(struct usb_device *hdev, unsigned char *state, int *step)
+{
+	int port = hdev->maxchild;
+
+	pr_debug("%s: %s, ports=%d, step=%d, state=%d\n",
+		__func__, dev_name(&hdev->dev), hdev->maxchild, (int)*step, hdev->state);
+
+	state[*step] = (unsigned char)(hdev->state);
+	*step += 1;
+
+	hdev->state = USB_STATE_NOTATTACHED;
+	for (port = hdev->maxchild; port > 0; port--) {
+		struct usb_device *udev = hdev->children[port-1];
+		if (udev)
+			nxp_ehci_resume_previous(udev, state, step);
+	}
+}
+
+static void nxp_ehci_resume_last(struct usb_device *hdev, unsigned char *state, int *step)
+{
+	int port = hdev->maxchild;
+
+	hdev->state = state[*step];
+	*step += 1;
+
+	pr_debug("%s: %s, ports=%d, step=%d, state=%d\n",
+		__func__, dev_name(&hdev->dev), hdev->maxchild, (int)*step, hdev->state);
+
+	usb_resume(&hdev->dev, PMSG_RESUME);
+
+	for (port = hdev->maxchild; port > 0; port--) {
+		struct usb_device *udev = hdev->children[port-1];
+		if (udev) {
+			udev->state = USB_STATE_CONFIGURED;
+			udev->reset_resume = 1;
+			nxp_ehci_resume_last(udev, state, step);
+		}
+	}
+}
+#endif
 
 static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 {
@@ -180,6 +238,12 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 			goto fail;
 	}
 
+	/*
+	 * add by jhkim to save resume time
+	 */
+#ifdef EHCI_RESUME_WORK_QUEUE
+	INIT_DELAYED_WORK(&nxp_ehci->resume_work, nxp_ehci_resume_work);
+#endif
 	return 0;
 
 fail:
@@ -282,8 +346,87 @@ static int nxp_ehci_suspend(struct device *dev)
 	return rc;
 }
 
+#ifdef EHCI_RESUME_WORK_QUEUE
+static void nxp_ehci_resume_work(struct work_struct *work)
+{
+	struct nxp_ehci_hcd *nxp_ehci = container_of(work, struct nxp_ehci_hcd, resume_work.work);
+	struct usb_hcd *hcd = nxp_ehci->hcd;
+	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+	struct platform_device *pdev = to_platform_device(nxp_ehci->dev);
+	struct nxp4330_ehci_platdata *pdata = pdev->dev.platform_data;
+	struct usb_device *udev = hcd->self.root_hub;
+
+	if (nxp_ehci->phy)
+		return;
+
+#if defined( CONFIG_USB_HSIC_NXP4330 )
+	if (pdata && pdata->phy_init)
+		pdata->phy_init(pdev, NXP_USB_PHY_HSIC);
+
+	if (pdata && pdata->hsic_phy_pwr_on)
+		pdata->hsic_phy_pwr_on(pdev, TRUE);
+#else
+
+	if (pdata && pdata->phy_init)
+		pdata->phy_init(pdev, NXP_USB_PHY_EHCI);
+#endif
+
+	/* DMA burst Enable */
+//	writel(EHCI_INSNREG00_ENABLE_DMA_BURST, EHCI_INSNREG00(hcd->regs));
+
+	if (time_before(jiffies, ehci->next_statechange))
+		msleep(1);		// msleep(100);
+
+	/* Mark hardware accessible again as we are out of D3 state by now */
+	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
+
+	if (ehci_readl(ehci, &ehci->regs->configured_flag) == FLAG_CF) {
+		int	mask = INTR_MASK;
+
+		ehci_prepare_ports_for_controller_resume(ehci);
+		if (!hcd->self.root_hub->do_remote_wakeup)
+			mask &= ~STS_PCD;
+		ehci_writel(ehci, mask, &ehci->regs->intr_enable);
+		ehci_readl(ehci, &ehci->regs->intr_enable);
+		return;
+	}
+
+	usb_root_hub_lost_power(hcd->self.root_hub);
+
+	(void) ehci_halt(ehci);
+	(void) ehci_reset(ehci);
+
+	/* emptying the schedule aborts any urbs */
+	spin_lock_irq(&ehci->lock);
+	if (ehci->reclaim)
+		end_unlink_async(ehci);
+	ehci_work(ehci);
+	spin_unlock_irq(&ehci->lock);
+
+	ehci_writel(ehci, ehci->command, &ehci->regs->command);
+	ehci_writel(ehci, FLAG_CF, &ehci->regs->configured_flag);
+	ehci_readl(ehci, &ehci->regs->command);	/* unblock posted writes */
+
+	/* here we "know" root ports should always stay powered */
+	ehci_port_power(ehci, 1);
+
+	ehci->rh_state = EHCI_RH_SUSPENDED;
+
+	/*
+	 * usb resume
+	 */
+	if (udev) {
+		int step = 0;
+		usb_lock_device(udev);
+		nxp_ehci_resume_last(udev, nxp_ehci->backup_state, &step);
+		usb_unlock_device(udev);
+	}
+}
+#endif
+
 static int nxp_ehci_resume(struct device *dev)
 {
+#ifndef EHCI_RESUME_WORK_QUEUE
 	struct nxp_ehci_hcd *nxp_ehci = dev_get_drvdata(dev);
 	struct usb_hcd *hcd = nxp_ehci->hcd;
 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
@@ -346,6 +489,16 @@ static int nxp_ehci_resume(struct device *dev)
 
 	ehci->rh_state = EHCI_RH_SUSPENDED;
 
+#else
+	struct nxp_ehci_hcd *nxp_ehci = dev_get_drvdata(dev);
+	struct usb_hcd *hcd = nxp_ehci->hcd;
+	struct usb_device *udev = hcd->self.root_hub;
+	int step = 0;
+
+	nxp_ehci_resume_previous(udev, nxp_ehci->backup_state, &step);
+	schedule_delayed_work(&nxp_ehci->resume_work,
+				msecs_to_jiffies(EHCI_RESUME_WORK_QUEUE_DELAY));
+#endif
 	return 0;
 }
 #else
