@@ -144,8 +144,11 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 		}
 
 		// 5. Release utmi reset
-		//writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<20), SOC_VA_TIEOFF + 0x14);
-		writel(readl(SOC_VA_TIEOFF + 0x14) |  (3<<20), SOC_VA_TIEOFF + 0x14);
+		temp1 = readl(SOC_VA_TIEOFF + 0x14) | (7<<20);
+		if (type == NXP_USB_PHY_HSIC)
+			writel(temp1, SOC_VA_TIEOFF + 0x14);
+		else
+			writel(temp1 & ~(4<<20), SOC_VA_TIEOFF + 0x14);
 
 		//6. Release ahb reset of EHCI, OHCI
 		//writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<17), SOC_VA_TIEOFF + 0x14);
@@ -195,12 +198,12 @@ int nxp_usb_phy_exit(struct platform_device *pdev, int type)
 		writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<17), SOC_VA_TIEOFF + 0x14);
 
 		// 5. Release utmi reset
-		writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<20), SOC_VA_TIEOFF + 0x14);
+		writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<20), SOC_VA_TIEOFF + 0x14);
 
 		// 4. POR of PHY
 		writel(readl(SOC_VA_TIEOFF + 0x20) |  (3<<7), SOC_VA_TIEOFF + 0x20);
 		if (type == NXP_USB_PHY_HSIC) {
-			// Set HSIC mode
+			// Clear HSIC mode
 			writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<23), SOC_VA_TIEOFF + 0x14);
 
 			// POR of HSIC PHY

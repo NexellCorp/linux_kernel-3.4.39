@@ -74,6 +74,10 @@ struct ehci_hcd {			/* one per controller */
 	struct ehci_regs __iomem *regs;
 	struct ehci_dbg_port __iomem *debug;
 
+#if defined( CONFIG_USB_HSIC_NXP4330 )
+	__u32 __iomem	*hsic_status_reg;
+#endif
+
 	__u32			hcs_params;	/* cached register copy */
 	spinlock_t		lock;
 	enum ehci_rh_state	rh_state;
