@@ -43,6 +43,11 @@
 #include <nxe2000-private.h>
 
 /*
+#define	PM_DBGOUT	printk
+*/
+#define BAT_RESUME_WORK_QUEUE
+
+/*
  * Debug
  */
 #if (0)
@@ -277,6 +282,8 @@ struct nxe2000_battery_info {
 	int				low_battery_flag;
 
 	int 			num;
+
+	struct work_struct	resume_work;	/* add by jhkim */
 };
 
 int g_full_flag;
@@ -377,7 +384,7 @@ static int check_charge_status_2(struct nxe2000_battery_info *info, int displaye
 {
 	if (displayed_soc_temp < 0)
 			displayed_soc_temp = 0;
-	
+
 	get_power_supply_status(info);
 	info->soca->soc = calc_capacity(info) * 100;
 
@@ -527,7 +534,7 @@ static int calc_capacity_in_period(struct nxe2000_battery_info *info,
 		goto out;
 	if (cc_stop_flag == 1)
 	{
-	
+
 		/* Enable charging */
 		err = nxe2000_set_bits(info->dev->parent, NXE2000_CHG_CTL1, 0x03);
 		if (err < 0)
@@ -572,7 +579,7 @@ static int calc_capacity_in_period(struct nxe2000_battery_info *info,
 #ifdef NXE2000_BATTERY_VERSION_20131226_V3000
 	*cc_cap = cc_sum*25/9/fa_cap;		/* unit is 0.01% */
 
-	//////////////////////////////////////////////////////////////////	
+	//////////////////////////////////////////////////////////////////
 	cc_cap_min = fa_cap*3600/100/100/100;	/* Unit is 0.0001% */
 	cc_cap_temp = cc_sum / cc_cap_min;
 #endif
@@ -582,7 +589,7 @@ static int calc_capacity_in_period(struct nxe2000_battery_info *info,
 	else
 		*cc_cap = cc_sum*25/9/fa_cap;       /* unit is 0.01% */
 
-	//////////////////////////////////////////////////////////////////  
+	//////////////////////////////////////////////////////////////////
 	cc_cap_min = fa_cap*3600/100/100/100;   /* Unit is 0.0001% */
 
 	if(cc_cap_min == 0)
@@ -592,7 +599,7 @@ static int calc_capacity_in_period(struct nxe2000_battery_info *info,
 #endif
 
 	cc_cap_res = cc_cap_temp % 100;
-	
+
 	if(*is_charging) {
 		info->soca->cc_cap_offset += cc_cap_res;
 		if (info->soca->cc_cap_offset >= 100) {
@@ -664,7 +671,7 @@ static int get_target_use_cap(struct nxe2000_battery_info *info)
 	//else
 	//	Rsys_now = info->soca->Rsys;
 	//	Rsys_now = max(info->soca->Rsys/2, Rsys_now);
-	
+
 
 	Ocv_ZeroPer_now = info->soca->target_vsys * 1000 - Ibat_now * Rsys_now;
 
@@ -685,7 +692,7 @@ static int get_target_use_cap(struct nxe2000_battery_info *info)
 
 	/* get RE_CAP_now */
 	RE_CAP_now = FA_CAP_now - use_cap;
-	
+
 	if (RE_CAP_now < NXE2000_RE_CAP_GO_DOWN) {
 		info->soca->hurry_up_flg = 1;
 	} else if (info->soca->Vsys_ave < info->soca->target_vsys*1000) {
@@ -714,7 +721,7 @@ static int get_target_use_cap(struct nxe2000_battery_info *info)
 #ifdef ENABLE_OCV_TABLE_CALIB
 /**
 * Calibration OCV Table
-* - Update the value of VBAT on 100% in OCV table 
+* - Update the value of VBAT on 100% in OCV table
 *    if battery is Full charged.
 * - int vbat_ocv <- unit is uV
 **/
@@ -765,7 +772,7 @@ static int calib_ocvTable(struct nxe2000_battery_info *info, int vbat_ocv)
 	for (i = 0; i <= 10; i = i+1) {
 		info->soca->ocv_table[i] = get_OCV_voltage(info, i);
 	}
-	
+
 	/* FG_En on & Reset*/
 	ret = reset_FG_process(info);
 	if (ret < 0) {
@@ -818,7 +825,7 @@ static void nxe2000_displayed_work(struct work_struct *work)
 	}
 
 	mutex_lock(&info->lock);
-	
+
 	is_jeita_updated = false;
 
 	if ((NXE2000_SOCA_START == info->soca->status)
@@ -833,11 +840,11 @@ static void nxe2000_displayed_work(struct work_struct *work)
 	/* judge Full state or Moni Vsys state */
 	calculated_ocv = calc_ocv(info);
 	if ((NXE2000_SOCA_DISP == info->soca->status)
-		 || (NXE2000_SOCA_STABLE == info->soca->status)) {	
+		 || (NXE2000_SOCA_STABLE == info->soca->status)) {
 		/* caluc 95% ocv */
 		temp_ocv = get_OCV_voltage(info, 10) -
 					(get_OCV_voltage(info, 10) - get_OCV_voltage(info, 9))/2;
-		
+
 		if(g_full_flag == 1){	/* for issue 1 solution start*/
 			info->soca->status = NXE2000_SOCA_FULL;
 			info->soca->last_cc_sum = 0;
@@ -890,11 +897,11 @@ static void nxe2000_displayed_work(struct work_struct *work)
 		}
 		info->soca->soc = calc_capacity(info) * 100;
 		info->soca->last_soc = calc_capacity_2(info);	/* for DISP */
-		
+
 		if (info->soca->Ibat_ave >= -20) { /* charging */
 			if (0 == info->soca->jt_limit) {
 				if (g_full_flag == 1) {
-					
+
 					if (POWER_SUPPLY_STATUS_FULL == info->soca->chg_status) {
 						if(info->soca->full_reset_count < NXE2000_UPDATE_COUNT_FULL_RESET) {
 							info->soca->full_reset_count++;
@@ -944,7 +951,7 @@ static void nxe2000_displayed_work(struct work_struct *work)
 						g_full_flag = 0;
 						info->soca->status = NXE2000_SOCA_DISP;
 						info->soca->soc_delta = 0;
-					} else if ((POWER_SUPPLY_STATUS_FULL == info->soca->chg_status) 
+					} else if ((POWER_SUPPLY_STATUS_FULL == info->soca->chg_status)
 						&& (info->soca->displayed_soc >= 9890)){
 						if(info->soca->chg_cmp_times > NXE2000_FULL_WAIT_TIME) {
 							info->soca->displayed_soc = 100*100;
@@ -964,7 +971,7 @@ static void nxe2000_displayed_work(struct work_struct *work)
 					} else {
 						fa_cap = get_check_fuel_gauge_reg(info, FA_CAP_H_REG, FA_CAP_L_REG,
 							0x7fff);
-						
+
 						if (info->soca->displayed_soc >= 9950) {
 							if((info->soca->soc_full - info->soca->soc) < 200) {
 								goto end_flow;
@@ -1120,7 +1127,7 @@ static void nxe2000_displayed_work(struct work_struct *work)
 			info->soca->status = NXE2000_SOCA_STABLE;
 			delay_flag = 1;
 		} else if (info->soca->Ibat_ave > 0) {
-			if ((0 == info->soca->jt_limit) || 
+			if ((0 == info->soca->jt_limit) ||
 			(POWER_SUPPLY_STATUS_FULL != info->soca->chg_status)) {
 				/* Charge */
 				if (last_disp_round < soc_round) {
@@ -1207,14 +1214,14 @@ static void nxe2000_displayed_work(struct work_struct *work)
 		/* caluc 95% ocv */
 		temp_ocv = get_OCV_voltage(info, 10) -
 					(get_OCV_voltage(info, 10) - get_OCV_voltage(info, 9))/2;
-		
+
 		if(g_full_flag == 1){	/* for issue 1 solution start*/
 			info->soca->status = NXE2000_SOCA_FULL;
 			info->soca->last_cc_sum = 0;
 			err = reset_FG_process(info);
 			if (err < 0)
 				dev_err(info->dev, "Error in writing the control register\n");
-			
+
 			goto end_flow;
 		}else if ((POWER_SUPPLY_STATUS_FULL == info->soca->chg_status)
 			&& (calculated_ocv > temp_ocv)) {
@@ -1247,7 +1254,7 @@ static void nxe2000_displayed_work(struct work_struct *work)
 				info->soca->last_cc_sum = 0;
 				err = reset_FG_process(info);
 				if (err < 0)
-					dev_err(info->dev, "Error in writing the control register\n");				
+					dev_err(info->dev, "Error in writing the control register\n");
 				goto end_flow;
 			}
 		}
@@ -1327,7 +1334,7 @@ static void nxe2000_displayed_work(struct work_struct *work)
 						      && (Vbat < info->fg_poff_vbat * 1000) ){
 							  info->soca->target_use_cap = 0;
 							  info->soca->status = NXE2000_SOCA_LOW_VOL;
-						  } else { 
+						  } else {
 							  info->soca->status = NXE2000_SOCA_UNSTABLE;
 						  }
 					}
@@ -1395,7 +1402,7 @@ static void nxe2000_displayed_work(struct work_struct *work)
 						      && (Vbat < info->fg_poff_vbat * 1000)){
 							  info->soca->target_use_cap = 0;
 							  info->soca->status = NXE2000_SOCA_LOW_VOL;
-						  } else { 
+						  } else {
 							  info->soca->status = NXE2000_SOCA_UNSTABLE;
 						  }
 					}
@@ -1663,7 +1670,7 @@ static void nxe2000_charge_monitor_work(struct work_struct *work)
 		case	1:
 			info->soca->dischg_state = 2;
 			break;
-	
+
 		case	2:
 		default:
 			break;
@@ -1824,7 +1831,7 @@ static int nxe2000_init_fgsoca(struct nxe2000_battery_info *info)
 			dev_err(info->dev,
 			"Error in writing CHGISET_REG%d\n", err);
 	}
-	
+
 	/* Rbat : Transfer */
 	info->soca->Rbat = get_OCV_init_Data(info, 12) * 1000 / 512
 							 * 5000 / 4095;
@@ -1868,7 +1875,7 @@ static int nxe2000_init_fgsoca(struct nxe2000_battery_info *info)
 	}
 
 	g_full_flag = 0;
-	
+
 #ifdef ENABLE_FG_KEEP_ON_MODE
 	g_fg_on_mode = 1;
 	info->soca->rsoc_ready_flag = 1;
@@ -1930,7 +1937,6 @@ static void nxe2000_sw_ubc_work(struct work_struct *work)
 	struct nxe2000_battery_info *info = container_of(work,
 		struct nxe2000_battery_info, sw_ubc_work.work);
 	uint8_t val = 0;
-	int is_sdp_type;
 	int pmic_vbus;
 	int ret;
 
@@ -2217,15 +2223,15 @@ set_recheck:
 static int check_jeita_status(struct nxe2000_battery_info *info, bool *is_jeita_updated)
 /*  JEITA Parameter settings
 *
-*          VCHG  
-*            |     
+*          VCHG
+*            |
 * jt_vfchg_h~+~~~~~~~~~~~~~~~~~~~+
 *            |                   |
 * jt_vfchg_l-| - - - - - - - - - +~~~~~~~~~~+
-*            |    Charge area    +          |               
+*            |    Charge area    +          |
 *  -------0--+-------------------+----------+--- Temp
 *            !                   +
-*          ICHG     
+*          ICHG
 *            |                   +
 *  jt_ichg_h-+ - -+~~~~~~~~~~~~~~+~~~~~~~~~~+
 *            +    |              +          |
@@ -2263,7 +2269,7 @@ static int check_jeita_status(struct nxe2000_battery_info *info, bool *is_jeita_
 	}
 	vfchg = (batset2_org & 0x70) >> 4;
 	batset2_org &= 0x8F;
-	
+
 	/* Read CHGISET */
 	err = nxe2000_read(info->dev->parent, CHGISET_REG, &chgiset_org);
 	if (err < 0) {
@@ -2274,7 +2280,7 @@ static int check_jeita_status(struct nxe2000_battery_info *info, bool *is_jeita_
 
 	set_ichg_h = (uint8_t)(chgiset_org | info->jt_ichg_h);
 	set_ichg_l = (uint8_t)(chgiset_org | info->jt_ichg_l);
-		
+
 	set_vchg_h = (uint8_t)((info->jt_vfchg_h << 4) | batset2_org);
 	set_vchg_l = (uint8_t)((info->jt_vfchg_l << 4) | batset2_org);
 
@@ -2381,7 +2387,7 @@ static int check_jeita_status(struct nxe2000_battery_info *info, bool *is_jeita_
 	get_power_supply_status(info);
 
 	return 0;
-	
+
 out:
 	return err;
 }
@@ -2476,7 +2482,7 @@ static void check_charging_state_work(struct work_struct *work)
 		ret = nxe2000_clr_bits(info->dev->parent, NXE2000_FG_CTRL, 0x10);
 		if (ret < 0)
 			dev_err(info->dev, "Error in writing FG_CTRL\n");
-		
+
 		return;	/* Factory Mode */
 	}
 
@@ -2591,7 +2597,7 @@ static int nxe2000_set_OCV_table(struct nxe2000_battery_info *info)
 	uint8_t val_temp;
 
 
-	//get ocv table 
+	//get ocv table
 	for (i = 0; i <= 10; i = i+1) {
 		info->soca->ocv_table_def[i] = get_OCV_voltage(info, i);
 	}
@@ -2612,7 +2618,7 @@ static int nxe2000_set_OCV_table(struct nxe2000_battery_info *info)
 //		info->soca->cutoff_ocv = info->soca->target_vsys - Ibat_min * info->soca->Rsys / 1000;
 
 		info->soca->target_vsys = temp1 + ( info->soca->target_ibat * info->soca->Rsys ) / 1000;
-		
+
 
 	} else {
 		info->soca->target_ibat = info->fg_target_ibat;
@@ -2631,7 +2637,7 @@ static int nxe2000_set_OCV_table(struct nxe2000_battery_info *info)
 
 		Ibat_min = -1 * info->soca->target_ibat;
 		info->soca->cutoff_ocv = info->soca->target_vsys - Ibat_min * info->soca->Rsys / 1000;
-		
+
 		full_ocv = (battery_init_para[info->num][20]<<8) | (battery_init_para[info->num][21]);
 		full_ocv = full_ocv * 5000 / 4095;
 
@@ -3000,7 +3006,7 @@ static int nxe2000_init_charger(struct nxe2000_battery_info *info)
 
 		/* keep bit 3 and bit 7 */
 	val = (val & 0x88);
-	
+
 	val = val + val2 + val3;
 
 	err = nxe2000_write(info->dev->parent, BATSET2_REG, val);
@@ -3058,7 +3064,7 @@ static int nxe2000_init_charger(struct nxe2000_battery_info *info)
 								 err);
 		goto free_device;
 	}
-	
+
 	if (charge_status != POWER_SUPPLY_STATUS_FULL)
 	{
 		/* Enable charging */
@@ -3071,7 +3077,7 @@ static int nxe2000_init_charger(struct nxe2000_battery_info *info)
 	/* get OCV100_min, OCV100_min*/
 	temp = (battery_init_para[info->num][24]<<8) | (battery_init_para[info->num][25]);
 	rbat = temp * 1000 / 512 * 5000 / 4095;
-	
+
 	/* get vfchg value */
 	err = nxe2000_read(info->dev->parent, BATSET2_REG, &val);
 	if (err < 0) {
@@ -3356,7 +3362,7 @@ static void charger_irq_work(struct work_struct *work)
 	int pmic_vbus = 0;
 	int ret = 0;
 	uint8_t val = 0;
-	
+
 	power_supply_changed(&info->battery);
 
 	if (info->gpio_otg_usbid > -1)
@@ -3838,7 +3844,7 @@ static int calc_capacity(struct nxe2000_battery_info *info)
 
 	temp = min(100, temp);
 	temp = max(0, temp);
-	
+
 	return temp;		/* Unit is 1% */
 }
 
@@ -4415,7 +4421,7 @@ static int nxe2000_batt_get_prop(struct power_supply *psy,
 		} else {
 			//val->intval = -EINVAL;
 			val->intval = info->time_to_empty * 60;
-			DBGOUT(info->dev, "time of empty battery is %d minutes\n", info->time_to_empty); 
+			DBGOUT(info->dev, "time of empty battery is %d minutes\n", info->time_to_empty);
 		}
 		break;
 
@@ -4533,6 +4539,10 @@ static void set_gpio_config(struct nxe2000_battery_info *info)
 	}
 #endif
 }
+
+#ifdef BAT_RESUME_WORK_QUEUE
+static void nxe2000_battery_resume_work(struct work_struct *work);
+#endif
 
 static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 {
@@ -4698,6 +4708,10 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 #ifdef KOOK_UBC_CHECK
 	INIT_DELAYED_WORK_DEFERRABLE(&info->get_charger_work,
 					nxe2000_get_charger_work);
+#endif
+
+#ifdef BAT_RESUME_WORK_QUEUE
+	INIT_WORK(&info->resume_work, nxe2000_battery_resume_work);
 #endif
 
 	/* for SW UBC. */
@@ -5146,9 +5160,33 @@ static int nxe2000_battery_suspend(struct device *dev)
 	return 0;
 }
 
+#ifdef BAT_RESUME_WORK_QUEUE
 static int nxe2000_battery_resume(struct device *dev)
 {
 	struct nxe2000_battery_info *info = dev_get_drvdata(dev);
+	int ret;
+
+	#ifdef CONFIG_SUSPEND_IDLE
+	ret = nxe2000_set_bits(info->dev->parent, 0x91, 0x10);    // GPIO4 : High
+	if (ret < 0)
+		ret = nxe2000_set_bits(info->dev->parent, 0x91, 0x10);
+	#else
+	ret = nxe2000_set_bits(info->dev->parent, 0x90, 0x10);    // GPIO4 : Output
+	if (ret < 0)
+		ret = nxe2000_set_bits(info->dev->parent, 0x90, 0x10);
+	#endif
+
+	schedule_work(&info->resume_work);
+	return ret;
+}
+
+static void nxe2000_battery_resume_work(struct work_struct *work) {
+	struct nxe2000_battery_info *info = container_of(work,
+				struct nxe2000_battery_info, resume_work);
+#else
+static int nxe2000_battery_resume(struct device *dev) {
+	struct nxe2000_battery_info *info = dev_get_drvdata(dev);
+#endif
 	uint8_t val;
 	int ret;
 	int displayed_soc_temp;
@@ -5156,7 +5194,6 @@ static int nxe2000_battery_resume(struct device *dev)
 	bool is_charging = true;
 	bool is_jeita_updated;
 	int i;
-	int otg_id;
 
 	PM_DBGOUT("PMU: ++ %s\n", __func__);
 
@@ -5165,14 +5202,16 @@ static int nxe2000_battery_resume(struct device *dev)
 
 	info->low_battery_flag		= 0;
 
-#ifdef CONFIG_SUSPEND_IDLE
+#ifndef BAT_RESUME_WORK_QUEUE
+	#ifdef CONFIG_SUSPEND_IDLE
 	ret = nxe2000_set_bits(info->dev->parent, 0x91, 0x10);    // GPIO4 : High
 	if (ret < 0)
 		ret = nxe2000_set_bits(info->dev->parent, 0x91, 0x10);
-#else
+	#else
 	ret = nxe2000_set_bits(info->dev->parent, 0x90, 0x10);    // GPIO4 : Output
 	if (ret < 0)
 		ret = nxe2000_set_bits(info->dev->parent, 0x90, 0x10);
+	#endif
 #endif
 
 	nxe2000_init_battery(info);
@@ -5232,7 +5271,7 @@ static int nxe2000_battery_resume(struct device *dev)
 		{
 			ret = calc_capacity_in_period(info, &cc_cap,
 							 &is_charging, false);
-		} else { 
+		} else {
 			ret = calc_capacity_in_period(info, &cc_cap,
 							 &is_charging, true);
 		}
@@ -5244,7 +5283,7 @@ static int nxe2000_battery_resume(struct device *dev)
 
 		displayed_soc_temp = info->soca->soc + info->soca->cc_delta;
 		if (info->soca->zero_flg == 1) {
-			if((info->soca->Ibat_ave >= 0) 
+			if((info->soca->Ibat_ave >= 0)
 			|| (displayed_soc_temp >= 100)){
 				info->soca->zero_flg = 0;
 			} else {
@@ -5338,7 +5377,9 @@ static int nxe2000_battery_resume(struct device *dev)
 
 	PM_DBGOUT("PMU: -- %s\n", __func__);
 
+#ifndef BAT_RESUME_WORK_QUEUE
 	return 0;
+#endif
 }
 
 static const struct dev_pm_ops nxe2000_battery_pm_ops = {
