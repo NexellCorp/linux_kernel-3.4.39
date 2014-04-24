@@ -40,6 +40,7 @@ struct nxp_ehci_hcd {
 	struct clk *clk;
 	struct usb_phy *phy;
 #ifdef CONFIG_USB_EHCI_NXP4330_RESUME_WORK
+	struct workqueue_struct *resume_wq;
 	struct delayed_work	resume_work;
 	int delay_time;
 	unsigned char backup_state[256];
@@ -246,6 +247,10 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 	if (100 > nxp_ehci->delay_time)
 		nxp_ehci->delay_time = EHCI_WORK_QUEUE_DELAY;
 
+	nxp_ehci->resume_wq = alloc_workqueue("nxp-ehci", WQ_MEM_RECLAIM | WQ_NON_REENTRANT, 1);
+	if (!nxp_ehci->resume_wq)
+		goto fail;
+
 	INIT_DELAYED_WORK(&nxp_ehci->resume_work, nxp_ehci_resume_work);
 #endif
 	return 0;
@@ -280,6 +285,9 @@ static int __devexit nxp_ehci_remove(struct platform_device *pdev)
 		pdata->phy_exit(pdev, NXP_USB_PHY_EHCI);
 #endif
 
+#ifdef CONFIG_USB_EHCI_NXP4330_RESUME_WORK
+	destroy_workqueue(nxp_ehci->resume_wq);
+#endif
 	iounmap(hcd->regs);
 
 	usb_put_hcd(hcd);
@@ -500,8 +508,12 @@ static int nxp_ehci_resume(struct device *dev)
 	int step = 0;
 
 	nxp_ehci_resume_previous(udev, nxp_ehci->backup_state, &step);
+	queue_delayed_work(nxp_ehci->resume_wq, &nxp_ehci->resume_work,
+				msecs_to_jiffies(nxp_ehci->delay_time));
+	#if (0)
 	schedule_delayed_work(&nxp_ehci->resume_work,
 				msecs_to_jiffies(nxp_ehci->delay_time));
+	#endif
 #endif
 	return 0;
 }
