@@ -127,8 +127,8 @@ _find_format(u32 pixelformat, int index)
 static int
 _set_plane_size(struct nxp_video_frame *frame, unsigned int sizes[])
 {
-    u32 y_size = ALIGN(frame->width, 16) * ALIGN(frame->height, 16);
-    u32 y_stride = ALIGN(frame->width, 16);
+    u32 y_stride = ALIGN(frame->width, 32);
+    u32 y_size = y_stride * ALIGN(frame->height, 16);
 
     switch (frame->format.pixelformat) {
     case V4L2_PIX_FMT_YUYV:
