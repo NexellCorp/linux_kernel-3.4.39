@@ -67,7 +67,7 @@
  */
 /* Primary */
 #define CFG_DISP_PRI_SCREEN_LAYER               0
-#define CFG_DISP_PRI_SCREEN_RGB_FORMAT          MLC_RGBFMT_A8B8G8R8
+#define CFG_DISP_PRI_SCREEN_RGB_FORMAT          MLC_RGBFMT_A8R8G8B8
 #define CFG_DISP_PRI_SCREEN_PIXEL_BYTE	        4
 #define CFG_DISP_PRI_SCREEN_COLOR_KEY	        0x090909
 
@@ -197,37 +197,53 @@
 /*------------------------------------------------------------------------------
  * 	SDHC
  */
-#define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
+#define	CFG_SDMMC0_DETECT_IO					(-1)
+
+#define	CFG_SDMMC0_CLK_DELAY_SAMPLE				(0<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+#define	CFG_SDMMC0_CLK_DELAY_DRIVE				(3<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+#define	CFG_SDMMC0_CLK_DELAY				    (CFG_SDMMC0_CLK_DELAY_SAMPLE | CFG_SDMMC0_CLK_DELAY_DRIVE)
 
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
  */
-#define CFG_SW_UBC_ENABLE						(1)
+#define CFG_SW_UBC_ENABLE						(-1)
 
+#ifdef CONFIG_SECRET_2ND_BOARD
+#define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 21)
+#else
 #define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)
-#define CFG_GPIO_OTG_VBUS_DET					(-1)//(PAD_GPIO_D + 21)
-#define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)
-#define CFG_GPIO_PMIC_LOWBAT_DET				(PAD_GPIO_ALV + 3)		/* Critical low battery detect */
-#define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)
+#endif
+#define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_B + 24) // NC
+#define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2) // NC
+#define CFG_GPIO_PMIC_LOWBAT_DET				(PAD_GPIO_ALV + 3) // NC
+#ifdef CONFIG_SECRET_2ND_BOARD
+#define CFG_GPIO_PMIC_INTR						(PAD_GPIO_B + 4)
+#else
+#define CFG_GPIO_PMIC_INTR						(PAD_GPIO_C + 0)
+#endif
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode
  */
 
-/* Wakeup Source : ALIVE [0~7] */
-#define CFG_PWR_WAKEUP_SRC_ALIVE0				CTRUE					/* KEY */
+/* Wakeup Source : ALIVE [0~5] */
+#define CFG_PWR_WAKEUP_SRC_ALIVE0				CFALSE					// NC
 #define CFG_PWR_WAKEUP_MOD_ALIVE0				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE1				CFALSE
+#define CFG_PWR_WAKEUP_SRC_ALIVE1				CFALSE					// NC
 #define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE2				CTRUE					/* PMIC - VUSB*/
-#define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE3				CTRUE					/* PMIC - CRITICAL LOW BATTERY */
-#define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_ASYNC_LOWLEVEL
-#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR - LOW BATTERY */
+#define CFG_PWR_WAKEUP_SRC_ALIVE2				CFALSE					// NC
+#define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_FALLINGEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE3				CFALSE					// NC
+#define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_FALLINGEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE4				CFALSE					// NC
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
+#define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE					// NC
 #define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE6				CFALSE					// NC
+#define CFG_PWR_WAKEUP_MOD_ALIVE6				PWR_DECT_FALLINGEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE7				CFALSE					// NC
+#define CFG_PWR_WAKEUP_MOD_ALIVE7				PWR_DECT_FALLINGEDGE
 
 /*
  * Wakeup Source : RTC ALARM

@@ -210,6 +210,14 @@ config USB_HSIC_NXP4330
 	---help---
 	  Enable support for the NEXELL NXP4330's on-chip HSIC controller.
 
+config USB_EHCI_NXP4330_RESUME_WORK
+	bool "Set resume delay for fast resume"
+	depends on USB_EHCI_NXP4330 && ARCH_NXP4330
+		default n
+	help
+	  Use delay work function to save resume time when resume. but 
+	  could be lost resume log message, set delay time with platform data
+
 config USB_EHCI_MV
 	bool "EHCI support for Marvell on-chip controller"
 	depends on USB_EHCI_HCD && (ARCH_PXA || ARCH_MMP)

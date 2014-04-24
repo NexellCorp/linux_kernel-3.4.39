@@ -446,6 +446,7 @@ static bool __dbg_timer_run = false;
 /* defined timer.c */
 extern int __timer_sys_mux_val;
 extern int __timer_sys_scl_val;
+extern int __timer_sys_clk_clr;
 
 void lltime_start(void)
 {
@@ -462,13 +463,10 @@ void lltime_start(void)
 
 	/* clock gen : enable */
 	if (5 == mux) {
-		uint clr = readl(TIMER_SYS_CLKGEN + CLKGEN_CLR);
-		if (!clr) {
-			lldebugout("low level system timer.%d not set ...\n", CFG_TIMER_SYS_TICK_CH);
-			return;
-		}
+		uint clr = __timer_sys_clk_clr;
+		uint enb = readl(TIMER_SYS_CLKGEN + CLKGEN_ENB);
 		writel(clr , TIMER_DBG_CLKGEN + CLKGEN_CLR);
-		writel(1<<2, TIMER_DBG_CLKGEN + CLKGEN_ENB);
+		writel((enb | 1<<2), TIMER_DBG_CLKGEN + CLKGEN_ENB);
 	}
 
 	/* Timer : stop */

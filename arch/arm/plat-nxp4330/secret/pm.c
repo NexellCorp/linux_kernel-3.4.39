@@ -36,15 +36,6 @@
 /*
  * 	PM ops
  */
-static void board_suspend_poweron(void)
-{
-	nxp_board_base_init();
-}
-
-static struct board_suspend_ops board_ops = {
-	.poweron	= board_suspend_poweron,
-};
-
 #define	POLY	(0x04C11DB7L)
 static inline U32 iget_fcs(U32 fcs, U32 data)
 {
@@ -94,7 +85,6 @@ static int __init board_suspend_init(void)
 	int ret;
 
 	nxp_board_suspend_mark = board_suspend_mark;
-	nxp_board_suspend_register(&board_ops);
 
 	if (pm_save_size > 0x1000) {
 		printk("*** FAIL: over reseve pm region max size %d (32K) ***\n", pm_save_size);

@@ -7,6 +7,7 @@
 
 #include <linux/module.h>
 #include <linux/init.h>
+#include <linux/cdev.h>
 #include <linux/i2c.h>
 #include <linux/input.h>
 #include <linux/workqueue.h>
@@ -19,7 +20,9 @@
 #include <mach/platform.h>
 #include <mach/soc.h>
 
-#define DEVICE_NAME						"pm-micom"
+#define DEVICE_NAME	"pm-micom"
+#define DEVICE_ADDR	0x30
+#define DEVICE_BUS 	0
 
 #define MAX_RETRY_I2C_XFER 				(100)
 
@@ -42,6 +45,15 @@
 struct micom_data {
 	struct i2c_client *client;
 };
+
+static struct drvPXMICOM {
+	struct class* class;
+	struct device* device;
+	dev_t version;
+	struct i2c_client* client;
+	struct semaphore sem;
+	struct cdev cdev;
+} *drvPXMICOM;
 
 static struct i2c_client *mi_client = NULL;
 
@@ -166,8 +178,8 @@ static int micom_probe(struct i2c_client *client,
 		const struct i2c_device_id *id)
 {
 	int err = 0;
-	int value_gpio = 0;
-	unsigned char value=0;
+//	int value_gpio = 0;
+//	unsigned char value=0;
 	struct micom_data *data;
 
 	data = kzalloc(sizeof(struct micom_data), GFP_KERNEL);
@@ -178,11 +190,11 @@ static int micom_probe(struct i2c_client *client,
 	i2c_set_clientdata(client, data);
 	data->client = client;
 	mi_client = client;
-	
-	value_gpio = gpio_get_value(CFG_MSP_READ);
-	printk(KERN_ERR "CFG_MSP_READ=[%d]\n", value_gpio);
+/*
+//	value_gpio = gpio_get_value(CFG_MSP_READ);
+//	printk(KERN_ERR "CFG_MSP_READ=[%d]\n", value_gpio);
 
-	err=micom_smbus_read_byte(client, MICOM_REG_PWR_STATE, &value);
+//	err=micom_smbus_read_byte(client, MICOM_REG_PWR_STATE, &value);
 	switch(value)
 	{
 		case MICOM_PWRSTATE_OFF:
@@ -201,7 +213,7 @@ static int micom_probe(struct i2c_client *client,
 			printk(KERN_INFO "%s() : Micom Power : unkown!! \n", __func__);
 			break;
 	}
-
+*/
 	err = sysfs_create_group(&client->dev.kobj, &micom_attribute_group);
 	if (err < 0)
 		goto error_sysfs;
@@ -261,10 +273,10 @@ static int micom_suspend(struct i2c_client *client, pm_message_t mesg)
 
 static int micom_resume(struct i2c_client *client)
 {
-	int err = 0;
-	unsigned char value=0;
+//	int err = 0;
+//	unsigned char value=0;
 
-	struct micom_data *data = i2c_get_clientdata(client);
+//	struct micom_data *data = i2c_get_clientdata(client);
     PM_DBGOUT("+%s\n", __func__);
 
 	//micom_smbus_write_byte(data->client, MICOM_REG_PWR_STATE, MICOM_CMD_PWR_RUN);
@@ -296,21 +308,107 @@ static struct i2c_driver micom_driver = {
 	.resume		= micom_resume,
 	.id_table	= micom_id,
 	.probe		= micom_probe,
-	.remove		= __devexit_p(micom_remove),
+	.remove		= __devexit_p(micom_remove)
+};	
+
+static struct i2c_board_info info =
+{
+    I2C_BOARD_INFO(DEVICE_NAME, DEVICE_ADDR),
 };
+
+static ssize_t drvPXMICOM_read(struct file* filp, char* buff, size_t length, loff_t* offset)
+{
+    buff[0] = 1;
+    return 1;
+}
+
+static ssize_t drvPXMICOM_write(struct file* filp, const char* buff, size_t len, loff_t* off)
+{
+	unsigned int i=0;
+
+	micom_smbus_write_byte(mi_client, buff[0], buff[1]);
+
+	return 1;
+}
+
+static struct file_operations fops =
+{
+    .read = drvPXMICOM_read,
+    .write = drvPXMICOM_write
+};
+
 
 static int __init micom_init(void)
 {
-    PM_DBGOUT("+%s\n", __func__);
+	int reval = -ENOMEM;
+	int result;
+	struct i2c_adapter* adapter;
+	struct i2c_client* client;
+
+	printk(KERN_ALERT"+%s\n", __func__);
 	pm_power_off_prepare = micom_shutdown;
-
 	nxp_check_pm_wakeup_dev = _pm_check_wakeup_dev;
+	
+    drvPXMICOM = kmalloc(sizeof *drvPXMICOM, GFP_KERNEL);
+	if(!drvPXMICOM)
+	{
+		printk(KERN_ALERT"pm-micom.c: cannot allocate memory for drvPXMICOM driver\n");
+	}
+    adapter = i2c_get_adapter(DEVICE_BUS);
+	if(!adapter)
+	{
+		printk(KERN_ALERT"pm-micom.c: cannot get adapter\n");
+	}
+    client = i2c_new_device(adapter, &info);
+	if(!client)
+	{
+		printk(KERN_ALERT"(%s-%s():%4d): Cannot create new device \n", __FILE__, __func__, __LINE__);
+	}else{
+		printk(KERN_ALERT"(%s-%s():%4d): Create new device \n", __FILE__, __func__, __LINE__);
+	}
 
-	return i2c_add_driver(&micom_driver);
+    drvPXMICOM->version = MKDEV(0,0);
+    reval = alloc_chrdev_region(&drvPXMICOM->version, 0, 1, DEVICE_NAME);
+	if(reval < 0)
+	{
+		printk(KERN_ALERT"pm-micom.c: error getting major number %d\r\n", reval);
+	}
+
+    drvPXMICOM->class = class_create(THIS_MODULE, DEVICE_NAME);
+	if(!drvPXMICOM->class)
+	{
+		printk(KERN_ALERT"pm-micom.c: error creating class\n");
+	}
+
+    drvPXMICOM->device = device_create(drvPXMICOM->class, NULL, drvPXMICOM->version, NULL, DEVICE_NAME);
+	if(!drvPXMICOM->device)
+	{
+		printk(KERN_ALERT"pm-micom.c: error creating device\n");
+	}
+
+    cdev_init(&drvPXMICOM->cdev, &fops);
+    drvPXMICOM->cdev.owner = THIS_MODULE;
+    drvPXMICOM->cdev.ops = &fops;
+    reval = cdev_add(&drvPXMICOM->cdev, drvPXMICOM->version, 1);
+
+	if(reval)
+	{
+		printk(KERN_ALERT"pm-micom.c: fail to add cdev\n");
+	}
+//	return i2c_add_driver(&micom_driver);
+
+	result = i2c_add_driver(&micom_driver);
+	printk(KERN_ALERT"pm-micom.c: i2c_add_driver return : %d\r\n", result);	
+	return result;
 }
 
 static void __exit micom_exit(void)
 {
+    device_destroy(drvPXMICOM->class, drvPXMICOM->version);
+    class_destroy(drvPXMICOM->class);
+    unregister_chrdev_region(drvPXMICOM->version, 1);
+    i2c_unregister_device(drvPXMICOM->client);
+    kfree(drvPXMICOM);
 	i2c_del_driver(&micom_driver);
     PM_DBGOUT("-%s\n", __func__);
 }
@@ -321,5 +419,3 @@ module_exit(micom_exit);
 MODULE_AUTHOR(" < @nexell.co.kr>");
 MODULE_DESCRIPTION("micom driver");
 MODULE_LICENSE("GPL");
-
-
