@@ -275,6 +275,7 @@ struct nxp_rfkill_plat_data {
     struct rfkill_dev_data *rf_dev;
     int rf_dev_num;
     int support_suspend;
+    int (*init)(void *data);
     int (*set_block)(void *data, bool blocked);
     int (*suspend)(struct platform_device *pdev, pm_message_t state);
     int (*resume)(struct platform_device *pdev);

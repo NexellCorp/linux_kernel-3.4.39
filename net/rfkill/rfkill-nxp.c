@@ -504,6 +504,9 @@ static int __devinit nxp_rfkill_probe(struct platform_device *pdev)
 
 	INIT_LIST_HEAD(&rf_data->head);
 
+	if (pdata->init)
+		pdata->init(pdata);
+
 	if (0 > nxp_rfkill_setup(rf_data, pdev))
 		goto err_rfkill_register;
 
