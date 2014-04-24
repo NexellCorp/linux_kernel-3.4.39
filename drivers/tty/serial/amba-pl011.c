@@ -1385,6 +1385,19 @@ static int pl011_startup(struct uart_port *port)
 	unsigned int cr;
 	int retval;
 
+	/*
+	 * move from function tail
+	 */
+#if (1)
+	if (uap->port.dev->platform_data) {
+		struct amba_pl011_data *plat;
+
+		plat = uap->port.dev->platform_data;
+		if (plat->init)
+			plat->init();
+	}
+#endif
+
 	retval = clk_prepare(uap->clk);
 	if (retval)
 		goto out;
@@ -1461,6 +1474,10 @@ static int pl011_startup(struct uart_port *port)
 	writew(uap->im, uap->port.membase + UART011_IMSC);
 	spin_unlock_irq(&uap->port.lock);
 
+	/*
+	 * move to function head
+	 */
+#if (0)
 	if (uap->port.dev->platform_data) {
 		struct amba_pl011_data *plat;
 
@@ -1468,7 +1485,7 @@ static int pl011_startup(struct uart_port *port)
 		if (plat->init)
 			plat->init();
 	}
-
+#endif
 	return 0;
 
  clk_dis:
