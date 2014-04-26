@@ -199,9 +199,12 @@
  */
 #define	CFG_SDMMC0_DETECT_IO					(-1)
 
-#define	CFG_SDMMC0_CLK_DELAY_SAMPLE				(0<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
-#define	CFG_SDMMC0_CLK_DELAY_DRIVE				(3<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
-#define	CFG_SDMMC0_CLK_DELAY				    (CFG_SDMMC0_CLK_DELAY_SAMPLE | CFG_SDMMC0_CLK_DELAY_DRIVE)
+#define	CFG_SDMMC2_CLK_SHIFT_SAMPLE				(1<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+#define	CFG_SDMMC2_CLK_SHIFT_DRIVE				(1<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+#define	CFG_SDMMC2_CLK_DELAY_SAMPLE				(0<<0)		/*  0x0 ~ 0xFF */
+#define	CFG_SDMMC2_CLK_DELAY_DRIVE				(0x94<0)	/*  0x0 ~ 0xFF */
+
+#define	CFG_SDMMC2_CLK_DELAY				    (CFG_SDMMC2_CLK_SHIFT_SAMPLE | CFG_SDMMC2_CLK_SHIFT_DRIVE | CFG_SDMMC2_CLK_DELAY_SAMPLE | CFG_SDMMC2_CLK_DELAY_DRIVE)
 
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
