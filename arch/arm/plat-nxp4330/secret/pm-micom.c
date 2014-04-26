@@ -19,10 +19,11 @@
 #include <linux/pm.h>
 #include <mach/platform.h>
 #include <mach/soc.h>
+#include <mach/pm.h>
 
 #define DEVICE_NAME	"pm-micom"
 #define DEVICE_ADDR	0x30
-#define DEVICE_BUS 	0
+#define DEVICE_BUS 	3
 
 #define MAX_RETRY_I2C_XFER 				(100)
 
@@ -257,17 +258,18 @@ static void micom_shutdown(void)
 	return;
 }
 
-#ifdef CONFIG_PM
+#if 0//def CONFIG_PM
 
 static int micom_suspend(struct i2c_client *client, pm_message_t mesg)
 {
 	
 	struct micom_data *data = i2c_get_clientdata(client);
+	int ret = 0;
     PM_DBGOUT("+%s\n", __func__);
 	
-	micom_smbus_write_byte(data->client, MICOM_REG_PWR_STATE, MICOM_CMD_PWR_SUSPEND_RAM);
+	ret=micom_smbus_write_byte(data->client, MICOM_REG_PWR_STATE, MICOM_CMD_PWR_SUSPEND_RAM);
 	
-    PM_DBGOUT("-%s\n", __func__);
+    PM_DBGOUT("-%s, ret:%d\n", __func__, ret);
 	return 0;
 }
 
@@ -337,6 +339,18 @@ static struct file_operations fops =
     .write = drvPXMICOM_write
 };
 
+static void micom_pm_poweroff(void)
+{
+	struct micom_data *data = i2c_get_clientdata(mi_client);
+	int ret = 0;
+	
+	ret=micom_smbus_write_byte(data->client, MICOM_REG_PWR_STATE, MICOM_CMD_PWR_SUSPEND_RAM);
+	return 0;
+}
+
+static struct board_suspend_ops micom_pm_ops = {
+	.poweroff	= micom_pm_poweroff,
+};
 
 static int __init micom_init(void)
 {
@@ -399,6 +413,8 @@ static int __init micom_init(void)
 
 	result = i2c_add_driver(&micom_driver);
 	printk(KERN_ALERT"pm-micom.c: i2c_add_driver return : %d\r\n", result);	
+
+	nxp_board_suspend_register(&micom_pm_ops);
 	return result;
 }
 

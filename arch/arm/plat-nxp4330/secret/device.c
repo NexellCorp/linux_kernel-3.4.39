@@ -172,7 +172,7 @@ static struct platform_device *fb_devices[] = {
 #define	PLLCTL		0
 #define	DPHYCTL		0
 
-#if 1
+#if 1 // CONFIG_SECRET_2ND_BOARD
 struct data_val{
 	u8 data[7];
 };
@@ -639,7 +639,7 @@ static struct platform_device rt5631_dai = {
 #if 1//defined(CONFIG_PM_MICOM) || defined(CONFIG_PM_MICOM_MODULE)
 #include <linux/i2c.h>
 
-#define	MICOM_I2C_BUS		(0)
+#define	MICOM_I2C_BUS		(3)
 
 static struct i2c_board_info micom_i2c_bdi = {
 	I2C_BOARD_INFO("pm-micom", (0x30)),
@@ -754,7 +754,6 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port3 = {
 	.sda_pin	= I2C3_SDA,
 	.scl_pin	= I2C3_SCL,
 	.udelay		= I2CUDELAY(CFG_I2C2_CLK),				/* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
-
 	.timeout	= 10,
 };
 
@@ -841,7 +840,7 @@ static struct regulator_consumer_supply nxe2000_ldo6_supply_0[] = {
 static struct regulator_consumer_supply nxe2000_ldo7_supply_0[] = {
 	REGULATOR_SUPPLY("vvid_3.3V", NULL),
 };
-#ifdef CONFIG_SECRET_2ND_BOARD
+#if 1// CONFIG_SECRET_2ND_BOARD
 static struct regulator_consumer_supply nxe2000_ldo8_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy3", NULL),
 };
@@ -856,7 +855,7 @@ static struct regulator_consumer_supply nxe2000_ldo9_supply_0[] = {
 static struct regulator_consumer_supply nxe2000_ldo10_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy2", NULL),
 };
-#ifdef CONFIG_SECRET_2ND_BOARD
+#if 1// CONFIG_SECRET_2ND_BOARD
 static struct regulator_consumer_supply nxe2000_ldortc1_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy4", NULL),
 };
@@ -914,14 +913,14 @@ NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.8V
 NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
 NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 3.3V VID */
-#ifdef CONFIG_SECRET_2ND_BOARD
+#if 1// CONFIG_SECRET_2ND_BOARD
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 #else
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V AUDIO */
 #endif
 NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
-#ifdef CONFIG_SECRET_2ND_BOARD
+#if 1// CONFIG_SECRET_2ND_BOARD
 NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 #else
@@ -1222,7 +1221,7 @@ static struct dw_mci_board _dwmci0_data = {
 					  MMC_CAP_NONREMOVABLE |
 			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
 				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
-	.caps2			= MMC_CAP2_PACKED_WR,
+	//.caps2			= MMC_CAP2_PACKED_WR,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
 	.sdr_timing		= 0x01010001,
@@ -1385,29 +1384,25 @@ static struct dw_mci_board _dwmci2_data = {
 #if defined(CONFIG_RFKILL_NEXELL)
 
 #define	BT_HOST_WAKE 	(PAD_GPIO_D + 28)
-#define	BT_DEV_WAKE 	(PAD_GPIO_E + 2)
-#define	BT_REG_ON		(PAD_GPIO_E + 3)
+#define	BT_DEV_WAKE 	(PAD_GPIO_E + 3)
+#define	BT_REG_ON		(PAD_GPIO_E + 2)
 
 static int bt_rfkill_bt_init(void *data)
 {
 	struct nxp_rfkill_plat_data *pdata = data;
-
-#if (1)	
-	int bt_dev_wake  = BT_DEV_WAKE;
-	int bt_host_wake = BT_HOST_WAKE;
-#else	
-	int bt_host_wake  = BT_DEV_WAKE;
+#if (0)
+	int bt_dev_wake = BT_DEV_WAKE;
+	int bt_hst_wake = BT_HOST_WAKE;
+#else
 	int bt_dev_wake = BT_HOST_WAKE;
+	int bt_hst_wake = BT_DEV_WAKE;
 #endif
+	pr_info("rfkill: %s bt device init ...\n", pdata->name);
+	gpio_request(bt_dev_wake, "bt dev wake");
+	gpio_request(bt_hst_wake, "bt hst wake");
 
-	pr_info("rfkill: %s bt device wake \n", pdata->name);
-	gpio_request(bt_dev_wake , "bt dev  wake");
-	gpio_request(bt_host_wake, "bt host wake");
-
-	gpio_direction_output(bt_dev_wake , 1);
-
-	gpio_direction_input(bt_host_wake);
-
+	gpio_direction_output(bt_dev_wake, 1);
+	gpio_direction_input(bt_hst_wake);
 	return 0;
 }
 
@@ -1421,9 +1416,9 @@ static int bt_rfkill_bt_set_block(void *data, bool blocked)
 		pdata->name, blocked, blocked?"Off":"On ", rfdev->gpio);
 
 	if (blocked)
-		gpio_direction_output(rfdev->gpio, 0);	// off
+		gpio_set_value(rfdev->gpio, 0);	// off
 	else
-		gpio_direction_output(rfdev->gpio, 1); // on
+		gpio_set_value(rfdev->gpio, 1); // on
 
 	return 0;
 }
