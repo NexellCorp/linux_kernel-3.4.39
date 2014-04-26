@@ -52,6 +52,22 @@ struct nxp_gpio {
 static const char *io_name[] = { "GPIOA", "GPIOB", "GPIOC", "GPIOD", "GPIOE", };
 #define	GET_GPIO(c)	container_of(chip, struct nxp_gpio, chip)
 
+static int nxp_gpio_request(struct gpio_chip *chip, unsigned offset)
+{
+	struct nxp_gpio *gpio = GET_GPIO(chip);
+	int io, fn;
+
+	io = (gpio->index * GPIO_NUM_PER_BANK) + offset;
+	fn = GET_GPIO_ALTFUNC(gpio->index, offset);
+
+	CHECK_ALTFUNC_RET(gpio, offset, EINVAL);
+
+	nxp_soc_gpio_set_io_func(io, fn);
+	pr_debug("%s: io [%s:%d=%d]\n", __func__, io_name[gpio->index], offset, io);
+
+	return 0;
+}
+
 static int nxp_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
 {
 	struct nxp_gpio *gpio = GET_GPIO(chip);
@@ -152,7 +168,7 @@ static int nxp_gpio_probe(struct platform_device *pdev)
 	struct nxp_gpio *gpio = NULL;
 	int ret;
 
-	pr_debug("%s: %s, %d ~ %2d\n", 
+	pr_debug("%s: %s, %d ~ %2d\n",
 		__func__, io_name[pdev->id], res->start, res->end);
 	if (!res) {
 		printk("Error: not allocated gpio resource [%d]\n", pdev->id);
@@ -166,6 +182,7 @@ static int nxp_gpio_probe(struct platform_device *pdev)
 	spin_lock_init(&gpio->lock);
 
 	gpio->index = pdev->id;
+	gpio->chip.request = nxp_gpio_request;
 	gpio->chip.to_irq = nxp_gpio_to_irq;
 	gpio->chip.direction_input = nxp_gpio_direction_input;
 	gpio->chip.direction_output = nxp_gpio_direction_output;
