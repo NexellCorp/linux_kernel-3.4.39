@@ -940,7 +940,7 @@ NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.8V
 NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.8V SYS */
 NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
-NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 3.3V VID */
+NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V VID */
 #if 1// CONFIG_SECRET_2ND_BOARD
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 #else
@@ -1390,15 +1390,18 @@ static struct dw_mci_board _dwmci2_data = {
 				  	  DW_MMC_QUIRK_HW_RESET_PW |
 				      DW_MCI_QUIRK_NO_DETECT_EBIT,
 	.bus_hz			= 100 * 1000 * 1000,
-	.caps			= MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
+	.caps			= MMC_CAP_UHS_DDR50 | //MMC_CAP_1_8V_DDR |
 					  MMC_CAP_NONREMOVABLE |
 			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
 				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
 	//.caps2			= MMC_CAP2_PACKED_WR,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-#ifdef CFG_SDMMC2_CLK_DELAY
+#if 0//def CFG_SDMMC2_CLK_DELAY
 	.clk_dly		= CFG_SDMMC2_CLK_DELAY,
+#else
+	.sdr_timing		= 0x01010001,
+	.ddr_timing		= 0x03030002,
 #endif
 
 };
