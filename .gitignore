@@ -11,6 +11,7 @@ arch/arm/include/generated
 vmlinux
 *.a
 *.d
+*.mod.*
 include/config
 include/generated
 include/linux/version.h
