@@ -72,9 +72,7 @@
 #ifdef WLMEDIA_HTSF
 extern void htsf_update(struct dhd_info *dhd, void *data);
 #endif
-// psw0523 fix for debugging
-/*int dhd_msg_level = DHD_ERROR_VAL;*/
-int dhd_msg_level = DHD_TRACE_VAL;
+int dhd_msg_level = DHD_ERROR_VAL;
 
 
 #include <wl_iw.h>
