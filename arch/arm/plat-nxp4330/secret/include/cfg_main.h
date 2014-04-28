@@ -36,7 +36,7 @@
  */
 #define CFG_UART_DEBUG_CH						0	/* For Low level debug */
 #define	CFG_UART_DEBUG_BAUDRATE					115200
-#define	CFG_UART_CLKGEN_CLOCK_HZ				14750000	/* 50000000 */
+#define	CFG_UART_CLKGEN_CLOCK_HZ				50000000 	/* 50000000 */
 
 /*------------------------------------------------------------------------------
  * 	Timer List (SYS = Source, EVT = Event, WDT = WatchDog)
@@ -209,7 +209,7 @@
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
  */
-#define CFG_SW_UBC_ENABLE						(-1)
+#define CFG_SW_UBC_ENABLE						(1)
 
 #if 1//CONFIG_SECRET_2ND_BOARD
 #define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 21)
