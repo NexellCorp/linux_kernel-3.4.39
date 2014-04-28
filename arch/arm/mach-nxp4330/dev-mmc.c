@@ -161,7 +161,7 @@ static struct dw_mci_board dwmci##_ch##_data = {		\
 }
 
 #define NXP_DWMCI_PLAT_DEV(_ch)	\
-static struct platform_device dwmci_dev_ch##_ch = {		\
+/*static*/ struct platform_device dwmci_dev_ch##_ch = {		\
 	.name			= "dw_mmc",								\
 	.id				= _ch,									\
 	.num_resources	= ARRAY_SIZE(dwmci##_ch##_resource),	\

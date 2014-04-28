@@ -199,16 +199,19 @@
  */
 #define	CFG_SDMMC0_DETECT_IO					(-1)
 
-#define	CFG_SDMMC0_CLK_DELAY_SAMPLE				(0<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
-#define	CFG_SDMMC0_CLK_DELAY_DRIVE				(3<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
-#define	CFG_SDMMC0_CLK_DELAY				    (CFG_SDMMC0_CLK_DELAY_SAMPLE | CFG_SDMMC0_CLK_DELAY_DRIVE)
+#define	CFG_SDMMC2_CLK_SHIFT_SAMPLE				(1<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+#define	CFG_SDMMC2_CLK_SHIFT_DRIVE				(1<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+#define	CFG_SDMMC2_CLK_DELAY_SAMPLE				(0<<0)		/*  0x0 ~ 0xFF */
+#define	CFG_SDMMC2_CLK_DELAY_DRIVE				(0x94<0)	/*  0x0 ~ 0xFF */
+
+#define	CFG_SDMMC2_CLK_DELAY				    (CFG_SDMMC2_CLK_SHIFT_SAMPLE | CFG_SDMMC2_CLK_SHIFT_DRIVE | CFG_SDMMC2_CLK_DELAY_SAMPLE | CFG_SDMMC2_CLK_DELAY_DRIVE)
 
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
  */
 #define CFG_SW_UBC_ENABLE						(-1)
 
-#ifdef CONFIG_SECRET_2ND_BOARD
+#if 1//CONFIG_SECRET_2ND_BOARD
 #define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 21)
 #else
 #define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)
@@ -216,7 +219,7 @@
 #define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_B + 24) // NC
 #define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2) // NC
 #define CFG_GPIO_PMIC_LOWBAT_DET				(PAD_GPIO_ALV + 3) // NC
-#ifdef CONFIG_SECRET_2ND_BOARD
+#if 1//CONFIG_SECRET_2ND_BOARD
 #define CFG_GPIO_PMIC_INTR						(PAD_GPIO_B + 4)
 #else
 #define CFG_GPIO_PMIC_INTR						(PAD_GPIO_C + 0)

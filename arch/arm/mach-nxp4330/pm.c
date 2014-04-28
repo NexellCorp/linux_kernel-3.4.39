@@ -167,15 +167,6 @@ static int suspend_machine(void)
 #endif
 
 	/*
-	 * wakeup from board.
-	 */
-	if (board_suspend && board_suspend->poweroff)
-		ret = board_suspend->poweroff();
-
-	if (ret < 0)
-		return ret;
-
-	/*
 	 * check wakeup event(alive, alarm)
 	 * before enter sleep mode
 	 */
@@ -185,6 +176,15 @@ static int suspend_machine(void)
 	if (readl(rtc + RTC_ALARM_INTPND) &
 		readl(rtc + RTC_ALARM_INTENB) & (1<<1))
 		return -EINVAL;
+
+	/*
+	 * wakeup from board.
+	 */
+	if (board_suspend && board_suspend->poweroff)
+		ret = board_suspend->poweroff();
+
+	if (ret < 0)
+		return ret;
 
 	return 0;
 }

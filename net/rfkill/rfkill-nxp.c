@@ -94,7 +94,8 @@ static void nxp_rfkill_work(struct work_struct *work)
 					rfdev->name, rfdev->supply_name, rfdev->delay_time_off);
 				regulator_enable(rfdev->vcc);
 			}
-		} else {
+		} else
+		if (NOT_GPIO != rfdev->gpio) {
 			pr_info("rfkill: %s power %s.%d delay enable (%dms)\n", rfdev->name,
 				GPIO_GROUP(rfdev->gpio), GPIO_BITNR(rfdev->gpio),
 				rfdev->delay_time_off);
@@ -108,7 +109,8 @@ static void nxp_rfkill_work(struct work_struct *work)
 					rfdev->name, rfdev->supply_name, rfdev->delay_time_off);
 				regulator_disable(rfdev->vcc);
 			}
-		} else {
+		} else
+		if (NOT_GPIO != rfdev->gpio) {
 			pr_info("rfkill: %s power %s.%d delay disable (%dms)\n", rfdev->name,
 				GPIO_GROUP(rfdev->gpio), GPIO_BITNR(rfdev->gpio),
 				rfdev->delay_time_off);
@@ -153,7 +155,8 @@ static int nxp_rfkill_set_block(void *data, bool blocked)
 						pr_info("rfkill: %s supply %s disable\n", rf_data->name, rfdev->supply_name);
 						regulator_disable(rfdev->vcc);
 					}
-				} else {
+				} else
+				if (NOT_GPIO != rfdev->gpio) {
 					pr_info("rfkill: %s power %s.%d disable\n", rf_data->name,
 						GPIO_GROUP(rfdev->gpio), GPIO_BITNR(rfdev->gpio));
 					gpio_set_value(rfdev->gpio, rfdev->invert ? 1 : 0);
@@ -171,7 +174,8 @@ static int nxp_rfkill_set_block(void *data, bool blocked)
 						pr_info("rfkill: %s supply %s enable\n", rf_data->name, rfdev->supply_name);
 						regulator_enable(rfdev->vcc);
 					}
-				} else {
+				} else
+				if (NOT_GPIO != rfdev->gpio) {
 					pr_info("rfkill: %s power %s.%d enable\n", rf_data->name,
 						GPIO_GROUP(rfdev->gpio), GPIO_BITNR(rfdev->gpio));
 					gpio_set_value(rfdev->gpio, rfdev->invert ? 0 : 1);
@@ -216,7 +220,8 @@ static int nxp_rfkill_module_notify(struct notifier_block *self, unsigned long v
 					pr_info("rfkill: %s supply %s enable\n", mod->name, rfdev->supply_name);
 					regulator_enable(rfdev->vcc);
 				}
-			} else {
+			} else
+			if (NOT_GPIO != rfdev->gpio) {
 				pr_info("rfkill: %s power %s.%d enable\n", mod->name,
 					GPIO_GROUP(rfdev->gpio), GPIO_BITNR(rfdev->gpio));
 				gpio_set_value(rfdev->gpio, rfdev->invert ? 0 : 1);
@@ -235,7 +240,8 @@ static int nxp_rfkill_module_notify(struct notifier_block *self, unsigned long v
 					pr_info("rfkill: %s supply %s disable\n", mod->name, rfdev->supply_name);
 					regulator_disable(rfdev->vcc);
 				}
-			} else {
+			} else
+			if (NOT_GPIO != rfdev->gpio) {
 				pr_info("rfkill: %s power %s.%d disable\n", mod->name,
 					GPIO_GROUP(rfdev->gpio), GPIO_BITNR(rfdev->gpio));
 				gpio_set_value(rfdev->gpio, rfdev->invert ? 1 : 0);
@@ -407,7 +413,8 @@ static int nxp_rfkill_suspend(struct platform_device *pdev, pm_message_t state)
 			if (rfdev->vcc) {
 				if (regulator_is_enabled(rfdev->vcc))
 					regulator_disable(rfdev->vcc);
-			} else {
+			} else
+			if (NOT_GPIO != rfdev->gpio) {
 				gpio_set_value(rfdev->gpio, rfdev->invert ? 1 : 0);
 			}
 		}
@@ -442,7 +449,8 @@ static int nxp_rfkill_resume(struct platform_device *pdev)
 			if (rfdev->vcc) {
 				if (!regulator_is_enabled(rfdev->vcc))
 					regulator_enable(rfdev->vcc);
-			} else {
+			} else
+			if (NOT_GPIO != rfdev->gpio) {
 				gpio_set_value(rfdev->gpio, rfdev->invert ? 0 : 1);
 			}
 		}

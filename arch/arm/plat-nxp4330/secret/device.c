@@ -172,6 +172,245 @@ static struct platform_device *fb_devices[] = {
 #define	PLLCTL		0
 #define	DPHYCTL		0
 
+#if 1 // CONFIG_SECRET_2ND_BOARD
+struct data_val{
+	u8 data[7];
+};
+
+struct reg_val{
+	u32 cmd;
+	u32 addr;
+	u32 cnt;
+	struct data_val data;
+};
+
+static struct reg_val mipi_init_data[]=
+{
+ {0x39, 0xFF, 4, {0xAA,0x55,0xA5,0x80}},
+ {0x39, 0x6F, 2, {0x11,0x00}},
+ {0x39, 0xF7, 2, {0x20,0x00}},
+ {0x15, 0x6F, 1, {0x06}},
+ {0x15, 0xF7, 1, {0xA0}},
+ {0x15, 0x6F, 1, {0x19}},
+ {0x15, 0xF7, 1, {0x12}},
+ {0x39, 0xF0, 4, {0x55,0xAA,0x52,0x08,0x00}},
+ {0x15, 0xC8, 1, {0x80}},
+ {0x39, 0xB1, 2, {0x6C,0x01}},
+ {0x15, 0xB6, 1, {0x08}},
+ {0x15, 0x6F, 1, {0x02}},
+ {0x15, 0xB8, 1, {0x08}},
+ {0x15, 0xBB, 2, {0x54,0x54}},
+ {0x15, 0xBC, 2, {0x05,0x05}},
+ {0x15, 0xC7, 1, {0x01}},
+ {0x39, 0xBD, 5, {0x02,0xB0,0x0C,0x0A,0x00}},
+ {0x39, 0xF0, 5, {0x55,0xAA,0x52,0x08,0x01}},
+ {0x15, 0xB0, 2, {0x05,0x05}},
+ {0x39, 0xB1, 2, {0x05,0x05}},
+ {0x39, 0xBC, 2, {0x8E,0x00}},
+ {0x39, 0xBD, 2, {0x92,0x00}},
+ {0x15, 0xCA, 1, {0x00}},
+ {0x15, 0xC0, 1, {0x04}},
+ {0x39, 0xB3, 2, {0x19,0x19}},
+ {0x39, 0xB4, 3, {0x12,0x12}},
+ {0x39, 0xB9, 3, {0x24,0x24}},
+ {0x39, 0xBA, 3, {0x14,0x14}},
+ {0x39, 0xF0, 5, {0x55,0xAA,0x52,0x08,0x02}},
+ {0x15, 0xEE, 1, {0x02}},
+ {0x39, 0xEF, 4, {0x09,0x06,0x15,0x18}},
+ {0x39, 0xB0, 6, {0x00,0x00,0x00,0x11,0x00,0x27}},
+ {0x15, 0x6F, 1, {0x06}},
+ {0x39, 0xB0, 6, {0x00,0x36,0x00,0x45,0x00,0x5F}},
+ {0x15, 0x6F, 1, {0x0C}},
+ {0x39, 0xB0, 4, {0x00,0x74,0x00,0xA5}},
+ {0x39, 0xB1, 6, {0x00,0xCF,0x01,0x13,0x01,0x47}},
+ {0x15, 0x6F, 1, {0x06}},
+ {0x39, 0xB1, 6, {0x01,0x9B,0x01,0xDF,0x01,0xE1}},
+ {0x15, 0x6F, 1, {0x0C}},
+ {0x39, 0xB1, 4, {0x02,0x23,0x02,0x6C}},
+ {0x39, 0xB2, 6, {0x02,0x9A,0x02,0xD7,0x03,0x05}},
+ {0x15, 0x6F, 1, {0x06}},
+ {0x39, 0xB2, 6, {0x03,0x42,0x03,0x68,0x03,0x91}},
+ {0x15, 0x6F, 1, {0x0C}},
+ {0x39, 0xB2, 4, {0x03,0xA5,0x03,0xBD}},
+ {0x39, 0xB3, 4, {0x03,0xD7,0x03,0xFF}},
+ {0x39, 0xBC, 6, {0x00,0x00,0x00,0x11,0x00,0x27}},
+ {0x15, 0x6F, 1, {0x06}},
+ {0x39, 0xBC, 6, {0x00,0x38,0x00,0x47,0x00,0x61}},
+ {0x15, 0x6F, 1, {0x0C}},
+ {0x39, 0xBC, 4, {0x00,0x78,0x00,0xAB}},
+ {0x39, 0xBD, 6, {0x00,0xD7,0x01,0x1B,0x01,0x4F}},
+ {0x15, 0x6F, 1, {0x06}},
+ {0x39, 0xBD, 6, {0x01,0xA1,0x01,0xE5,0x01,0xE7}},
+ {0x15, 0x6F, 1, {0x0C}},
+ {0x39, 0xBD, 4, {0x02,0x27,0x02,0x70}},
+ {0x39, 0xBE, 6, {0x02,0x9E,0x02,0xDB,0x03,0x07}},
+ {0x15, 0x6F, 1, {0x06}},
+ {0x39, 0xBE, 6, {0x03,0x44,0x03,0x6A,0x03,0x93}},
+ {0x15, 0x6F, 1, {0x0C}},
+ {0x39, 0xBE, 4, {0x03,0xA5,0x03,0xBD}},
+ {0x39, 0xBF, 4, {0x03,0xD7,0x03,0xFF}},
+ {0x39, 0xF0, 5, {0x55,0xAA,0x52,0x08,0x06}},
+ {0x39, 0xB0, 2, {0x00,0x17}},
+ {0x39, 0xB1, 2, {0x16,0x15}},
+ {0x39, 0xB2, 2, {0x14,0x13}},
+ {0x39, 0xB3, 2, {0x12,0x11}},
+ {0x39, 0xB4, 2, {0x10,0x2D}},
+ {0x39, 0xB5, 2, {0x01,0x08}},
+ {0x39, 0xB6, 2, {0x09,0x31}},
+ {0x39, 0xB7, 2, {0x31,0x31}},
+ {0x39, 0xB8, 2, {0x31,0x31}},
+ {0x39, 0xB9, 2, {0x31,0x31}},
+ {0x39, 0xBA, 2, {0x31,0x31}},
+ {0x39, 0xBB, 2, {0x31,0x31}},
+ {0x39, 0xBC, 2, {0x31,0x31}},
+ {0x39, 0xBD, 2, {0x31,0x09}},
+ {0x39, 0xBE, 2, {0x08,0x01}},
+ {0x39, 0xBF, 2, {0x2D,0x10}},
+ {0x39, 0xC0, 2, {0x11,0x12}},
+ {0x39, 0xC1, 2, {0x13,0x14}},
+ {0x39, 0xC2, 2, {0x15,0x16}},
+ {0x39, 0xC3, 2, {0x17,0x00}},
+ {0x39, 0xE5, 2, {0x31,0x31}},
+ {0x39, 0xC4, 2, {0x00,0x17}},
+ {0x39, 0xC5, 2, {0x16,0x15}},
+ {0x39, 0xC6, 2, {0x14,0x13}},
+ {0x39, 0xC7, 2, {0x12,0x11}},
+ {0x39, 0xC8, 2, {0x10,0x2D}},
+ {0x39, 0xC9, 2, {0x01,0x08}},
+ {0x39, 0xCA, 2, {0x09,0x31}},
+ {0x39, 0xCB, 2, {0x31,0x31}},
+ {0x39, 0xCC, 2, {0x31,0x31}},
+ {0x39, 0xCD, 2, {0x31,0x31}},
+ {0x39, 0xCE, 2, {0x31,0x31}},
+ {0x39, 0xCF, 2, {0x31,0x31}},
+ {0x39, 0xD0, 2, {0x31,0x31}},
+ {0x39, 0xD1, 2, {0x31,0x09}},
+ {0x39, 0xD2, 2, {0x08,0x01}},
+ {0x39, 0xD3, 2, {0x2D,0x10}},
+ {0x39, 0xD4, 2, {0x11,0x12}},
+ {0x39, 0xD5, 2, {0x13,0x14}},
+ {0x39, 0xD6, 2, {0x15,0x16}},
+ {0x39, 0xD7, 2, {0x17,0x00}},
+ {0x39, 0xE6, 2, {0x31,0x31}},
+ {0x39, 0xD8, 5, {0x00,0x00,0x00,0x00,0x00}},
+ {0x39, 0xD9, 5, {0x00,0x00,0x00,0x00,0x00}},
+ {0x15, 0xE7, 1, {0x00}},
+ {0x39, 0xF0, 5, {0x55,0xAA,0x52,0x08,0x03}},
+ {0x39, 0xB0, 2, {0x20,0x00}},
+ {0x39, 0xB1, 2, {0x20,0x00}},
+ {0x39, 0xB2, 5, {0x05,0x00,0x42,0x00,0x00}},
+ {0x39, 0xB6, 5, {0x05,0x00,0x42,0x00,0x00}},
+ {0x39, 0xBA, 5, {0x53,0x00,0x42,0x00,0x00}},
+ {0x39, 0xBB, 5, {0x53,0x00,0x42,0x00,0x00}},
+ {0x15, 0xC4, 1, {0x40}},
+ {0x39, 0xF0, 5, {0x55,0xAA,0x52,0x08,0x05}},
+ {0x39, 0xB0, 2, {0x17,0x06}},
+ {0x15, 0xB8, 1, {0x00}},
+ {0x39, 0xBD, 5, {0x03,0x01,0x01,0x00,0x01}},
+ {0x39, 0xB1, 2, {0x17,0x06}},
+ {0x39, 0xB9, 2, {0x00,0x01}},
+ {0x39, 0xB2, 2, {0x17,0x06}},
+ {0x39, 0xBA, 2, {0x00,0x01}},
+ {0x39, 0xB3, 2, {0x17,0x06}},
+ {0x39, 0xBB, 2, {0x0A,0x00}},
+ {0x39, 0xB4, 2, {0x17,0x06}},
+ {0x39, 0xB5, 2, {0x17,0x06}},
+ {0x39, 0xB6, 2, {0x14,0x03}},
+ {0x39, 0xB7, 2, {0x00,0x00}},
+ {0x39, 0xBC, 2, {0x02,0x01}},
+ {0x15, 0xC0, 1, {0x05}},
+ {0x15, 0xC4, 1, {0xA5}},
+ {0x39, 0xC8, 2, {0x03,0x30}},
+ {0x39, 0xC9, 2, {0x03,0x51}},
+ {0x39, 0xD1, 5, {0x00,0x05,0x03,0x00,0x00}},
+ {0x39, 0xD2, 5, {0x00,0x05,0x09,0x00,0x00}},
+ {0x15, 0xE5, 1, {0x02}},
+ {0x15, 0xE6, 1, {0x02}},
+ {0x15, 0xE7, 1, {0x02}},
+ {0x15, 0xE9, 1, {0x02}},
+ {0x15, 0xED, 1, {0x33}},
+ {0x05, 0x00, 1, {0x11}},
+ {0x05, 0x00, 1, {0x29}},
+};
+
+
+static void  mipilcd_dcs_long_write(U32 cmd, U32 ByteCount, const U8* pByteData )
+{
+	U32 DataCount32 = (ByteCount+3)/4;
+	U32	WordCount32 = 0;
+	int i = 0;
+	U32 index = 0;
+	volatile NX_MIPI_RegisterSet* pmipi = (volatile NX_MIPI_RegisterSet*)IO_ADDRESS(NX_MIPI_GetPhysicalAddress(index));
+
+	NX_ASSERT( 512 >= DataCount32 );
+
+	//printf("0x%02x, wc:%2d, 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x, status:0x%08x\n", 
+	//		cmd, ByteCount, pByteData[0], pByteData[1], pByteData[2], pByteData[3], pByteData[4], pByteData[5], pmipi->DSIM_STATUS);
+
+	for( i=0; i<DataCount32; i++ )
+	{
+		pmipi->DSIM_PAYLOAD = (pByteData[3]<<24)|(pByteData[2]<<16)|(pByteData[1]<<8)|pByteData[0];
+		pByteData += 4;
+	}
+	pmipi->DSIM_PKTHDR  = 0x39 | (ByteCount<<8);
+}
+
+
+static void mipilcd_dcs_write( unsigned int id, unsigned int data0, unsigned int data1 )
+{
+	U32 index = 0;
+	volatile NX_MIPI_RegisterSet* pmipi = (volatile NX_MIPI_RegisterSet*)IO_ADDRESS(NX_MIPI_GetPhysicalAddress(index));
+	//printf("0x%02x, %2d, 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n", id, 0, data0, data1, 0, 0, 0, 0);
+	pmipi->DSIM_PKTHDR = id | (data0<<8) | (data1<<16);
+}
+
+static int LD070WX3_SL01(int width, int height, void *data)
+{
+	int i=0;
+	int size=ARRAY_SIZE(mipi_init_data);
+	U32 index = 0;
+	U32 reg_val = 0;
+	u8 pByteData[8];
+
+	volatile NX_MIPI_RegisterSet* pmipi = (volatile NX_MIPI_RegisterSet*)IO_ADDRESS(NX_MIPI_GetPhysicalAddress(index));
+	reg_val = pmipi->DSIM_ESCMODE;
+	pmipi->DSIM_ESCMODE = reg_val|(3 << 6);
+	reg_val = pmipi->DSIM_ESCMODE;
+	//printf("reg_val:0x%x\n", reg_val);
+
+	mdelay(10);
+ 
+	for(i=0; i<size; i++)
+	{
+		switch(mipi_init_data[i].cmd)
+		{
+			case 0x05:
+				mipilcd_dcs_write(mipi_init_data[i].cmd, mipi_init_data[i].data.data[0], 0x00);
+				break;
+			case 0x15:
+				mipilcd_dcs_write(mipi_init_data[i].cmd, mipi_init_data[i].addr, mipi_init_data[i].data.data[0]);
+				break;
+ 			case 0x39:
+				pByteData[0] = mipi_init_data[i].addr;
+				memcpy(&pByteData[1], &mipi_init_data[i].data.data[0], 7);
+				mipilcd_dcs_long_write(mipi_init_data[i].cmd, mipi_init_data[i].cnt+1, &pByteData);
+				break;
+			case 0xff:
+				break;
+		}
+		mdelay(1);
+	}
+
+	reg_val = pmipi->DSIM_ESCMODE;
+	pmipi->DSIM_ESCMODE = reg_val&(~(3 << 6));
+	reg_val = pmipi->DSIM_ESCMODE;
+	//printf("reg_val:0x%x\n", reg_val);
+
+	mdelay(10);
+	return 0;
+}
+
+#else
 static void mipilcd_write( unsigned int id, unsigned int data0, unsigned int data1 )
 {
     U32 index = 0;
@@ -191,6 +430,7 @@ static int LD070WX3_SL01(int width, int height, void *data)
 
 	return 0;
 }
+#endif
 
 static struct disp_vsync_info mipi_vsync_param = {
 	.h_active_len	= CFG_DISP_PRI_RESOL_WIDTH,
@@ -308,12 +548,14 @@ static struct i2c_board_info __initdata aw5306_i2c_bdi = {
 
 static unsigned int  button_gpio[] = CFG_KEYPAD_KEY_BUTTON;
 static unsigned int  button_code[] = CFG_KEYPAD_KEY_CODE;
+static unsigned int  button_detect[] = {0, 0, 0, 0, 0, 1};
 
 struct nxp_key_plat_data key_plat_data = {
 	.bt_count	= ARRAY_SIZE(button_gpio),
 	.bt_io		= button_gpio,
 	.bt_code	= button_code,
 	.bt_repeat	= CFG_KEYPAD_REPEAT,
+	.bt_detect_high	= button_detect,
 };
 
 static struct platform_device key_plat_device = {
@@ -359,13 +601,45 @@ static struct platform_device wm8976_dai = {
 };
 #endif
 
+#if defined(CONFIG_SND_CODEC_RT5631) || defined(CONFIG_SND_CODEC_RT5631_MODULE)
+#include <linux/i2c.h>
+
+#define	RT5631_I2C_BUS		(0)
+
+/* CODEC */
+static struct i2c_board_info __initdata rt5631_i2c_bdi = {
+	.type	= "rt5631",
+	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
+};
+
+/* DAI */
+struct nxp_snd_dai_plat_data i2s_dai_data = {
+	.i2s_ch	= 0,
+	.sample_rate	= 48000,
+	.hp_jack 		= {
+		.support    	= 1,
+		.detect_io		= CFG_IO_MCU_HP_DET,
+		.detect_level	= 0,
+	},
+};
+
+static struct platform_device rt5631_dai = {
+	.name			= "rt5631-audio",
+	.id				= 0,
+	.dev			= {
+		.platform_data	= &i2s_dai_data,
+	}
+};
+#endif
+
+
 /*------------------------------------------------------------------------------
  * Micom platform device
  */
 #if 1//defined(CONFIG_PM_MICOM) || defined(CONFIG_PM_MICOM_MODULE)
 #include <linux/i2c.h>
 
-#define	MICOM_I2C_BUS		(0)
+#define	MICOM_I2C_BUS		(3)
 
 static struct i2c_board_info micom_i2c_bdi = {
 	I2C_BOARD_INFO("pm-micom", (0x30)),
@@ -469,6 +743,35 @@ void __init nxp_reserve_mem(void)
 }
 #endif
 
+
+#if defined(CONFIG_I2C_NEXELL)
+#define I2CUDELAY(x)	1000000/x
+/* gpio i2c 3 */
+#define	I2C3_SCL	PAD_GPIO_A + 25
+#define	I2C3_SDA	PAD_GPIO_A + 26
+
+static struct i2c_gpio_platform_data nxp_i2c_gpio_port3 = {
+	.sda_pin	= I2C3_SDA,
+	.scl_pin	= I2C3_SCL,
+	.udelay		= I2CUDELAY(CFG_I2C2_CLK),				/* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
+	.timeout	= 10,
+};
+
+
+static struct platform_device i2c_device_ch3 = {
+	.name	= "i2c-gpio",
+	.id		= 3,
+	.dev    = {
+		.platform_data	= &nxp_i2c_gpio_port3,
+	},
+};
+
+static struct platform_device *i2c_devices[] = {
+	&i2c_device_ch3,
+};
+#endif /* CONFIG_I2C_NEXELL */
+
+
 /*------------------------------------------------------------------------------
  * PMIC platform device
  */
@@ -485,7 +788,7 @@ void __init nxp_reserve_mem(void)
 //#include <linux/rtc/rtc-nxe2000.h>
 //#include <linux/rtc.h>
 
-#define NXE2000_I2C_BUS		(0)
+#define NXE2000_I2C_BUS		(3)
 #define NXE2000_I2C_ADDR	(0x64 >> 1)
 #define NXE2000_IRQ			CFG_GPIO_PMIC_INTR
 
@@ -537,7 +840,7 @@ static struct regulator_consumer_supply nxe2000_ldo6_supply_0[] = {
 static struct regulator_consumer_supply nxe2000_ldo7_supply_0[] = {
 	REGULATOR_SUPPLY("vvid_3.3V", NULL),
 };
-#ifdef CONFIG_SECRET_2ND_BOARD
+#if 1// CONFIG_SECRET_2ND_BOARD
 static struct regulator_consumer_supply nxe2000_ldo8_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy3", NULL),
 };
@@ -552,7 +855,7 @@ static struct regulator_consumer_supply nxe2000_ldo9_supply_0[] = {
 static struct regulator_consumer_supply nxe2000_ldo10_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy2", NULL),
 };
-#ifdef CONFIG_SECRET_2ND_BOARD
+#if 1// CONFIG_SECRET_2ND_BOARD
 static struct regulator_consumer_supply nxe2000_ldortc1_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy4", NULL),
 };
@@ -609,15 +912,15 @@ NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.8V
 NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.8V SYS */
 NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
-NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V VID */
-#ifdef CONFIG_SECRET_2ND_BOARD
+NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 3.3V VID */
+#if 1// CONFIG_SECRET_2ND_BOARD
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 #else
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V AUDIO */
 #endif
 NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
-#ifdef CONFIG_SECRET_2ND_BOARD
+#if 1// CONFIG_SECRET_2ND_BOARD
 NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 #else
@@ -927,22 +1230,129 @@ static struct dw_mci_board _dwmci0_data = {
 #endif
 
 #ifdef CONFIG_MMC_NEXELL_CH1
+
+#include <linux/mmc/card.h>
+
+#if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
+static void (*wifi_status_cb)(struct platform_device *, int state);
+#endif
+int _dwmci1_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
+{
+#if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
+    u_int io = PAD_GPIO_A + 19;
+    wifi_status_cb = notify_func;
+    nxp_soc_gpio_set_out_value(io, 0);
+#endif
+	return 0;
+}
+
+int _dwmci1_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
+{
+#if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
+    u_int io = PAD_GPIO_A + 19;
+    wifi_status_cb = NULL;
+    nxp_soc_gpio_set_out_value(io, 1);
+#endif
+	return 0;
+}
+
+static int _dwmci1_init(u32 slot_id, irq_handler_t handler, void *data)
+{
+#if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
+    struct dw_mci *host = (struct dw_mci *)data;
+    u_int io = PAD_GPIO_A + 19;
+    int irq = IRQ_GPIO_START + io;
+    int id = 1;
+    int ret = 0;
+
+	printk("dw_mmc dw_mmc.%d: Using external card detect irq %3d (io %2d)\n", id, irq, io);
+
+    nxp_soc_gpio_set_io_dir(io, 1);
+    nxp_soc_gpio_set_out_value(io, 0);
+    ret = request_irq(irq, handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, DEV_NAME_SDHC "1", (void *)host->slot[slot_id]);
+    if (0 > ret)
+        pr_err("dw_mmc.%d: failed to request irq %d\n", slot_id, irq);
+
+    /* MCU_WL_REG_ON */
+    io = PAD_GPIO_A + 17;
+    nxp_soc_gpio_set_out_value(io, 0);
+    nxp_soc_gpio_set_io_dir(io, 1);
+    nxp_soc_gpio_set_io_func(io, 0);
+#endif
+	return 0;
+}
+
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
-				  	  DW_MCI_QUIRK_HIGHSPEED |
-				  	  DW_MMC_QUIRK_HW_RESET_PW |
-				      DW_MCI_QUIRK_NO_DETECT_EBIT,
+				  	  DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 100 * 1000 * 1000,
-	.caps			= MMC_CAP_UHS_DDR50 |
-					  MMC_CAP_NONREMOVABLE |
-			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
-				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
-	//.caps2			= MMC_CAP2_PACKED_WR,
-	.desc_sz		= 4,
+    .caps           = MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
-	.sdr_timing		= 0x01010001,
-	.ddr_timing		= 0x03030002,
+    .cd_type        = DW_MCI_CD_EXTERNAL,
+	.init			= _dwmci1_init,
+	.ext_cd_init	= _dwmci1_ext_cd_init,
+	.ext_cd_cleanup	= _dwmci1_ext_cd_cleanup,
 };
+
+#if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
+
+#include <linux/if.h>
+#include <linux/skbuff.h>
+#include <linux/wlan_plat.h>
+
+static int _wifi_power(int on)
+{
+    printk("%s %d\n", __func__, on);
+    if (on)
+        nxp_soc_gpio_set_out_value(PAD_GPIO_A + 17, on);
+    return 0;
+}
+
+static int _wifi_reset(int on)
+{
+    printk("%s %d\n", __func__, on);
+    return 0;
+}
+
+extern struct platform_device dwmci_dev_ch1;
+static int _wifi_set_carddetect(int val)
+{
+    printk("%s %d\n", __func__, val);
+
+    if (wifi_status_cb)
+        wifi_status_cb(&dwmci_dev_ch1, val);
+    else
+        printk("%s: Nobody to notify\n", __func__);;
+    return 0;
+}
+
+static unsigned char _wifi_mac_addr[IFHWADDRLEN] = { 0, 0x90, 0x4c, 0, 0, 0 };
+
+static int _wifi_get_mac_addr(unsigned char *buf)
+{
+    memcpy(buf, _wifi_mac_addr, IFHWADDRLEN);
+    return 0;
+}
+
+static struct wifi_platform_data _wifi_control = {
+    .set_power          = _wifi_power,
+    .set_reset          = _wifi_reset,
+    .set_carddetect     = _wifi_set_carddetect,
+    .mem_prealloc       = NULL,
+    .get_mac_addr       = _wifi_get_mac_addr,
+    /*.get_country_code   = _wifi_get_country_code,*/
+    .get_country_code   = NULL,
+};
+
+static struct platform_device bcm_wifi_device = {
+     .name  = "bcmdhd_wlan",
+     .id    = 0,
+     .dev   = {
+         .platform_data = &_wifi_control,
+     },
+};
+
+#endif /* CONFIG_BROADCOM_WIFI */
 #endif
 
 #ifdef CONFIG_MMC_NEXELL_CH2
@@ -952,19 +1362,99 @@ static struct dw_mci_board _dwmci2_data = {
 				  	  DW_MMC_QUIRK_HW_RESET_PW |
 				      DW_MCI_QUIRK_NO_DETECT_EBIT,
 	.bus_hz			= 100 * 1000 * 1000,
-	.caps			= MMC_CAP_UHS_DDR50 |
+	.caps			= MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
 					  MMC_CAP_NONREMOVABLE |
 			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
 				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
 	//.caps2			= MMC_CAP2_PACKED_WR,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-	.sdr_timing		= 0x01010001,
-	.ddr_timing		= 0x03030002,
+#ifdef CFG_SDMMC2_CLK_DELAY
+	.clk_dly		= CFG_SDMMC2_CLK_DELAY,
+#endif
+
 };
 #endif
 
 #endif /* CONFIG_MMC_DW */
+
+/*------------------------------------------------------------------------------
+ * RFKILL driver
+ */
+#if defined(CONFIG_RFKILL_NEXELL)
+
+#define	BT_HOST_WAKE 	(PAD_GPIO_D + 28)
+#define	BT_DEV_WAKE 	(PAD_GPIO_E + 3)
+#define	BT_REG_ON		(PAD_GPIO_E + 2)
+
+static int bt_rfkill_bt_init(void *data)
+{
+	struct nxp_rfkill_plat_data *pdata = data;
+#if (0)
+	int bt_dev_wake = BT_DEV_WAKE;
+	int bt_hst_wake = BT_HOST_WAKE;
+#else
+	int bt_dev_wake = BT_HOST_WAKE;
+	int bt_hst_wake = BT_DEV_WAKE;
+#endif
+	pr_info("rfkill: %s bt device init ...\n", pdata->name);
+	gpio_request(bt_dev_wake, "bt dev wake");
+	gpio_request(bt_hst_wake, "bt hst wake");
+
+	gpio_direction_output(bt_dev_wake, 1);
+	gpio_direction_input(bt_hst_wake);
+	return 0;
+}
+
+#if (1)
+static int bt_rfkill_bt_set_block(void *data, bool blocked)
+{
+	struct nxp_rfkill_plat_data *pdata = data;
+	struct rfkill_dev_data *rfdev = pdata->rf_dev;
+
+	pr_info("rfkill: %s bt_rfkill_set_block %d %s gpio.%d\n",
+		pdata->name, blocked, blocked?"Off":"On ", rfdev->gpio);
+
+	if (blocked)
+		gpio_set_value(rfdev->gpio, 0);	// off
+	else
+		gpio_set_value(rfdev->gpio, 1); // on
+
+	return 0;
+}
+#endif
+
+/* BT RFKILL0 */
+struct rfkill_dev_data  rfkill_bt_dev =
+{
+	.gpio			= BT_REG_ON,
+	.initval		= RFKILL_INIT_SET | RFKILL_INIT_OFF,
+};
+
+struct nxp_rfkill_plat_data rfkill_bt_data = {
+	.name		= "BT-Rfkill",
+	.type		= RFKILL_TYPE_BLUETOOTH,
+	.rf_dev		= &rfkill_bt_dev,
+    .rf_dev_num	= 1,
+    .init		= bt_rfkill_bt_init,
+#if (1)
+	.set_block  = bt_rfkill_bt_set_block,
+#endif
+};
+
+static struct platform_device rfkill_bt = {
+	.name			= DEV_NAME_RFKILL,
+	.id				= 0,	/* rfkill0 */
+	.dev			= {
+		.platform_data	= &rfkill_bt_data,
+	}
+};
+
+
+static struct platform_device *rfkill_devices[] = {
+	&rfkill_bt,
+};
+#endif	/* CONFIG_RFKILL_NEXELL */
 
 /*------------------------------------------------------------------------------
  * USB HSIC power control.
@@ -1002,6 +1492,10 @@ void __init nxp_board_devices_register(void)
 	#endif
 	#ifdef CONFIG_MMC_NEXELL_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
+        #if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
+    printk("plat: register broadcom wifi device\n");
+    platform_device_register(&bcm_wifi_device);
+        #endif
 	#endif
 	#ifdef CONFIG_MMC_NEXELL_CH2
 	nxp_mmc_add_device(2, &_dwmci2_data);
@@ -1023,6 +1517,10 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&key_plat_device);
 #endif
 
+#if defined(CONFIG_I2C_NEXELL)
+    platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
+#endif
+
 #if defined(CONFIG_REGULATOR_NXE2000)
 	printk("plat: add device nxe2000 pmic\n");
 	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_regulators, ARRAY_SIZE(nxe2000_regulators));
@@ -1032,6 +1530,12 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device asoc-wm8976\n");
 	i2c_register_board_info(WM8976_I2C_BUS, &wm8976_i2c_bdi, 1);
 	platform_device_register(&wm8976_dai);
+#endif
+
+#if defined(CONFIG_SND_CODEC_RT5631) || defined(CONFIG_SND_CODEC_RT5631_MODULE)
+	printk("plat: add device asoc-rt5631\n");
+	i2c_register_board_info(RT5631_I2C_BUS, &rt5631_i2c_bdi, 1);
+	platform_device_register(&rt5631_dai);
 #endif
 
 #if defined(CONFIG_V4L2_NEXELL) || defined(CONFIG_V4L2_NEXELL_MODULE)
@@ -1062,6 +1566,11 @@ void __init nxp_board_devices_register(void)
 #if 0//defined(CONFIG_HAPTIC_DRV2605) || defined(CONFIG_HAPTIC_DRV2605_MODULE)
 	printk("plat: add haptic(drv2605)\n");
 	i2c_register_board_info(DRV2605_I2C_BUS, &drv2605_i2c_bdi, 1);
+#endif
+
+#if defined(CONFIG_RFKILL_NEXELL)
+    printk("plat: add device rfkill\n");
+    platform_add_devices(rfkill_devices, ARRAY_SIZE(rfkill_devices));
 #endif
 
 	/* END */
