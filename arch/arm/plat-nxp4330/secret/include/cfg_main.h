@@ -209,7 +209,7 @@
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
  */
-#define CFG_SW_UBC_ENABLE						(1)
+#define CFG_SW_UBC_ENABLE						(-1)
 
 #if 1//CONFIG_SECRET_2ND_BOARD
 #define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 21)
