@@ -346,6 +346,10 @@ static u32 dw_mci_prep_stop(struct dw_mci *host, struct mmc_command *cmd)
 	return cmdr;
 }
 
+// psw0523 add for broadcom wifi
+#include <mach/platform.h>
+#include <mach/soc.h>
+
 static void dw_mci_start_command(struct dw_mci *host,
 				 struct mmc_command *cmd, u32 cmd_flags)
 {
@@ -356,6 +360,19 @@ static void dw_mci_start_command(struct dw_mci *host,
 
 	mci_writel(host, CMDARG, cmd->arg);
 	wmb();
+
+    // psw0523 fix for broadcom wifi
+#if 0
+    if (host->cur_slot->id == 1) {
+        while (1) {
+            int value = nxp_soc_gpio_get_out_value(PAD_GPIO_D + 23);
+            if (value == 0)
+                msleep(10);
+            else
+                break;
+        }
+    }
+#endif
 
 	mci_writel(host, CMD, cmd_flags | SDMMC_CMD_START);
 }

@@ -6,6 +6,8 @@
 #include <asm/smp_plat.h>
 #include <asm/opcodes.h>
 
+#include <linux/err.h>
+
 #include "patch.h"
 
 struct patch {

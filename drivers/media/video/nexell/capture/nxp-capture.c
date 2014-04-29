@@ -448,8 +448,8 @@ static ssize_t sensor_show(struct device *dev,
     return scnprintf(buf, PAGE_SIZE, "is_mipi:%d,name:%s", _sensor_info[m].is_mipi, _sensor_info[m].name);
 }
 
-static struct device_attribute sensor0_attr = __ATTR(sensor.0, 0666, sensor_show, NULL);
-static struct device_attribute sensor1_attr = __ATTR(sensor.1, 0666, sensor_show, NULL);
+static struct device_attribute sensor0_attr = __ATTR(sensor.0, 0644, sensor_show, NULL);
+static struct device_attribute sensor1_attr = __ATTR(sensor.1, 0644, sensor_show, NULL);
 
 static struct attribute *attrs[] = {
     &sensor0_attr.attr, &sensor1_attr.attr,
