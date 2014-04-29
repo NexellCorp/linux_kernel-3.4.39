@@ -154,7 +154,7 @@ static struct platform_device *fb_devices[] = {
 #if defined (CONFIG_NEXELL_DISPLAY_MIPI)
 #include <linux/delay.h>
 
-#define	MIPI_BITRATE_750M
+#define	MIPI_BITRATE_512M//MIPI_BITRATE_750M
 
 #ifdef MIPI_BITRATE_1G
 #define	PLLPMS		0x033E8
@@ -162,6 +162,9 @@ static struct platform_device *fb_devices[] = {
 #elif defined(MIPI_BITRATE_750M)
 #define	PLLPMS		0x043E8
 #define	BANDCTL		0xC
+#elif defined(MIPI_BITRATE_512M)
+#define	PLLPMS		0x03200
+#define	BANDCTL		0x9
 #elif defined(MIPI_BITRATE_420M)
 #define	PLLPMS		0x2231
 #define	BANDCTL		0x7
@@ -171,6 +174,7 @@ static struct platform_device *fb_devices[] = {
 #endif
 #define	PLLCTL		0
 #define	DPHYCTL		0
+
 
 #if 1 // CONFIG_SECRET_2ND_BOARD
 struct data_val{
@@ -194,6 +198,8 @@ static struct reg_val mipi_init_data[]=
  {0x15, 0x6F, 1, {0x19}},
  {0x15, 0xF7, 1, {0x12}},
  {0x39, 0xF0, 5, {0x55,0xAA,0x52,0x08,0x00}},
+ {0x39, 0xEF, 2, {0x07,0xFF}},
+ {0x39, 0xEE, 4, {0x87,0x78,0x08,0x40}},
  {0x15, 0xC8, 1, {0x80}},
  {0x39, 0xB1, 2, {0x6C,0x01}},
  {0x15, 0xB6, 1, {0x08}},
