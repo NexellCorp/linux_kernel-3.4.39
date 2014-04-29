@@ -38,10 +38,7 @@ void __kprobes __patch_text(void *addr, unsigned int insn)
 		else
 			insn = __opcode_to_mem_arm(insn);
 
-        // psw0523 block this because of kernel panic
-#if 0
 		*(u32 *)addr = insn;
-#endif
 		size = sizeof(u32);
 	}
 
