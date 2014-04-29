@@ -198,7 +198,7 @@ static int alive_set_type_irq(struct irq_data *d, unsigned int type)
 	int offs = 0, i = 0;
 	NX_ALIVE_DETECTMODE mode = 0;
 
-	pr_debug("%s: alive irq = %d, io = %d, tupe=0x%x\n",
+	pr_debug("%s: alive irq = %d, io = %d, type=0x%x\n",
 		__func__, d->irq, bit, type);
 
 	switch (type) {
@@ -233,12 +233,25 @@ static int alive_set_type_irq(struct irq_data *d, unsigned int type)
     return 0;
 }
 
+static int alive_set_wake(struct irq_data *d, unsigned int on)
+{
+#if (0)
+  void __iomem *base = irq_data_get_irq_chip_data(d);
+	int bit = (d->irq & 0x1F);
+
+	pr_info("%s: alive irq = %d, io = %d wake %s\n",
+		__func__, d->irq, bit, on?"on":"off");
+#endif
+	return 0;
+}
+
 static struct irq_chip alive_chip = {
 	.name			= "ALIVE",
 	.irq_ack		= alive_ack_irq,
 	.irq_mask		= alive_mask_irq,
 	.irq_unmask		= alive_unmask_irq,
 	.irq_set_type	= alive_set_type_irq,
+	.irq_set_wake	= alive_set_wake,
 };
 
 static void alive_handler(unsigned int irq, struct irq_desc *desc)
@@ -417,12 +430,24 @@ static int gpio_set_type_irq(struct irq_data *d, unsigned int type)
     return 0;
 }
 
+static int gpio_set_wake(struct irq_data *d, unsigned int on)
+{
+#if (0)
+	void __iomem *base = irq_data_get_irq_chip_data(d);
+	int bit = (d->irq & 0x1F);
+	pr_debug("%s: gpio irq = %d, %s.%d wake %s\n",
+		__func__, d->irq, VIO_NAME(d->irq), bit, on?"on":"off");
+#endif
+	return 0;
+}
+
 static struct irq_chip gpio_chip = {
 	.name			= "GPIO",
 	.irq_ack		= gpio_ack_irq,
 	.irq_mask		= gpio_mask_irq,
 	.irq_unmask		= gpio_unmask_irq,
 	.irq_set_type	= gpio_set_type_irq,
+	.irq_set_wake	= gpio_set_wake,
 };
 
 static void gpio_handler(unsigned int irq, struct irq_desc *desc)
