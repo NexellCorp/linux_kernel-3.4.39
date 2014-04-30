@@ -1321,6 +1321,7 @@ static struct dw_mci_board _dwmci1_data = {
 				  	  DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 100 * 1000 * 1000,
     .caps           = MMC_CAP_CMD23,
+    .pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
 	.detect_delay_ms= 200,
     .cd_type        = DW_MCI_CD_EXTERNAL,
 	.init			= _dwmci1_init,
