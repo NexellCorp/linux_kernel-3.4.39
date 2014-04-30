@@ -5,22 +5,22 @@
 
 # psw0523 fix
 #DHDCFLAGS += -Wall -Wstrict-prototypes -Dlinux -DLINUX -DBCMDRIVER             \
-        -DBCMDONGLEHOST -DUNRELEASEDCHIP -DBCMDMA32 -DBCMFILEIMAGE            \
-        -DDHDTHREAD -DBDC -DOOB_INTR_ONLY                                     \
-        -DDHD_BCMEVENTS -DSHOW_EVENTS -DBCMDBG                                \
-        -DMMC_SDIO_ABORT -DBCMSDIO -DBCMLXSDMMC -DWLP2P     \
-        -DWIFI_ACT_FRAME -DARP_OFFLOAD_SUPPORT          \
-        -DKEEP_ALIVE -DCSCAN -DPKT_FILTER_SUPPORT                             \
-        -DEMBEDDED_PLATFORM -DPNO_SUPPORT
+        #-DBCMDONGLEHOST -DUNRELEASEDCHIP -DBCMDMA32 -DBCMFILEIMAGE            \
+        #-DDHDTHREAD -DBDC -DOOB_INTR_ONLY                                     \
+        #-DDHD_BCMEVENTS -DSHOW_EVENTS -DBCMDBG                                \
+        #-DMMC_SDIO_ABORT -DBCMSDIO -DBCMLXSDMMC -DWLP2P     \
+        #-DWIFI_ACT_FRAME -DARP_OFFLOAD_SUPPORT          \
+        #-DKEEP_ALIVE -DCSCAN -DPKT_FILTER_SUPPORT                             \
+        #-DEMBEDDED_PLATFORM -DPNO_SUPPORT
+
 DHDCFLAGS += -Wall -Wstrict-prototypes -Dlinux -DLINUX -DBCMDRIVER             \
         -DBCMDONGLEHOST -DUNRELEASEDCHIP -DBCMDMA32 -DBCMFILEIMAGE            \
-        -DDHDTHREAD -DBDC -DDHD_DEBUG \
+        -DDHDTHREAD -DBDC                                     \
         -DDHD_BCMEVENTS -DSHOW_EVENTS -DBCMDBG                                \
         -DMMC_SDIO_ABORT -DBCMSDIO -DBCMLXSDMMC -DWLP2P     \
         -DWIFI_ACT_FRAME -DARP_OFFLOAD_SUPPORT          \
         -DKEEP_ALIVE -DCSCAN -DPKT_FILTER_SUPPORT                             \
         -DEMBEDDED_PLATFORM -DPNO_SUPPORT
-
 #################
 # Common feature
 #################
@@ -130,17 +130,12 @@ DHDCFLAGS += -DDHDENABLE_TAILPAD
 # Android Platform Definition
 ##############################
 
-##########
-# KitKat
-##########
-# Definitions are filtered by Kernel version
+############
+# JellyBean
+############
 DHDCFLAGS += -DWL_ENABLE_P2P_IF
-DHDCFLAGS += -DWL_SUPPORT_BACKPORTED_KPATCHES
-# Default definitions for KitKat
+DHDCFLAGS += -DMULTIPLE_SUPPLICANT
 DHDCFLAGS += -DWL_CFG80211_STA_EVENT
-DHDCFLAGS += -DWL_IFACE_COMB_NUM_CHANNELS
-# To support p2p private command on kernel 3.8 or above
-DHDCFLAGS += -DWL_NEWCFG_PRIVCMD_SUPPORT
 
 
 
