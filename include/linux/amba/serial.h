@@ -206,6 +206,7 @@ struct amba_pl011_data {
         void (*init) (void);
 	void (*exit) (void);
 	void (*reset) (void);
+	void (*wake_peer) (void *port);
 };
 #endif
 

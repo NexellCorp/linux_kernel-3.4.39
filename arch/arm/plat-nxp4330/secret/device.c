@@ -154,7 +154,7 @@ static struct platform_device *fb_devices[] = {
 #if defined (CONFIG_NEXELL_DISPLAY_MIPI)
 #include <linux/delay.h>
 
-#define	MIPI_BITRATE_750M
+#define	MIPI_BITRATE_512M//MIPI_BITRATE_750M
 
 #ifdef MIPI_BITRATE_1G
 #define	PLLPMS		0x033E8
@@ -162,6 +162,9 @@ static struct platform_device *fb_devices[] = {
 #elif defined(MIPI_BITRATE_750M)
 #define	PLLPMS		0x043E8
 #define	BANDCTL		0xC
+#elif defined(MIPI_BITRATE_512M)
+#define	PLLPMS		0x03200
+#define	BANDCTL		0x9
 #elif defined(MIPI_BITRATE_420M)
 #define	PLLPMS		0x2231
 #define	BANDCTL		0x7
@@ -172,7 +175,8 @@ static struct platform_device *fb_devices[] = {
 #define	PLLCTL		0
 #define	DPHYCTL		0
 
-#if 1 // CONFIG_SECRET_2ND_BOARD
+
+#ifdef CONFIG_SECRET_2ND_BOARD
 struct data_val{
 	u8 data[7];
 };
@@ -194,6 +198,8 @@ static struct reg_val mipi_init_data[]=
  {0x15, 0x6F, 1, {0x19}},
  {0x15, 0xF7, 1, {0x12}},
  {0x39, 0xF0, 5, {0x55,0xAA,0x52,0x08,0x00}},
+ {0x39, 0xEF, 2, {0x07,0xFF}},
+ {0x39, 0xEE, 4, {0x87,0x78,0x08,0x40}},
  {0x15, 0xC8, 1, {0x80}},
  {0x39, 0xB1, 2, {0x6C,0x01}},
  {0x15, 0xB6, 1, {0x08}},
@@ -868,7 +874,7 @@ static struct regulator_consumer_supply nxe2000_ldo6_supply_0[] = {
 static struct regulator_consumer_supply nxe2000_ldo7_supply_0[] = {
 	REGULATOR_SUPPLY("vvid_3.3V", NULL),
 };
-#if 1// CONFIG_SECRET_2ND_BOARD
+#ifdef CONFIG_SECRET_2ND_BOARD
 static struct regulator_consumer_supply nxe2000_ldo8_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy3", NULL),
 };
@@ -883,7 +889,7 @@ static struct regulator_consumer_supply nxe2000_ldo9_supply_0[] = {
 static struct regulator_consumer_supply nxe2000_ldo10_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy2", NULL),
 };
-#if 1// CONFIG_SECRET_2ND_BOARD
+#ifdef CONFIG_SECRET_2ND_BOARD
 static struct regulator_consumer_supply nxe2000_ldortc1_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy4", NULL),
 };
@@ -941,14 +947,14 @@ NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.8V
 NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
 NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V VID */
-#if 1// CONFIG_SECRET_2ND_BOARD
+#ifdef CONFIG_SECRET_2ND_BOARD
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 #else
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V AUDIO */
 #endif
 NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
-#if 1// CONFIG_SECRET_2ND_BOARD
+#ifdef CONFIG_SECRET_2ND_BOARD
 NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 #else

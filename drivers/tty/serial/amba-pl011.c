@@ -1759,6 +1759,18 @@ static int pl010_verify_port(struct uart_port *port, struct serial_struct *ser)
 	return ret;
 }
 
+/*
+ * Add by jhkim for BT
+ */
+static void pl011_wake_peer(struct uart_port *port)
+{
+	struct uart_amba_port *uap = (struct uart_amba_port *)port;
+	struct amba_pl011_data *plat = uap->port.dev->platform_data;
+
+	if (plat->wake_peer)
+		plat->wake_peer(port);
+}
+
 static struct uart_ops amba_pl011_pops = {
 	.tx_empty	= pl01x_tx_empty,
 	.set_mctrl	= pl011_set_mctrl,
@@ -1781,6 +1793,7 @@ static struct uart_ops amba_pl011_pops = {
 	.poll_get_char = pl010_get_poll_char,
 	.poll_put_char = pl010_put_poll_char,
 #endif
+	.wake_peer	= pl011_wake_peer,	/* * Add by jhkim for BT */
 };
 
 static struct uart_amba_port *amba_ports[UART_NR];
@@ -1801,15 +1814,15 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
 {
 	struct uart_amba_port *uap = amba_ports[co->index];
 	unsigned int status, old_cr, new_cr;
-//	unsigned long flags;	// del by jhkim
+ //	unsigned long flags;
 	int locked = 1;
 
 	clk_enable(uap->clk);
 
-#if (0)
-	// del by jhkim
+	/* del by jhkim
 	local_irq_save(flags);
-#endif
+	*/
+
 
 	if (uap->port.sysrq)
 		locked = 0;
@@ -1840,10 +1853,9 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
 	if (locked)
 		spin_unlock(&uap->port.lock);
 
-#if (0)
-	// del by jhkim
+	/* del by jhkim
 	local_irq_restore(flags);
-#endif
+	*/
 
 	clk_disable(uap->clk);
 }
