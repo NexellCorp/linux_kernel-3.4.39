@@ -149,8 +149,8 @@ struct nxp_fb_param {
  */
 static int nxp_fb_dev_get_vsync(int module, struct disp_vsync_info *vsi)
 {
+#ifdef CONFIG_NEXELL_DISPLAY
 	enum disp_dev_type device = DISP_DEVICE_SYNCGEN0;
-
 	if (-1 == module)
 		return 0;
 
@@ -161,11 +161,13 @@ static int nxp_fb_dev_get_vsync(int module, struct disp_vsync_info *vsi)
 		printk(KERN_ERR "Fail to get framebuffer video sync (display.%d)\n", module);
 		return -EINVAL;
 	}
+#endif
 	return 0;
 }
 
 static int nxp_fb_dev_setup(struct nxp_fb_param *par)
 {
+#ifdef CONFIG_NEXELL_DISPLAY
 	int module = par->fb_dev.device_id;
 	int layer = par->fb_dev.layer;
 	int xres = par->fb_dev.x_resol;
@@ -180,12 +182,13 @@ static int nxp_fb_dev_setup(struct nxp_fb_param *par)
 	nxp_soc_disp_rgb_set_format(module, layer, par->fb_dev.format, xres, yres, pixel);
 	nxp_soc_disp_rgb_set_address(module, layer, phys, pixel, xres*pixel, 1);
 	nxp_soc_disp_rgb_set_enable(module, layer, 1);
-
+#endif
 	return 0;
 }
 
 static unsigned nxp_fb_dev_set_layer(struct nxp_fb_param *par)
 {
+#ifdef CONFIG_NEXELL_DISPLAY
 	int module = par->fb_dev.device_id;
 	int layer = par->fb_dev.layer;
 
@@ -193,10 +196,14 @@ static unsigned nxp_fb_dev_set_layer(struct nxp_fb_param *par)
 		return 0;
 
 	return nxp_soc_disp_rgb_set_fblayer(module, layer);
+#else
+	return 0;
+#endif
 }
 
 static void nxp_fb_dev_set_addr(struct nxp_fb_param *par, unsigned phys, int waitvsync)
 {
+#ifdef CONFIG_NEXELL_DISPLAY
 	int module = par->fb_dev.device_id;
 	int layer  = par->fb_dev.layer;
 	int xres = par->fb_dev.x_resol;
@@ -206,11 +213,12 @@ static void nxp_fb_dev_set_addr(struct nxp_fb_param *par, unsigned phys, int wai
 		return;
 
 	nxp_soc_disp_rgb_set_address(module, layer, phys, pixel, xres*pixel, waitvsync);
+#endif
 }
 
 static int nxp_fb_dev_enable(struct nxp_fb_param *par, bool on, int force)
 {
-#if !defined(CONFIG_LOGO_NEXELL_COPY)
+#if defined CONFIG_NEXELL_DISPLAY && !defined(CONFIG_LOGO_NEXELL_COPY)
 	int module = par->fb_dev.device_id;
 	int stat = 0;
 
@@ -218,7 +226,7 @@ static int nxp_fb_dev_enable(struct nxp_fb_param *par, bool on, int force)
 		return 0;
 
 	if (!force)
-		stat = nxp_soc_disp_device_stat_enable(DISP_DEVICE_SYNCGEN0 + module)
+		stat = nxp_soc_disp_device_stat_enable(DISP_DEVICE_SYNCGEN0 + module);
 
 	if (!stat)
 		nxp_soc_disp_device_enable_all(module, on ? 1: 0);
@@ -228,16 +236,21 @@ static int nxp_fb_dev_enable(struct nxp_fb_param *par, bool on, int force)
 
 static int nxp_fb_dev_suspend(struct nxp_fb_param *par)
 {
+	int ret = 0;
+#ifdef CONFIG_NEXELL_DISPLAY
 	int module = par->fb_dev.device_id;
 	if (-1 == module)
 		return 0;
 
 	PM_DBGOUT("%s\n", __func__);
-	return nxp_soc_disp_device_suspend_all(module);
+	ret = nxp_soc_disp_device_suspend_all(module);
+#endif
+	return ret;
 }
 
 static int nxp_fb_dev_resume(struct nxp_fb_param *par)
 {
+#ifdef CONFIG_NEXELL_DISPLAY
 	int module = par->fb_dev.device_id;
 	if (-1 == module)
 		return 0;
@@ -245,6 +258,7 @@ static int nxp_fb_dev_resume(struct nxp_fb_param *par)
 	PM_DBGOUT("%s\n", __func__);
 
 	nxp_soc_disp_device_resume_all(module);
+#endif
 	return 0;
 }
 
@@ -281,14 +295,16 @@ static inline  void fb_copy_unmap(struct page *page, void *virt)
 
 static unsigned nxp_fb_dev_get_addr(struct nxp_fb_param *par)
 {
+	unsigned int phyaddr = 0;
+#ifdef CONFIG_NEXELL_DISPLAY
 	int module = par->fb_dev.device_id;
 	int layer = par->fb_dev.layer;
-	unsigned int phyaddr = 0;
 
 	if (-1 == module)
 		return 0;
 
 	nxp_soc_disp_rgb_get_address(module, layer, &phyaddr, NULL, NULL);
+#endif
 	return phyaddr;
 }
 
