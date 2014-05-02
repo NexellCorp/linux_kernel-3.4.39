@@ -25,6 +25,9 @@
 #define CS42L51_CHIP_REV_ID		0x01
 #define CS42L51_MK_CHIP_REV(a, b)	((a)<<3|(b))
 
+#define CHIP_ID_MASK            	0xF8
+#define CHIP_REV_MASK			0x07
+
 #define CS42L51_POWER_CTL1		0x02
 #define CS42L51_POWER_CTL1_PDN_DACB	(1<<6)
 #define CS42L51_POWER_CTL1_PDN_DACA	(1<<5)
@@ -63,7 +66,7 @@
 
 #define CS42L51_MIC_CTL			0x05
 #define CS42L51_MIC_CTL_ADC_SNGVOL	(1<<7)
-#define CS42L51_MIC_CTL_ADCD_DBOOST	(1<<6)
+#define CS42L51_MIC_CTL_ADCB_DBOOST	(1<<6)
 #define CS42L51_MIC_CTL_ADCA_DBOOST	(1<<5)
 #define CS42L51_MIC_CTL_MICBIAS_SEL	(1<<4)
 #define CS42L51_MIC_CTL_MICBIAS_LVL(x)	(((x)&3)<<2)
