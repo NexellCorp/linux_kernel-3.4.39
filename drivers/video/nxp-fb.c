@@ -381,7 +381,7 @@ nxp_fb_init_display(struct fb_info *info)
 		par->fb_dev.fb_phy_base, par->fb_dev.fb_vir_base, par->fb_dev.fb_phy_len);
 }
 
-static void inline nxp_fb_setup_display(struct fb_info *info)
+static void inline nxp_fb_set_base(struct fb_info *info)
 {
 	struct nxp_fb_param *par = info->par;
 	u32 phys = par->fb_dev.fb_pan_phys;
@@ -983,11 +983,11 @@ static int nxp_fb_set_par(struct fb_info *info)
         dev->fb_pan_phys = dev->fb_phy_base;	/* pan restore */
 
         nxp_fb_setup_info(info);
-        nxp_fb_setup_display(info);
+        nxp_fb_set_base(info);
     } else {
         if (par->status != FB_STAT_INIT) {
             nxp_fb_setup_info(info);
-            nxp_fb_setup_display(info);
+            nxp_fb_set_base(info);
         }
     }
 #endif
