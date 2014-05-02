@@ -670,7 +670,7 @@ static struct platform_device rt5631_dai = {
 /*------------------------------------------------------------------------------
  * Micom platform device
  */
-#if 1//defined(CONFIG_PM_MICOM) || defined(CONFIG_PM_MICOM_MODULE)
+#if 0//defined(CONFIG_PM_MICOM) || defined(CONFIG_PM_MICOM_MODULE)
 #include <linux/i2c.h>
 
 #define	MICOM_I2C_BUS		(3)
@@ -1509,7 +1509,7 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(AW5306_I2C_BUS, &aw5306_i2c_bdi, 1);
 #endif
 
-#if 1//defined(CONFIG_PM_MICOM) || defined(CONFIG_PM_MICOM_MODULE)
+#if 0//defined(CONFIG_PM_MICOM) || defined(CONFIG_PM_MICOM_MODULE)
 	printk("plat: add pm-micom\n");
 	i2c_register_board_info(MICOM_I2C_BUS, &micom_i2c_bdi, 1);
 #endif
