@@ -195,20 +195,6 @@ static unsigned nxp_fb_dev_set_layer(struct nxp_fb_param *par)
 	return nxp_soc_disp_rgb_set_fblayer(module, layer);
 }
 
-static unsigned nxp_fb_dev_get_addr(struct nxp_fb_param *par)
-{
-	int module = par->fb_dev.device_id;
-	int layer = par->fb_dev.layer;
-	unsigned int phyaddr = 0;
-
-	if (-1 == module)
-		return 0;
-
-	nxp_soc_disp_rgb_get_address(module, layer, &phyaddr, NULL, NULL);
-
-	return phyaddr;
-}
-
 static void nxp_fb_dev_set_addr(struct nxp_fb_param *par, unsigned phys, int waitvsync)
 {
 	int module = par->fb_dev.device_id;
@@ -287,13 +273,23 @@ static inline void *fb_copy_map(struct page *page, unsigned int phys, int size)
 
 	return virt;
 }
+
 static inline  void fb_copy_unmap(struct page *page, void *virt)
 {
-	#if 1
 	vunmap((void*)virt);
-	#else
-	kunmap(page);
-	#endif
+}
+
+static unsigned nxp_fb_dev_get_addr(struct nxp_fb_param *par)
+{
+	int module = par->fb_dev.device_id;
+	int layer = par->fb_dev.layer;
+	unsigned int phyaddr = 0;
+
+	if (-1 == module)
+		return 0;
+
+	nxp_soc_disp_rgb_get_address(module, layer, &phyaddr, NULL, NULL);
+	return phyaddr;
 }
 
 static void nxp_fb_copy_boot_logo(struct nxp_fb_param *par, int size)
