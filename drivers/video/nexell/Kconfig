@@ -2,7 +2,7 @@
 # Video configuration
 #
 
-menu "Graphics support"
+menu "Nexell Graphics"
 	depends on HAS_IOMEM
 
 config FB_NEXELL_ION_MEM
@@ -15,8 +15,6 @@ config FB_NEXELL_ION_MEM
 config FB0_NEXELL
 	bool "Support primary   frame buffer (/dev/fb0)"
 	depends on FB_NEXELL
-	select NEXELL_DISPLAY
-	select NEXELL_DISPLAY_1ST
 	default y
 
 	config FB0_NEXELL_DISPOUT
@@ -27,8 +25,6 @@ config FB0_NEXELL
 config FB1_NEXELL
 	bool "Support secondary frame buffer (/dev/fb1)"
 	depends on FB_NEXELL
-	select NEXELL_DISPLAY
-	select NEXELL_DISPLAY_2ST
 	default n
 
 	config FB1_NEXELL_DISPOUT

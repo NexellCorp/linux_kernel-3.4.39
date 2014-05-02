@@ -79,20 +79,20 @@
 #define	CFG_DISP_PRI_LCD_WIDTH_MM				152.4
 #define	CFG_DISP_PRI_LCD_HEIGHT_MM				91.44
 
-#define CFG_DISP_PRI_RESOL_WIDTH          		1024	// X Resolution
-#define CFG_DISP_PRI_RESOL_HEIGHT				600	// Y Resolution
+#define CFG_DISP_PRI_RESOL_WIDTH          		800	// X Resolution
+#define CFG_DISP_PRI_RESOL_HEIGHT				1280	// Y Resolution
 
-#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH            20
-#define CFG_DISP_PRI_HSYNC_BACK_PORCH           160
-#define CFG_DISP_PRI_HSYNC_FRONT_PORCH          160
-#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CTRUE
-#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH            3
-#define CFG_DISP_PRI_VSYNC_BACK_PORCH            22
-#define CFG_DISP_PRI_VSYNC_FRONT_PORCH           12
-#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CTRUE
+#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH            1
+#define CFG_DISP_PRI_HSYNC_BACK_PORCH           40
+#define CFG_DISP_PRI_HSYNC_FRONT_PORCH          24
+#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CFALSE
+#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH            1
+#define CFG_DISP_PRI_VSYNC_BACK_PORCH            4
+#define CFG_DISP_PRI_VSYNC_FRONT_PORCH           4
+#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CFALSE
 
 #define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL0
-#define CFG_DISP_PRI_CLKGEN0_DIV                15
+#define CFG_DISP_PRI_CLKGEN0_DIV                12
 #define CFG_DISP_PRI_CLKGEN0_DELAY              0
 #define CFG_DISP_PRI_CLKGEN0_INVERT				0
 #define CFG_DISP_PRI_CLKGEN1_SOURCE             DPC_VCLK_SRC_VCLK2
@@ -188,14 +188,14 @@
  * 	Keypad
  */
 
-#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0, PAD_GPIO_E + 14, PAD_GPIO_E + 15}
-#define CFG_KEYPAD_KEY_CODE						{ KEY_POWER, KEY_VOLUMEUP, KEY_VOLUMEDOWN}
+#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0 }
+#define CFG_KEYPAD_KEY_CODE						{ KEY_POWER }
 #define CFG_KEYPAD_REPEAT						CFALSE /* 0: Repeat Off 1 : Repeat On */
 
 /*------------------------------------------------------------------------------
  * 	SDHC
  */
-#define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_C + 7)//(PAD_GPIO_ALV + 1)	/* external cd */
+#define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
 
 #define	CFG_SDMMC0_CLK_DELAY_SAMPLE				(0<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
 #define	CFG_SDMMC0_CLK_DELAY_DRIVE				(3<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
@@ -220,12 +220,12 @@
 /* Wakeup Source : ALIVE [0~7] */
 #define CFG_PWR_WAKEUP_SRC_ALIVE0				CTRUE					/* KEY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE0				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE1				CFALSE
-#define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_FALLINGEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE1				CTRUE
+#define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_BOTHEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE2				CTRUE					/* PMIC - VUSB*/
 #define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE3				CTRUE					/* PMIC - CRITICAL LOW BATTERY */
-#define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_FALLINGEDGE
+#define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_ASYNC_LOWLEVEL
 #define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR - LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
