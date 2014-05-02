@@ -38,7 +38,11 @@
 #include "bt_bcm.h"
 
 
+#if 0
 #define	pr_debug	pr_info
+#else
+#define	pr_debug	
+#endif
 
 
 #define	BT_GPIO_WAKE_HOST 		(PAD_GPIO_D + 28)
@@ -213,7 +217,7 @@ static enum hrtimer_restart bt_bcm_lpm_timer_func(struct hrtimer *timer)
 
 void pl011_uart1_prepare(void)
 {
-	printk(" *****************************[[UART1 INIT] =====================================\n");
+	//printk(" *****************************[[UART1 INIT] =====================================\n");
 	NX_UART_CH_INIT(1);
 	NX_GPIO_SetPadFunction (PAD_GET_GROUP(PAD_GPIO_D), 15, NX_GPIO_PADFUNC_1);	// RX
 	NX_GPIO_SetPadFunction (PAD_GET_GROUP(PAD_GPIO_D), 19, NX_GPIO_PADFUNC_1);	// TX
@@ -230,7 +234,8 @@ void pl011_uart1_wake_peer(void *uport)
 	struct bt_bcm_lpm *lpm = __bt_lpm;
 	struct bt_bcm_info *bcm = container_of(lpm, struct bt_bcm_info, lpm);
 	
-	//pr_debug("bt_bcm: lpm uart.%d trans [%s]\n", port->line, bcm->running?"run":"stopped");
+	pr_debug("bt_bcm: lpm uart.%d trans [%s]\n", port->line,
+		bcm->running?"run":"stopped");
 	
 	if (BT_UART_PORT_LINE != port->line) {
 		pr_debug("bt_bcm: Error UART.%d is not BT UART.%d\n", port->line, BT_UART_PORT_LINE);
