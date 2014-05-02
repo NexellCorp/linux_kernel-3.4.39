@@ -2,7 +2,7 @@
 # Video configuration
 #
 
-menu "Graphics support"
+menu "Nexell Graphics"
 	depends on HAS_IOMEM
 
 config FB_NEXELL_ION_MEM
