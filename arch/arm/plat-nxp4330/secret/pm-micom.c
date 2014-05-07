@@ -27,21 +27,43 @@
 
 #define MAX_RETRY_I2C_XFER 				(100)
 
-#define MICOM_REG_PWR_STATE				0x00
-#define MICOM_REG_BOOT_SOURCE			0x01
+#define MICOM_REG_NEXE_PWR_STATE		0x00
+#define MICOM_REG_CURRENT_PWR_STATE		0x01
 #define MICOM_REG_INT_SOURCE			0x02
 #define MICOM_REG_IR_VALUE				0x03
-#define MICOM_REG_PWR_MANAGER			0x04
+#define MICOM_REG_MCU_FW_VER			0x04
+#define MICOM_REG_MCU_TIMER_CTL			0x05
+#define MICOM_REG_BT_CTL				0x06
 
 #define MICOM_CMD_PWR_OFF				0x00
 #define MICOM_CMD_PWR_SUSPEND_FLASH		0x10
 #define MICOM_CMD_PWR_SUSPEND_RAM		0x11
-#define MICOM_CMD_PWR_RUN				0x0F
+#define MICOM_CMD_PWR_RUN				0x80
 
 #define MICOM_PWRSTATE_OFF				0x00
 #define MICOM_PWRSTATE_SUSPEND_FLASH	0x10
 #define MICOM_PWRSTATE_SUSPEND_RAM		0x11
 #define MICOM_PWRSTATE_RUN				0x0F
+
+#define MICOM_INTSRC_SENSOR_INT			0x01
+#define MICOM_INTSRC_LOWBAT_DET			0x02
+#define MICOM_INTSRC_PMIC_INT			0x04
+#define MICOM_INTSRC_TIMER_INT			0x08
+#define MICOM_INTSRC_VUSB_DET			0x10
+#define MICOM_INTSRC_BT_HOST_WAKE		0x40
+//#define MICOM_INTSRC_WL_HOST_WAKE		0x80
+
+#define MICOM_BT_REG_ON					(1<<3)
+#define MICOM_BT_DEV_WAKEUP				(1<<5)
+
+/*
+ * Bluetooth BCM struct
+ */
+enum bt_ctl_type {
+	BT_TYPE_POWER		= 1,
+	BT_TYPE_WAKE_DEVICE,
+	BT_TYPE_WAKE_HOST,
+};
 
 struct micom_data {
 	struct i2c_client *client;
@@ -61,33 +83,52 @@ static struct i2c_client *mi_client = NULL;
 static int micom_smbus_read_byte(struct i2c_client *client, unsigned char reg_addr, unsigned char *data)
 {
 	s32 dummy;
-	dummy = i2c_smbus_read_byte_data(client, reg_addr);
-	if (dummy < 0)
-	{
-		dev_err(&client->dev, "%s: fail!!! \n", __func__);
-	    PM_DBGOUT("%s: fail!!! \n", __func__);
-		return -1;
-	}
-	*data = dummy & 0x000000ff;
+	int i;
 
-	return 0;
+	for(i=0; i<3; i++)
+	{
+		dummy = i2c_smbus_read_byte_data(client, reg_addr);
+		if (dummy < 0)
+		{
+			mdelay(10);
+		}
+		else
+		{
+			*data = dummy & 0x000000ff;
+			return 0;
+		}
+	}
+
+	dev_err(&client->dev, "%s: fail!!! \n", __func__);
+	PM_DBGOUT("%s: fail!!! \n", __func__);
+	return -1;
 }
 
 static int micom_smbus_write_byte(struct i2c_client *client,
 		unsigned char reg_addr, unsigned char data)
 {
 	s32 dummy;
+	int i;
 
-	dummy = i2c_smbus_write_byte_data(client, reg_addr, data);
-	if (dummy < 0)
+	for(i=0; i<3; i++)
 	{
-		dev_err(&client->dev, "%s: fail!!! \n", __func__);
-	    PM_DBGOUT("%s: fail!!! \n", __func__);
-		return -1;
+		dummy = i2c_smbus_write_byte_data(client, reg_addr, data);
+		if (dummy < 0)
+		{
+			mdelay(10);
+		}
+		else
+		{
+			return 0;
+		}
 	}
-	return 0;
+
+	dev_err(&client->dev, "%s: fail!!! \n", __func__);
+	PM_DBGOUT("%s: fail!!! \n", __func__);
+	return -1;
 }
 
+#if 0
 static int micom_smbus_read_byte_block(struct i2c_client *client,
 		unsigned char reg_addr, unsigned char *data, unsigned char len)
 {
@@ -95,8 +136,9 @@ static int micom_smbus_read_byte_block(struct i2c_client *client,
 	dummy = i2c_smbus_read_i2c_block_data(client, reg_addr, len, data);
 	if (dummy < 0)
 	{
+
 		dev_err(&client->dev, "%s: fail!!! \n", __func__);
-	    PM_DBGOUT("%s: fail!!! \n", __func__);
+		PM_DBGOUT("%s: fail!!! \n", __func__);
 		return -1;
 	}
 	return 0;
@@ -132,12 +174,13 @@ static int bma_i2c_burst_read(struct i2c_client *client, u8 reg_addr,
 
 	if (MAX_RETRY_I2C_XFER  <= retry) {
 		dev_err(&client->dev, "%s: fail!!! \n", __func__);
-	    PM_DBGOUT("%s: fail!!! \n", __func__);
+		PM_DBGOUT("%s: fail!!! \n", __func__);
 		return -EIO;
 	}
 
 	return 0;
 }
+#endif
 
 static ssize_t micom_suspend_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -174,13 +217,45 @@ static struct attribute_group micom_attribute_group = {
 	.attrs = micom_attributes
 };
 
+int micom_bt_cmd(int sub, int on)
+{
+	int ret = 0;
+	unsigned char value=0;
+	struct micom_data *data = i2c_get_clientdata(mi_client);
+
+	micom_smbus_read_byte(data->client, MICOM_REG_BT_CTL, &value);
+	switch (sub)
+	{
+		case BT_TYPE_POWER:	
+			if(on)
+				value |= MICOM_BT_REG_ON;
+			else
+				value &= ~MICOM_BT_REG_ON;
+			break;
+
+		case BT_TYPE_WAKE_DEVICE:
+			if(on)
+				value |= MICOM_BT_DEV_WAKEUP;
+			else
+				value &= ~MICOM_BT_DEV_WAKEUP;
+			break;
+
+		default:
+			printk(KERN_ERR "micom_bt_cmd: unkonwn bt control type ...\n");
+			return -1;
+	}		
+	ret = micom_smbus_write_byte(data->client, MICOM_REG_BT_CTL, value);
+	return ret;
+}
+EXPORT_SYMBOL(micom_bt_cmd);
+
 
 static int micom_probe(struct i2c_client *client,
 		const struct i2c_device_id *id)
 {
 	int err = 0;
 //	int value_gpio = 0;
-//	unsigned char value=0;
+	unsigned char value=0;
 	struct micom_data *data;
 
 	data = kzalloc(sizeof(struct micom_data), GFP_KERNEL);
@@ -191,30 +266,24 @@ static int micom_probe(struct i2c_client *client,
 	i2c_set_clientdata(client, data);
 	data->client = client;
 	mi_client = client;
-/*
 //	value_gpio = gpio_get_value(CFG_MSP_READ);
 //	printk(KERN_ERR "CFG_MSP_READ=[%d]\n", value_gpio);
 
-//	err=micom_smbus_read_byte(client, MICOM_REG_PWR_STATE, &value);
-	switch(value)
-	{
-		case MICOM_PWRSTATE_OFF:
-			printk(KERN_INFO "%s() : Micom Power : OFF \n", __func__);
-			break;
-		case MICOM_PWRSTATE_SUSPEND_FLASH:
-			printk(KERN_INFO "%s() : Micom Power : SUSPEND_FLASH \n", __func__);
-			break;
-		case MICOM_PWRSTATE_SUSPEND_RAM:
-			printk(KERN_INFO "%s() : Micom Power : SUSPEND_RAM \n", __func__);
-			break;
-		case MICOM_PWRSTATE_RUN:
-			printk(KERN_INFO "%s() : Micom Power : RUN \n", __func__);
-			break;
-		default:
-			printk(KERN_INFO "%s() : Micom Power : unkown!! \n", __func__);
-			break;
-	}
-*/
+	err=micom_smbus_read_byte(client, MICOM_REG_NEXE_PWR_STATE, &value);
+	printk(KERN_INFO "%s() : 0x00(PWR ) : 0x%02x \n", __func__, value);
+	err=micom_smbus_read_byte(client, MICOM_REG_CURRENT_PWR_STATE, &value);
+	printk(KERN_INFO "%s() : 0x01(PWR ) : 0x%02x \n", __func__, value);
+	err=micom_smbus_read_byte(client, MICOM_REG_INT_SOURCE, &value);
+	printk(KERN_INFO "%s() : 0x02(INT ) : 0x%02x \n", __func__, value);
+	err=micom_smbus_read_byte(client, MICOM_REG_IR_VALUE, &value);
+	printk(KERN_INFO "%s() : 0x03(IR  ) : 0x%02x \n", __func__, value);
+	err=micom_smbus_read_byte(client, MICOM_REG_MCU_FW_VER, &value);
+	printk(KERN_INFO "%s() : 0x04(FW  ) : 0x%02x \n", __func__, value);
+	err=micom_smbus_read_byte(client, MICOM_REG_MCU_TIMER_CTL, &value);
+	printk(KERN_INFO "%s() : 0x05(TIME) : 0x%02x \n", __func__, value);
+	err=micom_smbus_read_byte(client, MICOM_REG_BT_CTL, &value);
+	printk(KERN_INFO "%s() : 0x06(BT  ) : 0x%02x \n", __func__, value);
+
 	err = sysfs_create_group(&client->dev.kobj, &micom_attribute_group);
 	if (err < 0)
 		goto error_sysfs;
@@ -252,7 +321,7 @@ static void micom_shutdown(void)
 
     PM_DBGOUT("+%s\n", __func__);
 
-	micom_smbus_write_byte(data->client, MICOM_REG_PWR_STATE, MICOM_CMD_PWR_OFF);
+	micom_smbus_write_byte(data->client, MICOM_REG_NEXE_PWR_STATE, MICOM_CMD_PWR_OFF);
 
     PM_DBGOUT("-%s\n", __func__);
 	return;
@@ -267,7 +336,7 @@ static int micom_suspend(struct i2c_client *client, pm_message_t mesg)
 	int ret = 0;
     PM_DBGOUT("+%s\n", __func__);
 	
-	ret=micom_smbus_write_byte(data->client, MICOM_REG_PWR_STATE, MICOM_CMD_PWR_SUSPEND_RAM);
+	ret=micom_smbus_write_byte(data->client, MICOM_REG_NEXE_PWR_STATE, MICOM_CMD_PWR_SUSPEND_RAM);
 	
     PM_DBGOUT("-%s, ret:%d\n", __func__, ret);
 	return 0;
@@ -281,7 +350,7 @@ static int micom_resume(struct i2c_client *client)
 //	struct micom_data *data = i2c_get_clientdata(client);
     PM_DBGOUT("+%s\n", __func__);
 
-	//micom_smbus_write_byte(data->client, MICOM_REG_PWR_STATE, MICOM_CMD_PWR_RUN);
+	//micom_smbus_write_byte(data->client, MICOM_REG_NEXE_PWR_STATE, MICOM_CMD_PWR_RUN);
 
     PM_DBGOUT("-%s\n", __func__);
 	return 0;
@@ -326,10 +395,8 @@ static ssize_t drvPXMICOM_read(struct file* filp, char* buff, size_t length, lof
 
 static ssize_t drvPXMICOM_write(struct file* filp, const char* buff, size_t len, loff_t* off)
 {
-	unsigned int i=0;
-
-	micom_smbus_write_byte(mi_client, buff[0], buff[1]);
-
+	struct micom_data *data = i2c_get_clientdata(mi_client);
+	micom_smbus_write_byte(data->client, buff[0], buff[1]);
 	return 1;
 }
 
@@ -341,15 +408,14 @@ static struct file_operations fops =
 
 static void micom_pm_poweroff(void)
 {
-	struct micom_data *data = i2c_get_clientdata(mi_client);
 	int ret = 0;
-	
-	ret=micom_smbus_write_byte(data->client, MICOM_REG_PWR_STATE, MICOM_CMD_PWR_SUSPEND_RAM);
-	return 0;
+	struct micom_data *data = i2c_get_clientdata(mi_client);
+	ret=micom_smbus_write_byte(data->client, MICOM_REG_NEXE_PWR_STATE, MICOM_CMD_PWR_SUSPEND_RAM);
+	return;
 }
 
 static struct board_suspend_ops micom_pm_ops = {
-	.poweroff	= micom_pm_poweroff,
+	.poweroff	= micom_pm_poweroff
 };
 
 static int __init micom_init(void)
@@ -359,7 +425,7 @@ static int __init micom_init(void)
 	struct i2c_adapter* adapter;
 	struct i2c_client* client;
 
-	printk(KERN_ALERT"+%s\n", __func__);
+	//printk(KERN_ALERT"+%s\n", __func__);
 	pm_power_off_prepare = micom_shutdown;
 	nxp_check_pm_wakeup_dev = _pm_check_wakeup_dev;
 	

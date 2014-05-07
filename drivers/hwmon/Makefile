@@ -130,6 +130,7 @@ obj-$(CONFIG_SENSORS_MMA7660)	+= mma7660.o
 obj-$(CONFIG_SENSORS_STK831X)	+= stk831x.o
 obj-$(CONFIG_PMBUS)		+= pmbus/
 obj-$(CONFIG_BOSCH)		+= bosch/
+obj-$(CONFIG_SENSORS_BMA222E_NX)	+= bma222-nx.o
 
 ccflags-$(CONFIG_HWMON_DEBUG_CHIP) := -DDEBUG
 

@@ -57,6 +57,11 @@ choice
 		help
    	 		Support for the android secret board.
 
+	config PLAT_NXP4330_BLACKBOX
+		bool "BLACKBOX: blackbox board"
+		help
+   	 		Support for the blackbox board.
+
 endchoice
 
 #

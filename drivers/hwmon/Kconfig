@@ -1436,4 +1436,11 @@ config SENSORS_ATK0110
 
 endif # ACPI
 
+config SENSORS_BMA222E_NX
+	tristate "BOSCH BMA222E 3-Axis Accelerometer(Nexell work)"
+	depends on I2C
+	default n
+	help
+		Say Y here to enable the accelerometer.
+
 endif # HWMON
