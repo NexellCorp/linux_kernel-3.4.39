@@ -2088,7 +2088,6 @@ static int pl011_suspend(struct amba_device *dev, pm_message_t state)
 static int pl011_resume(struct amba_device *dev)
 {
 	struct uart_amba_port *uap = amba_get_drvdata(dev);
-#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NEXELL_RESUME_WORK)
 	struct amba_pl011_data *plat = uap->port.dev->platform_data;
 
 	if (!uap)
@@ -2097,13 +2096,11 @@ static int pl011_resume(struct amba_device *dev)
 	if (plat->init)
 		plat->init();
 
+#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NEXELL_RESUME_WORK)
 	schedule_delayed_work(&uap->resume_work,
 			msecs_to_jiffies(UART_RESUME_WORK_DELAY));
 	return 0;
 #else
-	if (!uap)
-		return -EINVAL;
-
 	return uart_resume_port(&amba_reg, &uap->port);
 #endif
 }
