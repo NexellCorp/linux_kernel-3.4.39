@@ -1448,6 +1448,15 @@ static struct platform_device rfkill_device = {
 #endif	/* CONFIG_RFKILL_NEXELL */
 
 /*------------------------------------------------------------------------------
+ * USB HSIC power control.
+ */
+int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on)
+{
+	return 0;
+}
+EXPORT_SYMBOL(nxp_hsic_phy_pwr_on);
+
+/*------------------------------------------------------------------------------
  * register board platform devices
  */
 void __init nxp_board_devices_register(void)

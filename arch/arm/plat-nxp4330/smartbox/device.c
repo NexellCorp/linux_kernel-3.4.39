@@ -968,70 +968,119 @@ static struct dw_mci_board _dwmci0_data = {
 
 int  nxpmac_init(struct platform_device *pdev)
 {
-    u32 addr;
+	u32 addr;
+
+	/* Select PULL up/down. */
 #if 0
-    int grp_e = PAD_GET_GROUP(PAD_GPIO_E);
-
-    NX_GPIO_SetPullUpEnable( grp_e,  7, CFALSE );   // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
-    NX_GPIO_SetPullUpEnable( grp_e,  8, CFALSE );   // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
-    NX_GPIO_SetPullUpEnable( grp_e,  9, CFALSE );   // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
-    NX_GPIO_SetPullUpEnable( grp_e, 10, CFALSE );   // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
-    NX_GPIO_SetPullUpEnable( grp_e, 11, CFALSE );   // PAD_GPIOE11,    GMAC0_PHY_TXEN
-//    NX_GPIO_SetPullUpEnable( grp_e, 12, CFALSE );   // PAD_GPIOE12,    GMAC0_PHY_TXER
-//    NX_GPIO_SetPullUpEnable( grp_e, 13, CFALSE );   // PAD_GPIOE13,    GMAC0_PHY_COL
-    NX_GPIO_SetPullUpEnable( grp_e, 14, CFALSE );   // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
-    NX_GPIO_SetPullUpEnable( grp_e, 15, CFALSE );   // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
-    NX_GPIO_SetPullUpEnable( grp_e, 16, CFALSE );   // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
-    NX_GPIO_SetPullUpEnable( grp_e, 17, CFALSE );   // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
-    NX_GPIO_SetPullUpEnable( grp_e, 18, CFALSE );   // PAD_GPIOE18,    GMAC0_CLK_RX
-    NX_GPIO_SetPullUpEnable( grp_e, 19, CFALSE );   // PAD_GPIOE19,    GMAC0_PHY_RX_DV
-    NX_GPIO_SetPullUpEnable( grp_e, 20, CFALSE );   // PAD_GPIOE20,    GMAC0_GMII_MDC
-    NX_GPIO_SetPullUpEnable( grp_e, 21, CFALSE );   // PAD_GPIOE21,    GMAC0_GMII_MDI
-//    NX_GPIO_SetPullUpEnable( grp_e, 22, CFALSE );   // PAD_GPIOE22,    GMAC0_PHY_RXER
-//    NX_GPIO_SetPullUpEnable( grp_e, 23, CFALSE );   // PAD_GPIOE23,    GMAC0_PHY_CRS
-    NX_GPIO_SetPullUpEnable( grp_e, 24, CFALSE );   // PAD_GPIOE24,    GMAC0_GTX_CLK
-
-    NX_GPIO_SetPadFunction( grp_e,  7, 1 );         // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
-    NX_GPIO_SetPadFunction( grp_e,  8, 1 );         // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
-    NX_GPIO_SetPadFunction( grp_e,  9, 1 );         // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
-    NX_GPIO_SetPadFunction( grp_e, 10, 1 );         // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
-    NX_GPIO_SetPadFunction( grp_e, 11, 1 );         // PAD_GPIOE11,    GMAC0_PHY_TXEN
-//    NX_GPIO_SetPadFunction( grp_e, 12, 1 );         // PAD_GPIOE12,    GMAC0_PHY_TXER
-//    NX_GPIO_SetPadFunction( grp_e, 13, 1 );         // PAD_GPIOE13,    GMAC0_PHY_COL
-    NX_GPIO_SetPadFunction( grp_e, 14, 1 );         // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
-    NX_GPIO_SetPadFunction( grp_e, 15, 1 );         // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
-    NX_GPIO_SetPadFunction( grp_e, 16, 1 );         // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
-    NX_GPIO_SetPadFunction( grp_e, 17, 1 );         // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
-    NX_GPIO_SetPadFunction( grp_e, 18, 1 );         // PAD_GPIOE18,    GMAC0_CLK_RX
-    NX_GPIO_SetPadFunction( grp_e, 19, 1 );         // PAD_GPIOE19,    GMAC0_PHY_RX_DV
-    NX_GPIO_SetPadFunction( grp_e, 20, 1 );         // PAD_GPIOE20,    GMAC0_GMII_MDC
-    NX_GPIO_SetPadFunction( grp_e, 21, 1 );         // PAD_GPIOE21,    GMAC0_GMII_MDI
-//    NX_GPIO_SetPadFunction( grp_e, 22, 1 );     // PAD_GPIOE22,    GMAC0_PHY_RXER
-//    NX_GPIO_SetPadFunction( grp_e, 23, 1 );     // PAD_GPIOE23,    GMAC0_PHY_CRS
-    NX_GPIO_SetPadFunction( grp_e, 24, 1 );         // PAD_GPIOE24,    GMAC0_GTX_CLK
+	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+ 7, CFALSE );              // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
+	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+ 8, CFALSE );              // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
+	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+ 9, CFALSE );              // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
+	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+10, CFALSE );              // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
+	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+11, CFALSE );              // PAD_GPIOE11,    GMAC0_PHY_TXEN
+//	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+12, CFALSE );              // PAD_GPIOE12,    GMAC0_PHY_TXER
+//	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+13, CFALSE );              // PAD_GPIOE13,    GMAC0_PHY_COL
+	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+14, CFALSE );              // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
+	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+15, CFALSE );              // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
+	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+16, CFALSE );              // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
+	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+17, CFALSE );              // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
+	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+18, CFALSE );              // PAD_GPIOE18,    GMAC0_CLK_RX
+	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+19, CFALSE );              // PAD_GPIOE19,    GMAC0_PHY_RX_DV
+	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+20, CFALSE );              // PAD_GPIOE20,    GMAC0_GMII_MDC
+	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+21, CFALSE );              // PAD_GPIOE21,    GMAC0_GMII_MDI
+//	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+22, CFALSE );              // PAD_GPIOE22,    GMAC0_PHY_RXER
+//	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+23, CFALSE );              // PAD_GPIOE23,    GMAC0_PHY_CRS
+	nxp_soc_gpio_set_io_pull_sel( PAD_GPIO_E+24, CFALSE );              // PAD_GPIOE24,    GMAC0_GTX_CLK
 #endif
 
-    // Clock control
-    NX_CLKGEN_Initialize();
-    addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
-    NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (u32)IO_ADDRESS(addr) );
-    NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 4);     // Sync mode for 100 & 10Base-T : External RX_clk
-    NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);    // Sync mode for 100 & 10Base-T
-    NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);    // TX Clk invert off
-//    NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CTRUE);     // TX clk invert on : 100 & 10Base-T, Strength 0
+	/* Set PULL enable */
+#if 0
+	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+ 7, CFALSE );              // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
+	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+ 8, CFALSE );              // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
+	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+ 9, CFALSE );              // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
+	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+10, CFALSE );              // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
+	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+11, CFALSE );              // PAD_GPIOE11,    GMAC0_PHY_TXEN
+//	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+12, CFALSE );              // PAD_GPIOE12,    GMAC0_PHY_TXER
+//	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+13, CFALSE );              // PAD_GPIOE13,    GMAC0_PHY_COL
+	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+14, CFALSE );              // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
+	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+15, CFALSE );              // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
+	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+16, CFALSE );              // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
+	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+17, CFALSE );              // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
+	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+18, CFALSE );              // PAD_GPIOE18,    GMAC0_CLK_RX
+	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+19, CFALSE );              // PAD_GPIOE19,    GMAC0_PHY_RX_DV
+	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+20, CFALSE );              // PAD_GPIOE20,    GMAC0_GMII_MDC
+	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+21, CFALSE );              // PAD_GPIOE21,    GMAC0_GMII_MDI
+//	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+22, CFALSE );              // PAD_GPIOE22,    GMAC0_PHY_RXER
+//	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+23, CFALSE );              // PAD_GPIOE23,    GMAC0_PHY_CRS
+	nxp_soc_gpio_set_io_pull_enb( PAD_GPIO_E+24, CFALSE );              // PAD_GPIOE24,    GMAC0_GTX_CLK
+#endif
 
-    NX_CLKGEN_SetClockDivisorEnable( CLOCKINDEX_OF_DWC_GMAC_MODULE, CTRUE);
+	/* Set altnate function */
+#if 0
+	nxp_soc_gpio_set_io_func( PAD_GPIO_E+ 7, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
+	nxp_soc_gpio_set_io_func( PAD_GPIO_E+ 8, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
+	nxp_soc_gpio_set_io_func( PAD_GPIO_E+ 9, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
+	nxp_soc_gpio_set_io_func( PAD_GPIO_E+10, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
+	nxp_soc_gpio_set_io_func( PAD_GPIO_E+11, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE11,    GMAC0_PHY_TXEN
+//	nxp_soc_gpio_set_io_func( PAD_GPIO_E+12, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE12,    GMAC0_PHY_TXER
+//	nxp_soc_gpio_set_io_func( PAD_GPIO_E+13, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE13,    GMAC0_PHY_COL
+	nxp_soc_gpio_set_io_func( PAD_GPIO_E+14, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
+	nxp_soc_gpio_set_io_func( PAD_GPIO_E+15, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
+	nxp_soc_gpio_set_io_func( PAD_GPIO_E+16, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
+	nxp_soc_gpio_set_io_func( PAD_GPIO_E+17, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
+	nxp_soc_gpio_set_io_func( PAD_GPIO_E+18, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE18,    GMAC0_CLK_RX
+	nxp_soc_gpio_set_io_func( PAD_GPIO_E+19, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE19,    GMAC0_PHY_RX_DV
+	nxp_soc_gpio_set_io_func( PAD_GPIO_E+20, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE20,    GMAC0_GMII_MDC
+	nxp_soc_gpio_set_io_func( PAD_GPIO_E+21, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE21,    GMAC0_GMII_MDI
+//	nxp_soc_gpio_set_io_func( PAD_GPIO_E+22, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE22,    GMAC0_PHY_RXER
+//	nxp_soc_gpio_set_io_func( PAD_GPIO_E+23, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE23,    GMAC0_PHY_CRS
+	nxp_soc_gpio_set_io_func( PAD_GPIO_E+24, NX_GPIO_PADFUNC_1 );       // PAD_GPIOE24,    GMAC0_GTX_CLK
+#endif
 
-    // Reset control
-    NX_RSTCON_Initialize();
-    addr = NX_RSTCON_GetPhysicalAddress();
-    NX_RSTCON_SetBaseAddress( (u32)IO_ADDRESS(addr) );
-    NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
-    udelay(100);
-    NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_DISABLE);
-    udelay(100);
-    NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
-    udelay(100);
+	/* Set drive strength */
+#if 1
+	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 7, 3 );        // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
+	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 8, 3 );        // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
+	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 9, 3 );        // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
+	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+10, 3 );        // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
+	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+11, 3 );        // PAD_GPIOE11,    GMAC0_PHY_TXEN
+//	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+12, 3 );        // PAD_GPIOE12,    GMAC0_PHY_TXER
+//	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+13, 3 );        // PAD_GPIOE13,    GMAC0_PHY_COL
+	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+14, 3 );        // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
+	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+15, 3 );        // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
+	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+16, 3 );        // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
+	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+17, 3 );        // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
+	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+18, 3 );        // PAD_GPIOE18,    GMAC0_CLK_RX
+	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+19, 3 );        // PAD_GPIOE19,    GMAC0_PHY_RX_DV
+	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+20, 3 );        // PAD_GPIOE20,    GMAC0_GMII_MDC
+	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+21, 3 );        // PAD_GPIOE21,    GMAC0_GMII_MDI
+//	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+22, 3 );        // PAD_GPIOE22,    GMAC0_PHY_RXER
+//	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+23, 3 );        // PAD_GPIOE23,    GMAC0_PHY_CRS
+	nxp_soc_gpio_set_io_drv( PAD_GPIO_E+24, 0 );        // PAD_GPIOE24,    GMAC0_GTX_CLK
+
+//	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);    // TX Clk invert off
+#endif
+
+	// Clock control
+	NX_CLKGEN_Initialize();
+	addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
+	NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (u32)IO_ADDRESS(addr) );
+	NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 4);     // Sync mode for 100 & 10Base-T : External RX_clk
+	NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);    // Sync mode for 100 & 10Base-T
+	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);    // TX Clk invert off
+//	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CTRUE);     // TX clk invert on : 100 & 10Base-T, Strength 0
+
+	NX_CLKGEN_SetClockDivisorEnable( CLOCKINDEX_OF_DWC_GMAC_MODULE, CTRUE);
+
+	// Reset control
+	NX_RSTCON_Initialize();
+	addr = NX_RSTCON_GetPhysicalAddress();
+	NX_RSTCON_SetBaseAddress( (u32)IO_ADDRESS(addr) );
+	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
+	udelay(100);
+	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_DISABLE);
+	udelay(100);
+	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
+	udelay(100);
 
 	return 0;
 }
@@ -1056,7 +1105,8 @@ static struct stmmac_mdio_bus_data nxpmac0_mdio_bus = {
 };
 
 static struct plat_stmmacenet_data nxpmac_plat_data = {
-	.phy_addr = 3,
+//	.phy_addr = 3,	// Realtek
+	.phy_addr = 7,	// Micrel
 	.interface = PHY_INTERFACE_MODE_RGMII,
 	.autoneg = AUTONEG_DISABLE, //AUTONEG_ENABLE or AUTONEG_DISABLE
 	.speed = SPEED_100,
