@@ -854,6 +854,7 @@ static void nxp_fb_free_mem(struct fb_info *info)
 
 static int nxp_fb_set_var_pixfmt(struct fb_var_screeninfo *var, struct fb_info *info)
 {
+	struct nxp_fb_param  *par = info->par;
 	pr_debug("%s (bpp:%d)\n", __func__, var->bits_per_pixel);
 
 	switch (var->bits_per_pixel) {
@@ -884,6 +885,7 @@ static int nxp_fb_set_var_pixfmt(struct fb_var_screeninfo *var, struct fb_info *
 			var->blue.length	= 5;
 			var->blue.offset	= 0;
 			var->transp.length	= 0;
+			par->fb_dev.format  = MLC_RGBFMT_R5G6B5;
 			break;
 		case 24:
 			/* 24 bpp 888 */
@@ -894,6 +896,7 @@ static int nxp_fb_set_var_pixfmt(struct fb_var_screeninfo *var, struct fb_info *
 			var->blue.length	= 8;
 			var->blue.offset	= 0;
 			var->transp.length	= 0;
+			par->fb_dev.format  = MLC_RGBFMT_R8G8B8;
 			break;
 		case 32:
 			/* 32 bpp 888 */
@@ -905,6 +908,7 @@ static int nxp_fb_set_var_pixfmt(struct fb_var_screeninfo *var, struct fb_info *
 			var->blue.offset	= info->var.blue.offset;
 			var->transp.length	= info->var.transp.length;
 			var->transp.offset	= info->var.transp.offset;
+			par->fb_dev.format  = MLC_RGBFMT_A8R8G8B8;
 			break;
 		default:
 			printk(KERN_ERR "Error, not support fb bpp (%d)\n", var->bits_per_pixel);
@@ -925,8 +929,8 @@ static int nxp_fb_set_var_pixfmt(struct fb_var_screeninfo *var, struct fb_info *
 static int nxp_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 {
 	int ret = 0;
-	pr_debug("%s (xres:%d, yres:%d, bpp:%d, red offset:%d, green offset:%d, blue offset:%d, transp offset:%d)\n",
-		__func__, var->xres, var->yres, var->bits_per_pixel, var->red.offset, var->green.offset, var->blue.offset, var->transp.offset);
+	pr_debug("%s (xres:%d, yres:%d, bpp:%d)\n",
+		__func__, var->xres, var->yres, var->bits_per_pixel);
 
 	ret = nxp_fb_verify_var(var, info);
 	if (0 > ret)
@@ -983,7 +987,7 @@ static int nxp_fb_set_par(struct fb_info *info)
         dev->fb_pan_phys = dev->fb_phy_base;	/* pan restore */
 
         nxp_fb_setup_info(info);
-        nxp_fb_set_base(info);
+        nxp_fb_dev_setup(par);
     } else {
         if (par->status != FB_STAT_INIT) {
             nxp_fb_setup_info(info);
