@@ -57,9 +57,9 @@ extern struct ion_device *get_global_ion_device(void);
 /*
  *  Alters the hardware state
  */
-/*
+
 #define SUPPORT_ALTER_HARDWARE_STATE
-*/
+
 
 #if (0)
 #define	DUMP_VAR_SCREENINFO
@@ -925,8 +925,8 @@ static int nxp_fb_set_var_pixfmt(struct fb_var_screeninfo *var, struct fb_info *
 static int nxp_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 {
 	int ret = 0;
-	pr_debug("%s (xres:%d, yres:%d, bpp:%d)\n",
-		__func__, var->xres, var->yres, var->bits_per_pixel);
+	pr_debug("%s (xres:%d, yres:%d, bpp:%d, red offset:%d, green offset:%d, blue offset:%d, transp offset:%d)\n",
+		__func__, var->xres, var->yres, var->bits_per_pixel, var->red.offset, var->green.offset, var->blue.offset, var->transp.offset);
 
 	ret = nxp_fb_verify_var(var, info);
 	if (0 > ret)
@@ -1108,9 +1108,11 @@ static int nxp_fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *inf
 		offset = (offset + align - 1)/align * align;
 
 #ifdef CONFIG_FB_NEXELL_ION_MEM
-    {
+    if (var->bits_per_pixel == 32) {
         unsigned int index = offset / align;
         dev->fb_pan_phys = dev->dma_buf_data.context[index].dma_addr;
+    } else {
+        dev->fb_pan_phys = info->fix.smem_start + offset;
     }
 #else
 	dev->fb_pan_phys = info->fix.smem_start + offset;
