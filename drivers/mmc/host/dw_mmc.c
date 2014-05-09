@@ -39,7 +39,7 @@
 
 #include "dw_mmc.h"
 
-#define	MMC_RESUME_WORK_QUEUE
+//#define	MMC_RESUME_WORK_QUEUE
 
 /* Common flag combinations */
 #define DW_MCI_DATA_ERROR_FLAGS	(SDMMC_INT_DTO | SDMMC_INT_DCRC | \
