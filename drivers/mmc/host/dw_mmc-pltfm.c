@@ -54,6 +54,9 @@ static int __init dw_mci_pltfm_probe(struct platform_device *pdev)
 	ret = dw_mci_probe(host);
 	if (ret)
 		goto err_out;
+
+	/* add by jhkim */
+	device_enable_async_suspend(&pdev->dev);
 	return ret;
 err_out:
 	iounmap(host->regs);

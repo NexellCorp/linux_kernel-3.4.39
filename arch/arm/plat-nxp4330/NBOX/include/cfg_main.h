@@ -29,7 +29,7 @@
  * 	System Name
  */
 #define	CFG_SYS_CPU_NAME						"nxp4330q"
-#define	CFG_SYS_BOARD_NAME						"nxp4330-pyxis"
+#define	CFG_SYS_BOARD_NAME						"nxp4330-NBOX"
 
 /*------------------------------------------------------------------------------
  * 	Uart
@@ -49,6 +49,14 @@
  */
 #define CFG_ETHER_EXT_PHY_BASEADDR          	0x04000000	// DM9000: CS1
 #define	CFG_ETHER_EXT_IRQ_NUM					(IRQ_GPIO_C_START + 26)
+
+
+/*------------------------------------------------------------------------------
+ * 	GMAC PHY
+ */
+#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				(-1)//(IRQ_GPIO_D_START + 17)
+#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_C + 12)
+
 
 /*------------------------------------------------------------------------------
  * 	Nand (HWECC)
@@ -79,8 +87,8 @@
 #define	CFG_DISP_PRI_LCD_WIDTH_MM				152.4
 #define	CFG_DISP_PRI_LCD_HEIGHT_MM				91.44
 
-#define CFG_DISP_PRI_RESOL_WIDTH          		800	// X Resolution
-#define CFG_DISP_PRI_RESOL_HEIGHT				1280	// Y Resolution
+#define CFG_DISP_PRI_RESOL_WIDTH          		1920	// X Resolution
+#define CFG_DISP_PRI_RESOL_HEIGHT				1080	// Y Resolution
 
 #define CFG_DISP_PRI_HSYNC_SYNC_WIDTH            1
 #define CFG_DISP_PRI_HSYNC_BACK_PORCH           40

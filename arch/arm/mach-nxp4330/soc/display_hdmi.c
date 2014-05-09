@@ -1009,6 +1009,8 @@ static int hdmi_probe(struct platform_device *pdev)
     _context->external_irq = (phdmi ? (phdmi->external_irq != -1 ? phdmi->external_irq : -1): -1);
 	_context->plug_in = HDMI_PLUG_READY;
 
+    INIT_DELAYED_WORK(&_context->hpd_work, _hdmi_hpd_work);
+
     ret = request_irq(_context->internal_irq, _hdmi_irq_handler, 0,
             "hdmi-soc-int", _context);
     if (0 > ret) {
@@ -1016,8 +1018,6 @@ static int hdmi_probe(struct platform_device *pdev)
         goto _irq_fail;
     }
     disable_irq(_context->internal_irq);
-
-	INIT_DELAYED_WORK(&_context->hpd_work, _hdmi_hpd_work);
 
 	_get_vsync_info(_context->cur_preset, _context->source_device, &vsync, &sgpar);
 
@@ -1029,7 +1029,6 @@ static int hdmi_probe(struct platform_device *pdev)
     } else if (_context->cur_preset == NXP_HDMI_PRESET_1080P) {
         _context->vic = 16;
     }
-
 	nxp_soc_disp_register_proc_ops(DISP_DEVICE_HDMI, &hdmi_ops);
 	nxp_soc_disp_device_connect_to(DISP_DEVICE_HDMI, _context->source_device, &vsync);
 
