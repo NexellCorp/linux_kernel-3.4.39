@@ -57,9 +57,9 @@ extern struct ion_device *get_global_ion_device(void);
 /*
  *  Alters the hardware state
  */
-/*
+
 #define SUPPORT_ALTER_HARDWARE_STATE
-*/
+
 
 #if (0)
 #define	DUMP_VAR_SCREENINFO
@@ -1112,9 +1112,11 @@ static int nxp_fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *inf
 		offset = (offset + align - 1)/align * align;
 
 #ifdef CONFIG_FB_NEXELL_ION_MEM
-    {
+    if (var->bits_per_pixel == 32) {
         unsigned int index = offset / align;
         dev->fb_pan_phys = dev->dma_buf_data.context[index].dma_addr;
+    } else {
+        dev->fb_pan_phys = info->fix.smem_start + offset;
     }
 #else
 	dev->fb_pan_phys = info->fix.smem_start + offset;

@@ -368,6 +368,77 @@ int nxp_soc_gpio_get_io_pull_sel(unsigned int io)
 EXPORT_SYMBOL(nxp_soc_gpio_get_io_pull_sel);
 
 /*------------------------------------------------------------------------------
+ * 	Description	: set gpio drive strength
+ *	In[io]		: gpio pad number, 32*n + bit
+ * 				: (n= GPIO_A:0, GPIO_B:1, GPIO_C:2, GPIO_D:3, GPIO_E:4, bit= 0 ~ 32)
+ *	In[high]	: '1' is high level, '0' is low level
+ *	Return 		: none.
+ */
+void nxp_soc_gpio_set_io_drv(int gpio, int mode)
+{
+	int drv1 = 0, drv0 = 0;
+	int drv1_value, drv0_value;
+	int grp, bit;
+
+	if (gpio > (PAD_GPIO_ALV - 1) )
+		return;
+
+	grp = PAD_GET_GROUP(gpio);
+	bit = PAD_GET_BITNO(gpio);
+
+	switch (mode)
+	{
+	case 0: drv0 = 0, drv1 = 0; break;
+	case 1: drv0 = 0, drv1 = 1; break;
+	case 2: drv0 = 1, drv1 = 0; break;
+	case 3: drv0 = 1, drv1 = 1; break;
+	default: break;
+	}
+	DBGOUT("DRV Strength : GRP : i %x Bit: %x  mode :%d  \n   ",
+				grp, bit, mode);
+
+	drv1_value = NX_GPIO_GetDRV1(grp) & ~(1 << bit);
+	drv0_value = NX_GPIO_GetDRV0(grp) & ~(1 << bit);
+
+	if (drv1) drv1_value |= (drv1 << bit);
+	if (drv0) drv0_value |= (drv0 << bit);
+
+	DBGOUT(" Value : drv1 :%8x  drv0 %8x \n ", drv1_value, drv0_value);
+
+	NX_GPIO_SetDRV0 ( grp, drv0_value );
+	NX_GPIO_SetDRV1 ( grp, drv1_value );
+}
+EXPORT_SYMBOL(nxp_soc_gpio_set_io_drv);
+
+/*------------------------------------------------------------------------------
+ * 	Description	: get gpio drive strength
+ *	In[io]		: gpio pad number, 32*n + bit
+ * 				: (n= GPIO_A:0, GPIO_B:1, GPIO_C:2, GPIO_D:3, GPIO_E:4, bit= 0 ~ 32)
+ *	In[high]	: '1' is high level, '0' is low level
+ *	Return 		: none.
+ */
+int nxp_soc_gpio_get_io_drv(int gpio)
+{
+	int grp, bit;
+	int drv1 = 0, drv0 = 0;
+	int ret;
+
+	if (gpio > (PAD_GPIO_ALV - 1) )
+		return;
+
+	grp = PAD_GET_GROUP(gpio);
+	bit = PAD_GET_BITNO(gpio);
+
+	drv1 = NX_GPIO_GetDRV1(grp) & (1 << bit);
+	drv0 = NX_GPIO_GetDRV0(grp) & (1 << bit);
+
+	ret = (drv0 << 1) + drv1;
+
+	return ret;
+}
+EXPORT_SYMBOL(nxp_soc_gpio_get_io_drv);
+
+/*------------------------------------------------------------------------------
  * 	Description	: set gpio output level
  *	In[io]		: gpio pad number, 32*n + bit
  * 				: (n= GPIO_A:0, GPIO_B:1, GPIO_C:2, GPIO_D:3, GPIO_E:4, ALIVE:5, bit= 0 ~ 32)

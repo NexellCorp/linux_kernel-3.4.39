@@ -40,6 +40,8 @@ extern void 		nxp_soc_gpio_set_io_pull_enb(unsigned int io, int on);
 extern int 		 	nxp_soc_gpio_get_io_pull_enb(unsigned int io);
 extern void 		nxp_soc_gpio_set_io_pull_sel(unsigned int io, int on);
 extern int 		 	nxp_soc_gpio_get_io_pull_sel(unsigned int io);
+extern void			nxp_soc_gpio_set_io_drv(int gpio, int mode);
+extern int			nxp_soc_gpio_get_io_drv(int gpio);
 extern void			nxp_soc_gpio_set_out_value(unsigned int io, int high);
 extern int 		 	nxp_soc_gpio_get_out_value(unsigned int io);
 extern int 		 	nxp_soc_gpio_get_in_value(unsigned int io);
