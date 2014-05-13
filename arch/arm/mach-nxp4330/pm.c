@@ -129,8 +129,6 @@ static int suspend_machine(void)
 	int mask_bits = 0;
 	CBOOL MODE;
 
-	lldebugout("%s\n", __func__);
-
 	NX_ALIVE_SetWriteEnable(CTRUE);
 	NX_ALIVE_ClearWakeUpStatus();
 
@@ -250,6 +248,7 @@ static void suspend_cores(suspend_state_t stat)
 				break;
 		}
 
+#ifndef CONFIG_SUSPEND_IDLE
 		if (SUSPEND_SUSPEND == stat) {
 			NX_RSTCON_SetBaseAddress(IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
 			NX_RSTCON_SetnRST(reset, RSTCON_nDISABLE);
@@ -258,27 +257,6 @@ static void suspend_cores(suspend_state_t stat)
 			mdelay(1);
 			NX_TIEOFF_Set(core, 1);
 			PM_DBGOUT("Power off cpu.%d\n", cpu);
-		}
-#if (0)
-		/* reset core */
-		else {
-			unsigned int clock = TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CPUCLKOFF;
-			clock += cpu;
-
-			NX_TIEOFF_Set(core, 0);
-			mdelay(1);
-			NX_TIEOFF_Set(clamp, 0);
-			NX_TIEOFF_Set(clock, 0);
-			mdelay(1);
-
-			NX_RSTCON_SetBaseAddress(IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
-			NX_RSTCON_SetnRST(reset, RSTCON_nDISABLE);
-			mdelay(1);
-			NX_TIEOFF_Set(clock, 1);
-			NX_RSTCON_SetnRST(reset, RSTCON_nENABLE);
-			mdelay(1);
-			NX_TIEOFF_Set(clock, 0);
-			PM_DBGOUT("Power on cpu.%d\n", cpu);
 		}
 #endif
 	}
@@ -545,6 +523,7 @@ static int __powerdown(unsigned long arg)
 		return 0;
 	}
 
+	lldebugout("suspend machine\n", __func__);
 	do_suspend = (void (*)(ulong, ulong))((ulong)do_suspend + 0x220);
 	do_suspend(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
 
@@ -625,6 +604,8 @@ static int suspend_enter(suspend_state_t state)
      * goto sleep
      */
     cpu_suspend(0, __powerdown);
+
+	lldebugout("resume machine\n");
 
 	/*
 	 * Wakeup status
