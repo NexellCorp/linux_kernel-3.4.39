@@ -59,5 +59,5 @@ obj-$(CONFIG_NXP4330_MP2TS_IF)			+=  $(PROTOTYPE)/$(MODULES)/nx_mpegtsi.o
 
 obj-$(CONFIG_RTC_DRV_NXP)				+=  $(PROTOTYPE)/$(MODULES)/nx_rtc.o
 
-
+obj-$(CONFIG_PPM_NEXELL) +=  $(PROTOTYPE)/$(MODULES)/nx_ppm.o
 
