@@ -164,6 +164,13 @@ void nxp_cpu_reset(char str, const char *cmd)
 	if (nxp_board_reset)
 		nxp_board_reset(str, cmd);
 
+	__raw_writel((-1UL), SCR_RESET_SIG_RESET);
+	if (cmd && !strcmp(cmd, "recovery")) {
+		__raw_writel(RECOVERY_SIGNATURE, SCR_RESET_SIG_SET);
+		__raw_readl (SCR_RESET_SIG_READ);	/* verify */
+		printk("recovery sign [0x%x:0x%x] \n", SCR_RESET_SIG_READ, readl(SCR_RESET_SIG_READ));
+	}
+
 	NX_ALIVE_SetWriteEnable(CFALSE);	/* close alive gate */
     NX_CLKPWR_SetSoftwareResetEnable(CTRUE);
     NX_CLKPWR_DoSoftwareReset();

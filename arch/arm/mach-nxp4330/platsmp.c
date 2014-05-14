@@ -167,6 +167,6 @@ void  __init platform_smp_prepare_cpus(unsigned int max_cpus)
 {
 	scu_enable(scu_base);
 	__raw_writel(virt_to_phys(__secondary_startup), SCR_ARM_SECOND_BOOT);
-	__raw_writel(~(U32)0, SCR_SIGNAGURE_RESET);
+	__raw_writel((-1UL), SCR_SIGNAGURE_RESET);
 }
 

@@ -40,8 +40,13 @@
 #define	SCR_CRC_LEN_SET			(SCR_ALIVE_BASE + 0xD4)
 #define	SCR_CRC_LEN_READ		(SCR_ALIVE_BASE + 0xD8)
 
+#define	SCR_RESET_SIG_RESET		(SCR_ALIVE_BASE + 0xDC)	// ALIVESCRATCHRST5
+#define	SCR_RESET_SIG_SET		(SCR_ALIVE_BASE + 0xE0)
+#define	SCR_RESET_SIG_READ		(SCR_ALIVE_BASE + 0xE4)
+
 #define SUSPEND_SIGNATURE		(0x50575200)	/* PWR (ASCII) */
 #define	SUSPEND_SAVE_SIZE		(128*1024)		/* (_etext - _stext) */
+#define RECOVERY_SIGNATURE		(0x52455343)	/* (ASCII) : R.E.S.C */
 
 struct board_suspend_ops {
 	int  (*valid)		(suspend_state_t state);	/* before driver suspend */
