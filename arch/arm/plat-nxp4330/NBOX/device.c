@@ -36,6 +36,10 @@
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
+    { 1600000, 1200 },
+	{ 1500000, 1200 },
+	{ 1400000, 1200 },
+	{ 1300000, 1200 },
 	{ 1200000, 1200 },
 	{ 1100000, 1200 },
 	{ 1000000, 1200 },
@@ -54,7 +58,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP4330_CPUFREQ_PLLDEV,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1200*1000,
+	.max_cpufreq    = 1600*1000,
 	.max_retention  =   30*1000,
 	.rest_cpufreq   =  800*1000,
 	.rest_retention =    1*1000,
@@ -456,7 +460,7 @@ static struct platform_device wm8976_dai = {
 
 /* CODEC */
 static struct i2c_board_info __initdata alc5623_i2c_bdi = {
-	.type	= "alc5621",			// compatilbe with wm8976
+	.type	= "alc562x-codec",			// compatilbe with wm8976
 	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
 };
 
@@ -472,7 +476,7 @@ struct nxp_snd_dai_plat_data i2s_dai_data = {
 };
 
 static struct platform_device alc5623_dai = {
-	.name			= "rt5623-audio",
+	.name			= "alc5623-audio",
 	.id				= 0,
 	.dev			= {
 		.platform_data	= &i2s_dai_data,
