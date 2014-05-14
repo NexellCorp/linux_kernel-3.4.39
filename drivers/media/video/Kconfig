@@ -620,7 +620,19 @@ config VIDEO_GC2035
     tristate "GC2035 2M pixel camera sensor support"
     depends on I2C && VIDEO_V4L2
     ---help---
-      This driver supports SuperPix GC2035 SoC camera module.
+      This driver supports GC2035 SoC camera module.
+
+config VIDEO_GC0308
+    tristate "GC0308 0.3M pixel camera sensor support"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+      This driver supports GC0308 SoC camera module.
+
+config VIDEO_HM2057
+    tristate "HM2057 2M pixel camera sensor support"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+      This driver supports HM2057 SoC camera module.
 
 config VIDEO_SP0A19
     tristate "SP0A19 0.3M pixel camera sensor support"
@@ -633,12 +645,6 @@ config VIDEO_SP0838
     depends on I2C && VIDEO_V4L2
     ---help---
       This driver supports SuperPix SP0838 SoC camera module.
-
-config VIDEO_GC0308
-    tristate "GC0308 0.3M pixel camera sensor support"
-    depends on I2C && VIDEO_V4L2
-    ---help---
-      This driver supports GC0308 SoC camera module.
 
 config VIDEO_SP0838_FIXED_FRAMERATE
     bool "use fixed framerate"
