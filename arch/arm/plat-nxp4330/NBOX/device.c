@@ -1491,6 +1491,20 @@ static struct platform_device rfkill_device = {
 };
 #endif	/* CONFIG_RFKILL_NEXELL */
 
+#if defined(CONFIG_PPM_NEXELL)
+#include <mach/ppm.h>
+struct nxp_ppm_platform_data ppm_plat_data = {
+	.input_polarity = NX_PPM_INPUTPOL_INVERT,//NX_PPM_INPUTPOL_INVERT  or  NX_PPM_INPUTPOL_BYPASS
+};
+
+static struct platform_device ppm_device = {
+	.name			= DEV_NAME_PPM,
+	.dev			= {
+		.platform_data	= &ppm_plat_data,
+	}
+};
+#endif
+
 /*------------------------------------------------------------------------------
  * USB HSIC power control.
  */
@@ -1610,6 +1624,12 @@ void __init nxp_board_devices_register(void)
     printk("plat: add device nxp-gmac\n");
     platform_device_register(&nxp_gmac_dev);
 #endif
+
+#if defined(CONFIG_PPM_NEXELL)
+    printk("plat: add device ppm\n");
+    platform_device_register(&ppm_device);
+#endif
+
 	/* END */
 	printk("\n");
 }
