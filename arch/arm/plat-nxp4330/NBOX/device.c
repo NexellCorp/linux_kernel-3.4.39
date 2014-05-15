@@ -36,7 +36,7 @@
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-    	{ 1600000, 1200 },
+    { 1600000, 1200 },
 	{ 1500000, 1200 },
 	{ 1400000, 1200 },
 	{ 1300000, 1200 },
