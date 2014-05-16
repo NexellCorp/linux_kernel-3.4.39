@@ -1698,7 +1698,7 @@ static const struct win_size *sensor_select_win(u32 width, u32 height)
 {
 	const struct win_size *win;
     int i;
-    printk("%s .............\n",__func__);
+    SENSOR_DG("%s .............\n",__func__);
 
     for (i = 0; i < ARRAY_SIZE(hm2057_win); i++) {
         win = hm2057_win[i];
@@ -1963,10 +1963,10 @@ static bool check_id(struct i2c_client *client)
 
     if ((pid == SENSOR_ID)||(pid == SENSOR_ID1)) {
       //  sensor->model = SENSOR_V4L2_IDENT;
-       printk("====xiongbiao====hm2057 check_id is ok");
+       SENSOR_DG("====xiongbiao====hm2057 check_id is ok");
     } else {
         SENSOR_TR("error: %s mismatched   pid = 0x%x\n", SENSOR_NAME_STRING(), pid);
-        printk("====xiongbiao====hm2057 check_id is error!");
+        SENSOR_DG("====xiongbiao====hm2057 check_id is error!");
          return -ENODEV;
     }
     return 0;
@@ -1981,7 +1981,7 @@ static int sensor_set_params(struct v4l2_subdev *sd, u32 *width, u32 *height, en
 struct reginfo *winseqe_set_addr=NULL;
  const struct sensor_datafmt *fmt;
 	
-    printk("%s .............\n",__func__);
+    SENSOR_DG("%s .............\n",__func__);
     /*
      * select format
      */
@@ -2069,7 +2069,7 @@ static int sensor_set_brightness(struct v4l2_subdev *sd, struct v4l2_ctrl *ctrl)
     int val = ctrl->val;
     int ret;
 
-    printk("%s: val %d\n", __func__, val);
+    SENSOR_DG("%s: val %d\n", __func__, val);
 
     if (val < 0 || val >= ARRAY_SIZE(sensor_BrightnessSeqe)) {
         printk(KERN_ERR "%s: invalid value %d\n", __func__, val);
@@ -2093,7 +2093,7 @@ static int sensor_set_effect(struct v4l2_subdev *sd, struct v4l2_ctrl *ctrl)
     int val = ctrl->val;
     int ret;
 
-    printk("%s: val %d\n", __func__, val);
+    SENSOR_DG("%s: val %d\n", __func__, val);
 
     if (val < 0 || val >= ARRAY_SIZE(sensor_EffectSeqe)) {
         printk(KERN_ERR "%s: invalid value %d\n", __func__, val);
@@ -2117,7 +2117,7 @@ static int sensor_set_exposure(struct v4l2_subdev *sd, struct v4l2_ctrl *ctrl)
     int val = ctrl->val;
     int ret;
 
-    printk("%s: val %d\n", __func__, val);
+    SENSOR_DG("%s: val %d\n", __func__, val);
 
     if (val < 0 || val >= ARRAY_SIZE(sensor_ExposureSeqe)) {
         printk(KERN_ERR "%s: invalid value %d\n", __func__, val);
@@ -2141,7 +2141,7 @@ static int sensor_set_saturation(struct v4l2_subdev *sd, struct v4l2_ctrl *ctrl)
     int val = ctrl->val;
     int ret;
 
-    printk("%s: val %d\n", __func__, val);
+    SENSOR_DG("%s: val %d\n", __func__, val);
 
     if (val < 0 || val >= ARRAY_SIZE(sensor_SaturationSeqe)) {
         printk(KERN_ERR "%s: invalid value %d\n", __func__, val);
@@ -2165,7 +2165,7 @@ static int sensor_set_contrast(struct v4l2_subdev *sd, struct v4l2_ctrl *ctrl)
     int val = ctrl->val;
     int ret;
 
-    printk("%s: val %d\n", __func__, val);
+    SENSOR_DG("%s: val %d\n", __func__, val);
 
     if (val < 0 || val >= ARRAY_SIZE(sensor_ContrastSeqe)) {
         printk(KERN_ERR "%s: invalid value %d\n", __func__, val);
@@ -2189,7 +2189,7 @@ static int sensor_set_mirror(struct v4l2_subdev *sd, struct v4l2_ctrl *ctrl)
     int val = ctrl->val;
     int ret;
 
-    printk("%s: val %d\n", __func__, val);
+    SENSOR_DG("%s: val %d\n", __func__, val);
 
     if (val < 0 || val >= ARRAY_SIZE(sensor_MirrorSeqe)) {
         printk(KERN_ERR "%s: invalid value %d\n", __func__, val);
@@ -2213,7 +2213,7 @@ static int sensor_set_flip(struct v4l2_subdev *sd, struct v4l2_ctrl *ctrl)
     int val = ctrl->val;
     int ret;
 
-    printk("%s: val %d\n", __func__, val);
+    SENSOR_DG("%s: val %d\n", __func__, val);
 
     if (val < 0 || val >= ARRAY_SIZE(sensor_FlipSeqe)) {
         printk(KERN_ERR "%s: invalid value %d\n", __func__, val);
@@ -2237,7 +2237,7 @@ static int sensor_set_scene(struct v4l2_subdev *sd, struct v4l2_ctrl *ctrl)
     int val = ctrl->val;
     int ret;
 
-    printk("%s: val %d\n", __func__, val);
+    SENSOR_DG("%s: val %d\n", __func__, val);
 
     if (val < 0 || val >= ARRAY_SIZE(sensor_SceneSeqe)) {
         printk(KERN_ERR "%s: invalid value %d\n", __func__, val);
@@ -2261,7 +2261,7 @@ static int sensor_set_whiteBalance(struct v4l2_subdev *sd, struct v4l2_ctrl *ctr
     int val = ctrl->val;
     int ret;
 
-    printk("%s: val %d\n", __func__, val);
+    SENSOR_DG("%s: val %d\n", __func__, val);
 
     if (val < 0 || val >= ARRAY_SIZE(sensor_WhiteBalanceSeqe)) {
         printk(KERN_ERR "%s: invalid value %d\n", __func__, val);
@@ -2287,7 +2287,7 @@ static int sensor_set_digitalzoom(struct v4l2_subdev *sd, struct v4l2_ctrl *ctrl
     int ret;
     int digitalzoom_cur;
 
-    printk("%s: val %d\n", __func__, val);
+    SENSOR_DG("%s: val %d\n", __func__, val);
 
     digitalzoom_cur = sensor->info_priv.digitalzoom + val;
 
@@ -2312,7 +2312,7 @@ static int sensor_set_flash(struct v4l2_subdev *sd, struct v4l2_ctrl *ctrl)
     /* struct i2c_client *client = v4l2_get_subdevdata(sd); */
     int val = ctrl->val;
 
-    printk("%s: val %d\n", __func__, val);
+    SENSOR_DG("%s: val %d\n", __func__, val);
 
     return 0;
 }
@@ -2593,7 +2593,7 @@ static int sensor_s_power(struct v4l2_subdev *sd, int on)
 {
     struct sensor *sensor = subdev_to_sensor(sd);
 
-    printk("%s: on %d\n", __func__, on);
+    SENSOR_DG("%s: on %d\n", __func__, on);
 
     if (on) {
         sensor->info_priv.winseqe_cur_addr  = (int)SENSOR_INIT_WINSEQADR;
@@ -2628,7 +2628,7 @@ static struct v4l2_subdev_core_ops sensor_subdev_core_ops = {
 
 
 	
-    printk("===============%dx%d\n", mf->width,mf->height);
+    SENSOR_DG("===============%dx%d\n", mf->width,mf->height);
 
 
 
@@ -2640,34 +2640,34 @@ static struct v4l2_subdev_core_ops sensor_subdev_core_ops = {
         goto sensor_s_fmt_end;
     }
 
-    printk (KERN_ALERT "sensor->info_priv.fmt.code is 0x%02x", sensor->info_priv.fmt.code);
-    printk (KERN_ALERT "mf->code is 0x%02x", mf->code);
-    printk (KERN_ALERT "fmt->code is 0x%02x", fmt->code);
+    SENSOR_DG (KERN_ALERT "sensor->info_priv.fmt.code is 0x%02x", sensor->info_priv.fmt.code);
+    SENSOR_DG (KERN_ALERT "mf->code is 0x%02x", mf->code);
+    SENSOR_DG (KERN_ALERT "fmt->code is 0x%02x", fmt->code);
 //	if (sensor->info_priv.fmt.code != mf->code) {
 		switch (mf->code)
 		{
 			case V4L2_MBUS_FMT_YUYV8_2X8:
 			{
 				winseqe_set_addr = sensor_ClrFmt_YUYV;
-				printk(KERN_ALERT "**lone** YUYV");
+				SENSOR_DG(KERN_ALERT "**lone** YUYV");
 				break;
 			}
 			case V4L2_MBUS_FMT_UYVY8_2X8:
 			{
 				winseqe_set_addr = sensor_ClrFmt_UYVY;
-				printk(KERN_ALERT "**lone** UYVY");
+				SENSOR_DG(KERN_ALERT "**lone** UYVY");
 				break;
 			}
 			case V4L2_MBUS_FMT_YVYU8_2X8:
 			{
 				winseqe_set_addr = sensor_ClrFmt_YVYU;
-				printk(KERN_ALERT "**lone** YVYU");
+				SENSOR_DG(KERN_ALERT "**lone** YVYU");
 				break;
 			}
 			case V4L2_MBUS_FMT_VYUY8_2X8:
 			{
 				winseqe_set_addr = sensor_ClrFmt_VYUY;
-				printk(KERN_ALERT "**lone** VYUY");
+				SENSOR_DG(KERN_ALERT "**lone** VYUY");
 				break;
 			}
 			
@@ -2687,7 +2687,7 @@ static struct v4l2_subdev_core_ops sensor_subdev_core_ops = {
 
     set_w = mf->width;
     set_h = mf->height;
-   printk("===============%dx%d\n", set_w,set_h);
+   SENSOR_DG("===============%dx%d\n", set_w,set_h);
 
  if (((set_w <= 320) && (set_h <= 240)) && sensor_qvga[0].reg)
     {
@@ -2709,14 +2709,14 @@ static struct v4l2_subdev_core_ops sensor_subdev_core_ops = {
     }
 	else if (((set_w <= 1024) && (set_h <= 768)) && sensor_xga[0].reg)
     {
-        printk("\nsensor_s_fmt:sensor_xga\n");
+        SENSOR_DG("\nsensor_s_fmt:sensor_xga\n");
         winseqe_set_addr = sensor_xga;
         set_w = 1280;
         set_h = 1024;
     }
     else if (((set_w <= 1280) && (set_h <= 1024)) && sensor_sxga[0].reg)
     {
-        printk("\nsensor_s_fmt:sensor_sxga\n");
+        SENSOR_DG("\nsensor_s_fmt:sensor_sxga\n");
         winseqe_set_addr = sensor_sxga;
         set_w = 1280;
         set_h = 1024;
@@ -2756,7 +2756,7 @@ static int sensor_s_stream(struct v4l2_subdev *sd, int enable)
     struct sensor *sensor = subdev_to_sensor(sd);
     int ret = 0;
 
-    printk("%s: enable %d\n", __func__, enable);
+    SENSOR_DG("%s: enable %d\n", __func__, enable);
     if (enable) {
         if (sensor_task_lock(client, 1) < 0)
             goto sensor_INIT_ERR;
@@ -2808,7 +2808,7 @@ static int sensor_g_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *
     struct sensor *sensor = subdev_to_sensor(sd);
     struct i2c_client *client = v4l2_get_subdevdata(sd);
 
-    printk("%s .............\n",__func__);
+    SENSOR_DG("%s .............\n",__func__);
     if (!sensor->win || !sensor->cfmt) {
         u32 width = VGA_WIDTH;
         u32 height = VGA_HEIGHT;
@@ -2834,7 +2834,7 @@ static int sensor_try_mbus_fmt(struct v4l2_subdev *sd,
      struct sensor *sensor = subdev_to_sensor(sd);
     const struct win_size *win;
     int i;
-    printk("%s .............\n",__func__);
+    SENSOR_DG("%s .............\n",__func__);
     /*
      * select suitable win
      */
@@ -2874,7 +2874,7 @@ static int sensor_try_mbus_fmt(struct v4l2_subdev *sd,
 static int sensor_enum_framesizes(struct v4l2_subdev *sd, struct v4l2_frmsizeenum *fsize)
 {
     struct i2c_client *client = v4l2_get_subdevdata(sd);
-    printk("%s .............\n",__func__);
+    SENSOR_DG("%s .............\n",__func__);
     if (fsize->index >= ARRAY_SIZE(hm2057_win)) {
         dev_err(&client->dev, "index(%d) is over range %d\n", fsize->index, ARRAY_SIZE(hm2057_win));
         return -EINVAL;
@@ -2926,7 +2926,7 @@ static int sensor_s_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
         struct v4l2_subdev_format *fmt)
 {
     struct v4l2_mbus_framefmt *mf = &fmt->format;
-	printk("%s: %dx%d\n", __func__, mf->width, mf->height);
+	SENSOR_DG("%s: %dx%d\n", __func__, mf->width, mf->height);
     return sensor_s_mbus_fmt(sd, mf);
 }
 
@@ -2950,7 +2950,7 @@ static int sensor_link_setup(struct media_entity *entity,
         const struct media_pad *local,
         const struct media_pad *remote, u32 flags)
 {
-    printk("%s\n", __func__);
+    SENSOR_DG("%s\n", __func__);
     return 0;
 }
 
@@ -2970,14 +2970,7 @@ static int sensor_probe(struct i2c_client *client, const struct i2c_device_id *i
  struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
 
 
-    printk("%s:.......................................\n", __func__);
-
-    ret=sensor_read(client,0x01,&val);
-    printk("%s:.....Vid1 is :0x%02x  line :%d.......ret : %d............\n", __func__,val,__LINE__,ret);
-
-    ret=sensor_read(client,0x02,&val);
-    printk("%s:.....Vid2 is :0x%02x  line :%d.......ret : %d............\n", __func__,val,__LINE__,ret);
-
+    SENSOR_DG("%s:.......................................\n", __func__);
     sensor = kzalloc(sizeof(struct sensor), GFP_KERNEL);
     if (!sensor)
         return -ENOMEM;
