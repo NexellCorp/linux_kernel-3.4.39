@@ -386,6 +386,8 @@ extern char iface_name[IFNAMSIZ];
  * wl_android_wifi_on
  */
 static int g_wifi_on = TRUE;
+static int old_g_wifi_on = TRUE;
+
 
 /**
  * Local (static) function definitions
@@ -463,6 +465,8 @@ static int wl_android_set_suspendopt(struct net_device *dev, char *command, int 
 static int wl_android_set_suspendmode(struct net_device *dev, char *command, int total_len)
 {
 	int ret = 0;
+	int ret1 =0;
+	int retry = POWERUP_MAX_RETRY;
 
 #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(DHD_USE_EARLYSUSPEND)
 	int suspend_flag;
@@ -471,13 +475,65 @@ static int wl_android_set_suspendmode(struct net_device *dev, char *command, int
 	if (suspend_flag != 0)
 		suspend_flag = 1;
 
+#if 0 // for WIFI POWER OFF WHEN GOTO SLEEP bitpark 20140512 
+		if ( suspend_flag == 0 )
+		{ // wake
+			if(old_g_wifi_on )
+			{
+			 // priv wifi power on
+				 dhd_net_if_lock(dev);
+				 do {
+						dhd_net_wifi_platform_set_power(dev, TRUE, WIFI_TURNON_DELAY);
+						ret1 = dhd_net_bus_resume(dev, 0);
+						if (ret == 0)
+							break;
+						DHD_ERROR(("\nfailed to power up wifi chip, retry again (%d left) **\n\n",retry+1));
+						dhd_net_wifi_platform_set_power(dev, FALSE, WIFI_TURNOFF_DELAY);
+				} while (retry-- >= 0);
+				if (ret != 0) {
+					DHD_ERROR(("\nfailed to power up wifi chip, max retry reached **\n\n"));
+					goto exit1;
+				}
+				ret1 = dhd_net_bus_devreset(dev, FALSE);
+				dhd_net_bus_resume(dev, 1);
+				if (!ret1){
+					if (dhd_dev_init_ioctl(dev) < 0)
+					ret1 = -EFAULT;
+				}
+				g_wifi_on = TRUE;
+				dhd_net_if_unlock(dev);
+			}
+
+		}
+
+#endif
+
 	if (!(ret = net_os_set_suspend(dev, suspend_flag, 0)))
 		DHD_INFO(("%s: Suspend Mode %d\n", __FUNCTION__, suspend_flag));
 	else
 		DHD_ERROR(("%s: failed %d\n", __FUNCTION__, ret));
+
+#if 0 // for WIFI POWER OFF WHEN GOTO SLEEP bitpark 20140512 
+	if ( suspend_flag == 1 )
+	{ // go to SLEEP force  off
+		dhd_net_if_lock(dev);
+		ret1 = dhd_net_bus_devreset(dev, TRUE);
+		dhd_net_bus_suspend(dev);
+		dhd_net_wifi_platform_set_power(dev, FALSE, WIFI_TURNOFF_DELAY);
+
+		old_g_wifi_on = g_wifi_on ;
+		g_wifi_on = FALSE;
+		dhd_net_if_unlock(dev);
+	}
+#endif
+
 #endif
 
 	return ret;
+exit1:
+	dhd_net_if_unlock(dev);
+	return ret;
+
 }
 
 static int wl_android_get_band(struct net_device *dev, char *command, int total_len)
@@ -2943,6 +2999,10 @@ int wl_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 	else if (strnicmp(command, CMD_SETFWPATH, strlen(CMD_SETFWPATH)) == 0) {
 		bytes_written = wl_android_set_fwpath(net, command, priv_cmd.total_len);
 	}
+//// for WIFI POWER OFF WHEN GOTO SLEEP bitpark 20140512 
+	//else if (strnicmp(command, CMD_SETSUSPENDMODE, strlen(CMD_SETSUSPENDMODE)) == 0) {
+	//	bytes_written = wl_android_set_suspendmode(net, command, priv_cmd.total_len);
+	//}
 
 	if (!g_wifi_on) {
 		DHD_ERROR(("%s: Ignore private cmd \"%s\" - iface %s is down\n",
@@ -3010,6 +3070,7 @@ int wl_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 	else if (strnicmp(command, CMD_SETSUSPENDOPT, strlen(CMD_SETSUSPENDOPT)) == 0) {
 		bytes_written = wl_android_set_suspendopt(net, command, priv_cmd.total_len);
 	}
+// for WIFI POWER OFF WHEN GOTO SLEEP bitpark 20140512 
 	else if (strnicmp(command, CMD_SETSUSPENDMODE, strlen(CMD_SETSUSPENDMODE)) == 0) {
 		bytes_written = wl_android_set_suspendmode(net, command, priv_cmd.total_len);
 	}

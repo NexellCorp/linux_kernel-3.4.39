@@ -2,13 +2,13 @@
  * Linux platform device for DHD WLAN adapter
  *
  * Copyright (C) 1999-2014, Broadcom Corporation
- *
+ * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
  * under the terms of the GNU General Public License version 2 (the "GPL"),
  * available at http://www.broadcom.com/licenses/GPLv2.php, with the
  * following added to such license:
- *
+ * 
  *      As a special exception, the copyright holders of this software give you
  * permission to link this software with independent modules, and to copy and
  * distribute the resulting executable under terms of your choice, provided that
@@ -16,7 +16,7 @@
  * the license of that module.  An independent module is a module which is not
  * derived from this software.  The special exception does not apply to any
  * modifications of the software.
- *
+ * 
  *      Notwithstanding the above, under no circumstances may you combine this
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
@@ -507,15 +507,13 @@ extern int dhd_dpc_prio;
 extern uint dhd_deferred_tx;
 #if defined(BCMLXSDMMC)
 extern struct semaphore dhd_registration_sem;
-#endif
+#endif 
 
 static int dhd_wifi_platform_load_sdio(void)
 {
 	int i;
 	int err = 0;
 	wifi_adapter_info_t *adapter;
-
-    printk("%s entered\n", __func__);
 
 	BCM_REFERENCE(i);
 	BCM_REFERENCE(adapter);
@@ -619,7 +617,7 @@ fail:
 	/* x86 bring-up PC needs no power-up operations */
 	err = dhd_bus_register();
 
-#endif
+#endif 
 
 	return err;
 }
@@ -633,7 +631,6 @@ static int dhd_wifi_platform_load()
 {
 	int err = 0;
 
-    printk("%s entered\n", __func__);
 		wl_android_init();
 
 	if ((err = dhd_wifi_platform_load_usb()))

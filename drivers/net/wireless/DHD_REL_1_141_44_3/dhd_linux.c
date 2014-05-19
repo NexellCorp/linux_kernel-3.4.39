@@ -5566,11 +5566,12 @@ dhd_register_if(dhd_pub_t *dhdp, int ifidx, bool need_rtnl_lock)
 #ifdef BCMLXSDMMC
 		up(&dhd_registration_sem);
 #endif
-		if (!dhd_download_fw_on_driverload) {
-			dhd_net_bus_devreset(net, TRUE);
-			dhd_net_bus_suspend(net);
-			wifi_platform_set_power(dhdp->info->adapter, FALSE, WIFI_TURNOFF_DELAY);
-		}
+//bitpark for WIFI ON/OFF Control 20140512
+		//if (!dhd_download_fw_on_driverload) {
+		//	dhd_net_bus_devreset(net, TRUE);
+		//	dhd_net_bus_suspend(net);
+		//	wifi_platform_set_power(dhdp->info->adapter, FALSE, WIFI_TURNOFF_DELAY);
+		//}
 	}
 #endif /* OEM_ANDROID && BCMLXSDMMC && (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)) */
 	return 0;
@@ -6400,8 +6401,6 @@ dhd_net_bus_devreset(struct net_device *dev, uint8 flag)
 			dhd->fw_path, dhd->nv_path);
 	}
 
-    // psw0523 fix
-#if 1 // this is org
 	ret = dhd_bus_devreset(&dhd->pub, flag);
 	if (ret) {
 		DHD_ERROR(("%s: dhd_bus_devreset: %d\n", __FUNCTION__, ret));
@@ -6409,9 +6408,6 @@ dhd_net_bus_devreset(struct net_device *dev, uint8 flag)
 	}
 
 	return ret;
-#else
-    return 0;
-#endif
 }
 
 int

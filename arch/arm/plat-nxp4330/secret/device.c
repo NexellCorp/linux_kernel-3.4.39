@@ -1338,7 +1338,7 @@ static struct dw_mci_board _dwmci1_data = {
 static int _wifi_power(int on)
 {
     printk("%s %d\n", __func__, on);
-    if (on)
+//    if (on)
         nxp_soc_gpio_set_out_value(PAD_GPIO_A + 17, on);
     return 0;
 }

@@ -140,12 +140,12 @@ void* bcmsdh_probe(osl_t *osh, void *dev, void *sdioh, void *adapter_info, uint 
 
 	bcmsdh = bcmsdh_attach(osh, sdioh, &regs);
 	if (bcmsdh == NULL) {
-		printk("%s: bcmsdh_attach failed\n", __FUNCTION__);
+		SDLX_MSG(("%s: bcmsdh_attach failed\n", __FUNCTION__));
 		goto err;
 	}
 	bcmsdh_osinfo = MALLOC(osh, sizeof(bcmsdh_os_info_t));
 	if (bcmsdh_osinfo == NULL) {
-		printk("%s: failed to allocate bcmsdh_os_info_t\n", __FUNCTION__);
+		SDLX_MSG(("%s: failed to allocate bcmsdh_os_info_t\n", __FUNCTION__));
 		goto err;
 	}
 	bzero((char *)bcmsdh_osinfo, sizeof(bcmsdh_os_info_t));
@@ -179,7 +179,7 @@ void* bcmsdh_probe(osl_t *osh, void *dev, void *sdioh, void *adapter_info, uint 
 	bcmsdh_osinfo->context = drvinfo.probe((vendevid >> 16), (vendevid & 0xFFFF), bus_num,
 		slot_num, 0, bus_type, (void *)regs, osh, bcmsdh);
 	if (bcmsdh_osinfo->context == NULL) {
-		printk("%s: device attach failed\n", __FUNCTION__);
+		SDLX_MSG(("%s: device attach failed\n", __FUNCTION__));
 		goto err;
 	}
 
@@ -237,9 +237,6 @@ extern void sdio_func_unreg_notify(void);
 #if defined(BCMLXSDMMC)
 int bcmsdh_reg_sdio_notify(void* semaphore)
 {
-    // psw0523 debugging
-    printk("%s\n", __func__);
-    // end psw0523
 	return sdio_func_reg_notify(semaphore);
 }
 
