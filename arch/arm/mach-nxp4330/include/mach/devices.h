@@ -190,6 +190,8 @@ struct nxp_cpufreq_plat_data {
     long max_retention;     /* unit msec */
     long rest_cpufreq;      /* unit Khz */
     long rest_retention;    /* unit msec */
+    long hotplug_trigger_out;
+    long hotplug_trigger_in;
 };
 
 /*
