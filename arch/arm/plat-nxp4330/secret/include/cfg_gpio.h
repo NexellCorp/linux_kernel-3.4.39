@@ -19,7 +19,8 @@
 #define __CFG_GPIO_H__
 
 
-#if 1// CONFIG_SECRET_2ND_BOARD
+#if 1// CONFIG_SECRET_2ND_BOARD, CONFIG_SECRET_3RD_BOARD
+
 /*------------------------------------------------------------------------------
  *
  *	(GROUP_A)
@@ -41,7 +42,7 @@
 #define PAD_GPIOA10	(PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[9]          ,2:_                    ,3:_                    =// MCU_EMMC_RESET1 - NC
 #define PAD_GPIOA11	(PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[10]         ,2:_                    ,3:_                    =// MCU_BC0(micom p3.4)
 #define PAD_GPIOA12	(PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_UP  | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[11]         ,2:_                    ,3:_                    =// MCU_TOUCH_INT
-#define PAD_GPIOA13	(PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[12]         ,2:_                    ,3:_                    =// MCU_BACKLIGHT_EN - NC
+#define PAD_GPIOA13	(PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[12]         ,2:_                    ,3:_                    =// MCU_BACKLIGHT_EN - NC
 #define PAD_GPIOA14	(PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[13]         ,2:_                    ,3:_                    =// MCU_VG_EN - NC
 #define PAD_GPIOA15	(PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[14]         ,2:_                    ,3:_                    =// PANEL_RESET
 #define PAD_GPIOA16	(PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[15]         ,2:_                    ,3:-                    =// VGH_DETECT - NC
@@ -520,6 +521,6 @@
 
 #define GPIO_LEVEL_LOW						0
 #define GPIO_LEVEL_HIGH						1
-#endif /* CONFIG_SECRET_2ND_BOARD */
+#endif /* CONFIG_SECRET_2ND_BOARD CONFIG_SECRET_3RD_BOARD */
 #endif	/* __CFG_GPIO_H__ */
 
