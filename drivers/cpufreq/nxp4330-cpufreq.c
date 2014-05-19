@@ -192,7 +192,6 @@ static int nxp4330_cpufreq_target(struct cpufreq_policy *policy,
 		if (dvfs->rest_retention > ts) {
 			freqs.new = dvfs->rest_cpufreq;
 			pr_debug("rest %4ld:%4ldms (%u khz)\n", dvfs->rest_retention, ts, freqs.new);
-			ret = -EINVAL;
 			goto _cpu_freq;	/* retry */
 		}
 		dvfs->rest_ktime = ktime_set(0, 0);	/* clear rest time */
@@ -233,7 +232,7 @@ static int __cpuinit nxp4330_cpufreq_init(struct cpufreq_policy *policy)
 	struct cpufreq_frequency_table *freq_table = dvfs->freq_table;
 	int res;
 
-	pr_info("nxp4330-cpufreq: Available frequencies cpus (%d) \n",
+	pr_debug("nxp4330-cpufreq: available frequencies cpus (%d) \n",
 		num_online_cpus());
 
 	/* get policy fields based on the table */
