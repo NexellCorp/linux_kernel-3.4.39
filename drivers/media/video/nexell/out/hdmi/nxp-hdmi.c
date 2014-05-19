@@ -910,6 +910,18 @@ static int _hdmi_set_infoframe(struct nxp_hdmi *me)
     return 0;
 }
 
+static inline void _hdmi_enable(struct nxp_hdmi *me)
+{
+    u32 regval = NX_HDMI_GetReg(0, HDMI_LINK_HDMI_CON_0);
+    regval |= 0x01;
+    NX_HDMI_SetReg(0, HDMI_LINK_HDMI_CON_0, regval);
+
+    NX_DISPLAYTOP_HDMI_SetVSyncStart(me->VSyncStart);
+    NX_DISPLAYTOP_HDMI_SetHActiveStart(me->HActiveStart);
+    NX_DISPLAYTOP_HDMI_SetHActiveEnd(me->HActiveEnd);
+    NX_DISPLAYTOP_HDMI_SetVSyncHSStartEnd(me->VSyncHSStartEnd0, me->VSyncHSStartEnd1);
+}
+
 static int _hdmi_streamon(struct nxp_hdmi *me)
 {
     int ret;
@@ -967,7 +979,6 @@ static int _hdmi_streamon(struct nxp_hdmi *me)
     _config_hdmi(me);
     _set_remote_sync(me);
 
-#if 1
     _hdmi_set_infoframe(me);
     _hdmi_set_packets(me);
 
@@ -981,18 +992,8 @@ static int _hdmi_streamon(struct nxp_hdmi *me)
         hdmi_audio_enable(true);
 
     /* hdmi_set_dvi_mode(me->is_dvi); */
-#endif
 
-    {
-        u32 regval = NX_HDMI_GetReg(0, HDMI_LINK_HDMI_CON_0);
-        regval |= 0x01;
-        NX_HDMI_SetReg(0, HDMI_LINK_HDMI_CON_0, regval);
-
-        NX_DISPLAYTOP_HDMI_SetVSyncStart(me->VSyncStart);
-        NX_DISPLAYTOP_HDMI_SetHActiveStart(me->HActiveStart);
-        NX_DISPLAYTOP_HDMI_SetHActiveEnd(me->HActiveEnd);
-        NX_DISPLAYTOP_HDMI_SetVSyncHSStartEnd(me->VSyncHSStartEnd0, me->VSyncHSStartEnd1);
-    }
+    _hdmi_enable(me);
 
     mdelay(5);
 
@@ -1445,8 +1446,8 @@ static irqreturn_t _hdmi_irq_handler_ext(int irq, void *dev_data)
  */
 static void _hdmi_hpd_changed(struct nxp_hdmi *me, int state)
 {
-    /* int ret; */
-    /* u32 preset; */
+    int ret;
+    u32 preset;
 
     printk("%s: state 0x%x\n", __func__, state);
     if (state == switch_get_state(&me->hpd_switch))
@@ -1454,27 +1455,21 @@ static void _hdmi_hpd_changed(struct nxp_hdmi *me, int state)
 
     if (state) {
         /* connected */
-        /* TODO : edid i2c error */
-#if 0
         ret = me->edid.update(&me->edid);
         if (ret < 0) {
-            pr_err("%s: failed to edid update()\n", __func__);
-            return;
+            pr_err("%s: failed to edid update(), use static information\n", __func__);
+            me->is_dvi = false;
+            me->cur_preset = HDMI_DEFAULT_PRESET;
+            me->cur_conf = (struct hdmi_preset_conf *)_hdmi_preset2conf(HDMI_DEFAULT_PRESET);
+        } else {
+            preset = me->edid.preferred_preset(&me->edid);
+            if (preset == V4L2_DV_INVALID)
+                preset = HDMI_DEFAULT_PRESET;
+
+            me->is_dvi = !me->edid.supports_hdmi(&me->edid);
+            me->cur_preset = preset;
+            me->cur_conf = (struct hdmi_preset_conf *)_hdmi_preset2conf(preset);
         }
-
-        preset = me->edid.preferred_preset(&me->edid);
-        if (preset == V4L2_DV_INVALID)
-            preset = HDMI_DEFAULT_PRESET;
-
-        me->is_dvi = !me->edid.supports_hdmi(&me->edid);
-        me->cur_preset = preset;
-        me->cur_conf = (struct hdmi_preset_conf *)_hdmi_preset2conf(preset);
-#else
-        me->is_dvi = false;
-        me->cur_preset = HDMI_DEFAULT_PRESET;
-        me->cur_conf = (struct hdmi_preset_conf *)_hdmi_preset2conf(HDMI_DEFAULT_PRESET);
-#endif
-    } else {
     }
 
     switch_set_state(&me->hpd_switch, state);

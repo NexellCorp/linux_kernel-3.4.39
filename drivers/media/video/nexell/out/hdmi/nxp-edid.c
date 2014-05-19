@@ -49,58 +49,6 @@ static struct edid_preset {
 /**
  * internal function
  */
-// psw0523 test
-#if 0
-static int _edid_i2c_read(struct nxp_edid *me, u8 segment, u8 offset,
-        u8 *buf, size_t len)
-{
-    struct i2c_client *client = me->client;
-    int cnt = 0;
-    int ret;
-    struct i2c_msg msg[] = {
-        {
-            .addr = EDID_SEGMENT_ADDR,
-            .flags = segment ? 0 : I2C_M_IGNORE_NAK,
-            .len  = 1,
-            .buf  = &segment
-        },
-        {
-            .addr = EDID_ADDR,
-            .flags = 0,
-            .len  = 1,
-            .buf  = &offset
-        },
-        {
-            .addr = EDID_ADDR,
-            .flags = I2C_M_RD,
-            .len  = len,
-            .buf  = buf
-        }
-    };
-
-    if (!client) {
-        pr_err("%s: No i2c client\n", __func__);
-        return -ENODEV;
-    }
-
-    do {
-        ret = i2c_transfer(client->adapter, msg, ARRAY_SIZE(msg));
-        if (ret == ARRAY_SIZE(msg))
-            break;
-
-        pr_debug("%s: can't read data, retry %d\n", __func__, cnt);
-        msleep(25);
-        cnt++;
-    } while (cnt < EDID_MAX_I2C_RETRY_CNT);
-
-    if (cnt == EDID_MAX_I2C_RETRY_CNT) {
-        pr_err("%s: read timeout\n", __func__);
-        return -ETIMEDOUT;
-    }
-
-    return 0;
-}
-#else
 static int _edid_i2c_read(struct nxp_edid *me, u8 segment, u8 offset,
         u8 *buf, size_t len)
 {
@@ -123,7 +71,7 @@ static int _edid_i2c_read(struct nxp_edid *me, u8 segment, u8 offset,
         }
     };
 
-    printk("%s\n", __func__);
+    pr_debug("%s\n", __func__);
     if (!client) {
         pr_err("%s: No i2c client\n", __func__);
         return -ENODEV;
@@ -134,8 +82,7 @@ static int _edid_i2c_read(struct nxp_edid *me, u8 segment, u8 offset,
         if (ret == ARRAY_SIZE(msg))
             break;
 
-        /* pr_debug("%s: can't read data, retry %d\n", __func__, cnt); */
-        printk("%s: can't read data, retry %d\n", __func__, cnt);
+        pr_err("%s: can't read data, retry %d\n", __func__, cnt);
         msleep(25);
         cnt++;
         // psw0523 test
@@ -149,7 +96,6 @@ static int _edid_i2c_read(struct nxp_edid *me, u8 segment, u8 offset,
 
     return 0;
 }
-#endif
 
 static int _edid_read_block(struct nxp_edid *me, int block, u8 *buf, size_t len)
 {
@@ -174,7 +120,7 @@ static int _edid_read_block(struct nxp_edid *me, int block, u8 *buf, size_t len)
         return -EPROTO;
     }
 
-    printk("%s: sum 0x%x\n", __func__, sum);
+    pr_debug("%s: sum 0x%x\n", __func__, sum);
 
     return 0;
 }
@@ -257,8 +203,7 @@ static int nxp_edid_update(struct nxp_edid *me)
     int ret = 0;
     int i;
 
-    /* pr_debug("%s\n", __func__); */
-    printk("%s\n", __func__);
+    pr_debug("%s\n", __func__);
 
     me->edid_misc = 0;
 
@@ -269,7 +214,6 @@ static int nxp_edid_update(struct nxp_edid *me)
     print_hex_dump_bytes("EDID: ", DUMP_PREFIX_OFFSET, edid,
             ret * EDID_BLOCK_SIZE);
 
-    // TODO psw0523 test
     fb_edid_to_monspecs(edid, &specs);
     for (i = 0; i < ret; i++)
         fb_edid_add_monspecs(edid + i * EDID_BLOCK_SIZE, &specs);
@@ -306,7 +250,7 @@ static int nxp_edid_update(struct nxp_edid *me)
         else
             me->max_audio_ch = 2;
     } else {
-        me->max_audio_ch = 0;
+        me->max_audio_ch = 2;
     }
     pr_debug("%s: EDID Audio channels %d\n", __func__, me->max_audio_ch);
 
