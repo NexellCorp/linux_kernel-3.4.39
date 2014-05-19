@@ -81,7 +81,7 @@
 struct bosch_sensor_specific {
 	char *name;
 	/* 0 to 7 */
-	int place:3;
+	unsigned int place:3;
 	int irq;
 };
 

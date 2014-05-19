@@ -390,7 +390,7 @@ static int bt_bcm_rfkill_set_block(void *data, bool blocked)
 
 static int bt_bcm_rfkill_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	struct bt_bcm_lpm *lpm = &__bt_lpm;
+	struct bt_bcm_lpm *lpm = __bt_lpm;
 	nxp_soc_gpio_set_io_func(UART1_RTS_IO_NUM, UART1_RTS_ALT_IO);
 	nxp_soc_gpio_set_io_dir (UART1_RTS_IO_NUM, 1);
 	nxp_soc_gpio_set_out_value(UART1_RTS_IO_NUM, 1);
