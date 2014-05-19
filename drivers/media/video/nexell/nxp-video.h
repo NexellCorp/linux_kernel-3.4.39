@@ -108,6 +108,8 @@ struct nxp_video {
     struct v4l2_m2m_dev *m2m_dev;
     struct v4l2_m2m_ctx *m2m_ctx;
 
+    uint32_t open_count;
+
 };
 
 /* macros */

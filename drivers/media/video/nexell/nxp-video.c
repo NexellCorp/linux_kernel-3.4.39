@@ -1049,24 +1049,28 @@ static int nxp_video_open(struct file *file)
     int ret = 0;
 
     pr_debug("%s entered : %s\n", __func__, me->name);
-    memset(me->frame, 0, sizeof(struct nxp_video_frame)*2);
-    file->private_data = me;
 
-    sd = _get_remote_subdev(me,
-            me->type == NXP_VIDEO_TYPE_OUT ?
-            V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE : V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
-            &pad);
+    if (me->open_count == 0) {
+        memset(me->frame, 0, sizeof(struct nxp_video_frame)*2);
+        file->private_data = me;
 
-    if (sd)
-        ret = v4l2_subdev_call(sd, core, s_power, 1);
+        sd = _get_remote_subdev(me,
+                me->type == NXP_VIDEO_TYPE_OUT ?
+                V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE : V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
+                &pad);
 
-    if (me->m2m_dev) {
-        me->m2m_ctx = v4l2_m2m_ctx_init(me->m2m_dev, me, m2m_queue_init);
-        if (IS_ERR(me->m2m_ctx)) {
-            pr_err("%s: failed to v4l2_m2m_ctx_init()\n", __func__);
-            return -EINVAL;
+        if (sd)
+            ret = v4l2_subdev_call(sd, core, s_power, 1);
+
+        if (me->m2m_dev) {
+            me->m2m_ctx = v4l2_m2m_ctx_init(me->m2m_dev, me, m2m_queue_init);
+            if (IS_ERR(me->m2m_ctx)) {
+                pr_err("%s: failed to v4l2_m2m_ctx_init()\n", __func__);
+                return -EINVAL;
+            }
         }
     }
+    me->open_count++;
 
     pr_debug("%s exit\n", __func__);
 
@@ -1080,27 +1084,30 @@ static int nxp_video_release(struct file *file)
     struct v4l2_subdev *sd;
     int ret = 0;
 
-    sd = _get_remote_subdev(me,
-            me->type == NXP_VIDEO_TYPE_OUT ?
-            V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE : V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
-            &pad);
-    if (sd) {
-        ret = v4l2_subdev_call(sd, core, s_power, 0);
-        if (ret < 0) {
-            pr_err("%s: failed to subdev_call s_power(ret: %d)\n", __func__, ret);
-            return ret;
+    me->open_count--;
+    if (me->open_count == 0) {
+        sd = _get_remote_subdev(me,
+                me->type == NXP_VIDEO_TYPE_OUT ?
+                V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE : V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
+                &pad);
+        if (sd) {
+            ret = v4l2_subdev_call(sd, core, s_power, 0);
+            if (ret < 0) {
+                pr_err("%s: failed to subdev_call s_power(ret: %d)\n", __func__, ret);
+                return ret;
+            }
         }
+
+        if (me->vbq)
+            vb2_queue_release(me->vbq);
+
+        if (me->m2m_ctx) {
+            v4l2_m2m_ctx_release(me->m2m_ctx);
+            me->m2m_ctx = NULL;
+        }
+
+        file->private_data = 0;
     }
-
-    if (me->vbq)
-        vb2_queue_release(me->vbq);
-
-    if (me->m2m_ctx) {
-        v4l2_m2m_ctx_release(me->m2m_ctx);
-        me->m2m_ctx = NULL;
-    }
-
-    file->private_data = 0;
 
     return ret;
 }
