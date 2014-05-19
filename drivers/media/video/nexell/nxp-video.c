@@ -1052,7 +1052,6 @@ static int nxp_video_open(struct file *file)
 
     if (me->open_count == 0) {
         memset(me->frame, 0, sizeof(struct nxp_video_frame)*2);
-        file->private_data = me;
 
         sd = _get_remote_subdev(me,
                 me->type == NXP_VIDEO_TYPE_OUT ?
@@ -1071,6 +1070,7 @@ static int nxp_video_open(struct file *file)
         }
     }
     me->open_count++;
+    file->private_data = me;
 
     pr_debug("%s exit\n", __func__);
 
@@ -1106,8 +1106,8 @@ static int nxp_video_release(struct file *file)
             me->m2m_ctx = NULL;
         }
 
-        file->private_data = 0;
     }
+    file->private_data = 0;
 
     return ret;
 }
