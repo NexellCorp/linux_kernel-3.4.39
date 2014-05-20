@@ -155,7 +155,7 @@
  * 	I2C
  */
 #define CFG_I2C0_CLK							100000
-#define CFG_I2C1_CLK							10000	/* TOUCH */
+#define CFG_I2C1_CLK							100000	/* TOUCH */
 #define CFG_I2C2_CLK							100000
 
 /*------------------------------------------------------------------------------
