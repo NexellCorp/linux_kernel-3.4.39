@@ -237,7 +237,7 @@
  *	TOUCH
  */
 #define	CFG_IO_TOUCH_PENDOWN_DETECT			(PAD_GPIO_E + 11)
-//#define	CFG_IO_TOUCH_RESET_PIN				(PAD_GPIO_C + 12)						/* for aw5306 */
+#define	CFG_IO_TOUCH_RESET_PIN				(PAD_GPIO_C + 12)						/* for aw5306 */
 
 /*------------------------------------------------------------------------------
  *	GPIO EEPROM
@@ -262,7 +262,7 @@
 /*------------------------------------------------------------------------------
  *	AUDIO AMP for wm8976
  */
-#define CFG_IO_AUDIO_AMP_POWER				(PAD_GPIO_E + 22)		/* GPIO */
+#define CFG_IO_AUDIO_AMP_POWER				(PAD_GPIO_D + 15)		/* GPIO */
 
 
 #endif	/* __CFG_GPIO_H__ */
