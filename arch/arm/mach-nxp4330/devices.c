@@ -585,7 +585,7 @@ static struct vr_gpu_device_data vr_gpu_data =
 	/* Mali Dynamic power domain configuration in sequence from 0-11
 	 *  GP  PP0 PP1  PP2  PP3  PP4  PP5  PP6  PP7, L2$0 L2$1 L2$2
 	 */
-	.pmu_domain_config = {0x1, 0x2, 0x4, 0x4, 0x4, 0x8, 0x8, 0x8, 0x8, 0x1, 0x2, 0x8},
+	.pmu_domain_config = {0x1, 0x2, 0x4, 0, 0, 0, 0, 0, 0, 0x1, 0, 0},
 };
 
 static struct resource vr_gpu_resources[] =

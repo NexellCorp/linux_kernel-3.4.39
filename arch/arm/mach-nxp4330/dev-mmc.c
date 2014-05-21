@@ -111,10 +111,13 @@ static int __dwmci_get_ocr(u32 slot_id)
 static int __dwmci_initialize(int ch, ulong rate)
 {
 	struct clk *clk = NULL;
+	int reset = RESET_ID_SDMMC0 + ch;
 	char s[20];
 
+	if (!nxp_soc_rsc_status(reset))
+		nxp_soc_rsc_reset(reset);
+
 	sprintf(s, "%s.%d", DEV_NAME_SDHC, ch);
-	nxp_soc_rsc_reset(RESET_ID_SDMMC0 + ch);	/* reset */
 	clk = clk_get(NULL, s);
 	clk_set_rate(clk, rate);
 	clk_enable(clk);
@@ -123,6 +126,13 @@ static int __dwmci_initialize(int ch, ulong rate)
 
 static void __dwmci_suspend(struct dw_mci *host)
 {
+	struct clk *clk = NULL;
+	int ch = host->dev.id;
+	char s[20];
+
+	sprintf(s, "%s.%d", DEV_NAME_SDHC, ch);
+	clk = clk_get(NULL, s);
+	clk_disable(clk);
 }
 
 static void __dwmci_resume(struct dw_mci *host)
