@@ -235,7 +235,7 @@ static struct i2c_board_info __initdata gslX680_i2c_bdi = {
 #define CONFIG_ANDROID_VIBRATION
 #include <../../../../drivers/staging/android/timed_gpio.h>
 
-#define ANDROID_VIBRATION_GPIO    (PAD_GPIO_D + 18)
+#define ANDROID_VIBRATION_GPIO    (PAD_GPIO_A + 18)
 static struct timed_gpio android_vibration = {
     .name         = "vibrator",
     .gpio         = ANDROID_VIBRATION_GPIO,
@@ -1420,16 +1420,16 @@ void __init nxp_board_devices_register(void)
     printk("plat: register spidev\n");
 #endif
 
-/*
 #if defined(CONFIG_TOUCHSCREEN_AW5306)
 	printk("plat: add touch(aw5306) device\n");
 	i2c_register_board_info(AW5306_I2C_BUS, &aw5306_i2c_bdi, 1);
 #endif
-*/
+
 #if defined(CONFIG_TOUCHSCREEN_GSLX680)
 	printk("plat: add touch(gslX680) device\n");
 	i2c_register_board_info(GSLX680_I2C_BUS, &gslX680_i2c_bdi, 1);
 #endif
+
 
 #if defined(CONFIG_SENSORS_MMA7660) || defined(CONFIG_SENSORS_MMA7660_MODULE)
 	printk("plat: add g-sensor mma7660\n");

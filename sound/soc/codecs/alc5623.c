@@ -32,10 +32,11 @@
 
 #include "alc5623.h"
 
+static struct i2c_client *i2c;
 static int caps_charge = 2000;
 module_param(caps_charge, int, 0);
 MODULE_PARM_DESC(caps_charge, "ALC5623 cap charge time (msecs)");
-
+static int alc5623_set_bias_level(struct snd_soc_codec *codec,enum snd_soc_bias_level level);
 /* codec private data */
 struct alc5623_priv {
 	enum snd_soc_control_type control_type;
@@ -50,17 +51,18 @@ static void alc5623_fill_cache(struct snd_soc_codec *codec)
 {
 	int i, step = codec->driver->reg_cache_step;
 	u16 *cache = codec->reg_cache;
-
+    printk("%s .....%d.......\n",__func__,__LINE__);
 	/* not really efficient ... */
 	codec->cache_bypass = 1;
 	for (i = 0 ; i < codec->driver->reg_cache_size ; i += step)
-		cache[i] = snd_soc_read(codec, i);
+		cache[i] = i2c_smbus_read_word_data(i2c, i);
 	codec->cache_bypass = 0;
 }
 
 static inline int alc5623_reset(struct snd_soc_codec *codec)
 {
-	return snd_soc_write(codec, ALC5623_RESET, 0);
+    printk("%s .....%d.......\n",__func__,__LINE__);
+	return i2c_smbus_write_word_data(i2c, ALC5623_RESET, 0);
 }
 
 static int amp_mixer_event(struct snd_soc_dapm_widget *w,
@@ -70,16 +72,17 @@ static int amp_mixer_event(struct snd_soc_dapm_widget *w,
 	/* need to write to 'index-46h' register :        */
 	/* so write index num (here 0x46) to reg 0x6a     */
 	/* and then 0xffff/0 to reg 0x6c                  */
-	snd_soc_write(w->codec, ALC5623_HID_CTRL_INDEX, 0x46);
+  /*  printk("%s .....%d.......\n",__func__,__LINE__);
+	i2c_smbus_write_word_data(i2c, ALC5623_HID_CTRL_INDEX, 0x46);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
-		snd_soc_write(w->codec, ALC5623_HID_CTRL_DATA, 0xFFFF);
+		i2c_smbus_write_word_data(i2c, ALC5623_HID_CTRL_DATA, 0xFFFF);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
-		snd_soc_write(w->codec, ALC5623_HID_CTRL_DATA, 0);
+		i2c_smbus_write_word_data(i2c, ALC5623_HID_CTRL_DATA, 0);
 		break;
-	}
+	}*/
 
 	return 0;
 }
@@ -529,21 +532,22 @@ static const struct _pll_div codec_slave_pll_div[] = {
 static int alc5623_set_dai_pll(struct snd_soc_dai *codec_dai, int pll_id,
 		int source, unsigned int freq_in, unsigned int freq_out)
 {
-	int i;
+/*	int i;
 	struct snd_soc_codec *codec = codec_dai->codec;
 	int gbl_clk = 0, pll_div = 0;
 	u16 reg;
-
+    printk("%s .....%d.......\n",__func__,__LINE__);
 	if (pll_id < ALC5623_PLL_FR_MCLK || pll_id > ALC5623_PLL_FR_BCK)
 		return -ENODEV;
 
-	/* Disable PLL power */
-	snd_soc_update_bits(codec, ALC5623_PWR_MANAG_ADD2,
-				ALC5623_PWR_ADD2_PLL,
-				0);
 
-	/* pll is not used in slave mode */
-	reg = snd_soc_read(codec, ALC5623_DAI_CONTROL);
+	//snd_soc_update_bits(codec, ALC5623_PWR_MANAG_ADD2,
+	//			ALC5623_PWR_ADD2_PLL,
+	//			0);
+    i2c_smbus_write_word_data(i2c,ALC5623_PWR_MANAG_ADD2,i2c_smbus_read_word_data(i2c,ALC5623_PWR_MANAG_ADD2)&~ALC5623_PWR_ADD2_PLL);
+
+
+	reg = i2c_smbus_read_word_data(codec, ALC5623_DAI_CONTROL);
 	if (reg & ALC5623_DAI_SDP_SLAVE_MODE)
 		return 0;
 
@@ -555,7 +559,7 @@ static int alc5623_set_dai_pll(struct snd_soc_dai *codec_dai, int pll_id,
 		for (i = 0; i < ARRAY_SIZE(codec_master_pll_div); i++) {
 			if (codec_master_pll_div[i].pll_in == freq_in
 			   && codec_master_pll_div[i].pll_out == freq_out) {
-				/* PLL source from MCLK */
+				
 				pll_div  = codec_master_pll_div[i].regvalue;
 				break;
 			}
@@ -565,7 +569,7 @@ static int alc5623_set_dai_pll(struct snd_soc_dai *codec_dai, int pll_id,
 		for (i = 0; i < ARRAY_SIZE(codec_slave_pll_div); i++) {
 			if (codec_slave_pll_div[i].pll_in == freq_in
 			   && codec_slave_pll_div[i].pll_out == freq_out) {
-				/* PLL source from Bitclk */
+		
 				gbl_clk = ALC5623_GBL_CLK_PLL_SOUR_SEL_BITCLK;
 				pll_div = codec_slave_pll_div[i].regvalue;
 				break;
@@ -579,14 +583,16 @@ static int alc5623_set_dai_pll(struct snd_soc_dai *codec_dai, int pll_id,
 	if (!pll_div)
 		return -EINVAL;
 
-	snd_soc_write(codec, ALC5623_GLOBAL_CLK_CTRL_REG, gbl_clk);
-	snd_soc_write(codec, ALC5623_PLL_CTRL, pll_div);
-	snd_soc_update_bits(codec, ALC5623_PWR_MANAG_ADD2,
-				ALC5623_PWR_ADD2_PLL,
-				ALC5623_PWR_ADD2_PLL);
-	gbl_clk |= ALC5623_GBL_CLK_SYS_SOUR_SEL_PLL;
-	snd_soc_write(codec, ALC5623_GLOBAL_CLK_CTRL_REG, gbl_clk);
+	i2c_smbus_write_word_data(i2c, ALC5623_GLOBAL_CLK_CTRL_REG, gbl_clk);
+	i2c_smbus_write_word_data(i2c, ALC5623_PLL_CTRL, pll_div);
+	//snd_soc_update_bits(codec, ALC5623_PWR_MANAG_ADD2,
+	//			ALC5623_PWR_ADD2_PLL,
+	//			ALC5623_PWR_ADD2_PLL);
 
+    i2c_smbus_write_word_data(i2c,ALC5623_PWR_MANAG_ADD2,i2c_smbus_read_word_data(i2c,ALC5623_PWR_MANAG_ADD2)|ALC5623_PWR_ADD2_PLL);
+	gbl_clk |= ALC5623_GBL_CLK_SYS_SOUR_SEL_PLL;
+	i2c_smbus_write_word_data(i2c, ALC5623_GLOBAL_CLK_CTRL_REG, gbl_clk);
+*/
 	return 0;
 }
 
@@ -608,6 +614,178 @@ static const struct _coeff_div coeff_div[] = {
 	{384*1, 0x0c6b},
 };
 
+
+static int init_regs[][2]=
+{
+    {0x02,0x0000},
+    {0x04,0x0808},
+    {0x14,0x3f3f},
+    {0x0c,0x0808},
+    {0x22,0x0101},
+    {0x0a,0x0202},
+    {0x62,0x880e},
+    {0x12,0xff9f},
+    {0x34,0x8000},
+    {0x36,0x066f},
+    {0x40,0x3410},
+    #if 1
+    {0x1c,0x8740},
+    #else
+    {0x1c,0xA740},
+    {0x6a,0x0046},
+    {0x6c,0xFFFF},
+    #endif
+    {0x5a,0x0000},
+    //{0x3A,0x1d60},
+    //{0x3C,0xf7ff},
+    //{0x3E,0xf6ff},
+    {0x02,0x0000},
+    {0x04,0x0000},
+    {0x06,0x0000},
+    {0x0c,0x0000},
+};
+
+#define REG_INIT_NUM (sizeof(init_regs)/sizeof(init_regs[0]))
+
+static int set_init_regs(struct snd_soc_codec *codec)
+{
+    int i=0,reg,ret;
+    for (i=0;i<REG_INIT_NUM;i++) {
+        //snd_soc_write(codec, init_regs[i][0], init_regs[i][1]);
+        ret=i2c_smbus_write_word_data(i2c,(u8)init_regs[i][0], (u16)init_regs[i][1]);
+        if (ret<0) {
+            printk("i2c_smbus_write_word_data error %d\n",ret);
+        }
+        msleep(10); 
+        reg= i2c_smbus_read_word_data(i2c,(u8)init_regs[i][0]);
+        printk("Read reg[0x%02x] = 0x%04x \n",init_regs[i][0],reg);
+
+
+    }
+    printk("%s over %d regs \n",__func__,REG_INIT_NUM);
+    return 0;
+}
+
+static unsigned int ALC5625_read_IIC(struct i2c_client *client, unsigned char addr)
+{
+	u8 data[2] = {0};
+	unsigned int value = 0;
+	data[0] = addr;
+	if(i2c_master_send(client, data, 1) == 1)
+	{
+		i2c_master_recv(client, data, 2);
+		value = (data[0] << 8) | data[1];
+		return value;
+	}
+	else
+		printk("i2c read error\n");
+	return 0;
+}
+
+
+static void ALC5625_write_IIC(struct i2c_client *client, unsigned char addr, unsigned int value)
+{
+	u8 data[3];
+	data[0] = addr;
+	data[1] = (value & 0xff00) >> 8;
+	data[2] = value & 0x00ff;	
+	if(i2c_master_send(client, data, 3) != 3)
+		printk("i2c write error\n");
+}
+
+static void ALC5625_write_IICMask(struct i2c_client *client, u8 Offset, u16 Data,u16 Mask)
+{
+	u16 CodecData;
+    if(Mask!=0xffff) {
+        CodecData = ALC5625_read_IIC(client,Offset);
+        CodecData&=~Mask;
+        CodecData|=Data&Mask;
+        ALC5625_write_IIC(client,Offset,CodecData);
+    }
+    else{
+        ALC5625_write_IIC(client,Offset,Data);
+    }
+}
+
+
+typedef struct
+{
+    u8 CodecIndex;
+    u16 wCodecValue;
+}CodecRegister;
+
+static CodecRegister Set_Codec_Reg_Init1[]=
+{
+	{RT5621_SPK_OUT_VOL			,0x0000},//default speaker to 0DB
+	{RT5621_HP_OUT_VOL			,0x0808},//default HP to -12DB
+	{RT5621_ADC_REC_MIXER		,0x3F3F},//default Record is MicIn
+	{RT5621_STEREO_DAC_VOL		,0x0000},//default stereo DAC volume
+	{RT5621_MIC_CTRL			,0x0101},//set boost to +20DB for Mic10 x0400
+
+
+	{RT5621_LINE_IN_VOL			,0x0202},//set LineIN to HP(b15),SP(b14),MONO(b13) MIX
+
+	{RT5621_EQ_CTRL			,0x880E},//EQ
+	{RT5621_ADC_REC_GAIN			,0xFF9F},//ADC Gain
+	
+	{RT5621_AUDIO_INTERFACE		,0x8000},//set I2S codec to slave mode
+	{RT5621_STEREO_AD_DA_CLK_CTRL,0x066d},//AD-DA Filter clock is 256 fs
+	//{RT5621_STEREO_AD_DA_CLK_CTRL,0x0B50},//AD-DA Filter clock is 256 fs
+	{RT5621_ADD_CTRL_REG		,0x3410},//set Class AB & D ratio to 1 AVdd  0x5f00
+#if	1
+
+	{RT5621_OUTPUT_MIXER_CTRL	,0x8740},//default output mixer control,CLASS AB
+
+#else
+
+	{RT5621_OUTPUT_MIXER_CTRL	,0xA740},//default output mixer control,CLASS D	
+	{RT5621_HID_CTRL_INDEX		,0x46},	
+	{RT5621_HID_CTRL_DATA		,0xFFFF},//Power on all bit of  Class D
+	
+#endif
+
+	{RT5621_JACK_DET_CTRL   ,  0x0180}, //JACK Detect setting
+
+};
+
+#define SET_CODEC_REG_INIT_NUM1 (sizeof(Set_Codec_Reg_Init1)/sizeof(CodecRegister))
+
+static void init_codec(struct i2c_client *client)
+{
+    int i;
+    u16 PowerDownState=0;
+    u32 Vender1,Vender2;
+    ALC5625_write_IIC(client,0,0xffff);
+
+	for(i=0;i<=10000;i++);
+	
+	Vender1 = ALC5625_read_IIC(client,0x7C);
+	Vender2 = ALC5625_read_IIC(client,0x7E);
+
+	printk("ALC5621 INIT:vender id1 0x%x, id2 0x%x\r\n", Vender1, Vender2);
+
+	//ALC5625_write_IICMask(RT5621_PWR_MANAG_ADD3,PWR_MAIN_BIAS,PWR_MAIN_BIAS);		//power on main bias	
+	ALC5625_write_IICMask(client,RT5621_PWR_MANAG_ADD3,PWR_MAIN_BIAS|PWR_LINEIN_L_VOL|PWR_LINEIN_R_VOL,PWR_MAIN_BIAS|PWR_LINEIN_L_VOL|PWR_LINEIN_R_VOL);		//power on main bias and Line in	
+	ALC5625_write_IICMask(client,RT5621_PWR_MANAG_ADD2,PWR_VREF,PWR_VREF);				//power on Vref for All analog circuit
+
+	//initize customize setting 		
+	for(i=0;i<SET_CODEC_REG_INIT_NUM1;i++)
+	{
+		ALC5625_write_IIC(client, Set_Codec_Reg_Init1[i].CodecIndex,Set_Codec_Reg_Init1[i].wCodecValue); 
+	}	
+ 	
+	//ALC5625_write_IIC(client,RT5621_PWR_MANAG_ADD1,~PowerDownState);
+	//ALC5625_write_IIC(client,RT5621_PWR_MANAG_ADD2,~PowerDownState);
+	//ALC5625_write_IIC(client,RT5621_PWR_MANAG_ADD3,~PowerDownState);
+
+	ALC5625_write_IICMask(client,RT5621_HP_OUT_VOL, RT_L_MUTE|RT_R_MUTE,RT_L_MUTE|RT_R_MUTE);	//Mute headphone right/left channel
+	ALC5625_write_IICMask(client,RT5621_SPK_OUT_VOL,RT_L_MUTE|RT_R_MUTE,RT_L_MUTE|RT_R_MUTE);	//Mute Speaker right/left channel
+
+    printk("%s .....%d.......\n",__func__,__LINE__);
+
+}
+
+
 static int get_coeff(struct snd_soc_codec *codec, int rate)
 {
 	struct alc5623_priv *alc5623 = snd_soc_codec_get_drvdata(codec);
@@ -628,7 +806,8 @@ static int alc5623_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 {
 	struct snd_soc_codec *codec = codec_dai->codec;
 	struct alc5623_priv *alc5623 = snd_soc_codec_get_drvdata(codec);
-
+    printk("%s  freq is %d \n",__func__,freq);
+    
 	switch (freq) {
 	case  8192000:
 	case 11289600:
@@ -647,10 +826,12 @@ static int alc5623_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 static int alc5623_set_dai_fmt(struct snd_soc_dai *codec_dai,
 		unsigned int fmt)
 {
-	struct snd_soc_codec *codec = codec_dai->codec;
+	/*struct snd_soc_codec *codec = codec_dai->codec;
 	u16 iface = 0;
+    int ret;
+    printk("%s .....%d.......\n",__func__,__LINE__);
 
-	/* set master/slave audio interface */
+
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
 	case SND_SOC_DAIFMT_CBM_CFM:
 		iface = ALC5623_DAI_SDP_MASTER_MODE;
@@ -661,8 +842,8 @@ static int alc5623_set_dai_fmt(struct snd_soc_dai *codec_dai,
 	default:
 		return -EINVAL;
 	}
+    printk("%s .....%d.......\n",__func__,__LINE__);
 
-	/* interface format */
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:
 		iface |= ALC5623_DAI_I2S_DF_I2S;
@@ -682,8 +863,8 @@ static int alc5623_set_dai_fmt(struct snd_soc_dai *codec_dai,
 	default:
 		return -EINVAL;
 	}
+    printk("%s .....%d.......\n",__func__,__LINE__);
 
-	/* clock inversion */
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
 	case SND_SOC_DAIFMT_NB_NF:
 		break;
@@ -699,22 +880,26 @@ static int alc5623_set_dai_fmt(struct snd_soc_dai *codec_dai,
 		return -EINVAL;
 	}
 
-	return snd_soc_write(codec, ALC5623_DAI_CONTROL, iface);
+    ret=i2c_smbus_write_word_data(i2c, ALC5623_DAI_CONTROL, iface);
+
+    printk("%s .......ret:%d....over \n",__func__,ret);*/
+
+	return 0;
 }
 
 static int alc5623_pcm_hw_params(struct snd_pcm_substream *substream,
 		struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
 {
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	/*struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_codec *codec = rtd->codec;
 	struct alc5623_priv *alc5623 = snd_soc_codec_get_drvdata(codec);
 	int coeff, rate;
 	u16 iface;
 
-	iface = snd_soc_read(codec, ALC5623_DAI_CONTROL);
+	iface = i2c_smbus_read_word_data(i2c, ALC5623_DAI_CONTROL);
 	iface &= ~ALC5623_DAI_I2S_DL_MASK;
+    printk("%s .....%d.......\n",__func__,__LINE__);
 
-	/* bit size */
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S16_LE:
 		iface |= ALC5623_DAI_I2S_DL_16;
@@ -731,9 +916,10 @@ static int alc5623_pcm_hw_params(struct snd_pcm_substream *substream,
 	default:
 		return -EINVAL;
 	}
+    //set_init_regs(codec);
 
-	/* set iface & srate */
-	snd_soc_write(codec, ALC5623_DAI_CONTROL, iface);
+	//snd_soc_write(codec, ALC5623_DAI_CONTROL, iface);
+    i2c_smbus_write_word_data(i2c,ALC5623_DAI_CONTROL, iface);
 	rate = params_rate(params);
 	coeff = get_coeff(codec, rate);
 	if (coeff < 0)
@@ -742,8 +928,11 @@ static int alc5623_pcm_hw_params(struct snd_pcm_substream *substream,
 	coeff = coeff_div[coeff].regvalue;
 	dev_dbg(codec->dev, "%s: sysclk=%d,rate=%d,coeff=0x%04x\n",
 		__func__, alc5623->sysclk, rate, coeff);
-	snd_soc_write(codec, ALC5623_STEREO_AD_DA_CLK_CTRL, coeff);
+	//snd_soc_write(codec, ALC5623_STEREO_AD_DA_CLK_CTRL, coeff);
+    i2c_smbus_write_word_data(i2c,ALC5623_STEREO_AD_DA_CLK_CTRL, coeff);
 
+    //init_codec(i2c);*/
+    //alc5623_set_bias_level(codec,SND_SOC_BIAS_ON);
 	return 0;
 }
 
@@ -751,12 +940,15 @@ static int alc5623_mute(struct snd_soc_dai *dai, int mute)
 {
 	struct snd_soc_codec *codec = dai->codec;
 	u16 hp_mute = ALC5623_MISC_M_DAC_L_INPUT | ALC5623_MISC_M_DAC_R_INPUT;
-	u16 mute_reg = snd_soc_read(codec, ALC5623_MISC_CTRL) & ~hp_mute;
-
+	u16 mute_reg = i2c_smbus_read_word_data(i2c, ALC5623_MISC_CTRL) & ~hp_mute;
+    printk("%s .....%d.....mute : %d..\n",__func__,__LINE__,mute);
 	if (mute)
 		mute_reg |= hp_mute;
 
-	return snd_soc_write(codec, ALC5623_MISC_CTRL, mute_reg);
+	//return snd_soc_write(codec, ALC5623_MISC_CTRL, mute_reg);
+    return i2c_smbus_write_word_data(i2c,ALC5623_MISC_CTRL, mute_reg);
+    return 0;
+    
 }
 
 #define ALC5623_ADD2_POWER_EN (ALC5623_PWR_ADD2_VREF \
@@ -777,57 +969,70 @@ static int alc5623_mute(struct snd_soc_dai *dai, int mute)
 static void enable_power_depop(struct snd_soc_codec *codec)
 {
 	struct alc5623_priv *alc5623 = snd_soc_codec_get_drvdata(codec);
+    printk("%s .....%d.......\n",__func__,__LINE__);
+	//snd_soc_update_bits(codec, ALC5623_PWR_MANAG_ADD1,
+	//			ALC5623_PWR_ADD1_SOFTGEN_EN,
+	//			ALC5623_PWR_ADD1_SOFTGEN_EN);
 
-	snd_soc_update_bits(codec, ALC5623_PWR_MANAG_ADD1,
-				ALC5623_PWR_ADD1_SOFTGEN_EN,
-				ALC5623_PWR_ADD1_SOFTGEN_EN);
+    i2c_smbus_write_word_data(i2c,ALC5623_PWR_MANAG_ADD1,i2c_smbus_read_word_data(i2c,ALC5623_PWR_MANAG_ADD1)|ALC5623_PWR_ADD1_SOFTGEN_EN);
 
-	snd_soc_write(codec, ALC5623_PWR_MANAG_ADD3, ALC5623_ADD3_POWER_EN);
-
-	snd_soc_update_bits(codec, ALC5623_MISC_CTRL,
-				ALC5623_MISC_HP_DEPOP_MODE2_EN,
-				ALC5623_MISC_HP_DEPOP_MODE2_EN);
+	//snd_soc_write(codec, ALC5623_PWR_MANAG_ADD3, ALC5623_ADD3_POWER_EN);
+    i2c_smbus_write_word_data(i2c, ALC5623_PWR_MANAG_ADD3,i2c_smbus_read_word_data(i2c,ALC5623_PWR_MANAG_ADD3)|ALC5623_ADD3_POWER_EN);
+	//snd_soc_update_bits(codec, ALC5623_MISC_CTRL,
+	//			ALC5623_MISC_HP_DEPOP_MODE2_EN,
+	//			ALC5623_MISC_HP_DEPOP_MODE2_EN);
+    i2c_smbus_write_word_data(i2c,ALC5623_MISC_CTRL,i2c_smbus_read_word_data(i2c,ALC5623_MISC_CTRL)|ALC5623_MISC_HP_DEPOP_MODE2_EN);
 
 	msleep(500);
 
-	snd_soc_write(codec, ALC5623_PWR_MANAG_ADD2, ALC5623_ADD2_POWER_EN);
+	//snd_soc_write(codec, ALC5623_PWR_MANAG_ADD2, ALC5623_ADD2_POWER_EN);
+    i2c_smbus_write_word_data(i2c, ALC5623_PWR_MANAG_ADD2, i2c_smbus_read_word_data(i2c,ALC5623_PWR_MANAG_ADD2)|ALC5623_ADD2_POWER_EN);
+	// avoid writing '1' into 5622 reserved bits 
+	//if (alc5623->id == 0x22)
+	//	snd_soc_write(codec, ALC5623_PWR_MANAG_ADD1,
+	//		ALC5623_ADD1_POWER_EN_5622);
+	//else
+	//	snd_soc_write(codec, ALC5623_PWR_MANAG_ADD1,
+	//		ALC5623_ADD1_POWER_EN);
+    i2c_smbus_write_word_data(i2c, ALC5623_PWR_MANAG_ADD1,i2c_smbus_read_word_data(i2c,ALC5623_PWR_MANAG_ADD1)|ALC5623_ADD1_POWER_EN);
 
-	/* avoid writing '1' into 5622 reserved bits */
-	if (alc5623->id == 0x22)
-		snd_soc_write(codec, ALC5623_PWR_MANAG_ADD1,
-			ALC5623_ADD1_POWER_EN_5622);
-	else
-		snd_soc_write(codec, ALC5623_PWR_MANAG_ADD1,
-			ALC5623_ADD1_POWER_EN);
-
-	/* disable HP Depop2 */
-	snd_soc_update_bits(codec, ALC5623_MISC_CTRL,
-				ALC5623_MISC_HP_DEPOP_MODE2_EN,
-				0);
+	//snd_soc_update_bits(codec, ALC5623_MISC_CTRL,
+	//			ALC5623_MISC_HP_DEPOP_MODE2_EN,
+	//			0);
+    i2c_smbus_write_word_data(i2c,ALC5623_MISC_CTRL,i2c_smbus_read_word_data(i2c,ALC5623_MISC_CTRL)&~ALC5623_MISC_HP_DEPOP_MODE2_EN);
 
 }
 
 static int alc5623_set_bias_level(struct snd_soc_codec *codec,
 				      enum snd_soc_bias_level level)
 {
+    printk("%s .....%d.......\n",__func__,__LINE__);
 	switch (level) {
 	case SND_SOC_BIAS_ON:
-		enable_power_depop(codec);
+        //init_codec(i2c);
+        ALC5625_write_IIC(i2c,RT5621_PWR_MANAG_ADD1,0xcd60);
+        ALC5625_write_IIC(i2c,RT5621_PWR_MANAG_ADD2,0xf7ff);
+        ALC5625_write_IIC(i2c,RT5621_PWR_MANAG_ADD3,0xf6ff);
+        ALC5625_write_IICMask(i2c,RT5621_SPK_OUT_VOL		,~(RT_L_MUTE|RT_R_MUTE),RT_L_MUTE|RT_R_MUTE);	//Mute Speaker right/left channel
+        ALC5625_write_IICMask(i2c,RT5621_HP_OUT_VOL 		,~(RT_L_MUTE|RT_R_MUTE),RT_L_MUTE|RT_R_MUTE);	//Mute headphone right/left channel
+        //ALC5625_write_IICMask(client,RT5621_MONO_AUX_OUT_VOL,0,RT_L_MUTE|RT_R_MUTE);	//Mute Aux/Mono right/left channel
+        ALC5625_write_IIC(i2c,RT5621_STEREO_DAC_VOL	,0x0808);	//Mute DAC to HP,Speaker,Mono Mixer
+        enable_power_depop(codec);
 		break;
 	case SND_SOC_BIAS_PREPARE:
 		break;
 	case SND_SOC_BIAS_STANDBY:
-		/* everything off except vref/vmid, */
-		snd_soc_write(codec, ALC5623_PWR_MANAG_ADD2,
+
+		i2c_smbus_write_word_data(i2c, ALC5623_PWR_MANAG_ADD2,
 				ALC5623_PWR_ADD2_VREF);
-		snd_soc_write(codec, ALC5623_PWR_MANAG_ADD3,
+
+		i2c_smbus_write_word_data(i2c, ALC5623_PWR_MANAG_ADD3,
 				ALC5623_PWR_ADD3_MAIN_BIAS);
 		break;
 	case SND_SOC_BIAS_OFF:
-		/* everything off, dac mute, inactive */
-		snd_soc_write(codec, ALC5623_PWR_MANAG_ADD2, 0);
-		snd_soc_write(codec, ALC5623_PWR_MANAG_ADD3, 0);
-		snd_soc_write(codec, ALC5623_PWR_MANAG_ADD1, 0);
+		i2c_smbus_write_word_data(i2c, ALC5623_PWR_MANAG_ADD2, 0);
+		i2c_smbus_write_word_data(i2c, ALC5623_PWR_MANAG_ADD3, 0);
+		i2c_smbus_write_word_data(i2c, ALC5623_PWR_MANAG_ADD1, 0);
 		break;
 	}
 	codec->dapm.bias_level = level;
@@ -879,13 +1084,14 @@ static int alc5623_resume(struct snd_soc_codec *codec)
 	int i, step = codec->driver->reg_cache_step;
 	u16 *cache = codec->reg_cache;
 
-	/* Sync reg_cache with the hardware */
+
 	for (i = 2 ; i < codec->driver->reg_cache_size ; i += step)
-		snd_soc_write(codec, i, cache[i]);
+		//snd_soc_write(codec, i, cache[i]);
+        i2c_smbus_write_word_data(i2c, i, cache[i]);
 
 	alc5623_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 
-	/* charge alc5623 caps */
+
 	if (codec->dapm.suspend_bias_level == SND_SOC_BIAS_ON) {
 		alc5623_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 		codec->dapm.bias_level = SND_SOC_BIAS_ON;
@@ -900,6 +1106,7 @@ static int alc5623_probe(struct snd_soc_codec *codec)
 	struct alc5623_priv *alc5623 = snd_soc_codec_get_drvdata(codec);
 	struct snd_soc_dapm_context *dapm = &codec->dapm;
 	int ret;
+    printk("%s ............\n",__func__);
 
 	ret = snd_soc_codec_set_cache_io(codec, 8, 16, alc5623->control_type);
 	if (ret < 0) {
@@ -908,18 +1115,25 @@ static int alc5623_probe(struct snd_soc_codec *codec)
 	}
 
 	alc5623_reset(codec);
-	alc5623_fill_cache(codec);
+   
+	
 
 	/* power on device */
 	alc5623_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-
+    
 	if (alc5623->add_ctrl) {
-		snd_soc_write(codec, ALC5623_ADD_CTRL_REG,
+		//snd_soc_write(codec, ALC5623_ADD_CTRL_REG,
+		//		alc5623->add_ctrl);
+
+        i2c_smbus_write_word_data(i2c, ALC5623_ADD_CTRL_REG,
 				alc5623->add_ctrl);
+
 	}
 
 	if (alc5623->jack_det_ctrl) {
-		snd_soc_write(codec, ALC5623_JACK_DET_CTRL,
+		//snd_soc_write(codec, ALC5623_JACK_DET_CTRL,
+		//		alc5623->jack_det_ctrl);
+        i2c_smbus_write_word_data(i2c, ALC5623_JACK_DET_CTRL,
 				alc5623->jack_det_ctrl);
 	}
 
@@ -965,6 +1179,8 @@ static int alc5623_probe(struct snd_soc_codec *codec)
 		return -EINVAL;
 	}
 
+    init_codec(i2c);
+    alc5623_fill_cache(codec);
 	return ret;
 }
 
@@ -999,18 +1215,21 @@ static __devinit int alc5623_i2c_probe(struct i2c_client *client,
 	struct alc5623_priv *alc5623;
 	int ret, vid1, vid2;
 
-	vid1 = i2c_smbus_read_word_data(client, ALC5623_VENDOR_ID1);
+    printk("%s ............\n",__func__);
+
+	/*vid1 = i2c_smbus_read_word_data(client, ALC5623_VENDOR_ID1);
 	if (vid1 < 0) {
 		dev_err(&client->dev, "failed to read I2C\n");
 		return -EIO;
 	}
 	vid1 = ((vid1 & 0xff) << 8) | (vid1 >> 8);
 
-	vid2 = i2c_smbus_read_byte_data(client, ALC5623_VENDOR_ID2);
+	vid2 = i2c_smbus_read_word_data(client, ALC5623_VENDOR_ID2);
 	if (vid2 < 0) {
 		dev_err(&client->dev, "failed to read I2C\n");
 		return -EIO;
 	}
+    vid2 &=0xff;
 
 	if ((vid1 != 0x10ec) || (vid2 != id->driver_data)) {
 		dev_err(&client->dev, "unknown or wrong codec\n");
@@ -1021,7 +1240,7 @@ static __devinit int alc5623_i2c_probe(struct i2c_client *client,
 	}
 
 	dev_dbg(&client->dev, "Found codec id : alc56%02x\n", vid2);
-
+    printk("Found codec id : alc56%02x\n", vid2);*/
 	alc5623 = devm_kzalloc(&client->dev, sizeof(struct alc5623_priv),
 			       GFP_KERNEL);
 	if (alc5623 == NULL)
@@ -1032,7 +1251,7 @@ static __devinit int alc5623_i2c_probe(struct i2c_client *client,
 		alc5623->add_ctrl = pdata->add_ctrl;
 		alc5623->jack_det_ctrl = pdata->jack_det_ctrl;
 	}
-
+    vid2 = 0x21;
 	alc5623->id = vid2;
 	switch (alc5623->id) {
 	case 0x21:
@@ -1049,6 +1268,7 @@ static __devinit int alc5623_i2c_probe(struct i2c_client *client,
 	}
 
 	i2c_set_clientdata(client, alc5623);
+    i2c=client;
 	alc5623->control_type = SND_SOC_I2C;
 
 	ret =  snd_soc_register_codec(&client->dev,
@@ -1066,7 +1286,7 @@ static __devexit int alc5623_i2c_remove(struct i2c_client *client)
 }
 
 static const struct i2c_device_id alc5623_i2c_table[] = {
-	{"alc5621", 0x21},
+	{"alc562x-codec", 0x21},
 	{"alc5622", 0x22},
 	{"alc5623", 0x23},
 	{}
