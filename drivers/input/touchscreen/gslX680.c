@@ -32,6 +32,7 @@
 
 #include "gslX680.h"
 
+#define REPORT_DATA_ANDROID_4_0
 //#define GSL_DEBUG
 //#define GSL_MONITOR
 //#define HAVE_TOUCH_KEY

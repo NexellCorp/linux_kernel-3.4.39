@@ -159,6 +159,8 @@ struct nxe2000_battery_type_data {
 struct nxe2000_battery_platform_data {
 	int	irq;
 	int	alarm_vol_mv;
+	int	bat_impe;
+	int	slp_ibat;
 	int	multiple;
 
 	int	input_power_type;
