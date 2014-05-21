@@ -47,7 +47,7 @@ static void __init __gic_init(void __iomem *dist_base, void __iomem *cpu_base);
 #define	GIC_CPUI_BASE		(void __iomem *)(__PB_IO_MAP_MPPR_VIRT + 0x00000100)	// 0xF0000100
 
 #define	VIC0_INT_BASE		(void __iomem *)IO_ADDRESS(PHY_BASEADDR_INTC0)
-#define	VIC0_INT_MASK		(0x0FFFFFFF)
+#define	VIC0_INT_MASK		(0xFFFFFFFF)
 #define	VIC0_INT_RESUME		((1<<IRQ_PHY_CLKPWR_ALIVEIRQ) | (1<<IRQ_PHY_CLKPWR_RTCIRQ))
 
 #define	VIC1_INT_BASE		(void __iomem *)IO_ADDRESS(PHY_BASEADDR_INTC1)
