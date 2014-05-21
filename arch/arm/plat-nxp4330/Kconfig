@@ -38,12 +38,12 @@ choice
    	 		Support for the android pysix tablet board.
 
 	config PLAT_NXP4330_W7
-		bool "NBOX: Android w7 board"
+		bool "W7: Android w7 board"
 		help
    	 		Support for the android w7 tablet board.
 
 	config PLAT_NXP4330_NBOX
-		bool "w7: Android NBOX board"
+		bool "NBOX: Android NBOX board"
 		help
    	 		Support for the android nbox board.
 	
@@ -61,6 +61,11 @@ choice
 		bool "BLACKBOX: blackbox board"
 		help
    	 		Support for the blackbox board.
+
+	config PLAT_NXP4330_DRONE
+		bool "DRONE: Android drone board"
+		help
+   	 		Support for the drone board.
 
 endchoice
 

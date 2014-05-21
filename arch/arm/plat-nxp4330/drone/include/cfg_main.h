@@ -29,14 +29,14 @@
  * 	System Name
  */
 #define	CFG_SYS_CPU_NAME						"nxp4330q"
-#define	CFG_SYS_BOARD_NAME						"nxp4330-secret"
+#define	CFG_SYS_BOARD_NAME						"nxp4330-drone"
 
 /*------------------------------------------------------------------------------
  * 	Uart
  */
 #define CFG_UART_DEBUG_CH						0	/* For Low level debug */
 #define	CFG_UART_DEBUG_BAUDRATE					115200
-#define	CFG_UART_CLKGEN_CLOCK_HZ				50000000 	/* 50000000 */
+#define	CFG_UART_CLKGEN_CLOCK_HZ				14750000	/* 50000000 */
 
 /*------------------------------------------------------------------------------
  * 	Timer List (SYS = Source, EVT = Event, WDT = WatchDog)
@@ -79,40 +79,20 @@
 #define	CFG_DISP_PRI_LCD_WIDTH_MM				152.4
 #define	CFG_DISP_PRI_LCD_HEIGHT_MM				91.44
 
-#define CFG_DISP_PRI_RESOL_WIDTH          		800	// X Resolution
-#define CFG_DISP_PRI_RESOL_HEIGHT				1280	// Y Resolution
+#define CFG_DISP_PRI_RESOL_WIDTH          		1024	// X Resolution
+#define CFG_DISP_PRI_RESOL_HEIGHT				600	// Y Resolution
 
-#if defined(CONFIG_SECRET_3RD_BOARD)
-#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH			16
-#define CFG_DISP_PRI_HSYNC_BACK_PORCH			48
-#define CFG_DISP_PRI_HSYNC_FRONT_PORCH			16
-#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH			CFALSE
-#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH			4
-#define CFG_DISP_PRI_VSYNC_BACK_PORCH			4
-#define CFG_DISP_PRI_VSYNC_FRONT_PORCH			8
-#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH			CFALSE
-#elif defined(CONFIG_SECRET_2ND_BOARD)
-#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH			4
-#define CFG_DISP_PRI_HSYNC_BACK_PORCH			138
-#define CFG_DISP_PRI_HSYNC_FRONT_PORCH			138
-#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH			CFALSE
-#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH			4
-#define CFG_DISP_PRI_VSYNC_BACK_PORCH			12
-#define CFG_DISP_PRI_VSYNC_FRONT_PORCH			10
-#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH			CFALSE
-#else
-#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH			1
-#define CFG_DISP_PRI_HSYNC_BACK_PORCH			40
-#define CFG_DISP_PRI_HSYNC_FRONT_PORCH			24
-#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH			CFALSE
-#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH			1
-#define CFG_DISP_PRI_VSYNC_BACK_PORCH			4
-#define CFG_DISP_PRI_VSYNC_FRONT_PORCH			4
-#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH			CFALSE
-#endif
+#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH            20
+#define CFG_DISP_PRI_HSYNC_BACK_PORCH           160
+#define CFG_DISP_PRI_HSYNC_FRONT_PORCH          160
+#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CTRUE
+#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH            3
+#define CFG_DISP_PRI_VSYNC_BACK_PORCH            23
+#define CFG_DISP_PRI_VSYNC_FRONT_PORCH           12
+#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CTRUE
 
 #define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL0
-#define CFG_DISP_PRI_CLKGEN0_DIV                12
+#define CFG_DISP_PRI_CLKGEN0_DIV                15
 #define CFG_DISP_PRI_CLKGEN0_DELAY              0
 #define CFG_DISP_PRI_CLKGEN0_INVERT				0
 #define CFG_DISP_PRI_CLKGEN1_SOURCE             DPC_VCLK_SRC_VCLK2
@@ -148,7 +128,7 @@
  */
 #define	CFG_AUDIO_I2S0_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S0_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
-#define	CFG_AUDIO_I2S0_FRAME_BIT				32		// 32, 48
+#define	CFG_AUDIO_I2S0_FRAME_BIT				48		// 32, 48
 #define	CFG_AUDIO_I2S0_SAMPLE_RATE				48000
 #define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			0
 
@@ -190,10 +170,10 @@
 #define CFG_SPI2_COM_MODE						1 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
 
 #define CFG_SPI0_CS_GPIO_MODE					1		/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
-#define CFG_SPI1_CS_GPIO_MODE					0	/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
+#define CFG_SPI1_CS_GPIO_MODE					1		/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
 #define CFG_SPI2_CS_GPIO_MODE					0	/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
 
-#define CFG_SPI0_CS								PAD_GPIO_c + 30		/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
+#define CFG_SPI0_CS							PAD_GPIO_C + 30	/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
 /*------------------------------------------------------------------------------
  *  MPEGTSIF
  */
@@ -210,65 +190,48 @@
  * 	Keypad
  */
 
-#define CFG_KEYPAD_KEY_BUTTON					{PAD_GPIO_D+30, PAD_GPIO_D+31, PAD_GPIO_E+4, \
-												PAD_GPIO_E+5, PAD_GPIO_E+6, PAD_GPIO_C+10} // PAD_GPIO_ALV+0}
-#define CFG_KEYPAD_KEY_CODE						{KEY_VOLUMEUP, KEY_VOLUMEDOWN, KEY_MUTE, \
-												KEY_HOME, KEY_F12, KEY_POWER }
+#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0 }
+#define CFG_KEYPAD_KEY_CODE						{ KEY_POWER }
 #define CFG_KEYPAD_REPEAT						CFALSE /* 0: Repeat Off 1 : Repeat On */
 
 /*------------------------------------------------------------------------------
  * 	SDHC
  */
-#define	CFG_SDMMC0_DETECT_IO					(-1)
+#define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
 
-#define	CFG_SDMMC2_CLK_SHIFT_SAMPLE				(1<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
-#define	CFG_SDMMC2_CLK_SHIFT_DRIVE				(1<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
-#define	CFG_SDMMC2_CLK_DELAY_SAMPLE				(0<<0)		/*  0x0 ~ 0xFF */
-#define	CFG_SDMMC2_CLK_DELAY_DRIVE				(0x94<0)	/*  0x0 ~ 0xFF */
-
-#define	CFG_SDMMC2_CLK_DELAY				    (CFG_SDMMC2_CLK_SHIFT_SAMPLE | CFG_SDMMC2_CLK_SHIFT_DRIVE | CFG_SDMMC2_CLK_DELAY_SAMPLE | CFG_SDMMC2_CLK_DELAY_DRIVE)
+#define	CFG_SDMMC0_CLK_DELAY_SAMPLE				(0<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+#define	CFG_SDMMC0_CLK_DELAY_DRIVE				(3<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+#define	CFG_SDMMC0_CLK_DELAY				    (CFG_SDMMC0_CLK_DELAY_SAMPLE | CFG_SDMMC0_CLK_DELAY_DRIVE)
 
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
  */
-#define CFG_SW_UBC_ENABLE						(-1)
+#define CFG_SW_UBC_ENABLE					(0)
 
-#if defined(CONFIG_SECRET_2ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)
-#define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 21)
-#else
 #define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)
-#endif
-#define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_B + 24) // NC
-#define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2) // NC
-#define CFG_GPIO_PMIC_LOWBAT_DET				(PAD_GPIO_ALV + 3) // NC
-#if defined(CONFIG_SECRET_2ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)
-#define CFG_GPIO_PMIC_INTR						(PAD_GPIO_B + 4)
-#else
-#define CFG_GPIO_PMIC_INTR						(PAD_GPIO_C + 0)
-#endif
+#define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_D + 21)
+#define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)
+#define CFG_GPIO_PMIC_LOWBAT_DET				(PAD_GPIO_ALV + 3)		/* Critical low battery detect */
+#define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode
  */
 
-/* Wakeup Source : ALIVE [0~5] */
-#define CFG_PWR_WAKEUP_SRC_ALIVE0				CFALSE					// NC
+/* Wakeup Source : ALIVE [0~7] */
+#define CFG_PWR_WAKEUP_SRC_ALIVE0				CTRUE					/* KEY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE0				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE1				CFALSE					// NC
-#define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE2				CFALSE					// NC
-#define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE3				CFALSE					// NC
-#define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE4				CFALSE					// NC
+#define CFG_PWR_WAKEUP_SRC_ALIVE1				CTRUE
+#define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_BOTHEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE2				CTRUE					/* PMIC - VUSB*/
+#define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE3				CTRUE					/* PMIC - CRITICAL LOW BATTERY */
+#define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_ASYNC_LOWLEVEL
+#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR - LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE					// NC
+#define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE6				CFALSE					// NC
-#define CFG_PWR_WAKEUP_MOD_ALIVE6				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE7				CFALSE					// NC
-#define CFG_PWR_WAKEUP_MOD_ALIVE7				PWR_DECT_FALLINGEDGE
 
 /*
  * Wakeup Source : RTC ALARM

@@ -2,13 +2,13 @@
  * BCMSDH Function Driver for the native SDIO/MMC driver in the Linux Kernel
  *
  * Copyright (C) 1999-2014, Broadcom Corporation
- *
+ * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
  * under the terms of the GNU General Public License version 2 (the "GPL"),
  * available at http://www.broadcom.com/licenses/GPLv2.php, with the
  * following added to such license:
- *
+ * 
  *      As a special exception, the copyright holders of this software give you
  * permission to link this software with independent modules, and to copy and
  * distribute the resulting executable under terms of your choice, provided that
@@ -16,7 +16,7 @@
  * the license of that module.  An independent module is a module which is not
  * derived from this software.  The special exception does not apply to any
  * modifications of the software.
- *
+ * 
  *      Notwithstanding the above, under no circumstances may you combine this
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
@@ -285,9 +285,6 @@ static struct semaphore *notify_semaphore = NULL;
 static int dummy_probe(struct sdio_func *func,
                               const struct sdio_device_id *id)
 {
-    // psw0523 debugging
-    printk("%s: func %p, num %d\n", __func__, func, func ? func->num : -1);
-    // end psw0523
 	if (func && (func->num != 2)) {
 		return 0;
 	}
@@ -310,8 +307,6 @@ static struct sdio_driver dummy_sdmmc_driver = {
 
 int sdio_func_reg_notify(void* semaphore)
 {
-    // psw0523 debugging
-    printk("%s\n", __func__);
 	notify_semaphore = semaphore;
 	return sdio_register_driver(&dummy_sdmmc_driver);
 }

@@ -39,6 +39,10 @@ ifeq ($(CONFIG_PLAT_NXP4330_BLACKBOX),y)
 PLATBOARD :=blackbox
 endif
 
+ifeq ($(CONFIG_PLAT_NXP4330_DRONE),y)
+PLATBOARD :=drone
+endif
+
 #
 # Build options
 #
