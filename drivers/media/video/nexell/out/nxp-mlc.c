@@ -684,8 +684,8 @@ static int nxp_mlc_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
         pr_debug("%s: id %d, colorkey 0x%x, is_on %d\n", __func__, id, value, is_on);
         nxp_soc_disp_set_bg_color(id, 0x0);
         nxp_soc_disp_rgb_set_fblayer(id, 0);
-        /* nxp_soc_disp_video_set_colorkey(id, value, is_on); */
-        nxp_soc_disp_video_set_colorkey(id, value, false);
+        nxp_soc_disp_video_set_colorkey(id, value, is_on); 
+        //nxp_soc_disp_video_set_colorkey(id, value, false);
         break;
 
     case V4L2_CID_MLC_VID_ALPHA:
