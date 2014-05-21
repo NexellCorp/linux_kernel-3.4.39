@@ -215,7 +215,7 @@ static struct platform_device nand_plat_device = {
 };
 #endif	/* CONFIG_MTD_NAND_NEXELL */
 
-
+#if defined(CONFIG_TOUCHSCREEN_GSLX680)
 #include <linux/i2c.h>
 #define	GSLX680_I2C_BUS		(1)
 
@@ -224,7 +224,7 @@ static struct i2c_board_info __initdata gslX680_i2c_bdi = {
 	.addr	= (0x40),
     	.irq    = PB_PIO_IRQ(CFG_IO_TOUCH_PENDOWN_DETECT),
 };
-
+#endif
 
 
 /*------------------------------------------------------------------------------
@@ -235,7 +235,7 @@ static struct i2c_board_info __initdata gslX680_i2c_bdi = {
 #define CONFIG_ANDROID_VIBRATION
 #include <../../../../drivers/staging/android/timed_gpio.h>
 
-#define ANDROID_VIBRATION_GPIO    (PAD_GPIO_A + 18)
+#define ANDROID_VIBRATION_GPIO    (PAD_GPIO_D + 18)
 static struct timed_gpio android_vibration = {
     .name         = "vibrator",
     .gpio         = ANDROID_VIBRATION_GPIO,
@@ -301,7 +301,7 @@ struct nxp_snd_dai_plat_data i2s_dai_data = {
 	.sample_rate	= 48000,
 	.hp_jack 		= {
 		.support    	= 1,
-		.detect_io		= PAD_GPIO_A + 0,
+		.detect_io		= PAD_GPIO_E + 8,
 		.detect_level	= 1,
 	},
 };
@@ -346,7 +346,7 @@ static struct platform_device spdif_trans_dai = {
 /* CODEC */
 static struct i2c_board_info __initdata mma7660_i2c_bdi = {
 	.type	= "mma7660",
-	.addr	= (0x4c),
+	.addr	= 0x1D//(0x4c),
 };
 
 #endif
@@ -1144,7 +1144,7 @@ static int hdmi_read_hpd_gpio(int gpio)
 static struct nxp_out_platformdata out_plat_data = {
     .hdmi = {
         .internal_irq = 0,
-        .external_irq = PAD_GPIO_A + 19,
+        .external_irq = 0,//PAD_GPIO_A + 19,
         .set_int_external = hdmi_set_int_external,
         .set_int_internal = hdmi_set_int_internal,
         .read_hpd_gpio = hdmi_read_hpd_gpio,
@@ -1426,8 +1426,10 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(AW5306_I2C_BUS, &aw5306_i2c_bdi, 1);
 #endif
 */
+#if defined(CONFIG_TOUCHSCREEN_GSLX680)
 	printk("plat: add touch(gslX680) device\n");
 	i2c_register_board_info(GSLX680_I2C_BUS, &gslX680_i2c_bdi, 1);
+#endif
 
 #if defined(CONFIG_SENSORS_MMA7660) || defined(CONFIG_SENSORS_MMA7660_MODULE)
 	printk("plat: add g-sensor mma7660\n");

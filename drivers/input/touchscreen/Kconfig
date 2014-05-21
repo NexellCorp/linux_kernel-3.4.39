@@ -887,4 +887,12 @@ config TOUCHSCREEN_AW5306
 
 	  If unsure, say N.
 
+config TOUCHSCREEN_GSLX680
+	tristate "GSLX680 touchscreen"
+	depends on I2C
+	default n
+	help
+	  Say Y here if you have the GSLX680 touchscreen.
+
+	  If unsure, say N.
 endif
