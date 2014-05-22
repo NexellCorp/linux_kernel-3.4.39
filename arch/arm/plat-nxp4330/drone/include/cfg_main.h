@@ -206,11 +206,17 @@
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
  */
-#define CFG_SW_UBC_ENABLE					(0)
+#define CFG_SW_UBC_ENABLE						(0)
+
+/**
+ * 0 : GPIO interrupt (CFG_GPIO_PMIC_VUSB_DET)
+ * 1 : PMIC interrupt (FVUSBDETSINT)
+ */
+#define CFG_USB_DET_FROM_PMIC_INT				(0)
 
 #define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)
 #define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_D + 21)
-#define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)
+#define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)		/* Choice for SW_UBC or Wake-up*/
 #define CFG_GPIO_PMIC_LOWBAT_DET				(PAD_GPIO_ALV + 3)		/* Critical low battery detect */
 #define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
