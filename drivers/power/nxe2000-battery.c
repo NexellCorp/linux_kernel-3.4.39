@@ -2026,7 +2026,7 @@ static void nxe2000_sw_ubc_work(struct work_struct *work)
 
 	power_supply_changed(&info->battery);
 
-#if (CFG_USB_DET_SRC_PMIC == 1)
+#if (CFG_USB_DET_FROM_PMIC_INT == 1)
 	pmic_vbus = 1;
 #else
 	pmic_vbus = gpio_get_value(info->gpio_pmic_vbus);
@@ -3833,7 +3833,7 @@ static irqreturn_t charger_usb_isr(int irq, void *battery_info)
 		|| NXE2000_SOCA_FG_RESET == info->soca->status)
 		info->soca->stable_count = 11;
 
-#if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_SRC_PMIC == 1)
+#if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_FROM_PMIC_INT == 1)
 	dwc_otg_pcd_clear_ep0_state();
 	info->pmic_vbuschk_count    = 3;
 	info->flag_set_ilimit       = false;
@@ -3866,7 +3866,7 @@ static irqreturn_t charger_adp_isr(int irq, void *battery_info)
 	return IRQ_HANDLED;
 }
 
-#if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_SRC_PMIC == 0)
+#if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_FROM_PMIC_INT == 0)
 static irqreturn_t sw_ubc_isr(int irq, void *battery_info)
 {
 	struct nxe2000_battery_info *info = battery_info;
@@ -4986,7 +4986,7 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 
 	/* for SW UBC. */
 #if (CFG_SW_UBC_ENABLE == 1)
-#if (CFG_USB_DET_SRC_PMIC == 1)
+#if (CFG_USB_DET_FROM_PMIC_INT == 1)
 	INIT_DELAYED_WORK_DEFERRABLE(&info->sw_ubc_work,
 					nxe2000_sw_ubc_work);
 #else
@@ -5125,7 +5125,7 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 		queue_delayed_work(info->monitor_wqueue, &info->otgid_detect_work, msecs_to_jiffies(20));
 	}
 
-#if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_SRC_PMIC == 1)
+#if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_FROM_PMIC_INT == 1)
 	dwc_otg_pcd_clear_ep0_state();
 	info->pmic_vbuschk_count    = 3;
 	info->flag_set_ilimit       = false;
@@ -5281,7 +5281,7 @@ static int nxe2000_battery_suspend(struct device *dev)
 	nxe2000_power_suspend_status	= 1;
 	nxe2000_power_resume_status     = 0;
 
-#if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_SRC_PMIC == 0)
+#if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_FROM_PMIC_INT == 0)
 	if (info->gpio_pmic_vbus > -1) {
 		nxp_soc_gpio_set_int_enable(info->gpio_pmic_vbus, 0);
 		nxp_soc_gpio_clr_int_pend(info->gpio_pmic_vbus);
@@ -5442,7 +5442,7 @@ static int nxe2000_battery_suspend(struct device *dev)
 	flush_delayed_work(&info->jeita_work);
 /*	flush_work(&info->irq_work); */
 #if (CFG_SW_UBC_ENABLE == 1)
-#if (CFG_USB_DET_SRC_PMIC == 0)
+#if (CFG_USB_DET_FROM_PMIC_INT == 0)
 	if (info->gpio_pmic_vbus > -1)
 #endif
 		flush_delayed_work(&info->sw_ubc_work);
@@ -5464,7 +5464,7 @@ static int nxe2000_battery_suspend(struct device *dev)
 	cancel_delayed_work(&info->jeita_work);
 /*	flush_work(&info->irq_work); */
 #if (CFG_SW_UBC_ENABLE == 1)
-#if (CFG_USB_DET_SRC_PMIC == 0)
+#if (CFG_USB_DET_FROM_PMIC_INT == 0)
 	if (info->gpio_pmic_vbus > -1)
 #endif
 		cancel_delayed_work(&info->sw_ubc_work);
@@ -5726,7 +5726,7 @@ static int nxe2000_battery_resume(struct device *dev) {
 		queue_delayed_work(info->monitor_wqueue, &info->otgid_detect_work, msecs_to_jiffies(20));
 	}
 
-#if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_SRC_PMIC == 1)
+#if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_FROM_PMIC_INT == 1)
 	dwc_otg_pcd_clear_ep0_state();
 	info->pmic_vbuschk_count    = 3;
 	info->flag_set_ilimit       = false;
