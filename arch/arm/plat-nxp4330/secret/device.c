@@ -855,7 +855,7 @@ void __init nxp_reserve_mem(void)
 
 
 #if defined(CONFIG_I2C_NEXELL)
-#define I2CUDELAY(x)	1000000/x
+#define I2CUDELAY(x)	1000000/x/2
 /* gpio i2c 3 */
 #define	I2C3_SCL	PAD_GPIO_A + 25
 #define	I2C3_SDA	PAD_GPIO_A + 26

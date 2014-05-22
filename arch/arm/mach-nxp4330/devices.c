@@ -233,7 +233,7 @@ static AMBA_AHB_DEVICE(uart5, "uart-pl011.5", 0, PHY_BASEADDR_UART5, {IRQ_PHY_UA
  */
 
 #if defined(CONFIG_I2C_NEXELL)
-#define I2CUDELAY(x)	1000000/x
+#define I2CUDELAY(x)	1000000/x/2
 /* gpio i2c 0 */
 #ifdef CFG_IO_I2C0_SCL
 #define	I2C0_SCL	CFG_IO_I2C0_SCL
