@@ -1008,6 +1008,7 @@ static int hdmi_probe(struct platform_device *pdev)
     _context->internal_irq = NX_HDMI_GetInterruptNumber(0);
     _context->external_irq = (phdmi ? (phdmi->external_irq != -1 ? phdmi->external_irq : -1): -1);
 	_context->plug_in = HDMI_PLUG_READY;
+    _context->connect = 1;
 
     INIT_DELAYED_WORK(&_context->hpd_work, _hdmi_hpd_work);
 
