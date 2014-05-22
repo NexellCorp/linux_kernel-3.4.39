@@ -1100,9 +1100,12 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 	.gpio_pmic_vbus		= CFG_GPIO_PMIC_VUSB_DET,
 	.gpio_pmic_lowbat	= CFG_GPIO_PMIC_LOWBAT_DET,
 
-	.alarm_vol_mv 		= 3412,
-//	.adc_channel 		= NXE2000_ADC_CHANNEL_VBAT,
-	.multiple			= 100, //100%
+	.alarm_vol_mv		= 3450,
+//	.alarm_vol_mv		= 3412,
+	.bat_impe			= 1500,
+	.slp_ibat			= 3450,
+//	.adc_channel		= NXE2000_ADC_CHANNEL_VBAT,
+	.multiple			= 100,	//100%
 	.monitor_time		= 60,
 		/* some parameter is depend of battery type */
 	.type[0] = {
@@ -1113,8 +1116,8 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 		.ch_ilim_adp 	= 0x18,	/* ILIM_ADP	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_usb 	= 0x04,	/* ILIM_USB	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_icchg		= 0x03,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
-		.fg_target_vsys	= 3000,	/* This value is the target one to DSOC=0% */
-		.fg_target_ibat	= 1000, /* This value is the target one to DSOC=0% */
+		.fg_target_vsys	= 3450,	/* This value is the target one to DSOC=0% */
+		.fg_target_ibat	= 1000,	/* This value is the target one to DSOC=0% */
 		.fg_poff_vbat	= 0,	/* setting value of 0 per Vbat */
 		.jt_en			= 0,	/* JEITA Enable	  = 0 or 1 (1:enable, 0:disable) */
 		.jt_hw_sw		= 1,	/* JEITA HW or SW = 0 or 1 (1:HardWare, 0:SoftWare) */

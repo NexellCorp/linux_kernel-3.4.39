@@ -618,7 +618,7 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 
 	.alarm_vol_mv		= 3450,
 //	.alarm_vol_mv		= 3412,
-	.bat_impe			= 1725,
+	.bat_impe			= 1500,
 	.slp_ibat			= 3450,
 //	.adc_channel		= NXE2000_ADC_CHANNEL_VBAT,
 	.multiple			= 100,	//100%
@@ -628,7 +628,7 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 		.ch_vfchg		= 0x03,	/* VFCHG	= 0 - 4 (4.05v, 4.10v, 4.15v, 4.20v, 4.35v) */
 		.ch_vrchg		= 0x03,	/* VRCHG	= 0 - 4 (3.85v, 3.90v, 3.95v, 4.00v, 4.10v) */
 		.ch_vbatovset	= 0xFF,	/* VBATOVSET	= 0 or 1 (0 : 4.38v(up)/3.95v(down) 1: 4.53v(up)/4.10v(down)) */
-		.ch_ichg 		= 0x07,	/* ICHG		= 0 - 0x1D (100mA - 3000mA) */
+		.ch_ichg 		= 0x0E,	/* ICHG		= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_adp 	= 0x18,	/* ILIM_ADP	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_usb 	= 0x04,	/* ILIM_USB	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_icchg		= 0x03,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
@@ -690,11 +690,11 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 
 
 #define NXE2000_DEV_REG 		\
-	NXE2000_REG(DC1, dc1, 0),		\
-	NXE2000_REG(DC2, dc2, 0),		\
-	NXE2000_REG(DC3, dc3, 0),		\
-	NXE2000_REG(DC4, dc4, 0),		\
-	NXE2000_REG(DC5, dc5, 0),		\
+	NXE2000_REG(DC1, dc1, 0),	\
+	NXE2000_REG(DC2, dc2, 0),	\
+	NXE2000_REG(DC3, dc3, 0),	\
+	NXE2000_REG(DC4, dc4, 0),	\
+	NXE2000_REG(DC5, dc5, 0),	\
 	NXE2000_REG(LDO1, ldo1, 0),	\
 	NXE2000_REG(LDO2, ldo2, 0),	\
 	NXE2000_REG(LDO3, ldo3, 0),	\
