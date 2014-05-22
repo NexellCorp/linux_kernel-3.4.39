@@ -85,8 +85,8 @@
 #define	CFG_DISP_PRI_LCD_WIDTH_MM				152.4
 #define	CFG_DISP_PRI_LCD_HEIGHT_MM				91.44
 
-#define CFG_DISP_PRI_RESOL_WIDTH          		1280	// X Resolution
-#define CFG_DISP_PRI_RESOL_HEIGHT				 720	// Y Resolution
+#define CFG_DISP_PRI_RESOL_WIDTH          		1920	// X Resolution
+#define CFG_DISP_PRI_RESOL_HEIGHT				1280	// Y Resolution
 
 #define CFG_DISP_PRI_HSYNC_SYNC_WIDTH           1
 #define CFG_DISP_PRI_HSYNC_BACK_PORCH           0
