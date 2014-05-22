@@ -200,13 +200,6 @@ static int rt5631_probe(struct platform_device *pdev)
 	if (plat)
 		sprintf(str_dai_name, "%s.%d", DEV_NAME_I2S, plat->i2s_ch);
 
-	card->dev = &pdev->dev;
-	ret = snd_soc_register_card(card);
-	if (ret) {
-		dev_err(&pdev->dev, "snd_soc_register_card() failed: %d\n", ret);
-		return ret;
-	}
-
 	if (plat) {
 		rates = plat->sample_rate;
 		format = plat->pcm_format;
@@ -219,6 +212,13 @@ static int rt5631_probe(struct platform_device *pdev)
 		} else {
 			jack->name = NULL;
 		}
+	}
+
+	card->dev = &pdev->dev;
+	ret = snd_soc_register_card(card);
+	if (ret) {
+		dev_err(&pdev->dev, "snd_soc_register_card() failed: %d\n", ret);
+		return ret;
 	}
 
 	if (card->rtd) {
