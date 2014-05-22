@@ -29,7 +29,7 @@ SMS_SPI_DRV := 0
 SMS_I2C_DRV := 0
 
 # Default object, include in every build variant
-SMSOBJ := smscoreapi.o sms-cards.o smsendian.o 
+SMSOBJ := smscoreapi.o sms-cards.o smsendian.o
 
 
 EXTRA_CFLAGS += $(extra-cflags-y) $(extra-cflags-m)
@@ -48,11 +48,10 @@ endif
 
 ifdef CONFIG_SMS_DVB_API_SUBSYS
 ifneq ($(CONFIG_SMS_DVB_API_SUBSYS),n)
-SMSOBJ += smsdvb.o
 EXTRA_CFLAGS += -DSMS_DVB3_SUBSYS
+SMSOBJ += smsdvb.o
 endif
 endif
-
 
 ifdef CONFIG_SMS_HOSTLIB_SUBSYS
 ifneq ($(CONFIG_SMS_HOSTLIB_SUBSYS),n)
@@ -108,6 +107,4 @@ endif
 smsmdtv-objs := $(SMSOBJ)
 
 obj-$(CONFIG_SMS_SIANO_MDTV) += smsmdtv.o
-
-
 

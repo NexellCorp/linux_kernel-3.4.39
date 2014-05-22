@@ -33,10 +33,10 @@
 /*or in compilation at this section                         */
 /************************************************************/
 /*Host GPIO pin used for SMS interrupt*/
-#define HOST_INTERRUPT_PIN 	(PAD_GPIO_C + 10)
+#define HOST_INTERRUPT_PIN 	(PAD_GPIO_C + 10)	// by kook - for lynx
 
 /*Host GPIO pin used to reset SMS device*/
-#define HOST_SMS_RESET_PIN	(PAD_GPIO_A + 23)
+#define HOST_SMS_RESET_PIN	(PAD_GPIO_A + 23)	// by kook - for lynx
 
 /*Host SPI bus number used for SMS*/
 #define HOST_I2C_CTRL_NUM	0
@@ -124,14 +124,14 @@ static int smsi2c_loadfirmware_handler(void *context, void* p_data, u32 fw_size)
 					11,
 					sizeof(struct SmsTsEnable_S),
 					0},
-					40000000,	//15000000,
-					16,	//TSI_SERIAL_ON_SDIO,
+					40000000,	//15000000,						// by kook
+					16,	//TSI_SERIAL_ON_SDIO,					// by kook
 					TSI_SIGNALS_ACTIVE_LOW,
 					0,
 					TSI_SIG_OUT_FALL_EDGE,
 					TSI_BIT0_IS_MSB,
 					0,
-					TSI_TRANSPARENT,	//TSI_ENCAPSULATED,
+					TSI_TRANSPARENT,	//TSI_ENCAPSULATED,		// by kook
 					21};
 	
 	u32 sizeToCalc;
