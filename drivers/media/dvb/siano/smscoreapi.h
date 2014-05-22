@@ -1578,7 +1578,7 @@ typedef struct SmsDataDownload_S
 
 #if defined(CONFIG_FW_LOADER) || (defined(CONFIG_FW_LOADER_MODULE) && defined(MODULE))
 //#define REQUEST_FIRMWARE_SUPPORTED
-#define DEFAULT_FW_FILE_PATH "/etc/firmware"
+#define DEFAULT_FW_FILE_PATH "/etc/firmware"	// by kook
 #else
 #define DEFAULT_FW_FILE_PATH "/etc/firmware"
 #endif
