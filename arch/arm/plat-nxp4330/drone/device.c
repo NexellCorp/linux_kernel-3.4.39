@@ -338,14 +338,14 @@ static struct platform_device spdif_trans_dai = {
 /*------------------------------------------------------------------------------
  * G-Sensor platform device
  */
-#if defined(CONFIG_SENSORS_MMA7660) || defined(CONFIG_SENSORS_MMA7660_MODULE)
+#if defined(CONFIG_SENSORS_MMA865X) || defined(CONFIG_SENSORS_MMA865X_MODULE)
 #include <linux/i2c.h>
 
-#define	MMA7660_I2C_BUS		(2)
+#define	MMA865X_I2C_BUS		(2)
 
 /* CODEC */
-static struct i2c_board_info __initdata mma7660_i2c_bdi = {
-	.type	= "mma7660",
+static struct i2c_board_info __initdata mma865x_i2c_bdi = {
+	.type	= "mma8653",
 	.addr	= 0x1D//(0x4c),
 };
 
@@ -1431,9 +1431,9 @@ void __init nxp_board_devices_register(void)
 #endif
 
 
-#if defined(CONFIG_SENSORS_MMA7660) || defined(CONFIG_SENSORS_MMA7660_MODULE)
-	printk("plat: add g-sensor mma7660\n");
-	i2c_register_board_info(MMA7660_I2C_BUS, &mma7660_i2c_bdi, 1);
+#if defined(CONFIG_SENSORS_MMA865X) || defined(CONFIG_SENSORS_MMA865X_MODULE)
+	printk("plat: add g-sensor mma865x\n");
+	i2c_register_board_info(2, &mma865x_i2c_bdi, 1);
 #endif
 
 #if defined(CONFIG_SENSORS_STK831X) || defined(CONFIG_SENSORS_STK831X_MODULE)
