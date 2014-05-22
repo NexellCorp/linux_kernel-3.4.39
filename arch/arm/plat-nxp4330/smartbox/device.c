@@ -1188,8 +1188,8 @@ void __init nxp_board_devices_register(void)
 #endif
 
 #if defined(CONFIG_NXP4330_MP2TS_IF)
-    printk("plat: add device misc mpegts\n");
-    platform_device_register(&mpegts_plat_device);
+	printk("plat: add device misc mpegts\n");
+	platform_device_register(&mpegts_plat_device);
 #endif
 
 #if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)

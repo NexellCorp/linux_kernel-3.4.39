@@ -758,6 +758,18 @@ static struct i2c_board_info __initdata nxe2000_regulators[] = {
  * MPEGTS platform device
  */
 #if defined(CONFIG_NXP4330_MP2TS_IF)
+#include <mach/nxp4330_mp2ts.h>
+
+#define NXP_TS_PAGE_NUM_0       (36)	// Variable
+#define NXP_TS_BUF_SIZE_0       (TS_PAGE_SIZE * NXP_TS_PAGE_NUM_0)
+
+#define NXP_TS_PAGE_NUM_1       (36)	// Variable
+#define NXP_TS_BUF_SIZE_1       (TS_PAGE_SIZE * NXP_TS_PAGE_NUM_1)
+
+#define NXP_TS_PAGE_NUM_CORE    (36)	// Variable
+#define NXP_TS_BUF_SIZE_CORE    (TS_PAGE_SIZE * NXP_TS_PAGE_NUM_CORE)
+
+
 static struct nxp_mp2ts_dev_info mp2ts_dev_info[2] = {
     {
         .demod_irq_num = CFG_GPIO_DEMOD_0_IRQ_NUM,
@@ -772,7 +784,10 @@ static struct nxp_mp2ts_dev_info mp2ts_dev_info[2] = {
 };
 
 static struct nxp_mp2ts_plat_data mpegts_plat_data = {
-    .dev_info = mp2ts_dev_info,
+    .dev_info       = mp2ts_dev_info,
+    .ts_dma_size[0] = -1,                   // TS ch 0 - Static alloc size.
+    .ts_dma_size[1] = NXP_TS_BUF_SIZE_1,    // TS ch 1 - Static alloc size.
+    .ts_dma_size[2] = -1,                   // TS core - Static alloc size.
 };
 
 static struct platform_device mpegts_plat_device = {
@@ -1404,8 +1419,8 @@ void __init nxp_board_devices_register(void)
 #endif
 
 #if defined(CONFIG_NXP4330_MP2TS_IF)
-    printk("plat: add device misc mpegts\n");
-    platform_device_register(&mpegts_plat_device);
+	printk("plat: add device misc mpegts\n");
+	platform_device_register(&mpegts_plat_device);
 #endif
 
 #if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)
