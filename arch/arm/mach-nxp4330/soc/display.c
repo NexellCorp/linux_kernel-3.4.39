@@ -2109,21 +2109,27 @@ static ssize_t active_show(struct device *pdev,
 {
 	struct attribute *at = &attr->attr;
 	struct disp_control_info *info;
-	struct disp_process_dev *proc_dev;
+	struct disp_process_dev *dev;
 	const char *c;
 	char *s = buf;
-	int m, i;
+	int a, i, d[2], m = 0;
 
 	c = &at->name[strlen("active.")];
-	m = simple_strtoul(c, NULL, 10);
+	a = simple_strtoul(c, NULL, 10);
 
-	/* match fb.n and display.n */
 	for (i = 0; 2 > i; i++) {
 		info = get_module_to_info(i);
-		proc_dev = info->proc_dev;
-		if (proc_dev->dev_in == m)
-			break;
+		dev  = info->proc_dev;
+		d[i] = dev->dev_in;
 	}
+
+	/* not fb */
+	if (d[0] != DISP_DEVICE_END && d[1] != DISP_DEVICE_END)
+		m = a;
+	else /* 1 fb */
+		m = (d[0] == a) ? 0 : 1;
+
+	info = get_module_to_info(m);
 
 	s += sprintf(s, "%d\n", info->active_notify);
 	if (s != buf)
@@ -2137,20 +2143,27 @@ static ssize_t active_store(struct device *pdev,
 {
 	struct attribute *at = &attr->attr;
 	struct disp_control_info *info;
-	struct disp_process_dev *proc_dev;
+	struct disp_process_dev *dev;
 	const char *c;
-	int m, i, active = 0;
+	int a, i, d[2], m = 0;
+	int active = 0;
 
 	c = &at->name[strlen("active.")];
-	m = simple_strtoul(c, NULL, 10);
+	a = simple_strtoul(c, NULL, 10);
 
-	/* match fb.n and display.n */
 	for (i = 0; 2 > i; i++) {
 		info = get_module_to_info(i);
-		proc_dev = info->proc_dev;
-		if (proc_dev->dev_in == m)
-			break;
+		dev  = info->proc_dev;
+		d[i] = dev->dev_in;
 	}
+
+	/* not fb */
+	if (d[0] != DISP_DEVICE_END && d[1] != DISP_DEVICE_END)
+		m = a;
+	else /* 1 fb */
+		m = (d[0] == a) ? 0 : 1;
+
+	info = get_module_to_info(m);
 
 	sscanf(buf,"%d", &active);
 	info->active_notify = active ? 1 : 0;
@@ -2173,20 +2186,26 @@ static ssize_t vsync_show(struct device *pdev,
 {
 	struct attribute *at = &attr->attr;
 	struct disp_control_info *info;
-	struct disp_process_dev *proc_dev;
+	struct disp_process_dev *dev;
 	const char *c;
-	int m, i;
+	int a, i, d[2], m = 0;
 
 	c = &at->name[strlen("vsync.")];
-	m = simple_strtoul(c, NULL, 10);
+	a = simple_strtoul(c, NULL, 10);
 
-	/* match fb.n and display.n */
 	for (i = 0; 2 > i; i++) {
 		info = get_module_to_info(i);
-		proc_dev = info->proc_dev;
-		if (proc_dev->dev_in == m)
-			break;
+		dev  = info->proc_dev;
+		d[i] = dev->dev_in;
 	}
+
+	/* not fb */
+	if (d[0] != DISP_DEVICE_END && d[1] != DISP_DEVICE_END)
+		m = a;
+	else /* 1 fb */
+		m = (d[0] == a) ? 0 : 1;
+
+	info = get_module_to_info(m);
 
     return scnprintf(buf, PAGE_SIZE, "%llu\n", ktime_to_ns(info->time_stamp));
 }
@@ -2304,8 +2323,8 @@ static int display_soc_probe(struct platform_device *pldev)
 	pdev = get_display_ptr(DISP_DEVICE_SYNCGEN0 + module);
 	list_add(&pdev->list, &info->link);
 
-	pdev->dev_in = module;
-	pdev->dev_out = module;
+	pdev->dev_in  = DISP_DEVICE_END;
+	pdev->dev_out = DISP_DEVICE_END;
 	pdev->dev_info = (void*)info;
 	pdev->dev_id = DISP_DEVICE_SYNCGEN0 + module;
 	pdev->disp_ops  = &syncgen_ops[module];
