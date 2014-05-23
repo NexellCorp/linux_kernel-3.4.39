@@ -94,7 +94,8 @@ struct nxp_fb_dma_buf_data {
 #endif
 
 struct nxp_fb_device {
-	int 		  device_id;	/* 0: HDMI, 1: NTSC/PAL ENC */
+	int			  fb_id;
+	int 		  device_id;	/* 0: SYNGEN0 1: SYNGEN1 */
 	int			  layer;
 	int			  x_resol_max;	/* x max resolution */
 	int			  y_resol_max;	/* y max resolution */
@@ -147,10 +148,11 @@ struct nxp_fb_param {
 /*---------------------------------------------------------------------------------------------
  * 	FB device
  */
-static int nxp_fb_dev_get_vsync(int module, struct disp_vsync_info *vsi)
+static int nxp_fb_dev_get_vsync(int module, int fb, struct disp_vsync_info *vsi)
 {
 #ifdef CONFIG_NEXELL_DISPLAY
 	enum disp_dev_type device = DISP_DEVICE_SYNCGEN0;
+
 	if (-1 == module)
 		return 0;
 
@@ -161,6 +163,8 @@ static int nxp_fb_dev_get_vsync(int module, struct disp_vsync_info *vsi)
 		printk(KERN_ERR "Fail to get framebuffer video sync (display.%d)\n", module);
 		return -EINVAL;
 	}
+
+	nxp_soc_disp_device_framebuffer(module, fb);
 #endif
 	return 0;
 }
@@ -463,7 +467,7 @@ static void nxp_fb_dump_var(struct fb_var_screeninfo *var)
 static struct fb_ops nxp_fb_ops;
 static struct fb_info *nxp_fb_init_fb(int fb, struct device *dev)
 {
-	struct fb_info * info = NULL;
+	struct fb_info *info = NULL;
 	char name[256];
 
 	/*
@@ -515,7 +519,7 @@ static void nxp_fb_exit_fb(struct fb_info *info)
 	framebuffer_release(info);
 }
 
-static int nxp_fb_setup_param(struct fb_info *info, void *data)
+static int nxp_fb_setup_param(int fb, struct fb_info *info, void *data)
 {
 	struct nxp_fb_plat_data *plat = data;
 	struct nxp_fb_param  *par = info->par;
@@ -525,7 +529,7 @@ static int nxp_fb_setup_param(struct fb_info *info, void *data)
 	int i, ret;
 
 	/* get from output device */
-	ret = nxp_fb_dev_get_vsync(plat->module, &vsi);
+	ret = nxp_fb_dev_get_vsync(plat->module, fb, &vsi);
 	if (0 > ret)
 		return ret;
 
@@ -540,6 +544,7 @@ static int nxp_fb_setup_param(struct fb_info *info, void *data)
 		par->palette_buffer[i] = FB_PALETTE_CLEAR;
 
 	/* set hw variables */
+	dev->fb_id    	  = fb;
 	dev->device_id    = plat->module;
 	dev->layer    	  = plat->layer;
 	dev->x_resol_max  = plat->x_resol_max ? plat->x_resol_max : x_resol;
@@ -1326,7 +1331,7 @@ static int nxp_fb_probe(struct platform_device *pdev)
 		goto err_fb;
 	}
 
-	ret = nxp_fb_setup_param(info, plat);
+	ret = nxp_fb_setup_param(pdev->id, info, plat);
 	if (0 > ret)
 		goto err_map;
 

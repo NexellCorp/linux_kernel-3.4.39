@@ -441,7 +441,7 @@ static void disp_syncgen_irq_work(struct work_struct *work)
 	info = container_of(work, struct disp_control_info, work);
 	RET_ASSERT(info);
 
-	if (!info->cond_notify) 
+	if (!info->cond_notify)
 		return;
 
 	pdev = info->proc_dev;
@@ -782,7 +782,8 @@ static void disp_syncgen_resume(struct disp_process_dev *pdev)
 	int i = 0;
 
 	PM_DBGOUT("%s display.%d (MLC:%s, DPC:%s)\n",
-		__func__, module, pmly->enable?"ON":"OFF", pdev->status & PROC_STATUS_ENABLE?"ON":"OFF");
+		__func__, module, pmly->enable?"ON":"OFF",
+				pdev->status & PROC_STATUS_ENABLE?"ON":"OFF");
 
 	/* restore */
 	NX_MLC_SetClockPClkMode(module, NX_PCLKMODE_ALWAYS);
@@ -831,7 +832,8 @@ static inline int disp_ops_prepare_devs(struct list_head *head)
 		if (ops && ops->prepare) {
 			ret = ops->prepare(ops->dev);
 			if (ret) {
-				printk(KERN_ERR "Fail, display prepare [%s]...\n", dev_to_str(pdev->dev_id));
+				printk(KERN_ERR "Fail, display prepare [%s]...\n",
+					dev_to_str(pdev->dev_id));
 				return -EINVAL;
 			}
 		}
@@ -1073,7 +1075,8 @@ void nxp_soc_disp_rgb_set_address(int module, int layer,
 		int yoff = prgb->top * (prgb->width * prgb->pixelbyte);
 		phyaddr += (xoff + yoff);
 		stride = (prgb->width - prgb->left) * prgb->pixelbyte;
-		NX_MLC_SetPosition(module, layer, prgb->pos_x, prgb->pos_x, prgb->right-1, prgb->bottom-1);
+		NX_MLC_SetPosition(module, layer,
+				prgb->pos_x, prgb->pos_x, prgb->right-1, prgb->bottom-1);
 	}
 
 	prgb->address = phyaddr;
@@ -1297,7 +1300,8 @@ int nxp_soc_disp_video_set_position(int module, int left, int top,
 	pvid->vFilter = vf;
 
 	/* set scale */
-	NX_MLC_SetVideoLayerScale(module, srcw, srch, dstw, dsth, (CBOOL)hf, (CBOOL)hf, (CBOOL)vf, (CBOOL)vf);
+	NX_MLC_SetVideoLayerScale(module, srcw, srch, dstw, dsth,
+					(CBOOL)hf, (CBOOL)hf, (CBOOL)vf, (CBOOL)vf);
 	NX_MLC_SetPosition(module, MLC_LAYER_VIDEO, left, top, right-1, bottom-1);
 	NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
 	disp_syncgen_waitsync(module, MLC_LAYER_VIDEO, waitvsync);
@@ -1551,7 +1555,8 @@ int  nxp_soc_disp_layer_stat_enable(int module, int layer)
 /*
  *	Display Devices
  */
-int	nxp_soc_disp_device_connect_to(enum disp_dev_type device, enum disp_dev_type to, struct disp_vsync_info *psync)
+int	nxp_soc_disp_device_connect_to(enum disp_dev_type device,
+				enum disp_dev_type to, struct disp_vsync_info *psync)
 {
 	struct disp_process_dev *pdev, *sdev;
 	struct disp_process_ops *ops;
@@ -2025,6 +2030,16 @@ void nxp_soc_disp_unregister_irq_callback(int module)
 	info->callback_data = NULL;
 }
 
+void nxp_soc_disp_device_framebuffer(int module, int fb)
+{
+	struct disp_control_info *info = get_module_to_info(module);
+	struct disp_process_dev *pdev = info->proc_dev;
+
+	RET_ASSERT(0 == module || 1 == module);
+	pdev->dev_in = fb;
+	printk("display.%d connected to fb.%d  ...\n", module, fb);
+}
+
 /* TOP Layer */
 EXPORT_SYMBOL(nxp_soc_disp_get_resolution);
 EXPORT_SYMBOL(nxp_soc_disp_set_bg_color);
@@ -2092,15 +2107,23 @@ EXPORT_SYMBOL(nxp_soc_disp_register_proc_ops);
 static ssize_t active_show(struct device *pdev,
 			struct device_attribute *attr, char *buf)
 {
-	struct disp_control_info *info;
 	struct attribute *at = &attr->attr;
+	struct disp_control_info *info;
+	struct disp_process_dev *proc_dev;
 	const char *c;
 	char *s = buf;
-	int m;
+	int m, i;
 
 	c = &at->name[strlen("active.")];
 	m = simple_strtoul(c, NULL, 10);
-	info = get_module_to_info(m);
+
+	/* match fb.n and display.n */
+	for (i = 0; 2 > i; i++) {
+		info = get_module_to_info(i);
+		proc_dev = info->proc_dev;
+		if (proc_dev->dev_in == m)
+			break;
+	}
 
 	s += sprintf(s, "%d\n", info->active_notify);
 	if (s != buf)
@@ -2112,14 +2135,22 @@ static ssize_t active_show(struct device *pdev,
 static ssize_t active_store(struct device *pdev,
 			struct device_attribute *attr, const char *buf, size_t n)
 {
-	struct disp_control_info *info;
 	struct attribute *at = &attr->attr;
+	struct disp_control_info *info;
+	struct disp_process_dev *proc_dev;
 	const char *c;
-	int m, active = 0;
+	int m, i, active = 0;
 
 	c = &at->name[strlen("active.")];
 	m = simple_strtoul(c, NULL, 10);
-	info = get_module_to_info(m);
+
+	/* match fb.n and display.n */
+	for (i = 0; 2 > i; i++) {
+		info = get_module_to_info(i);
+		proc_dev = info->proc_dev;
+		if (proc_dev->dev_in == m)
+			break;
+	}
 
 	sscanf(buf,"%d", &active);
 	info->active_notify = active ? 1 : 0;
@@ -2140,14 +2171,22 @@ static struct device_attribute active1_attr =
 static ssize_t vsync_show(struct device *pdev,
 		struct device_attribute *attr, char *buf)
 {
-	struct disp_control_info *info;
 	struct attribute *at = &attr->attr;
+	struct disp_control_info *info;
+	struct disp_process_dev *proc_dev;
 	const char *c;
-	int m;
+	int m, i;
 
 	c = &at->name[strlen("vsync.")];
 	m = simple_strtoul(c, NULL, 10);
-	info = get_module_to_info(m);
+
+	/* match fb.n and display.n */
+	for (i = 0; 2 > i; i++) {
+		info = get_module_to_info(i);
+		proc_dev = info->proc_dev;
+		if (proc_dev->dev_in == m)
+			break;
+	}
 
     return scnprintf(buf, PAGE_SIZE, "%llu\n", ktime_to_ns(info->time_stamp));
 }
@@ -2265,6 +2304,8 @@ static int display_soc_probe(struct platform_device *pldev)
 	pdev = get_display_ptr(DISP_DEVICE_SYNCGEN0 + module);
 	list_add(&pdev->list, &info->link);
 
+	pdev->dev_in = DISP_DEVICE_END;
+	pdev->dev_out = DISP_DEVICE_END;
 	pdev->dev_info = (void*)info;
 	pdev->dev_id = DISP_DEVICE_SYNCGEN0 + module;
 	pdev->disp_ops  = &syncgen_ops[module];
