@@ -2304,8 +2304,8 @@ static int display_soc_probe(struct platform_device *pldev)
 	pdev = get_display_ptr(DISP_DEVICE_SYNCGEN0 + module);
 	list_add(&pdev->list, &info->link);
 
-	pdev->dev_in = DISP_DEVICE_END;
-	pdev->dev_out = DISP_DEVICE_END;
+	pdev->dev_in = module;
+	pdev->dev_out = module;
 	pdev->dev_info = (void*)info;
 	pdev->dev_id = DISP_DEVICE_SYNCGEN0 + module;
 	pdev->disp_ops  = &syncgen_ops[module];
