@@ -154,6 +154,7 @@ int 		 nxp_soc_disp_device_stat_enable(enum disp_dev_type device);
 int 		 nxp_soc_disp_device_suspend	(enum disp_dev_type device);
 void 		 nxp_soc_disp_device_resume 	(enum disp_dev_type device);
 
+void		 nxp_soc_disp_device_framebuffer(int module, int fb);
 int 		 nxp_soc_disp_device_enable_all	(int module, int enable);
 int 		 nxp_soc_disp_device_suspend_all(int module);
 void 		 nxp_soc_disp_device_resume_all	(int module);

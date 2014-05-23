@@ -1385,6 +1385,15 @@ config SENSORS_MMA7660
 
 		If unsure, say N.
 
+config SENSORS_MMA865X
+	tristate "Freescale MMA865X 3-Axis Accelerometer"
+	depends on I2C
+	default n
+	help
+		Say Y here to enable the accelerometer.
+
+		If unsure, say N.
+
 config SENSORS_STK831X
 	tristate "Lex Hsieh / Sensortek STK831X 3-Axis Accelerometer"
 	depends on I2C

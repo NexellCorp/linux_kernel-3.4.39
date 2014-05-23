@@ -1269,6 +1269,25 @@ static struct platform_device adc_device = {
 #include "dev-display.c"
 
 /*------------------------------------------------------------------------------
+ * Watchdog Timer
+ */
+
+#if defined(CONFIG_NXP4330_WATCHDOG)
+
+static struct resource nxp_wdt_resource[] = {
+        [0] = DEFINE_RES_MEM(PHY_BASEADDR_WDT, SZ_1K),
+        [1] = DEFINE_RES_IRQ(IRQ_PHY_WDT),
+};
+
+struct platform_device nxp_device_wdt = {
+        .name           = DEV_NAME_WDT,
+        .id             = -1,
+        .num_resources  = ARRAY_SIZE(nxp_wdt_resource),
+        .resource       = nxp_wdt_resource,
+};
+#endif
+
+/*------------------------------------------------------------------------------
  * register cpu platform devices
  */
 void __init nxp_cpu_devices_register(void)
@@ -1399,6 +1418,12 @@ void __init nxp_cpu_devices_register(void)
     /* Register the platform devices */
     printk("mach: add graphic device opengl|es\n");
     platform_device_register(&vr_gpu_device);
+
+#if defined(CONFIG_NXP4330_WATCHDOG)
+    printk("mach: add device watchdog\n");
+    platform_device_register(&nxp_device_wdt);
+#endif
+
 #ifdef CONFIG_PM_RUNTIME
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37))
 		pm_runtime_set_autosuspend_delay(&(vr_gpu_device.dev), 1000);
