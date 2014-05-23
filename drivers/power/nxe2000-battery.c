@@ -3500,6 +3500,12 @@ static void charger_irq_work(struct work_struct *work)
 			 "%s(): Error in enable charger mask INT %d\n",
 			 __func__, ret);
 
+#if defined(NXE2000_BATTERY_VERSION_20140516_V3131)
+	if(info->first_soc) {
+		return;
+	}
+#endif
+
 	/* set USB/ADP ILIM */
 	ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &val);
 	if (ret < 0) {
