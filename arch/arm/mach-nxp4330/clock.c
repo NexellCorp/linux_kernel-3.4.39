@@ -53,12 +53,20 @@
 #define	INPUT_CLKS		6		/* PLL0, PLL1, PLL2, PLL3, EXT1, EXT2 */
 
 #ifdef  CONFIG_ARM_NXP4330_CPUFREQ
-#define	DVFS_CPU_PLL	CONFIG_NXP4330_CPUFREQ_PLLDEV
-#define IGNORE_PLL		~(1<<DVFS_CPU_PLL)
+#define	DVFS_CPU_PLL	~(1<<CONFIG_NXP4330_CPUFREQ_PLLDEV)
 #else
-#define IGNORE_PLL		(-1)
+#define	DVFS_CPU_PLL	(-1UL)
 #endif
-#define	INPUT_MASK 		(((1<<INPUT_CLKS) - 1) & IGNORE_PLL)
+
+#ifdef  CONFIG_ARM_NXP4330_GPUFREQ
+#define	DVFS_GPU_PLL	~(1<<CONFIG_NXP4330_GPUFREQ_PLLDEV)
+#else
+#define	DVFS_GPU_PLL	(-1UL)
+#endif
+
+#define IGNORE_PLLs		(DVFS_CPU_PLL & DVFS_GPU_PLL)
+
+#define	INPUT_MASK 		(((1<<INPUT_CLKS) - 1) & IGNORE_PLLs)
 
 #define	_PLL0_ 			(1 << _InPLL0_)
 #define	_PLL1_ 			(1 << _InPLL1_)
@@ -234,6 +242,15 @@ static inline void peri_clk_rate(void *base, int level, int src, int div)
 	struct clkgen_register *preg = base;
 	register U32 val;
 
+#ifdef CONFIG_NXP4330_CPUFREQ_PLLDEV
+	if (CONFIG_NXP4330_CPUFREQ_PLLDEV == src)
+		printk("*** %s: Fail pll.%d for CPU DFS ***\n", __func__, src);
+#endif
+#ifdef CONFIG_NXP4330_GPUFREQ_PLLDEV
+	if (CONFIG_NXP4330_GPUFREQ_PLLDEV == src)
+		printk("*** %s: Fail pll.%d for GPU DFS ***\n", __func__, src);
+#endif
+
 	val  = ReadIODW(&preg->CLKGEN[level<<1]);
 	val &= ~(0x07   << 2);
 	val |=  (src    << 2);	/* source */
@@ -382,11 +399,11 @@ static inline long core_set_rate(struct clk *clk, long rate)
 	if (*c++ == 'l')
 		pll = simple_strtol(c, NULL, 10);
 
-	pr_debug("%s change pll.%d (dvfs pll.%d) %ld\n", __func__, pll, DVFS_CPU_PLL, rate);
+	pr_debug("%s change pll.%d (dvfs pll.%d) %ld\n", __func__, pll, CONFIG_NXP4330_CPUFREQ_PLLDEV, rate);
 
 	if (pll != -1 &&
-		pll == DVFS_CPU_PLL) {
-		if (! support_dvfs) {
+		pll == CONFIG_NXP4330_CPUFREQ_PLLDEV) {
+		if (!support_dvfs) {
 			printk("Can't DVFS rate %10ld with PLL %d....\n", rate, pll);
 			return clk->rate;
 		}
@@ -615,7 +632,6 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
 		int d = (0 == i ? peri->clk_div0: peri->clk_div1);
 		if (-1 == s)
 			continue;
-
 		peri_clk_rate(peri->base_addr, i, s, d);
 		pr_debug("clk: %s.%d (%p) set_rate [%d] src[%d] div[%d]\n",
 			peri->dev_name, peri->dev_id, peri->base_addr, i, s, d);
@@ -637,12 +653,20 @@ int clk_enable(struct clk *clk)
 		return 0;
 
 	spin_lock_irqsave(&peri->lock, flags);
-	pr_debug("clk: %s.%d enable (BCLK=%s)\n",
-		peri->dev_name, peri->dev_id, (_GATE_BCLK_&peri->clk_mask0?"ON":"PASS"));
+	pr_debug("clk: %s.%d enable (BCLK=%s, PCLK=%s)\n",
+		peri->dev_name, peri->dev_id, _GATE_BCLK_ & peri->clk_mask0 ? "ON":"PASS",
+		_GATE_PCLK_ & peri->clk_mask0 ? "ON":"PASS");
 
 	if (!(INPUT_MASK & peri->clk_mask0)) {
+		/*
+		 * Gated BCLK/PCLK enable
+		 */
 		if (_GATE_BCLK_ & peri->clk_mask0)
 			peri_clk_bclk(peri->base_addr, 1);
+
+		if (_GATE_PCLK_ & peri->clk_mask0)
+			peri_clk_pclk(peri->base_addr, 1);
+
 		spin_unlock_irqrestore(&peri->lock, flags);
 		return 0;
 	}
@@ -651,6 +675,24 @@ int clk_enable(struct clk *clk)
 	inv = peri->clk_inv0;
 	for (; peri->level > i; i++, inv = peri->clk_inv1)
 		peri_clk_invert(peri->base_addr, i, inv);
+
+	/*
+	 * Gated BCLK/PCLK enable
+	 */
+	if (_GATE_BCLK_ & peri->clk_mask0)
+		peri_clk_bclk(peri->base_addr, 1);
+
+	if (_GATE_PCLK_ & peri->clk_mask0)
+		peri_clk_pclk(peri->base_addr, 1);
+
+	/* restore clock rate */
+	for (i = 0; peri->level > i ; i++)	{
+		int s = (0 == i ? peri->clk_src0: peri->clk_src1);
+		int d = (0 == i ? peri->clk_div0: peri->clk_div1);
+		if (-1 == s)
+			continue;
+		peri_clk_rate(peri->base_addr, i, s, d);
+	}
 
 	peri_clk_enable(peri->base_addr);
 	peri->enable = true;
@@ -674,12 +716,30 @@ void clk_disable(struct clk *clk)
 
 	peri->enable = false;
 	if (!(INPUT_MASK & peri->clk_mask0)) {
+		/*
+	 	 * Gated BCLK/PCLK disable
+	 	*/
 		if (_GATE_BCLK_ & peri->clk_mask0)
 			peri_clk_bclk(peri->base_addr, 0);
+
+		if (_GATE_PCLK_ & peri->clk_mask0)
+			peri_clk_pclk(peri->base_addr, 0);
+
 		spin_unlock_irqrestore(&peri->lock, flags);
 		return;
 	}
+
+	peri_clk_rate(peri->base_addr, 0, 7, 256);	/* for power save */
 	peri_clk_disable(peri->base_addr);
+
+	/*
+	 * Gated BCLK/PCLK disable
+	 */
+	if (_GATE_BCLK_ & peri->clk_mask0)
+		peri_clk_bclk(peri->base_addr, 0);
+
+	if (_GATE_PCLK_ & peri->clk_mask0)
+		peri_clk_pclk(peri->base_addr, 0);
 
 	spin_unlock_irqrestore(&peri->lock, flags);
 	return;
@@ -743,7 +803,7 @@ void __init nxp_cpu_clock_init(void)
 	for (i = 0; ARRAY_SIZE(core_hz) > i; i++)
 		core_update_rate(i);
 
-	for (i = 0;( CLKPLL_NUM+PERIPH_NUM) > i; i++, cdev++) {
+	for (i = 0; (CLKPLL_NUM+PERIPH_NUM) > i; i++, cdev++) {
 		if (CLKPLL_NUM > i) {
 			cdev->name = clk_plls[i];
 			clk = &cdev->clk;
@@ -751,6 +811,7 @@ void __init nxp_cpu_clock_init(void)
 			continue;
 		}
 
+		peri = &clk_periphs[i-CLKPLL_NUM];
 		peri->base_addr = IO_ADDRESS(peri->base_addr);
 		spin_lock_init(&peri->lock);
 		cdev->peri = peri;
@@ -763,11 +824,14 @@ void __init nxp_cpu_clock_init(void)
 				cdev->clk.rate = core_rate(CORECLK_ID_PCLK);
 		}
 
-		/* Gated PCLK enable */
-		if (_GATE_PCLK_ & peri->clk_mask0)
-			peri_clk_pclk(peri->base_addr, 1);
-
-		peri++;	/* next */
+		/* prevent uart clock disable for low level debug message */
+		#ifndef CONFIG_DEBUG_NX_UART
+		if (peri->dev_name) {
+			peri_clk_disable(peri->base_addr);
+			peri_clk_bclk(peri->base_addr, 0);
+			peri_clk_pclk(peri->base_addr, 0);
+		}
+		#endif
 	}
 
 	cdev = clk_dev_get(CLKPLL_NUM);
@@ -778,7 +842,7 @@ void __init nxp_cpu_clock_init(void)
 				struct nxp_clk_dev *cl = &clk_devices[CLKPLL_NUM+PERIPH_NUM+i];
 				cl->name = clk_link[i].name;
 				cl->link = &cdev->clk;
-			#if 0 /* not support linked clock, ex uart */
+			#if (0) /* not support linked clock, ex uart */
 				cl->peri = cdev->peri;
 			#endif
 			}
@@ -788,7 +852,7 @@ void __init nxp_cpu_clock_init(void)
 
 	printk("CPU : Clock Generator= %d EA, ", DEVICE_NUM);
 #ifdef CONFIG_ARM_NXP4330_CPUFREQ
-	printk("DVFS = %s, PLL.%d\n", support_dvfs?"support":"can't support", DVFS_CPU_PLL);
+	printk("DVFS = %s, PLL.%d\n", support_dvfs?"support":"can't support", CONFIG_NXP4330_CPUFREQ_PLLDEV);
 #else
 	printk("DVFS = Off\n");
 #endif
@@ -828,12 +892,18 @@ void nxp_cpu_clock_print(void)
 
 void nxp_cpu_clock_resume(void)
 {
-	struct nxp_clk_periph *peri = clk_periphs;
-	int i = CLKPLL_NUM;
+	struct nxp_clk_periph *peri;
+	int cnt = PERIPH_NUM;
+	int i;
 
-	/* Gated PCLK enable */
-	for ( ; (CLKPLL_NUM+PERIPH_NUM) > i; i++, peri++) {
-		if (_GATE_PCLK_ & peri->clk_mask0)
-			peri_clk_pclk(peri->base_addr, 1);
+	for (i = 0; cnt > i; i++) {
+		peri = &clk_periphs[i];
+		/* exception */
+		if (_GATE_PCLK_ & peri->clk_mask0) {
+	#ifdef CONFIG_I2C_NEXELL
+			if (!strcmp("nxp-i2c", peri->dev_name))
+				peri_clk_pclk(peri->base_addr, 1);
+	#endif
+		}
 	}
 }
