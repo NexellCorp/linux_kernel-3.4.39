@@ -228,34 +228,6 @@ static struct i2c_board_info __initdata gslX680_i2c_bdi = {
 
 
 /*------------------------------------------------------------------------------
- * ANDROID timed gpio platform device
- */
-#if defined(CONFIG_GPIOLIB) && defined(CONFIG_ANDROID_TIMED_GPIO)
-
-#define CONFIG_ANDROID_VIBRATION
-#include <../../../../drivers/staging/android/timed_gpio.h>
-
-#define ANDROID_VIBRATION_GPIO    (PAD_GPIO_D + 18)
-static struct timed_gpio android_vibration = {
-    .name         = "vibrator",
-    .gpio         = ANDROID_VIBRATION_GPIO,
-    .max_timeout  = 15000, /* ms */
-};
-
-static struct timed_gpio_platform_data timed_gpio_data = {
-    .num_gpios    = 1,
-    .gpios        = &android_vibration,
-};
-
-static struct platform_device android_timed_gpios = {
-    .name         = "timed-gpio",
-    .id           = -1,
-	.dev          = {
-		.platform_data = &timed_gpio_data,
-	},
-};
-#endif
-/*------------------------------------------------------------------------------
  * Keypad platform device
  */
 #if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
@@ -1387,11 +1359,6 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&key_plat_device);
 #endif
 
-#if defined(CONFIG_ANDROID_VIBRATION)
-	printk("plat: add android timed gpio\n");
-    platform_device_register(&android_timed_gpios);
-#endif
-
 #if defined(CONFIG_I2C_NEXELL)
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif
@@ -1423,12 +1390,6 @@ void __init nxp_board_devices_register(void)
     printk("plat: register spidev\n");
 #endif
 
-/*
-#if defined(CONFIG_TOUCHSCREEN_AW5306)
-	printk("plat: add touch(aw5306) device\n");
-	i2c_register_board_info(AW5306_I2C_BUS, &aw5306_i2c_bdi, 1);
-#endif
-*/
 #if defined(CONFIG_TOUCHSCREEN_GSLX680)
 	printk("plat: add touch(gslX680) device\n");
 	i2c_register_board_info(GSLX680_I2C_BUS, &gslX680_i2c_bdi, 1);
@@ -1437,11 +1398,6 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_SENSORS_MMA865X) || defined(CONFIG_SENSORS_MMA865X_MODULE)
 	printk("plat: add g-sensor mma865x\n");
 	i2c_register_board_info(2, &mma865x_i2c_bdi, 1);
-#endif
-
-#if defined(CONFIG_SENSORS_STK831X) || defined(CONFIG_SENSORS_STK831X_MODULE)
-	printk("plat: add g-sensor stk831x\n");
-	i2c_register_board_info(STK831X_I2C_BUS, &stk831x_i2c_bdi, 1);
 #endif
 
 #if defined(CONFIG_RFKILL_NEXELL)
