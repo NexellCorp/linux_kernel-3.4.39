@@ -1043,7 +1043,10 @@ static int wm8978_hw_params(struct snd_pcm_substream *substream,
 			/* Clock CODEC directly from MCLK */
 			snd_soc_update_bits(codec, WM8978_CLOCKING, 0x100, 0);
 	}
-
+#if defined(CONFIG_PLAT_NXP4330_DRONE)   //drone use differential output of momo mix of DACs
+    snd_soc_update_bits(codec, WM8978_BEEP_CONTROL,(1<<4),(1<<4));
+    snd_soc_update_bits(codec, WM8978_OUTPUT_CONTROL,(1<<2),(1<<2));
+#endif
 	return 0;
 }
 
