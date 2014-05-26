@@ -36,7 +36,7 @@
 //#define GSL_DEBUG
 //#define GSL_MONITOR
 //#define HAVE_TOUCH_KEY
-#define SLEEP_CLEAR_POINT
+//#define SLEEP_CLEAR_POINT
 //#define FILTER_POINT
 #ifdef FILTER_POINT
 #define FILTER_MAX	9
@@ -941,9 +941,9 @@ error_alloc_dev:
 	return rc;
 }
 
-static int gsl_ts_suspend(struct device *dev)
+static int gsl_ts_suspend(struct i2c_client *client, pm_message_t mesg)
 {
-	struct gsl_ts *ts = dev_get_drvdata(dev);
+	struct gsl_ts *ts = i2c_get_clientdata(client);
 	int i;
 
   	printk("I'am in gsl_ts_suspend() start\n");
@@ -978,9 +978,9 @@ static int gsl_ts_suspend(struct device *dev)
 	return 0;
 }
 
-static int gsl_ts_resume(struct device *dev)
+static int gsl_ts_resume(struct i2c_client *client, pm_message_t mesg)
 {
-	struct gsl_ts *ts = dev_get_drvdata(dev);
+	struct gsl_ts *ts = i2c_get_clientdata(client);
 	int i;
 	
   	printk("I'am in gsl_ts_resume() start\n");
@@ -1019,14 +1019,14 @@ static void gsl_ts_early_suspend(struct early_suspend *h)
 {
 	struct gsl_ts *ts = container_of(h, struct gsl_ts, early_suspend);
 	printk("[GSLX680] Enter %s\n", __func__);
-	gsl_ts_suspend(&ts->client->dev);
+	gsl_ts_suspend(&ts->client,NULL);
 }
 
 static void gsl_ts_late_resume(struct early_suspend *h)
 {
 	struct gsl_ts *ts = container_of(h, struct gsl_ts, early_suspend);
 	printk("[GSLX680] Enter %s\n", __func__);
-	gsl_ts_resume(&ts->client->dev);
+	gsl_ts_resume(&ts->client);
 }
 #endif
 
