@@ -895,4 +895,13 @@ config TOUCHSCREEN_GSLX680
 	  Say Y here if you have the GSLX680 touchscreen.
 
 	  If unsure, say N.
+
+config TOUCHSCREEN_ATMEL_MXT640T
+	tristate "Atmel mXT 604T I2C Touchscreen"
+	depends on I2C
+	help
+	  Say Y here if you have Atmel mXT 604T I2C touchscreen.
+
+	  If unsure, say N.
+
 endif

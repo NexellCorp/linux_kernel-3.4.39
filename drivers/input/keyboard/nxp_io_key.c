@@ -97,7 +97,6 @@ static void nxp_key_event(struct work_struct *work)
 	unsigned int keycode = code->keycode;
 	int press = 0;
 	u_long flags;
-	DBGOUT("%s io:%d, code:%4d\n", __func__, code->io, keycode);
 
 	local_irq_save(flags);
 
@@ -110,9 +109,11 @@ static void nxp_key_event(struct work_struct *work)
 	if(press != code->keystat) {
 		code->keystat = press;
 		if (KEY_STAT_PRESS == press) {
+			DBGOUT("%s io:%d, code:%4d DN\n", __func__, code->io, keycode);
 			input_report_key(key->input, keycode, 1);
 			input_sync(key->input);
 		} else {
+			DBGOUT("%s io:%d, code:%4d UP\n", __func__, code->io, keycode);
 			input_report_key(key->input, keycode, 0);
 			input_sync(key->input);
 		}
