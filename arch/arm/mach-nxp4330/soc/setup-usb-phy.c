@@ -113,7 +113,6 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 
 			bit_pos -= 3;
 		}
-#endif
 		writel(temp2, SOC_VA_TIEOFF + 0x1C);
 
 		// 1. Release common reset of host controller
