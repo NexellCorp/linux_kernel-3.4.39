@@ -61,7 +61,6 @@ struct dma_desc {
 		} rx;
 		struct {
 			/* RDES0 */
-//			u32 payload_csum_error:1;
 			u32 rx_mac_addr:1;
 			u32 crc_error:1;
 			u32 dribbling:1;
