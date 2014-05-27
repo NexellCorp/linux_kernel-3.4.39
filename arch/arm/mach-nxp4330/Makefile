@@ -9,10 +9,11 @@ obj-$(CONFIG_ARCH_NXP4330) 			+= soc/
 obj-$(CONFIG_HOTPLUG_CPU)			+= hotplug.o
 obj-$(CONFIG_SMP)					+= platsmp.o headsmp.o
 obj-$(CONFIG_PM)					+= pm.o lldebug.o
-obj-$(CONFIG_ARM_NXP4330_CPUFREQ)	+= cpufreq.o
+obj-$(CONFIG_ARM_NXP4330_CPUFREQ)   += cpufreq.o
 obj-$(CONFIG_MMC_DW)				+= dev-mmc.o
 obj-$(CONFIG_HAVE_PWM)				+= pwm.o
 obj-$(CONFIG_CMA)					+= cma_reserve_mem.o
+obj-$(CONFIG_NEXELL_DFS_BCLK)		+= nxp-dfs-bclk.o
 
 #===============================================================================
 # Support prototype
