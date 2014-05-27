@@ -1400,8 +1400,9 @@ void dwc_otg_core_init(dwc_otg_core_if_t * core_if)
 		/* Broadcom had altered to (1<<3)|(0<<0) - WRESP=1, max 4 beats */
 // psw0523 fix
 		//ahbcfg.b.hburstlen = (1<<3)|(0<<0);//DWC_GAHBCFG_INT_DMA_BURST_INCR4;
-		//ahbcfg.b.hburstlen = 0x7;
-		ahbcfg.b.hburstlen = 0x0;
+		//ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR16;
+		//ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_SINGLE;
+		ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR4;
 // end psw0523
 		core_if->dma_enable = (core_if->core_params->dma_enable != 0);
 		core_if->dma_desc_enable =
