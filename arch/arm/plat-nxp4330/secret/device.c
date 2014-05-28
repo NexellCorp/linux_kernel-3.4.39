@@ -658,8 +658,14 @@ static struct i2c_board_info __initdata aw5306_i2c_bdi = {
 static int _atmel604t_power(bool on)
 {
     printk("%s %d\n", __func__, on);
-//    if (on)
-//        nxp_soc_gpio_set_out_value(PAD_GPIO_A + 17, on);
+	
+    if (on)
+	{	
+		
+		nxp_soc_gpio_set_out_value(CFG_IO_TOUCH_RESET_PIN, 1);
+
+	}
+
     return 0;
 }
 
@@ -674,7 +680,7 @@ static struct mxt_platform_data mxt_platform_data = {
 	.num_xnode=32,
 	.num_ynode=20,
 	.max_x=1280,
-	.max_y=720,
+	.max_y=800,
 	.irqflags = 0, // irq high or low 
 	.boot_address = 0x26,
 	.revision = 0x01,
@@ -1486,6 +1492,11 @@ static int _dwmci1_init(u32 slot_id, irq_handler_t handler, void *data)
 	return 0;
 }
 
+#define	DRIVE_DELAY(n)		((n & 0xFF) << 0)	// write
+#define	DRIVE_PHASE(n)		((n & 0x03) <<16)	// write
+#define	SAMPLE_DELAY(n)		((n & 0xFF) << 8)	// read
+#define	SAMPLE_PHASE(n)		((n & 0x03) <<24)	// read
+
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 					DW_MCI_QUIRK_HIGHSPEED,
@@ -1497,6 +1508,7 @@ static struct dw_mci_board _dwmci1_data = {
 	.init			= _dwmci1_init,
 	.ext_cd_init	= _dwmci1_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci1_ext_cd_cleanup,
+	.clk_dly		= DRIVE_DELAY(0) | SAMPLE_DELAY(0) | DRIVE_PHASE(1) | SAMPLE_PHASE(1),	// 0x01010000,
 };
 
 #if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
