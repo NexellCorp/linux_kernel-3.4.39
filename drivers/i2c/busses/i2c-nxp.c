@@ -182,28 +182,54 @@ static inline void i2c_trans_dev(unsigned int base, unsigned int ack, int stop)
 	writel(ICCR, (base+I2C_ICCR_OFFS));
 }
 
-static inline void i2c_stop_dev(struct nxp_i2c_param *par, int nostop, int read)
+static int i2c_scl_high(struct nxp_i2c_param *par)
 {
 	unsigned int base = (unsigned int)par->hw.base_addr;
 	unsigned int ICSR = 0, ICCR = 0, STOP = 0;
+	int gpio = par->hw.scl_io;
+	unsigned long start;
+	int timeout = 1;
+	gpio_request(gpio,NULL);
+	gpio_direction_output(gpio, 1);
+
+	STOP = (1<<STOP_CLK_REL_POS);
+	writel(STOP, (base+I2C_STOP_OFFS));
+	ICSR= readl(base+I2C_ICSR_OFFS);
+	ICSR &= ~(1<<ICSR_OUT_ENB_POS);
+	ICSR = par->trans_mode << ICSR_MOD_SEL_POS;
+	writel(ICSR, (base+I2C_ICSR_OFFS));
+	ICCR = (1<<ICCR_IRQ_CLR_POS);
+	writel(ICCR, (base+I2C_ICCR_OFFS));
+
+	start = jiffies;
+	while (!gpio_get_value(gpio)) {
+
+		if (time_after(jiffies, start + timeout)) {
+			if (gpio_get_value(gpio))
+				break;
+			return -ETIMEDOUT;
+		}
+		cpu_relax();
+	}
+
+	nxp_soc_gpio_set_io_func(gpio, 1);
+	return 0;
+}
+
+static inline void i2c_stop_dev(struct nxp_i2c_param *par, int nostop, int read)
+{
+	unsigned int base = (unsigned int)par->hw.base_addr;
+	unsigned int ICSR = 0, ICCR = 0;
 
 	if (!nostop) {
 		gpio_request(par->hw.sda_io,NULL);		 //gpio_Request
 		gpio_direction_output(par->hw.sda_io,0); //SDA LOW
 		udelay(1);
 
-		STOP = (1<<STOP_CLK_REL_POS);
-		writel(STOP, (base+I2C_STOP_OFFS));
-		ICSR= readl(base+I2C_ICSR_OFFS);
-		ICSR &= ~(1<<ICSR_OUT_ENB_POS);
-		ICSR = par->trans_mode << ICSR_MOD_SEL_POS;
-		writel(ICSR, (base+I2C_ICSR_OFFS));
+		i2c_scl_high(par);
 
-		ICCR = (1<<ICCR_IRQ_CLR_POS);
-		writel(ICCR, (base+I2C_ICCR_OFFS));
 		udelay(1);
 		gpio_set_value(par->hw.sda_io,1);			//STOP Signal Gen
-
 		nxp_soc_gpio_set_io_func(par->hw.sda_io, 1);
 	} else {
 		#if (NOSTOP_GPIO)

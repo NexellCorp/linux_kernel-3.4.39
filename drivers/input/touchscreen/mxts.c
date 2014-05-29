@@ -22,8 +22,6 @@
 #include <linux/delay.h>
 #include <linux/slab.h>
 #include <linux/gpio.h>
-//#include <linux/i2c/mxts_2952t.h>
-#include <linux/i2c/mxts.h>
 #include <asm/unaligned.h>
 #include <linux/firmware.h>
 #include <linux/string.h>
@@ -34,9 +32,9 @@
 #include <linux/pm_runtime.h>
 #endif
 
-//#include <linux/of_gpio.h>
+#include "mxts.h"
+
 #include <linux/regulator/consumer.h>
-//#include <linux/qpnp/pin.h>
 
 //static int mxt_power_onoff(struct mxt_data *data, bool enabled);
 static int mxt_make_highchg(struct mxt_data *data);
@@ -100,11 +98,19 @@ static int tsp_request_gpio(struct mxt_data *data)
 				"%s: wakeup int config return: %d\n",
 				__func__, ret);
 
+	ret = data->pdata->power_onoff(true);
+	if (ret) {
+		printk("mxts: Failed to power on.\n");
+		return -EINVAL;
+	}
+
+// when 50khz
+	msleep(100);
+
 	return ret;
 }
 
 #if 0
-
 static int mxt_power_onoff(struct mxt_data *data, bool enable)
 {
 	int ret = 0;
@@ -173,7 +179,7 @@ static int mxt_read_mem(struct mxt_data *data, u16 reg, u8 len, void *buf)
 		else
 			break;
 	}
-
+	udelay(4);
 	for (i = 0; i < 3 ; i++) {
 		ret = i2c_transfer(data->client->adapter, &msg[1], 1);
 		if (ret < 0)
@@ -182,7 +188,7 @@ static int mxt_read_mem(struct mxt_data *data, u16 reg, u8 len, void *buf)
 		else
 			break;
 	}
-	
+
 	return (ret == 1) ? 0 : -EIO;
 }
 
@@ -309,7 +315,6 @@ static int mxt_write_object(struct mxt_data *data,
 		dev_err(&data->client->dev,
 				"Error to write T[%d] offset[%d] val[%d]\n",
 				type, offset, val);
-
 	return error;
 }
 
@@ -334,32 +339,25 @@ static int mxt_calculate_infoblock_crc(struct mxt_data *data, u32 *crc_pointer)
 	u8 mem[7 + data->info.object_num * 6];
 	int ret;
 	int i,j;
-   
-    
+
+
     for (j=0; j < 20 ; j ++)
 	{
-		msleep(100);
-	
 		ret = mxt_read_mem(data, 0, sizeof(mem), mem);
-
-		
-		//if (ret)
-		//	return ret;
 		crc =0;
 		for (i = 0; i < sizeof(mem) - 1; i += 2)
 		{
 #if TSP_USE_ATMELDBG
 			dev_info(&data->client->dev,
 					"read info for CRC i=%d i+1=%d : %d %d\n",i,i+1, mem[i], mem[i + 1]);
-#endif				
+#endif
 			crc = mxt_make_crc24(crc, mem[i], mem[i + 1]);
 		}
-	
-		if ( mem[0] != 255 ) 
+
+		if ( mem[0] != 255 )
 		{
 			break;
 		}
-
 	}
 	*crc_pointer = mxt_make_crc24(crc, mem[i], 0) & 0x00FFFFFF;
 
@@ -376,11 +374,7 @@ static int mxt_read_info_crc(struct mxt_data *data, u32 *crc_pointer)
 	crc_address = MXT_OBJECT_TABLE_START_ADDRESS +
 			data->info.object_num * MXT_OBJECT_TABLE_ELEMENT_SIZE;
 
-	do{//hugh
-		msleep(10);
-		ret = mxt_read_mem(data, crc_address, 3, msg);
-	}while(msg[0] == 255);
-	
+	ret = mxt_read_mem(data, crc_address, 3, msg);
 	if (ret)
 		return ret;
 
@@ -605,34 +599,6 @@ static int mxt_write_config(struct mxt_fw_info *fw_info)
 
 	return ret;
 }
-
-static int mxt_very_config(struct mxt_fw_info *fw_info)
-{
-	struct mxt_data *data = fw_info->data;
-	struct device *dev = &data->client->dev;
-	struct mxt_object *object;
-	struct mxt_cfg_data *cfg_data;
-	u32 current_crc;
-	u8 i, val = 0;
-	u16 reg, index;
-	int ret;
-
-	/* Get config CRC from device */
-	ret = mxt_read_config_crc(data, &current_crc);
-	if (ret)
-		return ret;
-
-	/* Check config CRC */
-	if (current_crc == fw_info->cfg_crc) {
-		dev_info(dev, "mxt_very_config OK:[CRC 0x%06X]\n", current_crc);
-		return 0;
-	}
-
-	dev_info(dev, "mxt_very_config error:[CRC 0x%06X!=0x%06X]\n", current_crc,
-			fw_info->cfg_crc);
-
-	return ret;
-}
 #endif
 #if TSP_PATCH
 #include "mxts_patch.c"
@@ -682,7 +648,7 @@ static void charger_noti_dwork(struct work_struct *work)
 {
 	struct mxt_data *data = container_of(work, struct mxt_data,
 								noti_dwork.work);
-	if (!data->mxt_enabled) {	
+	if (!data->mxt_enabled) {
 		dev_info(&data->client->dev, "delaye work !!!\n");
 		schedule_delayed_work(&data->noti_dwork, HZ / 5);
 		return ;
@@ -715,14 +681,10 @@ static void mxt_report_input_data(struct mxt_data *data)
 			input_mt_report_slot_state(data->input_dev, MT_TOOL_FINGER, false);
 		} else {
 			input_mt_report_slot_state(data->input_dev, MT_TOOL_FINGER, true);
-			input_report_abs(data->input_dev, ABS_MT_POSITION_X,
-					data->fingers[i].x);
-			input_report_abs(data->input_dev, ABS_MT_POSITION_Y,
-					data->fingers[i].y);
-			input_report_abs(data->input_dev, ABS_MT_TOUCH_MAJOR,
-					data->fingers[i].w);
-			input_report_abs(data->input_dev, ABS_MT_PRESSURE,
-					 data->fingers[i].z);
+			input_report_abs(data->input_dev, ABS_MT_POSITION_X, data->fingers[i].x);
+			input_report_abs(data->input_dev, ABS_MT_POSITION_Y, data->fingers[i].y);
+			input_report_abs(data->input_dev, ABS_MT_TOUCH_MAJOR, data->fingers[i].w);
+			input_report_abs(data->input_dev, ABS_MT_PRESSURE, data->fingers[i].z);
 #if TSP_USE_SHAPETOUCH
 			/* Currently revision G firmware do not support it */
 			if (data->pdata->revision == MXT_REVISION_I) {
@@ -781,6 +743,7 @@ static void mxt_report_input_data(struct mxt_data *data)
 	}
 
 	if (count == 0) {
+//		input_report_abs(data->input_dev, ABS_MT_TOUCH_MAJOR, 0);	/* release press */
 		input_report_key(data->input_dev, BTN_TOUCH, 0);
 		input_report_key(data->input_dev, BTN_TOOL_FINGER, 0);
 	}
@@ -1154,7 +1117,7 @@ static void mxt_treat_T100_object(struct mxt_data *data,
 #if TSP_USE_SHAPETOUCH
 			data->fingers[id].component = msg[5];
 #endif
-#if 0
+#if 1
 			data->fingers[id].z = msg[6];
 			data->fingers[id].w = msg[7];
 #else
@@ -1196,6 +1159,9 @@ static irqreturn_t mxt_irq_thread(int irq, void *ptr)
 	struct device *dev = &data->client->dev;
 	u8 reportid, type;
 
+//	printk("========== preempt_count=%d, in interrupt= %s =================\n",
+//		preempt_count(), in_interrupt()?"O":"X");
+
 #if TSP_USE_ATMELDBG
 	dev_info(dev, "mxt_irq_thread start\n");
 #endif
@@ -1217,7 +1183,9 @@ static irqreturn_t mxt_irq_thread(int irq, void *ptr)
 		reportid = message.reportid;
 
 		if (reportid > data->max_reportid){
-			dev_err(dev, "mxt_irq_thread reportid Failed \n");
+			dev_err(dev, "mxt_irq_thread reportid %d Failed (max %d) \n",
+				reportid, data->max_reportid);
+			mdelay(2000);
 			//goto end;
 			break;
 		}
@@ -1271,7 +1239,8 @@ static irqreturn_t mxt_irq_thread(int irq, void *ptr)
 #if TSP_PATCH
 		mxt_patch_message(data, &message);
 #endif
-	} while (!gpio_get_value(data->pdata->tsp_int));
+//	} while (!gpio_get_value(data->pdata->tsp_int));
+	} while (0);
 
 	if (data->finger_mask)
 		mxt_report_input_data(data);
@@ -1478,7 +1447,6 @@ static int mxt_wait_for_chg(struct mxt_data *data, u16 time)
 	int timeout_counter = 0;
 
 	msleep(time);
-
 	if (data->pdata->tsp_int) {
 		while (gpio_get_value(data->pdata->tsp_int)
 			&& timeout_counter++ <= 20) {
@@ -1514,7 +1482,6 @@ static int mxt_command_backup(struct mxt_data *data, u8 value)
 			MXT_COMMAND_BACKUPNV, value);
 
 	msleep(MXT_BACKUP_TIME);
-
 	return 0;
 }
 
@@ -1656,7 +1623,7 @@ static int mxt_read_id_info(struct mxt_data *data)
 		data->info.matrix_ysize = id[5];
 		data->info.object_num = id[6];
 #if 1 //bitpark
-		if ( id[0] != 0xa4) 
+		if ( id[0] != 0xa4)
 		{
 			dev_err(&data->client->dev, "Read data fail. IC information\n");
 			ret = -EIO;
@@ -1681,11 +1648,8 @@ static int mxt_get_object_table(struct mxt_data *data)
 
 		reg = MXT_OBJECT_TABLE_START_ADDRESS +
 				MXT_OBJECT_TABLE_ELEMENT_SIZE * i;
-		do{//hugh
-			msleep(10);
-			error = mxt_read_mem(data, reg,
-					MXT_OBJECT_TABLE_ELEMENT_SIZE, buf);
-		}while(buf[0] == 255);
+		error = mxt_read_mem(data, reg,
+			MXT_OBJECT_TABLE_ELEMENT_SIZE, buf);
 		if (error)
 			return error;
 
@@ -1746,25 +1710,20 @@ static int mxt_initialize(struct mxt_data *data)
 	u32 read_info_crc, calc_info_crc;
 	int ret;
 
-	msleep(1000); 
-				
 	ret = mxt_read_id_info(data);
 
 #if 1 //bitpark
 	if (ret){
-		printk("mxt_initialize mxt_read_id_info Failed try after SW RESET\n");				
+		printk("mxt_initialize mxt_read_id_info Failed try after SW RESET\n");
 		/* Soft reset */
 		ret = mxt_command_reset(data, MXT_RESET_VALUE);
 		if (ret) {
 			printk("Failed Reset IC before mxt_read_id_info\n");
 		}
-		
-		msleep(1000); 
 		ret = mxt_read_id_info(data);
-	//	}
 	}
-#endif		
-		
+#endif
+
 	if (ret)
 		return ret;
 
@@ -1777,7 +1736,6 @@ static int mxt_initialize(struct mxt_data *data)
 		goto out;
 	}
 
-	msleep(00); 
 	/* Get object table infomation */
 	ret = mxt_get_object_table(data);
 	if (ret)
@@ -1849,15 +1807,7 @@ static int  mxt_rest_initialize(struct mxt_fw_info *fw_info)
 		dev_err(dev, "Failed backup NV data\n");
 		goto out;
 	}
-	msleep(500);
-	
-		/* Write config */
-	ret = mxt_very_config(fw_info);
-	if (ret) {
-		dev_err(dev, "Failed to very config from file\n");
-		goto out;
-	}
-	
+
 	/* Soft reset */
 	ret = mxt_command_reset(data, MXT_RESET_VALUE);
 	if (ret) {
@@ -1873,6 +1823,7 @@ out:
 	return ret;
 }
 
+#if 0
 static int mxt_power_on(struct mxt_data *data)
 {
 /*
@@ -1932,6 +1883,7 @@ static int mxt_power_off(struct mxt_data *data)
 out:
 	return ret;
 }
+#endif
 
 /* Need to be called by function that is blocked with mutex */
 static int mxt_start(struct mxt_data *data)
@@ -1944,7 +1896,7 @@ static int mxt_start(struct mxt_data *data)
 
 #if 1 //hmink
 		mxt_command_reset(data, MXT_RESET_VALUE);
-#endif	
+#endif
 
 		return ret;
 	}
@@ -1952,19 +1904,19 @@ static int mxt_start(struct mxt_data *data)
 	//ret = data->pdata->power_onoff(true);
 	if (ret)
 		dev_err(&data->client->dev, "Fail to start touch\n");
-			
-	
+
+
 	data->patch.cal_flag = 1; //1112 for patch start
 
 	enable_irq(data->client->irq);
-	
+
 #if 1 //hmink
 	ret = mxt_make_highchg(data);
 	if (ret) {
 		dev_err(&data->client->dev, "Failed to clear CHG pin\n");
 		//goto err_req_irq;
 	}
-#endif	
+#endif
 
 	dev_info(&data->client->dev, "mxt_resume\n");
 	return ret;
@@ -1983,7 +1935,7 @@ static int mxt_stop(struct mxt_data *data)
 
 #if 1 //20140305 hmink
 	disable_irq(data->client->irq);
-#endif	
+#endif
 
 	//ret = data->pdata->power_onoff(false);
 	if (ret) {
@@ -2054,21 +2006,22 @@ static int mxt_make_highchg(struct mxt_data *data)
 	struct device *dev = &data->client->dev;
 	struct mxt_message message;
 	int count = data->max_reportid * 2;
-	int error;
+	int error, cnt = 0;
 
 	/* Read dummy message to make high CHG pin */
 	do {
 		error = mxt_read_message(data, &message);
-		dev_err(dev, "mxt_read_message reportid =%x\n",message.reportid);
+		dev_err(dev, "mxt_read_message reportid =%x, cnt=%d\n",message.reportid, cnt++);
 		if (error)
 			return error;
-	} while (message.reportid != 0xff && --count);
+		msleep(1);
+	} while (!gpio_get_value(data->pdata->tsp_int));
+//	} while (message.reportid != 0xff && --count);
 
 	if (!count) {
 		dev_err(dev, "CHG pin isn't cleared\n");
 		return -EBUSY;
 	}
-
 	return 0;
 }
 
@@ -2080,15 +2033,8 @@ static int mxt_touch_finish_init(struct mxt_data *data)
 	client->irq = gpio_to_irq(data->pdata->tsp_int);
 
 	ret = request_threaded_irq(client->irq, NULL, mxt_irq_thread,
-		 IRQF_TRIGGER_FALLING , client->dev.driver->name, data);
+		 IRQF_TRIGGER_FALLING | IRQF_DISABLED, client->dev.driver->name, data);
 
-//	ret = request_threaded_irq(client->irq, NULL, mxt_irq_thread,
-//		 IRQF_TRIGGER_LOW , client->dev.driver->name, data);
-
-//	ret = request_irq(client->irq, mxt_irq_thread,
-//		 IRQF_TRIGGER_FALLING , client->dev.driver->name, data);
-
-				
 	if (ret) {
 		dev_err(&client->dev, "Failed to register interrupt\n");
 		goto err_req_irq;
@@ -2099,7 +2045,7 @@ static int mxt_touch_finish_init(struct mxt_data *data)
 		dev_err(&client->dev, "Failed to clear CHG pin\n");
 		goto err_req_irq;
 	}
-	
+
 //	ret = mxt_wait_for_chg(data, MXT_SW_RESET_TIME);
 //	if (ret)
 //		dev_err(&data->client->dev, "CHG pin Not respond after mxt_make_highchg[%d]\n");
@@ -2199,7 +2145,7 @@ static int mxt_flash_fw_on_probe(struct mxt_fw_info *fw_info)
 	struct mxt_data *data = fw_info->data;
 	struct device *dev = &data->client->dev;
 	int error;
-	
+
 #if 0 // ATMEL TEST
 
     fw_info->fw_ver = 255;
@@ -2207,13 +2153,11 @@ static int mxt_flash_fw_on_probe(struct mxt_fw_info *fw_info)
     return 0;
 
 #endif
-
 	error = mxt_read_id_info(data);
 
 #if 1 //hmink
 	if (error) {
 		dev_err(dev, "mxt_flash_fw_on_probe: mxt_read_id_info Failed\n");
-		msleep(1000); 
 		error = mxt_read_id_info(data);
 	}
 #endif
@@ -2361,7 +2305,6 @@ static int __devinit mxt_touch_init(struct mxt_data *data, bool nowait)
 			dev_err(&client->dev,
 				"cannot schedule firmware update (%d)\n", ret);
 	}
-out:
 	return ret;
 }
 
@@ -2485,20 +2428,13 @@ static int __devinit mxt_probe(struct i2c_client *client,
 #endif
 
 	input_mt_init_slots(input_dev, MXT_MAX_FINGER);
-
-	input_set_abs_params(input_dev, ABS_MT_POSITION_X,
-				0, pdata->max_x, 0, 0);
-	input_set_abs_params(input_dev, ABS_MT_POSITION_Y,
-				0, pdata->max_y, 0, 0);
-	input_set_abs_params(input_dev, ABS_MT_TOUCH_MAJOR,
-				0, MXT_AREA_MAX, 0, 0);
-	input_set_abs_params(input_dev, ABS_MT_PRESSURE,
-				0, MXT_AMPLITUDE_MAX, 0, 0);
+	input_set_abs_params(input_dev, ABS_MT_POSITION_X, 0, pdata->max_x, 0, 0);
+	input_set_abs_params(input_dev, ABS_MT_POSITION_Y, 0, pdata->max_y, 0, 0);
+	input_set_abs_params(input_dev, ABS_MT_TOUCH_MAJOR, 0, MXT_AREA_MAX, 0, 0);
+	input_set_abs_params(input_dev, ABS_MT_PRESSURE, 0, MXT_AMPLITUDE_MAX, 0, 0);
 #if TSP_USE_SHAPETOUCH
-	input_set_abs_params(input_dev, ABS_MT_COMPONENT,
-				0, MXT_COMPONENT_MAX, 0, 0);
-	input_set_abs_params(input_dev, ABS_MT_SUMSIZE,
-				0, MXT_SUMSIZE_MAX, 0, 0);
+	input_set_abs_params(input_dev, ABS_MT_COMPONENT, 0, MXT_COMPONENT_MAX, 0, 0);
+	input_set_abs_params(input_dev, ABS_MT_SUMSIZE, 0, MXT_SUMSIZE_MAX, 0, 0);
 #endif
 
 	input_set_drvdata(input_dev, data);
@@ -2532,25 +2468,16 @@ static int __devinit mxt_probe(struct i2c_client *client,
 		goto err_sysfs_init;
 	}
 */
-	ret = data->pdata->power_onoff(true);
-	if (ret) {
-		dev_err(&client->dev, "Failed to power on.\n");
-		goto err_power_on;
-	}
-
-#if 1
-	msleep(200); //hmink
-#endif
 #if 0
-	/* Soft reset */ // BITPARK for PXD 
+	/* Soft reset */ // BITPARK for PXD
 	ret = mxt_command_reset(data, MXT_RESET_VALUE);
 	if (ret) {
 		printk("Failed Reset IC in request_firmware\n");
 		//goto out;
 	}
-#endif			
+#endif
 	//mxt_read_id_info(data);
-			
+
 	data->patch.cal_flag = 1; //1112 for patch start
 	ret = mxt_touch_init(data, MXT_FIRMWARE_UPDATE_TYPE);
 	if (ret) {
@@ -2570,13 +2497,11 @@ static int __devinit mxt_probe(struct i2c_client *client,
 #endif
 
 #if 1 //hmink
-	msleep(1000);
 	ret = mxt_make_highchg(data);
 	if (ret) {
 		dev_err(&client->dev, "Failed to clear CHG pin\n");
 		//goto err_req_irq;
 	}
-	
 //	ret = mxt_wait_for_chg(data, MXT_SW_RESET_TIME);
 //	if (ret)
 //		dev_err(&data->client->dev, "CHG pin Not respond after mxt_make_highchg[%d]\n");
@@ -2589,7 +2514,7 @@ err_touch_init:
 
 err_power_on:
 	//mxt_sysfs_remove(data);
-err_sysfs_init:
+//err_sysfs_init:
 	input_unregister_device(input_dev);
 	input_dev = NULL;
 err_register_input_device:

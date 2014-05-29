@@ -300,7 +300,7 @@ enum {
 * because it use other write permission. it will be cause
 * failure of CTS
 */
-#define TSP_USE_ATMELDBG		1
+#define TSP_USE_ATMELDBG		0
 /************** Feature - **************/
 
 #if TSP_USE_SHAPETOUCH
