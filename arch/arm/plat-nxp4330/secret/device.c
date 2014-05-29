@@ -35,8 +35,8 @@
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-	{ 1200000, 1200 },
-	{ 1100000, 1200 },
+	//{ 1200000, 1200 },
+	//{ 1100000, 1200 },
 	{ 1000000, 1200 },
 	{  900000, 1200 },
 	{  800000, 1200 },
@@ -53,7 +53,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP4330_CPUFREQ_PLLDEV,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1200*1000,
+	.max_cpufreq    = 1000*1000,
 	.max_retention  =   20*1000,
 	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
