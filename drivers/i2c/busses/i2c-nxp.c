@@ -182,7 +182,7 @@ static inline void i2c_trans_dev(unsigned int base, unsigned int ack, int stop)
 	writel(ICCR, (base+I2C_ICCR_OFFS));
 }
 
-static int i2c_scl_high(struct nxp_i2c_param *par)
+static int i2c_stop_scl(struct nxp_i2c_param *par)
 {
 	unsigned int base = (unsigned int)par->hw.base_addr;
 	unsigned int ICSR = 0, ICCR = 0, STOP = 0;
@@ -226,7 +226,7 @@ static inline void i2c_stop_dev(struct nxp_i2c_param *par, int nostop, int read)
 		gpio_direction_output(par->hw.sda_io,0); //SDA LOW
 		udelay(1);
 
-		i2c_scl_high(par);
+		i2c_stop_scl(par);
 
 		udelay(1);
 		gpio_set_value(par->hw.sda_io,1);			//STOP Signal Gen
