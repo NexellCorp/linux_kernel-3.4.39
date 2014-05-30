@@ -32,7 +32,7 @@
 #include <linux/pm_runtime.h>
 #endif
 
-#include "mxts.h"
+#include <linux/i2c/mxts.h>
 
 #include <linux/regulator/consumer.h>
 
