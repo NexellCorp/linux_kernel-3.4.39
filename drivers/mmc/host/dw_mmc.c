@@ -2948,6 +2948,9 @@ int dw_mci_resume(struct dw_mci *host)
 
 	mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE);
 
+	/* ADD SD/EMMC Clock Shifting by jhkim */
+	mci_writel(host, CLKCTRL, host->pdata->clk_dly);
+
 	/*
  	 * call delayed work to save resume time
  	 */
