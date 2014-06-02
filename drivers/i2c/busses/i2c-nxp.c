@@ -190,9 +190,18 @@ static int i2c_stop_scl(struct nxp_i2c_param *par)
 	unsigned long start;
 	int timeout = 5, ret = 0;
 
+	STOP = (1<<STOP_CLK_REL_POS);
+	writel(STOP, (base+I2C_STOP_OFFS));
+	ICSR= readl(base+I2C_ICSR_OFFS);
+	ICSR &= ~(1<<ICSR_OUT_ENB_POS);
+	ICSR = par->trans_mode << ICSR_MOD_SEL_POS;
+	writel(ICSR, (base+I2C_ICSR_OFFS));
+	ICCR = (1<<ICCR_IRQ_CLR_POS);
+	writel(ICCR, (base+I2C_ICCR_OFFS));
+
 	if (!nxp_soc_gpio_get_in_value(gpio)) {
 		gpio_request(gpio,NULL);
-		gpio_direction_input(gpio);
+		gpio_direction_output(gpio, 1);
 		start = jiffies;
 		while (!gpio_get_value(gpio)) {
 			if (time_after(jiffies, start + timeout)) {
@@ -204,15 +213,6 @@ static int i2c_stop_scl(struct nxp_i2c_param *par)
 			cpu_relax();
 		}
 	}
-
-	STOP = (1<<STOP_CLK_REL_POS);
-	writel(STOP, (base+I2C_STOP_OFFS));
-	ICSR= readl(base+I2C_ICSR_OFFS);
-	ICSR &= ~(1<<ICSR_OUT_ENB_POS);
-	ICSR = par->trans_mode << ICSR_MOD_SEL_POS;
-	writel(ICSR, (base+I2C_ICSR_OFFS));
-	ICCR = (1<<ICCR_IRQ_CLR_POS);
-	writel(ICCR, (base+I2C_ICCR_OFFS));
 
 _stop_timeout:
 	nxp_soc_gpio_set_io_func(gpio, 1);
