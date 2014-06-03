@@ -138,6 +138,33 @@ struct dw_mci_slot {
 
 static struct workqueue_struct *dw_mci_card_workqueue;
 
+#if defined(CONFIG_ESP8089)
+#include <mach/platform.h>
+static struct dw_mci_slot* mci_slot[4] = {NULL, NULL, NULL, NULL};
+static int mci_id = 0;
+
+extern void mmc_stop_host(struct mmc_host *host);
+
+void sw_mci_rescan_card(unsigned insert)
+{
+	struct dw_mci_slot* slot = NULL;
+
+	BUG_ON(CFG_WIFI_SDIO_ID > 3);
+
+	slot = mci_slot[CFG_WIFI_SDIO_ID];
+
+	slot->last_detect_state = insert ? 1 : 0;
+
+	if(!insert)
+		mmc_stop_host(slot->mmc);
+
+	mmc_detect_change(slot->mmc, 0);
+
+	return;
+}
+EXPORT_SYMBOL_GPL(sw_mci_rescan_card);
+#endif
+
 #if defined(CONFIG_DEBUG_FS)
 static int dw_mci_req_show(struct seq_file *s, void *v)
 {
@@ -2358,6 +2385,10 @@ static int __devinit dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 	slot->mmc = mmc;
 	slot->host = host;
 	host->slot[id] = slot;	/* add by jhkim */
+
+#if defined(CONFIG_ESP8089)
+	mci_slot[mci_id++] = slot;
+#endif
 
 	mmc->ops = &dw_mci_ops;
 	mmc->f_min = DIV_ROUND_UP(host->bus_hz, 510);
