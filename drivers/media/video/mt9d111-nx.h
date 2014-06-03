@@ -130,8 +130,4 @@ struct mt9d111_state {
 #endif
 };
 
-extern bool cam0_init;
-extern bool cam1_init;
-
-
 #endif
