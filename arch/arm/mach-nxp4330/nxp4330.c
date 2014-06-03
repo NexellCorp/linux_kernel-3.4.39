@@ -66,6 +66,9 @@ static void cpu_base_init(void)
 	NX_CLKPWR_SetBaseAddress((U32)IO_ADDRESS(NX_CLKPWR_GetPhysicalAddress()));
 	NX_CLKPWR_OpenModule();
 
+	NX_ECID_Initialize();
+	NX_ECID_SetBaseAddress((U32)IO_ADDRESS(NX_ECID_GetPhysicalAddress()));
+
 	/*
 	 * NOTE> ALIVE Power Gate must enable for RTC register access.
      * 		 must be clear wfi jump address
@@ -193,10 +196,111 @@ static ssize_t version_show(struct device *pdev,
 
 	return (s - buf);
 }
+
+/*
+ * Notify cpu GUID
+ * HEX value
+ * /sys/devices/platform/cpu/guid
+ */
+static ssize_t guid_show(struct device *pdev,
+			struct device_attribute *attr, char *buf)
+{
+	char *s = buf;
+	unsigned long start = jiffies;
+	int timeout = 1;
+	u32 guid[4];
+
+	while (!NX_ECID_GetKeyReady()) {
+		if (time_after(jiffies, start + timeout)) {
+			if (NX_ECID_GetKeyReady())
+				break;
+			printk("Error: %s not key ready for CHIP GUID ...\n", __func__);
+			return -ETIMEDOUT;
+		}
+		cpu_relax();
+	}
+
+	NX_ECID_GetGUID((NX_GUID*)guid);
+	s += sprintf(s, "%08x:%08x:%08x:%08x\n", guid[0], guid[1], guid[2], guid[3]);
+	if (s != buf)
+		*(s-1) = '\n';
+
+	return (s - buf);
+}
+
+/*
+ * Notify cpu UUID
+ * HEX value
+ * /sys/devices/platform/cpu/guid
+ */
+static ssize_t uuid_show(struct device *pdev,
+			struct device_attribute *attr, char *buf)
+{
+	char *s = buf;
+	unsigned long start = jiffies;
+	int timeout = 1;
+	u32 euid[4];
+
+	while (!NX_ECID_GetKeyReady()) {
+		if (time_after(jiffies, start + timeout)) {
+			if (NX_ECID_GetKeyReady())
+				break;
+			printk("Error: %s not key ready for CHIP UUID ...\n", __func__);
+			return -ETIMEDOUT;
+		}
+		cpu_relax();
+	}
+
+	NX_ECID_GetECID(euid);
+	s += sprintf(s, "%08x:%08x:%08x:%08x\n", euid[0], euid[1], euid[2], euid[3]);
+	if (s != buf)
+		*(s-1) = '\n';
+
+	return (s - buf);
+}
+
+/*
+ * Notify cpu chip name
+ * HEX value
+ * /sys/devices/platform/cpu/name
+ */
+static ssize_t name_show(struct device *pdev,
+			struct device_attribute *attr, char *buf)
+{
+	char *s = buf;
+	unsigned long start = jiffies;
+	int timeout = 1;
+	u8 name[64];
+
+	while (!NX_ECID_GetKeyReady()) {
+		if (time_after(jiffies, start + timeout)) {
+			if (NX_ECID_GetKeyReady())
+				break;
+			printk("Error: %s not key ready for CHIP NAME ...\n", __func__);
+			return -ETIMEDOUT;
+		}
+		cpu_relax();
+	}
+
+	NX_ECID_GetChipName(name);
+	s += sprintf(s, "%s\n", name);
+	if (s != buf)
+		*(s-1) = '\n';
+
+	return (s - buf);
+}
+
 static struct device_attribute vers_attr = __ATTR(version, 0664, version_show, NULL);
+static struct device_attribute guid_attr = __ATTR(guid, 0664, guid_show, NULL);
+static struct device_attribute uuid_attr = __ATTR(uuid, 0664, uuid_show, NULL);
+static struct device_attribute name_attr = __ATTR(name, 0664, name_show, NULL);
 
 static struct attribute *attrs[] = {
-	&vers_attr.attr, NULL,
+	&vers_attr.attr,
+	&guid_attr.attr,
+	&uuid_attr.attr,
+	&name_attr.attr,
+	NULL,
 };
 
 static struct attribute_group attr_group = {
