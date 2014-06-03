@@ -42,7 +42,9 @@ static unsigned int *sramptr;
 
 #ifndef CONFIG_SUSPEND_IDLE
 void (*nxp_board_suspend_mark)(struct suspend_mark_up *mark, int suspend) = NULL;
-static void (*do_suspend)(ulong, ulong) = NULL;
+/*static void (*do_suspend)(ulong, ulong) = NULL;*/
+void (*do_suspend)(ulong, ulong) = NULL;
+EXPORT_SYMBOL_GPL(do_suspend);
 #endif
 
 struct save_gpio {
