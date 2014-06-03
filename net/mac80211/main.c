@@ -924,7 +924,17 @@ int ieee80211_register_hw(struct ieee80211_hw *hw)
 			wiphy_warn(local->hw.wiphy,
 				   "Failed to add default virtual iface\n");
 	}
-
+#if defined(CONFIG_ESP8089)
+        /* add p2p interface for p2p_concurrent */
+        if (local->hw.wiphy->interface_modes &
+                (BIT(NL80211_IFTYPE_P2P_GO) | BIT(NL80211_IFTYPE_P2P_CLIENT))) {
+                result = ieee80211_if_add(local, "p2p%d", NULL,
+                                          NL80211_IFTYPE_STATION, NULL);
+                if (result)
+                        wiphy_warn(local->hw.wiphy,
+                                   "Failed to add default virtual iface\n");
+        }
+#endif
 	rtnl_unlock();
 
 	local->network_latency_notifier.notifier_call =

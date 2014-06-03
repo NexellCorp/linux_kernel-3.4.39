@@ -155,7 +155,7 @@
  * 	I2C
  */
 #define CFG_I2C0_CLK							100000
-#define CFG_I2C1_CLK							100000	/* TOUCH */
+#define CFG_I2C1_CLK							400000	/* TOUCH */
 #define CFG_I2C2_CLK							100000
 
 /*------------------------------------------------------------------------------
@@ -199,14 +199,14 @@
  */
 #define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
 
-#define	CFG_SDMMC0_CLK_DELAY_SAMPLE				(0<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
-#define	CFG_SDMMC0_CLK_DELAY_DRIVE				(3<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+#define	CFG_SDMMC0_CLK_DELAY_SAMPLE				(1<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
+#define	CFG_SDMMC0_CLK_DELAY_DRIVE				(2<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
 #define	CFG_SDMMC0_CLK_DELAY				    (CFG_SDMMC0_CLK_DELAY_SAMPLE | CFG_SDMMC0_CLK_DELAY_DRIVE)
 
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
  */
-#define CFG_SW_UBC_ENABLE						(0)
+#define CFG_SW_UBC_ENABLE						(1)
 
 /**
  * 0 : GPIO interrupt (CFG_GPIO_PMIC_VUSB_DET)

@@ -1160,8 +1160,6 @@ CONFIG_NXPMAC_ETH=y
 CONFIG_NXPMAC_PLATFORM=y
 CONFIG_NXPMAC_DEBUG_FS=y
 CONFIG_NXPMAC_DA=y
-# CONFIG_NXPMAC_RING is not set
-CONFIG_NXPMAC_CHAINED=y
 # CONFIG_NET_VENDOR_SEEQ is not set
 # CONFIG_NET_VENDOR_SMSC is not set
 # CONFIG_NET_VENDOR_STMICRO is not set
@@ -1180,11 +1178,11 @@ CONFIG_PHYLIB=y
 # CONFIG_SMSC_PHY is not set
 # CONFIG_BROADCOM_PHY is not set
 # CONFIG_ICPLUS_PHY is not set
-CONFIG_REALTEK_PHY=y
+# CONFIG_REALTEK_PHY is not set
 # CONFIG_NATIONAL_PHY is not set
 # CONFIG_STE10XP is not set
 # CONFIG_LSI_ET1011C_PHY is not set
-# CONFIG_MICREL_PHY is not set
+CONFIG_MICREL_PHY=y
 # CONFIG_FIXED_PHY is not set
 # CONFIG_MDIO_BITBANG is not set
 # CONFIG_MICREL_KS8995MA is not set
@@ -1522,7 +1520,15 @@ CONFIG_SPI_MASTER=y
 #
 # PPS support
 #
-# CONFIG_PPS is not set
+CONFIG_PPS=y
+# CONFIG_PPS_DEBUG is not set
+
+#
+# PPS clients support
+#
+# CONFIG_PPS_CLIENT_KTIMER is not set
+# CONFIG_PPS_CLIENT_LDISC is not set
+# CONFIG_PPS_CLIENT_GPIO is not set
 
 #
 # PPS generators support
@@ -1531,9 +1537,10 @@ CONFIG_SPI_MASTER=y
 #
 # PTP clock support
 #
+CONFIG_PTP_1588_CLOCK=y
 
 #
-# Enable Device Drivers -> PPS to see the PTP clock options.
+# Enable PHYLIB and NETWORK_PHY_TIMESTAMPING to see the additional clocks.
 #
 CONFIG_ARCH_REQUIRE_GPIOLIB=y
 CONFIG_GPIOLIB=y

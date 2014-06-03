@@ -349,6 +349,23 @@ config IMX2_WDT
 	  To compile this driver as a module, choose M here: the
 	  module will be called imx2_wdt.
 
+config NXP4330_WATCHDOG
+        tristate "NXP4330 Watchdog"
+        depends on ARCH_NXP4330
+        select WATCHDOG_CORE
+        help
+          Watchdog timer block in the Nexell SoCs. This will reboot
+          the system when the timer expires with the watchdog enabled.
+
+          The driver is limited by the speed of the system's PCLK
+          signal, so with reasonably fast systems (PCLK around 50-66MHz)
+          then watchdog intervals of over approximately 20seconds are
+          unavailable.
+
+          The driver can be built as a module by choosing M, and will
+          be called nxp4330_wdt
+
+
 # AVR32 Architecture
 
 config AT32AP700X_WDT

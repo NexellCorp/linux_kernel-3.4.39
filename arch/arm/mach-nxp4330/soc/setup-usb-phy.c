@@ -95,7 +95,25 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 	}
 	else
 	{
+		u32 fladj_val, bit_num, bit_pos = 21;	// fladj_val0
 		u32 temp1, temp2, temp3;
+
+		// 0. Set FLADJ Register.
+		fladj_val = 0x20;
+#if 0
+		temp1 = readl(SOC_VA_TIEOFF + 0x1C) & ~(0x1FFFFFF);
+		temp2 = temp1 | fladj_val;
+#else
+		temp2 = fladj_val;
+#endif
+		for (bit_num = 0; bit_num < 6; bit_num++)
+		{
+			if (fladj_val & (1<<bit_num))
+				temp2 |= (0x7 << bit_pos);
+
+			bit_pos -= 3;
+		}
+		writel(temp2, SOC_VA_TIEOFF + 0x1C);
 
 		// 1. Release common reset of host controller
 		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<24), SOC_VA_RSTCON + 0x04);			// reset on

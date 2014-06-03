@@ -566,6 +566,8 @@ config VIDEO_MT9D111_CAM
 	  This is a Video4Linux2 sensor-level driver for the Micron
 	  MT9D111 1600x1200 CMOS sensor.
 
+source "drivers/media/video/thine/Kconfig"
+	  
 config VIDEO_TCM825X
 	tristate "TCM825x camera sensor support"
 	depends on I2C && VIDEO_V4L2

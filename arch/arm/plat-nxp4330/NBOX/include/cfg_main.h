@@ -215,6 +215,13 @@
 #define	CFG_SDMMC0_CLK_DELAY				    (CFG_SDMMC0_CLK_DELAY_SAMPLE | CFG_SDMMC0_CLK_DELAY_DRIVE)
 
 /*------------------------------------------------------------------------------
+ * 	WIFI
+ */
+#define CFG_WIFI_POWER_IO					(PAD_GPIO_A + 9)		/* GPIO */
+#define CFG_WIFI_SDIO_ID 					2
+/*------------------------------------------------------------------------------
+
+/*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
  */
 #define CFG_SW_UBC_ENABLE						(1)

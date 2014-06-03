@@ -36,7 +36,7 @@
 //#define GSL_DEBUG
 //#define GSL_MONITOR
 //#define HAVE_TOUCH_KEY
-#define SLEEP_CLEAR_POINT
+//#define SLEEP_CLEAR_POINT
 //#define FILTER_POINT
 #ifdef FILTER_POINT
 #define FILTER_MAX	9
@@ -136,6 +136,7 @@ struct gsl_ts {
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	struct early_suspend early_suspend;
 #endif
+    struct work_struct	resume_work;
 };
 
 #ifdef GSL_DEBUG 
@@ -374,7 +375,7 @@ static void startup_chip(struct i2c_client *client)
 	gsl_DataInit(gsl_config_data_id);
 #endif
 	gsl_ts_write(client, 0xe0, &tmp, 1);
-	msleep(10);	
+	//msleep(10);	
 }
 
 static void reset_chip(struct i2c_client *client)
@@ -383,12 +384,12 @@ static void reset_chip(struct i2c_client *client)
 	u8 buf[4] = {0x00};
 	
 	gsl_ts_write(client, 0xe0, &tmp, sizeof(tmp));
-	msleep(20);
+	//msleep(20);
 	tmp = 0x04;
 	gsl_ts_write(client, 0xe4, &tmp, sizeof(tmp));
-	msleep(10);
+	//msleep(10);
 	gsl_ts_write(client, 0xbc, buf, sizeof(buf));
-	msleep(10);
+	//msleep(10);
 }
 
 static void clr_reg(struct i2c_client *client)
@@ -397,32 +398,20 @@ static void clr_reg(struct i2c_client *client)
 
 	write_buf[0] = 0x88;
 	gsl_ts_write(client, 0xe0, &write_buf[0], 1); 	
-	msleep(20);
+	//msleep(20);
 	write_buf[0] = 0x03;
 	gsl_ts_write(client, 0x80, &write_buf[0], 1); 	
-	msleep(5);
+	//msleep(5);
 	write_buf[0] = 0x04;
 	gsl_ts_write(client, 0xe4, &write_buf[0], 1); 	
-	msleep(5);
+	//msleep(5);
 	write_buf[0] = 0x00;
 	gsl_ts_write(client, 0xe0, &write_buf[0], 1); 	
-	msleep(20);
+	//msleep(20);
 }
 
 static void init_chip(struct i2c_client *client)
 {
-	int rc;
-	
-	gslX680_shutdown_low();	
-	msleep(20); 	
-	gslX680_shutdown_high();	
-	msleep(20); 		
-	rc = test_i2c(client);
-	if(rc < 0)
-	{
-		printk("------gslX680 test_i2c error------\n");	
-		return;
-	}	
 	clr_reg(client);
 	reset_chip(client);
 	gsl_load_fw(client);			
@@ -435,7 +424,7 @@ static void check_mem_data(struct i2c_client *client)
 {
 	u8 read_buf[4]  = {0};
 	
-	msleep(30);
+	//msleep(30);
 
 	gsl_ts_read(client,0xb0, read_buf, sizeof(read_buf));
 
@@ -588,11 +577,11 @@ static void report_data(struct gsl_ts *ts, u16 x, u16 y, u8 pressure, u8 id)
 	}
 
 	input_mt_slot(ts->input, id);
-	input_report_abs(ts->input, ABS_MT_TRACKING_ID, id);
+	input_mt_report_slot_state(ts->input, MT_TOOL_FINGER, true);
+	input_report_abs(ts->input, ABS_MT_TOUCH_MAJOR, 1);					
+
 	input_report_abs(ts->input, ABS_MT_POSITION_X, x);
 	input_report_abs(ts->input, ABS_MT_POSITION_Y, y);
-	input_report_abs(ts->input, ABS_MT_PRESSURE, pressure); 
-	input_report_key(ts->input, BTN_TOUCH, 1);
 }
 
 static void gslX680_ts_worker(struct work_struct *work)
@@ -717,7 +706,6 @@ static void gslX680_ts_worker(struct work_struct *work)
 		{
 		#ifdef REPORT_DATA_ANDROID_4_0
 			input_mt_slot(ts->input, i);
-			input_report_abs(ts->input, ABS_MT_TRACKING_ID, -1);
 			input_mt_report_slot_state(ts->input, MT_TOOL_FINGER, false);
 		#endif
 			id_sign[i]=0;
@@ -748,6 +736,26 @@ i2c_lock_schedule:
 	enable_irq(ts->irq);
 		
 }
+
+static void gs_ts_work_resume(struct work_struct *work)
+{
+    int i;
+    struct gsl_ts *ts = container_of(work, struct gsl_ts,resume_work);
+
+  	printk("I'am in gsl_ts_resume() start\n");
+	gslX680_shutdown_high();
+	//msleep(20); 	
+	reset_chip(ts->client);
+	startup_chip(ts->client);
+	check_mem_data(ts->client);
+
+#ifdef GSL_MONITOR
+	printk( "gsl_ts_resume () : queue gsl_monitor_work\n");
+	queue_delayed_work(gsl_monitor_workqueue, &gsl_monitor_work, 300);
+#endif	
+	enable_irq(ts->irq);
+}
+
 
 #ifdef GSL_MONITOR
 static void gsl_monitor_worker(void)
@@ -887,25 +895,14 @@ static int gslX680_ts_init(struct i2c_client *client, struct gsl_ts *ts)
 	input_device->dev.parent = &client->dev;
 	input_set_drvdata(input_device, ts);
 
-	set_bit(ABS_MT_POSITION_X, input_device->absbit);
-	set_bit(ABS_MT_POSITION_Y, input_device->absbit);
-	set_bit(ABS_MT_TOUCH_MAJOR, input_device->absbit);
-	set_bit(ABS_MT_WIDTH_MAJOR, input_device->absbit);
-	set_bit(ABS_PRESSURE, input_device->absbit);
-	set_bit(BTN_TOUCH, input_device->keybit);
 	set_bit(EV_ABS, input_device->evbit);
-	set_bit(EV_KEY, input_device->evbit);
-	set_bit(EV_SYN,input_device->evbit);
+
 	__set_bit(INPUT_PROP_DIRECT, input_device->propbit);
 	input_mt_init_slots(input_device, (MAX_CONTACTS + 1));
 	 
 	input_set_abs_params(input_device,ABS_MT_POSITION_X, 0, SCREEN_MAX_X, 0, 0);
 	input_set_abs_params(input_device,ABS_MT_POSITION_Y, 0, SCREEN_MAX_Y, 0, 0);
 	input_set_abs_params(input_device,ABS_MT_TOUCH_MAJOR, 0, PRESS_MAX, 0, 0);
-	input_set_abs_params(input_device,ABS_MT_WIDTH_MAJOR, 0, 200, 0, 0);
-       input_set_abs_params(input_device, ABS_MT_TRACKING_ID, 0, 5, 0, 0);
-	input_set_abs_params(input_device,ABS_PRESSURE, 0, PRESS_MAX, 0 , 0);
-	input_set_abs_params(input_device, ABS_MT_PRESSURE, 0, PRESS_MAX, 0, 0);
 
 #ifdef HAVE_TOUCH_KEY
 	input_device->evbit[0] = BIT_MASK(EV_KEY);
@@ -941,9 +938,9 @@ error_alloc_dev:
 	return rc;
 }
 
-static int gsl_ts_suspend(struct device *dev)
+static int gsl_ts_suspend(struct i2c_client *client, pm_message_t mesg)
 {
-	struct gsl_ts *ts = dev_get_drvdata(dev);
+	struct gsl_ts *ts = i2c_get_clientdata(client);
 	int i;
 
   	printk("I'am in gsl_ts_suspend() start\n");
@@ -978,38 +975,10 @@ static int gsl_ts_suspend(struct device *dev)
 	return 0;
 }
 
-static int gsl_ts_resume(struct device *dev)
+static int gsl_ts_resume(struct i2c_client *client, pm_message_t mesg)
 {
-	struct gsl_ts *ts = dev_get_drvdata(dev);
-	int i;
-	
-  	printk("I'am in gsl_ts_resume() start\n");
-
-	gslX680_shutdown_high();
-	msleep(20); 	
-	reset_chip(ts->client);
-	startup_chip(ts->client);
-	check_mem_data(ts->client);
-
-#ifdef SLEEP_CLEAR_POINT
-	#ifdef REPORT_DATA_ANDROID_4_0
-	for(i =1;i<=MAX_CONTACTS;i++)
-	{	
-		input_mt_slot(ts->input, i);
-		input_report_abs(ts->input, ABS_MT_TRACKING_ID, -1);
-		input_mt_report_slot_state(ts->input, MT_TOOL_FINGER, false);
-	}
-	#else	
-	input_mt_sync(ts->input);
-	#endif
-	input_sync(ts->input);	
-#endif
-#ifdef GSL_MONITOR
-	printk( "gsl_ts_resume () : queue gsl_monitor_work\n");
-	queue_delayed_work(gsl_monitor_workqueue, &gsl_monitor_work, 300);
-#endif	
-	
-	enable_irq(ts->irq);
+	struct gsl_ts *ts = i2c_get_clientdata(client);
+	schedule_work(&ts->resume_work);
 
 	return 0;
 }
@@ -1019,14 +988,14 @@ static void gsl_ts_early_suspend(struct early_suspend *h)
 {
 	struct gsl_ts *ts = container_of(h, struct gsl_ts, early_suspend);
 	printk("[GSLX680] Enter %s\n", __func__);
-	gsl_ts_suspend(&ts->client->dev);
+	gsl_ts_suspend(&ts->client,NULL);
 }
 
 static void gsl_ts_late_resume(struct early_suspend *h)
 {
 	struct gsl_ts *ts = container_of(h, struct gsl_ts, early_suspend);
 	printk("[GSLX680] Enter %s\n", __func__);
-	gsl_ts_resume(&ts->client->dev);
+	gsl_ts_resume(&ts->client);
 }
 #endif
 
@@ -1061,7 +1030,7 @@ static int __devinit gsl_ts_probe(struct i2c_client *client,
 	
 	gslX680_init();    	
 	init_chip(ts->client);
-	check_mem_data(ts->client);
+	//check_mem_data(ts->client);
    
 	
 	rc=  request_irq(client->irq, gsl_ts_irq, IRQF_TRIGGER_RISING, client->name, ts);
@@ -1089,7 +1058,7 @@ static int __devinit gsl_ts_probe(struct i2c_client *client,
 	gsl_monitor_workqueue = create_singlethread_workqueue("gsl_monitor_workqueue");
 	queue_delayed_work(gsl_monitor_workqueue, &gsl_monitor_work, 1000);
 #endif
-
+    INIT_WORK(&ts->resume_work, gs_ts_work_resume);
 	printk("[GSLX680] End %s\n", __func__);
 
 	return 0;

@@ -35,8 +35,8 @@
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-	{ 1200000, 1200 },
-	{ 1100000, 1200 },
+	//{ 1200000, 1200 },
+	//{ 1100000, 1200 },
 	{ 1000000, 1200 },
 	{  900000, 1200 },
 	{  800000, 1200 },
@@ -53,7 +53,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP4330_CPUFREQ_PLLDEV,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1200*1000,
+	.max_cpufreq    = 1000*1000,
 	.max_retention  =   20*1000,
 	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
@@ -154,7 +154,7 @@ static struct platform_device *fb_devices[] = {
 #if defined (CONFIG_NEXELL_DISPLAY_MIPI)
 #include <linux/delay.h>
 
-#if defined(CONFIG_SECRET_3RD_BOARD)
+#if defined(CONFIG_SECRET_2P1ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)
 #define	MIPI_BITRATE_480M
 #else
 #define	MIPI_BITRATE_512M
@@ -202,7 +202,6 @@ static struct platform_device *fb_devices[] = {
 #define	DPHYCTL		0
 
 #define MIPI_DELAY 0xFF
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 struct data_val{
 	u8 data[48];
@@ -215,7 +214,7 @@ struct mipi_reg_val{
 	struct data_val data;
 };
 
-#if defined(CONFIG_SECRET_3RD_BOARD)
+#if defined(CONFIG_SECRET_2P1ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)
 
 static struct mipi_reg_val mipi_init_data_tiny[]= // BOE init code tiny
 {
@@ -649,6 +648,70 @@ static struct i2c_board_info __initdata aw5306_i2c_bdi = {
 };
 #endif
 
+#if defined(CONFIG_TOUCHSCREEN_ATMEL_MXT640T)
+#include <linux/i2c.h>
+#include <linux/i2c/mxts.h>
+
+#define	MXT604T_I2C_BUS		(1)
+
+
+static int _atmel604t_power(bool on)
+{
+    printk("%s %d\n", __func__, on);
+	
+    if (on)
+	{	
+		
+		nxp_soc_gpio_set_out_value(CFG_IO_TOUCH_RESET_PIN, 1);
+
+	}
+
+    return 0;
+}
+
+static bool _atmel604t_read_change( )
+{
+    printk("%s %d\n", __func__);
+	
+    return 0;
+}
+
+static struct mxt_platform_data mxt_platform_data = {
+	.num_xnode=32,
+	.num_ynode=20,
+	.max_x=1280,
+	.max_y=800,
+	.irqflags = 0, // irq high or low 
+	.boot_address = 0x26,
+	.revision = 0x01,
+#if defined(CONFIG_TOUCHSCREEN_SMAC)
+	.firmware_name = MXT_SMAC_FIRMWARE_NAME,		// MXT_SMAC_FIRMWARE_NAME or MXT_TRAIS_FIRMWARE_NAME
+#else
+	.firmware_name = MXT_TRAIS_FIRMWARE_NAME,		// MXT_SMAC_FIRMWARE_NAME or MXT_TRAIS_FIRMWARE_NAME
+#endif
+//	.tsp_en;		/* enable LDO 3.3V */
+//	.tsp_en1;		/* enable LDO 8.2V */
+	.tsp_int = CFG_IO_TOUCH_PENDOWN_DETECT,
+//	.tsp_rst
+
+	.project_name = "PXD",
+	.model_name = "QFD",	
+//	const char *config_ver;    // ????? get_config_ver()와 관련 있어 보이나 사용하는 곳 없음.
+    .config = 0,         // ?????
+	.read_chg = _atmel604t_read_change,
+	.power_onoff = _atmel604t_power,
+//	.register_cb = NULL,
+};
+
+static struct i2c_board_info __initdata mxt604t_i2c_bdi = {
+	.type	= "Atmel MXT640T",
+	.addr	= MXT_APP_LOW,
+	.irq    = PB_PIO_IRQ(CFG_IO_TOUCH_PENDOWN_DETECT),
+	.platform_data	= &mxt_platform_data,
+};
+
+#endif
+
 /*------------------------------------------------------------------------------
  * Keypad platform device
  */
@@ -658,7 +721,11 @@ static struct i2c_board_info __initdata aw5306_i2c_bdi = {
 
 static unsigned int  button_gpio[] = CFG_KEYPAD_KEY_BUTTON;
 static unsigned int  button_code[] = CFG_KEYPAD_KEY_CODE;
+#if defined(CONFIG_SECRET_3RD_BOARD)
+static unsigned int  button_detect[] = {0, 0, 0, 0, 1};
+#else
 static unsigned int  button_detect[] = {0, 0, 0, 0, 0, 1};
+#endif
 
 struct nxp_key_plat_data key_plat_data = {
 	.bt_count	= ARRAY_SIZE(button_gpio),
@@ -950,7 +1017,7 @@ static struct regulator_consumer_supply nxe2000_ldo6_supply_0[] = {
 static struct regulator_consumer_supply nxe2000_ldo7_supply_0[] = {
 	REGULATOR_SUPPLY("vvid_3.3V", NULL),
 };
-#if defined(CONFIG_SECRET_2ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)
+#if defined(CONFIG_SECRET_2ND_BOARD)||defined(CONFIG_SECRET_2P1ND_BOARD)
 static struct regulator_consumer_supply nxe2000_ldo8_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy3", NULL),
 };
@@ -965,7 +1032,7 @@ static struct regulator_consumer_supply nxe2000_ldo9_supply_0[] = {
 static struct regulator_consumer_supply nxe2000_ldo10_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy2", NULL),
 };
-#if defined(CONFIG_SECRET_2ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)
+#if defined(CONFIG_SECRET_2ND_BOARD)||defined(CONFIG_SECRET_2P1ND_BOARD)
 static struct regulator_consumer_supply nxe2000_ldortc1_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy4", NULL),
 };
@@ -1010,30 +1077,60 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
+#if defined(CONFIG_SECRET_3RD_BOARD)
 NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1100000, 1, 12);	/* 1.1V ARM */
 NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1000000, 1, 14);	/* 1.0V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
 NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  8);	/* 1.5V SYS */
+NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V TOUCH */
+NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 1,  2);	/* 1.8V LCD */
+NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1800000, 1,  6);	/* 1.8V SYS1 */
+NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1800000, 1,  6);	/* 1.8V SYS */
+NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V SENSOR */
+NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
+NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V VID2 */
+NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V AUDIO */
+NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
+NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
+NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
+NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
 
+#elif defined(CONFIG_SECRET_2ND_BOARD)||defined(CONFIG_SECRET_2P1ND_BOARD)
+NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1100000, 1, 12);	/* 1.1V ARM */
+NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1000000, 1, 14);	/* 1.0V CORE */
+NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
+NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
+NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  8);	/* 1.5V SYS */
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 1, 0, 3300000, 1,  -1);	/* 3.3V WIFI */
 NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 1,  2);	/* 1.8V LCD */
-NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.8V SYS1 */
-NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.8V SYS */
+NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1800000, 1,  6);	/* 1.8V SYS1 */
+NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1800000, 1,  6);	/* 1.8V SYS */
 NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
 NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V VID */
-#if defined(CONFIG_SECRET_2ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 1, 0, 3300000, 1,  -1);	/* 3.3V WIFI */
-#else
-NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V AUDIO */
-#endif
 NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
-#if defined(CONFIG_SECRET_2ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)
 NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
+
 #else
+NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1100000, 1, 12);	/* 1.1V ARM */
+NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1000000, 1, 14);	/* 1.0V CORE */
+NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
+NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
+NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  8);	/* 1.5V SYS */
+NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 1, 0, 3300000, 1,  -1);	/* 3.3V WIFI */
+NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 1,  2);	/* 1.8V LCD */
+NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1800000, 1,  6);	/* 1.8V SYS1 */
+NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1800000, 1,  6);	/* 1.8V SYS */
+NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
+NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
+NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V VID */
+NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V AUDIO */
+NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
+NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
 NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
 #endif
@@ -1109,7 +1206,11 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 	.monitor_time		= 60,
 		/* some parameter is depend of battery type */
 	.type[0] = {
+#if defined(CONFIG_SECRET_3RD_BOARD)
+		.ch_vfchg		= 0x04,	/* VFCHG	= 0 - 4 (4.05v, 4.10v, 4.15v, 4.20v, 4.35v) */
+#else
 		.ch_vfchg		= 0x03,	/* VFCHG	= 0 - 4 (4.05v, 4.10v, 4.15v, 4.20v, 4.35v) */
+#endif
 		.ch_vrchg		= 0x03,	/* VRCHG	= 0 - 4 (3.85v, 3.90v, 3.95v, 4.00v, 4.10v) */
 		.ch_vbatovset	= 0xFF,	/* VBATOVSET	= 0 or 1 (0 : 4.38v(up)/3.95v(down) 1: 4.53v(up)/4.10v(down)) */
 		.ch_ichg 		= 0x0E,	/* ICHG		= 0 - 0x1D (100mA - 3000mA) */
@@ -1118,7 +1219,7 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 		.ch_icchg		= 0x03,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
 		.fg_target_vsys	= 3450,	/* This value is the target one to DSOC=0% */
 		.fg_target_ibat	= 1000,	/* This value is the target one to DSOC=0% */
-		.fg_poff_vbat	= 0,	/* setting value of 0 per Vbat */
+		.fg_poff_vbat	= 3450,	/* setting value of 0 per Vbat */
 		.jt_en			= 0,	/* JEITA Enable	  = 0 or 1 (1:enable, 0:disable) */
 		.jt_hw_sw		= 1,	/* JEITA HW or SW = 0 or 1 (1:HardWare, 0:SoftWare) */
 		.jt_temp_h		= 50,	/* degree C */
@@ -1352,9 +1453,9 @@ static void (*wifi_status_cb)(struct platform_device *, int state);
 int _dwmci1_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
 {
 #if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
-    u_int io = PAD_GPIO_A + 19;
-    wifi_status_cb = notify_func;
-    nxp_soc_gpio_set_out_value(io, 0);
+	u_int io = PAD_GPIO_A + 19;
+	wifi_status_cb = notify_func;
+	nxp_soc_gpio_set_out_value(io, 0);
 #endif
 	return 0;
 }
@@ -1362,9 +1463,9 @@ int _dwmci1_ext_cd_init(void (*notify_func)(struct platform_device *, int state)
 int _dwmci1_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
 {
 #if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
-    u_int io = PAD_GPIO_A + 19;
-    wifi_status_cb = NULL;
-    nxp_soc_gpio_set_out_value(io, 1);
+	u_int io = PAD_GPIO_A + 19;
+	wifi_status_cb = NULL;
+	nxp_soc_gpio_set_out_value(io, 1);
 #endif
 	return 0;
 }
@@ -1372,40 +1473,46 @@ int _dwmci1_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int sta
 static int _dwmci1_init(u32 slot_id, irq_handler_t handler, void *data)
 {
 #if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
-    struct dw_mci *host = (struct dw_mci *)data;
-    u_int io = PAD_GPIO_A + 19;
-    int irq = IRQ_GPIO_START + io;
-    int id = 1;
-    int ret = 0;
+	struct dw_mci *host = (struct dw_mci *)data;
+	u_int io = PAD_GPIO_A + 19;
+	int irq = IRQ_GPIO_START + io;
+	int id = 1;
+	int ret = 0;
 
 	printk("dw_mmc dw_mmc.%d: Using external card detect irq %3d (io %2d)\n", id, irq, io);
 
-    nxp_soc_gpio_set_io_dir(io, 1);
-    nxp_soc_gpio_set_out_value(io, 0);
-    ret = request_irq(irq, handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, DEV_NAME_SDHC "1", (void *)host->slot[slot_id]);
-    if (0 > ret)
-        pr_err("dw_mmc.%d: failed to request irq %d\n", slot_id, irq);
+	nxp_soc_gpio_set_io_dir(io, 1);
+	nxp_soc_gpio_set_out_value(io, 0);
+	ret = request_irq(irq, handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, DEV_NAME_SDHC "1", (void *)host->slot[slot_id]);
+	if (0 > ret)
+		pr_err("dw_mmc.%d: failed to request irq %d\n", slot_id, irq);
 
-    /* MCU_WL_REG_ON */
-    io = PAD_GPIO_A + 17;
-    nxp_soc_gpio_set_out_value(io, 0);
-    nxp_soc_gpio_set_io_dir(io, 1);
-    nxp_soc_gpio_set_io_func(io, 0);
+	/* MCU_WL_REG_ON */
+	io = CFG_IO_MCU_WL_REG_ON;
+	nxp_soc_gpio_set_out_value(io, 0);
+	nxp_soc_gpio_set_io_dir(io, 1);
+	nxp_soc_gpio_set_io_func(io, 0);
 #endif
 	return 0;
 }
 
+#define	DRIVE_DELAY(n)		((n & 0xFF) << 0)	// write
+#define	DRIVE_PHASE(n)		((n & 0x03) <<16)	// write
+#define	SAMPLE_DELAY(n)		((n & 0xFF) << 8)	// read
+#define	SAMPLE_PHASE(n)		((n & 0x03) <<24)	// read
+
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
-				  	  DW_MCI_QUIRK_HIGHSPEED,
+					DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 100 * 1000 * 1000,
-    .caps           = MMC_CAP_CMD23,
-    .pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
+	.caps           = MMC_CAP_CMD23,
+	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
 	.detect_delay_ms= 200,
-    .cd_type        = DW_MCI_CD_EXTERNAL,
+	.cd_type        = DW_MCI_CD_EXTERNAL,
 	.init			= _dwmci1_init,
 	.ext_cd_init	= _dwmci1_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci1_ext_cd_cleanup,
+	.clk_dly		= DRIVE_DELAY(0) | SAMPLE_DELAY(0) | DRIVE_PHASE(2) | SAMPLE_PHASE(1),	// 0x01010000,
 };
 
 #if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
@@ -1416,54 +1523,53 @@ static struct dw_mci_board _dwmci1_data = {
 
 static int _wifi_power(int on)
 {
-    printk("%s %d\n", __func__, on);
-//    if (on)
-        nxp_soc_gpio_set_out_value(PAD_GPIO_A + 17, on);
-    return 0;
+	printk("%s %d\n", __func__, on);
+	nxp_soc_gpio_set_out_value(CFG_IO_MCU_WL_REG_ON, on);
+	return 0;
 }
 
 static int _wifi_reset(int on)
 {
-    printk("%s %d\n", __func__, on);
-    return 0;
+	printk("%s %d\n", __func__, on);
+	return 0;
 }
 
 extern struct platform_device dwmci_dev_ch1;
 static int _wifi_set_carddetect(int val)
 {
-    printk("%s %d\n", __func__, val);
+	printk("%s %d\n", __func__, val);
 
-    if (wifi_status_cb)
-        wifi_status_cb(&dwmci_dev_ch1, val);
-    else
-        printk("%s: Nobody to notify\n", __func__);;
-    return 0;
+	if (wifi_status_cb)
+	wifi_status_cb(&dwmci_dev_ch1, val);
+	else
+	printk("%s: Nobody to notify\n", __func__);;
+	return 0;
 }
 
 static unsigned char _wifi_mac_addr[IFHWADDRLEN] = { 0, 0x90, 0x4c, 0, 0, 0 };
 
 static int _wifi_get_mac_addr(unsigned char *buf)
 {
-    memcpy(buf, _wifi_mac_addr, IFHWADDRLEN);
-    return 0;
+	memcpy(buf, _wifi_mac_addr, IFHWADDRLEN);
+	return 0;
 }
 
 static struct wifi_platform_data _wifi_control = {
-    .set_power          = _wifi_power,
-    .set_reset          = _wifi_reset,
-    .set_carddetect     = _wifi_set_carddetect,
-    .mem_prealloc       = NULL,
-    .get_mac_addr       = _wifi_get_mac_addr,
-    /*.get_country_code   = _wifi_get_country_code,*/
-    .get_country_code   = NULL,
+	.set_power          = _wifi_power,
+	.set_reset          = _wifi_reset,
+	.set_carddetect     = _wifi_set_carddetect,
+	.mem_prealloc       = NULL,
+	.get_mac_addr       = _wifi_get_mac_addr,
+	/*.get_country_code   = _wifi_get_country_code,*/
+	.get_country_code   = NULL,
 };
 
 static struct platform_device bcm_wifi_device = {
-     .name  = "bcmdhd_wlan",
-     .id    = 0,
-     .dev   = {
-         .platform_data = &_wifi_control,
-     },
+	.name  = "bcmdhd_wlan",
+	.id    = 0,
+	.dev   = {
+		.platform_data = &_wifi_control,
+	},
 };
 
 #endif /* CONFIG_BROADCOM_WIFI */
@@ -1586,6 +1692,11 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_TOUCHSCREEN_AW5306)
 	printk("plat: add touch(aw5306) device\n");
 	i2c_register_board_info(AW5306_I2C_BUS, &aw5306_i2c_bdi, 1);
+#endif
+
+#if defined(CONFIG_TOUCHSCREEN_ATMEL_MXT640T)
+	printk("plat: add touch(ATMEL MXT604T) device\n");
+	i2c_register_board_info(MXT604T_I2C_BUS, &mxt604t_i2c_bdi, 1);
 #endif
 
 #if 0//defined(CONFIG_PM_MICOM) || defined(CONFIG_PM_MICOM_MODULE)

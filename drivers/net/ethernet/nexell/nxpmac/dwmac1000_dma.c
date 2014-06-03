@@ -27,12 +27,11 @@
 *******************************************************************************/
 
 #include <asm/io.h>
-#include <linux/nxpmac.h>
 #include "dwmac1000.h"
 #include "dwmac_dma.h"
 
-static int dwmac1000_dma_init(void __iomem *ioaddr, int pbl, u32 dma_tx,
-			      u32 dma_rx)
+static int dwmac1000_dma_init(void __iomem *ioaddr, int pbl, int fb, int mb,
+			      int burst_len, u32 dma_tx, u32 dma_rx, int atds)
 {
 	u32 value = readl(ioaddr + DMA_BUS_MODE);
 	int limit;
@@ -64,19 +63,19 @@ static int dwmac1000_dma_init(void __iomem *ioaddr, int pbl, u32 dma_tx,
 				    (pbl << DMA_BUS_MODE_RPBL_SHIFT));
 
 	/* Set the Fixed burst mode */
-//	if (fb)
-//		value |= DMA_BUS_MODE_FB;
+	if (fb)
+		value |= DMA_BUS_MODE_FB;
 
 	/* Mixed Burst has no effect when fb is set */
-//	if (mb)
-//		value |= DMA_BUS_MODE_MB;
+	if (mb)
+		value |= DMA_BUS_MODE_MB;
 
-#ifdef CONFIG_STMMAC_DA
+#ifdef CONFIG_NXPMAC_DA
 	value |= DMA_BUS_MODE_DA;	/* Rx has priority over tx */
 #endif
 
-//	if (atds)
-//		value |= DMA_BUS_MODE_ATDS;
+	if (atds)
+		value |= DMA_BUS_MODE_ATDS;
 
 	writel(value, ioaddr + DMA_BUS_MODE);
 
@@ -97,9 +96,7 @@ static int dwmac1000_dma_init(void __iomem *ioaddr, int pbl, u32 dma_tx,
 	 *  burst length. Any burst equal or below the provided burst
 	 *  length would be allowed to perform.
 	 */
-//	writel(DMA_AXI_BLEN_16, ioaddr + DMA_AXI_BUS_MODE);
-	writel((4 << 20) | (4 << 16) | DMA_AXI_BLEN_8,
-		 ioaddr + DMA_AXI_BUS_MODE);
+	writel(burst_len, ioaddr + DMA_AXI_BUS_MODE);
 
 	/* Mask interrupts by writing to CSR7 */
 	writel(DMA_INTR_DEFAULT_MASK, ioaddr + DMA_INTR_ENA);
@@ -114,12 +111,12 @@ static int dwmac1000_dma_init(void __iomem *ioaddr, int pbl, u32 dma_tx,
 }
 
 static void dwmac1000_dma_operation_mode(void __iomem *ioaddr, int txmode,
-				    int rxmode)
+					 int rxmode)
 {
 	u32 csr6 = readl(ioaddr + DMA_CONTROL);
 
 	if (txmode == SF_DMA_MODE) {
-		CHIP_DBG(KERN_DEBUG "GMAC: enable TX store and forward mode\n");
+		pr_debug("GMAC: enable TX store and forward mode\n");
 		/* Transmit COE type 2 cannot be done in cut-through mode. */
 		csr6 |= DMA_CONTROL_TSF;
 		/* Operating on second frame increase the performance
@@ -127,8 +124,7 @@ static void dwmac1000_dma_operation_mode(void __iomem *ioaddr, int txmode,
 		 */
 		csr6 |= DMA_CONTROL_OSF;
 	} else {
-		CHIP_DBG(KERN_DEBUG "GMAC: disabling TX store and forward mode"
-			      " (threshold = %d)\n", txmode);
+		pr_debug("GMAC: disabling TX SF (threshold %d)\n", txmode);
 		csr6 &= ~DMA_CONTROL_TSF;
 		csr6 &= DMA_CONTROL_TC_TX_MASK;
 		/* Set the transmit threshold */
@@ -145,11 +141,10 @@ static void dwmac1000_dma_operation_mode(void __iomem *ioaddr, int txmode,
 	}
 
 	if (rxmode == SF_DMA_MODE) {
-		CHIP_DBG(KERN_DEBUG "GMAC: enable RX store and forward mode\n");
+		pr_debug("GMAC: enable RX store and forward mode\n");
 		csr6 |= DMA_CONTROL_RSF;
 	} else {
-		CHIP_DBG(KERN_DEBUG "GMAC: disabling RX store and forward mode"
-			      " (threshold = %d)\n", rxmode);
+		pr_debug("GMAC: disable RX SF mode (threshold %d)\n", rxmode);
 		csr6 &= ~DMA_CONTROL_RSF;
 		csr6 &= DMA_CONTROL_TC_RX_MASK;
 		if (rxmode <= 32)
@@ -184,6 +179,11 @@ static unsigned int dwmac1000_get_hw_feature(void __iomem *ioaddr)
 	return readl(ioaddr + DMA_HW_FEATURE);
 }
 
+static void dwmac1000_rx_watchdog(void __iomem *ioaddr, u32 riwt)
+{
+	writel(riwt, ioaddr + DMA_RX_WATCHDOG);
+}
+
 const struct stmmac_dma_ops dwmac1000_dma_ops = {
 	.init = dwmac1000_dma_init,
 	.dump_regs = dwmac1000_dump_dma_regs,
@@ -197,4 +197,5 @@ const struct stmmac_dma_ops dwmac1000_dma_ops = {
 	.stop_rx = dwmac_dma_stop_rx,
 	.dma_interrupt = dwmac_dma_interrupt,
 	.get_hw_feature = dwmac1000_get_hw_feature,
+	.rx_watchdog = dwmac1000_rx_watchdog,
 };

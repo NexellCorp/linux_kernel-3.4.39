@@ -819,7 +819,7 @@ static int dwc_otg_driver_resume(struct platform_device *_dev)
 
         queue_delayed_work(s_otg_reprobe_wqueue,
                           &s_otg_reprobe_work,
-                          HZ);
+                          msecs_to_jiffies(1));
     }
 
     PM_DBGOUT("-%s\n", __func__);
@@ -1019,8 +1019,15 @@ static int dwc_otg_driver_probe(
 
     // psw0523 add for pm
 #if defined(CONFIG_PM) && defined(CONFIG_ARCH_NXP4330)
-    if (!s_pdev)
+    if (s_pdev == NULL)
         s_pdev = _dev;
+
+    if (s_otg_reprobe_wqueue == NULL) {
+        s_otg_reprobe_wqueue
+            = create_singlethread_workqueue("otg_reprobe_work");
+        INIT_DELAYED_WORK_DEFERRABLE(&s_otg_reprobe_work,
+                            otg_reprobe_work);
+    }
 
 #if 0   //ndef CONFIG_SUSPEND_IDLE
     if (!s_pm_notify.notifier_call) {

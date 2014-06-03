@@ -813,20 +813,16 @@ static void AW5306_ts_power(void)
 #ifdef CONFIG_PM
 static int AW5306_ts_suspend(struct i2c_client *client, pm_message_t state)
 {
-#ifndef CONFIG_SUSPEND_IDLE
 	PM_DBGOUT("%s (flag=%d)\n", __func__, suspend_flag);
 	if (suspend_flag != 1)
 		suspend_flag = 1;
-#endif
 	return 0;
 }
 
 static int AW5306_ts_resume(struct i2c_client *client)
 {
-#ifndef CONFIG_SUSPEND_IDLE
 	struct AW5306_ts_data *ts = i2c_get_clientdata(this_client);
 	schedule_work(&ts->resume_work);
-#endif
 	return 0;
 }
 #else

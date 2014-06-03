@@ -18,8 +18,9 @@
  */
 
 #include <linux/kernel.h>
-#include <linux/slab.h>
 #include <linux/module.h>
+#include <linux/sched.h>
+#include <linux/slab.h>
 #include <linux/i2c.h>
 #include <linux/init.h>
 #include <linux/time.h>
@@ -40,9 +41,10 @@
 #define pr_debug(msg...)
 */
 
+#define NOSTOP_GPIO 		(1)
 #define	I2C_CLOCK_RATE		(100000)	/* wait 50 msec */
 #define TRANS_RETRY_CNT		(1)
-#define	WAIT_ACK_TIME		(100)		/* wait 50 msec */
+#define	WAIT_ACK_TIME		(500)		/* wait 50 msec */
 
 const static int i2c_gpio [][2] = {
 	{ (PAD_GPIO_D + 2), (PAD_GPIO_D + 3) },
@@ -180,30 +182,66 @@ static inline void i2c_trans_dev(unsigned int base, unsigned int ack, int stop)
 	writel(ICCR, (base+I2C_ICCR_OFFS));
 }
 
-static inline void i2c_stop_dev(struct nxp_i2c_param *par, int nostop, int read)
+static int i2c_stop_scl(struct nxp_i2c_param *par)
 {
 	unsigned int base = (unsigned int)par->hw.base_addr;
 	unsigned int ICSR = 0, ICCR = 0, STOP = 0;
+	int gpio = par->hw.scl_io;
+	unsigned long start;
+	int timeout = 5, ret = 0;
+
+	STOP = (1<<STOP_CLK_REL_POS);
+	writel(STOP, (base+I2C_STOP_OFFS));
+	ICSR= readl(base+I2C_ICSR_OFFS);
+	ICSR &= ~(1<<ICSR_OUT_ENB_POS);
+	ICSR = par->trans_mode << ICSR_MOD_SEL_POS;
+	writel(ICSR, (base+I2C_ICSR_OFFS));
+	ICCR = (1<<ICCR_IRQ_CLR_POS);
+	writel(ICCR, (base+I2C_ICCR_OFFS));
+
+	if (!nxp_soc_gpio_get_in_value(gpio)) {
+		gpio_request(gpio,NULL);
+		gpio_direction_output(gpio, 1);
+		start = jiffies;
+		while (!gpio_get_value(gpio)) {
+			if (time_after(jiffies, start + timeout)) {
+				if (gpio_get_value(gpio))
+					break;
+				ret = -ETIMEDOUT;
+				goto _stop_timeout;
+			}
+			cpu_relax();
+		}
+	}
+
+_stop_timeout:
+	nxp_soc_gpio_set_io_func(gpio, 1);
+	return ret;
+}
+
+static inline void i2c_stop_dev(struct nxp_i2c_param *par, int nostop, int read)
+{
+	unsigned int base = (unsigned int)par->hw.base_addr;
+	unsigned int ICSR = 0, ICCR = 0;
 
 	if (!nostop) {
 		gpio_request(par->hw.sda_io,NULL);		 //gpio_Request
 		gpio_direction_output(par->hw.sda_io,0); //SDA LOW
 		udelay(1);
 
-		STOP = (1<<STOP_CLK_REL_POS);
-		writel(STOP, (base+I2C_STOP_OFFS));
-		ICSR= readl(base+I2C_ICSR_OFFS);
-		ICSR &= ~(1<<ICSR_OUT_ENB_POS);
-		ICSR = par->trans_mode << ICSR_MOD_SEL_POS;
-		writel(ICSR, (base+I2C_ICSR_OFFS));
+		i2c_stop_scl(par);
 
-		ICCR = (1<<ICCR_IRQ_CLR_POS);
-		writel(ICCR, (base+I2C_ICCR_OFFS));
 		udelay(1);
 		gpio_set_value(par->hw.sda_io,1);			//STOP Signal Gen
-
 		nxp_soc_gpio_set_io_func(par->hw.sda_io, 1);
 	} else {
+		#if (NOSTOP_GPIO)
+		gpio_request(par->hw.sda_io,NULL);		 //gpio_Request
+		gpio_direction_output(par->hw.sda_io,1); //SDA LOW
+		udelay(1);
+		gpio_request(par->hw.scl_io,NULL);		 //gpio_Request
+		gpio_direction_output(par->hw.scl_io,1); //SDA LOW
+		#endif
 		/*
 		ICSR  = readl(base+I2C_ICSR_OFFS);
 		ICSR &= ~(1<<ICSR_OUT_ENB_POS);
@@ -213,6 +251,10 @@ static inline void i2c_stop_dev(struct nxp_i2c_param *par, int nostop, int read)
 
 		ICCR = (1<<ICCR_IRQ_CLR_POS);
 		writel(ICCR, (base+I2C_ICCR_OFFS));
+		#if (NOSTOP_GPIO)
+		nxp_soc_gpio_set_io_func(par->hw.sda_io, 1);
+		nxp_soc_gpio_set_io_func(par->hw.scl_io, 1);
+		#endif
 	}
 }
 
@@ -364,12 +406,12 @@ static irqreturn_t i2c_irq_handler(int irqno, void *dev_id)
 
 	if (!par->runing) {
 		pr_err("************ I2C.%d IRQ NO RUN ************\n", par->hw.port);
-		return IRQ_NONE;
+		return IRQ_HANDLED;
 	}
 
 	if (par->polling) {
 		pr_err("************ I2C.%d IRQ POLLING ************\n", par->hw.port);
-		i2c_irq_thread( irqno,dev_id);
+		i2c_irq_thread(irqno,dev_id);
 		return IRQ_HANDLED;
 	}
 
@@ -530,7 +572,7 @@ static int nxp_i2c_algo_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, 
 			break;
 	}
 
-	par->runing = 1;
+	par->runing = 0;
 	par->polling = 0;
 
 	if (!preempt_count())
@@ -587,6 +629,8 @@ static int	nxp_i2c_set_param(struct nxp_i2c_param *par, struct platform_device *
 	}
 
 	rate = clk_get_rate(clk);
+	clk_enable(clk);
+
 	req_rate = par->rate;
 	t_clk = rate/16/3;
 
@@ -626,14 +670,12 @@ static int	nxp_i2c_set_param(struct nxp_i2c_param *par, struct platform_device *
 		DEV_NAME_I2C, par->hw.port, rate/t_src/t_div,
 		rate, par->hw.clksrc, par->hw.clkscale-1, par->timeout);
 
-	ret = request_threaded_irq(par->hw.irqno, i2c_irq_handler,	i2c_irq_thread,
+	ret = request_threaded_irq(par->hw.irqno, i2c_irq_handler, i2c_irq_thread,
 				IRQF_DISABLED|IRQF_SHARED , DEV_NAME_I2C, par);
 	if (ret)
 		printk(KERN_ERR "Fail, i2c.%d request irq %d ...\n", par->hw.port, par->hw.irqno);
 
 	i2c_bus_off(par);
-
-	clk_enable(clk);
 
 	return ret;
 }
@@ -724,8 +766,10 @@ static int nxp_i2c_resume(struct platform_device *pdev)
 	nxp_soc_gpio_set_io_func(sda, 1);
 	nxp_soc_rsc_reset(rsc);
 
-	i2c_bus_off(par);
 	clk_enable(par->clk);
+	mdelay(1);
+
+	i2c_bus_off(par);
 	return 0;
 }
 
