@@ -819,7 +819,7 @@ static int dwc_otg_driver_resume(struct platform_device *_dev)
 
         queue_delayed_work(s_otg_reprobe_wqueue,
                           &s_otg_reprobe_work,
-                          HZ);
+                          msecs_to_jiffies(1));
     }
 
     PM_DBGOUT("-%s\n", __func__);

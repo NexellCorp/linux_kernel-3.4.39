@@ -684,14 +684,18 @@ static struct mxt_platform_data mxt_platform_data = {
 	.irqflags = 0, // irq high or low 
 	.boot_address = 0x26,
 	.revision = 0x01,
-	.firmware_name = MXT_DEFAULT_FIRMWARE_NAME,
+#if defined(CONFIG_TOUCHSCREEN_SMAC)
+	.firmware_name = MXT_SMAC_FIRMWARE_NAME,		// MXT_SMAC_FIRMWARE_NAME or MXT_TRAIS_FIRMWARE_NAME
+#else
+	.firmware_name = MXT_TRAIS_FIRMWARE_NAME,		// MXT_SMAC_FIRMWARE_NAME or MXT_TRAIS_FIRMWARE_NAME
+#endif
 //	.tsp_en;		/* enable LDO 3.3V */
 //	.tsp_en1;		/* enable LDO 8.2V */
 	.tsp_int = CFG_IO_TOUCH_PENDOWN_DETECT,
 //	.tsp_rst
 
 	.project_name = "PXD",
-	.model_name = "NX4330",	
+	.model_name = "QFD",	
 //	const char *config_ver;    // ????? get_config_ver()와 관련 있어 보이나 사용하는 곳 없음.
     .config = 0,         // ?????
 	.read_chg = _atmel604t_read_change,
