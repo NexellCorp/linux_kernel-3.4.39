@@ -188,9 +188,7 @@ static int i2c_stop_scl(struct nxp_i2c_param *par)
 	unsigned int ICSR = 0, ICCR = 0, STOP = 0;
 	int gpio = par->hw.scl_io;
 	unsigned long start;
-	int timeout = 1;
-	gpio_request(gpio,NULL);
-	gpio_direction_output(gpio, 1);
+	int timeout = 5, ret = 0;
 
 	STOP = (1<<STOP_CLK_REL_POS);
 	writel(STOP, (base+I2C_STOP_OFFS));
@@ -201,19 +199,24 @@ static int i2c_stop_scl(struct nxp_i2c_param *par)
 	ICCR = (1<<ICCR_IRQ_CLR_POS);
 	writel(ICCR, (base+I2C_ICCR_OFFS));
 
-	start = jiffies;
-	while (!gpio_get_value(gpio)) {
-
-		if (time_after(jiffies, start + timeout)) {
-			if (gpio_get_value(gpio))
-				break;
-			return -ETIMEDOUT;
+	if (!nxp_soc_gpio_get_in_value(gpio)) {
+		gpio_request(gpio,NULL);
+		gpio_direction_output(gpio, 1);
+		start = jiffies;
+		while (!gpio_get_value(gpio)) {
+			if (time_after(jiffies, start + timeout)) {
+				if (gpio_get_value(gpio))
+					break;
+				ret = -ETIMEDOUT;
+				goto _stop_timeout;
+			}
+			cpu_relax();
 		}
-		cpu_relax();
 	}
 
+_stop_timeout:
 	nxp_soc_gpio_set_io_func(gpio, 1);
-	return 0;
+	return ret;
 }
 
 static inline void i2c_stop_dev(struct nxp_i2c_param *par, int nostop, int read)

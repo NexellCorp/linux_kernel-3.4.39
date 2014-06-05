@@ -22,6 +22,7 @@
 #include <linux/delay.h>
 #include <linux/kernel.h>
 #include <linux/utsname.h>
+#include <linux/ratelimit.h>
 #include <linux/platform_device.h>
 
 #include <linux/usb/ch9.h>
@@ -31,6 +32,9 @@
 #include <mach/platform.h>
 
 #include "gadget_chips.h"
+
+#define USE_FFS		(0)
+
 
 /*
  * Kbuild is not very cooperative with respect to linking separately
@@ -44,7 +48,9 @@
 #include "epautoconf.c"
 #include "composite.c"
 
+#if (USE_FFS == 1)
 #include "f_fs.c"
+#endif
 #include "f_audio_source.c"
 #include "f_mass_storage.c"
 #include "u_serial.c"
@@ -90,11 +96,11 @@ struct android_usb_function {
 	void (*disable)(struct android_usb_function *);
 
 	int (*bind_config)(struct android_usb_function *,
-				struct usb_configuration *);
+					struct usb_configuration *);
 
 	/* Optional: called when the configuration is removed */
 	void (*unbind_config)(struct android_usb_function *,
-				struct usb_configuration *);
+					struct usb_configuration *);
 	/* Optional: handle ctrl requests before the device is configured */
 	int (*ctrlrequest)(struct android_usb_function *,
 					struct usb_composite_dev *,
@@ -232,6 +238,7 @@ static void android_disable(struct android_dev *dev)
 /*-------------------------------------------------------------------------*/
 /* Supported functions initialization */
 
+#if (USE_FFS == 1)
 struct functionfs_config {
 	bool opened;
 	bool enabled;
@@ -383,7 +390,7 @@ static int functionfs_check_dev_callback(const char *dev_name)
 {
 	return 0;
 }
-
+#endif	/* #if (USE_FFS == 1) */
 
 struct adb_data {
 	bool opened;
@@ -995,7 +1002,9 @@ static struct android_usb_function audio_source_function = {
 };
 
 static struct android_usb_function *supported_functions[] = {
+#if (USE_FFS == 1)
 	&ffs_function,
+#endif
 	&adb_function,
 	&acm_function,
 	&mtp_function,
@@ -1015,7 +1024,7 @@ static int android_init_functions(struct android_usb_function **functions,
 	struct android_usb_function *f;
 	struct device_attribute **attrs;
 	struct device_attribute *attr;
-	int err;
+	int err = 0;
 	int index = 0;
 
 	for (; (f = *functions++); index++) {
@@ -1206,7 +1215,7 @@ functions_store(struct device *pdev, struct device_attribute *attr,
 		err = android_enable_function(dev, name);
 		if (err)
 			pr_err("android_usb: Cannot enable '%s' (%d)",
-							   name, err);
+							 name, err);
 	}
 
 	mutex_unlock(&dev->mutex);
@@ -1413,7 +1422,7 @@ static int android_bind(struct usb_composite_dev *cdev)
 	device_desc.iProduct = id;
 
 	/* Default strings - should be updated by userspace */
-	strncpy(manufacturer_string, "Android", sizeof(manufacturer_string)-1);
+	strncpy(manufacturer_string, "Android", sizeof(manufacturer_string) - 1);
 	strncpy(product_string, "Android", sizeof(product_string) - 1);
 	strncpy(serial_string, "0123456789ABCDEF", sizeof(serial_string) - 1);
 
@@ -1441,6 +1450,12 @@ static int android_bind(struct usb_composite_dev *cdev)
 static int android_usb_unbind(struct usb_composite_dev *cdev)
 {
 	struct android_dev *dev = _android_dev;
+
+#if 1
+	manufacturer_string[0] = '\0';
+	product_string[0] = '\0';
+	serial_string[0] = '0';
+#endif
 
 	cancel_work_sync(&dev->work);
 	android_cleanup_functions(dev->functions);
