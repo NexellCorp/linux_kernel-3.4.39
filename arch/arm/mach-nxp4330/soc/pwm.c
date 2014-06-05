@@ -163,7 +163,7 @@ static inline void pwm_start(int ch, int irqon)
 	writel(val, PWM_BASE + PWM_STAT);
 
 	val = readl(PWM_BASE + PWM_TCON);
-	val &= ~(0xE << TCON_CH(ch));
+	val &= ~(0xA << TCON_CH(ch));
 	val |=  (TCON_UP << TCON_CH(ch));
 	writel(val, PWM_BASE + PWM_TCON);
 

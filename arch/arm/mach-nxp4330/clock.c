@@ -52,6 +52,15 @@
 
 #define	INPUT_CLKS		6		/* PLL0, PLL1, PLL2, PLL3, EXT1, EXT2 */
 
+#define CONFIG_ARM_NXP4330_GPUFREQ
+#if defined(CONFIG_NXP4330_DFS_BCLK_PLL_0)
+#define CONFIG_NXP4330_GPUFREQ_PLLDEV 0
+#elif defined(CONFIG_NXP4330_DFS_BCLK_PLL_1)
+#define CONFIG_NXP4330_GPUFREQ_PLLDEV 1
+#else
+#define CONFIG_NXP4330_GPUFREQ_PLLDEV 0
+#endif
+
 #ifdef  CONFIG_ARM_NXP4330_CPUFREQ
 #define	DVFS_CPU_PLL	~(1<<CONFIG_NXP4330_CPUFREQ_PLLDEV)
 #else
@@ -524,7 +533,7 @@ EXPORT_SYMBOL(clk_get_rate);
  */
 long clk_round_rate(struct clk *clk, unsigned long rate)
 {
-	struct nxp_clk_dev *pll, *cdev = clk_container(clk);
+	struct nxp_clk_dev *pll = NULL, *cdev = clk_container(clk);
 	struct nxp_clk_periph *peri = cdev->peri;
 	unsigned long request = rate, rate_hz = 0, flags;
 	unsigned long clock_hz, freq_hz = 0;
@@ -573,6 +582,9 @@ next:
 
 		if (rate_hz && (abs(rate-request) > abs(rate_hz-request)))
 			continue;
+
+		pr_debug("clk: %s.%d, pll[%u] request[%ld] calc[%ld]\n",
+			peri->dev_name, peri->dev_id, pll->clk.rate, request, rate);
 
 		if (clk2) {
 			s1 = -1, d1 = -1;	/* not use */

@@ -915,15 +915,17 @@ static void vin_setup_io(int module, bool force)
     }
 }
 
-
+#if defined(CONFIG_VIDEO_S5K5CAGX)
 static struct i2c_board_info s5k5cagx_i2c_boardinfo[] = {
     {
         I2C_BOARD_INFO("S5K5CAGX", 0x78>>1),
     },
 };
+#endif
 
-/* for mipi camera: s5k4ecgx */
-static int s5k4ecgx_power_enable(bool on)
+#if defined(CONFIG_NXP_CAPTURE_MIPI_CSI)
+/* for mipi camera */
+static int mipi_camera_power_enable(bool on)
 {
 #if defined(CFG_IO_MIPI_CAMERA_POWER_ENABLE) && defined(CFG_IO_MIPI_CAMERA_RESETN)
     static bool is_mipi_first = true;
@@ -955,12 +957,6 @@ static int s5k4ecgx_power_enable(bool on)
     return 0;
 }
 
-#if defined(CONFIG_NXP_CAPTURE_MIPI_CSI)
-static int s5k4ecgx_set_clock(ulong clk_rate)
-{
-    /* do nothing */
-    return 0;
-}
 
 static void mipi_vin_setup_io(int module, bool force)
 {
@@ -972,13 +968,20 @@ static int mipi_phy_enable(bool en)
     return 0;
 }
 
+static int mipi_camera_set_clock(ulong clk_rate)
+{
+    /* do nothing */
+    return 0;
+}
+
+#if defined(CONFIG_VIDEO_S5K4ECGX)
 static struct i2c_board_info s5k4ecgx_i2c_boardinfo[] = {
     {
         I2C_BOARD_INFO("S5K4ECGX", 0x5A>>1),
     },
 };
 
-struct nxp_mipi_csi_platformdata mipi_plat_data = {
+struct nxp_mipi_csi_platformdata s5k4ecgx_plat_data = {
     .module     = 0,
     .clk_rate   = 27000000, // 27MHz
     .lanes      = 4,
@@ -991,25 +994,50 @@ struct nxp_mipi_csi_platformdata mipi_plat_data = {
     .base       = 0, /* not used */
     .phy_enable = mipi_phy_enable
 };
+#elif defined(CONFIG_VIDEO_THP7212_CAM)
+static struct i2c_board_info thp7212_i2c_boardinfo[] = {
+    {
+        I2C_BOARD_INFO("THP7212NX", 0xC0>>1),
+    },
+};
+
+struct nxp_mipi_csi_platformdata thp7212_plat_data = {
+    .module     = 0,
+    .clk_rate   = 27000000, // 27MHz
+    .lanes      = 4,
+    .alignment = 0,
+    .hs_settle  = 0,
+    .width      = 1920,
+    .height     = 1080,
+    .fixed_phy_vdd = false,
+    .irq        = 0, /* not used */
+    .base       = 0, /* not used */
+    .phy_enable = mipi_phy_enable
+};
+
+#endif
+
 #endif
 
 static struct nxp_v4l2_i2c_board_info sensor[] = {
     {
+#if defined(CONFIG_VIDEO_S5K5CAGX)
         .board_info = &s5k5cagx_i2c_boardinfo[0],
-        .i2c_adapter_id = 0,
-    },
-#if defined(CONFIG_NXP_CAPTURE_MIPI_CSI)
-    {
-        .board_info = &s5k4ecgx_i2c_boardinfo[0],
-        /* lynx */
-        .i2c_adapter_id = 0,
-        /* vtk */
-        /* .i2c_adapter_id = 1, */
-    },
 #endif
+        .i2c_adapter_id = 0,
+    },
+    {
+#if defined(CONFIG_VIDEO_S5K4ECGX)
+        .board_info = &s5k4ecgx_i2c_boardinfo[0],
+#elif defined(CONFIG_VIDEO_THP7212_CAM)
+        .board_info = &thp7212_i2c_boardinfo[0],
+#endif
+        .i2c_adapter_id = 0,
+    },
 };
 
 static struct nxp_capture_platformdata capture_plat_data[] = {
+#if defined(CONFIG_VIDEO_S5K5CAGX)
     {
         .module = 0,
         .sensor = &sensor[0],
@@ -1042,7 +1070,9 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .stop_delay_ms  = 0,
         },
     },
-#if defined(CONFIG_NXP_CAPTURE_MIPI_CSI)
+#endif
+#if defined(CONFIG_NXP_CAPTURE_MIPI_CSI) 
+#if defined(CONFIG_VIDEO_S5K4ECGX)
     {
         .module = 1,
         .sensor = &sensor[1],
@@ -1065,16 +1095,50 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .interlace      = false,
             .clk_rate       = 27000000,
             .late_power_down = false,
-            .power_enable   = s5k4ecgx_power_enable,
-            .set_clock      = s5k4ecgx_set_clock,
+            .power_enable   = mipi_camera_power_enable,
+            .set_clock      = mipi_camera_set_clock,
             .setup_io       = mipi_vin_setup_io,
         },
         .deci = {
             .start_delay_ms = 0,
             .stop_delay_ms  = 0,
         },
-        .csi = &mipi_plat_data,
+        .csi = &s5k4ecgx_plat_data,
     },
+#elif defined(CONFIG_VIDEO_THP7212_CAM)
+    {
+        .module = 1,
+        .sensor = &sensor[1],
+        .type = NXP_CAPTURE_INF_CSI,
+        .parallel = {
+            /* for mipi */
+            .is_mipi        = true,
+            .external_sync  = true,
+            .h_active       = 1920,
+            .h_frontporch   = 4,
+            .h_syncwidth    = 4,
+            .h_backporch    = 4,
+            .v_active       = 1080,
+            .v_frontporch   = 1,
+            .v_syncwidth    = 1,
+            .v_backporch    = 1,
+            .clock_invert   = false,
+            .port           = NX_VIP_INPUTPORT_B,
+            .data_order     = NXP_VIN_CBY0CRY1,
+            .interlace      = false,
+            .clk_rate       = 27000000,
+            .late_power_down = false,
+            .power_enable   = mipi_camera_power_enable,
+            .set_clock      = mipi_camera_set_clock,
+            .setup_io       = mipi_vin_setup_io,
+        },
+        .deci = {
+            .start_delay_ms = 0,
+            .stop_delay_ms  = 0,
+        },
+        .csi = &thp7212_plat_data,
+    },
+#endif
 #endif
     { 0, NULL, 0, },
 };

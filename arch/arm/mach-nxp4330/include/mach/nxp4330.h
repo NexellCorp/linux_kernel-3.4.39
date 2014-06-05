@@ -305,6 +305,7 @@
 #include <nx_mpegtsi.h>
 #include <nx_vip.h>
 #include <nx_adc.h>
+#include <nx_ecid.h>
 
 #endif /* 	__ASSEMBLY__ */
 #endif /*	__NXP4330_H__ */
