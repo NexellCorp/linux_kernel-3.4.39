@@ -38,27 +38,6 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-#define DWMCI_CLKSEL						0x09c
-#define DWMCI_DDR200_RDDQS_EN				0x110
-#define DWMCI_DDR200_ASYNC_FIFO_CTRL		0x114
-#define DWMCI_DDR200_DLINE_CTRL				0x118
-/* DDR200 RDDQS Enable*/
-#define DWMCI_TXDT_CRC_TIMER_FASTLIMIT(x)	(((x) & 0xFF) << 16)
-#define DWMCI_TXDT_CRC_TIMER_INITVAL(x)		(((x) & 0xFF) << 8)
-#define DWMCI_BUSY_CHK_CLK_STOP_EN			BIT(2)
-#define DWMCI_RXDATA_START_BIT_SEL			BIT(1)
-#define DWMCI_RDDQS_EN						BIT(0)
-#define DWMCI_DDR200_RDDQS_EN_DEF			DWMCI_TXDT_CRC_TIMER_FASTLIMIT(0x12) | \
-											DWMCI_TXDT_CRC_TIMER_INITVAL(0x15)
-#define DWMCI_DDR200_DLINE_CTRL_DEF			DWMCI_FIFO_CLK_DELAY_CTRL(0x2) | \
-											DWMCI_RD_DQS_DELAY_CTRL(0x40)
-
-/* DDR200 Async FIFO Control */
-#define DWMCI_ASYNC_FIFO_RESET				BIT(0)
-
-/* DDR200 DLINE Control */
-#define DWMCI_FIFO_CLK_DELAY_CTRL(x)		(((x) & 0x3) << 16)
-#define DWMCI_RD_DQS_DELAY_CTRL(x)			((x) & 0x3FF)
 
 static u64 dwmci_dmamask = DMA_BIT_MASK(32);
 
@@ -74,32 +53,6 @@ static int __dwmci_get_bus_wd(u32 slot_id)
 
 static void __dwmci_set_io_timing(void *data, unsigned char timing)
 {
-	struct dw_mci *host = (struct dw_mci *)data;
-	struct dw_mci_board *pdata = host->pdata;
-	u32 clksel, rddqs, dline;
-
-	if (timing > MMC_TIMING_MMC_HS200) {
-		pr_err("%s: timing(%d): not suppored\n", __func__, timing);
-		return;
-	}
-
-	rddqs = DWMCI_DDR200_RDDQS_EN_DEF;
-	dline = DWMCI_DDR200_DLINE_CTRL_DEF;
-	clksel = __raw_readl(host->regs + DWMCI_CLKSEL);
-
-	if (timing == MMC_TIMING_MMC_HS200 || timing == MMC_TIMING_UHS_SDR104) {
-		clksel = (clksel & 0xfff8ffff) | (pdata->clk_drv << 16);
-	} else if (timing == MMC_TIMING_UHS_SDR50) {
-		clksel = (clksel & 0xfff8ffff) | (pdata->clk_drv << 16);
-	} else if (timing == MMC_TIMING_UHS_DDR50) {
-		clksel = pdata->ddr_timing;
-	} else {
-		clksel = pdata->sdr_timing;
-	}
-
-	__raw_writel(clksel, host->regs + DWMCI_CLKSEL);
-	__raw_writel(rddqs, host->regs + DWMCI_DDR200_RDDQS_EN);
-	__raw_writel(dline, host->regs + DWMCI_DDR200_DLINE_CTRL);
 }
 
 static int __dwmci_get_ocr(u32 slot_id)
@@ -114,8 +67,7 @@ static int __dwmci_initialize(int ch, ulong rate)
 	int reset = RESET_ID_SDMMC0 + ch;
 	char s[20];
 
-	if (!nxp_soc_rsc_status(reset))
-		nxp_soc_rsc_reset(reset);
+	nxp_soc_rsc_reset(reset);
 
 	sprintf(s, "%s.%d", DEV_NAME_SDHC, ch);
 	clk = clk_get(NULL, s);
@@ -245,8 +197,6 @@ void __init nxp_mmc_add_device(int ch, struct dw_mci_board *mci)
 	NXP_DWMCI_ITEM_CHECK(mci, dst, pm_caps);
 	NXP_DWMCI_ITEM_CHECK(mci, dst, fifo_depth);
 	NXP_DWMCI_ITEM_CHECK(mci, dst, detect_delay_ms);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, hclk_name);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, cclk_name);
 	NXP_DWMCI_ITEM_CHECK(mci, dst, init);
 	NXP_DWMCI_ITEM_CHECK(mci, dst, get_ro);
 	NXP_DWMCI_ITEM_CHECK(mci, dst, get_cd);
@@ -261,7 +211,6 @@ void __init nxp_mmc_add_device(int ch, struct dw_mci_board *mci)
 	NXP_DWMCI_ITEM_CHECK(mci, dst, clk_smpl);
 	NXP_DWMCI_ITEM_CHECK(mci, dst, tuned);
 	NXP_DWMCI_ITEM_CHECK(mci, dst, cd_type);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, desc_sz);
 	NXP_DWMCI_ITEM_CHECK(mci, dst, ext_cd_init);
 	NXP_DWMCI_ITEM_CHECK(mci, dst, ext_cd_cleanup);
 	NXP_DWMCI_ITEM_CHECK(mci, dst, setpower);
@@ -274,6 +223,7 @@ void __init nxp_mmc_add_device(int ch, struct dw_mci_board *mci)
 	NXP_DWMCI_ITEM_CHECK(mci, dst, suspend);
 	NXP_DWMCI_ITEM_CHECK(mci, dst, resume);
 	NXP_DWMCI_ITEM_CHECK(mci, dst, late_resume);
+	NXP_DWMCI_ITEM_CHECK(mci, dst, hs_over_clk);
 
 	printk("plat: add device sdmmc [%d]\n", ch);
     platform_device_register(dwmci_devices[id]);

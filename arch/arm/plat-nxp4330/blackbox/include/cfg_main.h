@@ -187,13 +187,6 @@
  * 	SDHC
  */
 #define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_B + 24)	/* external cd */
-#define	CFG_SDMMC0_CLK_DELAY_SAMPLE				(2<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
-#define	CFG_SDMMC0_CLK_DELAY_DRIVE				(3<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
-//#define	CFG_SDMMC0_CLK_DELAY				    (CFG_SDMMC0_CLK_DELAY_SAMPLE | CFG_SDMMC0_CLK_DELAY_DRIVE)
-
-#define	CFG_SDMMC1_CLK_DELAY_SAMPLE				(0<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
-#define	CFG_SDMMC1_CLK_DELAY_DRIVE				(1<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
-//#define	CFG_SDMMC1_CLK_DELAY				    (CFG_SDMMC1_CLK_DELAY_SAMPLE | CFG_SDMMC1_CLK_DELAY_DRIVE)
 /*------------------------------------------------------------------------------
  *  MPEGTSIF
  */
