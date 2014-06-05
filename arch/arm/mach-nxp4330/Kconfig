@@ -101,6 +101,23 @@ config NEXELL_DISPLAY_RESCONV
 	depends on NEXELL_DISPLAY
 	default n
 
+config NEXELL_DFS_BCLK
+    bool "DFS For BCLK"
+    default n
+
+choice
+    prompt "Select BCLK PLL device"
+    depends on NEXELL_DFS_BCLK
+    default NXP4330_DFS_BCLK_PLL_0
+
+config NXP4330_DFS_BCLK_PLL_0
+    bool "PLL 0"
+
+config NXP4330_DFS_BCLK_PLL_1
+    bool "PLL 1"
+
+endchoice
+
 source "kernel/Kconfig.hz"
 source "arch/arm/plat-nxp4330/Kconfig"
 

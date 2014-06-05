@@ -856,9 +856,6 @@ static void mt9d111_init_work(struct work_struct *work)
 }
 #endif
 
-//bool cam0_init = false;
-//EXPORT_SYMBOL_GPL(cam0_init);
-
 static int mt9d111_init(struct v4l2_subdev *sd, u32 val)
 {
 #ifndef USE_INITIAL_WORKER_THREAD
@@ -887,18 +884,6 @@ static int mt9d111_init(struct v4l2_subdev *sd, u32 val)
 		}
 
 #ifndef USE_INITIAL_WORKER_THREAD
-#if 0
-		if(cam1_init == true)
-		{
-			err = mt9d111_write_regs(client, mt9d111_reg_reset, ARRAY_SIZE(mt9d111_reg_reset));
-		}
-		else
-		{
-			err = mt9d111_write_regs(client, mt9d111_reg_addr_chg, ARRAY_SIZE(mt9d111_reg_addr_chg));
-			client->addr = (0x90>>1);
-		}
-#endif
-
 		err = mt9d111_write_regs(client, mt9d111_reg_init, ARRAY_SIZE(mt9d111_reg_init));
 		//err = mt9d111_write_regs(client, mt9d111_reg_init_rotate, ARRAY_SIZE(mt9d111_reg_init_rotate));
 		//err = mt9d111_write_regs(client, mt9d111_reg_init_1285x725, ARRAY_SIZE(mt9d111_reg_init_1285x725));
@@ -960,7 +945,6 @@ static int mt9d111_s_power(struct v4l2_subdev *sd, int on)
 			mdelay(1);
 			nxp_soc_pwm_set_frequency(pwm_ch, 24000000, 50);
 			is_first = false;
-			cam0_init = true;
 		}
 	}
 	else 
@@ -970,7 +954,6 @@ static int mt9d111_s_power(struct v4l2_subdev *sd, int on)
 		nxp_soc_gpio_set_out_value(reset_en, 0);
 		state->inited = false;
 		is_first = true;
-		cam0_init = false;
 	}
 #endif 
 	return 0;

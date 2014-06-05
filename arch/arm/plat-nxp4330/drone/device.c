@@ -154,11 +154,59 @@ static struct platform_device *fb_devices[] = {
 #if defined(CONFIG_BACKLIGHT_PWM)
 #include <linux/pwm_backlight.h>
 
+#include <linux/gpio.h>
+#include <mach/platform.h>
+#include <mach/devices.h>
+#include <mach/soc.h>
+#define	PWM_BASE	IO_ADDRESS(PHY_BASEADDR_PWM)
+#define	PWM_TCON		(0x08)
+#define	TCON_INVT		(1<<2)
+int pwm_init(struct device *dev)
+{
+    volatile U32 val;
+	val  = readl(PWM_BASE + PWM_TCON);
+	val &= ~TCON_INVT;
+	val |=  TCON_INVT;
+	writel(val, PWM_BASE + PWM_TCON);
+    return 0;
+}
+
+#define CFG_IO_PWM_EN ((PAD_GPIO_B + 27))
+#define PWM_PIN  (PAD_GPIO_D +  1)
+
+
+int pwm_notify_after(struct device *dev,int brightness)
+{
+    unsigned int io = CFG_IO_PWM_EN;
+    if (brightness==0) {
+        nxp_soc_gpio_set_out_value(PWM_PIN, 1);
+		nxp_soc_gpio_set_io_dir(PWM_PIN, 1);
+		nxp_soc_gpio_set_io_func(PWM_PIN, 0);
+    }
+    else
+    {
+        nxp_soc_gpio_set_io_func(PWM_PIN, 1);
+    }
+    return brightness;
+}
+
+int pwm_notify(struct device *dev,int brightness)
+{
+    if(brightness>0 && brightness<=40){
+        brightness=40;
+    }
+    return brightness;
+}
+
+
 static struct platform_pwm_backlight_data bl_plat_data = {
 	.pwm_id			= CFG_LCD_PRI_PWM_CH,
-	.max_brightness = 256,//	/* 255 is 100%, set over 100% */
+	.max_brightness = 255,//	/* 255 is 100%, set over 100% */
 	.dft_brightness = 100,//	/* 99% */
 	.pwm_period_ns	= 1000000000/CFG_LCD_PRI_PWM_FREQ,
+    .init           = pwm_init,
+    .notify         = pwm_notify,
+    .notify_after   = pwm_notify_after,
 };
 
 static struct platform_device bl_plat_device = {
@@ -168,6 +216,7 @@ static struct platform_device bl_plat_device = {
 		.platform_data	= &bl_plat_data,
 	},
 };
+
 #endif
 
 /*------------------------------------------------------------------------------
@@ -529,14 +578,14 @@ NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 0,  2);	/* 3.3V
 #else
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 1,  2);	/* 3.3V GPS */
 #endif
-NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 0, 0, 1800000, 0,  2);	/* 1.8V CAM1 */
+NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 0,  2);	/* 1.8V CAM1 */
 NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.8V SYS1 */
 NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.9V SYS */
-NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 0, 0, 2800000, 0,  1);	/* 2.8V VCAM */
+NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 1, 1, 2800000, 0,  1);	/* 2.8V VCAM */
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
 NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V VID */
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
-NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* 3.3V VCAM */
+NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 1, 1, 3300000, 0,  0);	/* 3.3V VCAM */
 NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
 NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
@@ -985,13 +1034,7 @@ static bool front_camera_power_state_changed(void)
 
 static struct i2c_board_info front_camera_i2c_boardinfo[] = {
     {
-#if defined(CONFIG_VIDEO_SP0A19)
-        I2C_BOARD_INFO("SP0A19", 0x42>>1),
-#elif defined(CONFIG_VIDEO_SP0838)
         I2C_BOARD_INFO("SP0838", 0x18),
-#else
-#error "You must select SP0838 or SP0A19 for front camera!!!"
-#endif
     },
 };
 
@@ -1005,6 +1048,7 @@ static struct nxp_v4l2_i2c_board_info sensor[] = {
         .i2c_adapter_id = 0,
     },
 };
+
 
 static struct nxp_capture_platformdata capture_plat_data[] = {
     {
@@ -1074,7 +1118,6 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
     },
     { 0, NULL, 0, },
 };
-
 /* out platformdata */
 static struct i2c_board_info hdmi_edid_i2c_boardinfo = {
     I2C_BOARD_INFO("nxp_edid", 0xA0>>1),
@@ -1215,6 +1258,24 @@ static int _dwmci_get_ro(u32 slot_id)
 }
 
 #ifdef CONFIG_MMC_NEXELL_CH0
+static struct dw_mci_board _dwmci0_data = {
+    .quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
+				  	  DW_MCI_QUIRK_HIGHSPEED |
+				  	  DW_MMC_QUIRK_HW_RESET_PW |
+				      DW_MCI_QUIRK_NO_DETECT_EBIT,
+	.bus_hz			= 100 * 1000 * 1000,
+	.caps			= MMC_CAP_UHS_DDR50 |
+					  MMC_CAP_NONREMOVABLE |
+			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
+				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
+	.desc_sz		= 4,
+	.detect_delay_ms= 200,
+	.sdr_timing		= 0x01010001,
+	.ddr_timing		= 0x03030002,
+};
+#endif
+
+#ifdef CONFIG_MMC_NEXELL_CH1
 static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 {
 	struct dw_mci *host = (struct dw_mci *)data;
@@ -1236,14 +1297,13 @@ static int _dwmci0_get_cd(u32 slot_id)
 	int io = CFG_SDMMC0_DETECT_IO;
 	return nxp_soc_gpio_get_in_value(io);
 }
-
-static struct dw_mci_board _dwmci0_data = {
-	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION,
+static struct dw_mci_board _dwmci1_data = {
+	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
+						DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 100 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
+	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
 	.detect_delay_ms= 200,
-//	.sdr_timing		= 0x03020001,
-//	.ddr_timing		= 0x03030002,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
 #if defined (CFG_SDMMC0_CLK_DELAY)
 	  .clk_dly        = CFG_SDMMC0_CLK_DELAY,
@@ -1257,21 +1317,24 @@ static struct dw_mci_board _dwmci0_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_NEXELL_CH1
-static struct dw_mci_board _dwmci1_data = {
-	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
-				  	  DW_MCI_QUIRK_HIGHSPEED |
-				  	  DW_MMC_QUIRK_HW_RESET_PW |
-				      DW_MCI_QUIRK_NO_DETECT_EBIT,
-	.bus_hz			= 100 * 1000 * 1000,
-	.caps			= MMC_CAP_UHS_DDR50 |
-					  MMC_CAP_NONREMOVABLE |
-			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
-				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
-	.desc_sz		= 4,
-	.detect_delay_ms= 200,
-	.sdr_timing		= 0x03020001,
-	.ddr_timing		= 0x03030002,
+#ifdef CONFIG_MMC_NEXELL_CH2
+void SDCH2_cfg_gpio(int width)
+{
+    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  18, NX_GPIO_PADFUNC_2);
+    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  19, NX_GPIO_PADFUNC_2);
+    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  20, NX_GPIO_PADFUNC_2);
+    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  21, NX_GPIO_PADFUNC_2);
+    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  22, NX_GPIO_PADFUNC_2);
+    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  23, NX_GPIO_PADFUNC_2);
+}
+
+static struct dw_mci_board _dwmci2_data = {
+	.quirks	= DW_MCI_QUIRK_HIGHSPEED,
+	.bus_hz	= 10 * 1000 * 1000,
+	.caps = MMC_CAP_CMD23|MMC_CAP_NONREMOVABLE,
+	.detect_delay_ms = 200,
+	.cd_type = DW_MCI_CD_NONE,
+	.cfg_gpio = SDCH2_cfg_gpio,
 };
 #endif
 
@@ -1398,6 +1461,9 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_SENSORS_MMA865X) || defined(CONFIG_SENSORS_MMA865X_MODULE)
 	printk("plat: add g-sensor mma865x\n");
 	i2c_register_board_info(2, &mma865x_i2c_bdi, 1);
+#elif defined(CONFIG_SENSORS_MMA7660) || defined(CONFIG_SENSORS_MMA7660_MODULE)
+	printk("plat: add g-sensor mma7660\n");
+	i2c_register_board_info(MMA7660_I2C_BUS, &mma7660_i2c_bdi, 1);
 #endif
 
 #if defined(CONFIG_RFKILL_NEXELL)

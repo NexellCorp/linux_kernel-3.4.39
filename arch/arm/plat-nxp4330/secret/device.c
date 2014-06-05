@@ -226,7 +226,7 @@ static struct mipi_reg_val mipi_init_data_tiny[]= // BOE init code tiny
  {0x39, 0xC3,  3, {0x40, 0x00, 0x28}},
 
  {MIPI_DELAY,  5, 0, {0}},
- {0x05, 0x00,  1, {0x11}}, 
+ {0x05, 0x00,  1, {0x11}},
 
  {MIPI_DELAY,120, 0, {0}},
  {0x39, 0xF0,  2, {0x5A, 0x5A}},
@@ -269,7 +269,7 @@ static struct mipi_reg_val mipi_init_data[]= // BOE init code
  {0x39, 0xC3,  3, {0x40, 0x00, 0x28}},
  {MIPI_DELAY,120, 0, {0}},
  {0x15, 0x35,  1, {0x00}},
- {0x05, 0x00,  1, {0x11}}, 
+ {0x05, 0x00,  1, {0x11}},
  {0x05, 0x00,  1, {0x29}},
 };
 
@@ -428,7 +428,7 @@ static struct mipi_reg_val mipi_init_data[]= // INNOLUX init code
 
 #else
 
-static struct mipi_reg_val mipi_init_data[]= 
+static struct mipi_reg_val mipi_init_data[]=
 {
  {0x15, 0xB2,  1, {0x7D}},
  {0x15, 0xAE,  1, {0x0B}},
@@ -490,7 +490,7 @@ static int MIPI_LCD_INIT(int width, int height, void *data)
 	U32 value = 0;
 	u8 pByteData[48];
 	int size=ARRAY_SIZE(mipi_init_data);
-	//struct mipi_reg_val *lcd_init_data = &mipi_init_data; 
+	//struct mipi_reg_val *lcd_init_data = &mipi_init_data;
 
 	volatile NX_MIPI_RegisterSet* pmipi = (volatile NX_MIPI_RegisterSet*)IO_ADDRESS(NX_MIPI_GetPhysicalAddress(index));
 	value = pmipi->DSIM_ESCMODE;
@@ -658,10 +658,10 @@ static struct i2c_board_info __initdata aw5306_i2c_bdi = {
 static int _atmel604t_power(bool on)
 {
     printk("%s %d\n", __func__, on);
-	
+
     if (on)
-	{	
-		
+	{
+
 		nxp_soc_gpio_set_out_value(CFG_IO_TOUCH_RESET_PIN, 1);
 
 	}
@@ -672,7 +672,7 @@ static int _atmel604t_power(bool on)
 static bool _atmel604t_read_change( )
 {
     printk("%s %d\n", __func__);
-	
+
     return 0;
 }
 
@@ -681,10 +681,11 @@ static struct mxt_platform_data mxt_platform_data = {
 	.num_ynode=20,
 	.max_x=1280,
 	.max_y=800,
-	.irqflags = 0, // irq high or low 
+	.irqflags = 0, // irq high or low
 	.boot_address = 0x26,
 	.revision = 0x01,
-#if defined(CONFIG_TOUCHSCREEN_SMAC)
+/*#if defined(CONFIG_TOUCHSCREEN_SMAC)*/
+#if (1)
 	.firmware_name = MXT_SMAC_FIRMWARE_NAME,		// MXT_SMAC_FIRMWARE_NAME or MXT_TRAIS_FIRMWARE_NAME
 #else
 	.firmware_name = MXT_TRAIS_FIRMWARE_NAME,		// MXT_SMAC_FIRMWARE_NAME or MXT_TRAIS_FIRMWARE_NAME
@@ -695,7 +696,7 @@ static struct mxt_platform_data mxt_platform_data = {
 //	.tsp_rst
 
 	.project_name = "PXD",
-	.model_name = "QFD",	
+	.model_name = "QFD",
 //	const char *config_ver;    // ????? get_config_ver()와 관련 있어 보이나 사용하는 곳 없음.
     .config = 0,         // ?????
 	.read_chg = _atmel604t_read_change,
