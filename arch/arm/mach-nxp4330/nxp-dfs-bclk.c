@@ -7,6 +7,7 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
+#include <linux/sched.h>
 
 #include <mach/platform.h>
 #include <mach/soc.h>
@@ -24,6 +25,7 @@ static struct dfs_bclk_manager {
     atomic_t counter;
     atomic_t user_bitmap;
     uint32_t current_bclk;
+    struct delayed_work delayed_work;
 
     dfs_bclk_func func;
 } dfs_bclk_manager = {
@@ -400,12 +402,15 @@ void _real_change_pll(volatile u32 *clkpwr_reg, u32 *sram_base, u32 pll_data)
 }
 #endif
 
+extern void nxp_cpu_pll_change_lock(void);
+extern void nxp_cpu_pll_change_unlock(void);
 static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
 {
     bool pending = false;
     /*u64 t1, t2, t3, t4, t5;*/
     /*u32 line;*/
     /*uint32_t dirty1, dirty2;*/
+    nxp_cpu_pll_change_lock();
     local_irq_disable();
     _cpu_pll_change_frequency(pll_num, bclk);
     /*printk("===>\n");*/
@@ -516,6 +521,7 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
     NX_DPC_ClearInterruptPendingAll(0);
     local_irq_enable();
     NX_DPC_SetInterruptEnableAll(0, true);
+    nxp_cpu_pll_change_unlock();
     /*enable_irq(287);*/
     /*printk("dirty: %d, %d\n", dirty1, dirty2);*/
     /*printk("MLC ControlReg %d -> 0x%x\n", __LINE__, NX_MLC_GetControlReg(0));*/
@@ -523,6 +529,18 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
     /*printk("t : %llu, %llu, %llu, %llu, %llu\n", tint[0], tint[1], tint[2], tint[3], tint[4]);*/
     /*printk("===> %llu ns, %llu ns, %llu ns, %llu ns\n",*/
             /*100*(t2-t1), 100*(t3-t2), 100*(t4-t3), 100*(t5-t4));*/
+}
+
+static void _delayed_work(struct work_struct *work)
+{
+    printk("bclk dfs delayed work\n");
+    dfs_bclk_manager.current_bclk =
+        dfs_bclk_manager.func(
+                dfs_bclk_manager.bclk_pll_num,
+                atomic_read(&dfs_bclk_manager.counter),
+                atomic_read(&dfs_bclk_manager.user_bitmap),
+                dfs_bclk_manager.current_bclk
+                );
 }
 
 static int default_dfs_bclk_func(uint32_t pll_num, uint32_t counter, uint32_t user_bitmap, uint32_t current_bclk)
@@ -542,6 +560,7 @@ static int default_dfs_bclk_func(uint32_t pll_num, uint32_t counter, uint32_t us
 
     if (bclk != current_bclk)
         _disable_irq_and_set(pll_num, bclk);
+
     return bclk;
 }
 
@@ -552,6 +571,8 @@ int bclk_get(uint32_t user)
 {
     if (enable) {
         printk("%s: %d, %d\n", __func__, user, atomic_read(&dfs_bclk_manager.counter));
+        /*cancel_delayed_work_sync(&dfs_bclk_manager.delayed_work);*/
+        cancel_delayed_work(&dfs_bclk_manager.delayed_work);
         atomic_inc(&dfs_bclk_manager.counter);
         ATOMIC_SET_MASK(&dfs_bclk_manager.user_bitmap, 1<<user);
         if (user == BCLK_USER_MPEG)
@@ -571,17 +592,23 @@ int bclk_put(uint32_t user)
 {
     if (enable) {
         printk("%s: %d, %d\n", __func__, user, atomic_read(&dfs_bclk_manager.counter));
+        /*cancel_delayed_work_sync(&dfs_bclk_manager.delayed_work);*/
+        cancel_delayed_work(&dfs_bclk_manager.delayed_work);
         atomic_dec(&dfs_bclk_manager.counter);
         ATOMIC_CLEAR_MASK(&dfs_bclk_manager.user_bitmap, 1<<user);
         if (user == BCLK_USER_MPEG)
             nxp_pm_data_restore(NULL);
-        dfs_bclk_manager.current_bclk =
-            dfs_bclk_manager.func(
-                    dfs_bclk_manager.bclk_pll_num,
-                    atomic_read(&dfs_bclk_manager.counter),
-                    atomic_read(&dfs_bclk_manager.user_bitmap),
-                    dfs_bclk_manager.current_bclk
-                    );
+        if (user != BCLK_USER_DMA) {
+            dfs_bclk_manager.current_bclk =
+                dfs_bclk_manager.func(
+                        dfs_bclk_manager.bclk_pll_num,
+                        atomic_read(&dfs_bclk_manager.counter),
+                        atomic_read(&dfs_bclk_manager.user_bitmap),
+                        dfs_bclk_manager.current_bclk
+                        );
+        } else {
+            queue_delayed_work(system_nrt_wq, &dfs_bclk_manager.delayed_work, msecs_to_jiffies(1000));
+        }
     }
     return 0;
 }
@@ -698,6 +725,7 @@ static int __init dfs_bclk_init(void)
 
      clkpwr = (struct NX_CLKPWR_RegisterSet*)IO_ADDRESS(PHY_BASEADDR_CLKPWR_MODULE);
 
+     INIT_DELAYED_WORK(&dfs_bclk_manager.delayed_work, _delayed_work);
      return 0;
 }
 module_init(dfs_bclk_init);
