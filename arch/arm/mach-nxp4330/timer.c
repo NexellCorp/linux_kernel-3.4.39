@@ -181,11 +181,14 @@ static void timer_clock_select(struct timer_info *info, long frequency)
 {
 	struct clk *clk = NULL;
 	char name[16] = CORECLK_NAME_PCLK;
-	ulong rate, mout, tout = 0;
-	ulong thz, delt = (-1UL);
+	ulong rate, tout = 0;
 	int tscl = 0, tmux = 5;
-	int smux = 0, pscl = 0;
 	int vers = nxp_cpu_version();
+
+#if !defined(CONFIG_NEXELL_DFS_BCLK)
+	int smux = 0, pscl = 0;
+	ulong mout;
+	ulong thz, delt = (-1UL);
 
 	/* PCLK */
 	info->clk = clk_get(NULL, name);
@@ -204,6 +207,7 @@ static void timer_clock_select(struct timer_info *info, long frequency)
 		tout = thz, tmux = smux, tscl = pscl;
 		delt = abs(frequency-thz);
    	}
+#endif
 
 	/* CLKGEN */
 	if (vers && tout != frequency) {
