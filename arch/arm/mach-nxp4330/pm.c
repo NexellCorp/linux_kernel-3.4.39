@@ -40,12 +40,31 @@
 static unsigned int  sramsave[SRAM_SAVE_SIZE/4];
 static unsigned int *sramptr;
 
-#ifndef CONFIG_SUSPEND_IDLE
 void (*nxp_board_suspend_mark)(struct suspend_mark_up *mark, int suspend) = NULL;
-/*static void (*do_suspend)(ulong, ulong) = NULL;*/
 void (*do_suspend)(ulong, ulong) = NULL;
 EXPORT_SYMBOL_GPL(do_suspend);
-#endif
+
+void nxp_pm_data_save(void *mem)
+{
+	unsigned int *src = sramptr;
+	unsigned int *dst = mem ? mem : sramsave;
+	int i = 0;
+
+	for(; ARRAY_SIZE(sramsave) > i; i++)
+		dst[i] = src[i];
+}
+EXPORT_SYMBOL_GPL(nxp_pm_data_save);
+
+void nxp_pm_data_restore(void *mem)
+{
+	unsigned int *src = mem ? mem : sramsave;
+	unsigned int *dst = sramptr;
+	int i = 0;
+
+	for( ; ARRAY_SIZE(sramsave) > i; i++)
+		dst[i] = src[i];
+}
+EXPORT_SYMBOL_GPL(nxp_pm_data_restore);
 
 struct save_gpio {
 	unsigned long data;			/* 0x00 */
@@ -501,11 +520,12 @@ static void suspend_clock(suspend_state_t stat)
 static int __powerdown(unsigned long arg)
 {
 	int ret = suspend_machine();
-	int i;
-	if (0 == ret) {
-		for(i = 0; ARRAY_SIZE(sramsave) > i; i++)
-			sramptr[i] = sramsave[i];
-	}
+#ifndef CONFIG_SUSPEND_IDLE
+	void (*power_down)(ulong, ulong) = NULL;
+#endif
+
+	if (0 == ret)
+		nxp_pm_data_restore(NULL);
 
 #ifdef CONFIG_SUSPEND_IDLE
 	lldebugout("Go to IDLE...\n");
@@ -526,8 +546,8 @@ static int __powerdown(unsigned long arg)
 	}
 
 	lldebugout("suspend machine\n", __func__);
-	do_suspend = (void (*)(ulong, ulong))((ulong)do_suspend + 0x220);
-	do_suspend(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
+	power_down = (void (*)(ulong, ulong))((ulong)do_suspend + 0x220);
+	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
 
     while (1) { ; }
 #endif
@@ -656,13 +676,10 @@ static struct platform_suspend_ops suspend_ops = {
 
 static int __init suspend_ops_init(void)
 {
-	int i = 0;
 	sramptr = (unsigned int*)ioremap(0xFFFF0000, SRAM_SAVE_SIZE);
 
 	pr_debug("%s sram save\r\n", __func__);
-	for(i=0; ARRAY_SIZE(sramsave) > i; i++)
-		sramsave[i] = sramptr[i];
-
+	nxp_pm_data_save(NULL);
 	suspend_set_ops(&suspend_ops);
 
 #ifndef CONFIG_SUSPEND_IDLE
