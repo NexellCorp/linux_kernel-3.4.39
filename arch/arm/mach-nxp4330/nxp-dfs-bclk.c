@@ -407,102 +407,15 @@ extern void nxp_cpu_pll_change_unlock(void);
 static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
 {
     bool pending = false;
-    /*u64 t1, t2, t3, t4, t5;*/
-    /*u32 line;*/
-    /*uint32_t dirty1, dirty2;*/
     nxp_cpu_pll_change_lock();
-    local_irq_disable();
     _cpu_pll_change_frequency(pll_num, bclk);
-    /*printk("===>\n");*/
+    local_irq_disable();
+    /*disable_percpu_irq(IRQ_GIC_PPI_VIC);*/
     NX_DPC_SetInterruptEnableAll(0, false);
 
-#if 0
-    /*printk("MLC ControlReg 0x%x\n", NX_MLC_GetControlReg(0));*/
-    /*disable_irq(287);*/
     do {
         pending = NX_DPC_GetInterruptPendingAll(0);
     } while (!pending);
-    NX_DPC_ClearInterruptPendingAll(0);
-    {
-        int i;
-        for (i = 0; i < 50; i++)
-            udelay(100);
-    }
-#endif
-
-    /*NX_MLC_SetMLCEnable(0, false);*/
-    /*NX_MLC_SetMLCEnable(0, true);*/
-    /*NX_MLC_SetTopDirtyFlag(0);*/
-    do {
-        /*NX_MLC_SetTopDirtyFlag(0);*/
-        pending = NX_DPC_GetInterruptPendingAll(0);
-        /*tint[0] = tint[1];*/
-        /*tint[1] = tint[2];*/
-        /*tint[2] = timer_source_read(NULL);*/
-    } while (!pending);
-    /*tint[3] = timer_source_read(NULL);*/
-    /*tint[4] = 0;*/
-
-    /*while(NX_MLC_GetTopDirtyFlag(0) == 1);*/
-    /*tint[4] = timer_source_read(NULL);*/
-    /*dirty1 = NX_MLC_GetTopDirtyFlag(0);*/
-#if 0
-    {
-        int i;
-        for (i = 0; i < 200; i++)
-            udelay(100);
-    }
-#else
-    /*nxp_cpu_pll_change_frequency(pll_num, bclk);*/
-    /*t1 = timer_source_read(NULL);*/
-	/*core_pll_change(pll_num, PMS_P(s_p, s_l), PMS_M(s_p, s_l), PMS_S(s_p, s_l));*/
-#if 0
-    {
-        uint32_t PLL = pll_num;
-        uint32_t P = PMS_P(s_p, s_l);
-        uint32_t M = PMS_M(s_p, s_l);
-        uint32_t S = PMS_S(s_p, s_l);
-        volatile uint32_t *modreg = (volatile uint32_t *)clkpwr;
-        /*uint32_t counter1 = 0, counter2 = 0;*/
-        uint32_t tmp;
-
-        // 1. change PLL0 clock to Oscillator Clock
-        clkpwr->PLLSETREG[PLL] &= ~(1 << 28); 	// pll bypass on, xtal clock use
-        clkpwr->CLKMODEREG0 = (1 << PLL); 		// update pll
-        tmp = clkpwr->CLKMODEREG0;
-        /*while(*modreg & (1<<31));*/
-        /*t2 = timer_source_read(NULL);*/
-
-        // 2. PLL Power Down & PMS value setting
-        clkpwr->PLLSETREG[PLL] =((1UL << 29)			| // power down
-                (0UL << 28)    		| // clock bypass on, xtal clock use
-                (S   << PLL_S_BITPOS) 	|
-                (M   << PLL_M_BITPOS) 	|
-                (P   << PLL_P_BITPOS));
-        clkpwr->CLKMODEREG0 = (1 << PLL); 				// update pll
-        tmp = clkpwr->CLKMODEREG0;
-        /*while(*modreg & (1<<31));*/
-        /*t3 = timer_source_read(NULL);*/
-
-        // 3. Update PLL & wait PLL locking
-        clkpwr->PLLSETREG[PLL] &= ~((U32)(1UL<<29)); // pll power up
-        clkpwr->CLKMODEREG0 = (1<<PLL); 				// update pll
-        while(*modreg & (1<<31)); 		// wait for change update pll
-        /*t4 = timer_source_read(NULL);*/
-        /*[>tmp = clkpwr->CLKMODEREG0;<]*/
-        /*udelay(50);*/
-
-        // 4. Change to PLL clock
-        /*udelay(30);*/
-        clkpwr->PLLSETREG[PLL] |= (1 << 28); 			// pll bypass off, pll clock use
-        clkpwr->CLKMODEREG0 = (1<<PLL); 				// update pll
-        /*tmp = clkpwr->CLKMODEREG0;*/
-        /*while(clkpwr->CLKMODEREG0 & (1<<31)); 		// wait for change update pll*/
-        while(*modreg & (1<<31)); 		// wait for change update pll
-
-        /*printk("counter: %d, %d\n", counter1, counter2);*/
-    }
-#else
     {
         extern void (*do_suspend)(ulong, ulong);
         void (*real_change_pll)(u32*, u32*, u32*, u32) = (void (*)(u32 *, u32 *, u32 *, u32))((ulong)do_suspend + 0x224);
@@ -514,21 +427,12 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
         real_change_pll((u32 *)clkpwr, (u32 *)do_suspend, (u32 *)(IO_ADDRESS(PHY_BASEADDR_DREX)), pll_data);
         /*_real_change_pll((u32 *)clkpwr, NULL, pll_data);*/
     }
-#endif
-    /*t5 = timer_source_read(NULL);*/
-#endif
-    /*dirty2 = NX_MLC_GetTopDirtyFlag(0);*/
+
     NX_DPC_ClearInterruptPendingAll(0);
-    local_irq_enable();
     NX_DPC_SetInterruptEnableAll(0, true);
+    local_irq_enable();
+    /*enable_percpu_irq(IRQ_GIC_PPI_VIC, 0);*/
     nxp_cpu_pll_change_unlock();
-    /*enable_irq(287);*/
-    /*printk("dirty: %d, %d\n", dirty1, dirty2);*/
-    /*printk("MLC ControlReg %d -> 0x%x\n", __LINE__, NX_MLC_GetControlReg(0));*/
-    /*printk("dirty clear line: %d\n", line);*/
-    /*printk("t : %llu, %llu, %llu, %llu, %llu\n", tint[0], tint[1], tint[2], tint[3], tint[4]);*/
-    /*printk("===> %llu ns, %llu ns, %llu ns, %llu ns\n",*/
-            /*100*(t2-t1), 100*(t3-t2), 100*(t4-t3), 100*(t5-t4));*/
 }
 
 static void _delayed_work(struct work_struct *work)
