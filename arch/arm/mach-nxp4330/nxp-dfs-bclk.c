@@ -409,7 +409,7 @@ extern void nxp_cpu_pll_change_unlock(void);
 static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
 {
     bool pending = false;
-    nxp_cpu_pll_change_lock();
+    /*nxp_cpu_pll_change_lock();*/
     _cpu_pll_change_frequency(pll_num, bclk);
     local_irq_disable();
     /*disable_percpu_irq(IRQ_GIC_PPI_VIC);*/
@@ -434,7 +434,7 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
     NX_DPC_SetInterruptEnableAll(0, true);
     local_irq_enable();
     /*enable_percpu_irq(IRQ_GIC_PPI_VIC, 0);*/
-    nxp_cpu_pll_change_unlock();
+    /*nxp_cpu_pll_change_unlock();*/
 }
 
 static void _delayed_work(struct work_struct *work)
@@ -478,7 +478,7 @@ int bclk_get(uint32_t user)
     if (enable) {
         printk("%s: %d, %d\n", __func__, user, atomic_read(&dfs_bclk_manager.counter));
         /*cancel_delayed_work_sync(&dfs_bclk_manager.delayed_work);*/
-        cancel_delayed_work(&dfs_bclk_manager.delayed_work);
+        /*cancel_delayed_work(&dfs_bclk_manager.delayed_work);*/
         atomic_inc(&dfs_bclk_manager.counter);
         ATOMIC_SET_MASK(&dfs_bclk_manager.user_bitmap, 1<<user);
         if (user == BCLK_USER_MPEG)
@@ -499,11 +499,12 @@ int bclk_put(uint32_t user)
     if (enable) {
         printk("%s: %d, %d\n", __func__, user, atomic_read(&dfs_bclk_manager.counter));
         /*cancel_delayed_work_sync(&dfs_bclk_manager.delayed_work);*/
-        cancel_delayed_work(&dfs_bclk_manager.delayed_work);
+        /*cancel_delayed_work(&dfs_bclk_manager.delayed_work);*/
         atomic_dec(&dfs_bclk_manager.counter);
         ATOMIC_CLEAR_MASK(&dfs_bclk_manager.user_bitmap, 1<<user);
         if (user == BCLK_USER_MPEG)
             nxp_pm_data_restore(NULL);
+#if 0
         if (user != BCLK_USER_DMA) {
             dfs_bclk_manager.current_bclk =
                 dfs_bclk_manager.func(
@@ -515,6 +516,15 @@ int bclk_put(uint32_t user)
         } else {
             queue_delayed_work(system_nrt_wq, &dfs_bclk_manager.delayed_work, msecs_to_jiffies(1000));
         }
+#else
+        dfs_bclk_manager.current_bclk =
+            dfs_bclk_manager.func(
+                    dfs_bclk_manager.bclk_pll_num,
+                    atomic_read(&dfs_bclk_manager.counter),
+                    atomic_read(&dfs_bclk_manager.user_bitmap),
+                    dfs_bclk_manager.current_bclk
+                    );
+#endif
     }
     return 0;
 }
