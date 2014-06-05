@@ -23,7 +23,8 @@
 #define __LINUX_POWER_NXE2000_BATTERY_INIT_H
 
 /* Capacity             : 3000mAh */
-/* Cut-off Voltage      : 3.4V */
+/* Cut-off Voltage      : 3.45V */
+/* Full Voltage         : 4.20V */
 /* Thermistor B Value   : 3450 */
 /* Board Impedance      : 0 ohm */
 
