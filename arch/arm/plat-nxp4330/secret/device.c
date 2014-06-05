@@ -1586,7 +1586,7 @@ static struct dw_mci_board _dwmci2_data = {
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
 	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | 	\
-						DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(2),	// 0x01010000,
+						DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(1),	// 100 = (1) (1), 200 = (0) (2)
 
 };
 #endif
