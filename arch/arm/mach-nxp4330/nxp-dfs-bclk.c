@@ -17,6 +17,27 @@
 #define BCLK_MEDIUM 200000000
 #define BCLK_MAX    400000000
 
+static int default_dfs_bclk_func(uint32_t pll_num, uint32_t counter, uint32_t user_bitmap, uint32_t current_bclk);
+
+static struct dfs_bclk_manager {
+    uint32_t bclk_pll_num;
+    atomic_t counter;
+    atomic_t user_bitmap;
+    uint32_t current_bclk;
+
+    dfs_bclk_func func;
+} dfs_bclk_manager = {
+#ifdef CONFIG_NXP4330_DFS_BCLK_PLL_0
+    .bclk_pll_num = 0,
+#else
+    .bclk_pll_num = 1,
+#endif
+    .counter = ATOMIC_INIT(0),
+    .user_bitmap = ATOMIC_INIT(0),
+    .current_bclk = BCLK_MAX,
+    .func = default_dfs_bclk_func
+};
+
 /**
  * sysfs attributes
  */
@@ -344,14 +365,17 @@ static u64 tint[5];
 static volatile struct NX_CLKPWR_RegisterSet *clkpwr;
 
 // u32 pll_data : (p << 24) | (m << 16) | (s << 8) | pll_num
+#if 1
+        /*u32 pll_data = (P << 24) | (M << 8) | (S << 2) | pll_num;*/
 void _real_change_pll(volatile u32 *clkpwr_reg, u32 *sram_base, u32 pll_data)
 {
     // here : block other ip bus access
-    uint32_t pll_num = pll_data & 0x000000ff;
-    uint32_t s       = (pll_data & 0x0000ff00) >> 8;
-    uint32_t m       = (pll_data & 0x00ff0000) >> 16;
+    uint32_t pll_num = pll_data & 0x00000003;
+    uint32_t s       = (pll_data & 0x000000fc) >> 2;
+    uint32_t m       = (pll_data & 0x00ffff00) >> 8;
     uint32_t p       = (pll_data & 0xff000000) >> 24;
     volatile u32 *pllset_reg = (clkpwr_reg + 2 + pll_num);
+    /*printk("clkpwr reg %p, pllset reg %p, plldata 0x%x, p %d, m %d, s %d\n", clkpwr_reg, pllset_reg, pll_data, p, m, s);*/
 
     *pllset_reg &= ~(1 << 28);
     *clkpwr_reg  = (1 << pll_num);
@@ -374,6 +398,7 @@ void _real_change_pll(volatile u32 *clkpwr_reg, u32 *sram_base, u32 pll_data)
     while(*clkpwr_reg & (1<<31));
     // here : unblock other ip bus access
 }
+#endif
 
 static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
 {
@@ -426,6 +451,7 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
     /*nxp_cpu_pll_change_frequency(pll_num, bclk);*/
     /*t1 = timer_source_read(NULL);*/
 	/*core_pll_change(pll_num, PMS_P(s_p, s_l), PMS_M(s_p, s_l), PMS_S(s_p, s_l));*/
+#if 0
     {
         uint32_t PLL = pll_num;
         uint32_t P = PMS_P(s_p, s_l);
@@ -433,14 +459,13 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
         uint32_t S = PMS_S(s_p, s_l);
         volatile uint32_t *modreg = (volatile uint32_t *)clkpwr;
         /*uint32_t counter1 = 0, counter2 = 0;*/
-        /*uint32_t tmp;*/
+        uint32_t tmp;
 
         // 1. change PLL0 clock to Oscillator Clock
         clkpwr->PLLSETREG[PLL] &= ~(1 << 28); 	// pll bypass on, xtal clock use
         clkpwr->CLKMODEREG0 = (1 << PLL); 		// update pll
-        /*tmp = clkpwr->CLKMODEREG0;*/
-        /*while(clkpwr->CLKMODEREG0 & (1<<31)); 		// wait for change update pll*/
-        while(*modreg & (1<<31));
+        tmp = clkpwr->CLKMODEREG0;
+        /*while(*modreg & (1<<31));*/
         /*t2 = timer_source_read(NULL);*/
 
         // 2. PLL Power Down & PMS value setting
@@ -450,15 +475,13 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
                 (M   << PLL_M_BITPOS) 	|
                 (P   << PLL_P_BITPOS));
         clkpwr->CLKMODEREG0 = (1 << PLL); 				// update pll
-        /*tmp = clkpwr->CLKMODEREG0;*/
-        /*while(clkpwr->CLKMODEREG0 & (1<<31)); 			// wait for change update pll*/
-        while(*modreg & (1<<31));
+        tmp = clkpwr->CLKMODEREG0;
+        /*while(*modreg & (1<<31));*/
         /*t3 = timer_source_read(NULL);*/
 
         // 3. Update PLL & wait PLL locking
         clkpwr->PLLSETREG[PLL] &= ~((U32)(1UL<<29)); // pll power up
         clkpwr->CLKMODEREG0 = (1<<PLL); 				// update pll
-        /*while(clkpwr->CLKMODEREG0 & (1<<31)); 				// wait for change update pll*/
         while(*modreg & (1<<31)); 		// wait for change update pll
         /*t4 = timer_source_read(NULL);*/
         /*[>tmp = clkpwr->CLKMODEREG0;<]*/
@@ -474,6 +497,19 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
 
         /*printk("counter: %d, %d\n", counter1, counter2);*/
     }
+#else
+    {
+        extern void (*do_suspend)(ulong, ulong);
+        void (*real_change_pll)(u32*, u32*, u32*, u32) = (void (*)(u32 *, u32 *, u32 *, u32))((ulong)do_suspend + 0x224);
+        uint32_t P = PMS_P(s_p, s_l);
+        uint32_t M = PMS_M(s_p, s_l);
+        uint32_t S = PMS_S(s_p, s_l);
+        u32 pll_data = (P << 24) | (M << 8) | (S << 2) | pll_num;
+        /*printk("before call: p %d, m %d, s %d\n", P, M, S);*/
+        real_change_pll((u32 *)clkpwr, (u32 *)do_suspend, (u32 *)(IO_ADDRESS(PHY_BASEADDR_DREX)), pll_data);
+        /*_real_change_pll((u32 *)clkpwr, NULL, pll_data);*/
+    }
+#endif
     /*t5 = timer_source_read(NULL);*/
 #endif
     /*dirty2 = NX_MLC_GetTopDirtyFlag(0);*/
@@ -491,44 +527,23 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
 
 static int default_dfs_bclk_func(uint32_t pll_num, uint32_t counter, uint32_t user_bitmap, uint32_t current_bclk)
 {
+    uint32_t bclk = current_bclk;
     if (counter > 0) {
         if (user_bitmap & ((1 << BCLK_USER_MPEG) | (1 << BCLK_USER_OGL))) {
-            if (current_bclk != bclk_max) {
-                uint32_t bclk = bclk_max;
-                /*_set_and_wait(pll_num, bclk);*/
-                _disable_irq_and_set(pll_num, bclk);
-                return bclk;
+            if (bclk != bclk_max) {
+                bclk = bclk_max;
             }
+        } else if (user_bitmap & (1 << BCLK_USER_DMA)) {
+            bclk = BCLK_MEDIUM;
         }
     } else {
-        if (current_bclk != bclk_min) {
-            uint32_t bclk = bclk_min;
-            /*_set_and_wait(pll_num, bclk);*/
-            _disable_irq_and_set(pll_num, bclk);
-            return bclk;
-        }
+        bclk = bclk_min;
     }
-    return current_bclk;
+
+    if (bclk != current_bclk)
+        _disable_irq_and_set(pll_num, bclk);
+    return bclk;
 }
-
-struct dfs_bclk_manager {
-    uint32_t bclk_pll_num;
-    atomic_t counter;
-    atomic_t user_bitmap;
-    uint32_t current_bclk;
-
-    dfs_bclk_func func;
-} dfs_bclk_manager = {
-#ifdef CONFIG_NXP4330_DFS_BCLK_PLL_0
-    .bclk_pll_num = 0,
-#else
-    .bclk_pll_num = 1,
-#endif
-    .counter = ATOMIC_INIT(0),
-    .user_bitmap = ATOMIC_INIT(0),
-    .current_bclk = BCLK_MAX,
-    .func = default_dfs_bclk_func
-};
 
 int bclk_get(uint32_t user)
 {
