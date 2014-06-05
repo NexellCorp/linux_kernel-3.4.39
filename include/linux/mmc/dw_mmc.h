@@ -319,6 +319,12 @@ struct dw_mci_board {
 	void (*suspend)(struct dw_mci *host);
 	void (*resume)(struct dw_mci *host);
 	void (*late_resume)(struct dw_mci *host);
+	u32		hs_over_clk;
 };
+
+#define	DW_MMC_DRIVE_DELAY(n)		((n & 0xFF) << 0)	// write
+#define	DW_MMC_DRIVE_PHASE(n)		((n & 0x03) <<16)	// write
+#define	DW_MMC_SAMPLE_DELAY(n)		((n & 0xFF) << 8)	// read
+#define	DW_MMC_SAMPLE_PHASE(n)		((n & 0x03) <<24)	// read
 
 #endif /* LINUX_MMC_DW_MMC_H */

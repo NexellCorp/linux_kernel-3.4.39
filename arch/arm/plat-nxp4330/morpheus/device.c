@@ -632,9 +632,7 @@ static struct dw_mci_board _dwmci0_data = {
 			MMC_CAP_ERASE | MMC_CAP_HW_RESET,
 	.desc_sz = 4,
 	.detect_delay_ms= 200,
-#if defined (CFG_SDMMC0_CLK_DELAY)
-	.clk_dly        = CFG_SDMMC0_CLK_DELAY,
-#endif
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(0),
 };
 #endif
 
@@ -666,9 +664,7 @@ static struct dw_mci_board _dwmci2_data = {
 	.bus_hz			= 50 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
-#if defined (CFG_SDMMC2_CLK_DELAY)
-	.clk_dly        = CFG_SDMMC2_CLK_DELAY,
-#endif
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 	.cd_type		= DW_MCI_CD_EXTERNAL,
 	.init			= _dwmci2_init,
 	.get_ro 		= _dwmci_get_ro,

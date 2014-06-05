@@ -1302,6 +1302,8 @@ static struct spi_board_info spi_plat_board[] __initdata = {
  * DW MMC board config
  */
 #if defined(CONFIG_MMC_DW)
+#include <linux/mmc/dw_mmc.h>
+
 int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
 {
 	return 0;
@@ -1345,9 +1347,7 @@ static struct dw_mci_board _dwmci0_data = {
 	.bus_hz			= 70 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
-#if defined (CFG_SDMMC0_CLK_DELAY)
-	.clk_dly        = CFG_SDMMC0_CLK_DELAY,
-#endif
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(3),
 	.cd_type		= DW_MCI_CD_EXTERNAL,
 	.init			= _dwmci0_init,
 	.get_ro			= _dwmci_get_ro,

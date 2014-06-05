@@ -1276,10 +1276,7 @@ static struct dw_mci_board _dwmci1_data = {
 //	.sdr_timing		= 0x03020001,
 //	.ddr_timing		= 0x03030002,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
-#if defined (CFG_SDMMC0_CLK_DELAY)
-	  .clk_dly        = CFG_SDMMC0_CLK_DELAY,
-#endif
-
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(0),
 	.init			= _dwmci0_init,
 	.get_ro         = _dwmci_get_ro,
 	.get_cd			= _dwmci0_get_cd,

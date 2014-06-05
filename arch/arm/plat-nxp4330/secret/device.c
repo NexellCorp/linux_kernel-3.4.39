@@ -1497,11 +1497,6 @@ static int _dwmci1_init(u32 slot_id, irq_handler_t handler, void *data)
 	return 0;
 }
 
-#define	DRIVE_DELAY(n)		((n & 0xFF) << 0)	// write
-#define	DRIVE_PHASE(n)		((n & 0x03) <<16)	// write
-#define	SAMPLE_DELAY(n)		((n & 0xFF) << 8)	// read
-#define	SAMPLE_PHASE(n)		((n & 0x03) <<24)	// read
-
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 					DW_MCI_QUIRK_HIGHSPEED,
@@ -1513,7 +1508,7 @@ static struct dw_mci_board _dwmci1_data = {
 	.init			= _dwmci1_init,
 	.ext_cd_init	= _dwmci1_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci1_ext_cd_cleanup,
-	.clk_dly		= DRIVE_DELAY(0) | SAMPLE_DELAY(0) | DRIVE_PHASE(2) | SAMPLE_PHASE(1),	// 0x01010000,
+	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),	
 };
 
 #if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
@@ -1582,7 +1577,8 @@ static struct dw_mci_board _dwmci2_data = {
 				  	  DW_MCI_QUIRK_HIGHSPEED |
 				  	  DW_MMC_QUIRK_HW_RESET_PW |
 				      DW_MCI_QUIRK_NO_DETECT_EBIT,
-	.bus_hz			= 100 * 1000 * 1000,
+	.bus_hz			= 1200 * 1000 * 1000,
+	.hs_over_clk	=  50 * 1000 * 1000,
 	.caps			= MMC_CAP_UHS_DDR50 | //MMC_CAP_1_8V_DDR |
 					  MMC_CAP_NONREMOVABLE |
 			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
@@ -1590,12 +1586,8 @@ static struct dw_mci_board _dwmci2_data = {
 	//.caps2			= MMC_CAP2_PACKED_WR,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-#if 0//def CFG_SDMMC2_CLK_DELAY
-	.clk_dly		= CFG_SDMMC2_CLK_DELAY,
-#else
-	.sdr_timing		= 0x01010001,
-	.ddr_timing		= 0x03030002,
-#endif
+	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | 	\
+						DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(2),	// 0x01010000,
 
 };
 #endif

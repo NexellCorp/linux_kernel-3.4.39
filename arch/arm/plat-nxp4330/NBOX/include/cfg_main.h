@@ -210,16 +210,11 @@
  */
 #define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
 
-#define	CFG_SDMMC0_CLK_DELAY_SAMPLE				(0<<24)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
-#define	CFG_SDMMC0_CLK_DELAY_DRIVE				(3<<16)		/*  0 : 0, 1: 90, 2 : 180 ,3 : 270   */
-#define	CFG_SDMMC0_CLK_DELAY				    (CFG_SDMMC0_CLK_DELAY_SAMPLE | CFG_SDMMC0_CLK_DELAY_DRIVE)
-
 /*------------------------------------------------------------------------------
  * 	WIFI
  */
 #define CFG_WIFI_POWER_IO					(PAD_GPIO_A + 9)		/* GPIO */
 #define CFG_WIFI_SDIO_ID 					2
-/*------------------------------------------------------------------------------
 
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
