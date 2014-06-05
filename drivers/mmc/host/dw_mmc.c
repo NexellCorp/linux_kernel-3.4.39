@@ -138,6 +138,33 @@ struct dw_mci_slot {
 
 static struct workqueue_struct *dw_mci_card_workqueue;
 
+#if defined(CONFIG_ESP8089)
+#include <mach/platform.h>
+static struct dw_mci_slot* mci_slot[4] = {NULL, NULL, NULL, NULL};
+static int mci_id = 0;
+
+extern void mmc_stop_host(struct mmc_host *host);
+
+void sw_mci_rescan_card(unsigned insert)
+{
+	struct dw_mci_slot* slot = NULL;
+
+	BUG_ON(CFG_WIFI_SDIO_ID > 3);
+
+	slot = mci_slot[CFG_WIFI_SDIO_ID];
+
+	slot->last_detect_state = insert ? 1 : 0;
+
+	if(!insert)
+		mmc_stop_host(slot->mmc);
+
+	mmc_detect_change(slot->mmc, 0);
+
+	return;
+}
+EXPORT_SYMBOL_GPL(sw_mci_rescan_card);
+#endif
+
 #if defined(CONFIG_DEBUG_FS)
 static int dw_mci_req_show(struct seq_file *s, void *v)
 {
@@ -2725,10 +2752,6 @@ int dw_mci_resume(struct dw_mci *host)
 	/* ADD SD/EMMC Clock Shifting by Youngbok Park */
 	mci_writel(host, CLKCTRL, host->pdata->clk_dly);
 
-	/* disable clock to CIU */
-	mci_writel(host, CLKENA, 0);
-	mci_writel(host, CLKSRC, 0);
-
 	mci_writel(host, RINTSTS, 0xFFFFFFFF);
 	mci_writel(host, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER |
 		   SDMMC_INT_TXDR | SDMMC_INT_RXDR |
@@ -2736,7 +2759,6 @@ int dw_mci_resume(struct dw_mci *host)
 
 	/* add by jhkim: disalbe internal card detection */
 	mci_writel(host, INTMASK, mci_readl(host, INTMASK) & ~SDMMC_INT_CD);
-
 	mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE);
 
 	/*
