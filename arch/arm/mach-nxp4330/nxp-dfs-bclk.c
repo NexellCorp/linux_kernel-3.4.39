@@ -13,6 +13,8 @@
 #include <mach/soc.h>
 #include <mach/nxp-dfs-bclk.h>
 
+#ifdef CONFIG_NEXELL_DFS_BCLK
+
 #define BCLK_MIN    120000000
 /*#define BCLK_MIN    100000000*/
 #define BCLK_MEDIUM 200000000
@@ -637,3 +639,15 @@ module_init(dfs_bclk_init);
 MODULE_AUTHOR("swpark <swpark@nexell.co.kr>");
 MODULE_DESCRIPTION("DFS BCLK Manger for NXP4330");
 MODULE_LICENSE("GPL");
+#else
+int bclk_get(uint32_t user) {
+    return 0;
+}
+int bclk_put(uint32_t user) {
+    return 0;
+}
+int register_dfs_bclk_func(dfs_bclk_func) {
+    return 0;
+}
+#endif
+
