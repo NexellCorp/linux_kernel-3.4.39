@@ -524,7 +524,7 @@ EXPORT_SYMBOL(clk_get_rate);
  */
 long clk_round_rate(struct clk *clk, unsigned long rate)
 {
-	struct nxp_clk_dev *pll, *cdev = clk_container(clk);
+	struct nxp_clk_dev *pll = NULL, *cdev = clk_container(clk);
 	struct nxp_clk_periph *peri = cdev->peri;
 	unsigned long request = rate, rate_hz = 0, flags;
 	unsigned long clock_hz, freq_hz = 0;
@@ -573,6 +573,9 @@ next:
 
 		if (rate_hz && (abs(rate-request) > abs(rate_hz-request)))
 			continue;
+
+		pr_debug("clk: %s.%d, pll[%u] request[%ld] calc[%ld]\n",
+			peri->dev_name, peri->dev_id, pll->clk.rate, request, rate);
 
 		if (clk2) {
 			s1 = -1, d1 = -1;	/* not use */
