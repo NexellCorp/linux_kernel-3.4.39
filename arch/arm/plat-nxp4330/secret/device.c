@@ -684,8 +684,7 @@ static struct mxt_platform_data mxt_platform_data = {
 	.irqflags = 0, // irq high or low
 	.boot_address = 0x26,
 	.revision = 0x01,
-/*#if defined(CONFIG_TOUCHSCREEN_SMAC)*/
-#if (1)
+#if defined(CONFIG_TOUCHSCREEN_SMAC)
 	.firmware_name = MXT_SMAC_FIRMWARE_NAME,		// MXT_SMAC_FIRMWARE_NAME or MXT_TRAIS_FIRMWARE_NAME
 #else
 	.firmware_name = MXT_TRAIS_FIRMWARE_NAME,		// MXT_SMAC_FIRMWARE_NAME or MXT_TRAIS_FIRMWARE_NAME
@@ -1577,7 +1576,7 @@ static struct dw_mci_board _dwmci2_data = {
 				  	  DW_MCI_QUIRK_HIGHSPEED |
 				  	  DW_MMC_QUIRK_HW_RESET_PW |
 				      DW_MCI_QUIRK_NO_DETECT_EBIT,
-	.bus_hz			= 1200 * 1000 * 1000,
+	.bus_hz			= 100 * 1000 * 1000,
 	.hs_over_clk	=  50 * 1000 * 1000,
 	.caps			= MMC_CAP_UHS_DDR50 | //MMC_CAP_1_8V_DDR |
 					  MMC_CAP_NONREMOVABLE |
