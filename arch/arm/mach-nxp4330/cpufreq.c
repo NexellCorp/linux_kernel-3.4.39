@@ -16,11 +16,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-#include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/init.h>
 #include <linux/errno.h>
 #include <linux/err.h>
 #include <linux/string.h>
+#include <linux/delay.h>
 #include <linux/delay.h>
 #include <mach/platform.h>
 
@@ -190,6 +192,15 @@ static void core_pll_change(int PLL, int P, int M, int S)
 	while(clkpwr->CLKMODEREG0 & (1<<31)); 				// wait for change update pll
 }
 
+static DEFINE_SPINLOCK(_pll_lock);
+static inline void core_pll_change_lock(bool lock)
+{
+	if (lock)
+		spin_lock(&_pll_lock);
+	else
+		spin_unlock(&_pll_lock);
+}
+
 unsigned long nxp_cpu_pll_change_frequency(int no, unsigned long rate)
 {
 	struct pll_pms *p;
@@ -209,6 +220,10 @@ unsigned long nxp_cpu_pll_change_frequency(int no, unsigned long rate)
 	}
 
 	i = len/2;
+
+	/* lock */
+	core_pll_change_lock(true);
+
 	while (1) {
 		l = n + i;
 		freq = PMS_RATE(p, l);
@@ -234,8 +249,23 @@ unsigned long nxp_cpu_pll_change_frequency(int no, unsigned long rate)
 	/* change */
 	core_pll_change(no, PMS_P(p, l), PMS_M(p, l), PMS_S(p, l));
 
+	/* unlock */
+	core_pll_change_lock(false);
+
 	DBGOUT("(real %ld Khz, P=%d ,M=%3d, S=%d)\n",
 		PMS_RATE(p, l), PMS_P(p, l), PMS_M(p, l), PMS_S(p, l));
 
 	return PMS_RATE(p, l);
 }
+
+void nxp_cpu_pll_change_lock(void)
+{
+	core_pll_change_lock(true);
+}
+EXPORT_SYMBOL_GPL(nxp_cpu_pll_change_lock);
+
+void nxp_cpu_pll_change_unlock(void)
+{
+	core_pll_change_lock(false);
+}
+EXPORT_SYMBOL_GPL(nxp_cpu_pll_change_unlock);
