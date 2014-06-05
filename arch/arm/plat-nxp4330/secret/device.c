@@ -696,8 +696,8 @@ static struct mxt_platform_data mxt_platform_data = {
 
 	.project_name = "PXD",
 	.model_name = "QFD",
-//	const char *config_ver;    // ????? get_config_ver()와 관련 있어 보이나 사용하는 곳 없음.
-    .config = 0,         // ?????
+//	const char *config_ver;   
+    .config = 0,
 	.read_chg = _atmel604t_read_change,
 	.power_onoff = _atmel604t_power,
 //	.register_cb = NULL,

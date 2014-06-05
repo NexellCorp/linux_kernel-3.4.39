@@ -904,4 +904,8 @@ config TOUCHSCREEN_ATMEL_MXT640T
 
 	  If unsure, say N.
 
+config TOUCHSCREEN_SMAC
+	bool
+	default y
+
 endif
