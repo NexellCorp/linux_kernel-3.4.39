@@ -5316,7 +5316,8 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 		queue_delayed_work(info->monitor_wqueue, &info->otgid_detect_work, msecs_to_jiffies(20));
 	}
 
-#if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_FROM_PMIC_INT == 1)
+#if (CFG_SW_UBC_ENABLE == 1)
+#if (CFG_USB_DET_FROM_PMIC_INT == 1)
 	dwc_otg_pcd_clear_ep0_state();
 	info->pmic_vbuschk_count    = 3;
 	info->flag_set_ilimit       = false;
@@ -5331,6 +5332,7 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 			queue_delayed_work(info->monitor_wqueue, &info->sw_ubc_work, msecs_to_jiffies(1000));
 		}
 	}
+#endif
 #endif
 
 #if defined(NXE2000_BATTERY_VERSION_20140516_V3131)
@@ -5917,7 +5919,8 @@ static int nxe2000_battery_resume(struct device *dev) {
 		queue_delayed_work(info->monitor_wqueue, &info->otgid_detect_work, msecs_to_jiffies(20));
 	}
 
-#if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_FROM_PMIC_INT == 1)
+#if (CFG_SW_UBC_ENABLE == 1)
+#if (CFG_USB_DET_FROM_PMIC_INT == 1)
 	dwc_otg_pcd_clear_ep0_state();
 	info->pmic_vbuschk_count    = 3;
 	info->flag_set_ilimit       = false;
@@ -5932,6 +5935,7 @@ static int nxe2000_battery_resume(struct device *dev) {
 
 		nxp_soc_gpio_set_int_enable(info->gpio_pmic_vbus, 1);
 	}
+#endif
 #endif
 
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION) || defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
