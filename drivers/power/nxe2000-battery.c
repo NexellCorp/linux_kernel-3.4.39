@@ -1318,6 +1318,9 @@ static void nxe2000_displayed_work(struct work_struct *work)
 		err = measure_vbatt_FG(info, &Vbat);
 		err = measure_vsys_ADC(info, &Vsys);
 
+		PM_LOGOUT("PMU : %s : Ibat(%d mA), Vbat(%d uV), Vsys(%d uV) **********\n",
+			__func__, Ibat, Vbat, Vsys);
+
 		info->soca->Ibat_ave = Ibat;
 		info->soca->Vbat_ave = Vbat;
 		info->soca->Vsys_ave = Vsys;
@@ -1520,6 +1523,10 @@ end_flow:
 		if (err < 0)
 			dev_err(info->dev, "Read cc_sum Error !!-----\n");
 	}
+
+	PM_LOGOUT("PMU:STATUS= %d: IBAT= %d: VSYS= %d: VBAT= %d: DSOC= %d: RSOC= %d:\n",
+		info->soca->status, info->soca->Ibat_ave, info->soca->Vsys_ave, info->soca->Vbat_ave,
+		info->soca->displayed_soc, info->soca->soc);
 
 #ifdef DISABLE_CHARGER_TIMER
 	/* clear charger timer */
@@ -1789,8 +1796,8 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 
 		info->soca->displayed_soc = capacity * 100;
 
-		PM_LOGOUT("PMU : %s : Check Parameter ********** Ibat(%d mA), Vbat(%d uV), Ocv(%d, %d uV) **********\n",
-			__func__, info->soca->Ibat[0], info->soca->Vbat[0], info->soca->chg_count, info->soca->Ocv[info->soca->chg_count] );
+		PM_LOGOUT("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Ocv(%d uV) **********\n",
+			__func__, info->soca->chg_count, info->soca->Ibat[0], info->soca->Vbat[0], info->soca->Ocv[info->soca->chg_count] );
 	}
 #else
 
@@ -2136,6 +2143,8 @@ static int nxe2000_init_fgsoca(struct nxe2000_battery_info *info)
 			dev_err(info->dev, "Error in writing the control register\n");
 	}
 
+	PM_LOGOUT(KERN_INFO "PMU: %s : * Rbat = %d mOhm   n_cap = %d mAH\n",
+			 __func__, info->soca->Rbat, info->soca->n_cap);
 	return 1;
 }
 #endif
@@ -3355,6 +3364,8 @@ static int nxe2000_init_charger(struct nxe2000_battery_info *info)
 	info->soca->OCV100_min = ( vfchg_val * 99 / 100 - (icchg_val * (rbat +20))/1000 - 20 ) * 1000;
 	info->soca->OCV100_max = ( vfchg_val * 101 / 100 - (icchg_val * (rbat +20))/1000 + 20 ) * 1000;
 
+	PM_LOGOUT("PMU : %s : 100 min %d, 100 max %d vfchg %d icchg %d rbat %d\n",__func__,
+		info->soca->OCV100_min,info->soca->OCV100_max,vfchg_val,icchg_val,rbat);
 
 	/* Set ADRQ=00 to stop ADC */
 	nxe2000_write(info->dev->parent, NXE2000_ADC_CNT3, 0x0);
