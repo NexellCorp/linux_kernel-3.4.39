@@ -43,18 +43,19 @@
 #include <nxe2000-private.h>
 
 /*
-#define	PM_DBGOUT	printk
-*/
-#define BAT_RESUME_WORK_QUEUE
-
-/*
  * Debug
  */
-#if (0)
-#define DBGOUT(dev, fmt, arg...)		dev_info(dev, fmt, arg...)
-#else
+//#define PM_LOGOUT printk
+#define PM_LOGOUT(fmt, arg...)
+
+//#define DBGOUT(dev, fmt, arg...)		dev_info(dev, fmt, arg...)
 #define DBGOUT(dev, fmt, arg...)		do {} while (0)
-#endif
+
+
+/*
+ * LOCAL define
+ */
+#define BAT_RESUME_WORK_QUEUE
 
 #define NXE2000_BATTERY_VERSION_20140605_V3131
 #define NXE2000_BATTERY_VERSION_20140516_V3131
@@ -1788,17 +1789,17 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 
 		info->soca->displayed_soc = capacity * 100;
 
-		printk("PMU : %s : Check Parameter ********** Ibat(%d mA), Vbat(%d uV), Ocv(%d, %d uV) **********\n",
+		PM_LOGOUT("PMU : %s : Check Parameter ********** Ibat(%d mA), Vbat(%d uV), Ocv(%d, %d uV) **********\n",
 			__func__, info->soca->Ibat[0], info->soca->Vbat[0], info->soca->chg_count, info->soca->Ocv[info->soca->chg_count] );
 	}
 #else
 
-	printk("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV), Ocv(%d uV) **********\n",
+	PM_LOGOUT("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV), Ocv(%d uV) **********\n",
 		__func__, info->soca->chg_count, info->soca->Ibat[0], info->soca->Vbat[0], info->soca->Vsys[0], info->soca->Ocv[info->soca->chg_count] );
 #endif	/* NXE2000_BATTERY_VERSION_20140605_V3131 */
 #else
 
-	printk("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV) **********\n",
+	PM_LOGOUT("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV) **********\n",
 		__func__, info->soca->chg_count, info->soca->Ibat[0], info->soca->Vbat[0], info->soca->Vsys[0] );
 #endif	/* NXE2000_BATTERY_VERSION_20140516_V3131 */
 #else
@@ -3572,17 +3573,8 @@ static int get_power_supply_Android_status(struct nxe2000_battery_info *info)
 
 	switch (info->soca->chg_status) {
 		case	POWER_SUPPLY_STATUS_UNKNOWN:
-				ret = POWER_SUPPLY_STATUS_UNKNOWN;
-				break;
-
 		case	POWER_SUPPLY_STATUS_NOT_CHARGING:
-				ret = POWER_SUPPLY_STATUS_NOT_CHARGING;
-				break;
-
 		case	POWER_SUPPLY_STATUS_DISCHARGING:
-				ret = POWER_SUPPLY_STATUS_DISCHARGING;
-				break;
-
 		case	POWER_SUPPLY_STATUS_CHARGING:
 				ret = info->soca->chg_status;
 				break;
@@ -4232,6 +4224,11 @@ static int calc_first_soc(struct nxe2000_battery_info *info)
 		}
 	}
 
+	for (i = 0; i < NXE2000_GET_CHARGE_NUM; i++) {
+		PM_LOGOUT(KERN_INFO "PMU: %s (%d) Ocv(%d)\n",
+			 __func__, i, info->soca->Ocv[i]);
+	}
+
 	Ocv_temp = 0;
 
 	for (i = 3; i < NXE2000_GET_CHARGE_NUM-3; i++) {
@@ -4245,11 +4242,11 @@ static int calc_first_soc(struct nxe2000_battery_info *info)
 #if defined(NXE2000_BATTERY_VERSION_20140605_V3131)
 	if (info->soca->ocv_table[0] >= Ocv_ave) {
 		capacity = 1;
-		printk(KERN_INFO "PMU: %s Under 0%% on ocv_table(%d)\n",
+		PM_LOGOUT(KERN_INFO "PMU: %s Under 0%% on ocv_table(%d)\n",
 			 __func__, info->soca->ocv_table[0]);
 	} else if (info->soca->ocv_table[10] <= Ocv_ave) {
 		capacity = 100;
-		printk(KERN_INFO "PMU: %s Over 100%% on ocv_table(%d)\n",
+		PM_LOGOUT(KERN_INFO "PMU: %s Over 100%% on ocv_table(%d)\n",
 			 __func__, info->soca->ocv_table[10]);
 	} else {
 		for (i = 1; i < 11; i++) {
@@ -4259,7 +4256,7 @@ static int calc_first_soc(struct nxe2000_battery_info *info)
 					(i-1)*10, info->soca->ocv_table[i-1], i*10,
 					 info->soca->ocv_table[i], Ocv_ave);
 
-				printk(KERN_INFO "PMU: %s (%d) ocv_table(%d)\n",
+				PM_LOGOUT(KERN_INFO "PMU: %s (%d) ocv_table(%d)\n",
 					 __func__, i, info->soca->ocv_table[i]);
 				break;
 			}
@@ -4283,6 +4280,9 @@ static int calc_first_soc(struct nxe2000_battery_info *info)
 	}
 #endif
 #endif	/* NXE2000_BATTERY_VERSION_20140516_V3131 */
+
+	PM_LOGOUT(KERN_INFO "PMU: %s first soc(%d)\n",
+		 __func__, capacity);
 
 	return capacity;
 }
