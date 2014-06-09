@@ -36,12 +36,16 @@
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
+//	{ 1600000, 1200 },
+//	{ 1500000, 1200 },
+//	{ 1400000, 1200 },
+//	{ 1300000, 1200 },
 	{ 1200000, 1200 },
 	{ 1100000, 1200 },
 	{ 1000000, 1200 },
 	{  900000, 1200 },
 	{  800000, 1200 },
-#if 0
+#if 1
 	{  780000, 1200 },
 	{  562000, 1200 },
 	{  533000, 1200 },
@@ -56,7 +60,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
 	.max_cpufreq    = 1200*1000,
 	.max_retention  =   30*1000,
-	.rest_cpufreq   =  800*1000,
+	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
 };
 
@@ -154,59 +158,11 @@ static struct platform_device *fb_devices[] = {
 #if defined(CONFIG_BACKLIGHT_PWM)
 #include <linux/pwm_backlight.h>
 
-#include <linux/gpio.h>
-#include <mach/platform.h>
-#include <mach/devices.h>
-#include <mach/soc.h>
-#define	PWM_BASE	IO_ADDRESS(PHY_BASEADDR_PWM)
-#define	PWM_TCON		(0x08)
-#define	TCON_INVT		(1<<2)
-int pwm_init(struct device *dev)
-{
-    volatile U32 val;
-	val  = readl(PWM_BASE + PWM_TCON);
-	val &= ~TCON_INVT;
-	val |=  TCON_INVT;
-	writel(val, PWM_BASE + PWM_TCON);
-    return 0;
-}
-
-#define CFG_IO_PWM_EN ((PAD_GPIO_B + 27))
-#define PWM_PIN  (PAD_GPIO_D +  1)
-
-
-int pwm_notify_after(struct device *dev,int brightness)
-{
-    unsigned int io = CFG_IO_PWM_EN;
-    if (brightness==0) {
-        nxp_soc_gpio_set_out_value(PWM_PIN, 1);
-		nxp_soc_gpio_set_io_dir(PWM_PIN, 1);
-		nxp_soc_gpio_set_io_func(PWM_PIN, 0);
-    }
-    else
-    {
-        nxp_soc_gpio_set_io_func(PWM_PIN, 1);
-    }
-    return brightness;
-}
-
-int pwm_notify(struct device *dev,int brightness)
-{
-    if(brightness>0 && brightness<=40){
-        brightness=40;
-    }
-    return brightness;
-}
-
-
 static struct platform_pwm_backlight_data bl_plat_data = {
 	.pwm_id			= CFG_LCD_PRI_PWM_CH,
 	.max_brightness = 255,//	/* 255 is 100%, set over 100% */
 	.dft_brightness = 100,//	/* 99% */
 	.pwm_period_ns	= 1000000000/CFG_LCD_PRI_PWM_FREQ,
-    .init           = pwm_init,
-    .notify         = pwm_notify,
-    .notify_after   = pwm_notify_after,
 };
 
 static struct platform_device bl_plat_device = {
@@ -653,10 +609,10 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 	.gpio_pmic_vbus		= CFG_GPIO_PMIC_VUSB_DET,
 	.gpio_pmic_lowbat	= CFG_GPIO_PMIC_LOWBAT_DET,
 
-	.alarm_vol_mv		= 3450,
+	.alarm_vol_mv		= 3400,
 //	.alarm_vol_mv		= 3412,
 	.bat_impe			= 1500,
-	.slp_ibat			= 3450,
+	.slp_ibat			= 3400,
 //	.adc_channel		= NXE2000_ADC_CHANNEL_VBAT,
 	.multiple			= 100,	//100%
 	.monitor_time		= 60,
@@ -1263,7 +1219,7 @@ static struct dw_mci_board _dwmci0_data = {
 				  	  DW_MCI_QUIRK_HIGHSPEED |
 				  	  DW_MMC_QUIRK_HW_RESET_PW |
 				      DW_MCI_QUIRK_NO_DETECT_EBIT,
-	.bus_hz			= 100 * 1000 * 1000,
+	.bus_hz			= 50 * 1000 * 1000,
 	.caps			= MMC_CAP_UHS_DDR50 |
 					  MMC_CAP_NONREMOVABLE |
 			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
