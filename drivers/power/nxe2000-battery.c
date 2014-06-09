@@ -1848,7 +1848,7 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 
 		info->soca->displayed_soc = capacity * 100;
 
-		printk("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV), Ocv(%d uV) **********\n",
+		PM_LOGOUT("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV), Ocv(%d uV) **********\n",
 			__func__,
 			info->soca->chg_count,
 			info->soca->Ibat[info->soca->chg_count],
@@ -1858,7 +1858,7 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 	}
 #else
 
-	printk("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV), Ocv(%d uV) **********\n",
+	PM_LOGOUT("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV), Ocv(%d uV) **********\n",
 		__func__,
 		info->soca->chg_count,
 		info->soca->Ibat[info->soca->chg_count],
@@ -1868,7 +1868,7 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 #endif	/* NXE2000_BATTERY_VERSION_20140605_V3131 */
 #else
 
-	printk("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV) **********\n",
+	PM_LOGOUT("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV) **********\n",
 		__func__,
 		info->soca->chg_count,
 		info->soca->Ibat[info->soca->chg_count],
@@ -4273,7 +4273,7 @@ static int calc_first_soc(struct nxe2000_battery_info *info)
 				(i-1)*10, info->soca->ocv_table[i-1], i*10,
 				 info->soca->ocv_table[i], Ocv_ave);
 
-			printk(KERN_INFO "PMU: %s (%d) ocv_table(%d)\n",
+			PM_LOGOUT(KERN_INFO "PMU: %s (%d) ocv_table(%d)\n",
 				 __func__, i, info->soca->ocv_table[i]);
 			break;
 		}
