@@ -384,12 +384,12 @@ static void reset_chip(struct i2c_client *client)
 	u8 buf[4] = {0x00};
 	
 	gsl_ts_write(client, 0xe0, &tmp, sizeof(tmp));
-	//msleep(20);
+	msleep(20);
 	tmp = 0x04;
 	gsl_ts_write(client, 0xe4, &tmp, sizeof(tmp));
-	//msleep(10);
+	msleep(10);
 	gsl_ts_write(client, 0xbc, buf, sizeof(buf));
-	//msleep(10);
+	msleep(10);
 }
 
 static void clr_reg(struct i2c_client *client)
@@ -741,13 +741,7 @@ static void gs_ts_work_resume(struct work_struct *work)
 {
     int i;
     struct gsl_ts *ts = container_of(work, struct gsl_ts,resume_work);
-
-  	printk("I'am in gsl_ts_resume() start\n");
-	gslX680_shutdown_high();
-	//msleep(20); 	
-	reset_chip(ts->client);
-	startup_chip(ts->client);
-	check_mem_data(ts->client);
+	init_chip(ts->client);
 
 #ifdef GSL_MONITOR
 	printk( "gsl_ts_resume () : queue gsl_monitor_work\n");
