@@ -25,6 +25,7 @@
 #include <linux/platform_device.h>
 #include <linux/power_supply.h>
 #include <linux/irq.h>
+#include <linux/gpio.h>
 
 /* nexell soc headers */
 #include <mach/platform.h>
@@ -259,7 +260,6 @@ void __init nxp_reserve_mem(void)
 #include <linux/i2c.h>
 #include <linux/regulator/machine.h>
 #include <linux/mfd/nxe2000.h>
-#include <linux/gpio.h>
 #include <linux/io.h>
 #include <linux/regulator/fixed.h>
 #include <linux/regulator/nxe2000-regulator.h>
