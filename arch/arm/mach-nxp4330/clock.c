@@ -52,13 +52,17 @@
 
 #define	INPUT_CLKS		6		/* PLL0, PLL1, PLL2, PLL3, EXT1, EXT2 */
 
-#define CONFIG_ARM_NXP4330_GPUFREQ
-#if defined(CONFIG_NXP4330_DFS_BCLK_PLL_0)
-#define CONFIG_NXP4330_GPUFREQ_PLLDEV 0
-#elif defined(CONFIG_NXP4330_DFS_BCLK_PLL_1)
-#define CONFIG_NXP4330_GPUFREQ_PLLDEV 1
+#if defined(CONFIG_NEXELL_DFS_BCLK)
+	#if defined(CONFIG_NXP4330_DFS_BCLK_PLL_0)
+	#define CONFIG_NXP4330_BCLKFREQ_PLLDEV 	0
+	#elif defined(CONFIG_NXP4330_DFS_BCLK_PLL_1)
+	#define CONFIG_NXP4330_BCLKFREQ_PLLDEV 	1
+	#else
+	#define CONFIG_NXP4330_BCLKFREQ_PLLDEV	0
+	#endif
+#define	DVFS_BCLK_PLL	~(1<<CONFIG_NXP4330_BCLKFREQ_PLLDEV)
 #else
-#define CONFIG_NXP4330_GPUFREQ_PLLDEV 0
+#define	DVFS_BCLK_PLL	(-1UL)
 #endif
 
 #ifdef  CONFIG_ARM_NXP4330_CPUFREQ
@@ -67,14 +71,7 @@
 #define	DVFS_CPU_PLL	(-1UL)
 #endif
 
-#ifdef  CONFIG_ARM_NXP4330_GPUFREQ
-#define	DVFS_GPU_PLL	~(1<<CONFIG_NXP4330_GPUFREQ_PLLDEV)
-#else
-#define	DVFS_GPU_PLL	(-1UL)
-#endif
-
-#define IGNORE_PLLs		(DVFS_CPU_PLL & DVFS_GPU_PLL)
-
+#define IGNORE_PLLs		(DVFS_CPU_PLL & DVFS_BCLK_PLL)
 #define	INPUT_MASK 		(((1<<INPUT_CLKS) - 1) & IGNORE_PLLs)
 
 #define	_PLL0_ 			(1 << _InPLL0_)
@@ -253,11 +250,11 @@ static inline void peri_clk_rate(void *base, int level, int src, int div)
 
 #ifdef CONFIG_NXP4330_CPUFREQ_PLLDEV
 	if (CONFIG_NXP4330_CPUFREQ_PLLDEV == src)
-		printk("*** %s: Fail pll.%d for CPU DFS ***\n", __func__, src);
+		printk("*** %s: Fail pll.%d for CPU  DFS ***\n", __func__, src);
 #endif
-#ifdef CONFIG_NXP4330_GPUFREQ_PLLDEV
-	if (CONFIG_NXP4330_GPUFREQ_PLLDEV == src)
-		printk("*** %s: Fail pll.%d for GPU DFS ***\n", __func__, src);
+#ifdef CONFIG_NXP4330_BCLKFREQ_PLLDEV
+	if (CONFIG_NXP4330_BCLKFREQ_PLLDEV == src)
+		printk("*** %s: Fail pll.%d for BCLK DFS ***\n", __func__, src);
 #endif
 
 	val  = ReadIODW(&preg->CLKGEN[level<<1]);
@@ -583,8 +580,8 @@ next:
 		if (rate_hz && (abs(rate-request) > abs(rate_hz-request)))
 			continue;
 
-		pr_debug("clk: %s.%d, pll[%u] request[%ld] calc[%ld]\n",
-			peri->dev_name, peri->dev_id, pll->clk.rate, request, rate);
+		pr_debug("clk: %s.%d, pll.%d[%u] request[%ld] calc[%ld]\n",
+			peri->dev_name, peri->dev_id, n, pll->clk.rate, request, rate);
 
 		if (clk2) {
 			s1 = -1, d1 = -1;	/* not use */
@@ -839,6 +836,10 @@ void __init nxp_cpu_clock_init(void)
 		/* prevent uart clock disable for low level debug message */
 		#ifndef CONFIG_DEBUG_NX_UART
 		if (peri->dev_name) {
+			#ifdef CONFIG_BACKLIGHT_PWM
+			if (!strcmp(peri->dev_name,DEV_NAME_PWM))
+				continue;
+			#endif
 			peri_clk_disable(peri->base_addr);
 			peri_clk_bclk(peri->base_addr, 0);
 			peri_clk_pclk(peri->base_addr, 0);
