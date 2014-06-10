@@ -53,7 +53,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
 	.max_cpufreq    = 1200*1000,
-	.max_retention  =   30*1000,
+	.max_retention  =   20*1000,
 	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
 };
