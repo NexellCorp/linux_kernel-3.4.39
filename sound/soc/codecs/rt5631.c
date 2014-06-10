@@ -2020,6 +2020,17 @@ static int rt5631_set_bias_level(struct snd_soc_codec *codec,
 #ifdef	VMID_ADD_WIDGET
 		rt5631_setup(codec);
 #endif
+		if (codec->dapm.bias_level == SND_SOC_BIAS_ON) {
+			snd_soc_update_bits(codec, RT5631_SPK_OUT_VOL,
+				RT5631_L_MUTE | RT5631_R_MUTE,
+				RT5631_L_MUTE | RT5631_R_MUTE);
+			snd_soc_update_bits(codec, RT5631_HP_OUT_VOL,
+				RT5631_L_MUTE | RT5631_R_MUTE,
+				RT5631_L_MUTE | RT5631_R_MUTE);
+			snd_soc_update_bits(codec, RT5631_PWR_MANAG_ADD2,
+				RT5631_PWR_MICBIAS1_VOL | RT5631_PWR_MICBIAS2_VOL,
+				RT5631_PWR_MICBIAS1_VOL | RT5631_PWR_MICBIAS2_VOL);
+		}
 		break;
 
 	case SND_SOC_BIAS_PREPARE:
@@ -2183,9 +2194,9 @@ static int rt5631_suspend(struct snd_soc_codec *codec)
 
 static int rt5631_resume(struct snd_soc_codec *codec)
 {
-#if (1)
 	u16 *value = codec->reg_cache;
 	int i = 0;
+	struct rt5631_priv *rt5631 = snd_soc_codec_get_drvdata(codec);
 
 	rt5631_reset(codec);
 	snd_soc_update_bits(codec, RT5631_PWR_MANAG_ADD3,
@@ -2201,9 +2212,18 @@ static int rt5631_resume(struct snd_soc_codec *codec)
 			continue;
 		snd_soc_write(codec, i, value[i]);
 	}
-#endif
 
-	rt5631_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+	codec->cache_only = false;
+	codec->cache_sync = 1;
+	snd_soc_cache_sync(codec);
+	rt5631_index_sync(codec);
+		
+	if(codec->dapm.bias_level == SND_SOC_BIAS_ON) {
+		rt5631_set_bias_level(codec, SND_SOC_BIAS_ON);
+	}
+	else if(codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
+		rt5631_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+	}
 	return 0;
 }
 #else

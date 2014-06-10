@@ -811,6 +811,7 @@ static struct pl022_ssp_controller ssp1_platform_data = {
 #else
     .enable_dma     = 0,
 #endif
+	.init 			= (void *)spi_init,
 };
 
 static struct amba_device spi1_device = {
@@ -845,9 +846,10 @@ static struct pl022_ssp_controller ssp2_platform_data = {
 #else
     .enable_dma     = 0,
 #endif
+	.init 			= (void *)spi_init,
 };
 
-static struct amba_device spi1_device = {
+static struct amba_device spi2_device = {
     .dev = {
 	        .init_name          = "ssp-pl022.2",
 	        .coherent_dma_mask  = 0x000fffffUL,
