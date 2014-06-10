@@ -27,9 +27,12 @@
 #include <mach/platform.h>
 #include "nxp-i2s.h"
 
+#include "../codecs/rt5631.h"
 
 static char str_dai_name[16] = DEV_NAME_I2S;
 static int (*cpu_resume_fn)(struct snd_soc_dai *dai) = NULL;
+static struct snd_soc_codec *rt5631 = NULL;
+static int codec_bias_level = 0;
 
 static int rt5631_hw_params(struct snd_pcm_substream *substream,
 				struct snd_pcm_hw_params *params)
@@ -54,6 +57,8 @@ static int rt5631_hw_params(struct snd_pcm_substream *substream,
 static int rt5631_resume_pre(struct snd_soc_card *card)
 {
 	struct snd_soc_dai *cpu_dai = card->rtd->cpu_dai;
+    struct snd_soc_codec *codec = rt5631;
+
 	int ret = 0;
 	PM_DBGOUT("+%s\n", __func__);
 
@@ -69,7 +74,20 @@ static int rt5631_resume_pre(struct snd_soc_card *card)
 		ret = cpu_resume_fn(cpu_dai);
 
 	PM_DBGOUT("-%s\n", __func__);
+    codec_bias_level = codec->dapm.bias_level;
+
 	return ret;
+}
+
+static int rt5631_resume_post(struct snd_soc_card *card)
+{
+    struct snd_soc_codec *codec = rt5631;
+    PM_DBGOUT("%s BAIAS=%d, PRE=%d\n", __func__, codec->dapm.bias_level, codec_bias_level);
+
+    if (SND_SOC_BIAS_OFF != codec_bias_level)
+        codec->driver->resume(codec);
+
+    return 0;
 }
 
 static struct snd_soc_ops rt5631_ops = {
@@ -130,6 +148,8 @@ static int rt5631_dai_init(struct snd_soc_pcm_runtime *rtd)
 	struct snd_soc_jack_gpio *jack = &jack_gpio;
 	int ret;
 
+	rt5631 = codec;
+
 	/* set endpoints to not connected */
 	snd_soc_dapm_nc_pin(dapm, "AUXO1");
 	snd_soc_dapm_nc_pin(dapm, "AUXO2");
@@ -177,6 +197,7 @@ static struct snd_soc_card rt5631_card = {
 	.dai_link 			= &rt5631_dai_link,
 	.num_links 			= 1,
 	.resume_pre			= &rt5631_resume_pre,
+	.resume_post		= &rt5631_resume_post,
 	.dapm_widgets 		= rt5631_dapm_widgets,
 	.num_dapm_widgets 	= ARRAY_SIZE(rt5631_dapm_widgets),
 	.dapm_routes 		= rt5631_audio_map,
