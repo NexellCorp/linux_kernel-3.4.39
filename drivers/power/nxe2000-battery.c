@@ -43,19 +43,21 @@
 #include <nxe2000-private.h>
 
 /*
-#define	PM_DBGOUT	printk
-*/
-#define BAT_RESUME_WORK_QUEUE
-
-/*
  * Debug
  */
-#if (0)
-#define DBGOUT(dev, fmt, arg...)		dev_info(dev, fmt, arg...)
-#else
-#define DBGOUT(dev, fmt, arg...)		do {} while (0)
-#endif
+//#define PM_LOGOUT printk
+#define PM_LOGOUT(fmt, arg...)
 
+//#define DBGOUT(dev, fmt, arg...)		dev_info(dev, fmt, arg...)
+#define DBGOUT(dev, fmt, arg...)		do {} while (0)
+
+
+/*
+ * LOCAL define
+ */
+#define BAT_RESUME_WORK_QUEUE
+
+#define NXE2000_BATTERY_VERSION_20140605_V3131
 #define NXE2000_BATTERY_VERSION_20140516_V3131
 #define NXE2000_BATTERY_VERSION_20140221_V3100
 //#define NXE2000_BATTERY_VERSION_20131226_V3000
@@ -1299,7 +1301,7 @@ static void nxe2000_displayed_work(struct work_struct *work)
 			 = (is_charging == true) ? cc_cap : -cc_cap;
 
 		displayed_soc_temp
-		       = info->soca->soc + info->soca->cc_delta;
+			 = info->soca->soc + info->soca->cc_delta;
 		if (displayed_soc_temp < 0)
 			displayed_soc_temp = 0;
 		displayed_soc_temp
@@ -1315,6 +1317,9 @@ static void nxe2000_displayed_work(struct work_struct *work)
 		err = measure_Ibatt_FG(info, &Ibat);
 		err = measure_vbatt_FG(info, &Vbat);
 		err = measure_vsys_ADC(info, &Vsys);
+
+		PM_LOGOUT("PMU : %s : Ibat(%d mA), Vbat(%d uV), Vsys(%d uV) **********\n",
+			__func__, Ibat, Vbat, Vsys);
 
 		info->soca->Ibat_ave = Ibat;
 		info->soca->Vbat_ave = Vbat;
@@ -1518,6 +1523,10 @@ end_flow:
 		if (err < 0)
 			dev_err(info->dev, "Read cc_sum Error !!-----\n");
 	}
+
+	PM_LOGOUT("PMU:STATUS= %d: IBAT= %d: VSYS= %d: VBAT= %d: DSOC= %d: RSOC= %d:\n",
+		info->soca->status, info->soca->Ibat_ave, info->soca->Vsys_ave, info->soca->Vbat_ave,
+		info->soca->displayed_soc, info->soca->soc);
 
 #ifdef DISABLE_CHARGER_TIMER
 	/* clear charger timer */
@@ -1723,6 +1732,9 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 	int Ibat_sort[NXE2000_GET_CHARGE_NUM];
 	int i, j;
 	int ret;
+#if defined(NXE2000_BATTERY_VERSION_20140605_V3131)
+	int capacity;
+#endif
 
 	mutex_lock(&info->lock);
 
@@ -1730,10 +1742,12 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 	if(!info->factory_mode_complete) {
 		queue_delayed_work(info->monitor_wqueue, &info->get_charge_work,
 			 NXE2000_CHARGE_CALC_TIME * HZ);
+		mutex_unlock(&info->lock);
 		return;
 	}
 #endif
 
+#if 0	// org
 	for (i = NXE2000_GET_CHARGE_NUM-1; i > 0; i--) {
 		if (0 == info->soca->chg_count) {
 			info->soca->Vbat[i] = 0;
@@ -1758,6 +1772,116 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 		info->soca->Ocv[info->soca->chg_count]
 			 = info->soca->Vbat[0] - info->soca->Ibat[0] * info->soca->Rbat;
 	}
+
+#if defined(NXE2000_BATTERY_VERSION_20140605_V3131)
+	if(info->first_soc){
+		if (info->soca->ocv_table[0] >= info->soca->Ocv[info->soca->chg_count]) {
+			capacity = 1;
+		} else if (info->soca->ocv_table[10] <= info->soca->Ocv[info->soca->chg_count]) {
+			capacity = 100;
+		} else {
+			for (i = 1; i < 11; i++) {
+				if (info->soca->ocv_table[i] >= info->soca->Ocv[info->soca->chg_count]) {
+					/* unit is 1% */
+					capacity = Calc_Linear_Interpolation(
+						(i-1)*10, info->soca->ocv_table[i-1], i*10,
+						 info->soca->ocv_table[i], info->soca->Ocv[info->soca->chg_count]);
+					break;
+				}
+			}
+		}
+	
+		capacity = max(1, capacity);
+		capacity = min(100, capacity);
+
+		info->soca->displayed_soc = capacity * 100;
+
+		PM_LOGOUT("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Ocv(%d uV) **********\n",
+			__func__, info->soca->chg_count, info->soca->Ibat[0], info->soca->Vbat[0], info->soca->Ocv[info->soca->chg_count] );
+	}
+#else
+
+	PM_LOGOUT("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV), Ocv(%d uV) **********\n",
+		__func__, info->soca->chg_count, info->soca->Ibat[0], info->soca->Vbat[0], info->soca->Vsys[0], info->soca->Ocv[info->soca->chg_count] );
+#endif	/* NXE2000_BATTERY_VERSION_20140605_V3131 */
+#else
+
+	PM_LOGOUT("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV) **********\n",
+		__func__, info->soca->chg_count, info->soca->Ibat[0], info->soca->Vbat[0], info->soca->Vsys[0] );
+#endif	/* NXE2000_BATTERY_VERSION_20140516_V3131 */
+#else
+
+	if (0 == info->soca->chg_count) {
+		for (i = 0; i < NXE2000_GET_CHARGE_NUM; i++) {
+			info->soca->Vbat[i] = 0;
+			info->soca->Vsys[i] = 0;
+			info->soca->Ibat[i] = 0;
+#if defined(NXE2000_BATTERY_VERSION_20140516_V3131)
+			info->soca->Ocv[i]  = 0;
+#endif
+		}
+	}
+
+	ret = measure_vbatt_FG(info, &info->soca->Vbat[info->soca->chg_count]);
+	ret = measure_vsys_ADC(info, &info->soca->Vsys[info->soca->chg_count]);
+	ret = measure_Ibatt_FG(info, &info->soca->Ibat[info->soca->chg_count]);
+
+#if defined(NXE2000_BATTERY_VERSION_20140516_V3131)
+	if ((info->first_soc == 1) || (NXE2000_SOCA_START != info->soca->status)) {
+		info->soca->Ocv[info->soca->chg_count]
+			 = info->soca->Vbat[info->soca->chg_count] - info->soca->Ibat[info->soca->chg_count] * info->soca->Rbat;
+	}
+
+#if defined(NXE2000_BATTERY_VERSION_20140605_V3131)
+	if(info->first_soc){
+		if (info->soca->ocv_table[0] >= info->soca->Ocv[info->soca->chg_count]) {
+			capacity = 1;
+		} else if (info->soca->ocv_table[10] <= info->soca->Ocv[info->soca->chg_count]) {
+			capacity = 100;
+		} else {
+			for (i = 1; i < 11; i++) {
+				if (info->soca->ocv_table[i] >= info->soca->Ocv[info->soca->chg_count]) {
+					/* unit is 1% */
+					capacity = Calc_Linear_Interpolation(
+						(i-1)*10, info->soca->ocv_table[i-1], i*10,
+						 info->soca->ocv_table[i], info->soca->Ocv[info->soca->chg_count]);
+					break;
+				}
+			}
+		}
+	
+		capacity = max(1, capacity);
+		capacity = min(100, capacity);
+
+		info->soca->displayed_soc = capacity * 100;
+
+		PM_LOGOUT("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV), Ocv(%d uV) **********\n",
+			__func__,
+			info->soca->chg_count,
+			info->soca->Ibat[info->soca->chg_count],
+			info->soca->Vbat[info->soca->chg_count],
+			info->soca->Vsys[info->soca->chg_count],
+			info->soca->Ocv[info->soca->chg_count] );
+	}
+#else
+
+	PM_LOGOUT("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV), Ocv(%d uV) **********\n",
+		__func__,
+		info->soca->chg_count,
+		info->soca->Ibat[info->soca->chg_count],
+		info->soca->Vbat[info->soca->chg_count],
+		info->soca->Vsys[info->soca->chg_count],
+		info->soca->Ocv[info->soca->chg_count] );
+#endif	/* NXE2000_BATTERY_VERSION_20140605_V3131 */
+#else
+
+	PM_LOGOUT("PMU : %s : Check Parameter ********** %d - Ibat(%d mA), Vbat(%d uV), Vsys(%d uV) **********\n",
+		__func__,
+		info->soca->chg_count,
+		info->soca->Ibat[info->soca->chg_count],
+		info->soca->Vbat[info->soca->chg_count],
+		info->soca->Vsys[info->soca->chg_count] );
+#endif	/* NXE2000_BATTERY_VERSION_20140516_V3131 */
 #endif
 
 	info->soca->chg_count++;
@@ -1772,6 +1896,10 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 #if defined(NXE2000_BATTERY_VERSION_20140516_V3131)
 	if(info->first_soc) {
 		info->first_soc = 0;
+#if defined(NXE2000_BATTERY_VERSION_20140605_V3131)
+		queue_delayed_work(info->monitor_wqueue, &info->displayed_work, 0);
+#endif
+
 		ret = nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, 0x08);
 		if (ret < 0)
 			dev_err(info->dev, "Error in writing the control register\n");
@@ -1819,6 +1947,7 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 	Vsys_temp = Vsys_temp / (NXE2000_GET_CHARGE_NUM - 6);
 	Ibat_temp = Ibat_temp / (NXE2000_GET_CHARGE_NUM - 6);
 
+#if 0	// org
 	if (0 == info->soca->chg_count) {
 		queue_delayed_work(info->monitor_wqueue, &info->get_charge_work,
 				 NXE2000_CHARGE_UPDATE_TIME * HZ);
@@ -1829,6 +1958,12 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 		info->soca->Vsys_ave = Vsys_temp;
 		info->soca->Ibat_ave = Ibat_temp;
 	}
+#else
+
+	info->soca->Vbat_ave = Vbat_temp;
+	info->soca->Vsys_ave = Vsys_temp;
+	info->soca->Ibat_ave = Ibat_temp;
+#endif
 
 	info->soca->chg_count = 0;
 	queue_delayed_work(info->monitor_wqueue, &info->get_charge_work,
@@ -1944,8 +2079,15 @@ static int nxe2000_init_fgsoca(struct nxe2000_battery_info *info)
 #endif
 
 	/* Start first Display job */
+#if defined(NXE2000_BATTERY_VERSION_20140605_V3131)
+	if (info->first_soc == 0) {
+		queue_delayed_work(info->monitor_wqueue, &info->displayed_work,
+					 NXE2000_FIRST_DISPLAY_TIME*HZ);
+	}
+#else
 	queue_delayed_work(info->monitor_wqueue, &info->displayed_work,
 					 NXE2000_FIRST_DISPLAY_TIME*HZ);
+#endif
 
 	/* Start first Waiting stable job */
 	queue_delayed_work(info->monitor_wqueue, &info->charge_stable_work,
@@ -2001,6 +2143,8 @@ static int nxe2000_init_fgsoca(struct nxe2000_battery_info *info)
 			dev_err(info->dev, "Error in writing the control register\n");
 	}
 
+	PM_LOGOUT(KERN_INFO "PMU: %s : * Rbat = %d mOhm   n_cap = %d mAH\n",
+			 __func__, info->soca->Rbat, info->soca->n_cap);
 	return 1;
 }
 #endif
@@ -3220,6 +3364,8 @@ static int nxe2000_init_charger(struct nxe2000_battery_info *info)
 	info->soca->OCV100_min = ( vfchg_val * 99 / 100 - (icchg_val * (rbat +20))/1000 - 20 ) * 1000;
 	info->soca->OCV100_max = ( vfchg_val * 101 / 100 - (icchg_val * (rbat +20))/1000 + 20 ) * 1000;
 
+	PM_LOGOUT("PMU : %s : 100 min %d, 100 max %d vfchg %d icchg %d rbat %d\n",__func__,
+		info->soca->OCV100_min,info->soca->OCV100_max,vfchg_val,icchg_val,rbat);
 
 	/* Set ADRQ=00 to stop ADC */
 	nxe2000_write(info->dev->parent, NXE2000_ADC_CNT3, 0x0);
@@ -3428,6 +3574,7 @@ static int get_power_supply_status(struct nxe2000_battery_info *info)
 
 static int get_power_supply_Android_status(struct nxe2000_battery_info *info)
 {
+	int ret = POWER_SUPPLY_STATUS_UNKNOWN;
 
 	get_power_supply_status(info);
 
@@ -3437,34 +3584,25 @@ static int get_power_supply_Android_status(struct nxe2000_battery_info *info)
 
 	switch (info->soca->chg_status) {
 		case	POWER_SUPPLY_STATUS_UNKNOWN:
-				return POWER_SUPPLY_STATUS_UNKNOWN;
-				break;
-
 		case	POWER_SUPPLY_STATUS_NOT_CHARGING:
-				return POWER_SUPPLY_STATUS_NOT_CHARGING;
-				break;
-
 		case	POWER_SUPPLY_STATUS_DISCHARGING:
-				return POWER_SUPPLY_STATUS_DISCHARGING;
-				break;
-
 		case	POWER_SUPPLY_STATUS_CHARGING:
-				return POWER_SUPPLY_STATUS_CHARGING;
+				ret = info->soca->chg_status;
 				break;
 
 		case	POWER_SUPPLY_STATUS_FULL:
 				if(info->soca->displayed_soc == 100 * 100) {
-					return POWER_SUPPLY_STATUS_FULL;
+					ret = POWER_SUPPLY_STATUS_FULL;
 				} else {
-					return POWER_SUPPLY_STATUS_CHARGING;
+					ret = POWER_SUPPLY_STATUS_CHARGING;
 				}
 				break;
 		default:
-				return POWER_SUPPLY_STATUS_UNKNOWN;
+				ret = POWER_SUPPLY_STATUS_UNKNOWN;
 				break;
 	}
 
-	return POWER_SUPPLY_STATUS_UNKNOWN;
+	return ret;
 }
 
 static void charger_irq_work(struct work_struct *work)
@@ -3500,10 +3638,12 @@ static void charger_irq_work(struct work_struct *work)
 			 "%s(): Error in enable charger mask INT %d\n",
 			 __func__, ret);
 
+#if 0
 #if defined(NXE2000_BATTERY_VERSION_20140516_V3131)
-	if(info->first_soc) {
+	if(info->first_soc && (info->soca->chg_count < NXE2000_GET_CHARGE_NUM) ) {
 		return;
 	}
+#endif
 #endif
 
 	/* set USB/ADP ILIM */
@@ -3540,6 +3680,12 @@ static void charger_irq_work(struct work_struct *work)
 					val |=	(0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
 				}
 
+#if defined(NXE2000_BATTERY_VERSION_20140516_V3131)
+				if(info->first_soc && (info->soca->chg_count < NXE2000_GET_CHARGE_NUM) ) {
+					val |= (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
+				}
+#endif
+
 				nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
 
 				info->ubc_check_count = 0;
@@ -3561,6 +3707,12 @@ static void charger_irq_work(struct work_struct *work)
 					val |=	(0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
 					val |=	(0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
 				}
+
+#if defined(NXE2000_BATTERY_VERSION_20140516_V3131)
+				if(info->first_soc && (info->soca->chg_count < NXE2000_GET_CHARGE_NUM) ) {
+					val |= (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
+				}
+#endif
 
 				ret = nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
 				if (ret < 0)
@@ -3605,6 +3757,12 @@ static void charger_irq_work(struct work_struct *work)
 					val |= (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
 					val |= (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
 				}
+
+#if defined(NXE2000_BATTERY_VERSION_20140516_V3131)
+				if(info->first_soc && (info->soca->chg_count < NXE2000_GET_CHARGE_NUM) ) {
+					val |= (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
+				}
+#endif
 
 				ret = nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
 				if (ret < 0)
@@ -4077,6 +4235,11 @@ static int calc_first_soc(struct nxe2000_battery_info *info)
 		}
 	}
 
+	for (i = 0; i < NXE2000_GET_CHARGE_NUM; i++) {
+		PM_LOGOUT(KERN_INFO "PMU: %s (%d) Ocv(%d)\n",
+			 __func__, i, info->soca->Ocv[i]);
+	}
+
 	Ocv_temp = 0;
 
 	for (i = 3; i < NXE2000_GET_CHARGE_NUM-3; i++) {
@@ -4086,18 +4249,51 @@ static int calc_first_soc(struct nxe2000_battery_info *info)
 	Ocv_gap_min = info->soca->Ocv[6] - info->soca->Ocv[3];
 	Ocv_gap_max = info->soca->Ocv[NXE2000_GET_CHARGE_NUM-1] - info->soca->Ocv[0];
 
+#if defined(NXE2000_BATTERY_VERSION_20140516_V3131)
+#if defined(NXE2000_BATTERY_VERSION_20140605_V3131)
+	if (info->soca->ocv_table[0] >= Ocv_ave) {
+		capacity = 1;
+		PM_LOGOUT(KERN_INFO "PMU: %s Under 0%% on ocv_table(%d)\n",
+			 __func__, info->soca->ocv_table[0]);
+	} else if (info->soca->ocv_table[10] <= Ocv_ave) {
+		capacity = 100;
+		PM_LOGOUT(KERN_INFO "PMU: %s Over 100%% on ocv_table(%d)\n",
+			 __func__, info->soca->ocv_table[10]);
+	} else {
+		for (i = 1; i < 11; i++) {
+			if (info->soca->ocv_table[i] >= Ocv_ave) {
+				/* unit is 1% */
+				capacity = Calc_Linear_Interpolation(
+					(i-1)*10, info->soca->ocv_table[i-1], i*10,
+					 info->soca->ocv_table[i], Ocv_ave);
+
+				PM_LOGOUT(KERN_INFO "PMU: %s (%d) ocv_table(%d)\n",
+					 __func__, i, info->soca->ocv_table[i]);
+				break;
+			}
+		}
+	}
+
+	capacity = max(1, capacity);
+	capacity = min(100, capacity);
+#else
 	for (i = 1; i < 11; i++) {
 		if (info->soca->ocv_table[i] >= Ocv_ave) {
 			/* unit is 1% */
 			capacity = Calc_Linear_Interpolation(
 				(i-1)*10, info->soca->ocv_table[i-1], i*10,
 				 info->soca->ocv_table[i], Ocv_ave);
-			printk(KERN_INFO "PMU: %s (%d) ocv_table(%d)\n",
+
+			PM_LOGOUT(KERN_INFO "PMU: %s (%d) ocv_table(%d)\n",
 				 __func__, i, info->soca->ocv_table[i]);
-				 
 			break;
 		}
 	}
+#endif
+#endif	/* NXE2000_BATTERY_VERSION_20140516_V3131 */
+
+	PM_LOGOUT(KERN_INFO "PMU: %s first soc(%d)\n",
+		 __func__, capacity);
 
 	return capacity;
 }
@@ -5131,7 +5327,8 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 		queue_delayed_work(info->monitor_wqueue, &info->otgid_detect_work, msecs_to_jiffies(20));
 	}
 
-#if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_FROM_PMIC_INT == 1)
+#if (CFG_SW_UBC_ENABLE == 1)
+#if (CFG_USB_DET_FROM_PMIC_INT == 1)
 	dwc_otg_pcd_clear_ep0_state();
 	info->pmic_vbuschk_count    = 3;
 	info->flag_set_ilimit       = false;
@@ -5146,6 +5343,7 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 			queue_delayed_work(info->monitor_wqueue, &info->sw_ubc_work, msecs_to_jiffies(1000));
 		}
 	}
+#endif
 #endif
 
 #if defined(NXE2000_BATTERY_VERSION_20140516_V3131)
@@ -5732,7 +5930,8 @@ static int nxe2000_battery_resume(struct device *dev) {
 		queue_delayed_work(info->monitor_wqueue, &info->otgid_detect_work, msecs_to_jiffies(20));
 	}
 
-#if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_FROM_PMIC_INT == 1)
+#if (CFG_SW_UBC_ENABLE == 1)
+#if (CFG_USB_DET_FROM_PMIC_INT == 1)
 	dwc_otg_pcd_clear_ep0_state();
 	info->pmic_vbuschk_count    = 3;
 	info->flag_set_ilimit       = false;
@@ -5747,6 +5946,7 @@ static int nxe2000_battery_resume(struct device *dev) {
 
 		nxp_soc_gpio_set_int_enable(info->gpio_pmic_vbus, 1);
 	}
+#endif
 #endif
 
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION) || defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
