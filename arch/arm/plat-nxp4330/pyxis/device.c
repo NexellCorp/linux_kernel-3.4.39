@@ -41,13 +41,11 @@ static unsigned long dfs_freq_table[][2] = {
 	{ 1000000, 1200 },
 	{  900000, 1200 },
 	{  800000, 1200 },
-#if 0
 	{  780000, 1200 },
 	{  562000, 1200 },
 	{  533000, 1200 },
 	{  490000, 1200 },
 	{  400000, 1200 },
-#endif
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
@@ -55,8 +53,8 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
 	.max_cpufreq    = 1200*1000,
-	.max_retention  =   30*1000,
-	.rest_cpufreq   =  800*1000,
+	.max_retention  =   20*1000,
+	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
 };
 
@@ -525,8 +523,8 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1200000, 1, 12);	/* 1.2V ARM */
 NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1, 14);	/* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
-NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1600000, 1, -1);	/* 1.6V DDR */
-NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1600000, 1,  8);	/* 1.6V SYS */
+NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
+NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  8);	/* 1.5V SYS */
 #if defined(CONFIG_RFKILL_NEXELL)
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 0,  2);	/* 3.3V GPS */
 #else
