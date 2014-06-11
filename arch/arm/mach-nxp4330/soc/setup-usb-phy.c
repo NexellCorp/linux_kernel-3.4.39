@@ -81,7 +81,11 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 		temp   &= ~(3<<7);
 		temp   |=  (1<<7);
 		writel(temp, SOC_VA_TIEOFF + 0x34);
-		udelay(40); // 40us delay need.
+#if 1
+		udelay(1);
+		writel(readl(SOC_VA_TIEOFF + 0x34) |  (3<<7), SOC_VA_TIEOFF + 0x34);
+#endif
+		udelay(10); // 40us delay need.
 
 		// 6. UTMI reset
 		temp   |=  (1<<3);
@@ -143,11 +147,11 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 			writel(temp3, SOC_VA_TIEOFF + 0x2C);
 
 		// 4. POR of PHY
-		writel(readl(SOC_VA_TIEOFF + 0x20) & ~(3<<7), SOC_VA_TIEOFF + 0x20);
-		writel(readl(SOC_VA_TIEOFF + 0x20) |  (1<<7), SOC_VA_TIEOFF + 0x20);
-
-		// Wait clock of PHY - about 40 micro seconds
-		udelay(100); // 40us delay need.
+		temp1   = readl(SOC_VA_TIEOFF + 0x20);
+		temp1  &= ~(3<<7);
+		temp1  |=  (1<<7);
+		writel(temp1, SOC_VA_TIEOFF + 0x20);
+		udelay(10); // 40us delay need.
 
 		if (type == NXP_USB_PHY_HSIC) {
 			// Set HSIC mode
@@ -180,6 +184,8 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 
 int nxp_usb_phy_exit(struct platform_device *pdev, int type)
 {
+	u32 temp;
+
 	PM_DBGOUT("++ %s\n", __func__);
 
 	if (!pdev)
@@ -187,18 +193,36 @@ int nxp_usb_phy_exit(struct platform_device *pdev, int type)
 
 	if( type == NXP_USB_PHY_OTG )
 	{
-		u32 temp;
-
 		temp    = readl(SOC_VA_TIEOFF + 0x34);
 
-		temp   &= ~(1<<3);                      //nUtmiResetSync = 0
+		// 0. Select VBUS
+		temp   |=  (3<<24);   /* Select VBUS 3.3V */
+//		temp   &= ~(3<<24);   /* Select VBUS 5V */
 		writel(temp, SOC_VA_TIEOFF + 0x34);
 
-		temp   &= ~(1<<2);                      //nResetSync = 0
+		// 1. UTMI reset
+		temp   &= ~(1<<3);
 		writel(temp, SOC_VA_TIEOFF + 0x34);
 
-		temp   |=  (3<<7);                      //POR_ENB=1, POR=1
+		// 2. AHB reset
+		temp   &= ~(1<<2);
 		writel(temp, SOC_VA_TIEOFF + 0x34);
+
+		// 3. POR of PHY
+#if 0
+		writel(readl(SOC_VA_TIEOFF + 0x34) |  (3<<7), SOC_VA_TIEOFF + 0x34);
+#else
+		temp    = readl(SOC_VA_TIEOFF + 0x34);
+		temp   &= ~(3<<7);
+		temp   |=  (1<<7);
+		writel(temp, SOC_VA_TIEOFF + 0x34);
+		udelay(1);
+		temp   |=  (3<<7);
+		writel(temp, SOC_VA_TIEOFF + 0x34);
+		udelay(1);
+		temp   &= ~(2<<7);
+		writel(temp, SOC_VA_TIEOFF + 0x34);
+#endif
 
 		// OTG reset on
 		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<25), SOC_VA_RSTCON + 0x04);
@@ -219,17 +243,30 @@ int nxp_usb_phy_exit(struct platform_device *pdev, int type)
 		writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<20), SOC_VA_TIEOFF + 0x14);
 
 		// 4. POR of PHY
-		writel(readl(SOC_VA_TIEOFF + 0x20) |  (3<<7), SOC_VA_TIEOFF + 0x20);
+#if 0
+		writel(readl(SOC_VA_TIEOFF + 0x20) | (3<<7), SOC_VA_TIEOFF + 0x20);
+#else
+		temp    = readl(SOC_VA_TIEOFF + 0x20);
+		temp   &= ~(3<<7);
+		temp   |=  (1<<7);
+		writel(temp, SOC_VA_TIEOFF + 0x20);
+		udelay(1);
+		temp   |=  (3<<7);
+		writel(temp, SOC_VA_TIEOFF + 0x20);
+		udelay(1);
+		temp   &= ~(2<<7);
+		writel(temp, SOC_VA_TIEOFF + 0x20);
+#endif
 		if (type == NXP_USB_PHY_HSIC) {
 			// Clear HSIC mode
 			writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<23), SOC_VA_TIEOFF + 0x14);
 
 			// POR of HSIC PHY
 			writel(readl(SOC_VA_TIEOFF + 0x28) |  (3<<18), SOC_VA_TIEOFF + 0x28);
-
-			// Wait clock of PHY - about 40 micro seconds
-			udelay(100); // 40us delay need.
 		}
+
+		// Wait clock of PHY - about 40 micro seconds
+		udelay(10); // 40us delay need.
 
 		// EHCI, OHCI reset on
 //		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<24), SOC_VA_RSTCON + 0x04);
