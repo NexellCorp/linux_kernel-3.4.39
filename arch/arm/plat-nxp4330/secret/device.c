@@ -1616,7 +1616,7 @@ static struct dw_mci_board _dwmci2_data = {
 				  	  DW_MCI_QUIRK_HIGHSPEED |
 				  	  DW_MMC_QUIRK_HW_RESET_PW |
 				      DW_MCI_QUIRK_NO_DETECT_EBIT,
-	.bus_hz			= 100 * 1000 * 1000,
+	.bus_hz			= 200 * 1000 * 1000,
 	.hs_over_clk	=  50 * 1000 * 1000,
 	.caps			= MMC_CAP_UHS_DDR50 | //MMC_CAP_1_8V_DDR |
 					  MMC_CAP_NONREMOVABLE |
@@ -1626,7 +1626,7 @@ static struct dw_mci_board _dwmci2_data = {
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
 	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | 	\
-						DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(1),	// 100 = (1) (1), 200 = (0) (2)
+						DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(2),	// 100 = (1) (1), 200 = (0) (2)
 
 };
 #endif

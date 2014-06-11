@@ -899,13 +899,20 @@ config TOUCHSCREEN_GSLX680
 config TOUCHSCREEN_ATMEL_MXT640T
 	tristate "Atmel mXT 604T I2C Touchscreen"
 	depends on I2C
+	default n
 	help
 	  Say Y here if you have Atmel mXT 604T I2C touchscreen.
 
 	  If unsure, say N.
 
+
 config TOUCHSCREEN_SMAC
-	bool
-	default y
+	tristate "SMAC TSP for Atmel mXT 604T Touchscreen"
+	depends on TOUCHSCREEN_ATMEL_MXT640T
+	default n
+	help
+	  Say Y here if you have Atmel mXT 604T I2C touchscreen.
+
+	  If unsure, say N.
 
 endif

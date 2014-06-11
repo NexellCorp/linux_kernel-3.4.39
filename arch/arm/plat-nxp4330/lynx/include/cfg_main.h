@@ -92,7 +92,7 @@
 #define CFG_DISP_PRI_VSYNC_FRONT_PORCH          23
 #define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CFALSE
 
-#define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL0
+#define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL2
 #define CFG_DISP_PRI_CLKGEN0_DIV                12
 #define CFG_DISP_PRI_CLKGEN0_DELAY              0
 #define CFG_DISP_PRI_CLKGEN0_INVERT				0
@@ -188,6 +188,7 @@
  * 	SDHC
  */
 #define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
+//#define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_B + 24)	/* external cd */
 
 /*------------------------------------------------------------------------------
  *  MPEGTSIF
@@ -215,7 +216,7 @@
 /*------------------------------------------------------------------------------
  *  NXE2000 PMIC
  */
-#define CFG_SW_UBC_ENABLE						(1)
+#define CFG_SW_UBC_ENABLE						(0)
 
 /**
  * 0 : GPIO interrupt (CFG_GPIO_PMIC_VUSB_DET)
