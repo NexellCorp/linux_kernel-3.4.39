@@ -33,7 +33,6 @@
 /*
 #define pr_debug	printk
 */
-#define VECTOR_INT_DETECT   (1)
 
 static void __init gpio_init(void __iomem *base, unsigned int irq_start,
 							u32 irq_sources, u32 resume_sources);
@@ -67,18 +66,6 @@ static void __init __gic_init(void __iomem *dist_base, void __iomem *cpu_base);
  */
 void __init nxp_cpu_init_irq(void)
 {
-#if (VECTOR_INT_DETECT == 1)
-	void __iomem *base = (void __iomem *)VIC0_INT_BASE;
-	int i, j;
-
-	for (j = 0; j < 2; j++) {
-		for (i = 0; i < 32; i++)
-			writel_relaxed((j*32) + i, base + VIC_VECT_ADDR0 + (i<<2));
-
-		base = (void __iomem *)VIC1_INT_BASE;
-	}
-#endif
-
 	pr_debug("%s\n", __func__);
 
 	vic_init  (VIC0_INT_BASE ,  0, VIC0_INT_MASK, VIC0_INT_RESUME);	/*  0 ~ 31 */
@@ -100,64 +87,12 @@ void __init nxp_cpu_init_irq(void)
 }
 
 #ifdef CONFIG_ARM_GIC
-#define FIRST_DECTCT_IRQ	(1<<IRQ_PHY_TIMER_INT0)
-u32 g_toggling = 1;
 static void vic_handler(unsigned int irq, struct irq_desc *desc)
 {
+	void __iomem *base = (void __iomem *)VIC0_INT_BASE;
 	u32 stat, gic = irq;
 	int i = 0;
 
-#if (VECTOR_INT_DETECT == 1)
-	void __iomem *base[2];
-	u32 first_detc;
-
-	g_toggling = (~g_toggling) & 1;
-
-	stat = readl_relaxed(VIC0_INT_BASE + VIC_IRQ_STATUS);
-	first_detc = stat & FIRST_DECTCT_IRQ;
-	if (first_detc)
-	{
-		stat = first_detc;
-		irq = ffs(stat) - 1;
-	}
-	else
-	{
-		if (g_toggling)
-		{
-			base[0] = (void __iomem *)VIC1_INT_BASE;
-			base[1] = (void __iomem *)VIC0_INT_BASE;
-		}
-		else
-		{
-			base[0] = (void __iomem *)VIC0_INT_BASE;
-			base[1] = (void __iomem *)VIC1_INT_BASE;
-		}
-
-		for (i = 0; i < 2; i++)
-		{
-			stat = readl_relaxed(base[i] + VIC_IRQ_STATUS);
-			if (stat) {
-				irq = readl_relaxed(base[i] + VIC_PL192_VECT_ADDR);
-				writel_relaxed(0xFF, base[i] + VIC_PL192_VECT_ADDR);
-				break;
-			}
-		}
-	}
-
-	pr_debug("%s: vic[%s] gic irq=%d, vic=%d, stat=0x%02x \n",
-		__func__, i?"1":"0", gic, irq, stat);
-
-	if (! stat) {
-		printk(KERN_ERR "Unknown vic gic irq=%d, stat=0x%08x\r\n", gic, stat);
-		writel_relaxed(31, GIC_CPUI_BASE + GIC_CPU_EOI);
-		return;
-	}
-
-	/* vic descriptor */
-	desc = irq_desc + irq;
-#else	/* #if (VECTOR_INT_DETECT == 0) */
-
-	void __iomem *base = (void __iomem *)VIC0_INT_BASE;
 
 	for (i = 0; i < 2; i++) {
 		stat = readl_relaxed(base + VIC_IRQ_STATUS);
@@ -180,7 +115,6 @@ static void vic_handler(unsigned int irq, struct irq_desc *desc)
 	/* vic descriptor */
 	irq += (i*32);
 	desc = irq_desc + irq;
-#endif	/* #if (VECTOR_INT_DETECT == 0) */
 
 	if (desc)
 		generic_handle_irq_desc(irq, desc);
