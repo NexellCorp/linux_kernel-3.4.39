@@ -5,25 +5,30 @@
 
 # psw0523 fix
 #DHDCFLAGS += -Wall -Wstrict-prototypes -Dlinux -DLINUX -DBCMDRIVER             \
-        -DBCMDONGLEHOST -DUNRELEASEDCHIP -DBCMDMA32 -DBCMFILEIMAGE            \
-        -DDHDTHREAD -DBDC -DOOB_INTR_ONLY                                     \
-        -DDHD_BCMEVENTS -DSHOW_EVENTS -DBCMDBG                                \
-        -DMMC_SDIO_ABORT -DBCMSDIO -DBCMLXSDMMC -DWLP2P     \
-        -DWIFI_ACT_FRAME -DARP_OFFLOAD_SUPPORT          \
-        -DKEEP_ALIVE -DCSCAN -DPKT_FILTER_SUPPORT                             \
-        -DEMBEDDED_PLATFORM -DPNO_SUPPORT
+		#-DBCMDONGLEHOST -DUNRELEASEDCHIP -DBCMDMA32 -DBCMFILEIMAGE            \
+		#-DDHDTHREAD -DBDC -DOOB_INTR_ONLY                                     \
+		#-DDHD_BCMEVENTS -DSHOW_EVENTS -DBCMDBG                                \
+		#-DMMC_SDIO_ABORT -DBCMSDIO -DBCMLXSDMMC -DWLP2P     \
+		#-DWIFI_ACT_FRAME -DARP_OFFLOAD_SUPPORT          \
+		#-DKEEP_ALIVE -DCSCAN -DPKT_FILTER_SUPPORT                             \
+		#-DEMBEDDED_PLATFORM -DPNO_SUPPORT
 DHDCFLAGS += -Wall -Wstrict-prototypes -Dlinux -DLINUX -DBCMDRIVER             \
-        -DBCMDONGLEHOST -DUNRELEASEDCHIP -DBCMDMA32 -DBCMFILEIMAGE            \
-        -DDHDTHREAD -DBDC -DDHD_DEBUG \
-        -DDHD_BCMEVENTS -DSHOW_EVENTS -DBCMDBG                                \
-        -DMMC_SDIO_ABORT -DBCMSDIO -DBCMLXSDMMC -DWLP2P     \
-        -DWIFI_ACT_FRAME -DARP_OFFLOAD_SUPPORT          \
-        -DKEEP_ALIVE -DCSCAN -DPKT_FILTER_SUPPORT                             \
-        -DEMBEDDED_PLATFORM -DPNO_SUPPORT
+		-DBCMDONGLEHOST -DUNRELEASEDCHIP -DBCMDMA32 -DBCMFILEIMAGE            \
+		-DDHDTHREAD -DBDC -DDHD_DEBUG \
+		-DDHD_BCMEVENTS -DSHOW_EVENTS -DBCMDBG                                \
+		-DMMC_SDIO_ABORT -DBCMSDIO -DBCMLXSDMMC -DWLP2P     \
+		-DWIFI_ACT_FRAME -DARP_OFFLOAD_SUPPORT          \
+		-DKEEP_ALIVE -DCSCAN -DPKT_FILTER_SUPPORT                             \
+		-DEMBEDDED_PLATFORM -DPNO_SUPPORT
 
 #################
 # Common feature
 #################
+
+# use oob intr
+ifeq ($(CONFIG_BROADCOM_WIFI_USE_OOB),y)
+  DHDCFLAGS += -DOOB_INTR_ONLY
+endif
 
 DHDCFLAGS += -DCUSTOMER_HW4
 DHDCFLAGS += -DWL_CFG80211

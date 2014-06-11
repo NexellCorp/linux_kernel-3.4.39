@@ -684,7 +684,8 @@ static struct mxt_platform_data mxt_platform_data = {
 	.irqflags = 0, // irq high or low
 	.boot_address = 0x26,
 	.revision = 0x01,
-#if defined(CONFIG_TOUCHSCREEN_SMAC)
+/*#if defined(CONFIG_TOUCHSCREEN_SMAC)*/
+#if (1)
 	.firmware_name = MXT_SMAC_FIRMWARE_NAME,		// MXT_SMAC_FIRMWARE_NAME or MXT_TRAIS_FIRMWARE_NAME
 #else
 	.firmware_name = MXT_TRAIS_FIRMWARE_NAME,		// MXT_SMAC_FIRMWARE_NAME or MXT_TRAIS_FIRMWARE_NAME
@@ -696,7 +697,7 @@ static struct mxt_platform_data mxt_platform_data = {
 
 	.project_name = "PXD",
 	.model_name = "QFD",
-//	const char *config_ver;   
+//	const char *config_ver;
     .config = 0,
 	.read_chg = _atmel604t_read_change,
 	.power_onoff = _atmel604t_power,
@@ -1507,7 +1508,7 @@ static struct dw_mci_board _dwmci1_data = {
 	.init			= _dwmci1_init,
 	.ext_cd_init	= _dwmci1_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci1_ext_cd_cleanup,
-	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),	
+	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 };
 
 #if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
@@ -1559,9 +1560,48 @@ static struct wifi_platform_data _wifi_control = {
 	.get_country_code   = NULL,
 };
 
+/* for OOB interrupt */
+#ifdef CONFIG_BROADCOM_WIFI_USE_OOB
+static struct resource brcm_wlan_resouces[] = {
+    [0] = {
+        .name = "bcmdhd_wlan_irq",
+#if defined(CONFIG_OOB_INTR_ALIVE_0)
+        .start = IRQ_ALIVE_0,
+        .end   = IRQ_ALIVE_0,
+#elif defined(CONFIG_OOB_INTR_ALIVE_1)
+        .start = IRQ_ALIVE_1,
+        .end   = IRQ_ALIVE_1,
+#elif defined(CONFIG_OOB_INTR_ALIVE_2)
+        .start = IRQ_ALIVE_2,
+        .end   = IRQ_ALIVE_2,
+#elif defined(CONFIG_OOB_INTR_ALIVE_3)
+        .start = IRQ_ALIVE_3,
+        .end   = IRQ_ALIVE_3,
+#elif defined(CONFIG_OOB_INTR_ALIVE_4)
+        .start = IRQ_ALIVE_4,
+        .end   = IRQ_ALIVE_4,
+#elif defined(CONFIG_OOB_INTR_ALIVE_5)
+        .start = IRQ_ALIVE_5,
+        .end   = IRQ_ALIVE_5,
+#elif defined(CONFIG_OOB_INTR_ALIVE_6)
+        .start = IRQ_ALIVE_6,
+        .end   = IRQ_ALIVE_6,
+#elif defined(CONFIG_OOB_INTR_ALIVE_7)
+        .start = IRQ_ALIVE_7,
+        .end   = IRQ_ALIVE_7,
+#endif
+        .flags = IORESOURCE_IRQ | IORESOURCE_IRQ_LOWEDGE,
+    }
+};
+#endif
+
 static struct platform_device bcm_wifi_device = {
 	.name  = "bcmdhd_wlan",
 	.id    = 0,
+#ifdef CONFIG_BROADCOM_WIFI_USE_OOB
+    .num_resources = ARRAY_SIZE(brcm_wlan_resouces),
+    .resource = brcm_wlan_resouces,
+#endif
 	.dev   = {
 		.platform_data = &_wifi_control,
 	},

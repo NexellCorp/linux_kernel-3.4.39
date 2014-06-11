@@ -164,13 +164,10 @@ void* bcmsdh_probe(osl_t *osh, void *dev, void *sdioh, void *adapter_info, uint 
 	/* Get customer specific OOB IRQ parametres: IRQ number as IRQ type */
 	bcmsdh_osinfo->oob_irq_num = wifi_platform_get_irq_number(adapter_info,
 		&bcmsdh_osinfo->oob_irq_flags);
-    // psw0523 fix
-#if 0
 	if  (bcmsdh_osinfo->oob_irq_num < 0) {
 		printk("%s: Host OOB irq is not defined\n", __FUNCTION__);
 		goto err;
 	}
-#endif
 #endif /* defined(BCMLXSDMMC) */
 
 	/* Read the vendor/device ID from the CIS */
@@ -304,9 +301,6 @@ void bcmsdh_oob_intr_set(bcmsdh_info_t *bcmsdh, bool enable)
 		return;
 
 	bcmsdh_osinfo = bcmsdh->os_cxt;
-    // psw0523 add
-    if (bcmsdh_osinfo->oob_irq_num >= 0) {
-    // end psw0523
 	spin_lock_irqsave(&bcmsdh_osinfo->oob_irq_spinlock, flags);
 	if (bcmsdh_osinfo->oob_irq_enabled != enable) {
 		if (enable)
@@ -316,9 +310,6 @@ void bcmsdh_oob_intr_set(bcmsdh_info_t *bcmsdh, bool enable)
 		bcmsdh_osinfo->oob_irq_enabled = enable;
 	}
 	spin_unlock_irqrestore(&bcmsdh_osinfo->oob_irq_spinlock, flags);
-    // psw0523 add
-    }
-    // end psw0523
 }
 
 static irqreturn_t wlan_oob_irq(int irq, void *dev_id)
@@ -339,9 +330,6 @@ int bcmsdh_oob_intr_register(bcmsdh_info_t *bcmsdh, bcmsdh_cb_fn_t oob_irq_handl
 {
 	int err = 0;
 	bcmsdh_os_info_t *bcmsdh_osinfo = bcmsdh->os_cxt;
-    // psw0523 add
-    if (bcmsdh_osinfo->oob_irq_num >= 0) {
-    // end psw0523
 
 	SDLX_MSG(("%s: Enter\n", __FUNCTION__));
 	if (bcmsdh_osinfo->oob_irq_registered) {
@@ -370,9 +358,6 @@ int bcmsdh_oob_intr_register(bcmsdh_info_t *bcmsdh, bcmsdh_cb_fn_t oob_irq_handl
 #endif /* CONFIG_ARCH_RHEA || CONFIG_ARCH_CAPRI */
 	bcmsdh_osinfo->oob_irq_enabled = TRUE;
 	bcmsdh_osinfo->oob_irq_registered = TRUE;
-    // psw0523 add
-    }
-    // end psw0523
 	return err;
 }
 
@@ -380,9 +365,6 @@ void bcmsdh_oob_intr_unregister(bcmsdh_info_t *bcmsdh)
 {
 	int err = 0;
 	bcmsdh_os_info_t *bcmsdh_osinfo = bcmsdh->os_cxt;
-    // psw0523 add
-    if (bcmsdh_osinfo->oob_irq_num >= 0) {
-    // end psw0523
 
 	SDLX_MSG(("%s: Enter\n", __FUNCTION__));
 	if (!bcmsdh_osinfo->oob_irq_registered) {
@@ -406,9 +388,6 @@ void bcmsdh_oob_intr_unregister(bcmsdh_info_t *bcmsdh)
 	}
 	free_irq(bcmsdh_osinfo->oob_irq_num, bcmsdh);
 	bcmsdh_osinfo->oob_irq_registered = FALSE;
-    // psw0523 add
-    }
-    // end psw0523
 }
 #endif /* defined(OOB_INTR_ONLY) || defined(BCMSPI_ANDROID) */
 
