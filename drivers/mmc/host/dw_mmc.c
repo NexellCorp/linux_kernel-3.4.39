@@ -157,8 +157,8 @@ void sw_mci_rescan_card(unsigned insert)
 
 	if(!insert)
 		mmc_stop_host(slot->mmc);
-
-	mmc_detect_change(slot->mmc, 0);
+	else
+		mmc_detect_change(slot->mmc, 0);
 
 	return;
 }
@@ -2282,6 +2282,10 @@ static int __devinit dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 	slot->mmc = mmc;
 	slot->host = host;
 	host->slot[id] = slot;	/* add by jhkim */
+
+#if defined(CONFIG_ESP8089)
+	mci_slot[mci_id++] = slot;
+#endif
 
 	mmc->ops = &dw_mci_ops;
 	mmc->f_min = DIV_ROUND_UP(host->bus_hz, 510);
