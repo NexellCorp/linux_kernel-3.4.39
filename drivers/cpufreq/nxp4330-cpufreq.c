@@ -71,7 +71,8 @@ static enum hrtimer_restart nxp4330_cpufreq_restore_timer(struct hrtimer *hrtime
 		wake_up_process(dvfs->rest_p);
 
 		/* to rest frequency after end of rest time */
-		hrtimer_start(&dvfs->rest_hrtimer, ms_to_ktime(dvfs->max_retention), HRTIMER_MODE_REL_PINNED);
+		hrtimer_start(&dvfs->rest_hrtimer, ms_to_ktime(dvfs->max_retention), 
+				HRTIMER_MODE_REL_PINNED);
 	}
 
 	return HRTIMER_NORESTART;
@@ -90,7 +91,9 @@ static enum hrtimer_restart nxp4330_cpufreq_rest_timer(struct hrtimer *hrtimer)
 	wake_up_process(dvfs->rest_p);
 
 	/* to restore frequency after end of rest time */
-	hrtimer_start(&dvfs->restore_hrtimer, ms_to_ktime(dvfs->rest_retention), HRTIMER_MODE_REL_PINNED);
+	hrtimer_start(&dvfs->restore_hrtimer, ms_to_ktime(dvfs->rest_retention), 
+			HRTIMER_MODE_REL_PINNED);
+
 	return HRTIMER_NORESTART;
 }
 
@@ -248,7 +251,6 @@ static int nxp4330_cpufreq_target(struct cpufreq_policy *policy,
 	if (dvfs->max_cpufreq && dvfs->run_monitor && freqs.new < dvfs->max_cpufreq ) {
 		dvfs->run_monitor = 0;
 		hrtimer_cancel(&dvfs->rest_hrtimer);
-	//	hrtimer_cancel(&dvfs->restore_hrtimer);
 		pr_debug("stop monitor\n");
 	}
 
