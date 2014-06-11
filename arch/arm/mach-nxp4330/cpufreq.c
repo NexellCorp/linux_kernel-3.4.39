@@ -147,7 +147,6 @@ static struct pll_pms pll2_3_pms [] =
 #define	PMS_M(p, i)		((&p[i])->M)
 #define	PMS_S(p, i)		((&p[i])->S)
 
-
 #define PLL_S_BITPOS	0
 #define PLL_M_BITPOS    8
 #define PLL_P_BITPOS    18
@@ -193,12 +192,14 @@ static void core_pll_change(int PLL, int P, int M, int S)
 }
 
 static DEFINE_SPINLOCK(_pll_lock);
+static unsigned long lock_flags;
+
 static inline void core_pll_change_lock(bool lock)
 {
 	if (lock)
-		spin_lock(&_pll_lock);
+		spin_lock_irqsave(&_pll_lock, lock_flags);
 	else
-		spin_unlock(&_pll_lock);
+		spin_unlock_irqrestore(&_pll_lock, lock_flags);
 }
 
 unsigned long nxp_cpu_pll_change_frequency(int no, unsigned long rate)
@@ -220,9 +221,6 @@ unsigned long nxp_cpu_pll_change_frequency(int no, unsigned long rate)
 	}
 
 	i = len/2;
-
-	/* lock */
-	core_pll_change_lock(true);
 
 	while (1) {
 		l = n + i;
@@ -246,10 +244,8 @@ unsigned long nxp_cpu_pll_change_frequency(int no, unsigned long rate)
 		}
 	}
 
-	/* change */
+	core_pll_change_lock(true);
 	core_pll_change(no, PMS_P(p, l), PMS_M(p, l), PMS_S(p, l));
-
-	/* unlock */
 	core_pll_change_lock(false);
 
 	DBGOUT("(real %ld Khz, P=%d ,M=%3d, S=%d)\n",
