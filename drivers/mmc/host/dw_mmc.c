@@ -52,6 +52,7 @@
 #define DW_MCI_SEND_STATUS	1
 #define DW_MCI_RECV_STATUS	2
 #define DW_MCI_DMA_THRESHOLD	16
+#define DW_MCI_HW_TIMEOUT		200	// ms
 
 #ifdef CONFIG_MMC_DW_IDMAC
 struct idmac_desc {
@@ -157,8 +158,8 @@ void sw_mci_rescan_card(unsigned insert)
 
 	if(!insert)
 		mmc_stop_host(slot->mmc);
-	else
-		mmc_detect_change(slot->mmc, 0);
+
+	mmc_detect_change(slot->mmc, 0);
 
 	return;
 }
@@ -834,6 +835,7 @@ static void __dw_mci_start_request(struct dw_mci *host,
 	struct mmc_request *mrq;
 	struct mmc_data	*data;
 	u32 cmdflags, timeout = 0;
+	u32 hw_timeout = host->pdata->hw_timeout;
 
 	mrq = slot->mrq;
 	if (host->pdata->select_slot)
@@ -857,7 +859,7 @@ static void __dw_mci_start_request(struct dw_mci *host,
 
 	/* s/w reset value adds 2 second to give opportunity to host controller */
 	mod_timer(&host->timer, jiffies +
-			msecs_to_jiffies(timeout + 2000));
+			msecs_to_jiffies(timeout + hw_timeout));
 
 	cmdflags = dw_mci_prepare_command(slot->mmc, cmd);
 
@@ -2283,10 +2285,6 @@ static int __devinit dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 	slot->host = host;
 	host->slot[id] = slot;	/* add by jhkim */
 
-#if defined(CONFIG_ESP8089)
-	mci_slot[mci_id++] = slot;
-#endif
-
 	mmc->ops = &dw_mci_ops;
 	mmc->f_min = DIV_ROUND_UP(host->bus_hz, 510);
 	mmc->f_max = host->bus_hz;
@@ -2606,6 +2604,10 @@ int dw_mci_probe(struct dw_mci *host)
 	if (host->pdata->cd_type == DW_MCI_CD_EXTERNAL)
 		host->pdata->ext_cd_init(&dw_mci_notify_change);
 
+	/* user set hw timeout */
+	if (!host->pdata->hw_timeout)
+		host->pdata->hw_timeout = DW_MCI_HW_TIMEOUT;
+
 	/*
 	 * Enable interrupts for command done, data over, data empty, card det,
 	 * receive ready and error such as transmit, receive timeout, crc error
@@ -2622,8 +2624,8 @@ int dw_mci_probe(struct dw_mci *host)
 
 	dev_info(&host->dev, "DW MMC controller at irq %d, "
 		 "%d bit host data width, "
-		 "%u deep fifo\n",
-		 host->irq, width, fifo_size);
+		 "%u deep fifo hw timeout %d ms\n",
+		 host->irq, width, fifo_size, host->pdata->hw_timeout);
 	if (host->quirks & DW_MCI_QUIRK_IDMAC_DTO)
 		dev_info(&host->dev, "Internal DMAC interrupt fix enabled.\n");
 
