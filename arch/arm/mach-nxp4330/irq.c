@@ -155,7 +155,7 @@ static u16 g_vic_priority [64] = {
 	NXP_IRQ_PRIORITY_LOWEST			// 63
 };
 
-void nxp_cpu_init_vic_priority(void)
+int nxp_cpu_init_vic_priority(void)
 {
 	void __iomem *base = (void __iomem *)VIC0_INT_BASE;
 	int i, j;
@@ -166,10 +166,12 @@ void nxp_cpu_init_vic_priority(void)
 
 		base = (void __iomem *)VIC1_INT_BASE;
 	}
+
+	return 0;
 }
 EXPORT_SYMBOL(nxp_cpu_init_vic_priority);
 
-void nxp_cpu_init_vic_table(void)
+int nxp_cpu_init_vic_table(void)
 {
 	void __iomem *base = (void __iomem *)VIC0_INT_BASE;
 	int i, j;
@@ -180,6 +182,8 @@ void nxp_cpu_init_vic_table(void)
 
 		base = (void __iomem *)VIC1_INT_BASE;
 	}
+
+	return 0;
 }
 EXPORT_SYMBOL(nxp_cpu_init_vic_table);
 
