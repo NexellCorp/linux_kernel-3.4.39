@@ -491,7 +491,7 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
 {
     bool pending = false;
     volatile NX_DREX_REG *pdrex = (volatile NX_DREX_REG *)IO_ADDRESS(PHY_BASEADDR_DREX);
-    /*volatile u32 *pl310_bot = (volatile u32 *)IO_ADDRESS(0xC0050000);*/
+    volatile u32 *pl301_bot = (volatile u32 *)IO_ADDRESS(0xC0050000);
     int stop;
 
     _cpu_pll_change_frequency(pll_num, bclk);
@@ -517,8 +517,8 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
         uint32_t M = PMS_M(s_p, s_l);
         uint32_t S = PMS_S(s_p, s_l);
         u32 pll_data = (P << 24) | (M << 8) | (S << 2) | pll_num;
-        /*real_change_pll((u32 *)clkpwr, (u32 *)pl310_bot, (u32 *)pdrex, pll_data);*/
-        real_change_pll((u32 *)clkpwr, (u32 *)do_suspend, (u32 *)pdrex, pll_data);
+        real_change_pll((u32 *)clkpwr, (u32 *)pl301_bot, (u32 *)pdrex, pll_data);
+        /*real_change_pll((u32 *)clkpwr, (u32 *)do_suspend, (u32 *)pdrex, pll_data);*/
         /*_real_change_pll((u32 *)clkpwr, pll_data);*/
     }
 
