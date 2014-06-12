@@ -50,7 +50,11 @@ static struct rt5631_init_reg init_list[] = {
 	{RT5631_OUTMIXER_L_CTRL		, 0xdfC0},
 	{RT5631_OUTMIXER_R_CTRL		, 0xdfC0},
 	{RT5631_SPK_MIXER_CTRL		, 0xd8d8},
+#ifdef CONFIG_PLAT_NXP4330_SECRET
+	{RT5631_SPK_MONO_OUT_CTRL	, 0x3c00},
+#else
 	{RT5631_SPK_MONO_OUT_CTRL	, 0x6c00},
+#endif
 	{RT5631_GEN_PUR_CTRL_REG	, 0x4e00},
 	{RT5631_SPK_MONO_HP_OUT_CTRL	, 0x0000},
 	{RT5631_INT_ST_IRQ_CTRL_2	, 0x0f18},
@@ -109,7 +113,11 @@ static const u16 rt5631_reg[RT5631_VENDOR_ID1 + 1] = {
 	[RT5631_DIG_MIC_CTRL] = 0x3000,
 	[RT5631_MONO_INPUT_VOL] = 0x8808,
 	[RT5631_SPK_MIXER_CTRL] = 0xf8f8,
+#ifdef CONFIG_PLAT_NXP4330_SECRET
+	[RT5631_SPK_MONO_OUT_CTRL] = 0x3c00,
+#else
 	[RT5631_SPK_MONO_OUT_CTRL] = 0xfc00,
+#endif
 	[RT5631_SPK_MONO_HP_OUT_CTRL] = 0x4440,
 	[RT5631_SDP_CTRL] = 0x8000,
 	//[RT5631_MONO_SDP_CTRL] = 0x8000,	//for ALC5631V
@@ -1991,7 +1999,11 @@ static void rt5631_setup(struct snd_soc_codec *codec)
 	snd_soc_write(codec, RT5631_OUTMIXER_L_CTRL, 0xdfC0);
 	snd_soc_write(codec, RT5631_OUTMIXER_R_CTRL, 0xdfC0);
 	snd_soc_write(codec, RT5631_SPK_MIXER_CTRL, 0xe8e8);		// 28h: 0xd8d8
+#ifdef CONFIG_PLAT_NXP4330_SECRET
+	snd_soc_write(codec, RT5631_SPK_MONO_OUT_CTRL, 0x3c00);
+#else
 	snd_soc_write(codec, RT5631_SPK_MONO_OUT_CTRL, 0x6c00);
+#endif
 	snd_soc_write(codec, RT5631_GEN_PUR_CTRL_REG, 0x4e00);		// 40h: HP volume
 	snd_soc_write(codec, RT5631_SPK_MONO_HP_OUT_CTRL, 0x0000);
 
