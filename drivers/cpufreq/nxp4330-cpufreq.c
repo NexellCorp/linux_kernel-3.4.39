@@ -65,13 +65,15 @@ static enum hrtimer_restart nxp4330_cpufreq_restore_timer(struct hrtimer *hrtime
 	dvfs->rest_ktime = ktime_set(0, 0);	/* clear */
 	dvfs->new_cpufreq = dvfs->target_freq;	/* restore */
 
-	pr_debug("cpufreq : restore after rest %4ldms\n", dvfs->rest_retention);
+	pr_debug("cpufreq : restore %ldkhz after rest %4ldms\n",
+		dvfs->target_freq, dvfs->rest_retention);
 
 	if (dvfs->target_freq > dvfs->rest_cpufreq) {
 		wake_up_process(dvfs->rest_p);
 
 		/* to rest frequency after end of rest time */
-		hrtimer_start(&dvfs->rest_hrtimer, ms_to_ktime(dvfs->max_retention), HRTIMER_MODE_REL_PINNED);
+		hrtimer_start(&dvfs->rest_hrtimer, ms_to_ktime(dvfs->max_retention),
+				HRTIMER_MODE_REL_PINNED);
 	}
 
 	return HRTIMER_NORESTART;
@@ -84,45 +86,57 @@ static enum hrtimer_restart nxp4330_cpufreq_rest_timer(struct hrtimer *hrtimer)
 	dvfs->rest_ktime = ktime_get();
 	dvfs->new_cpufreq = dvfs->rest_cpufreq;
 
-	pr_debug("cpufreq : max %ldkhz -> %ldkhz rest %4ldms\n",
-		dvfs->max_cpufreq, dvfs->new_cpufreq, dvfs->max_retention);
+	pr_debug("cpufreq : %ldkhz (%4ldms) -> %ldkhz rest (%4ldms) \n",
+		dvfs->max_cpufreq, dvfs->max_retention,
+		dvfs->new_cpufreq, dvfs->rest_retention);
 
 	wake_up_process(dvfs->rest_p);
 
 	/* to restore frequency after end of rest time */
-	hrtimer_start(&dvfs->restore_hrtimer, ms_to_ktime(dvfs->rest_retention), HRTIMER_MODE_REL_PINNED);
+	hrtimer_start(&dvfs->restore_hrtimer, ms_to_ktime(dvfs->rest_retention),
+			HRTIMER_MODE_REL_PINNED);
 
 	return HRTIMER_NORESTART;
 }
 
-static int nxp4330_cpufreq_update(void *unused)
+static void nxp4330_cpufreq_update(struct cpufreq_dvfs_data *dvfs)
 {
-	struct cpufreq_dvfs_data *dvfs = get_cpufreq_data();
 	struct cpufreq_freqs freqs;
 	struct clk *clk = dvfs->clk;
 	int cpu = dvfs->cpu;
 
+	if (!dvfs->new_cpufreq)
+		return;
+
+	mutex_lock(&dvfs->lock);
+	set_current_state(TASK_UNINTERRUPTIBLE);
+
+	freqs.new = dvfs->new_cpufreq;
+	freqs.old = clk_get_rate(clk) / 1000;
+	freqs.cpu = cpu;
+	pr_debug("cpufreq : update %ldkhz\n", dvfs->new_cpufreq);
+
+	for_each_cpu(freqs.cpu, dvfs->cpus)
+	cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
+
+	clk_set_rate(clk, freqs.new*1000);
+
+	for_each_cpu(freqs.cpu, dvfs->cpus)
+	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+
+	set_current_state(TASK_INTERRUPTIBLE);
+	mutex_unlock(&dvfs->lock);
+}
+
+static int nxp4330_cpufreq_thread(void *unused)
+{
+	struct cpufreq_dvfs_data *dvfs = get_cpufreq_data();
+
+	set_current_state(TASK_INTERRUPTIBLE);
+
 	while (!kthread_should_stop()) {
-		set_current_state(TASK_UNINTERRUPTIBLE);
 
-		mutex_lock(&dvfs->lock);
-
-		freqs.new = dvfs->new_cpufreq;
-		freqs.old = clk_get_rate(clk) / 1000;
-		freqs.cpu = cpu;
-		pr_debug("cpufreq : update %ldkhz\n", dvfs->new_cpufreq);
-
-		for_each_cpu(freqs.cpu, dvfs->cpus)
-		cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
-
-		clk_set_rate(clk, freqs.new*1000);
-
-		for_each_cpu(freqs.cpu, dvfs->cpus)
-		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
-
-		mutex_unlock(&dvfs->lock);
-
-		set_current_state(TASK_INTERRUPTIBLE);
+		nxp4330_cpufreq_update(dvfs);
 
 		/* wait */
 		schedule();
@@ -132,6 +146,7 @@ static int nxp4330_cpufreq_update(void *unused)
 
 		set_current_state(TASK_INTERRUPTIBLE);
 	}
+	__set_current_state(TASK_RUNNING);
 	return 0;
 }
 
@@ -151,13 +166,14 @@ static inline int nxp4330_cpufreq_setup(struct cpufreq_dvfs_data *dvfs)
 	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	hrtimer->function = nxp4330_cpufreq_restore_timer;
 
-	p = kthread_create_on_node(nxp4330_cpufreq_update,
+	p = kthread_create_on_node(nxp4330_cpufreq_thread,
 						NULL, cpu_to_node(cpu), "cpufreq-update");
 	if (IS_ERR(p)) {
 		pr_err("%s: cpu%d: failed rest thread for cpufreq\n", __func__, cpu);
 		return PTR_ERR(p);
 	}
 	kthread_bind(p, cpu);
+	wake_up_process(p);
 
 	dvfs->rest_p = p;
 	set_cpufreq_data(dvfs);
@@ -249,14 +265,14 @@ static int nxp4330_cpufreq_target(struct cpufreq_policy *policy,
 	if (dvfs->max_cpufreq && dvfs->run_monitor && freqs.new < dvfs->max_cpufreq ) {
 		dvfs->run_monitor = 0;
 		hrtimer_cancel(&dvfs->rest_hrtimer);
-		pr_debug("stop monitor\n");
+		pr_debug("stop monitor");
 	}
 
 	if (dvfs->max_cpufreq && !dvfs->run_monitor && freqs.new >= dvfs->max_cpufreq) {
 		dvfs->run_monitor = 1;
 		hrtimer_start(&dvfs->rest_hrtimer, ms_to_ktime(dvfs->max_retention),
 			      HRTIMER_MODE_REL_PINNED);
-		pr_debug("run  monitor\n");
+		pr_debug("run  monitor");
 	}
 
 _cpu_freq:
@@ -265,6 +281,7 @@ _cpu_freq:
 		cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
 
 	/* Change frequency */
+	pr_debug(", set rate %ukhz\n", freqs.new);
 	ret = clk_set_rate(clk, freqs.new * 1000);
 
 	/* post change notification */
