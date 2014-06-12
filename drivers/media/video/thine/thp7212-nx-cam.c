@@ -2352,7 +2352,7 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 	// Start C0 00 00 ram_7210.elf.s19.1 Stop 
 	ret = thp7212_i2c_write_block(sd, ram_7210_elf_s19_1, sizeof(ram_7210_elf_s19_1));
 	if(ret < 0) {
-		dev_err(&client->dev, "\e[31m%s(ram_7210_elf_s19_1) i2c error, ret = %d\n", __func__, ret);
+		dev_err(&client->dev, "\e[31m%s(ram_7210_elf_s19_1) i2c error\e[0m, ret = %d\n", __func__, ret);
 		return ret;
 	}
 	// Start C0 FF 08 10 00 80 Stop 
@@ -2360,7 +2360,7 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 		u8 buf[] = { 0xFF, 0x08, 0x10, 0x00, 0x80 };
 		ret = thp7212_i2c_write_block(sd, buf, sizeof(buf));
 		if(ret < 0) {
-			dev_err(&client->dev, "\e[31m%s(Start C0 FF 08 10 00 80 Stop) i2c error, ret = %d\n", __func__, ret);
+			dev_err(&client->dev, "\e[31m%s(Start C0 FF 08 10 00 80 Stop) i2c error\e[0m, ret = %d\n", __func__, ret);
 			return ret;
 		}
 	}
@@ -2368,7 +2368,7 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 	// Start C0 00 00 ram_7210.elf.s19.2 Stop
 	ret = thp7212_i2c_write_block(sd, ram_7210_elf_s19_2, sizeof(ram_7210_elf_s19_2));
 	if(ret < 0) {
-		dev_err(&client->dev, "\e[31m%s(ram_7210_elf_s19_2) i2c error, ret = %d\n", __func__, ret);
+		dev_err(&client->dev, "\e[31m%s(ram_7210_elf_s19_2) i2c error\e[0m, ret = %d\n", __func__, ret);
 		return ret;
 	}
 	// Start C0 FF 08 10 01 00 Stop 
@@ -2376,7 +2376,7 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 		u8 buf[] = { 0xFF, 0x08, 0x10, 0x01, 0x00 };
 		ret = thp7212_i2c_write_block(sd, buf, sizeof(buf));
 		if(ret < 0) {
-			dev_err(&client->dev, "\e[31m%s( Start C0 FF 08 10 01 00 Stop ) i2c error, ret = %d\n", __func__, ret);
+			dev_err(&client->dev, "\e[31m%s( Start C0 FF 08 10 01 00 Stop ) i2c error\e[0m, ret = %d\n", __func__, ret);
 			return ret;
 		}
 	}
@@ -2384,7 +2384,7 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 	// Start C0 00 00 ram_7210.elf.s19.3 Stop
 	ret = thp7212_i2c_write_block(sd, ram_7210_elf_s19_3, sizeof(ram_7210_elf_s19_3));
 	if(ret < 0) {
-		dev_err(&client->dev, "\e[31m%s(ram_7210_elf_s19_3) i2c error, ret = %d\n", __func__, ret);
+		dev_err(&client->dev, "\e[31m%s(ram_7210_elf_s19_3) i2c error\e[0m, ret = %d\n", __func__, ret);
 		return ret;
 	}
 	// Start C0 FF 00 01 Stop 
@@ -2392,7 +2392,7 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 		u8 buf[] = { 0xFF, 0x00, 0x01 };
 		ret = thp7212_i2c_write_block(sd, buf, sizeof(buf));
 		if(ret < 0) {
-			dev_err(&client->dev, "\e[31m%s(Start C0 FF 00 01 Stop) i2c error, ret = %d\n", __func__, ret);
+			dev_err(&client->dev, "\e[31m%s(Start C0 FF 00 01 Stop) i2c error\e[0m, ret = %d\n", __func__, ret);
 			return ret;
 		}
 	}
@@ -2404,7 +2404,7 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 		u8 buf[] = { 0xF0, 0x1C, 0x00 }; //Frame rate select 0x00-0x02 (0x00:30fps, 0x01:25fps, 0x02:20fps)
 		ret = thp7212_i2c_write_block(sd, buf, sizeof(buf));
 		if(ret < 0) {
-			dev_err(&client->dev, "\e[31m%s(Start C0 F0 1C 0x Stop) i2c error, ret = %d\n", __func__, ret);
+			dev_err(&client->dev, "\e[31m%s(Start C0 F0 1C 0x Stop) i2c error\e[0m, ret = %d\n", __func__, ret);
 			return ret;
 		}
 	}	
@@ -2416,7 +2416,7 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 		u8 buf[] = { 0xF0, 0x0B, 0x01 }; //	Output ON/OFF 0x00-0x01 (0x00:OFF, 0x01:ON)
 		ret = thp7212_i2c_write_block(sd, buf, sizeof(buf));
 		if(ret < 0) {
-			dev_err(&client->dev, "\e[31m%s(Start C0 F0 0B 01 Stop) i2c error, ret = %d\n", __func__, ret);
+			dev_err(&client->dev, "\e[31m%s(Start C0 F0 0B 01 Stop) i2c error\e[0m, ret = %d\n", __func__, ret);
 			return ret;
 		}
 	}
@@ -2427,7 +2427,7 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 			u8 buf[] = { 0xF0, 0x16, 0x0A }; //resolution select
 			ret = thp7212_i2c_write_block(sd, buf, sizeof(buf));
 			if(ret < 0) {
-			dev_err(&client->dev, "\e[31m%s(Start C0 F0 16 0A Stop) i2c error, ret = %d\n", __func__, ret);
+			dev_err(&client->dev, "\e[31m%s(Start C0 F0 16 0A Stop) i2c error\e[0m, ret = %d\n", __func__, ret);
 				return ret;
 			}
 		}

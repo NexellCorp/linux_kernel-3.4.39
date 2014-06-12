@@ -320,6 +320,7 @@ struct dw_mci_board {
 	void (*resume)(struct dw_mci *host);
 	void (*late_resume)(struct dw_mci *host);
 	u32		hs_over_clk;
+	u32		hw_timeout;	/* add by jhkim */
 };
 
 #define	DW_MMC_DRIVE_DELAY(n)		((n & 0xFF) << 0)	// write

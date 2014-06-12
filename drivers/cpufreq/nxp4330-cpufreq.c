@@ -91,6 +91,7 @@ static enum hrtimer_restart nxp4330_cpufreq_rest_timer(struct hrtimer *hrtimer)
 
 	/* to restore frequency after end of rest time */
 	hrtimer_start(&dvfs->restore_hrtimer, ms_to_ktime(dvfs->rest_retention), HRTIMER_MODE_REL_PINNED);
+
 	return HRTIMER_NORESTART;
 }
 
@@ -104,10 +105,12 @@ static int nxp4330_cpufreq_update(void *unused)
 	while (!kthread_should_stop()) {
 		set_current_state(TASK_UNINTERRUPTIBLE);
 
+		mutex_lock(&dvfs->lock);
+
 		freqs.new = dvfs->new_cpufreq;
 		freqs.old = clk_get_rate(clk) / 1000;
 		freqs.cpu = cpu;
-		printk("cpufreq : update %ldkhz\n", dvfs->new_cpufreq);
+		pr_debug("cpufreq : update %ldkhz\n", dvfs->new_cpufreq);
 
 		for_each_cpu(freqs.cpu, dvfs->cpus)
 		cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
@@ -116,6 +119,8 @@ static int nxp4330_cpufreq_update(void *unused)
 
 		for_each_cpu(freqs.cpu, dvfs->cpus)
 		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+
+		mutex_unlock(&dvfs->lock);
 
 		set_current_state(TASK_INTERRUPTIBLE);
 
@@ -204,12 +209,15 @@ static int nxp4330_cpufreq_target(struct cpufreq_policy *policy,
 		return ret;
 	}
 
+	mutex_lock(&dvfs->lock);
+
 	table = &freq_table[i];
 	freqs.new = table->frequency;
 
 	if (!freqs.new) {
 		pr_err("%s: cpu%d: no match for freq %d khz\n",
 			__func__, policy->cpu, target_freq);
+		mutex_unlock(&dvfs->lock);
 		return -EINVAL;
 	}
 
@@ -220,6 +228,7 @@ static int nxp4330_cpufreq_target(struct cpufreq_policy *policy,
 
 	if (freqs.old == freqs.new && policy->cur == freqs.new) {
 		pr_debug("PASS\n");
+		mutex_unlock(&dvfs->lock);
 		return ret;
 	}
 
@@ -240,7 +249,6 @@ static int nxp4330_cpufreq_target(struct cpufreq_policy *policy,
 	if (dvfs->max_cpufreq && dvfs->run_monitor && freqs.new < dvfs->max_cpufreq ) {
 		dvfs->run_monitor = 0;
 		hrtimer_cancel(&dvfs->rest_hrtimer);
-	//	hrtimer_cancel(&dvfs->restore_hrtimer);
 		pr_debug("stop monitor\n");
 	}
 
@@ -262,6 +270,8 @@ _cpu_freq:
 	/* post change notification */
 	for_each_cpu(freqs.cpu, policy->cpus)
 		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+
+	mutex_unlock(&dvfs->lock);
 
 	return ret;
 }

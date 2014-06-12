@@ -31,13 +31,13 @@
 #include <mach/gpio.h>
 
 /*
-#define	pr_debug	printk
+#define pr_debug	printk
 */
 
 static void __init gpio_init(void __iomem *base, unsigned int irq_start,
-		     				u32 irq_sources, u32 resume_sources);
+							u32 irq_sources, u32 resume_sources);
 static void __init alive_init(void __iomem *base, unsigned int irq_start,
-		     				u32 irq_sources, u32 resume_sources);
+							u32 irq_sources, u32 resume_sources);
 static void __init __gic_init(void __iomem *dist_base, void __iomem *cpu_base);
 
 /*----------------------------------------------------------------------------
@@ -93,8 +93,10 @@ static void vic_handler(unsigned int irq, struct irq_desc *desc)
 	u32 stat, gic = irq;
 	int i = 0;
 
-	for (i = 0; 2 > i; i++) {
+
+	for (i = 0; i < 2; i++) {
 		stat = readl_relaxed(base + VIC_IRQ_STATUS);
+
 		irq  = ffs(stat) - 1;
 		if (stat)
 			break;

@@ -1016,21 +1016,20 @@ void otg_phy_init(void)
 
     // 5. POR of PHY
 #if 0
-#if 0
-    writel(readl(SOC_VA_TIEOFF + 0x34) & ~(2<<7), SOC_VA_TIEOFF + 0x34);
-    writel(readl(SOC_VA_TIEOFF + 0x34) |  (1<<7), SOC_VA_TIEOFF + 0x34);
+    writel(readl(SOC_VA_TIEOFF + 0x34) |  (3<<7), SOC_VA_TIEOFF + 0x34);
 #else
-    writel(readl(SOC_VA_TIEOFF + 0x34) & ~(3<<7), SOC_VA_TIEOFF + 0x34);
-    writel(readl(SOC_VA_TIEOFF + 0x34) |  (1<<7), SOC_VA_TIEOFF + 0x34);
-#endif
-#else
-
     temp    = readl(SOC_VA_TIEOFF + 0x34);
     temp   &= ~(3<<7);
     temp   |=  (1<<7);
     writel(temp, SOC_VA_TIEOFF + 0x34);
+    udelay(1);
+    temp   |=  (3<<7);
+    writel(temp, SOC_VA_TIEOFF + 0x34);
+    udelay(1);
+    temp   &= ~(2<<7);
+    writel(temp, SOC_VA_TIEOFF + 0x34);
 #endif
-    udelay(40); // 40us delay need.
+    udelay(10); // 40us delay need.
 
     // 6. UTMI reset
     writel(readl(SOC_VA_TIEOFF + 0x34) | (1<<3), SOC_VA_TIEOFF + 0x34);
@@ -1061,19 +1060,18 @@ void otg_phy_off(void)
     udelay(10); // 10 clock need
 
     // 3. POR of PHY
-#if 0
-#if 0
+#if 1
     writel(readl(SOC_VA_TIEOFF + 0x34) |  (3<<7), SOC_VA_TIEOFF + 0x34);
-    writel(readl(SOC_VA_TIEOFF + 0x34) & ~(1<<7), SOC_VA_TIEOFF + 0x34);
 #else
-    writel(readl(SOC_VA_TIEOFF + 0x34) & ~(3<<7), SOC_VA_TIEOFF + 0x34);
-    writel(readl(SOC_VA_TIEOFF + 0x34) |  (2<<7), SOC_VA_TIEOFF + 0x34);
-#endif
-#else
-
     temp    = readl(SOC_VA_TIEOFF + 0x34);
     temp   &= ~(3<<7);
-    temp   |=  (2<<7);
+    temp   |=  (1<<7);
+    writel(temp, SOC_VA_TIEOFF + 0x34);
+    udelay(1);
+    temp   |=  (3<<7);
+    writel(temp, SOC_VA_TIEOFF + 0x34);
+    udelay(1);
+    temp   &= ~(2<<7);
     writel(temp, SOC_VA_TIEOFF + 0x34);
 #endif
     udelay(10); // 40us delay need.

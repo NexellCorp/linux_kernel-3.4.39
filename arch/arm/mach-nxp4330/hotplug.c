@@ -171,8 +171,10 @@ void platform_cpu_die(unsigned int cpu)
 	/* wakeup form idle */
 	write_pen_release(-1);
 
+	#if 0
 	if (spurious)
 		pr_warn("CPU%u: %u spurious wakeup calls\n", cpu, spurious);
+	#endif		
 }
 
 int platform_cpu_disable(unsigned int cpu)
