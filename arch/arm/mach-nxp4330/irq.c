@@ -19,7 +19,6 @@
 #include <linux/kernel.h>
 #include <linux/version.h>
 #include <linux/init.h>
-#include <linux/export.h>
 #include <linux/types.h>
 #include <linux/interrupt.h>
 #include <asm/io.h>
@@ -35,29 +34,6 @@
 #define pr_debug	printk
 */
 
-/*----------------------------------------------------------------------------
- *  Define interrupt priority
- */
-
-#define NXP_IRQ_PRIORITY_HIGHEST        0
-#define NXP_IRQ_PRIORITY_LOWEST         15
-
-#define NXP_IRQ_PRIORITY_TIMER          0
-#define NXP_IRQ_PRIORITY_SYS_TICK       NXP_IRQ_PRIORITY_LOWEST
-#define NXP_IRQ_PRIORITY_DMA            1
-#define NXP_IRQ_PRIORITY_EINT           1
-#define NXP_IRQ_PRIORITY_DISPLAY_UINT   2   // Display, Camera
-#define NXP_IRQ_PRIORITY_STORAGE        2   // SDHC, NAND
-#define NXP_IRQ_PRIORITY_AUDIO          4
-#define NXP_IRQ_PRIORITY_COPROCESSOR    5   // Video codec, 3D Accelerator, Scaler
-#define NXP_IRQ_PRIORITY_NOMAL_0        8
-#define NXP_IRQ_PRIORITY_NOMAL_1        10
-#define NXP_IRQ_PRIORITY_NOMAL_2        12
-#define NXP_IRQ_PRIORITY_NOMAL_3        14
-
-//----------------------------------------------------------------------------
-
-
 static void __init gpio_init(void __iomem *base, unsigned int irq_start,
 							u32 irq_sources, u32 resume_sources);
 static void __init alive_init(void __iomem *base, unsigned int irq_start,
@@ -67,132 +43,30 @@ static void __init __gic_init(void __iomem *dist_base, void __iomem *cpu_base);
 /*----------------------------------------------------------------------------
  *  cpu irq handler
  */
-#define GIC_DIST_BASE		(void __iomem *)(__PB_IO_MAP_MPPR_VIRT + 0x00001000) 	// 0xF0001000
-#define GIC_CPUI_BASE		(void __iomem *)(__PB_IO_MAP_MPPR_VIRT + 0x00000100)	// 0xF0000100
+#define	GIC_DIST_BASE		(void __iomem *)(__PB_IO_MAP_MPPR_VIRT + 0x00001000) 	// 0xF0001000
+#define	GIC_CPUI_BASE		(void __iomem *)(__PB_IO_MAP_MPPR_VIRT + 0x00000100)	// 0xF0000100
 
-#define VIC0_INT_BASE		(void __iomem *)IO_ADDRESS(PHY_BASEADDR_INTC0)
-#define VIC0_INT_MASK		(0xFFFFFFFF)
-#define VIC0_INT_RESUME		((1<<IRQ_PHY_CLKPWR_ALIVEIRQ) | (1<<IRQ_PHY_CLKPWR_RTCIRQ))
+#define	VIC0_INT_BASE		(void __iomem *)IO_ADDRESS(PHY_BASEADDR_INTC0)
+#define	VIC0_INT_MASK		(0xFFFFFFFF)
+#define	VIC0_INT_RESUME		((1<<IRQ_PHY_CLKPWR_ALIVEIRQ) | (1<<IRQ_PHY_CLKPWR_RTCIRQ))
 
-#define VIC1_INT_BASE		(void __iomem *)IO_ADDRESS(PHY_BASEADDR_INTC1)
-#define VIC1_INT_MASK		(0x0FFFFFFF)
-#define VIC1_INT_RESUME		(0)
+#define	VIC1_INT_BASE		(void __iomem *)IO_ADDRESS(PHY_BASEADDR_INTC1)
+#define	VIC1_INT_MASK		(0x0FFFFFFF)
+#define	VIC1_INT_RESUME		(0)
 
-#define GPIO_INT_BASE		(void __iomem *)IO_ADDRESS(PHY_BASEADDR_GPIOA)
-#define GPIO_BASE_OFFSET	(0x1000)
-#define GPIO_INT_MASK		(0xFFFFFFFF)
+#define	GPIO_INT_BASE		(void __iomem *)IO_ADDRESS(PHY_BASEADDR_GPIOA)
+#define	GPIO_BASE_OFFSET	(0x1000)
+#define	GPIO_INT_MASK		(0xFFFFFFFF)
 
-#define ALIVE_INT_BASE		(void __iomem *)IO_ADDRESS(PHY_BASEADDR_CLKPWR_MODULE + 0x800)
-#define ALIVE_INT_MASK		(0x000000FF)
+#define	ALIVE_INT_BASE		(void __iomem *)IO_ADDRESS(PHY_BASEADDR_CLKPWR_MODULE + 0x800)
+#define	ALIVE_INT_MASK		(0x000000FF)
 
 /*
  *  cpu irq handler
  */
-static u16 g_vic_priority [64] = {
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_MCUSTOP
-	NXP_IRQ_PRIORITY_DMA,			// IRQ_PHY_DMA0
-	NXP_IRQ_PRIORITY_DMA,			// IRQ_PHY_DMA1
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_CLKPWR_INTREQPWR
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_CLKPWR_ALIVEIRQ
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_CLKPWR_RTCIRQ
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_UART1
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_UART0
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_UART2
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_UART3
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_UART4
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_UART5
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_SSP0
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_SSP1
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_SSP2
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_I2C0
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_I2C1
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_I2C2
-	NXP_IRQ_PRIORITY_COPROCESSOR,	// IRQ_PHY_DEINTERLACE
-	NXP_IRQ_PRIORITY_COPROCESSOR,	// IRQ_PHY_SCALER
-	NXP_IRQ_PRIORITY_AUDIO,			// IRQ_PHY_AC97
-	NXP_IRQ_PRIORITY_AUDIO,			// IRQ_PHY_SPDIFRX
-	NXP_IRQ_PRIORITY_AUDIO,			// IRQ_PHY_SPDIFTX
-	NXP_IRQ_PRIORITY_SYS_TICK,		// IRQ_PHY_TIMER_INT0
-	NXP_IRQ_PRIORITY_SYS_TICK,		// IRQ_PHY_TIMER_INT1
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_TIMER_INT2
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_TIMER_INT3
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_PWM_INT0
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_PWM_INT1
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_PWM_INT2
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_PWM_INT3
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_WDT
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_MPEGTSI
-	NXP_IRQ_PRIORITY_DISPLAY_UINT,	// IRQ_PHY_DPC_P
-	NXP_IRQ_PRIORITY_DISPLAY_UINT,	// IRQ_PHY_DPC_S
-	NXP_IRQ_PRIORITY_DISPLAY_UINT,	// IRQ_PHY_RESCONV
-	NXP_IRQ_PRIORITY_DISPLAY_UINT,	// IRQ_PHY_HDMI
-	NXP_IRQ_PRIORITY_DISPLAY_UINT,	// IRQ_PHY_VIP0
-	NXP_IRQ_PRIORITY_DISPLAY_UINT,	// IRQ_PHY_VIP1
-	NXP_IRQ_PRIORITY_DISPLAY_UINT,	// IRQ_PHY_MIPI
-	NXP_IRQ_PRIORITY_COPROCESSOR,	// IRQ_PHY_VR
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_ADC
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_PPM
-	NXP_IRQ_PRIORITY_STORAGE,		// IRQ_PHY_SDMMC0
-	NXP_IRQ_PRIORITY_STORAGE,		// IRQ_PHY_SDMMC1
-	NXP_IRQ_PRIORITY_STORAGE,		// IRQ_PHY_SDMMC2
-	NXP_IRQ_PRIORITY_COPROCESSOR,	// IRQ_PHY_CODA960_HOST
-	NXP_IRQ_PRIORITY_COPROCESSOR,	// IRQ_PHY_CODA960_JPG
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_GMAC
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_USB20OTG
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_USB20HOST
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_CAN0
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_CAN1
-	NXP_IRQ_PRIORITY_EINT,			// IRQ_PHY_GPIOA
-	NXP_IRQ_PRIORITY_EINT,			// IRQ_PHY_GPIOB
-	NXP_IRQ_PRIORITY_EINT,			// IRQ_PHY_GPIOC
-	NXP_IRQ_PRIORITY_EINT,			// IRQ_PHY_GPIOD
-	NXP_IRQ_PRIORITY_EINT,			// IRQ_PHY_GPIOE
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_CRYPTO
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_PDM
-	NXP_IRQ_PRIORITY_LOWEST,		// 60
-	NXP_IRQ_PRIORITY_LOWEST,		// 61
-	NXP_IRQ_PRIORITY_LOWEST,		// 62
-	NXP_IRQ_PRIORITY_LOWEST			// 63
-};
-
-int nxp_cpu_init_vic_priority(void)
-{
-	void __iomem *base = (void __iomem *)VIC0_INT_BASE;
-	int i, j;
-
-	for (j = 0; j < 2; j++) {
-		for (i = 0; i < 32; i++)
-			writel_relaxed((j*32) + i, base + VIC_VECT_ADDR0 + (i<<2));
-
-		base = (void __iomem *)VIC1_INT_BASE;
-	}
-
-	return 0;
-}
-EXPORT_SYMBOL(nxp_cpu_init_vic_priority);
-
-int nxp_cpu_init_vic_table(void)
-{
-	void __iomem *base = (void __iomem *)VIC0_INT_BASE;
-	int i, j;
-
-	for (j = 0; j < 2; j++) {
-		for (i = 0; i < 32; i++)
-			writel_relaxed(g_vic_priority[(j*32) + i], base + VIC_VECT_CNTL0 + (i<<2));
-
-		base = (void __iomem *)VIC1_INT_BASE;
-	}
-
-	return 0;
-}
-EXPORT_SYMBOL(nxp_cpu_init_vic_table);
-
 void __init nxp_cpu_init_irq(void)
 {
 	pr_debug("%s\n", __func__);
-
-	nxp_cpu_init_vic_table();
-	nxp_cpu_init_vic_priority();
 
 	vic_init  (VIC0_INT_BASE ,  0, VIC0_INT_MASK, VIC0_INT_RESUME);	/*  0 ~ 31 */
 	vic_init  (VIC1_INT_BASE , 32, VIC1_INT_MASK, VIC1_INT_RESUME);	/* 32 ~ 59 */
@@ -213,34 +87,20 @@ void __init nxp_cpu_init_irq(void)
 }
 
 #ifdef CONFIG_ARM_GIC
-u32 g_toggling = 1;
 static void vic_handler(unsigned int irq, struct irq_desc *desc)
 {
-	void __iomem *base[2];
+	void __iomem *base = (void __iomem *)VIC0_INT_BASE;
 	u32 stat, gic = irq;
 	int i = 0;
 
-	g_toggling = (~g_toggling) & 1;
 
-	if (g_toggling)
-	{
-		base[0] = (void __iomem *)VIC1_INT_BASE;
-		base[1] = (void __iomem *)VIC0_INT_BASE;
-	}
-	else
-	{
-		base[0] = (void __iomem *)VIC0_INT_BASE;
-		base[1] = (void __iomem *)VIC1_INT_BASE;
-	}
+	for (i = 0; i < 2; i++) {
+		stat = readl_relaxed(base + VIC_IRQ_STATUS);
 
-	for (i = 0; i < 2; i++)
-	{
-		stat = readl_relaxed(base[i] + VIC_IRQ_STATUS);
-		if (stat) {
-			irq = readl_relaxed(base[i] + VIC_PL192_VECT_ADDR);
-			writel_relaxed(0xFF, base[i] + VIC_PL192_VECT_ADDR);
+		irq  = ffs(stat) - 1;
+		if (stat)
 			break;
-		}
+		base = (void __iomem *)VIC1_INT_BASE;
 	}
 
 	pr_debug("%s: vic[%s] gic irq=%d, vic=%d, stat=0x%02x \n",
@@ -253,6 +113,7 @@ static void vic_handler(unsigned int irq, struct irq_desc *desc)
 	}
 
 	/* vic descriptor */
+	irq += (i*32);
 	desc = irq_desc + irq;
 
 	if (desc)
