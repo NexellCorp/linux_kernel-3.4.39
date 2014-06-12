@@ -37,8 +37,8 @@
 
 #define SRAM_SAVE_SIZE		(0x4000)
 
-extern void nxp_cpu_init_vic_priority(void);
-extern void nxp_cpu_init_vic_table(void);
+extern int nxp_cpu_init_vic_priority(void);
+extern int nxp_cpu_init_vic_table(void);
 
 
 static unsigned int  sramsave[SRAM_SAVE_SIZE/4];

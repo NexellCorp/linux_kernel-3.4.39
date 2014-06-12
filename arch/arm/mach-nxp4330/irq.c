@@ -19,6 +19,7 @@
 #include <linux/kernel.h>
 #include <linux/version.h>
 #include <linux/init.h>
+#include <linux/export.h>
 #include <linux/types.h>
 #include <linux/interrupt.h>
 #include <asm/io.h>
@@ -208,48 +209,33 @@ void __init nxp_cpu_init_irq(void)
 }
 
 #ifdef CONFIG_ARM_GIC
-#define FIRST_DECTCT_IRQ	((1<<IRQ_PHY_TIMER_INT0) | (1<<IRQ_PHY_TIMER_INT1))
-//#define FIRST_DECTCT_IRQ	(1<<IRQ_PHY_TIMER_INT0)
 u32 g_toggling = 1;
 static void vic_handler(unsigned int irq, struct irq_desc *desc)
 {
 	void __iomem *base[2];
-	u32 first_detc;
 	u32 stat, gic = irq;
 	int i = 0;
 
 	g_toggling = (~g_toggling) & 1;
 
-#if 0
-	stat = readl_relaxed(VIC0_INT_BASE + VIC_IRQ_STATUS);
-	first_detc = stat & FIRST_DECTCT_IRQ;
-	if (first_detc)
+	if (g_toggling)
 	{
-		stat = first_detc;
-		irq = ffs(stat) - 1;
+		base[0] = (void __iomem *)VIC1_INT_BASE;
+		base[1] = (void __iomem *)VIC0_INT_BASE;
 	}
 	else
-#endif
 	{
-		if (g_toggling)
-		{
-			base[0] = (void __iomem *)VIC1_INT_BASE;
-			base[1] = (void __iomem *)VIC0_INT_BASE;
-		}
-		else
-		{
-			base[0] = (void __iomem *)VIC0_INT_BASE;
-			base[1] = (void __iomem *)VIC1_INT_BASE;
-		}
+		base[0] = (void __iomem *)VIC0_INT_BASE;
+		base[1] = (void __iomem *)VIC1_INT_BASE;
+	}
 
-		for (i = 0; i < 2; i++)
-		{
-			stat = readl_relaxed(base[i] + VIC_IRQ_STATUS);
-			if (stat) {
-				irq = readl_relaxed(base[i] + VIC_PL192_VECT_ADDR);
-				writel_relaxed(0xFF, base[i] + VIC_PL192_VECT_ADDR);
-				break;
-			}
+	for (i = 0; i < 2; i++)
+	{
+		stat = readl_relaxed(base[i] + VIC_IRQ_STATUS);
+		if (stat) {
+			irq = readl_relaxed(base[i] + VIC_PL192_VECT_ADDR);
+			writel_relaxed(0xFF, base[i] + VIC_PL192_VECT_ADDR);
+			break;
 		}
 	}
 
