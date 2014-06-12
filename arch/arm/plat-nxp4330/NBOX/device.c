@@ -45,7 +45,7 @@ static unsigned long dfs_freq_table[][2] = {
 	{ 1000000, 1200 },
 	{  900000, 1200 },
 	{  800000, 1200 },
-#if 0
+#if 1
 	{  780000, 1200 },
 	{  562000, 1200 },
 	{  533000, 1200 },
@@ -60,7 +60,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
 	.max_cpufreq    = 1600*1000,
 	.max_retention  =   30*1000,
-	.rest_cpufreq   =  800*1000,
+	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
 };
 
@@ -1286,23 +1286,12 @@ static struct dw_mci_board _dwmci1_data = {
 #endif
 
 #ifdef CONFIG_MMC_NEXELL_CH2
-void SDCH2_cfg_gpio(int width)
-{
-    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  18, NX_GPIO_PADFUNC_2);
-    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  19, NX_GPIO_PADFUNC_2);
-    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  20, NX_GPIO_PADFUNC_2);
-    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  21, NX_GPIO_PADFUNC_2);
-    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  22, NX_GPIO_PADFUNC_2);
-    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  23, NX_GPIO_PADFUNC_2);
-}
-
 static struct dw_mci_board _dwmci2_data = {
 	.quirks	= DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz	= 10 * 1000 * 1000,
 	.caps = MMC_CAP_CMD23|MMC_CAP_NONREMOVABLE,
 	.detect_delay_ms = 200,
 	.cd_type = DW_MCI_CD_NONE,
-	.cfg_gpio = SDCH2_cfg_gpio,
 };
 #endif
 
