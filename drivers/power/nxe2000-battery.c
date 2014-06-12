@@ -55,7 +55,7 @@
 /*
  * LOCAL define
  */
-#define BAT_RESUME_WORK_QUEUE
+//#define BAT_RESUME_WORK_QUEUE
 
 #define NXE2000_BATTERY_VERSION_20140605_V3131
 #define NXE2000_BATTERY_VERSION_20140516_V3131
@@ -1790,7 +1790,7 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 				}
 			}
 		}
-	
+
 		capacity = max(1, capacity);
 		capacity = min(100, capacity);
 
@@ -1849,7 +1849,7 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 				}
 			}
 		}
-	
+
 		capacity = max(1, capacity);
 		capacity = min(100, capacity);
 
@@ -4861,7 +4861,7 @@ static int nxe2000_batt_get_prop(struct power_supply *psy,
 			//val->intval = -EINVAL;
 			val->intval = info->time_to_empty * 60;
 			DBGOUT(info->dev, "time of empty battery is %d minutes\n",
-							 info->time_to_empty); 
+							 info->time_to_empty);
 		}
 		break;
 
@@ -5184,6 +5184,9 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 
 #ifdef BAT_RESUME_WORK_QUEUE
 	INIT_WORK(&info->resume_work, nxe2000_battery_resume_work);
+#else
+	/* add by jhkim */
+	device_enable_async_suspend(&pdev->dev);
 #endif
 
 	/* for SW UBC. */
