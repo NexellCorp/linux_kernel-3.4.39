@@ -2196,7 +2196,6 @@ static int rt5631_resume(struct snd_soc_codec *codec)
 {
 	u16 *value = codec->reg_cache;
 	int i = 0;
-	struct rt5631_priv *rt5631 = snd_soc_codec_get_drvdata(codec);
 
 	rt5631_reset(codec);
 	snd_soc_update_bits(codec, RT5631_PWR_MANAG_ADD3,
