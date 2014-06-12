@@ -37,6 +37,10 @@
 
 #define SRAM_SAVE_SIZE		(0x4000)
 
+extern void nxp_cpu_init_vic_priority(void);
+extern void nxp_cpu_init_vic_table(void);
+
+
 static unsigned int  sramsave[SRAM_SAVE_SIZE/4];
 static unsigned int *sramptr;
 
@@ -385,10 +389,10 @@ static void suspend_l2cache(suspend_state_t stat)
 
 	if (SUSPEND_SUSPEND == stat) {
 		pl2c->tag_latency = readl_relaxed(base + L2X0_TAG_LATENCY_CTRL);
-    	pl2c->data_latency = readl_relaxed(base + L2X0_DATA_LATENCY_CTRL);
-    	pl2c->prefetch_ctrl = readl_relaxed(base + L2X0_PREFETCH_CTRL);
-    	pl2c->filter_start = readl_relaxed(base + L2X0_ADDR_FILTER_START);
-    	pl2c->filter_end = readl_relaxed(base + L2X0_ADDR_FILTER_END);
+		pl2c->data_latency = readl_relaxed(base + L2X0_DATA_LATENCY_CTRL);
+		pl2c->prefetch_ctrl = readl_relaxed(base + L2X0_PREFETCH_CTRL);
+		pl2c->filter_start = readl_relaxed(base + L2X0_ADDR_FILTER_START);
+		pl2c->filter_end = readl_relaxed(base + L2X0_ADDR_FILTER_END);
 		pl2c->pwr_ctrl = readl_relaxed(base + L2X0_POWER_CTRL);
 		pl2c->aux_ctrl = readl_relaxed(base + L2X0_AUX_CTRL);
 		pl2c->tieoff = readl_relaxed(IO_ADDRESS(PHY_BASEADDR_TIEOFF));
@@ -404,9 +408,9 @@ static void suspend_l2cache(suspend_state_t stat)
 
 		/* restore */
 		writel_relaxed(pl2c->tag_latency, (base + L2X0_TAG_LATENCY_CTRL));
-    	writel_relaxed(pl2c->data_latency, (base + L2X0_DATA_LATENCY_CTRL));
-    	writel_relaxed(pl2c->filter_start, (base + L2X0_ADDR_FILTER_START));
-    	writel_relaxed(pl2c->filter_end, (base + L2X0_ADDR_FILTER_END));
+		writel_relaxed(pl2c->data_latency, (base + L2X0_DATA_LATENCY_CTRL));
+		writel_relaxed(pl2c->filter_start, (base + L2X0_ADDR_FILTER_START));
+		writel_relaxed(pl2c->filter_end, (base + L2X0_ADDR_FILTER_END));
 		writel_relaxed(pl2c->prefetch_ctrl, (base + L2X0_PREFETCH_CTRL));
 		writel_relaxed(pl2c->pwr_ctrl, (base + L2X0_POWER_CTRL));
 
@@ -549,7 +553,7 @@ static int __powerdown(unsigned long arg)
 	power_down = (void (*)(ulong, ulong))((ulong)do_suspend + 0x220);
 	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
 
-    while (1) { ; }
+	while (1) { ; }
 #endif
 	return 0;
 }
@@ -566,49 +570,49 @@ static int suspend_valid(suspend_state_t state)
 	__wake_event_bits = 0;
 
 #ifdef CONFIG_SUSPEND
-    if (!suspend_valid_only_mem(state)) {
-        printk(KERN_ERR "%s: not supported state(%d)\n", __func__, state);
-        return 0;
-    }
+	if (!suspend_valid_only_mem(state)) {
+		printk(KERN_ERR "%s: not supported state(%d)\n", __func__, state);
+		return 0;
+	}
 #endif
-    if (board_suspend && board_suspend->valid)
-        ret = board_suspend->valid(state);
+	if (board_suspend && board_suspend->valid)
+		ret = board_suspend->valid(state);
 
-  	PM_DBGOUT("%s %s\n", __func__, ret ? "DONE":"WAKE");
-    return ret;
+	PM_DBGOUT("%s %s\n", __func__, ret ? "DONE":"WAKE");
+	return ret;
 }
 
 /* return : 0 = goto suspend, 1 = wake up */
 static int suspend_begin(suspend_state_t state)
 {
 	int ret = 0;
-    if (board_suspend && board_suspend->begin)
-        ret = board_suspend->begin(state);
+	if (board_suspend && board_suspend->begin)
+		ret = board_suspend->begin(state);
 
-  	PM_DBGOUT("%s %s\n", __func__, ret ? "WAKE":"DONE");
-    return 0;
+	PM_DBGOUT("%s %s\n", __func__, ret ? "WAKE":"DONE");
+	return 0;
 }
 
 /* return : 0 = goto suspend, 1 = wake up */
 static int suspend_prepare(void)
 {
 	int ret = 0;
-    if (board_suspend && board_suspend->prepare)
-        ret = board_suspend->prepare();
+	if (board_suspend && board_suspend->prepare)
+		ret = board_suspend->prepare();
 
-  	PM_DBGOUT("%s %s\n", __func__, ret ? "WAKE":"DONE");
-    return ret;
+	PM_DBGOUT("%s %s\n", __func__, ret ? "WAKE":"DONE");
+	return ret;
 }
 
 /* return : 0 = goto suspend, 1 = wake up */
 static int suspend_enter(suspend_state_t state)
 {
-    int ret = 0;
-  	lldebugout("%s enter\n", __func__);
+	int ret = 0;
+	lldebugout("%s enter\n", __func__);
 
-    if (board_suspend && board_suspend->enter) {
+	if (board_suspend && board_suspend->enter) {
 		if ((ret = board_suspend->enter(state)))
-            return ret;
+			return ret;
 	}
 
 	suspend_clock(SUSPEND_SUSPEND);
@@ -622,10 +626,10 @@ static int suspend_enter(suspend_state_t state)
 	/* SMP power down */
 	suspend_cores(SUSPEND_SUSPEND);
 
-    /*
-     * goto sleep
-     */
-    cpu_suspend(0, __powerdown);
+	/*
+	 * goto sleep
+	 */
+	cpu_suspend(0, __powerdown);
 
 	lldebugout("resume machine\n");
 
@@ -633,11 +637,14 @@ static int suspend_enter(suspend_state_t state)
 	 * Wakeup status
 	 */
 #ifndef CONFIG_SUSPEND_IDLE
-    suspend_mark(SUSPEND_RESUME);
+	suspend_mark(SUSPEND_RESUME);
 #endif
 	suspend_l2cache(SUSPEND_RESUME);
 
 	resume_machine();
+
+	nxp_cpu_init_vic_priority();
+	nxp_cpu_init_vic_table();
 
 	suspend_alive(SUSPEND_RESUME);
 	suspend_gpio(SUSPEND_RESUME);
@@ -648,30 +655,30 @@ static int suspend_enter(suspend_state_t state)
 	/* print wakeup evnet */
 	print_wake_event();
 
-    return 0;
+	return 0;
 }
 
 static void suspend_finish(void)
 {
 	PM_DBGOUT("%s\n", __func__);
-    if (board_suspend && board_suspend->finish)
-        board_suspend->finish();
+	if (board_suspend && board_suspend->finish)
+		board_suspend->finish();
 }
 
 static void suspend_end(void)
 {
 	PM_DBGOUT("%s\n", __func__);
-    if (board_suspend && board_suspend->end)
-        board_suspend->end();
+	if (board_suspend && board_suspend->end)
+		board_suspend->end();
 }
 
 static struct platform_suspend_ops suspend_ops = {
-    .valid      = suspend_valid,     /* first suspend call */
-    .begin      = suspend_begin,     /* before driver suspend */
-    .prepare    = suspend_prepare,   /* after driver suspend */
-    .enter      = suspend_enter,     /* goto suspend */
-    .finish     = suspend_finish,    /* before driver resume */
-    .end        = suspend_end,       /* after driver resume */
+	.valid      = suspend_valid,     /* first suspend call */
+	.begin      = suspend_begin,     /* before driver suspend */
+	.prepare    = suspend_prepare,   /* after driver suspend */
+	.enter      = suspend_enter,     /* goto suspend */
+	.finish     = suspend_finish,    /* before driver resume */
+	.end        = suspend_end,       /* after driver resume */
 };
 
 static int __init suspend_ops_init(void)
