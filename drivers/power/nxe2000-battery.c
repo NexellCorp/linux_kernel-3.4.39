@@ -2166,7 +2166,7 @@ static void nxe2000_sw_ubc_work(struct work_struct *work)
 		struct nxe2000_battery_info, sw_ubc_work.work);
 	uint8_t val = 0;
 	int pmic_vbus;
-	int ret;
+	int temp, ret;
 
 	power_supply_changed(&info->battery);
 
@@ -2184,6 +2184,7 @@ static void nxe2000_sw_ubc_work(struct work_struct *work)
 		goto recheck_ubc;
 	}
 
+#if 0
 	if (val != info->ch_ilim_dcp)
 		info->flag_set_ilimit = false;
 
@@ -2195,6 +2196,25 @@ static void nxe2000_sw_ubc_work(struct work_struct *work)
 
 		info->flag_set_ilimit = true;
 	}
+#else
+
+	if (val == info->is_sdp_type)
+		temp = info->ch_ilim_usb;
+	else
+		temp = info->ch_ilim_dcp;
+
+	if (val != temp)
+		info->flag_set_ilimit = false;
+
+	if (pmic_vbus && !info->flag_set_ilimit) {
+		ret = nxe2000_write(info->dev->parent, NXE2000_REG_REGISET2, temp);
+		if (ret < 0) {
+			dev_err(info->dev, "Can't write NXE2000_REG_REGISET2 register. : %d\n", ret);
+		}
+
+		info->flag_set_ilimit = true;
+	}
+#endif
 
 recheck_ubc:
 	if (info->pmic_vbuschk_count) {
@@ -5092,7 +5112,11 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 	info->battery.external_power_changed
 		 = nxe2000_external_power_changed;
 
+#if (CFG_SW_UBC_ENABLE == 1)
+	nxe2000_clr_bits(info->dev->parent, 0x90, 0x10);	// GPIO4 : Input
+#else
 	nxe2000_set_bits(info->dev->parent, 0x90, 0x10);	// GPIO4 : Output
+#endif
 	nxe2000_set_bits(info->dev->parent, 0x91, 0x10);	// GPIO4 : High(Hi-Z)
 
 	set_gpio_config(info);
@@ -5725,6 +5749,7 @@ static int nxe2000_battery_resume(struct device *dev)
 	struct nxe2000_battery_info *info = dev_get_drvdata(dev);
 	int ret;
 
+#if (CFG_SW_UBC_ENABLE == 0)
 	#ifdef CONFIG_SUSPEND_IDLE
 	ret = nxe2000_set_bits(info->dev->parent, 0x91, 0x10);    // GPIO4 : High
 	if (ret < 0)
@@ -5734,6 +5759,7 @@ static int nxe2000_battery_resume(struct device *dev)
 	if (ret < 0)
 		ret = nxe2000_set_bits(info->dev->parent, 0x90, 0x10);
 	#endif
+#endif
 
 	schedule_work(&info->resume_work);
 	return ret;
@@ -5762,6 +5788,7 @@ static int nxe2000_battery_resume(struct device *dev) {
 	info->low_battery_flag		= 0;
 
 #ifndef BAT_RESUME_WORK_QUEUE
+#if (CFG_SW_UBC_ENABLE == 0)
 	#ifdef CONFIG_SUSPEND_IDLE
 	ret = nxe2000_set_bits(info->dev->parent, 0x91, 0x10);    // GPIO4 : High
 	if (ret < 0)
@@ -5771,6 +5798,7 @@ static int nxe2000_battery_resume(struct device *dev) {
 	if (ret < 0)
 		ret = nxe2000_set_bits(info->dev->parent, 0x90, 0x10);
 	#endif
+#endif
 #endif
 
 #ifdef ENABLE_MASKING_INTERRUPT_IN_SLEEP
