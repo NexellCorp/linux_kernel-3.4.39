@@ -1964,10 +1964,15 @@ static struct uart_driver amba_reg = {
 };
 
 #if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NEXELL_RESUME_WORK)
+extern bool	console_suspend_enabled;
+
 static void pl011_resume_work(struct work_struct *work)
 {
 	struct uart_amba_port *uap = container_of(work,
-					struct uart_amba_port, resume_work.work);
+				struct uart_amba_port, resume_work.work);
+
+	console_suspend_enabled = 1;
+	resume_console();
 	uart_resume_port(&amba_reg, &uap->port);
 }
 #endif
@@ -2097,10 +2102,16 @@ static int pl011_resume(struct amba_device *dev)
 		plat->init();
 
 #if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NEXELL_RESUME_WORK)
+	/*
+	 * disable console duration delay time
+	 * to save wakeup time
+	 */
+	console_suspend_enabled = 0;
 	schedule_delayed_work(&uap->resume_work,
 			msecs_to_jiffies(UART_RESUME_WORK_DELAY));
 	return 0;
 #else
+
 	return uart_resume_port(&amba_reg, &uap->port);
 #endif
 }
