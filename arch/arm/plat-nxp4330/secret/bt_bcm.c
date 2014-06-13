@@ -45,17 +45,19 @@
 #endif
 
 
-#define	BT_GPIO_WAKE_HOST 		(PAD_GPIO_D + 28)
-#define	BT_GPIO_WAKE_DEVICE 	(PAD_GPIO_E + 3)
-#define	BT_GPIO_REG_ON			(PAD_GPIO_E + 2)
+#if defined(CONFIG_SECRET_3P1RD_BOARD)
+#define	BT_GPIO_REG_ON			(-1)
+#define	BT_GPIO_WAKE_DEVICE 	(PAD_GPIO_A + 17)
+#else
+#define	BT_GPIO_REG_ON			(-1)//(PAD_GPIO_E + 2)
+#define	BT_GPIO_WAKE_DEVICE 	(-1)//(PAD_GPIO_E + 3)
+#endif
+#define	BT_GPIO_WAKE_HOST 		(PAD_GPIO_A + 23)//(PAD_GPIO_D + 28)
 #define	BT_UART_PORT_LINE		(1)	/* ttyAMA1 */
 
 #define	SUPPOR_BT_BCM_LPM
-//#define	BT_CONTROL_GPIO
 
-#ifndef	BT_CONTROL_GPIO
 extern int micom_bt_cmd(int sub, int on);
-#endif
 
 /*
  * Bluetooth BCM platform data
@@ -107,51 +109,58 @@ static const char *ioname[] = { "GPIOA", "GPIOB", "GPIOC", "GPIOD", "GPIOE", "AL
  */
 static inline int bt_bcm_request_io(struct bt_ctl_gpio *bti)
 {
-#ifdef BT_CONTROL_GPIO
-	return gpio_request(bti->gpio, bti->name);
-#else
-	return 0;
-#endif	
+	int ret = 0;
+
+	if(bti->gpio > -1)
+		ret = gpio_request(bti->gpio, bti->name);
+
+	return ret;
 }
 
 static inline void bt_bcm_free_io(struct bt_ctl_gpio *bti)
 {
-#ifdef BT_CONTROL_GPIO
-	gpio_free(bti->gpio);
-#endif	
+	if(bti->gpio > -1)
+		gpio_free(bti->gpio);
 }
 
 static inline int bt_bcm_set_direction(struct bt_ctl_gpio *bti, int dir, int val)
 {
-#ifdef BT_CONTROL_GPIO
-	if (dir)
-		return gpio_direction_output(bti->gpio, val);
-	else
-		return gpio_direction_input(bti->gpio);
-#endif
-	return 0;
+	int ret = 0;
+
+	if(bti->gpio > -1)
+	{
+		if (dir)
+			ret = gpio_direction_output(bti->gpio, val);
+		else
+			ret = gpio_direction_input(bti->gpio);
+	}
+	return ret;
 }
 
 static inline void bt_bcm_set_io_val(struct bt_ctl_gpio *bti, int on)
 {
-#ifdef BT_CONTROL_GPIO
-	gpio_set_value(bti->gpio, (on ? 1: 0));
-#else
 	int sub;
-	switch (bti->type)
+
+	if(bti->gpio > -1)
 	{
-		case BT_TYPE_POWER:	
-			sub = BT_TYPE_POWER;
-			break;
-		case BT_TYPE_WAKE_DEVICE:
-			sub = BT_TYPE_WAKE_DEVICE;
-			break;
-		default:
-			pr_err("bt_bcm: unkonwn bt control type ...\n");
-			return;
-	}		
-	micom_bt_cmd(sub, on);
-#endif	
+		gpio_set_value(bti->gpio, (on ? 1: 0));
+	}
+	else
+	{
+		switch (bti->type)
+		{
+			case BT_TYPE_POWER:	
+				sub = BT_TYPE_POWER;
+				break;
+			case BT_TYPE_WAKE_DEVICE:
+				sub = BT_TYPE_WAKE_DEVICE;
+				break;
+			default:
+				pr_err("bt_bcm: unkonwn bt control type ...\n");
+				return;
+		}		
+		micom_bt_cmd(sub, on);
+	}
 }
 
 static inline int bt_bcm_get_io_val(struct bt_ctl_gpio *bti)

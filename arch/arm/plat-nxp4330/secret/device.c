@@ -150,7 +150,7 @@ static struct platform_device *fb_devices[] = {
 #if defined (CONFIG_NEXELL_DISPLAY_MIPI)
 #include <linux/delay.h>
 
-#if defined(CONFIG_SECRET_2P1ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)
+#if defined(CONFIG_SECRET_2P1ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)||defined(CONFIG_SECRET_3P1RD_BOARD)
 #define	MIPI_BITRATE_480M
 #else
 #define	MIPI_BITRATE_512M
@@ -210,7 +210,7 @@ struct mipi_reg_val{
 	struct data_val data;
 };
 
-#if defined(CONFIG_SECRET_2P1ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)
+#if defined(CONFIG_SECRET_2P1ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)||defined(CONFIG_SECRET_3P1RD_BOARD)
 
 static struct mipi_reg_val mipi_init_data_tiny[]= // BOE init code tiny
 {
@@ -717,7 +717,7 @@ static struct i2c_board_info __initdata mxt604t_i2c_bdi = {
 
 static unsigned int  button_gpio[] = CFG_KEYPAD_KEY_BUTTON;
 static unsigned int  button_code[] = CFG_KEYPAD_KEY_CODE;
-#if defined(CONFIG_SECRET_3RD_BOARD)
+#if defined(CONFIG_SECRET_3RD_BOARD)||defined(CONFIG_SECRET_3P1RD_BOARD)
 static unsigned int  button_detect[] = {0, 0, 0, 0, 1};
 #else
 static unsigned int  button_detect[] = {0, 0, 0, 0, 0, 1};
@@ -1073,7 +1073,7 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-#if defined(CONFIG_SECRET_3RD_BOARD)
+#if defined(CONFIG_SECRET_3RD_BOARD)||defined(CONFIG_SECRET_3P1RD_BOARD)
 NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1100000, 1, 12);	/* 1.1V ARM */
 NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1000000, 1, 14);	/* 1.0V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
@@ -1202,7 +1202,7 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 	.monitor_time		= 60,
 		/* some parameter is depend of battery type */
 	.type[0] = {
-#if defined(CONFIG_SECRET_3RD_BOARD)
+#if defined(CONFIG_SECRET_3RD_BOARD)||defined(CONFIG_SECRET_3P1RD_BOARD)
 		.ch_vfchg		= 0x04,	/* VFCHG	= 0 - 4 (4.05v, 4.10v, 4.15v, 4.20v, 4.35v) */
 #else
 		.ch_vfchg		= 0x03,	/* VFCHG	= 0 - 4 (4.05v, 4.10v, 4.15v, 4.20v, 4.35v) */
