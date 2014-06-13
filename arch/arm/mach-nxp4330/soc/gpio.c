@@ -424,7 +424,7 @@ int nxp_soc_gpio_get_io_drv(int gpio)
 	int ret;
 
 	if (gpio > (PAD_GPIO_ALV - 1) )
-		return;
+		return -1;
 
 	grp = PAD_GET_GROUP(gpio);
 	bit = PAD_GET_BITNO(gpio);

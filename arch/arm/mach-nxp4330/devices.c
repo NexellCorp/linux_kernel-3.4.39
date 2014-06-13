@@ -1043,8 +1043,6 @@ EXPORT_SYMBOL(otg_phy_init);
 
 void otg_phy_off(void)
 {
-    u32 temp;
-
     PM_DBGOUT("+%s\n", __func__);
 
     // 0. Select VBUS
