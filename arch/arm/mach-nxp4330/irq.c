@@ -162,7 +162,7 @@ int nxp_cpu_init_vic_priority(void)
 
 	for (j = 0; j < 2; j++) {
 		for (i = 0; i < 32; i++)
-			writel_relaxed((j*32) + i, base + VIC_VECT_ADDR0 + (i<<2));
+			writel_relaxed(g_vic_priority[(j*32) + i], base + VIC_VECT_CNTL0 + (i<<2));
 
 		base = (void __iomem *)VIC1_INT_BASE;
 	}
@@ -178,7 +178,7 @@ int nxp_cpu_init_vic_table(void)
 
 	for (j = 0; j < 2; j++) {
 		for (i = 0; i < 32; i++)
-			writel_relaxed(g_vic_priority[(j*32) + i], base + VIC_VECT_CNTL0 + (i<<2));
+			writel_relaxed((j*32) + i, base + VIC_VECT_ADDR0 + (i<<2));
 
 		base = (void __iomem *)VIC1_INT_BASE;
 	}
