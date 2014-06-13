@@ -1063,7 +1063,7 @@ static struct platform_device_id platform_ids[] = {
     // psw0523 add
 #if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
     {
-        .name = "nxp-dwcotg",
+        .name = "dwc_otg",
         .driver_data = (kernel_ulong_t) 0xdeadbeef,
     },
 #endif
