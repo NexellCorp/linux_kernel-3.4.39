@@ -180,6 +180,8 @@ int nxp_cpu_init_vic_table(void)
 		for (i = 0; i < 32; i++)
 			writel_relaxed((j*32) + i, base + VIC_VECT_ADDR0 + (i<<2));
 
+		writel_relaxed(0, base + VIC_PL192_VECT_ADDR);
+
 		base = (void __iomem *)VIC1_INT_BASE;
 	}
 
@@ -191,8 +193,8 @@ void __init nxp_cpu_init_irq(void)
 {
 	pr_debug("%s\n", __func__);
 
-	nxp_cpu_init_vic_table();
 	nxp_cpu_init_vic_priority();
+	nxp_cpu_init_vic_table();
 
 	vic_init  (VIC0_INT_BASE ,  0, VIC0_INT_MASK, VIC0_INT_RESUME);	/*  0 ~ 31 */
 	vic_init  (VIC1_INT_BASE , 32, VIC1_INT_MASK, VIC1_INT_RESUME);	/* 32 ~ 59 */
@@ -213,12 +215,12 @@ void __init nxp_cpu_init_irq(void)
 }
 
 #ifdef CONFIG_ARM_GIC
-u32 g_toggling = 1;
+static u32 g_toggling = 1;
 static void vic_handler(unsigned int irq, struct irq_desc *desc)
 {
 	void __iomem *base[2];
-	u32 stat, gic = irq;
-	int i = 0;
+	volatile u32 stat, gic = irq;
+	volatile int i = 0;
 
 	g_toggling = (~g_toggling) & 1;
 
@@ -238,7 +240,7 @@ static void vic_handler(unsigned int irq, struct irq_desc *desc)
 		stat = readl_relaxed(base[i] + VIC_IRQ_STATUS);
 		if (stat) {
 			irq = readl_relaxed(base[i] + VIC_PL192_VECT_ADDR);
-			writel_relaxed(0xFF, base[i] + VIC_PL192_VECT_ADDR);
+			writel_relaxed(0, base[i] + VIC_PL192_VECT_ADDR);
 			break;
 		}
 	}
