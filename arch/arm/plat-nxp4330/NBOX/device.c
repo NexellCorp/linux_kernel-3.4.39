@@ -36,10 +36,10 @@
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-    { 1600000, 1200 },
-	{ 1500000, 1200 },
-	{ 1400000, 1200 },
-	{ 1300000, 1200 },
+//    { 1600000, 1200 },
+//	{ 1500000, 1200 },
+//	{ 1400000, 1200 },
+//	{ 1300000, 1200 },
 	{ 1200000, 1200 },
 	{ 1100000, 1200 },
 	{ 1000000, 1200 },
@@ -58,7 +58,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP4330_CPUFREQ_PLLDEV,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1600*1000,
+	.max_cpufreq    = 1200*1000,
 	.max_retention  =   30*1000,
 	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
@@ -758,10 +758,12 @@ static struct dw_mci_board _dwmci1_data = {
 #ifdef CONFIG_MMC_NEXELL_CH2
 static struct dw_mci_board _dwmci2_data = {
 	.quirks	= DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz	= 10 * 1000 * 1000,
+	.bus_hz	= 50 * 1000 * 1000,
 	.caps = MMC_CAP_CMD23|MMC_CAP_NONREMOVABLE,
 	.detect_delay_ms = 200,
 	.cd_type = DW_MCI_CD_NONE,
+	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
+//	.clk_dly		= DW_MMC_DRIVE_DELAY(1) | DW_MMC_SAMPLE_DELAY(2) | DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(0),
 };
 #endif
 
