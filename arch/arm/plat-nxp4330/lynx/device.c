@@ -33,64 +33,29 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-
-
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-#if 0
-	{ 1600000, 1200 },
-	{ 1500000, 1200 },
-	{ 1400000, 1200 },
-	{ 1300000, 1200 },
-#endif
 	{ 1200000, 1200 },
 	{ 1100000, 1200 },
 	{ 1000000, 1200 },
 	{  900000, 1200 },
 	{  800000, 1200 },
 	{  780000, 1200 },
-	{  760000, 1200 },
-	{  740000, 1200 },
-	{  720000, 1200 },
 	{  562000, 1200 },
 	{  533000, 1200 },
 	{  490000, 1200 },
-	{  470000, 1200 },
-	{  460000, 1200 },
-	{  450000, 1200 },
-	{  440000, 1200 },
-	{  430000, 1200 },
-	{  420000, 1200 },
-	{  410000, 1200 },
 	{  400000, 1200 },
-#if 0
-	{  399000, 1200 },
-	{  390000, 1200 },
-	{  384000, 1200 },
-	{  350000, 1200 },
-	{  330000, 1200 },
-	{  300000, 1200 },
-	{  266000, 1200 },
-	{  250000, 1200 },
-	{  220000, 1200 },
-	{  200000, 1200 },
-	{  166000, 1200 },
-	{  147500, 1200 },
-	{  133000, 1200 },
-	{  125000, 1200 },
-	{  100000, 1200 },
-#endif
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP4330_CPUFREQ_PLLDEV,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq   	= 1200*1000,
-	.max_retention 	=   20*1000,
-	.rest_cpufreq  	=  400*1000,
-	.rest_retention	=    1*1000,
+	.max_cpufreq    = 1200*1000,
+	.max_retention  =   20*1000,
+	.rest_cpufreq   =  400*1000,
+	.rest_retention =    1*1000,
 };
 
 static struct platform_device dfs_plat_device = {
