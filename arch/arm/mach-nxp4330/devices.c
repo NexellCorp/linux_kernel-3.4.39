@@ -1058,20 +1058,7 @@ void otg_phy_off(void)
     udelay(10); // 10 clock need
 
     // 3. POR of PHY
-#if 1
     writel(readl(SOC_VA_TIEOFF + 0x34) |  (3<<7), SOC_VA_TIEOFF + 0x34);
-#else
-    temp    = readl(SOC_VA_TIEOFF + 0x34);
-    temp   &= ~(3<<7);
-    temp   |=  (1<<7);
-    writel(temp, SOC_VA_TIEOFF + 0x34);
-    udelay(1);
-    temp   |=  (3<<7);
-    writel(temp, SOC_VA_TIEOFF + 0x34);
-    udelay(1);
-    temp   &= ~(2<<7);
-    writel(temp, SOC_VA_TIEOFF + 0x34);
-#endif
     udelay(10); // 40us delay need.
 
     // 4. Release otg common reset
@@ -1132,7 +1119,7 @@ static struct resource otg_resources[] = {
 static u64 otg_dmamask = DMA_BIT_MASK(32);
 
 static struct platform_device otg_plat_device = {
-    .name   = "nxp-dwcotg",
+    .name   = "dwc_otg",
     .id     = -1,
     .dev    = {
         .dma_mask = &otg_dmamask,
