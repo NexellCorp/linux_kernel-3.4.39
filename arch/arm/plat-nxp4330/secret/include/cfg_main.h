@@ -82,7 +82,7 @@
 #define CFG_DISP_PRI_RESOL_WIDTH          		800	// X Resolution
 #define CFG_DISP_PRI_RESOL_HEIGHT				1280	// Y Resolution
 
-#if defined(CONFIG_SECRET_2P1ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)
+#if defined(CONFIG_SECRET_2P1ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)||defined(CONFIG_SECRET_3P1RD_BOARD)
 #define CFG_DISP_PRI_HSYNC_SYNC_WIDTH			16
 #define CFG_DISP_PRI_HSYNC_BACK_PORCH			48
 #define CFG_DISP_PRI_HSYNC_FRONT_PORCH			16
@@ -215,7 +215,7 @@
  * 	Keypad
  */
 
-#if defined(CONFIG_SECRET_3RD_BOARD)
+#if defined(CONFIG_SECRET_3RD_BOARD)||defined(CONFIG_SECRET_3P1RD_BOARD)
 #define CFG_KEYPAD_KEY_BUTTON					{PAD_GPIO_ALV+0, PAD_GPIO_ALV+1, PAD_GPIO_ALV+2, \
 												PAD_GPIO_ALV+3, PAD_GPIO_C+10}
 
@@ -245,7 +245,8 @@
  */
 #define CFG_USB_DET_FROM_PMIC_INT				(1)
 
-#if defined(CONFIG_SECRET_2ND_BOARD)||defined(CONFIG_SECRET_2P1ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)
+#if defined(CONFIG_SECRET_2ND_BOARD)||defined(CONFIG_SECRET_2P1ND_BOARD)\
+	||defined(CONFIG_SECRET_3RD_BOARD)||defined(CONFIG_SECRET_3P1RD_BOARD)
 #define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 21)
 #else
 #define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)
@@ -254,7 +255,8 @@
 //#define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 5)	// NC	/* Choice for SW_UBC or Wake-up*/
 #define CFG_GPIO_PMIC_VUSB_DET					(-1)	// NC			/* Choice for SW_UBC or Wake-up*/
 #define CFG_GPIO_PMIC_LOWBAT_DET				(PAD_GPIO_ALV + 5)	// NC		/* Critical low battery detect */
-#if defined(CONFIG_SECRET_2ND_BOARD)||defined(CONFIG_SECRET_2P1ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)
+#if defined(CONFIG_SECRET_2ND_BOARD)||defined(CONFIG_SECRET_2P1ND_BOARD)\
+	||defined(CONFIG_SECRET_3RD_BOARD)||defined(CONFIG_SECRET_3P1RD_BOARD)
 #define CFG_GPIO_PMIC_INTR						(PAD_GPIO_B + 4)
 #else
 #define CFG_GPIO_PMIC_INTR						(PAD_GPIO_C + 0)
