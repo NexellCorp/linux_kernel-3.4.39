@@ -1403,11 +1403,11 @@ config SERIAL_NEXELL_UART5
 		default n
 
 config SERIAL_NEXELL_RESUME_WORK
-	bool "Set to reduce resume time from suspend (PL011)"
+	bool "Set this to reduce resume time (PL011)"
 	depends on SERIAL_AMBA_PL011
 		default n
 	help
-	  Use delay work function to save resume time when resume. but 
+	  Disable console output to save wakeup time when resume.\, but 
 	  could be lost resume log message
 	
 endmenu 
