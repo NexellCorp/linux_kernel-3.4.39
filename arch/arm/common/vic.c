@@ -71,6 +71,12 @@ static int vic_id;
  * Common initialisation code for registration
  * and resume.
 */
+#if defined(CONFIG_ARCH_NXP4330)
+static void vic_init2(void __iomem *base)
+{
+	return;
+}
+#else
 static void vic_init2(void __iomem *base)
 {
 	int i;
@@ -82,6 +88,7 @@ static void vic_init2(void __iomem *base)
 
 	writel(32, base + VIC_PL190_DEF_VECT_ADDR);
 }
+#endif
 
 #ifdef CONFIG_PM
 static void resume_one_vic(struct vic_device *vic)
