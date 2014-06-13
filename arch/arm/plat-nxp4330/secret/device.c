@@ -53,10 +53,6 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP4330_CPUFREQ_PLLDEV,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1000*1000,
-	.max_retention  =   20*1000,
-	.rest_cpufreq   =  400*1000,
-	.rest_retention =    1*1000,
 };
 
 static struct platform_device dfs_plat_device = {
