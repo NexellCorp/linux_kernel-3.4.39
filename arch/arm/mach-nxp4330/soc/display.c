@@ -360,7 +360,6 @@ static int disp_multily_enable(struct disp_control_info *info, int enable)
 		pmly->x_resol = psync->h_active_len;
 		pmly->y_resol = psync->v_active_len;
 		pmly->interlace = psync->interlace;
-		pmly->mem_lock_len = 16;	/* fix mem lock size, psgen->mem_lock_size */
 
 		xresol = pmly->x_resol;
 		yresol = pmly->y_resol;
@@ -807,13 +806,14 @@ static void disp_syncgen_resume(struct disp_process_dev *pdev)
 	memcpy((void*)pdev->base_addr, (const void*)pdev->save_addr, dpc_len);
 
 	if (pdev->status & PROC_STATUS_ENABLE) {
+//		int wait = info->wait_time * 10;
 		disp_syncgen_irqenable(module, 0);	/* disable interrupt */
 
 		NX_DPC_SetDPCEnable(module, CTRUE);
 		NX_DPC_SetClockDivisorEnable(module, CTRUE);
 
 		/* wait sync */
-	//	DISP_WAIT_POLL_VSYNC(module, info->wait_time * 10);
+//		DISP_WAIT_POLL_VSYNC(module, wait);
 		disp_syncgen_irqenable(module, 1);	/* enable interrupt */
 	}
 }
@@ -2350,6 +2350,7 @@ static int display_soc_probe(struct platform_device *pldev)
 	pmly = &info->multilayer;
 	pmly->base_addr = (unsigned int)NX_MLC_GetBaseAddress(module);
 	pmly->save_addr = (unsigned int)&save_multily[module];
+	pmly->mem_lock_len = 16;	/* fix mem lock size, psgen->mem_lock_size */
 
 	/* set control info */
 	ret = display_soc_setup(module, pdev, pldev);
