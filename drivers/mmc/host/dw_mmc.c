@@ -52,7 +52,7 @@
 #define DW_MCI_SEND_STATUS	1
 #define DW_MCI_RECV_STATUS	2
 #define DW_MCI_DMA_THRESHOLD	16
-#define DW_MCI_HW_TIMEOUT		200	// ms
+#define DW_MCI_HW_TIMEOUT		500	// ms
 
 #ifdef CONFIG_MMC_DW_IDMAC
 struct idmac_desc {
