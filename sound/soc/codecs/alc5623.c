@@ -774,12 +774,12 @@ static void init_codec(struct i2c_client *client)
 		ALC5625_write_IIC(client, Set_Codec_Reg_Init1[i].CodecIndex,Set_Codec_Reg_Init1[i].wCodecValue); 
 	}	
  	
-	//ALC5625_write_IIC(client,RT5621_PWR_MANAG_ADD1,~PowerDownState);
-	//ALC5625_write_IIC(client,RT5621_PWR_MANAG_ADD2,~PowerDownState);
-	//ALC5625_write_IIC(client,RT5621_PWR_MANAG_ADD3,~PowerDownState);
+	ALC5625_write_IIC(client,RT5621_PWR_MANAG_ADD1,~PowerDownState);
+	ALC5625_write_IIC(client,RT5621_PWR_MANAG_ADD2,~PowerDownState);
+	ALC5625_write_IIC(client,RT5621_PWR_MANAG_ADD3,~PowerDownState);
 
-	ALC5625_write_IICMask(client,RT5621_HP_OUT_VOL, RT_L_MUTE|RT_R_MUTE,RT_L_MUTE|RT_R_MUTE);	//Mute headphone right/left channel
-	ALC5625_write_IICMask(client,RT5621_SPK_OUT_VOL,RT_L_MUTE|RT_R_MUTE,RT_L_MUTE|RT_R_MUTE);	//Mute Speaker right/left channel
+	//ALC5625_write_IICMask(client,RT5621_HP_OUT_VOL, RT_L_MUTE|RT_R_MUTE,RT_L_MUTE|RT_R_MUTE);	//Mute headphone right/left channel
+	//ALC5625_write_IICMask(client,RT5621_SPK_OUT_VOL,RT_L_MUTE|RT_R_MUTE,RT_L_MUTE|RT_R_MUTE);	//Mute Speaker right/left channel
 
     printk("%s .....%d.......\n",__func__,__LINE__);
 
@@ -933,6 +933,7 @@ static int alc5623_pcm_hw_params(struct snd_pcm_substream *substream,
 
     //init_codec(i2c);*/
     //alc5623_set_bias_level(codec,SND_SOC_BIAS_ON);
+    //init_codec(i2c);
 	return 0;
 }
 
@@ -1121,59 +1122,59 @@ static int alc5623_probe(struct snd_soc_codec *codec)
 	/* power on device */
 	alc5623_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
     
-	if (alc5623->add_ctrl) {
+/*	if (alc5623->add_ctrl) {
 		//snd_soc_write(codec, ALC5623_ADD_CTRL_REG,
 		//		alc5623->add_ctrl);
 
         i2c_smbus_write_word_data(i2c, ALC5623_ADD_CTRL_REG,
 				alc5623->add_ctrl);
 
-	}
+	}*/
 
-	if (alc5623->jack_det_ctrl) {
+	/*if (alc5623->jack_det_ctrl) {
 		//snd_soc_write(codec, ALC5623_JACK_DET_CTRL,
 		//		alc5623->jack_det_ctrl);
         i2c_smbus_write_word_data(i2c, ALC5623_JACK_DET_CTRL,
 				alc5623->jack_det_ctrl);
-	}
+	}*/
 
 	switch (alc5623->id) {
 	case 0x21:
-		snd_soc_add_codec_controls(codec, alc5621_vol_snd_controls,
-			ARRAY_SIZE(alc5621_vol_snd_controls));
+//		snd_soc_add_codec_controls(codec, alc5621_vol_snd_controls,
+//			ARRAY_SIZE(alc5621_vol_snd_controls));
 		break;
 	case 0x22:
-		snd_soc_add_codec_controls(codec, alc5622_vol_snd_controls,
-			ARRAY_SIZE(alc5622_vol_snd_controls));
+//		snd_soc_add_codec_controls(codec, alc5622_vol_snd_controls,
+//			ARRAY_SIZE(alc5622_vol_snd_controls));
 		break;
 	case 0x23:
-		snd_soc_add_codec_controls(codec, alc5623_vol_snd_controls,
-			ARRAY_SIZE(alc5623_vol_snd_controls));
+//		snd_soc_add_codec_controls(codec, alc5623_vol_snd_controls,
+//			ARRAY_SIZE(alc5623_vol_snd_controls));
 		break;
 	default:
 		return -EINVAL;
 	}
 
-	snd_soc_add_codec_controls(codec, alc5623_snd_controls,
-			ARRAY_SIZE(alc5623_snd_controls));
+//	snd_soc_add_codec_controls(codec, alc5623_snd_controls,
+//			ARRAY_SIZE(alc5623_snd_controls));
 
-	snd_soc_dapm_new_controls(dapm, alc5623_dapm_widgets,
-					ARRAY_SIZE(alc5623_dapm_widgets));
+//	snd_soc_dapm_new_controls(dapm, alc5623_dapm_widgets,
+//					ARRAY_SIZE(alc5623_dapm_widgets));
 
 	/* set up audio path interconnects */
-	snd_soc_dapm_add_routes(dapm, intercon, ARRAY_SIZE(intercon));
+//	snd_soc_dapm_add_routes(dapm, intercon, ARRAY_SIZE(intercon));
 
 	switch (alc5623->id) {
 	case 0x21:
 	case 0x22:
-		snd_soc_dapm_new_controls(dapm, alc5623_dapm_amp_widgets,
-					ARRAY_SIZE(alc5623_dapm_amp_widgets));
-		snd_soc_dapm_add_routes(dapm, intercon_amp_spk,
-					ARRAY_SIZE(intercon_amp_spk));
+//		snd_soc_dapm_new_controls(dapm, alc5623_dapm_amp_widgets,
+//					ARRAY_SIZE(alc5623_dapm_amp_widgets));
+//		snd_soc_dapm_add_routes(dapm, intercon_amp_spk,
+//					ARRAY_SIZE(intercon_amp_spk));
 		break;
 	case 0x23:
-		snd_soc_dapm_add_routes(dapm, intercon_spk,
-					ARRAY_SIZE(intercon_spk));
+//		snd_soc_dapm_add_routes(dapm, intercon_spk,
+//					ARRAY_SIZE(intercon_spk));
 		break;
 	default:
 		return -EINVAL;

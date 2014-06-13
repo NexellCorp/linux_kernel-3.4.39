@@ -30,15 +30,42 @@
 #include "../codecs/alc5623.h"
 #include "nxp-i2s.h"
 
-/*
+
 #define	pr_debug	printk
-*/
 
 #define	AUDIO_AMP_POWER		CFG_IO_AUDIO_AMP_POWER
 
-static struct snd_soc_jack_gpio jack_gpio;
+//static struct snd_soc_jack_gpio jack_gpio;
 static struct snd_soc_codec *alc5623 = NULL;
 static int codec_bias_level = 0;
+
+#if defined(CONFIG_PLAT_NXP4330_NBOX)
+/***************************************/
+// jimmy@zhongwei, 20140609 Testing
+/***************************************/
+/* sysfs name HeadsetObserver.java looks for to track headset state
+ */
+#include <linux/switch.h>
+struct switch_dev switch_nxl_jack_detection = {
+	.name = "h2w",
+};
+static int jack_report_enable = 0;
+static int NXL_JackInOut = 0;
+//struct wake_lock detect_jack_wake_lock;
+
+#endif 
+
+static int alc5623_jack_status_check(void);
+static struct snd_soc_jack_gpio jack_gpio = {
+	//.invert		= true,			// High detect : invert = false
+	.name		= "hp-gpio",
+	.report		= SND_JACK_HEADPHONE | SND_JACK_HEADSET | SND_JACK_MECHANICAL | SND_JACK_AVOUT,
+	.debounce_time = 200,
+	.jack_status_check = alc5623_jack_status_check,
+};
+
+static struct snd_soc_jack hp_jack;
+
 
 static int alc5623_jack_status_check(void)
 {
@@ -54,18 +81,33 @@ static int alc5623_jack_status_check(void)
 		level = !level;
 
 	printk("%s: hp jack %s\n", __func__, level?"IN":"OUT");
-
+	
 	if (!level) {
-		//snd_soc_update_bits(codec, WM8978_LOUT1_HP_CONTROL, 0x40, 0x40);
-		//snd_soc_update_bits(codec, WM8978_ROUT1_HP_CONTROL, 0x40, 0x40);
+		/***************************************/
+		// jimmy@zhongwei, 20140609 Testing
+		/***************************************/
+		NXL_JackInOut = 0x00; // 1: jack In
 		gpio_direction_output(AUDIO_AMP_POWER, 1);
 	} else {
-
-		//snd_soc_update_bits(codec, WM8978_LOUT1_HP_CONTROL, 0x40, 0x0);
-		//snd_soc_update_bits(codec, WM8978_ROUT1_HP_CONTROL, 0x40, 0x0);
+		/***************************************/
+		// jimmy@zhongwei, 20140609 Testing
+		/***************************************/
+		NXL_JackInOut = 0x02; // 1: jack In
 		gpio_direction_output(AUDIO_AMP_POWER, 0);
 	}
 
+#if defined(CONFIG_PLAT_NXP4330_NBOX)
+	/***************************************/
+	// jimmy@zhongwei, 20140609 Testing
+	/***************************************/
+	//if(jack_report_enable)
+	{
+		printk(" Jack Report (%d)\n", NXL_JackInOut);
+		//wake_lock_timeout(&detect_jack_wake_lock, WAKE_LOCK_TIME);
+		switch_set_state(&switch_nxl_jack_detection, NXL_JackInOut); //  2->Jack In
+	}
+#endif
+	
 	return !level;
 }
 
@@ -79,7 +121,7 @@ static int alc5623_hw_params(struct snd_pcm_substream *substream,
 						SND_SOC_DAIFMT_CBS_CFS;
 	int ret = 0;
 
-	printk("%s\n", __func__);
+//	printk("%s\n", __func__);
 	ret = snd_soc_dai_set_sysclk(codec_dai, 0, freq, SND_SOC_CLOCK_IN);
 	if (0 > ret)
 		return ret;
@@ -88,7 +130,7 @@ static int alc5623_hw_params(struct snd_pcm_substream *substream,
 	if (0 > ret)
 		return ret;
     
-    printk("%s ....line:%d....ret :%d...\n",__func__,__LINE__,ret);
+//    printk("%s ....line:%d....ret :%d...\n",__func__,__LINE__,ret);
 	return ret;
 }
 
@@ -115,8 +157,21 @@ static int alc5623_startup(struct snd_pcm_substream *substream)
 
 	if (!level) {
 		pr_debug("AMP ON\n");
+
+#if defined(CONFIG_PLAT_NXP4330_NBOX)
+		/***************************************/
+		// jimmy@zhongwei, 20140609 Testing
+		/***************************************/
+		if(level == 0)
+		switch_set_state(&switch_nxl_jack_detection, 0); // 
+		else
+		switch_set_state(&switch_nxl_jack_detection, 0x2); // 
+#endif
+
 		gpio_direction_output(AUDIO_AMP_POWER, 1);
 	}
+	//jack_report_enable=1;
+	
 	return 0;
 }
 
@@ -126,13 +181,22 @@ static void alc5623_shutdown(struct snd_pcm_substream *substream)
 	struct snd_soc_codec *codec = rtd->codec;
 	int stream = substream->stream;
 
-	printk("%s\n", __func__);
+//	printk("%s\n", __func__);
 
 	//if (stream == SNDRV_PCM_STREAM_CAPTURE)
 	//	snd_soc_update_bits(codec, WM8978_POWER_MANAGEMENT_1, 0x10, 0x00);	// MICBIASEN
 
     if (stream == SNDRV_PCM_STREAM_PLAYBACK)
+{
+		//printk("AMP OFF\n");
+		#if 0
+		/***************************************/
+		// jimmy@zhongwei, 20140609 Testing
+		/***************************************/
+		switch_set_state(&switch_nxl_jack_detection, 0); //  1->Jack In
+		#endif
 		gpio_direction_output(AUDIO_AMP_POWER, 0);
+}
 }
 
 static int alc5623_suspend_pre(struct snd_soc_card *card)
@@ -165,15 +229,7 @@ static int alc5623_resume_post(struct snd_soc_card *card)
 	return 0;
 }
 
-static struct snd_soc_jack_gpio jack_gpio = {
-	.invert		= true,			// High detect : invert = false
-	.name		= "hp-gpio",
-	.report		= SND_JACK_HEADPHONE,
-	.debounce_time = 200,
-	.jack_status_check = alc5623_jack_status_check,
-};
 
-static struct snd_soc_jack hp_jack;
 
 static int alc5623_dai_init(struct snd_soc_pcm_runtime *rtd)
 {
@@ -188,13 +244,23 @@ static int alc5623_dai_init(struct snd_soc_pcm_runtime *rtd)
 	if (NULL == jack->name)
 		return 0;
 
+#if defined(CONFIG_PLAT_NXP4330_NBOX)
+	/***************************************/
+	// jimmy@zhongwei, 20140609 Testing
+	/***************************************/
+	ret = switch_dev_register(&switch_nxl_jack_detection);
+	if (ret < 0) {
+		printk("%s : Failed to register switch device\n", __func__);
+	}
+	//wake_lock_init(&detect_jack_wake_lock, WAKE_LOCK_SUSPEND, "nxl_jack_detect");
+#endif
+
 	ret = snd_soc_jack_new(codec, "Headphone Jack", SND_JACK_HEADPHONE, &hp_jack);
 	if (ret)
 		return ret;
 
 	ret = snd_soc_jack_add_gpios(&hp_jack, 1, jack);
-	printk("%s: %s register audio jack detect, %d\n",
-		ret?"Fail":"Done", __func__, jack->gpio);
+	printk("%s: %s register audio jack detect, %d\n", ret?"Fail":"Done", __func__, jack->gpio);
 
 	return 0;
 }
@@ -229,6 +295,7 @@ static struct snd_soc_card alc5623_card = {
 	.resume_pre		= &alc5623_resume_pre,
 	.resume_post	= &alc5623_resume_post,
 };
+
 
 /*
  * codec driver
@@ -293,6 +360,13 @@ static int alc5623_remove(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = platform_get_drvdata(pdev);
 	pr_debug("%s\n", __func__);
+#if defined(CONFIG_PLAT_NXP4330_NBOX)
+	/***************************************/
+	// jimmy@zhongwei, 20140609 Testing
+	/***************************************/
+	//wake_lock_destroy(&detect_jack_wake_lock);
+	switch_dev_unregister(&switch_nxl_jack_detection);
+#endif
 	snd_soc_unregister_card(card);
 	gpio_free(AUDIO_AMP_POWER);
 	return 0;
@@ -312,3 +386,4 @@ module_platform_driver(alc5623_driver);
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
 MODULE_DESCRIPTION("Sound codec-alc5623 driver for the Nexell");
 MODULE_LICENSE("GPL");
+
