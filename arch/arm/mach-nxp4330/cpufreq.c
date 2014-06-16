@@ -141,7 +141,7 @@ static void core_pll_change(int PLL, int P, int M, int S)
 
 	while(clkpwr->CLKMODEREG0 & (1<<31)); 			// wait for change update pll
 
-	udelay(1);
+//	udelay(1);
 
 	// 3. Update PLL & wait PLL locking
 	clkpwr->PLLSETREG[PLL] &= ~((U32)(1UL<<29)); // pll power up
@@ -150,7 +150,7 @@ static void core_pll_change(int PLL, int P, int M, int S)
 
 	while(clkpwr->CLKMODEREG0 & (1<<31)); 		// wait for change update pll
 
-	udelay(10);	// 1000us
+//	udelay(10);	// 1000us
 
 	// 4. Change to PLL clock
 	clkpwr->PLLSETREG[PLL] |= (1<<28); 			// pll bypass off, pll clock use
