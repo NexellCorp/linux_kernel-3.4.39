@@ -2285,6 +2285,9 @@ static int __devinit dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 	slot->host = host;
 	host->slot[id] = slot;	/* add by jhkim */
 
+#if defined(CONFIG_ESP8089)
+	mci_slot[mci_id++] = slot;
+#endif
 	mmc->ops = &dw_mci_ops;
 	mmc->f_min = DIV_ROUND_UP(host->bus_hz, 510);
 	mmc->f_max = host->bus_hz;
