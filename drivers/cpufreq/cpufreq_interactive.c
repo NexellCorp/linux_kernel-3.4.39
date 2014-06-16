@@ -1216,6 +1216,9 @@ static int __init cpufreq_interactive_init(void)
 	if (IS_ERR(speedchange_task))
 		return PTR_ERR(speedchange_task);
 
+#ifdef CONFIG_NEXELL_DFS_BCLK
+	kthread_bind(speedchange_task, 0);	/* bind cpu.0 */
+#endif
 	sched_setscheduler_nocheck(speedchange_task, SCHED_FIFO, &param);
 	get_task_struct(speedchange_task);
 
