@@ -526,7 +526,11 @@ int32_t dwc_otg_hcd_handle_port_intr(dwc_otg_hcd_t * dwc_otg_hcd)
 			 * HFIR.FrInterval
 			 */
 			hfir.d32 = DWC_READ_REG32(&host_if->host_global_regs->hfir);
+#if defined(CONFIG_ARCH_NXP4330)
+			hfir.b.frint = calc_frame_interval(dwc_otg_hcd->core_if) - 1;
+#else
 			hfir.b.frint = calc_frame_interval(dwc_otg_hcd->core_if);
+#endif
 			DWC_WRITE_REG32(&host_if->host_global_regs->hfir, hfir.d32);
 
 			/* Check if we need to adjust the PHY clock speed for

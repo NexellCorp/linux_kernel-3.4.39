@@ -109,8 +109,8 @@ extern int32_t dwc_otg_get_param_dma_enable(dwc_otg_core_if_t * core_if);
 extern int dwc_otg_set_param_dma_desc_enable(dwc_otg_core_if_t * core_if,
 					     int32_t val);
 extern int32_t dwc_otg_get_param_dma_desc_enable(dwc_otg_core_if_t * core_if);
-//#define dwc_param_dma_desc_enable_default 1
-#define dwc_param_dma_desc_enable_default 0 // Broadcom BCM2708
+#define dwc_param_dma_desc_enable_default 1 // org
+//#define dwc_param_dma_desc_enable_default 0 // Broadcom BCM2708, Nexell NXP4330
 
 /** The DMA Burst size (applicable only for External DMA
  * Mode). 1, 4, 8 16, 32, 64, 128, 256 (default 32)
@@ -180,8 +180,9 @@ extern int32_t dwc_otg_get_param_enable_dynamic_fifo(dwc_otg_core_if_t *
 extern int dwc_otg_set_param_data_fifo_size(dwc_otg_core_if_t * core_if,
 					    int32_t val);
 extern int32_t dwc_otg_get_param_data_fifo_size(dwc_otg_core_if_t * core_if);
-//#define dwc_param_data_fifo_size_default 8192
-#define dwc_param_data_fifo_size_default 0xFF0 // Broadcom BCM2708
+//#define dwc_param_data_fifo_size_default 8192   // org
+//#define dwc_param_data_fifo_size_default 0xFF0  // Broadcom BCM2708
+#define dwc_param_data_fifo_size_default 6016   // NXP4330
 
 /** Number of 4-byte words in the Rx FIFO in device mode when dynamic
  * FIFO sizing is enabled.
@@ -190,9 +191,9 @@ extern int32_t dwc_otg_get_param_data_fifo_size(dwc_otg_core_if_t * core_if);
 extern int dwc_otg_set_param_dev_rx_fifo_size(dwc_otg_core_if_t * core_if,
 					      int32_t val);
 extern int32_t dwc_otg_get_param_dev_rx_fifo_size(dwc_otg_core_if_t * core_if);
-// psw0523 fix
-//#define dwc_param_dev_rx_fifo_size_default 1064
-#define dwc_param_dev_rx_fifo_size_default 0x200
+#define dwc_param_dev_rx_fifo_size_default 1064   // org
+//#define dwc_param_dev_rx_fifo_size_default 512  // psw0523 fix
+//#define dwc_param_dev_rx_fifo_size_default 798  // kook
 
 /** Number of 4-byte words in the non-periodic Tx FIFO in device mode
  * when dynamic FIFO sizing is enabled.
@@ -202,9 +203,8 @@ extern int dwc_otg_set_param_dev_nperio_tx_fifo_size(dwc_otg_core_if_t *
 						     core_if, int32_t val);
 extern int32_t dwc_otg_get_param_dev_nperio_tx_fifo_size(dwc_otg_core_if_t *
 							 core_if);
-// psw0523 fix
-//#define dwc_param_dev_nperio_tx_fifo_size_default 1024
-#define dwc_param_dev_nperio_tx_fifo_size_default 0x2000
+//#define dwc_param_dev_nperio_tx_fifo_size_default 1024  // org
+#define dwc_param_dev_nperio_tx_fifo_size_default 8192  // psw0523 fix
 
 /** Number of 4-byte words in each of the periodic Tx FIFOs in device
  * mode when dynamic FIFO sizing is enabled.
@@ -214,9 +214,7 @@ extern int dwc_otg_set_param_dev_perio_tx_fifo_size(dwc_otg_core_if_t * core_if,
 						    int32_t val, int fifo_num);
 extern int32_t dwc_otg_get_param_dev_perio_tx_fifo_size(dwc_otg_core_if_t *
 							core_if, int fifo_num);
-// psw0523 fix
-//#define dwc_param_dev_perio_tx_fifo_size_default 256
-#define dwc_param_dev_perio_tx_fifo_size_default 0x100
+#define dwc_param_dev_perio_tx_fifo_size_default 256
 
 /** Number of 4-byte words in the Rx FIFO in host mode when dynamic
  * FIFO sizing is enabled.
@@ -225,8 +223,8 @@ extern int32_t dwc_otg_get_param_dev_perio_tx_fifo_size(dwc_otg_core_if_t *
 extern int dwc_otg_set_param_host_rx_fifo_size(dwc_otg_core_if_t * core_if,
 					       int32_t val);
 extern int32_t dwc_otg_get_param_host_rx_fifo_size(dwc_otg_core_if_t * core_if);
-//#define dwc_param_host_rx_fifo_size_default 1024
-#define dwc_param_host_rx_fifo_size_default 774 // Broadcom BCM2708
+#define dwc_param_host_rx_fifo_size_default 1024
+//#define dwc_param_host_rx_fifo_size_default 774 // Broadcom BCM2708
 
 /** Number of 4-byte words in the non-periodic Tx FIFO in host mode
  * when Dynamic FIFO sizing is enabled in the core.
@@ -248,7 +246,7 @@ extern int dwc_otg_set_param_host_perio_tx_fifo_size(dwc_otg_core_if_t *
 extern int32_t dwc_otg_get_param_host_perio_tx_fifo_size(dwc_otg_core_if_t *
 							 core_if);
 //#define dwc_param_host_perio_tx_fifo_size_default 1024
-#define dwc_param_host_perio_tx_fifo_size_default 0x200 // Broadcom BCM2708
+#define dwc_param_host_perio_tx_fifo_size_default 512 // Broadcom BCM2708
 
 /** The maximum transfer size supported in bytes.
  * 2047 to 65,535  (default 65,535)
@@ -274,7 +272,8 @@ extern int dwc_otg_set_param_host_channels(dwc_otg_core_if_t * core_if,
 					   int32_t val);
 extern int32_t dwc_otg_get_param_host_channels(dwc_otg_core_if_t * core_if);
 //#define dwc_param_host_channels_default 12
-#define dwc_param_host_channels_default 8 // Broadcom BCM2708
+//#define dwc_param_host_channels_default 8 // Broadcom BCM2708
+#define dwc_param_host_channels_default 16 // Nexell NXP4330
 
 /** The number of endpoints in addition to EP0 available for device
  * mode operations.
@@ -285,7 +284,8 @@ extern int32_t dwc_otg_get_param_host_channels(dwc_otg_core_if_t * core_if);
 extern int dwc_otg_set_param_dev_endpoints(dwc_otg_core_if_t * core_if,
 					   int32_t val);
 extern int32_t dwc_otg_get_param_dev_endpoints(dwc_otg_core_if_t * core_if);
-#define dwc_param_dev_endpoints_default 6
+//#define dwc_param_dev_endpoints_default 6
+#define dwc_param_dev_endpoints_default 15// Nexell NXP4330
 
 /**
  * Specifies the type of PHY interface to use. By default, the driver

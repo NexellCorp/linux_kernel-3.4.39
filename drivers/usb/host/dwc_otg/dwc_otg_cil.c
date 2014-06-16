@@ -5360,30 +5360,30 @@ static int dwc_otg_setup_params(dwc_otg_core_if_t * core_if)
 	dwc_otg_set_param_otg_cap(core_if, dwc_param_otg_cap_default);
 	dwc_otg_set_param_dma_enable(core_if, dwc_param_dma_enable_default);
 	dwc_otg_set_param_dma_desc_enable(core_if,
-					  dwc_param_dma_desc_enable_default);
+					dwc_param_dma_desc_enable_default);
 	dwc_otg_set_param_opt(core_if, dwc_param_opt_default);
 	dwc_otg_set_param_dma_burst_size(core_if,
-					 dwc_param_dma_burst_size_default);
+					dwc_param_dma_burst_size_default);
 	dwc_otg_set_param_host_support_fs_ls_low_power(core_if,
-						       dwc_param_host_support_fs_ls_low_power_default);
+					dwc_param_host_support_fs_ls_low_power_default);
 	dwc_otg_set_param_enable_dynamic_fifo(core_if,
-					      dwc_param_enable_dynamic_fifo_default);
+					dwc_param_enable_dynamic_fifo_default);
 	dwc_otg_set_param_data_fifo_size(core_if,
-					 dwc_param_data_fifo_size_default);
+					dwc_param_data_fifo_size_default);
 	dwc_otg_set_param_dev_rx_fifo_size(core_if,
-					   dwc_param_dev_rx_fifo_size_default);
+					dwc_param_dev_rx_fifo_size_default);
 	dwc_otg_set_param_dev_nperio_tx_fifo_size(core_if,
-						  dwc_param_dev_nperio_tx_fifo_size_default);
+					dwc_param_dev_nperio_tx_fifo_size_default);
 	dwc_otg_set_param_host_rx_fifo_size(core_if,
-					    dwc_param_host_rx_fifo_size_default);
+					dwc_param_host_rx_fifo_size_default);
 	dwc_otg_set_param_host_nperio_tx_fifo_size(core_if,
-						   dwc_param_host_nperio_tx_fifo_size_default);
+					dwc_param_host_nperio_tx_fifo_size_default);
 	dwc_otg_set_param_host_perio_tx_fifo_size(core_if,
-						  dwc_param_host_perio_tx_fifo_size_default);
+					dwc_param_host_perio_tx_fifo_size_default);
 	dwc_otg_set_param_max_transfer_size(core_if,
-					    dwc_param_max_transfer_size_default);
+					dwc_param_max_transfer_size_default);
 	dwc_otg_set_param_max_packet_count(core_if,
-					   dwc_param_max_packet_count_default);
+					dwc_param_max_packet_count_default);
 	dwc_otg_set_param_host_channels(core_if,
 					dwc_param_host_channels_default);
 	dwc_otg_set_param_dev_endpoints(core_if,
@@ -5391,27 +5391,27 @@ static int dwc_otg_setup_params(dwc_otg_core_if_t * core_if)
 	dwc_otg_set_param_phy_type(core_if, dwc_param_phy_type_default);
 	dwc_otg_set_param_speed(core_if, dwc_param_speed_default);
 	dwc_otg_set_param_host_ls_low_power_phy_clk(core_if,
-						    dwc_param_host_ls_low_power_phy_clk_default);
+					dwc_param_host_ls_low_power_phy_clk_default);
 	dwc_otg_set_param_phy_ulpi_ddr(core_if, dwc_param_phy_ulpi_ddr_default);
 	dwc_otg_set_param_phy_ulpi_ext_vbus(core_if,
-					    dwc_param_phy_ulpi_ext_vbus_default);
+					dwc_param_phy_ulpi_ext_vbus_default);
 	dwc_otg_set_param_phy_utmi_width(core_if,
-					 dwc_param_phy_utmi_width_default);
+					dwc_param_phy_utmi_width_default);
 	dwc_otg_set_param_ts_dline(core_if, dwc_param_ts_dline_default);
 	dwc_otg_set_param_i2c_enable(core_if, dwc_param_i2c_enable_default);
 	dwc_otg_set_param_ulpi_fs_ls(core_if, dwc_param_ulpi_fs_ls_default);
 	dwc_otg_set_param_en_multiple_tx_fifo(core_if,
-					      dwc_param_en_multiple_tx_fifo_default);
+					dwc_param_en_multiple_tx_fifo_default);
 	for (i = 0; i < 15; i++) {
 		dwc_otg_set_param_dev_perio_tx_fifo_size(core_if,
-							 dwc_param_dev_perio_tx_fifo_size_default,
-							 i);
+					dwc_param_dev_perio_tx_fifo_size_default,
+					i);
 	}
 
 	for (i = 0; i < 15; i++) {
 		dwc_otg_set_param_dev_tx_fifo_size(core_if,
-						   dwc_param_dev_tx_fifo_size_default,
-						   i);
+					dwc_param_dev_tx_fifo_size_default,
+					i);
 	}
 	dwc_otg_set_param_thr_ctl(core_if, dwc_param_thr_ctl_default);
 	dwc_otg_set_param_mpi_enable(core_if, dwc_param_mpi_enable_default);
@@ -5488,16 +5488,11 @@ int dwc_otg_set_param_otg_cap(dwc_otg_core_if_t * core_if, int32_t val)
 			     val);
 		}
 		val =
-		    (((core_if->hwcfg2.b.op_mode ==
-		       DWC_HWCFG2_OP_MODE_HNP_SRP_CAPABLE_OTG)
-		      || (core_if->hwcfg2.b.op_mode ==
-			  DWC_HWCFG2_OP_MODE_SRP_ONLY_CAPABLE_OTG)
-		      || (core_if->hwcfg2.b.op_mode ==
-			  DWC_HWCFG2_OP_MODE_SRP_CAPABLE_DEVICE)
-		      || (core_if->hwcfg2.b.op_mode ==
-			  DWC_HWCFG2_OP_MODE_SRP_CAPABLE_HOST)) ?
-		     DWC_OTG_CAP_PARAM_SRP_ONLY_CAPABLE :
-		     DWC_OTG_CAP_PARAM_NO_HNP_SRP_CAPABLE);
+			(((core_if->hwcfg2.b.op_mode == DWC_HWCFG2_OP_MODE_HNP_SRP_CAPABLE_OTG)
+			|| (core_if->hwcfg2.b.op_mode == DWC_HWCFG2_OP_MODE_SRP_ONLY_CAPABLE_OTG)
+			|| (core_if->hwcfg2.b.op_mode == DWC_HWCFG2_OP_MODE_SRP_CAPABLE_DEVICE)
+			|| (core_if->hwcfg2.b.op_mode == DWC_HWCFG2_OP_MODE_SRP_CAPABLE_HOST)) ?
+			 DWC_OTG_CAP_PARAM_SRP_ONLY_CAPABLE : DWC_OTG_CAP_PARAM_NO_HNP_SRP_CAPABLE);
 		retval = -DWC_E_INVALID;
 	}
 
@@ -5796,14 +5791,14 @@ int dwc_otg_set_param_host_perio_tx_fifo_size(dwc_otg_core_if_t * core_if,
 		return -DWC_E_INVALID;
 	}
 
-	if (val > ((core_if->hptxfsiz.d32) >> 16)) {
+	if (val > (core_if->hptxfsiz.d32 >> 16)) {
 		if (dwc_otg_param_initialized
 		    (core_if->core_params->host_perio_tx_fifo_size)) {
 			DWC_ERROR
 			    ("%d invalid for host_perio_tx_fifo_size. Check HW configuration.\n",
 			     val);
 		}
-		val = (core_if->hptxfsiz.d32) >> 16;
+		val = (core_if->hptxfsiz.d32 >> 16);
 		retval = -DWC_E_INVALID;
 	}
 
@@ -5835,7 +5830,7 @@ int dwc_otg_set_param_max_transfer_size(dwc_otg_core_if_t * core_if,
 			     val);
 		}
 		val =
-		    ((1 << (core_if->hwcfg3.b.packet_size_cntr_width + 11)) -
+		    ((1 << (core_if->hwcfg3.b.xfer_size_cntr_width + 11)) -
 		     1);
 		retval = -DWC_E_INVALID;
 	}
