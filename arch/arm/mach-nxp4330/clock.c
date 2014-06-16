@@ -444,7 +444,13 @@ static inline long core_set_rate(struct clk *clk, long rate)
 	if (*c++ == 'l')
 		pll = simple_strtol(c, NULL, 10);
 
-	pr_debug("%s change pll.%d (dvfs pll.%d) %ld\n", __func__, pll, CONFIG_NXP4330_CPUFREQ_PLLDEV, rate);
+	pr_debug("%s change pll.%d (dvfs pll.%d) %ld \n",
+		__func__, pll, CONFIG_NXP4330_CPUFREQ_PLLDEV, rate);
+
+#ifdef CONFIG_NEXELL_DFS_BCLK
+	WARN(0 != raw_smp_processor_id(), "Dynamic Frequency CPU.%d  conflict with BCLK DFS...\n",
+		raw_smp_processor_id());
+#endif
 
 	if (pll != -1 &&
 		pll == CONFIG_NXP4330_CPUFREQ_PLLDEV) {
