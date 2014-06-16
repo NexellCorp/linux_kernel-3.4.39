@@ -84,6 +84,7 @@ void 	 		nxp_board_base_init(void);			/* No init section for suspend */
 
 void 			nxp_cpu_clock_resume(void);
 void			nxp_cpu_clock_print(void);
+void 			nxp_cpu_clock_update_rate(int pll);
 unsigned int 	nxp_cpu_clock_hz(int type);			/* 0=PLL0, 1=PLL1, 2=FCLK, 3=MCLK, 4=BCLK, 5=PCLK */
 void 		 	nxp_cpu_shutdown(void);
 void 		 	nxp_cpu_core_shutdown(int core);
