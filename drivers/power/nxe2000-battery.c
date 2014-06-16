@@ -4794,15 +4794,25 @@ static int nxe2000_batt_get_prop(struct power_supply *psy,
 		if (nxe2000_power_resume_status)
 		{
 			val->intval = 1;
-			nxe2000_power_resume_status	= 0;
+			nxe2000_power_resume_status = 0;
 		}
 		else
-			info->online_state = val->intval;
+		{
+			if ((info->capacity == 0) && (info->soca->Ibat_ave < 0))
+				val->intval = 0;
+		}
+
+		info->online_state = val->intval;
 	}
 		break;
 	/* this setting is same as battery driver of 584 */
 	case POWER_SUPPLY_PROP_STATUS:
 		info->status = get_power_supply_Android_status(info);
+
+		if ((info->capacity == 0) && (info->soca->Ibat_ave < 0)) {
+			info->status = POWER_SUPPLY_STATUS_DISCHARGING;
+		}
+
 		val->intval = info->status;
 		/* DBGOUT(info->dev, "Power Supply Status is %d\n",
 							info->status); */
@@ -5112,7 +5122,7 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 	info->battery.external_power_changed
 		 = nxe2000_external_power_changed;
 
-#if (CFG_SW_UBC_ENABLE == 1)
+#if 0	//(CFG_SW_UBC_ENABLE == 1)
 	nxe2000_clr_bits(info->dev->parent, 0x90, 0x10);	// GPIO4 : Input
 #else
 	nxe2000_set_bits(info->dev->parent, 0x90, 0x10);	// GPIO4 : Output
@@ -5702,14 +5712,16 @@ static int nxe2000_battery_suspend(struct device *dev)
 #endif
 #endif
 
-#ifdef CONFIG_SUSPEND_IDLE
+#if 0	//(CFG_SW_UBC_ENABLE == 0)
+	#ifdef CONFIG_SUSPEND_IDLE
 	ret = nxe2000_clr_bits(info->dev->parent, 0x91, 0x10);    // GPIO4 : Low
 	if (ret < 0)
 		ret = nxe2000_clr_bits(info->dev->parent, 0x91, 0x10);
-#else
+	#else
 	ret = nxe2000_clr_bits(info->dev->parent, 0x90, 0x10);    // GPIO4 : Input
 	if (ret < 0)
 		ret = nxe2000_clr_bits(info->dev->parent, 0x90, 0x10);
+	#endif
 #endif
 
 	/* OTG POWER OFF */
@@ -5749,7 +5761,7 @@ static int nxe2000_battery_resume(struct device *dev)
 	struct nxe2000_battery_info *info = dev_get_drvdata(dev);
 	int ret;
 
-#if (CFG_SW_UBC_ENABLE == 0)
+#if 0	//(CFG_SW_UBC_ENABLE == 0)
 	#ifdef CONFIG_SUSPEND_IDLE
 	ret = nxe2000_set_bits(info->dev->parent, 0x91, 0x10);    // GPIO4 : High
 	if (ret < 0)
@@ -5788,7 +5800,7 @@ static int nxe2000_battery_resume(struct device *dev) {
 	info->low_battery_flag		= 0;
 
 #ifndef BAT_RESUME_WORK_QUEUE
-#if (CFG_SW_UBC_ENABLE == 0)
+#if 0	//(CFG_SW_UBC_ENABLE == 0)
 	#ifdef CONFIG_SUSPEND_IDLE
 	ret = nxe2000_set_bits(info->dev->parent, 0x91, 0x10);    // GPIO4 : High
 	if (ret < 0)
