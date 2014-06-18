@@ -586,8 +586,8 @@ int dwc_otg_hcd_urb_dequeue(dwc_otg_hcd_t * hcd,
 	 */
 
 	DWC_DEBUGPL(DBG_HCD, "DWC OTG HCD URB Dequeue - "
-                    "delete %sQueue handler\n",
-                    hcd->core_if->dma_desc_enable?"DMA ":"");
+					"delete %sQueue handler\n",
+					hcd->core_if->dma_desc_enable?"DMA ":"");
 	if (!hcd->core_if->dma_desc_enable) {
 		uint8_t b = urb_qtd->in_process;
 		dwc_otg_hcd_qtd_remove_and_free(hcd, urb_qtd, qh);
@@ -1367,15 +1367,15 @@ dwc_otg_transaction_type_e dwc_otg_hcd_select_transactions(dwc_otg_hcd_t * hcd)
 			qh->nak_frame = 0xffff;
 
 		if (microframe_schedule) {
-				DWC_SPINLOCK_IRQSAVE(channel_lock, &flags);
-				if (hcd->available_host_channels < 1) {
-					DWC_SPINUNLOCK_IRQRESTORE(channel_lock, flags);
-					break;
-				}
-				hcd->available_host_channels--;
+			DWC_SPINLOCK_IRQSAVE(channel_lock, &flags);
+			if (hcd->available_host_channels < 1) {
 				DWC_SPINUNLOCK_IRQRESTORE(channel_lock, flags);
+				break;
+			}
+			hcd->available_host_channels--;
+			DWC_SPINUNLOCK_IRQRESTORE(channel_lock, flags);
 #ifdef DEBUG_HOST_CHANNELS
-				last_sel_trans_num_nonper_scheduled++;
+			last_sel_trans_num_nonper_scheduled++;
 #endif /* DEBUG_HOST_CHANNELS */
 		}
 

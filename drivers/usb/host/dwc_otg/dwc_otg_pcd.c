@@ -1174,8 +1174,8 @@ dwc_otg_pcd_t *dwc_otg_pcd_init(dwc_otg_core_if_t * core_if)
 	}
 
 	pcd->lock = DWC_SPINLOCK_ALLOC();
-        DWC_DEBUGPL(DBG_HCDV, "Init of PCD %p given core_if %p\n",
-                    pcd, core_if);//GRAYG
+	DWC_DEBUGPL(DBG_HCDV, "Init of PCD %p given core_if %p\n",
+			pcd, core_if);//GRAYG
 	if (!pcd->lock) {
 		DWC_ERROR("Could not allocate lock for pcd");
 		DWC_FREE(pcd);

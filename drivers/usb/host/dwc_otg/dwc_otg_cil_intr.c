@@ -692,13 +692,13 @@ static int32_t dwc_otg_handle_pwrdn_idsts_change(dwc_otg_device_t *otg_dev)
 		uint8_t is_host = 0;
 		DWC_SPINUNLOCK(core_if->lock);
 		/* Change the core_if's lock to hcd/pcd lock depend on mode? */
-#ifndef DWC_HOST_ONLY		
+#ifndef DWC_HOST_ONLY
 		if (gpwrdn_temp.b.idsts)
 			core_if->lock = otg_dev->pcd->lock;
 #endif
 #ifndef DWC_DEVICE_ONLY
 		if (!gpwrdn_temp.b.idsts) {
-				core_if->lock = otg_dev->hcd->lock;	
+				core_if->lock = otg_dev->hcd->lock;
 				is_host = 1;
 		}
 #endif

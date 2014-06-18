@@ -72,7 +72,12 @@
 #define DWC_DRIVER_VERSION	"3.00a 10-AUG-2012"
 #define DWC_DRIVER_DESC		"HS OTG USB Controller driver"
 
-bool microframe_schedule=true;
+#if defined(CONFIG_ARCH_NXP4330) && defined(CONFIG_USB_VIDEO_CLASS)
+bool microframe_schedule=false;     // Nexell NXP4330
+#else
+bool microframe_schedule=true;      // org
+#endif
+
 
 static const char dwc_driver_name[] = "dwc_otg";
 

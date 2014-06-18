@@ -62,6 +62,7 @@ void dwc_otg_hcd_qh_free(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 		DWC_CIRCLEQ_REMOVE(&qh->qtd_list, qtd, qtd_list_entry);
 		dwc_otg_hcd_qtd_free(qtd);
 	}
+	DWC_SPINUNLOCK(hcd->lock);
 
 	if (hcd->core_if->dma_desc_enable) {
 		dwc_otg_hcd_qh_free_ddma(hcd, qh);
@@ -75,6 +76,7 @@ void dwc_otg_hcd_qh_free(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 		DWC_DMA_FREE(buf_size, qh->dw_align_buf, qh->dw_align_buf_dma);
 	}
 
+	DWC_SPINLOCK(hcd->lock);
 	DWC_FREE(qh);
 	qh = NULL;
 	DWC_SPINUNLOCK(hcd->lock);
