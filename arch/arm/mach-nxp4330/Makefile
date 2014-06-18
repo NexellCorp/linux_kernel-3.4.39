@@ -13,6 +13,7 @@ obj-$(CONFIG_ARM_NXP4330_CPUFREQ)   += cpufreq.o
 obj-$(CONFIG_MMC_DW)				+= dev-mmc.o
 obj-$(CONFIG_HAVE_PWM)				+= pwm.o
 obj-$(CONFIG_CMA)					+= cma_reserve_mem.o
+obj-$(CONFIG_ANDROID_RAM_CONSOLE)	+= ram_con_dev.o
 obj-y								+= nxp-dfs-bclk.o
 
 #===============================================================================

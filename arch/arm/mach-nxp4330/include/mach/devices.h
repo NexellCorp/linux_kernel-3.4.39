@@ -284,4 +284,9 @@ struct nxp_rfkill_plat_data {
     int (*resume)(struct platform_device *pdev);
 };
 
+/*
+ *  ram console
+ */
+extern int __init persistent_ram_console_reserve(void);
+
 #endif    /* __DEVICES_H__ */
