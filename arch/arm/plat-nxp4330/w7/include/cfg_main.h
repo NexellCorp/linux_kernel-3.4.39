@@ -29,7 +29,7 @@
  * 	System Name
  */
 #define	CFG_SYS_CPU_NAME						"nxp4330q"
-#define	CFG_SYS_BOARD_NAME						"nxp4330-pyxis"
+#define	CFG_SYS_BOARD_NAME						"nxp4330-w7"
 
 /*------------------------------------------------------------------------------
  * 	Uart
@@ -130,7 +130,7 @@
 #define	CFG_AUDIO_I2S0_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
 #define	CFG_AUDIO_I2S0_FRAME_BIT				48		// 32, 48
 #define	CFG_AUDIO_I2S0_SAMPLE_RATE				48000
-#define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			0
+#define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			1
 
 #define	CFG_AUDIO_I2S1_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S1_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
@@ -223,8 +223,8 @@
 #define CFG_PWR_WAKEUP_SRC_ALIVE0				CTRUE					/* KEY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE0				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE1				CFALSE
-#define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE2				CTRUE					/* PMIC - VUSB*/
+#define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_BOTHEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE2				CFALSE					/* PMIC - VUSB*/
 #define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE3				CTRUE					/* PMIC - CRITICAL LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_FALLINGEDGE

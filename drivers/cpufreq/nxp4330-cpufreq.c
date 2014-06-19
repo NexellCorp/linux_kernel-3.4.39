@@ -153,7 +153,7 @@ static int nxp4330_cpufreq_thread(void *unused)
 static inline int nxp4330_cpufreq_setup(struct cpufreq_dvfs_data *dvfs)
 {
 	struct hrtimer *hrtimer = &dvfs->rest_hrtimer;
-	int cpu = smp_processor_id();
+	int cpu = 0;
 	struct task_struct *p;
 
 	dvfs->run_monitor = 0;
