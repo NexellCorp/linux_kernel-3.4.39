@@ -83,16 +83,20 @@ static int alc5623_jack_status_check(void)
 	printk("%s: hp jack %s\n", __func__, level?"IN":"OUT");
 	
 	if (!level) {
+#if defined(CONFIG_PLAT_NXP4330_NBOX)
 		/***************************************/
 		// jimmy@zhongwei, 20140609 Testing
 		/***************************************/
 		NXL_JackInOut = 0x00; // 1: jack In
+#endif
 		gpio_direction_output(AUDIO_AMP_POWER, 1);
 	} else {
+#if defined(CONFIG_PLAT_NXP4330_NBOX)
 		/***************************************/
 		// jimmy@zhongwei, 20140609 Testing
 		/***************************************/
 		NXL_JackInOut = 0x02; // 1: jack In
+#endif
 		gpio_direction_output(AUDIO_AMP_POWER, 0);
 	}
 
