@@ -240,7 +240,7 @@ static struct dwc_otg_driver_module_params dwc_otg_module_params = {
         -1,
         -1,
         -1,
-        -1 
+        -1
             /* 15 */
     },
 #endif
@@ -619,7 +619,7 @@ extern void otg_clk_disable(void);
 
 #define REM_RETVAL(n) n
 static int dwc_otg_driver_remove(struct platform_device *_dev )
-{       
+{
     dwc_otg_device_t *otg_dev = platform_get_drvdata(_dev);
 
     DWC_DEBUGPL(DBG_ANY, "%s(%p) otg_dev %p\n", __func__, _dev, otg_dev);
@@ -711,7 +711,7 @@ static int dwc_otg_driver_remove(struct platform_device *_dev )
 #define CFG_OTG_MODE_HOST   1
 #define CFG_OTG_MODE_DEVICE 0
 
-extern void set_otg_mode(unsigned int mode, int is_force); 
+extern void set_otg_mode(unsigned int mode, int is_force);
 extern unsigned int get_otg_mode(void);
 
 #ifdef CONFIG_PM
@@ -824,7 +824,7 @@ static int dwc_otg_driver_resume(struct platform_device *_dev)
 
         queue_delayed_work(s_otg_reprobe_wqueue,
                           &s_otg_reprobe_work,
-                          msecs_to_jiffies(1));
+                          msecs_to_jiffies(50));
     }
 
     PM_DBGOUT("-%s\n", __func__);
@@ -1011,15 +1011,15 @@ static int dwc_otg_driver_probe(
 
     /*
      * Enable the global interrupt after all the interrupt
-     * handlers are installed if there is no ADP support else 
+     * handlers are installed if there is no ADP support else
      * perform initial actions required for Internal ADP logic.
      */
-    if (!dwc_otg_get_param_adp_enable(dwc_otg_device->core_if)) {	
+    if (!dwc_otg_get_param_adp_enable(dwc_otg_device->core_if)) {
         dev_dbg(&_dev->dev, "Calling enable_global_interrupts\n");
         dwc_otg_enable_global_interrupts(dwc_otg_device->core_if);
         dev_dbg(&_dev->dev, "Done\n");
     } else
-        dwc_otg_adp_start(dwc_otg_device->core_if, 
+        dwc_otg_adp_start(dwc_otg_device->core_if,
                 dwc_otg_is_host_mode(dwc_otg_device->core_if));
 
     // psw0523 add for pm
@@ -1088,7 +1088,7 @@ static struct platform_driver dwc_otg_driver = {
     .suspend = dwc_otg_driver_suspend,
     .resume  = dwc_otg_driver_resume,
 #endif
-    // no 'shutdown', 'suspend', 'resume', 'suspend_late' or 'resume_early' 
+    // no 'shutdown', 'suspend', 'resume', 'suspend_late' or 'resume_early'
 };
 
 /**
@@ -1633,7 +1633,7 @@ MODULE_PARM_DESC(nak_holdoff_enable, "Enable the NAK holdoff");
 
     <tr>
     <td>thr_ctl</td>
-    <td>Specifies whether to enable Thresholding for Device mode. Bits 0, 1, 2 of 
+    <td>Specifies whether to enable Thresholding for Device mode. Bits 0, 1, 2 of
     this parmater specifies if thresholding is enabled for non-Iso Tx, Iso Tx and
     Rx transfers accordingly.
     The driver will automatically detect the value for this parameter if none is
@@ -1686,7 +1686,7 @@ MODULE_PARM_DESC(nak_holdoff_enable, "Enable the NAK holdoff");
     The driver will automatically detect the value for this parameter if none is
     specified.
 - 0: IC_USB disabled (default, if available)
-    - 1: IC_USB enable 
+    - 1: IC_USB enable
     </td></tr>
 
     <tr>
@@ -1725,9 +1725,9 @@ MODULE_PARM_DESC(nak_holdoff_enable, "Enable the NAK holdoff");
 
     <tr>
     <td>cont_on_bna</td>
-    <td>Specifies whether Enable Continue on BNA enabled or no. 
+    <td>Specifies whether Enable Continue on BNA enabled or no.
     After receiving BNA interrupt the core disables the endpoint,when the
-    endpoint is re-enabled by the application the  
+    endpoint is re-enabled by the application the
 - 0: Core starts processing from the DOEPDMA descriptor (default)
     - 1: Core starts processing from the descriptor which received the BNA.
     This parameter is valid only when OTG_EN_DESC_DMA == 1b1.
@@ -1736,7 +1736,7 @@ MODULE_PARM_DESC(nak_holdoff_enable, "Enable the NAK holdoff");
     <tr>
     <td>ahb_single</td>
     <td>This bit when programmed supports SINGLE transfers for remainder data
-    in a transfer for DMA mode of operation. 
+    in a transfer for DMA mode of operation.
 - 0: The remainder data will be sent using INCR burst size (default)
     - 1: The remainder data will be sent using SINGLE burst size.
     </td></tr>
@@ -1755,7 +1755,7 @@ MODULE_PARM_DESC(nak_holdoff_enable, "Enable the NAK holdoff");
     <td>Specifies whether OTG is performing as USB OTG Revision 2.0 or Revision 1.3
     USB OTG device.
 - 0: OTG 2.0 support disabled (default)
-    - 1: OTG 2.0 support enabled 
+    - 1: OTG 2.0 support enabled
     </td></tr>
 
     */
