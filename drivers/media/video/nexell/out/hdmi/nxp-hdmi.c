@@ -886,6 +886,7 @@ static int _hdmi_set_infoframe(struct nxp_hdmi *me)
 
     info_3d = _hdmi_preset2info(me->cur_preset);
 
+    pr_debug("%s: is_3d %d\n", __func__, info_3d->is_3d);
     if (info_3d->is_3d == HDMI_VIDEO_FORMAT_3D) {
         infoframe.type = HDMI_PACKET_TYPE_VSI;
         infoframe.ver  = HDMI_VSI_VERSION;
@@ -1466,7 +1467,9 @@ static void _hdmi_hpd_changed(struct nxp_hdmi *me, int state)
             if (preset == V4L2_DV_INVALID)
                 preset = HDMI_DEFAULT_PRESET;
 
-            me->is_dvi = !me->edid.supports_hdmi(&me->edid);
+            // psw0523 fix : edid error?
+            /*me->is_dvi = !me->edid.supports_hdmi(&me->edid);*/
+            me->is_dvi = false;
             me->cur_preset = preset;
             me->cur_conf = (struct hdmi_preset_conf *)_hdmi_preset2conf(preset);
         }
