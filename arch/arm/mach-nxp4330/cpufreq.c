@@ -164,10 +164,13 @@ static unsigned long lock_flags;
 
 static inline void core_pll_change_lock(bool lock)
 {
-	if (lock)
+	if (lock) {
+		preempt_disable();
 		spin_lock_irqsave(&_pll_lock, lock_flags);
-	else
+	} else {
 		spin_unlock_irqrestore(&_pll_lock, lock_flags);
+		preempt_enable();
+	}
 }
 
 unsigned long nxp_cpu_pll_change_frequency(int no, unsigned long rate)
