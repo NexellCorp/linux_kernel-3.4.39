@@ -727,46 +727,22 @@ extern void dwc_udc_suspend(void);
 extern void nxp_wake_lock_timeout(void);
 #endif
 
-#if 0   //ndef CONFIG_SUSPEND_IDLE
+#if 1   //ndef CONFIG_SUSPEND_IDLE
 static struct notifier_block s_pm_notify;
+static bool pm_suspended = false;
+
+static void otg_reprobe_work(struct work_struct *work);
+
 int dwc_otg_hcd_pm_notify(struct notifier_block *notifier_block,
         unsigned long mode, void *unused)
 {
     PM_DBGOUT("++ %s: %d mode\n", __func__, mode);
 
-    switch(mode) {
-    case PM_SUSPEND_PREPARE:
-        PM_DBGOUT("%s: prepare suspend\n", __func__);
-
-        if (s_pdev) {
-            struct platform_device * _dev = s_pdev;
-            dwc_otg_device_t *otg_dev;
-
-            otg_dev = platform_get_drvdata(s_pdev);
-
-             /*
-             * Disable the global interrupt until all the interrupt
-             * handlers are installed.
-             */
-            dev_dbg(&_dev->dev, "Calling disable_global_interrupts\n");
-            dwc_otg_disable_global_interrupts(otg_dev->core_if);
-        }
-        break;
-
-    case PM_POST_SUSPEND:
-        PM_DBGOUT("%s: post suspend\n", __func__);
-
-        if (s_pdev) {
-            struct platform_device * _dev = s_pdev;
-            dwc_otg_device_t *otg_dev;
-
-            dev_dbg(&_dev->dev, "Calling enable_global_interrupts\n");
-            dwc_otg_enable_global_interrupts(otg_dev->core_if);
-            dev_dbg(&_dev->dev, "Done\n");
-        }
-        break;
+    if (s_pdev && PM_POST_SUSPEND == mode) {
+       	if (true == pm_suspended)
+       		otg_reprobe_work(NULL);
+   		pm_suspended = false;
     }
-
     return 0;
 }
 #endif  /* CONFIG_SUSPEND_IDLE */
@@ -786,6 +762,7 @@ static int dwc_otg_driver_suspend(struct platform_device *_dev, pm_message_t sta
 
         otg_clk_disable();
         otg_phy_off();
+        pm_suspended = true;
     }
 
     PM_DBGOUT("-%s\n", __func__);
@@ -807,13 +784,14 @@ static int dwc_otg_driver_resume(struct platform_device *_dev)
 {
     PM_DBGOUT("+%s\n", __func__);
 
-    if (s_pdev) {
+    if (s_pdev && true == pm_suspended) {
         otg_clk_enable();
         otg_phy_init();
         mdelay(10);
 
         dwc_udc_suspend();
         dwc_otg_driver_remove(s_pdev);
+		return 0;
 
         if (s_otg_reprobe_wqueue == NULL) {
             s_otg_reprobe_wqueue
@@ -824,7 +802,7 @@ static int dwc_otg_driver_resume(struct platform_device *_dev)
 
         queue_delayed_work(s_otg_reprobe_wqueue,
                           &s_otg_reprobe_work,
-                          msecs_to_jiffies(50));
+                          msecs_to_jiffies(300));
     }
 
     PM_DBGOUT("-%s\n", __func__);
@@ -1034,7 +1012,7 @@ static int dwc_otg_driver_probe(
                             otg_reprobe_work);
     }
 
-#if 0   //ndef CONFIG_SUSPEND_IDLE
+#if 1   //ndef CONFIG_SUSPEND_IDLE
     if (!s_pm_notify.notifier_call) {
         s_pm_notify.notifier_call = dwc_otg_hcd_pm_notify;
         register_pm_notifier(&s_pm_notify);
