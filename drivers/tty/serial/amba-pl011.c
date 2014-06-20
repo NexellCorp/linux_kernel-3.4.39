@@ -52,6 +52,7 @@
 #include <linux/scatterlist.h>
 #include <linux/delay.h>
 #include <linux/types.h>
+#include <linux/wakelock.h>
 
 #include <asm/io.h>
 #include <asm/sizes.h>
@@ -172,6 +173,7 @@ struct uart_amba_port {
 	struct pl011_dmatx_data	dmatx;
 #endif
 	struct delayed_work	resume_work;	/* add by jhkim */
+	struct wake_lock resume_lock;       /* add by jhkim */
 };
 
 /*
@@ -1814,7 +1816,6 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
 {
 	struct uart_amba_port *uap = amba_ports[co->index];
 	unsigned int status, old_cr, new_cr;
- //	unsigned long flags;
 	int locked = 1;
 
 	clk_enable(uap->clk);
@@ -1822,7 +1823,6 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
 	/* del by jhkim
 	local_irq_save(flags);
 	*/
-
 
 	if (uap->port.sysrq)
 		locked = 0;
@@ -1964,16 +1964,18 @@ static struct uart_driver amba_reg = {
 };
 
 #if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NEXELL_RESUME_WORK)
-extern bool	console_suspend_enabled;
+#define uart_console(port)	((port)->cons && (port)->cons->index == (port)->line)
 
 static void pl011_resume_work(struct work_struct *work)
 {
 	struct uart_amba_port *uap = container_of(work,
-				struct uart_amba_port, resume_work.work);
+					struct uart_amba_port, resume_work.work);
+	struct uart_port *port = &uap->port;
 
-	console_suspend_enabled = 1;
-	resume_console();
-	uart_resume_port(&amba_reg, &uap->port);
+	if (uart_console(port)) {
+		uart_resume_port(&amba_reg, port);
+		wake_unlock(&uap->resume_lock);
+	}
 }
 #endif
 
@@ -2031,6 +2033,10 @@ static int pl011_probe(struct amba_device *dev, const struct amba_id *id)
 	/* add by jhkim for fast resume */
 #if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NEXELL_RESUME_WORK)
 	INIT_DELAYED_WORK(&uap->resume_work, pl011_resume_work);
+ 	wake_lock_init(&uap->resume_lock, WAKE_LOCK_SUSPEND,
+	             kasprintf(GFP_KERNEL, "PL011%u", amba_rev(dev)));
+
+	device_enable_async_suspend(&dev->dev);
 #endif
 
 	/* Ensure interrupts from this UART are masked and cleared */
@@ -2094,6 +2100,7 @@ static int pl011_resume(struct amba_device *dev)
 {
 	struct uart_amba_port *uap = amba_get_drvdata(dev);
 	struct amba_pl011_data *plat = uap->port.dev->platform_data;
+	struct uart_port *port = &uap->port;
 
 	if (!uap)
 		return -EINVAL;
@@ -2106,14 +2113,15 @@ static int pl011_resume(struct amba_device *dev)
 	 * disable console duration delay time
 	 * to save wakeup time
 	 */
-	console_suspend_enabled = 0;
-	schedule_delayed_work(&uap->resume_work,
-			msecs_to_jiffies(UART_RESUME_WORK_DELAY));
-	return 0;
-#else
-
-	return uart_resume_port(&amba_reg, &uap->port);
+	if (uart_console(port)) {
+		wake_lock(&uap->resume_lock);
+		schedule_delayed_work(&uap->resume_work,
+				msecs_to_jiffies(UART_RESUME_WORK_DELAY));
+		return 0;
+	}
 #endif
+
+	return uart_resume_port(&amba_reg, port);
 }
 #endif	/* CONFIG_PM */
 
