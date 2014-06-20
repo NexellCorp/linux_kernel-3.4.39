@@ -278,6 +278,16 @@ static void _done_buf(struct nxp_video_buffer *buf, bool updated)
     buf->cb_buf_done(buf);
 }
 
+static void _irq_callback(void *data)
+{
+    struct nxp_mlc *me = (struct nxp_mlc *)data;
+    spin_lock(&me->vlock);
+    if (me->old_vid_buf)
+        _done_buf(me->old_vid_buf, true);
+    me->old_vid_buf = NULL;
+    spin_unlock(&me->vlock);
+}
+
 static void _clear_all_rgb_buf(struct nxp_mlc *me)
 {
     unsigned long flags;
@@ -351,9 +361,10 @@ static void _clear_all_vid_buf(struct nxp_mlc *me)
     while (!list_empty(&me->vid_buffer_list)) {
         buf = list_entry(me->vid_buffer_list.next,
                 struct nxp_video_buffer, list);
+        _done_buf(buf, true);
         list_del_init(&buf->list);
     }
-    INIT_LIST_HEAD(&me->rgb_buffer_list);
+    INIT_LIST_HEAD(&me->vid_buffer_list);
     spin_unlock_irqrestore(&me->vlock, flags);
 }
 
@@ -373,10 +384,16 @@ static void _update_vid_buffer(struct nxp_mlc *me)
     buf = list_first_entry(&me->vid_buffer_list,
             struct nxp_video_buffer, list);
     list_del_init(&buf->list);
+    if (me->cur_vid_buf)
+        me->old_vid_buf = me->cur_vid_buf;
+    else
+        me->old_vid_buf = NULL;
+    me->cur_vid_buf = buf;
     spin_unlock_irqrestore(&me->vlock, flags);
 
     if (!me->vid_enabled) {
         _hw_configure_video(me);
+        me->callback = nxp_soc_disp_register_irq_callback(me->id, _irq_callback, me);
         me->vid_enabled = true;
     }
 
@@ -386,8 +403,6 @@ static void _update_vid_buffer(struct nxp_mlc *me)
         _hw_enable(me, true);
         me->enabled = true;
     }
-
-    _done_buf(buf, true);
 }
 
 static int mlc_vid_buffer_queue(struct nxp_video_buffer *buf, void *data)
@@ -684,7 +699,7 @@ static int nxp_mlc_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
         pr_debug("%s: id %d, colorkey 0x%x, is_on %d\n", __func__, id, value, is_on);
         nxp_soc_disp_set_bg_color(id, 0x0);
         nxp_soc_disp_rgb_set_fblayer(id, 0);
-        nxp_soc_disp_video_set_colorkey(id, value, is_on); 
+        nxp_soc_disp_video_set_colorkey(id, value, is_on);
         //nxp_soc_disp_video_set_colorkey(id, value, false);
         break;
 
@@ -911,9 +926,24 @@ static int nxp_mlc_s_stream(struct v4l2_subdev *sd, int enable)
             v4l2_subdev_call(remote_sink, video, s_stream, 1);
     } else {
         if (is_video) {
+            unsigned long flags;
             me->vid_streaming = false;
             _hw_video_enable(me, false);
+            nxp_soc_disp_unregister_irq_callback(me->id, me->callback);
+            me->callback = NULL;
             me->vid_enabled = false;
+            spin_lock_irqsave(&me->vlock, flags);
+            if (me->old_vid_buf) {
+                pr_debug("%s: video done buf late for old buf!", __func__);
+                _done_buf(me->old_vid_buf, true);
+                me->old_vid_buf = NULL;
+            }
+            if (me->cur_vid_buf) {
+                pr_debug("%s: video done buf late for cur buf!", __func__);
+                _done_buf(me->cur_vid_buf, true);
+                me->cur_vid_buf = NULL;
+            }
+            spin_unlock_irqrestore(&me->vlock, flags);
             _clear_all_vid_buf(me);
         } else {
             me->rgb_streaming = false;
