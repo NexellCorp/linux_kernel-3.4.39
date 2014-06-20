@@ -118,6 +118,16 @@ config NXP4330_DFS_BCLK_PLL_1
 
 endchoice
 
+config ANDROID_PERSISTENT_RAM_CONS_AREA
+    hex "RAM console physical hex address"
+    depends on ANDROID_RAM_CONSOLE
+    default 0x0
+
+config ANDROID_PERSISTENT_RAM_CONS_SIZE
+    int "RAM console size (KB)"
+    depends on ANDROID_RAM_CONSOLE
+    default 16
+
 source "kernel/Kconfig.hz"
 source "arch/arm/plat-nxp4330/Kconfig"
 

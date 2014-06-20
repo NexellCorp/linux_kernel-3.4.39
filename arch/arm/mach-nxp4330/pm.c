@@ -160,7 +160,7 @@ static int suspend_machine(void)
 	/*
 	 * set wakeup device
 	 */
-	for (i = 0; 8 > i; i++) {
+	for (i = 0; sizeof(pads)/sizeof(pads[0]) > i; i++) {
 		if ((pads[i][0] == CFALSE) || (pads[i][1] > PWR_DECT_BOTHEDGE))
 			continue;
 

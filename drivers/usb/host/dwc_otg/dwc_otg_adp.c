@@ -628,7 +628,7 @@ static int32_t dwc_otg_adp_handle_prb_intr(dwc_otg_core_if_t * core_if,
 		gpwrdn.d32 = DWC_READ_REG32(&core_if->core_global_regs->gpwrdn);
 		if (compare_timer_values(core_if)) {
 			DWC_PRINTF("Difference in timer values !!! \n");
-//                      core_if->adp.attached = DWC_OTG_ADP_ATTACHED;
+//			core_if->adp.attached = DWC_OTG_ADP_ATTACHED;
 			dwc_otg_adp_probe_stop(core_if);
 
 			/* Power on the core */
