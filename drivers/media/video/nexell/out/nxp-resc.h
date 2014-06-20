@@ -31,6 +31,8 @@ struct nxp_resc {
     uint32_t remote_preset;
 
     bool streaming;
+
+    struct disp_irq_callback *callback;
 };
 
 /**

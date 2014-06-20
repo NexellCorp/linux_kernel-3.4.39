@@ -92,7 +92,8 @@ struct nxp_mlc {
     /* video buffer */
     spinlock_t vlock;
     struct list_head vid_buffer_list;
-    //struct nxp_video_buffer *cur_vid_buf;
+    struct nxp_video_buffer *cur_vid_buf;
+    struct nxp_video_buffer *old_vid_buf;
 
     /* buffer consumer */
     struct nxp_buffer_consumer *rgb_consumer;
@@ -112,6 +113,9 @@ struct nxp_mlc {
     bool vid_enabled;
     bool vid_streaming;
     struct nxp_mlc_vid_attr vid_attr;
+
+    /* irq callback */
+    struct disp_irq_callback *callback;
 
 };
 

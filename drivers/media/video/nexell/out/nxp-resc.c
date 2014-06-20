@@ -564,7 +564,7 @@ static int _set_remote_sync(struct nxp_resc *me)
 
         me->dynamic_change_count = 0;
         if (me->preset->dpc_sync_param.use_dynamic)
-            nxp_soc_disp_register_irq_callback(me->dpc_module_num, _resc_intr_callback, me);
+            me->callback = nxp_soc_disp_register_irq_callback(me->dpc_module_num, _resc_intr_callback, me);
 
         ret = nxp_soc_disp_device_connect_to(DISP_DEVICE_RESCONV, source_device, &vsync);
         if (ret) {
@@ -717,8 +717,10 @@ static int nxp_resc_s_stream(struct v4l2_subdev *sd, int enable)
 
             nxp_soc_disp_device_enable(me->source_device, 0);
             nxp_soc_disp_device_disconnect(DISP_DEVICE_RESCONV, me->source_device);
-            if (me->preset->dpc_sync_param.use_dynamic)
-                nxp_soc_disp_unregister_irq_callback(me->dpc_module_num);
+            if (me->preset->dpc_sync_param.use_dynamic) {
+                nxp_soc_disp_unregister_irq_callback(me->dpc_module_num, me->callback);
+                me->callback = NULL;
+            }
 
             me->streaming = false;
         }
