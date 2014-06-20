@@ -1417,6 +1417,59 @@ static struct platform_device nxp_v4l2_dev = {
 #endif /* CONFIG_V4L2_NEXELL || CONFIG_V4L2_NEXELL_MODULE */
 
 /*------------------------------------------------------------------------------
+ * SSP/SPI
+ */
+#if defined(CONFIG_SPI_SPIDEV) || defined(CONFIG_SPI_SPIDEV_MODULE)
+#include <linux/spi/spi.h>
+#if (CFG_SPI0_CS_GPIO_MODE)
+static void spi0_cs(u32 chipselect)
+{
+	if(nxp_soc_gpio_get_io_func( CFG_SPI0_CS )!= nxp_soc_gpio_get_altnum( CFG_SPI0_CS))
+		nxp_soc_gpio_set_io_func( CFG_SPI0_CS, nxp_soc_gpio_get_altnum( CFG_SPI0_CS));
+
+	nxp_soc_gpio_set_io_dir( CFG_SPI0_CS,1);
+	nxp_soc_gpio_set_out_value(	 CFG_SPI0_CS , chipselect);
+}
+#endif
+struct pl022_config_chip spi0_info = {
+    /* available POLLING_TRANSFER, INTERRUPT_TRANSFER, DMA_TRANSFER */
+    .com_mode = CFG_SPI0_COM_MODE,
+    .iface = SSP_INTERFACE_MOTOROLA_SPI,
+    /* We can only act as master but SSP_SLAVE is possible in theory */
+    .hierarchy = SSP_MASTER,
+    /* 0 = drive TX even as slave, 1 = do not drive TX as slave */
+    .slave_tx_disable = 1,
+    .rx_lev_trig = SSP_RX_4_OR_MORE_ELEM,
+    .tx_lev_trig = SSP_TX_4_OR_MORE_EMPTY_LOC,
+    .ctrl_len = SSP_BITS_8,
+    .wait_state = SSP_MWIRE_WAIT_ZERO,
+    .duplex = SSP_MICROWIRE_CHANNEL_FULL_DUPLEX,
+    /*
+     * This is where you insert a call to a function to enable CS
+     * (usually GPIO) for a certain chip.
+     */
+#if (CFG_SPI0_CS_GPIO_MODE)
+    .cs_control = spi0_cs,
+#endif
+	.clkdelay = SSP_FEEDBACK_CLK_DELAY_1T,
+
+};
+
+static struct spi_board_info spi_plat_board[] __initdata = {
+    [0] = {
+        .modalias        = "spidev",    /* fixup */
+        .max_speed_hz    = 3125000,     /* max spi clock (SCK) speed in HZ */
+        .bus_num         = 0,           /* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
+        .chip_select     = 0,           /* Note> set chip select num, must be smaller than spi cs_num */
+        .controller_data = &spi0_info,
+        .mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
+    },
+};
+
+#endif
+
+
+/*------------------------------------------------------------------------------
  * DW MMC board config
  */
 #if defined(CONFIG_MMC_DW)
@@ -1620,8 +1673,8 @@ static struct dw_mci_board _dwmci2_data = {
 	//.caps2			= MMC_CAP2_PACKED_WR,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | 	\
-						DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(2),	// 100 = (1) (1), 200 = (0) (2)
+	.clk_dly		= DW_MMC_DRIVE_DELAY(0x0) | DW_MMC_SAMPLE_DELAY(0x1c) | 	\
+						DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(1),	// 100 = (1) (1), 200 = (0) (2)
 
 };
 #endif
@@ -1739,6 +1792,11 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_SENSORS_BMG) || defined(CONFIG_SENSORS_BMG_MODULE)
 	printk("plat: add gyro-sensor(bmg160)\n");
 	i2c_register_board_info(BMG160_I2C_BUS, &bmg160_i2c_bdi, 1);
+#endif
+
+#if defined(CONFIG_SPI_SPIDEV) || defined(CONFIG_SPI_SPIDEV_MODULE)
+	spi_register_board_info(spi_plat_board, ARRAY_SIZE(spi_plat_board));
+	printk("plat: register spidev\n");
 #endif
 
 #if 0//defined(CONFIG_HAPTIC_DRV2605) || defined(CONFIG_HAPTIC_DRV2605_MODULE)

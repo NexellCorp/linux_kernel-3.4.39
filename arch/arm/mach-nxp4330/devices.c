@@ -753,12 +753,12 @@ static void spi_init(int ch)
 
 	clk = clk_get(NULL,name);
 	clk_set_rate(clk,req_clk);
-
+	
 	nxp_soc_rsc_enter(reset[ch][0]);
     nxp_soc_rsc_enter(reset[ch][1]);
 	nxp_soc_rsc_exit(reset[ch][0]);
     nxp_soc_rsc_exit(reset[ch][1]);
-
+	clk_enable(clk);
 }
 
 #if defined(CONFIG_SPI_PL022_PORT0)

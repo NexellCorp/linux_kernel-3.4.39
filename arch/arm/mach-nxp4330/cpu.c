@@ -33,6 +33,7 @@
 
 /* nexell soc headers */
 #include <mach/platform.h>
+#include <mach/devices.h>
 #include <mach/map_desc.h>
 
 #if (0)
@@ -203,6 +204,10 @@ static void __init cpu_mem_reserve(void)
 #ifdef CONFIG_CMA
 extern void nxp_reserve_mem(void);
 	nxp_reserve_mem();
+#endif
+
+#ifdef CONFIG_ANDROID_RAM_CONSOLE
+	persistent_ram_console_reserve();
 #endif
 }
 
