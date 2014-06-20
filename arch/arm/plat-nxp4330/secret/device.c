@@ -1794,6 +1794,11 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(BMG160_I2C_BUS, &bmg160_i2c_bdi, 1);
 #endif
 
+#if defined(CONFIG_SPI_SPIDEV) || defined(CONFIG_SPI_SPIDEV_MODULE)
+	spi_register_board_info(spi_plat_board, ARRAY_SIZE(spi_plat_board));
+	printk("plat: register spidev\n");
+#endif
+
 #if 0//defined(CONFIG_HAPTIC_DRV2605) || defined(CONFIG_HAPTIC_DRV2605_MODULE)
 	printk("plat: add haptic(drv2605)\n");
 	i2c_register_board_info(DRV2605_I2C_BUS, &drv2605_i2c_bdi, 1);
