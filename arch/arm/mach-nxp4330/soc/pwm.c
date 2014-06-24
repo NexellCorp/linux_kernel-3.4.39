@@ -80,8 +80,8 @@ static struct pwm_device devs_pwm[] = {
 };
 #define	PWN_CHANNELS	(4)
 
-#define	_LOCK_(c)		{ if (!preempt_count() && !in_interrupt()) mutex_lock(&pwm[c].lock); }
-#define	_UNLOCK_(c)		{ if (mutex_is_locked(&pwm[c].lock)) mutex_unlock(&pwm[c].lock); }
+#define	_LOCK_(c)		{ if (!preempt_count() && !in_interrupt()) mutex_lock(&devs_pwm[c].lock); }
+#define	_UNLOCK_(c)		{ if (mutex_is_locked(&devs_pwm[c].lock)) mutex_unlock(&devs_pwm[c].lock); }
 
 #define RET_ASSERT_VAL(_expr_, _ret_)	{			\
 	if (!(_expr_)) {								\
