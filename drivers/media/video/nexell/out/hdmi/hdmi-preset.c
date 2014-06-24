@@ -2186,15 +2186,17 @@ static const struct hdmi_3d_info info_3d_fp = {
 };
 
 const struct hdmi_conf hdmi_conf[] = {
-	{ V4L2_DV_480P59_94,	   &hdmi_conf_480p59_94,	&info_2d },
-	{ V4L2_DV_480P60,	   &hdmi_conf_480p60,		&info_2d },
-	{ V4L2_DV_576P50,	   &hdmi_conf_576p50,		&info_2d },
-	{ V4L2_DV_720P50,	   &hdmi_conf_720p50,		&info_2d },
-	{ V4L2_DV_720P59_94,	   &hdmi_conf_720p59_94,	&info_2d },
-	{ V4L2_DV_720P60,	   &hdmi_conf_720p60,		&info_2d },
-	{ V4L2_DV_1080P50,	   &hdmi_conf_1080p50,		&info_2d },
-	{ V4L2_DV_1080P59_94,	   &hdmi_conf_1080p59_94,	&info_2d },
-	{ V4L2_DV_1080P60,	   &hdmi_conf_1080p60,		&info_2d },
+    { V4L2_DV_480P59_94,        &hdmi_conf_480p59_94,       &info_2d },
+    { V4L2_DV_480P60,           &hdmi_conf_480p60,          &info_2d },
+    { V4L2_DV_576P50,           &hdmi_conf_576p50,          &info_2d },
+    { V4L2_DV_720P50,           &hdmi_conf_720p50,          &info_2d },
+    { V4L2_DV_720P59_94,        &hdmi_conf_720p59_94,       &info_2d },
+    { V4L2_DV_720P60,           &hdmi_conf_720p60,          &info_2d },
+    { V4L2_DV_1080P50,          &hdmi_conf_1080p50,         &info_2d },
+    { V4L2_DV_1080P59_94,       &hdmi_conf_1080p59_94,      &info_2d },
+    { V4L2_DV_1080P60,          &hdmi_conf_1080p60,         &info_2d },
+    { V4L2_DV_1080P60_SB_HALF,  &hdmi_conf_1080p60_sb_half, &info_3d_sb_h },
+    { V4L2_DV_1080P60_TB,       &hdmi_conf_1080p60_tb,      &info_3d_tb },
 };
 
 const int hdmi_pre_cnt = ARRAY_SIZE(hdmi_conf);

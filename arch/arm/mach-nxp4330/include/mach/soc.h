@@ -130,8 +130,8 @@ unsigned int nxp_soc_disp_get_bg_color(int module);
 void 		 nxp_soc_disp_layer_set_enable (int module, int layer, int enable);
 int 		 nxp_soc_disp_layer_stat_enable(int module, int layer);
 int 		 nxp_soc_disp_wait_vertical_sync(int module);	/* syncgen's interrupt */
-void		 nxp_soc_disp_register_irq_callback(int module, void (*callback)(void *), void *data);
-void		 nxp_soc_disp_unregister_irq_callback(int module);
+struct disp_irq_callback *nxp_soc_disp_register_irq_callback(int module, void (*callback)(void *), void *data);
+void		 nxp_soc_disp_unregister_irq_callback(int module, struct disp_irq_callback *);
 
 /*
  * display device control: refer to display.h
