@@ -74,6 +74,7 @@
 #define KOOK_UBC_CHECK
 //#define KOOK_ADP_ONLY_MODE
 #define KOOK_LOW_VOL_DET_TEST
+//#define KOOK_FAKE_POWER_ON_EVENT
 
 
 #if (CFG_PMIC_BAT_CHG_SUPPORT == 1)
@@ -304,9 +305,11 @@ int charger_irq;
 int g_soc;
 int g_fg_on_mode;
 
-static volatile int nxe2000_power_suspend_status;
+//static volatile int nxe2000_power_suspend_status;
+#ifdef KOOK_FAKE_POWER_ON_EVENT
 static volatile int nxe2000_power_resume_status;
 static volatile int nxe2000_power_lowbat;
+#endif
 
 /*This is for full state*/
 static int BatteryTableFlageDef=0;
@@ -4791,12 +4794,14 @@ static int nxe2000_batt_get_prop(struct power_supply *psy,
 		}
 #endif
 
+#ifdef KOOK_FAKE_POWER_ON_EVENT
 		if (nxe2000_power_resume_status)
 		{
 			val->intval = 1;
 			nxe2000_power_resume_status = 0;
 		}
 		else
+#endif
 		{
 			if ((info->capacity == 0) && (info->soca->Ibat_ave < 0))
 				val->intval = 0;
@@ -4846,12 +4851,14 @@ static int nxe2000_batt_get_prop(struct power_supply *psy,
 #ifdef	ENABLE_FUEL_GAUGE_FUNCTION
 	/* current battery capacity is get from fuel gauge */
 	case POWER_SUPPLY_PROP_CAPACITY:
+#ifdef KOOK_FAKE_POWER_ON_EVENT
 		if (nxe2000_power_lowbat)
 		{
 			val->intval = (5 * nxe2000_power_lowbat);       /* unit is % */
 			nxe2000_power_lowbat--;
 			break;
 		}
+#endif
 
 		if (info->entry_factory_mode) {
 			info->capacity = 100;
@@ -5350,9 +5357,11 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 	/* Enable Charger/ADC interrupt */
 	nxe2000_set_bits(info->dev->parent, NXE2000_INTC_INTEN, CHG_INT | ADC_INT);
 
-	nxe2000_power_suspend_status	= 0;
+//	nxe2000_power_suspend_status	= 0;
+#ifdef KOOK_FAKE_POWER_ON_EVENT
 	nxe2000_power_resume_status		= 0;
 	nxe2000_power_lowbat			= 0;
+#endif
 
 #if 1
 	info->ubc_check_count	= 1;
@@ -5519,8 +5528,10 @@ static int nxe2000_battery_suspend(struct device *dev)
 	}
 #endif
 
-	nxe2000_power_suspend_status	= 1;
+//	nxe2000_power_suspend_status    = 1;
+#ifdef KOOK_FAKE_POWER_ON_EVENT
 	nxe2000_power_resume_status     = 0;
+#endif
 
 #if (CFG_SW_UBC_ENABLE == 1) && (CFG_USB_DET_FROM_PMIC_INT == 0)
 	if (info->gpio_pmic_vbus > -1) {
@@ -5794,8 +5805,14 @@ static int nxe2000_battery_resume(struct device *dev) {
 
 	PM_DBGOUT("PMU: ++ %s\n", __func__);
 
-	nxe2000_power_resume_status	= 1;
-	nxe2000_power_lowbat		= 2;
+#ifdef KOOK_FAKE_POWER_ON_EVENT
+	if (info->gpio_pmic_vbus > -1) {
+		if (gpio_get_value(info->gpio_pmic_vbus)) {
+			nxe2000_power_resume_status	= 1;
+			nxe2000_power_lowbat		= 2;
+		}
+	}
+#endif
 
 	info->low_battery_flag		= 0;
 
@@ -5963,7 +5980,7 @@ static int nxe2000_battery_resume(struct device *dev) {
 		}
 	}
 
-	nxe2000_power_suspend_status    = 0;
+//	nxe2000_power_suspend_status    = 0;
 
 	info->ubc_check_count	= 1;
 	info->chg_ctr			= 0x03;
