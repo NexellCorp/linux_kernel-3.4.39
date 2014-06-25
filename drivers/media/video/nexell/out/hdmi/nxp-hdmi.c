@@ -1427,7 +1427,13 @@ static irqreturn_t _hdmi_irq_handler(int irq, void *dev_data)
 #endif
 
     /* queue_work(system_nrt_wq, &me->hpd_work); */
-    queue_delayed_work(system_nrt_wq, &me->hpd_work, msecs_to_jiffies(1000));
+    if (flag & (HDMI_INTC_FLAG_HPD_UNPLUG | HDMI_INTC_FLAG_HPD_PLUG))
+        queue_delayed_work(system_nrt_wq, &me->hpd_work, msecs_to_jiffies(1000));
+
+    if (me->callback && (me->irq_num_of_callback & flag)) {
+        hdmi_write_mask(HDMI_LINK_INTC_FLAG_0, ~0, me->irq_num_of_callback);
+        me->callback(me->callback_data);
+    }
 
     return IRQ_HANDLED;
 }
@@ -1757,3 +1763,29 @@ int resume_nxp_hdmi(struct nxp_hdmi *me)
     return 0;
 }
 #endif
+
+extern struct nxp_hdmi *get_nxp_hdmi(void);
+int register_hdmi_irq_callback(int int_num, int (*callback)(void *), void *data)
+{
+    struct nxp_hdmi *hdmi = get_nxp_hdmi();
+    if (hdmi) {
+        hdmi->callback = callback;
+        hdmi->callback_data = data;
+        hdmi->irq_num_of_callback = int_num;
+        printk("%s: int_num 0x%x, callback %p\n", __func__, int_num, callback);
+        return 0;
+    }
+    return -ENODEV;
+}
+
+int unregister_hdmi_irq_callback(int int_num)
+{
+    struct nxp_hdmi *hdmi = get_nxp_hdmi();
+    if (hdmi && int_num == hdmi->irq_num_of_callback) {
+        hdmi->callback = NULL;
+        hdmi->callback_data = NULL;
+        hdmi->irq_num_of_callback = -1;
+        return 0;
+    }
+    return -ENODEV;
+}
