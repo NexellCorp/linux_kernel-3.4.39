@@ -52,7 +52,7 @@ struct pwm_device {
 	struct mutex lock;
 };
 
-static struct pwm_device _pwm[] = {
+static struct pwm_device devs_pwm[] = {
 	[0] = {
 		.ch	    = 0,
 		.io     = PAD_GPIO_D +  1,
@@ -80,8 +80,8 @@ static struct pwm_device _pwm[] = {
 };
 #define	PWN_CHANNELS	(4)
 
-#define	_LOCK_(c)		{ if (! preempt_count() && ! in_interrupt()) mutex_lock(&pwm[c].lock); }
-#define	_UNLOCK_(c)		{ if (mutex_is_locked(&pwm[c].lock)) mutex_unlock(&pwm[c].lock); }
+#define	_LOCK_(c)		{ if (!preempt_count() && !in_interrupt()) mutex_lock(&devs_pwm[c].lock); }
+#define	_UNLOCK_(c)		{ if (mutex_is_locked(&devs_pwm[c].lock)) mutex_unlock(&devs_pwm[c].lock); }
 
 #define RET_ASSERT_VAL(_expr_, _ret_)	{			\
 	if (!(_expr_)) {								\
@@ -232,13 +232,14 @@ static void pwm_set_device(struct pwm_device *pwm)
 
 unsigned long nxp_soc_pwm_set_frequency(int ch, unsigned int request, unsigned int duty)
 {
-	struct pwm_device *pwm = &_pwm[ch];
+	struct pwm_device *pwm = &devs_pwm[ch];
 	volatile unsigned long rate, freq, clock = 0;
 	volatile unsigned long hz = 0, pwmhz = 0;
 	volatile unsigned int tcnt;
 	int i, n, end = 0;
 
 	RET_ASSERT_VAL(PWN_CHANNELS > ch, -EINVAL);
+	RET_ASSERT_VAL(ch >= 0, -EINVAL);
 	RET_ASSERT_VAL(100 >= duty && duty >= 0, -EINVAL);
 
 	if (request > (clk_in_max/DUTY_MIN_VAL)) {
@@ -312,7 +313,7 @@ EXPORT_SYMBOL_GPL(nxp_soc_pwm_set_frequency);
  */
 void nxp_soc_pwm_get_frequency(int ch, unsigned int *freq, unsigned int *duty)
 {
-	struct pwm_device *pwm = &_pwm[ch];
+	struct pwm_device *pwm = &devs_pwm[ch];
 	RET_ASSERT(PWN_CHANNELS > ch);
 
 	*freq = pwm->request;
@@ -339,7 +340,7 @@ static ssize_t pwm_show(struct device *dev,
 
 	c  = &at->name[strlen("pwm.")];
 	ch = simple_strtoul(c, NULL, 10);
-	pwm = &_pwm[ch];
+	pwm = &devs_pwm[ch];
 
 	s += sprintf(s, "%ld,%d%% (%u,%u)\n", pwm->pwm_hz, pwm->duty, pwm->counter, pwm->compare);
 	if (s != buf)
@@ -359,7 +360,7 @@ static ssize_t pwm_store(struct device *dev,
 
 	c  = &at->name[strlen("pwm.")];
 	ch = simple_strtoul(c, NULL, 10);
-	pwm = &_pwm[ch];
+	pwm = &devs_pwm[ch];
 
 	sscanf(buf,"%ld,%ld", &request, &duty);
 	nxp_soc_pwm_set_frequency(ch, request, duty);
@@ -390,7 +391,7 @@ static int __init nxp_soc_pwm_init(void)
 #ifdef CONFIG_PWM_SYSFS
 	struct kobject *kobj = NULL;
 #endif
-	struct pwm_device *pwm = &_pwm[0];
+	struct pwm_device *pwm = &devs_pwm[0];
 	struct clk *clk = clk_get(NULL, CORECLK_NAME_PCLK);
 	char id[32] = {0,};
 	int i, ret = 0;

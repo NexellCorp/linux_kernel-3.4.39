@@ -616,7 +616,11 @@ static struct disp_mipi_param mipi_param = {
 
 static struct platform_pwm_backlight_data bl_plat_data = {
 	.pwm_id			= CFG_LCD_PRI_PWM_CH,
+#if defined(CONFIG_SECRET_2P1ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)||defined(CONFIG_SECRET_3P1RD_BOARD)
+	.max_brightness = 255,		/* 255 is 100% */
+#else
 	.max_brightness = 255 + 255,	/* 255 is 100%, set over 100% */
+#endif
 	.dft_brightness = 128,	/* 50% */
 	.pwm_period_ns	= 1000000000/CFG_LCD_PRI_PWM_FREQ,
 };
