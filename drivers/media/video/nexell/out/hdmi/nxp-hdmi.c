@@ -223,32 +223,35 @@ static int _get_vsync_info(int preset, int device,
 {
 	nxp_soc_disp_device_get_sync_param(device, (void*)par);
 
+    /**
+     * reference : CEA-861D.pdf
+     */
     switch (preset) {
     case V4L2_DV_480P59_94:
     case V4L2_DV_480P60:
         /* 480p: 720x480 */
         vsync->h_active_len = 720;
-        vsync->h_sync_width = 40;
-        vsync->h_back_porch = 220;
-        vsync->h_front_porch = 110;
+        vsync->h_sync_width = 62;
+        vsync->h_back_porch = 60;
+        vsync->h_front_porch = 16;
         vsync->h_sync_invert = 0;
         vsync->v_active_len = 480;
-        vsync->v_sync_width = 5;
-        vsync->v_back_porch = 20;
-        vsync->v_front_porch = 5;
+        vsync->v_sync_width = 6;
+        vsync->v_back_porch = 30;
+        vsync->v_front_porch = 9;
         vsync->v_sync_invert = 0;
         break;
 
     case V4L2_DV_576P50:
-        /* 576p: 1024x576 */
-        vsync->h_active_len = 1024;
-        vsync->h_sync_width = 40;
-        vsync->h_back_porch = 220;
-        vsync->h_front_porch = 110;
+        /* 576p: 720x576 */
+        vsync->h_active_len = 720;
+        vsync->h_sync_width = 64;
+        vsync->h_back_porch = 68;
+        vsync->h_front_porch = 12;
         vsync->h_sync_invert = 0;
         vsync->v_active_len = 576;
         vsync->v_sync_width = 5;
-        vsync->v_back_porch = 20;
+        vsync->v_back_porch = 39;
         vsync->v_front_porch = 5;
         vsync->v_sync_invert = 0;
         break;
@@ -562,6 +565,26 @@ static int _config_hdmi(struct nxp_hdmi *me)
     u32 fixed_ffff = 0xffff;
 
     switch (me->cur_conf->mbus_fmt.height) {
+    case 480:
+        width = 720;
+        height = 480;
+        hfp = 16;
+        hsw = 62;
+        hbp = 60;
+        vfp = 9;
+        vsw = 6;
+        vbp = 30;
+        break;
+    case 576:
+        width = 720;
+        height = 576;
+        hfp = 12;
+        hsw = 64;
+        hbp = 68;
+        vfp = 5;
+        vsw = 5;
+        vbp = 39;
+        break;
     case 720:
         /* config = &config_720p; */
         printk("%s: 720p\n", __func__);
