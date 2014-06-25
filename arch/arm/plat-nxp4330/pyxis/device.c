@@ -33,6 +33,10 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
+#if defined(CONFIG_NXP_HDMI_CEC)
+#include <mach/nxp-hdmi-cec.h>
+#endif
+
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
@@ -1312,6 +1316,15 @@ int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on)
 EXPORT_SYMBOL(nxp_hsic_phy_pwr_on);
 
 /*------------------------------------------------------------------------------
+ * HDMI CEC driver
+ */
+#if defined(CONFIG_NXP_HDMI_CEC)
+static struct platform_device hdmi_cec_device = {
+	.name			= NXP_HDMI_CEC_DRV_NAME,
+};
+#endif /* CONFIG_NXP_HDMI_CEC */
+
+/*------------------------------------------------------------------------------
  * register board platform devices
  */
 void __init nxp_board_devices_register(void)
@@ -1406,6 +1419,11 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_RFKILL_NEXELL)
     printk("plat: add device rfkill\n");
     platform_device_register(&rfkill_device);
+#endif
+
+#if defined(CONFIG_NXP_HDMI_CEC)
+    printk("plat: add device hdmi-cec\n");
+    platform_device_register(&hdmi_cec_device);
 #endif
 
 	/* END */
