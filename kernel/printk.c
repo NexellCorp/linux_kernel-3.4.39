@@ -1197,7 +1197,9 @@ void suspend_console(void)
 		return;
 	printk("Suspending console(s) (use no_console_suspend to debug)\n");
 	console_lock();
+#ifndef CONFIG_ANDROID_RAM_CONSOLE
 	console_suspended = 1;
+#endif
 	up(&console_sem);
 }
 
