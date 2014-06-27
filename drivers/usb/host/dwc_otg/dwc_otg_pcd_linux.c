@@ -69,7 +69,7 @@ static struct gadget_wrapper {
 	struct usb_ep in_ep[16];
 	struct usb_ep out_ep[16];
 
-} *gadget_wrapper;
+} *gadget_wrapper = NULL;
 
 /* Display the contents of the buffer */
 extern void dump_msg(const u8 * buf, unsigned int length);
@@ -1311,6 +1311,48 @@ static void dwc_otg_pcd_gadget_release(struct device *dev)
 	DWC_DEBUGPL(DBG_PCDV, "%s(%p)\n", __func__, dev);
 }
 
+// psw0523 add for ttyGS resume
+static int alloc_wrapper2(dwc_bus_dev_t *_dev, struct gadget_wrapper *d)
+{
+	static char pcd_name[] = "dwc_otg_pcd";
+	dwc_otg_device_t *otg_dev = DWC_OTG_BUSDRVDATA(_dev);
+	int retval;
+
+	DWC_DEBUGPL(DBG_PCDV, "++ %s\n", __func__);
+
+	memset(d, 0, sizeof(*d));
+
+	d->gadget.name = pcd_name;
+	d->pcd = otg_dev->pcd;
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,30)
+	strcpy(d->gadget.dev.bus_id, "gadget");
+#else
+	dev_set_name(&d->gadget.dev, "%s", "gadget");
+#endif
+
+	d->gadget.dev.parent = &_dev->dev;
+	d->gadget.dev.release = dwc_otg_pcd_gadget_release;
+// psw0523 add
+    d->gadget.dev.dma_mask = _dev->dev.dma_mask;
+// end psw0523
+	d->gadget.ops = &dwc_otg_pcd_ops;
+#if 0
+// org
+	d->gadget.max_speed = dwc_otg_pcd_is_dualspeed(otg_dev->pcd) ? USB_SPEED_HIGH:USB_SPEED_FULL;
+#else
+// psw0523 fix
+    d->gadget.max_speed = USB_SPEED_HIGH;
+#endif
+	d->gadget.is_otg = dwc_otg_pcd_is_otg(otg_dev->pcd);
+
+	d->driver = 0;
+	/* Register the gadget device */
+	retval = device_register(&d->gadget.dev);
+
+    return retval;
+}
+
 static struct gadget_wrapper *alloc_wrapper(dwc_bus_dev_t *_dev)
 {
 	static char pcd_name[] = "dwc_otg_pcd";
@@ -1363,6 +1405,21 @@ static struct gadget_wrapper *alloc_wrapper(dwc_bus_dev_t *_dev)
 	return d;
 }
 
+// psw0523 add for ttyGS resume
+static void free_wrapper2(struct gadget_wrapper *d)
+{
+	DWC_DEBUGPL(DBG_PCDV, "++ %s\n", __func__);
+
+	if (d->driver) {
+		/* should have been done already by driver model core */
+		DWC_WARN("driver '%s' is still registered\n",
+			 d->driver->driver.name);
+		usb_gadget_unregister_driver(d->driver);
+	}
+
+	device_unregister(&d->gadget.dev);
+}
+
 static void free_wrapper(struct gadget_wrapper *d)
 {
 	DWC_DEBUGPL(DBG_PCDV, "++ %s\n", __func__);
@@ -1398,7 +1455,11 @@ int pcd_init(dwc_bus_dev_t *_dev)
 	}
 
 	otg_dev->pcd->otg_dev = otg_dev;
-	gadget_wrapper = alloc_wrapper(_dev);
+    // psw0523 fix for ttyGS resume
+    if (!gadget_wrapper)
+        gadget_wrapper = alloc_wrapper(_dev);
+    else
+        alloc_wrapper2(_dev, gadget_wrapper);
 
 	/*
 	 * Initialize EP structures
@@ -1474,7 +1535,9 @@ void pcd_remove(dwc_bus_dev_t *_dev)
 	free_irq(_dev->irq, pcd);
 #endif
 	dwc_otg_pcd_remove(otg_dev->pcd);
-	free_wrapper(gadget_wrapper);
+    // psw0523 fix for ttyGS resume
+	/*free_wrapper(gadget_wrapper);*/
+    free_wrapper2(gadget_wrapper);
 //	otg_dev->pcd = NULL;
 }
 
