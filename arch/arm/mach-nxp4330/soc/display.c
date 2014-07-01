@@ -1575,7 +1575,7 @@ int	nxp_soc_disp_device_connect_to(enum disp_dev_type device,
 {
 	struct disp_process_dev *pdev, *sdev;
 	struct disp_process_ops *ops;
-	struct list_head *head, *new;
+	struct list_head *head, *new, *obj;
 	int ret = 0;
 
 	RET_ASSERT_VAL(device != to, -EINVAL);
@@ -1591,24 +1591,6 @@ int	nxp_soc_disp_device_connect_to(enum disp_dev_type device,
 
 	spin_lock(&sdev->lock);
 
-	if (psync) {
-		/* source sync */
-		ops = sdev->disp_ops;
-		if (ops && ops->set_vsync) {
-			ret = ops->set_vsync(sdev, psync);
-			if (0 > ret)
-				goto _exit;
-		}
-
-		/* device operation */
-		ops = pdev->disp_ops;
-		if (ops && ops->set_vsync) {
-			ret = ops->set_vsync(pdev, psync);
-			if (0 > ret)
-				goto _exit;
-		}
-	}
-
 	/* list add */
 	if (DISP_DEVICE_SYNCGEN0 == sdev->dev_id ||
 		DISP_DEVICE_SYNCGEN1 == sdev->dev_id) {
@@ -1616,6 +1598,34 @@ int	nxp_soc_disp_device_connect_to(enum disp_dev_type device,
 		head = &info->link;
 	} else {
 		head = &disp_resconv_link;
+	}
+
+	/* check connect status */
+	list_for_each(obj, head) {
+		struct disp_process_dev *dev = container_of(obj,
+					struct disp_process_dev, list);
+		if (dev == pdev) {
+			printk(KERN_ERR "Fail, %s is already connected to %s ...\n",
+				dev_to_str(dev->dev_id), dev_to_str(sdev->dev_id));
+			ret = -EINVAL;
+			goto _exit;
+		}
+	}
+
+	if (psync) {
+		ops = sdev->disp_ops;	/* source sync */
+		if (ops && ops->set_vsync) {
+			ret = ops->set_vsync(sdev, psync);
+			if (0 > ret)
+				goto _exit;
+		}
+
+		ops = pdev->disp_ops;	/* device operation */
+		if (ops && ops->set_vsync) {
+			ret = ops->set_vsync(pdev, psync);
+			if (0 > ret)
+				goto _exit;
+		}
 	}
 
 	new	= &pdev->list;
