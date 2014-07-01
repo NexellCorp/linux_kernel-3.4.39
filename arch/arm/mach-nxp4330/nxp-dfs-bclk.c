@@ -493,13 +493,22 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
     volatile NX_DREX_REG *pdrex = (volatile NX_DREX_REG *)IO_ADDRESS(PHY_BASEADDR_DREX);
     volatile u32 *pl301_bot = (volatile u32 *)IO_ADDRESS(0xC0050000);
     int stop;
+    volatile u32 tmp;
 
     _cpu_pll_change_frequency(pll_num, bclk);
+
+    WARN(0 != raw_smp_processor_id(), "BCLK Dynamic Frequency CPU.%d  conflict with BCLK DFS...\n",
+            raw_smp_processor_id());
 
     stop = cpu_down_force();
 
     preempt_disable();
     local_irq_disable();
+
+    tmp = *((u32*)clkpwr);
+    mb();
+    tmp = *((u32*)pl301_bot);
+    mb();
 
     pdrex->DIRECTCMD = ((DIRCMD_PALL << DIRCMD_TYPE_SHIFT) | (DIRCMD_CHIP_0 << DIRCMD_CHIP_SHIFT)); // precharge all cmd
     pdrex->CONCONTROL &= ~(0x1 << 5);
@@ -539,6 +548,8 @@ static int bclk_dfs_thread(void *unused)
     /*uint32_t pll = dfs_bclk_manager.bclk_pll_num;*/
     while (!kthread_should_stop()) {
         /*uint32_t bclk = dfs_bclk_manager.current_bclk;*/
+
+        set_current_state(TASK_UNINTERRUPTIBLE);
 
         dfs_bclk_manager.current_bclk =
             dfs_bclk_manager.func(
