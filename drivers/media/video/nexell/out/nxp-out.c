@@ -138,7 +138,7 @@ int register_nxp_out(struct nxp_out *me)
         pr_err("%s: failed to link mlc0 to resc\n", __func__);
         goto error_out;
     }
-    /* link mlc1 pad source to hdmi pad sink */
+    /* link mlc1 pad source to resc pad sink */
     ret = media_entity_create_link(
             &me->mlcs[1]->subdev.entity, NXP_MLC_PAD_SOURCE,
             &me->resc->subdev.entity, 0,
