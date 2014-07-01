@@ -413,7 +413,7 @@ static int __init nxp_soc_pwm_init(void)
 
 	clk_in_max  = clk_get_rate(clk);
 #if defined(CONFIG_NEXELL_DFS_BCLK)
-	clk_in_max  = 50*1000*1000;
+	clk_in_max  = 20*1000*1000;
 #else
 	clk_in_max /= 2;
 #endif
