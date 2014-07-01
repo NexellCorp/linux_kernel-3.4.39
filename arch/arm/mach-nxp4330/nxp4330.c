@@ -290,16 +290,59 @@ static ssize_t name_show(struct device *pdev,
 	return (s - buf);
 }
 
+/*
+ * Notify board mem phsical size
+ * HEX value
+ * /sys/devices/platform/cpu/mem_size
+ */
+extern struct meminfo meminfo;
+static ssize_t mem_size_show(struct device *pdev,
+			struct device_attribute *attr, char *buf)
+{
+	struct meminfo *mi = &meminfo;
+	char *s = buf;
+	int len = (int)(mi->bank[0].size/SZ_1M);
+
+	s += sprintf(s, "%d\n", len);	/* unit is Mbyte */
+	if (s != buf)
+		*(s-1) = '\n';
+
+	return (s - buf);
+}
+
+/*
+ * Notify board mem clock frequency
+ * HEX value
+ * /sys/devices/platform/cpu/mem_clock
+ */
+static ssize_t mem_clock_show(struct device *pdev,
+			struct device_attribute *attr, char *buf)
+{
+	unsigned int mclk = nxp_cpu_clock_hz(5);
+	int khz = (int)(mclk/1000);
+	char *s = buf;
+
+	s += sprintf(s, "%d\n", khz);	/* unit is Khz */
+	if (s != buf)
+		*(s-1) = '\n';
+
+	return (s - buf);
+}
+
 static struct device_attribute vers_attr = __ATTR(version, 0664, version_show, NULL);
 static struct device_attribute guid_attr = __ATTR(guid, 0664, guid_show, NULL);
 static struct device_attribute uuid_attr = __ATTR(uuid, 0664, uuid_show, NULL);
 static struct device_attribute name_attr = __ATTR(name, 0664, name_show, NULL);
+static struct device_attribute mem_size_attr = __ATTR(mem_size, 0664, mem_size_show, NULL);
+static struct device_attribute mem_clock_attr = __ATTR(mem_clock, 0664, mem_clock_show, NULL);
 
 static struct attribute *attrs[] = {
 	&vers_attr.attr,
 	&guid_attr.attr,
 	&uuid_attr.attr,
 	&name_attr.attr,
+	&mem_size_attr.attr,
+	&mem_clock_attr.attr,
 	NULL,
 };
 
