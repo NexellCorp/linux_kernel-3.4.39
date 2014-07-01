@@ -79,7 +79,26 @@ config NEXELL_DISPLAY_HDMI
 
 	endchoice
 
-    source arch/arm/mach-nxp4330/soc/hdmi/Kconfig
+    choice
+        prompt "HDMI Audio Interface"
+        depends on NXP_OUT_HDMI || NEXELL_DISPLAY_HDMI
+        default NEXELL_DISPLAY_HDMI_AUDIO_SPDIF
+        help
+          Choose which interface to use for hdmi audio output
+
+    config NEXELL_DISPLAY_HDMI_AUDIO_SPDIF
+        bool "SPDIF"
+
+    config NEXELL_DISPLAY_HDMI_AUDIO_I2S
+        bool "I2S"
+
+    endchoice
+
+config NEXELL_DISPLAY_HDMI_USE_HDCP
+    depends on NEXELL_DISPLAY_HDMI
+    bool "HDMI use HDCP block"
+    default n
+    ---help---
+      Say y here to enable hdcp module
 
 endmenu
-
