@@ -261,11 +261,8 @@ static void _hw_configure_video(struct nxp_mlc *me)
 
 static void _hw_enable(struct nxp_mlc *me, bool enable)
 {
-    printk("%s: enable %d\n", __func__, enable);
-    if (enable)
-        nxp_soc_disp_device_enable_all(me->id, enable);
-    else
-        nxp_soc_disp_device_enable_all(me->id, enable);
+    pr_debug("%s: enable %d\n", __func__, enable);
+    nxp_soc_disp_device_enable_all(me->id, enable);
 }
 
 /**

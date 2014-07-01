@@ -139,6 +139,7 @@ struct disp_process_dev {
 	struct disp_process_ops *disp_ops;
 	void * dev_param;
 	void * dev_info;
+    void * priv;
 };
 
 /*

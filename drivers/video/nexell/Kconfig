@@ -79,4 +79,7 @@ config NEXELL_DISPLAY_HDMI
 
 	endchoice
 
+    source arch/arm/mach-nxp4330/soc/hdmi/Kconfig
+
 endmenu
+
