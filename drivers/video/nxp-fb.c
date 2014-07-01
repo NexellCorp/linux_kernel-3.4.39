@@ -156,7 +156,7 @@ static int nxp_fb_dev_get_vsync(int module, int fb, struct disp_vsync_info *vsi)
 	if (-1 == module)
 		return 0;
 
-	if (1 == device)
+	if (1 == module)
 		device = DISP_DEVICE_SYNCGEN1;
 
 	if (0 > nxp_soc_disp_device_get_vsync_info(device, vsi)) {
