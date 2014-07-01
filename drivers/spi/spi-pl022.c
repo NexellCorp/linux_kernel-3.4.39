@@ -2060,7 +2060,6 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
 	       adev->res.start, pl022->virtbase);
 
 	pl022->clk = clk_get(&adev->dev, NULL);
-	
 	platform_info->init(master->bus_num);		/*bok add func */
 
 	if (IS_ERR(pl022->clk)) {
@@ -2074,7 +2073,7 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
 		dev_err(&adev->dev, "could not prepare SSP/SPI bus clock\n");
 		goto  err_clk_prep;
 	}
-
+	
 	status = clk_enable(pl022->clk);
 	if (status) {
 		dev_err(&adev->dev, "could not enable SSP/SPI bus clock\n");
@@ -2200,10 +2199,13 @@ static int pl022_suspend(struct device *dev)
 static int pl022_resume(struct device *dev)
 {
 	struct pl022 *pl022 = dev_get_drvdata(dev);
+	struct pl022_ssp_controller *platform_info = dev->platform_data;
+
 	int ret;
 
 	/* Start the queue running */
 	ret = spi_master_resume(pl022->master);
+	platform_info->init(pl022->master->bus_num); //bok add
 	if (ret)
 		dev_err(dev, "problem starting queue (%d)\n", ret);
 	else

@@ -72,7 +72,12 @@
 #define DWC_DRIVER_VERSION	"3.00a 10-AUG-2012"
 #define DWC_DRIVER_DESC		"HS OTG USB Controller driver"
 
-bool microframe_schedule=true;
+#if defined(CONFIG_ARCH_NXP4330) && defined(CONFIG_USB_VIDEO_CLASS)
+bool microframe_schedule=false;     // Nexell NXP4330
+#else
+bool microframe_schedule=true;      // org
+#endif
+
 
 static const char dwc_driver_name[] = "dwc_otg";
 
@@ -235,7 +240,7 @@ static struct dwc_otg_driver_module_params dwc_otg_module_params = {
         -1,
         -1,
         -1,
-        -1 
+        -1
             /* 15 */
     },
 #endif
@@ -610,12 +615,13 @@ extern void otg_phy_init(void);
 extern void otg_phy_off(void);
 extern void otg_clk_enable(void);
 extern void otg_clk_disable(void);
+static dwc_otg_device_t *dwc_otg_dev;
 #endif
 
 #define REM_RETVAL(n) n
 static int dwc_otg_driver_remove(struct platform_device *_dev )
-{       
-    dwc_otg_device_t *otg_dev = platform_get_drvdata(_dev);
+{
+    dwc_otg_device_t *otg_dev = dwc_otg_dev;
 
     DWC_DEBUGPL(DBG_ANY, "%s(%p) otg_dev %p\n", __func__, _dev, otg_dev);
 
@@ -706,7 +712,7 @@ static int dwc_otg_driver_remove(struct platform_device *_dev )
 #define CFG_OTG_MODE_HOST   1
 #define CFG_OTG_MODE_DEVICE 0
 
-extern void set_otg_mode(unsigned int mode, int is_force); 
+extern void set_otg_mode(unsigned int mode, int is_force);
 extern unsigned int get_otg_mode(void);
 
 #ifdef CONFIG_PM
@@ -714,57 +720,11 @@ extern unsigned int get_otg_mode(void);
 //static int dwc_otg_driver_remove(struct platform_device *_dev);
 static int dwc_otg_driver_probe(struct platform_device *_dev);
 static struct platform_device *s_pdev = NULL;
-static struct delayed_work      s_otg_reprobe_work;
-static struct workqueue_struct *s_otg_reprobe_wqueue;
 extern void dwc_udc_resume(void);
 extern void dwc_udc_suspend(void);
 #if defined(CONFIG_USB_G_ANDROID)
 extern void nxp_wake_lock_timeout(void);
 #endif
-
-#if 0   //ndef CONFIG_SUSPEND_IDLE
-static struct notifier_block s_pm_notify;
-int dwc_otg_hcd_pm_notify(struct notifier_block *notifier_block,
-        unsigned long mode, void *unused)
-{
-    PM_DBGOUT("++ %s: %d mode\n", __func__, mode);
-
-    switch(mode) {
-    case PM_SUSPEND_PREPARE:
-        PM_DBGOUT("%s: prepare suspend\n", __func__);
-
-        if (s_pdev) {
-            struct platform_device * _dev = s_pdev;
-            dwc_otg_device_t *otg_dev;
-
-            otg_dev = platform_get_drvdata(s_pdev);
-
-             /*
-             * Disable the global interrupt until all the interrupt
-             * handlers are installed.
-             */
-            dev_dbg(&_dev->dev, "Calling disable_global_interrupts\n");
-            dwc_otg_disable_global_interrupts(otg_dev->core_if);
-        }
-        break;
-
-    case PM_POST_SUSPEND:
-        PM_DBGOUT("%s: post suspend\n", __func__);
-
-        if (s_pdev) {
-            struct platform_device * _dev = s_pdev;
-            dwc_otg_device_t *otg_dev;
-
-            dev_dbg(&_dev->dev, "Calling enable_global_interrupts\n");
-            dwc_otg_enable_global_interrupts(otg_dev->core_if);
-            dev_dbg(&_dev->dev, "Done\n");
-        }
-        break;
-    }
-
-    return 0;
-}
-#endif  /* CONFIG_SUSPEND_IDLE */
 #endif  /* CONFIG_USB_G_ANDROID */
 
 static int dwc_otg_driver_suspend(struct platform_device *_dev, pm_message_t state)
@@ -772,7 +732,7 @@ static int dwc_otg_driver_suspend(struct platform_device *_dev, pm_message_t sta
     PM_DBGOUT("+%s\n", __func__);
 
     if (s_pdev) {
-        dwc_otg_device_t *otg_dev = platform_get_drvdata(s_pdev);
+        dwc_otg_device_t *otg_dev = dwc_otg_dev;
         dwc_otg_core_if_t * core_if = otg_dev->core_if;
 
         /* Disable all interrupts */
@@ -788,16 +748,6 @@ static int dwc_otg_driver_suspend(struct platform_device *_dev, pm_message_t sta
     return 0;
 }
 
-static void otg_reprobe_work(struct work_struct *work)
-{
-    dwc_otg_driver_probe(s_pdev);
-    dwc_udc_resume();
-
-#if defined(CONFIG_USB_G_ANDROID)
-    nxp_wake_lock_timeout();
-#endif
-}
-
 static int dwc_otg_driver_resume(struct platform_device *_dev)
 {
     PM_DBGOUT("+%s\n", __func__);
@@ -808,18 +758,13 @@ static int dwc_otg_driver_resume(struct platform_device *_dev)
         mdelay(10);
 
         dwc_udc_suspend();
+        platform_set_drvdata(_dev, dwc_otg_dev);
         dwc_otg_driver_remove(s_pdev);
-
-        if (s_otg_reprobe_wqueue == NULL) {
-            s_otg_reprobe_wqueue
-                = create_singlethread_workqueue("otg_reprobe_work");
-            INIT_DELAYED_WORK_DEFERRABLE(&s_otg_reprobe_work,
-                                otg_reprobe_work);
-        }
-
-        queue_delayed_work(s_otg_reprobe_wqueue,
-                          &s_otg_reprobe_work,
-                          msecs_to_jiffies(1));
+   		dwc_otg_driver_probe(s_pdev);
+	    dwc_udc_resume();
+#if defined(CONFIG_USB_G_ANDROID)
+    	nxp_wake_lock_timeout();
+#endif
     }
 
     PM_DBGOUT("-%s\n", __func__);
@@ -858,6 +803,7 @@ static int dwc_otg_driver_probe(
     DWC_DEBUGPL(DBG_ANY,"Platform resource: start=%08x, len=%08x\n",
             _dev->resource->start,
             _dev->resource->end - _dev->resource->start + 1);
+
     if (!request_mem_region(_dev->resource[0].start,
                 _dev->resource[0].end - _dev->resource[0].start + 1,
                 "dwc_otg")) {
@@ -1006,15 +952,15 @@ static int dwc_otg_driver_probe(
 
     /*
      * Enable the global interrupt after all the interrupt
-     * handlers are installed if there is no ADP support else 
+     * handlers are installed if there is no ADP support else
      * perform initial actions required for Internal ADP logic.
      */
-    if (!dwc_otg_get_param_adp_enable(dwc_otg_device->core_if)) {	
+    if (!dwc_otg_get_param_adp_enable(dwc_otg_device->core_if)) {
         dev_dbg(&_dev->dev, "Calling enable_global_interrupts\n");
         dwc_otg_enable_global_interrupts(dwc_otg_device->core_if);
         dev_dbg(&_dev->dev, "Done\n");
     } else
-        dwc_otg_adp_start(dwc_otg_device->core_if, 
+        dwc_otg_adp_start(dwc_otg_device->core_if,
                 dwc_otg_is_host_mode(dwc_otg_device->core_if));
 
     // psw0523 add for pm
@@ -1022,19 +968,8 @@ static int dwc_otg_driver_probe(
     if (s_pdev == NULL)
         s_pdev = _dev;
 
-    if (s_otg_reprobe_wqueue == NULL) {
-        s_otg_reprobe_wqueue
-            = create_singlethread_workqueue("otg_reprobe_work");
-        INIT_DELAYED_WORK_DEFERRABLE(&s_otg_reprobe_work,
-                            otg_reprobe_work);
-    }
-
-#if 0   //ndef CONFIG_SUSPEND_IDLE
-    if (!s_pm_notify.notifier_call) {
-        s_pm_notify.notifier_call = dwc_otg_hcd_pm_notify;
-        register_pm_notifier(&s_pm_notify);
-    }
-#endif  /* CONFIG_SUSPEND_IDLE */
+	dwc_otg_dev = dwc_otg_device;
+	device_enable_async_suspend(&_dev->dev);
 #endif
 
     return 0;
@@ -1083,7 +1018,7 @@ static struct platform_driver dwc_otg_driver = {
     .suspend = dwc_otg_driver_suspend,
     .resume  = dwc_otg_driver_resume,
 #endif
-    // no 'shutdown', 'suspend', 'resume', 'suspend_late' or 'resume_early' 
+    // no 'shutdown', 'suspend', 'resume', 'suspend_late' or 'resume_early'
 };
 
 /**
@@ -1628,7 +1563,7 @@ MODULE_PARM_DESC(nak_holdoff_enable, "Enable the NAK holdoff");
 
     <tr>
     <td>thr_ctl</td>
-    <td>Specifies whether to enable Thresholding for Device mode. Bits 0, 1, 2 of 
+    <td>Specifies whether to enable Thresholding for Device mode. Bits 0, 1, 2 of
     this parmater specifies if thresholding is enabled for non-Iso Tx, Iso Tx and
     Rx transfers accordingly.
     The driver will automatically detect the value for this parameter if none is
@@ -1681,7 +1616,7 @@ MODULE_PARM_DESC(nak_holdoff_enable, "Enable the NAK holdoff");
     The driver will automatically detect the value for this parameter if none is
     specified.
 - 0: IC_USB disabled (default, if available)
-    - 1: IC_USB enable 
+    - 1: IC_USB enable
     </td></tr>
 
     <tr>
@@ -1720,9 +1655,9 @@ MODULE_PARM_DESC(nak_holdoff_enable, "Enable the NAK holdoff");
 
     <tr>
     <td>cont_on_bna</td>
-    <td>Specifies whether Enable Continue on BNA enabled or no. 
+    <td>Specifies whether Enable Continue on BNA enabled or no.
     After receiving BNA interrupt the core disables the endpoint,when the
-    endpoint is re-enabled by the application the  
+    endpoint is re-enabled by the application the
 - 0: Core starts processing from the DOEPDMA descriptor (default)
     - 1: Core starts processing from the descriptor which received the BNA.
     This parameter is valid only when OTG_EN_DESC_DMA == 1b1.
@@ -1731,7 +1666,7 @@ MODULE_PARM_DESC(nak_holdoff_enable, "Enable the NAK holdoff");
     <tr>
     <td>ahb_single</td>
     <td>This bit when programmed supports SINGLE transfers for remainder data
-    in a transfer for DMA mode of operation. 
+    in a transfer for DMA mode of operation.
 - 0: The remainder data will be sent using INCR burst size (default)
     - 1: The remainder data will be sent using SINGLE burst size.
     </td></tr>
@@ -1750,7 +1685,7 @@ MODULE_PARM_DESC(nak_holdoff_enable, "Enable the NAK holdoff");
     <td>Specifies whether OTG is performing as USB OTG Revision 2.0 or Revision 1.3
     USB OTG device.
 - 0: OTG 2.0 support disabled (default)
-    - 1: OTG 2.0 support enabled 
+    - 1: OTG 2.0 support enabled
     </td></tr>
 
     */

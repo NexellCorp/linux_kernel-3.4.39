@@ -1174,8 +1174,8 @@ dwc_otg_pcd_t *dwc_otg_pcd_init(dwc_otg_core_if_t * core_if)
 	}
 
 	pcd->lock = DWC_SPINLOCK_ALLOC();
-        DWC_DEBUGPL(DBG_HCDV, "Init of PCD %p given core_if %p\n",
-                    pcd, core_if);//GRAYG
+	DWC_DEBUGPL(DBG_HCDV, "Init of PCD %p given core_if %p\n",
+			pcd, core_if);//GRAYG
 	if (!pcd->lock) {
 		DWC_ERROR("Could not allocate lock for pcd");
 		DWC_FREE(pcd);
@@ -2222,9 +2222,7 @@ int dwc_otg_pcd_ep_queue(dwc_otg_pcd_t * pcd, void *ep_handle,
 
 #else
 
-	if ((dma_buf & 0x3) && GET_CORE_IF(pcd)->dma_enable
-		&& (buflen != 0)
-		&& !GET_CORE_IF(pcd)->dma_desc_enable) {
+	if ((dma_buf & 0x3) && buflen && GET_CORE_IF(pcd)->dma_enable) {
 		req->dw_align_buf = DWC_DMA_ALLOC(buflen,
 				 &req->dw_align_buf_dma);
 		if (!req->dw_align_buf) {
@@ -2370,6 +2368,7 @@ int dwc_otg_pcd_ep_queue(dwc_otg_pcd_t * pcd, void *ep_handle,
 					uint32_t out_max_xfer =
 					    DDMA_MAX_TRANSFER_SIZE -
 					    (DDMA_MAX_TRANSFER_SIZE % 4);
+
 					if (ep->dwc_ep.is_in) {
 						if (ep->dwc_ep.maxxfer >
 						    DDMA_MAX_TRANSFER_SIZE) {

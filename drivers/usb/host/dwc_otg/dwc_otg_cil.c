@@ -849,18 +849,17 @@ int dwc_otg_save_dev_regs(dwc_otg_core_if_t * core_if)
 	DWC_DEBUGPL(DBG_ANY,
 		    "=============Backing Host registers==============\n");
 	DWC_DEBUGPL(DBG_ANY, "Backed up dcfg            = %08x\n", dr->dcfg);
-	DWC_DEBUGPL(DBG_ANY, "Backed up dctl        = %08x\n", dr->dctl);
-	DWC_DEBUGPL(DBG_ANY, "Backed up daintmsk            = %08x\n",
-		    dr->daintmsk);
-	DWC_DEBUGPL(DBG_ANY, "Backed up diepmsk        = %08x\n", dr->diepmsk);
-	DWC_DEBUGPL(DBG_ANY, "Backed up doepmsk        = %08x\n", dr->doepmsk);
+	DWC_DEBUGPL(DBG_ANY, "Backed up dctl            = %08x\n", dr->dctl);
+	DWC_DEBUGPL(DBG_ANY, "Backed up daintmsk        = %08x\n", dr->daintmsk);
+	DWC_DEBUGPL(DBG_ANY, "Backed up diepmsk         = %08x\n", dr->diepmsk);
+	DWC_DEBUGPL(DBG_ANY, "Backed up doepmsk         = %08x\n", dr->doepmsk);
 	for (i = 0; i < core_if->dev_if->num_in_eps; ++i) {
-		DWC_DEBUGPL(DBG_ANY, "Backed up diepctl[%d]        = %08x\n", i,
-			    dr->diepctl[i]);
-		DWC_DEBUGPL(DBG_ANY, "Backed up dieptsiz[%d]        = %08x\n",
-			    i, dr->dieptsiz[i]);
-		DWC_DEBUGPL(DBG_ANY, "Backed up diepdma[%d]        = %08x\n", i,
-			    dr->diepdma[i]);
+		DWC_DEBUGPL(DBG_ANY, "Backed up diepctl[%d]     = %08x\n", i,
+				dr->diepctl[i]);
+		DWC_DEBUGPL(DBG_ANY, "Backed up dieptsiz[%d]    = %08x\n", i,
+				dr->dieptsiz[i]);
+		DWC_DEBUGPL(DBG_ANY, "Backed up diepdma[%d]     = %08x\n", i,
+				dr->diepdma[i]);
 	}
 
 	return 0;
@@ -1397,13 +1396,15 @@ void dwc_otg_core_init(dwc_otg_core_if_t * core_if)
 		DWC_DEBUGPL(DBG_CIL, "Internal DMA Mode\n");
 		/* Old value was DWC_GAHBCFG_INT_DMA_BURST_INCR - done for 
 		  Host mode ISOC in issue fix - vahrama */
-		/* Broadcom had altered to (1<<3)|(0<<0) - WRESP=1, max 4 beats */
-// psw0523 fix
-		//ahbcfg.b.hburstlen = (1<<3)|(0<<0);//DWC_GAHBCFG_INT_DMA_BURST_INCR4;
-		//ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR16;
+#if defined(CONFIG_ARCH_NXP4330)
 		//ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_SINGLE;
+		//ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR;
 		ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR4;
-// end psw0523
+		//ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR16;
+#else
+		/* Broadcom had altered to (1<<3)|(0<<0) - WRESP=1, max 4 beats */
+		ahbcfg.b.hburstlen = (1<<3)|(0<<0);//DWC_GAHBCFG_INT_DMA_BURST_INCR4;
+#endif
 		core_if->dma_enable = (core_if->core_params->dma_enable != 0);
 		core_if->dma_desc_enable =
 		    (core_if->core_params->dma_desc_enable != 0);
@@ -1662,6 +1663,8 @@ void dwc_otg_core_dev_init(dwc_otg_core_if_t * core_if)
 
 	/* Device configuration register */
 	init_devspd(core_if);
+
+#if 0
 	dcfg.d32 = DWC_READ_REG32(&dev_if->dev_global_regs->dcfg);
 	dcfg.b.descdma = (core_if->dma_desc_enable) ? 1 : 0;
 	dcfg.b.perfrint = DWC_DCFG_FRAME_INTERVAL_80;
@@ -1675,9 +1678,9 @@ void dwc_otg_core_dev_init(dwc_otg_core_if_t * core_if)
 		dctl.b.encontonbna = 1;
 		DWC_MODIFY_REG32(&dev_if->dev_global_regs->dctl, 0, dctl.d32);
 	}
-	
 
 	DWC_WRITE_REG32(&dev_if->dev_global_regs->dcfg, dcfg.d32);
+#endif
 
 	/* Configure data FIFO sizes */
 	if (core_if->hwcfg2.b.dynamic_fifo && params->enable_dynamic_fifo) {
@@ -1859,7 +1862,7 @@ void dwc_otg_core_dev_init(dwc_otg_core_if_t * core_if)
 		/* Clear all pending Device Interrupts */
 		/** @todo - if the condition needed to be checked
 		 *  or in any case all pending interrutps should be cleared?
-	     */
+		 */
 		if (core_if->multiproc_int_enable) {
 			for (i = 0; i < core_if->dev_if->num_in_eps; ++i) {
 				DWC_WRITE_REG32(&dev_if->
@@ -1971,6 +1974,24 @@ void dwc_otg_core_dev_init(dwc_otg_core_if_t * core_if)
 			    dthrctl.b.rx_thr_len);
 
 	}
+
+#if 1	// 20140626 by kook - for Scatter/Gather mode
+	dcfg.d32 = DWC_READ_REG32(&dev_if->dev_global_regs->dcfg);
+	dcfg.b.descdma = (core_if->dma_desc_enable) ? 1 : 0;
+	dcfg.b.perfrint = DWC_DCFG_FRAME_INTERVAL_80;
+	/* Enable Device OUT NAK in case of DDMA mode*/
+	if (core_if->core_params->dev_out_nak) {
+		dcfg.b.endevoutnak = 1;		
+	}
+
+	if (core_if->core_params->cont_on_bna) {
+		dctl_data_t dctl = {.d32 = 0 };
+		dctl.b.encontonbna = 1;
+		DWC_MODIFY_REG32(&dev_if->dev_global_regs->dctl, 0, dctl.d32);
+	}
+
+	DWC_WRITE_REG32(&dev_if->dev_global_regs->dcfg, dcfg.d32);
+#endif
 
 	dwc_otg_enable_device_interrupts(core_if);
 
@@ -2899,8 +2920,8 @@ void dwc_otg_hc_start_transfer(dwc_otg_core_if_t * core_if, dwc_hc_t * hc)
 	}
 #ifdef DEBUG
 	if (hc->ep_type != DWC_OTG_EP_TYPE_INTR) {
-                DWC_DEBUGPL(DBG_HCDV, "transfer %d from core_if %p\n",
-                            hc->hc_num, core_if);//GRAYG
+		DWC_DEBUGPL(DBG_HCDV, "transfer %d from core_if %p\n",
+							hc->hc_num, core_if);//GRAYG
 		core_if->hc_xfer_info[hc->hc_num].core_if = core_if;
 		core_if->hc_xfer_info[hc->hc_num].hc = hc;
 
@@ -3364,14 +3385,13 @@ void dwc_otg_ep_activate(dwc_otg_core_if_t * core_if, dwc_ep_t * ep)
 				diepmsk.b.nak = 1;
 			}
 
-			
-			
+
 /*
 			if (core_if->dma_desc_enable) {
 				diepmsk.b.bna = 1;
 			}
 */
-/*			
+/*
 			if (core_if->dma_enable) {
 				doepmsk.b.nak = 1;
 			}
@@ -3387,13 +3407,13 @@ void dwc_otg_ep_activate(dwc_otg_core_if_t * core_if, dwc_ep_t * ep)
 			if (ep->type == DWC_OTG_EP_TYPE_ISOC)
 				doepmsk.b.outtknepdis = 1;
 
-/*			
 
+/*
 			if (core_if->dma_desc_enable) {
 				doepmsk.b.bna = 1;
 			}
 */
-/*			
+/*
 			doepmsk.b.babble = 1;
 			doepmsk.b.nyet = 1;
 			doepmsk.b.nak = 1;
@@ -4134,9 +4154,7 @@ void dwc_otg_ep0_start_transfer(dwc_otg_core_if_t * core_if, dwc_ep_t * ep)
 
 	/* IN endpoint */
 	if (ep->is_in == 1) {
-		dwc_otg_dev_in_ep_regs_t *in_regs =
-		    core_if->dev_if->in_ep_regs[0];
-
+		dwc_otg_dev_in_ep_regs_t *in_regs = core_if->dev_if->in_ep_regs[0];
 		gnptxsts_data_t gtxstatus;
 
 		if (core_if->snpsid >= OTG_CORE_REV_3_00a) {
@@ -4198,11 +4216,8 @@ void dwc_otg_ep0_start_transfer(dwc_otg_core_if_t * core_if, dwc_ep_t * ep)
 		/* Write the DMA register */
 		if (core_if->dma_enable) {
 			if (core_if->dma_desc_enable == 0) {
-				DWC_WRITE_REG32(&in_regs->dieptsiz,
-						deptsiz.d32);
-
-				DWC_WRITE_REG32(&(in_regs->diepdma),
-						(uint32_t) ep->dma_addr);
+				DWC_WRITE_REG32(&in_regs->dieptsiz, deptsiz.d32);
+				DWC_WRITE_REG32(&in_regs->diepdma, (uint32_t) ep->dma_addr);
 			} else {
 				dma_desc = core_if->dev_if->in_desc_addr;
 
@@ -4219,8 +4234,7 @@ void dwc_otg_ep0_start_transfer(dwc_otg_core_if_t * core_if, dwc_ep_t * ep)
 
 				/** DIEPDMA0 Register write */
 				DWC_WRITE_REG32(&in_regs->diepdma,
-						core_if->
-						dev_if->dma_in_desc_addr);
+						core_if->dev_if->dma_in_desc_addr);
 			}
 		} else {
 			DWC_WRITE_REG32(&in_regs->dieptsiz, deptsiz.d32);
@@ -4256,8 +4270,7 @@ void dwc_otg_ep0_start_transfer(dwc_otg_core_if_t * core_if, dwc_ep_t * ep)
 		}
 	} else {
 		/* OUT endpoint */
-		dwc_otg_dev_out_ep_regs_t *out_regs =
-		    core_if->dev_if->out_ep_regs[0];
+		dwc_otg_dev_out_ep_regs_t *out_regs = core_if->dev_if->out_ep_regs[0];
 
 		depctl.d32 = DWC_READ_REG32(&out_regs->doepctl);
 		deptsiz.d32 = DWC_READ_REG32(&out_regs->doeptsiz);
@@ -6782,28 +6795,28 @@ uint32_t dwc_otg_get_devspeed(dwc_otg_core_if_t * core_if)
 	dcfg_data_t dcfg;
 	/* originally: dcfg.d32 = DWC_READ_REG32(&core_if->dev_if->dev_global_regs->dcfg); */
 
-        dcfg.d32 = -1; //GRAYG	
-        DWC_DEBUGPL(DBG_CILV, "%s - core_if(%p)\n", __func__, core_if);
-        if (NULL == core_if)
-                DWC_ERROR("reg request with NULL core_if\n");
-        DWC_DEBUGPL(DBG_CILV, "%s - core_if(%p)->dev_if(%p)\n", __func__,
-                    core_if, core_if->dev_if);
-        if (NULL == core_if->dev_if)
-                DWC_ERROR("reg request with NULL dev_if\n");
-        DWC_DEBUGPL(DBG_CILV, "%s - core_if(%p)->dev_if(%p)->"
-                    "dev_global_regs(%p)\n", __func__,
-                    core_if, core_if->dev_if,
-                    core_if->dev_if->dev_global_regs);
-        if (NULL == core_if->dev_if->dev_global_regs)
-                DWC_ERROR("reg request with NULL dev_global_regs\n");
-        else {
-                DWC_DEBUGPL(DBG_CILV, "%s - &core_if(%p)->dev_if(%p)->"
-                            "dev_global_regs(%p)->dcfg = %p\n", __func__,
-                            core_if, core_if->dev_if,
-                            core_if->dev_if->dev_global_regs,
-                            &core_if->dev_if->dev_global_regs->dcfg);
-        	dcfg.d32 = DWC_READ_REG32(&core_if->dev_if->dev_global_regs->dcfg);
-        }
+	dcfg.d32 = -1; //GRAYG
+	DWC_DEBUGPL(DBG_CILV, "%s - core_if(%p)\n", __func__, core_if);
+	if (NULL == core_if)
+		DWC_ERROR("reg request with NULL core_if\n");
+	DWC_DEBUGPL(DBG_CILV, "%s - core_if(%p)->dev_if(%p)\n", __func__,
+				core_if, core_if->dev_if);
+	if (NULL == core_if->dev_if)
+		DWC_ERROR("reg request with NULL dev_if\n");
+	DWC_DEBUGPL(DBG_CILV, "%s - core_if(%p)->dev_if(%p)->"
+				"dev_global_regs(%p)\n", __func__,
+				core_if, core_if->dev_if,
+				core_if->dev_if->dev_global_regs);
+	if (NULL == core_if->dev_if->dev_global_regs)
+		DWC_ERROR("reg request with NULL dev_global_regs\n");
+	else {
+		DWC_DEBUGPL(DBG_CILV, "%s - &core_if(%p)->dev_if(%p)->"
+					"dev_global_regs(%p)->dcfg = %p\n", __func__,
+					core_if, core_if->dev_if,
+					core_if->dev_if->dev_global_regs,
+					&core_if->dev_if->dev_global_regs->dcfg);
+		dcfg.d32 = DWC_READ_REG32(&core_if->dev_if->dev_global_regs->dcfg);
+	}
 	return dcfg.b.devspd;
 }
 

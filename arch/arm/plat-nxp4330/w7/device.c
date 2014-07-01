@@ -21,11 +21,13 @@
  * MA 02111-1307 USA
  */
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/types.h>
 #include <linux/platform_device.h>
 #include <linux/power_supply.h>
 #include <linux/irq.h>
 #include <linux/amba/pl022.h>
+
 /* nexell soc headers */
 #include <mach/platform.h>
 #include <mach/devices.h>
@@ -155,7 +157,7 @@ static struct platform_device *fb_devices[] = {
 static struct platform_pwm_backlight_data bl_plat_data = {
 	.pwm_id			= CFG_LCD_PRI_PWM_CH,
 	.max_brightness = 256,//	/* 255 is 100%, set over 100% */
-	.dft_brightness = 255,//	/* 99% */
+	.dft_brightness = 100,//	/* 99% */
 	.pwm_period_ns	= 1000000000/CFG_LCD_PRI_PWM_FREQ,
 };
 
@@ -312,7 +314,7 @@ struct aw5306_plat_data nxp_aw5306_plat_data = {
 	.max_x = 1024,
 	.max_y = 600,
 	.x_invert_flag = 1,
-	.y_invert_flag = 0,
+	.y_invert_flag = 1,
 	.xy_exchange_flag = 1,
 };
 
@@ -406,6 +408,35 @@ struct nxp_snd_dai_plat_data i2s_dai_data = {
 
 static struct platform_device wm8976_dai = {
 	.name			= "wm8976-audio",
+	.id				= 0,
+	.dev			= {
+		.platform_data	= &i2s_dai_data,
+	}
+};
+#endif
+
+#if defined(CONFIG_SND_CODEC_ALC5623)
+#include <linux/i2c.h>
+
+/* CODEC */
+static struct i2c_board_info __initdata alc5623_i2c_bdi = {
+	.type	= "alc562x-codec",			// compatilbe with wm8976
+	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
+};
+
+/* DAI */
+struct nxp_snd_dai_plat_data i2s_dai_data = {
+	.i2s_ch	= 0,
+	.sample_rate	= 48000,
+	.hp_jack 		= {
+		.support    	= 1,
+		.detect_io		= PAD_GPIO_E + 23,
+		.detect_level	= 1,
+	},
+};
+
+static struct platform_device alc5623_dai = {
+	.name			= "alc5623-audio",
 	.id				= 0,
 	.dev			= {
 		.platform_data	= &i2s_dai_data,
@@ -658,8 +689,11 @@ NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1, 14);	/* 1.1V
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1600000, 1, -1);	/* 1.6V DDR */
 NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1600000, 1,  8);	/* 1.6V SYS */
-
-NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V GPS */
+#if defined(CONFIG_RFKILL_NEXELL)
+NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 1, 1, 3300000, 1,  -1);	/* 3.3V GPS */
+#else
+NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 1, 1, 3300000, 1,  -1);	/* 3.3V GPS */
+#endif
 NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 0,  2);	/* 1.8V CAM1 */
 NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.8V SYS1 */
 NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  6);	/* 1.9V SYS */
@@ -1244,7 +1278,7 @@ static int hdmi_read_hpd_gpio(int gpio)
 static struct nxp_out_platformdata out_plat_data = {
     .hdmi = {
         .internal_irq = 0,
-        .external_irq = PAD_GPIO_E + 21,
+        .external_irq = 0,//PAD_GPIO_E + 21,
         .set_int_external = hdmi_set_int_external,
         .set_int_internal = hdmi_set_int_internal,
         .read_hpd_gpio = hdmi_read_hpd_gpio,
@@ -1340,7 +1374,26 @@ static int _dwmci_get_ro(u32 slot_id)
 }
 
 #ifdef CONFIG_MMC_NEXELL_CH0
-static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
+static struct dw_mci_board _dwmci0_data = {
+    .quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
+				  	  DW_MCI_QUIRK_HIGHSPEED |
+				  	  DW_MMC_QUIRK_HW_RESET_PW |
+				      DW_MCI_QUIRK_NO_DETECT_EBIT,
+	.bus_hz			= 50 * 1000 * 1000,
+	.caps			= MMC_CAP_UHS_DDR50 |
+					  MMC_CAP_NONREMOVABLE |
+			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
+				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
+	.desc_sz		= 4,
+	.detect_delay_ms= 200,
+//	.sdr_timing		= 0x01010001,
+//	.ddr_timing		= 0x03030002,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(0),
+};
+#endif
+
+#ifdef CONFIG_MMC_NEXELL_CH1
+static int _dwmci1_init(u32 slot_id, irq_handler_t handler, void *data)
 {
 	struct dw_mci *host = (struct dw_mci *)data;
 	int io  = CFG_SDMMC0_DETECT_IO;
@@ -1356,42 +1409,25 @@ static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 	return 0;
 }
 
-static int _dwmci0_get_cd(u32 slot_id)
+static int _dwmci1_get_cd(u32 slot_id)
 {
 	int io = CFG_SDMMC0_DETECT_IO;
 	return nxp_soc_gpio_get_in_value(io);
 }
-
-static struct dw_mci_board _dwmci0_data = {
-	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION,
-	.bus_hz			= 100 * 1000 * 1000,
-	.caps			= MMC_CAP_CMD23,
-	.detect_delay_ms= 200,
-	.cd_type		= DW_MCI_CD_EXTERNAL,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(3) | DW_MMC_SAMPLE_PHASE(0),
-	.init			= _dwmci0_init,
-	.get_ro         = _dwmci_get_ro,
-	.get_cd			= _dwmci0_get_cd,
-	.ext_cd_init	= _dwmci_ext_cd_init,
-	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
-};
-#endif
-
-#ifdef CONFIG_MMC_NEXELL_CH1
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
-				  	  DW_MCI_QUIRK_HIGHSPEED |
-				  	  DW_MMC_QUIRK_HW_RESET_PW |
-				      DW_MCI_QUIRK_NO_DETECT_EBIT,
+						DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 100 * 1000 * 1000,
-	.caps			= MMC_CAP_UHS_DDR50 |
-					  MMC_CAP_NONREMOVABLE |
-			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
-				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
-	.desc_sz		= 4,
+	.caps			= MMC_CAP_CMD23,
+	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
 	.detect_delay_ms= 200,
-	.sdr_timing		= 0x03020001,
-	.ddr_timing		= 0x03030002,
+	.cd_type		= DW_MCI_CD_EXTERNAL,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.init			= _dwmci1_init,
+	.get_ro         = _dwmci_get_ro,
+	.get_cd			= _dwmci1_get_cd,
+	.ext_cd_init	= _dwmci_ext_cd_init,
+	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
 };
 #endif
 
@@ -1520,6 +1556,12 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device asoc-wm8976\n");
 	i2c_register_board_info(WM8976_I2C_BUS, &wm8976_i2c_bdi, 1);
 	platform_device_register(&wm8976_dai);
+#endif
+
+#if defined(CONFIG_SND_CODEC_ALC5623)
+	printk("plat: add device asoc-alc5623\n");
+	i2c_register_board_info(0, &alc5623_i2c_bdi, 1);
+	platform_device_register(&alc5623_dai);
 #endif
 
 #if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)

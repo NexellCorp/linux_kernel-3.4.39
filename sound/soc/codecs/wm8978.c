@@ -1056,6 +1056,17 @@ static int wm8978_mute(struct snd_soc_dai *dai, int mute)
 
 	pr_debug("%s: %d\n", __func__, mute);
 
+#if defined(CONFIG_PLAT_NXP4330_DRONE)   //Drone do not mute to avoid "popo" noise.
+    /* HP */
+	snd_soc_update_bits(codec, WM8978_LOUT1_HP_CONTROL, 0x40, 0x0);
+	snd_soc_update_bits(codec, WM8978_ROUT1_HP_CONTROL, 0x40, 0x0);
+	/* SPK */
+	snd_soc_update_bits(codec, WM8978_LOUT2_SPK_CONTROL, 0x40, 0x0);
+    snd_soc_update_bits(codec, WM8978_ROUT2_SPK_CONTROL, 0x40, 0x0);
+    snd_soc_update_bits(codec, WM8978_DAC_CONTROL, 0x40, 0);
+    return 0;
+#endif
+
 	if (mute){
 		/* HP */
 		snd_soc_update_bits(codec, WM8978_LOUT1_HP_CONTROL, 0x40, 0x40);
@@ -1073,11 +1084,11 @@ static int wm8978_mute(struct snd_soc_dai *dai, int mute)
 		snd_soc_update_bits(codec, WM8978_ROUT2_SPK_CONTROL, 0x40, 0x0);
 		snd_soc_update_bits(codec, WM8978_DAC_CONTROL, 0x40, 0);
 	}
+
 	return 0;
 }
 void wm8978_set_bias(int flag)
 {
-
 	if (flag)
 		snd_soc_update_bits(wm8978_codec,0x01,0x10,0x10);
 	else
@@ -1089,7 +1100,6 @@ static int wm8978_set_bias_level(struct snd_soc_codec *codec,
 				 enum snd_soc_bias_level level)
 {
 	u16 power1 = snd_soc_read(codec, WM8978_POWER_MANAGEMENT_1) & ~3;
-
 	switch (level) {
 	case SND_SOC_BIAS_ON:
 	case SND_SOC_BIAS_PREPARE:
@@ -1225,7 +1235,6 @@ static int wm8978_probe(struct snd_soc_codec *codec)
 	struct wm8978_priv *wm8978 = snd_soc_codec_get_drvdata(codec);
 	u16 *cache = codec->reg_cache;
 	int ret = 0, i;
-
 	/*
 	 * Set default system clock to PLL, it is more precise, this is also the
 	 * default hardware setting
@@ -1296,7 +1305,6 @@ static __devinit int wm8978_i2c_probe(struct i2c_client *i2c,
 {
 	struct wm8978_priv *wm8978;
 	int ret;
-
 	wm8978 = kzalloc(sizeof(struct wm8978_priv), GFP_KERNEL);
 	if (wm8978 == NULL)
 		return -ENOMEM;

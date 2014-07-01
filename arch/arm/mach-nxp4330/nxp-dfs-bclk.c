@@ -8,6 +8,7 @@
 #include <linux/interrupt.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
+#include <linux/suspend.h>
 
 // serializing
 #include <linux/list.h>
@@ -38,6 +39,9 @@ static struct dfs_bclk_manager {
     atomic_t counter;
     atomic_t user_bitmap;
     uint32_t current_bclk;
+    int suspended;
+    struct timer_list pm_timer;
+    struct notifier_block pm_notifier;
     struct delayed_work delayed_work;
 
     dfs_bclk_func func;
@@ -50,7 +54,8 @@ static struct dfs_bclk_manager {
     .counter = ATOMIC_INIT(0),
     .user_bitmap = ATOMIC_INIT(0),
     .current_bclk = BCLK_MAX,
-    .func = default_dfs_bclk_func
+    .suspended = 0,
+    .func = default_dfs_bclk_func,
 };
 
 /**
@@ -495,6 +500,9 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
     int stop;
     volatile u32 tmp;
 
+	if (dfs_bclk_manager.suspended)
+		return;
+
     _cpu_pll_change_frequency(pll_num, bclk);
 
     WARN(0 != raw_smp_processor_id(), "BCLK Dynamic Frequency CPU.%d  conflict with BCLK DFS...\n",
@@ -571,9 +579,34 @@ static int bclk_dfs_thread(void *unused)
     return 0;
 }
 
+static void bclk_dfs_pm_timer(unsigned long p)
+{
+	struct dfs_bclk_manager *manager = (struct dfs_bclk_manager *)p;
+	manager->suspended = 0;
+}
+
+static int bclk_dfs_pm_notify(struct notifier_block *this,
+        unsigned long mode, void *unused)
+{
+	struct dfs_bclk_manager *manager = container_of(this,
+					struct dfs_bclk_manager, pm_notifier);
+	struct timer_list *timer = &manager->pm_timer;
+
+    switch(mode) {
+    case PM_SUSPEND_PREPARE:
+		del_timer(timer);
+    	manager->suspended = 1;
+    	break;
+    case PM_POST_SUSPEND:
+		timer->expires = get_jiffies_64() + msecs_to_jiffies(5000);
+		add_timer(timer);
+        break;
+    }
+    return 0;
+}
+
 static void _delayed_work_func(struct work_struct *work)
 {
-    printk("%s\n", __func__);
     wake_up_process(bclk_dfs_task);
 }
 
@@ -752,13 +785,14 @@ static struct attribute_group attr_group = {
     .attrs = (struct attribute **)attrs,
 };
 
+#if 0
 // for only test
 #include <mach/pm.h>
 static int test_kthread_func(void *arg)
 {
     volatile unsigned char *pvirt = NULL;
     dma_addr_t phys;
-    volatile unsigned char *p;
+    volatile unsigned char *p = NULL;
     unsigned int count = 0;
     volatile unsigned char data;
 
@@ -787,6 +821,7 @@ static int test_kthread_func(void *arg)
 
     return 0;
 }
+#endif
 
 static int __init dfs_bclk_init(void)
 {
@@ -811,8 +846,22 @@ static int __init dfs_bclk_init(void)
     INIT_DELAYED_WORK(&dfs_bclk_manager.delayed_work, _delayed_work_func);
 
     {
-        int cpu = 0;
-        struct task_struct *p = kthread_create_on_node(bclk_dfs_thread, NULL, cpu_to_node(cpu), "bclk_dfs");
+		static struct notifier_block *pm_notifier = &dfs_bclk_manager.pm_notifier;
+		struct timer_list *timer = &dfs_bclk_manager.pm_timer;
+		struct task_struct *p = NULL;
+        int cpu = 0, err = 0;
+
+		pm_notifier->notifier_call = bclk_dfs_pm_notify;
+		err = register_pm_notifier(pm_notifier);
+		if (err) {
+			pr_err("BCLK pm notifier for cpu.%d failed\n", cpu);
+			return PTR_ERR(p);
+		}
+		init_timer(timer);
+		timer->function = bclk_dfs_pm_timer;
+		timer->data = (unsigned long)&dfs_bclk_manager;
+
+        p = kthread_create_on_node(bclk_dfs_thread, NULL, cpu_to_node(cpu), "bclk_dfs");
         if (IS_ERR(p)) {
             pr_err("BCLK Dynamic Frequency for cpu.%d failed\n", cpu);
             return PTR_ERR(p);

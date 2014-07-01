@@ -203,7 +203,7 @@
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
  */
-#define CFG_SW_UBC_ENABLE						(1)
+#define CFG_SW_UBC_ENABLE						(0)
 
 /**
  * 0 : GPIO interrupt (CFG_GPIO_PMIC_VUSB_DET)

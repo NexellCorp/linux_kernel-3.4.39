@@ -223,32 +223,35 @@ static int _get_vsync_info(int preset, int device,
 {
 	nxp_soc_disp_device_get_sync_param(device, (void*)par);
 
+    /**
+     * reference : CEA-861D.pdf
+     */
     switch (preset) {
     case V4L2_DV_480P59_94:
     case V4L2_DV_480P60:
         /* 480p: 720x480 */
         vsync->h_active_len = 720;
-        vsync->h_sync_width = 40;
-        vsync->h_back_porch = 220;
-        vsync->h_front_porch = 110;
+        vsync->h_sync_width = 62;
+        vsync->h_back_porch = 60;
+        vsync->h_front_porch = 16;
         vsync->h_sync_invert = 0;
         vsync->v_active_len = 480;
-        vsync->v_sync_width = 5;
-        vsync->v_back_porch = 20;
-        vsync->v_front_porch = 5;
+        vsync->v_sync_width = 6;
+        vsync->v_back_porch = 30;
+        vsync->v_front_porch = 9;
         vsync->v_sync_invert = 0;
         break;
 
     case V4L2_DV_576P50:
-        /* 576p: 1024x576 */
-        vsync->h_active_len = 1024;
-        vsync->h_sync_width = 40;
-        vsync->h_back_porch = 220;
-        vsync->h_front_porch = 110;
+        /* 576p: 720x576 */
+        vsync->h_active_len = 720;
+        vsync->h_sync_width = 64;
+        vsync->h_back_porch = 68;
+        vsync->h_front_porch = 12;
         vsync->h_sync_invert = 0;
         vsync->v_active_len = 576;
         vsync->v_sync_width = 5;
-        vsync->v_back_porch = 20;
+        vsync->v_back_porch = 39;
         vsync->v_front_porch = 5;
         vsync->v_sync_invert = 0;
         break;
@@ -562,6 +565,26 @@ static int _config_hdmi(struct nxp_hdmi *me)
     u32 fixed_ffff = 0xffff;
 
     switch (me->cur_conf->mbus_fmt.height) {
+    case 480:
+        width = 720;
+        height = 480;
+        hfp = 16;
+        hsw = 62;
+        hbp = 60;
+        vfp = 9;
+        vsw = 6;
+        vbp = 30;
+        break;
+    case 576:
+        width = 720;
+        height = 576;
+        hfp = 12;
+        hsw = 64;
+        hbp = 68;
+        vfp = 5;
+        vsw = 5;
+        vbp = 39;
+        break;
     case 720:
         /* config = &config_720p; */
         printk("%s: 720p\n", __func__);
@@ -886,6 +909,7 @@ static int _hdmi_set_infoframe(struct nxp_hdmi *me)
 
     info_3d = _hdmi_preset2info(me->cur_preset);
 
+    pr_debug("%s: is_3d %d\n", __func__, info_3d->is_3d);
     if (info_3d->is_3d == HDMI_VIDEO_FORMAT_3D) {
         infoframe.type = HDMI_PACKET_TYPE_VSI;
         infoframe.ver  = HDMI_VSI_VERSION;
@@ -1426,7 +1450,13 @@ static irqreturn_t _hdmi_irq_handler(int irq, void *dev_data)
 #endif
 
     /* queue_work(system_nrt_wq, &me->hpd_work); */
-    queue_delayed_work(system_nrt_wq, &me->hpd_work, msecs_to_jiffies(1000));
+    if (flag & (HDMI_INTC_FLAG_HPD_UNPLUG | HDMI_INTC_FLAG_HPD_PLUG))
+        queue_delayed_work(system_nrt_wq, &me->hpd_work, msecs_to_jiffies(1000));
+
+    if (me->callback && (me->irq_num_of_callback & flag)) {
+        hdmi_write_mask(HDMI_LINK_INTC_FLAG_0, ~0, me->irq_num_of_callback);
+        me->callback(me->callback_data);
+    }
 
     return IRQ_HANDLED;
 }
@@ -1466,7 +1496,9 @@ static void _hdmi_hpd_changed(struct nxp_hdmi *me, int state)
             if (preset == V4L2_DV_INVALID)
                 preset = HDMI_DEFAULT_PRESET;
 
-            me->is_dvi = !me->edid.supports_hdmi(&me->edid);
+            // psw0523 fix : edid error?
+            /*me->is_dvi = !me->edid.supports_hdmi(&me->edid);*/
+            me->is_dvi = false;
             me->cur_preset = preset;
             me->cur_conf = (struct hdmi_preset_conf *)_hdmi_preset2conf(preset);
         }
@@ -1754,3 +1786,29 @@ int resume_nxp_hdmi(struct nxp_hdmi *me)
     return 0;
 }
 #endif
+
+extern struct nxp_hdmi *get_nxp_hdmi(void);
+int register_hdmi_irq_callback(int int_num, int (*callback)(void *), void *data)
+{
+    struct nxp_hdmi *hdmi = get_nxp_hdmi();
+    if (hdmi) {
+        hdmi->callback = callback;
+        hdmi->callback_data = data;
+        hdmi->irq_num_of_callback = int_num;
+        printk("%s: int_num 0x%x, callback %p\n", __func__, int_num, callback);
+        return 0;
+    }
+    return -ENODEV;
+}
+
+int unregister_hdmi_irq_callback(int int_num)
+{
+    struct nxp_hdmi *hdmi = get_nxp_hdmi();
+    if (hdmi && int_num == hdmi->irq_num_of_callback) {
+        hdmi->callback = NULL;
+        hdmi->callback_data = NULL;
+        hdmi->irq_num_of_callback = -1;
+        return 0;
+    }
+    return -ENODEV;
+}

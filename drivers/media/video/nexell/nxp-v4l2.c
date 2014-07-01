@@ -387,6 +387,12 @@ static struct platform_driver nxp_v4l2_driver = {
     },
 };
 
+#ifdef CONFIG_NXP_OUT_HDMI
+struct nxp_hdmi *get_nxp_hdmi(void) {
+     return __me->out->hdmi;
+}
+#endif
+
 module_platform_driver(nxp_v4l2_driver);
 
 MODULE_AUTHOR("swpark <swpark@nexell.co.kr>");

@@ -159,8 +159,13 @@ struct disp_control_info {
 	struct lcd_operation    *lcd_ops;		/* LCD and Backlight */
 	struct disp_multily_dev  multilayer;
 	struct disp_process_dev	*proc_dev;
+#if 0
 	void (*callback)(void *);
 	void  *callback_data;
+#else
+    spinlock_t lock_callback;
+    struct list_head callback_list;
+#endif
 };
 
 static LIST_HEAD(disp_resconv_link);
@@ -472,10 +477,20 @@ static irqreturn_t	disp_syncgen_irqhandler(int irq, void *desc)
 	if (!version)
 		NX_MLC_SetTopDirtyFlag(module);
 
+#if 0
 	if (info->callback) {
 		void *data = info->callback_data;
 		info->callback(data);
 	}
+#else
+    spin_lock(&info->lock_callback);
+    if (!list_empty(&info->callback_list)) {
+        struct disp_irq_callback *callback;
+        list_for_each_entry(callback, &info->callback_list, list)
+            callback->handler(callback->data);
+    }
+    spin_unlock(&info->lock_callback);
+#endif
 
 #if (0)
     {
@@ -2009,25 +2024,45 @@ void nxp_soc_disp_register_lcd_ops(int module, struct lcd_operation *ops)
 	info->lcd_ops = ops;
 }
 
-void nxp_soc_disp_register_irq_callback(int module, void (*callback)(void *), void *data)
+struct disp_irq_callback *nxp_soc_disp_register_irq_callback(int module, void (*callback)(void *), void *data)
 {
+    unsigned long flags;
+    struct disp_irq_callback *entry = NULL;
 	struct disp_control_info *info = get_module_to_info(module);
-	RET_ASSERT(0 == module || 1 == module);
-	RET_ASSERT(callback);
+	RET_ASSERT_NULL(0 == module || 1 == module);
+	RET_ASSERT_NULL(callback);
 
 	DBGOUT("%s: display.%d\n", __func__, module);
+#if 0
 	info->callback = callback;
 	info->callback_data = data;
+#else
+    entry = (struct disp_irq_callback *)kmalloc(sizeof(struct disp_irq_callback), GFP_KERNEL);
+    entry->handler = callback;
+    entry->data = data;
+    spin_lock_irqsave(&info->lock_callback, flags);
+    list_add_tail(&entry->list, &info->callback_list);
+    spin_unlock_irqrestore(&info->lock_callback, flags);
+    return entry;
+#endif
 }
 
-void nxp_soc_disp_unregister_irq_callback(int module)
+void nxp_soc_disp_unregister_irq_callback(int module, struct disp_irq_callback *callback)
 {
+    unsigned long flags;
 	struct disp_control_info *info = get_module_to_info(module);
 	RET_ASSERT(0 == module || 1 == module);
 
 	DBGOUT("%s: display.%d\n", __func__, module);
+#if 0
 	info->callback = NULL;
 	info->callback_data = NULL;
+#else
+    spin_lock_irqsave(&info->lock_callback, flags);
+    list_del(&callback->list);
+    spin_unlock_irqrestore(&info->lock_callback, flags);
+    kfree(callback);
+#endif
 }
 
 void nxp_soc_disp_device_framebuffer(int module, int fb)
@@ -2260,6 +2295,8 @@ static int display_soc_setup(int module, struct disp_process_dev *pdev,
 	INIT_WORK(&info->work, disp_syncgen_irq_work);
 
 	init_waitqueue_head(&info->wait_queue);
+    INIT_LIST_HEAD(&info->callback_list);
+    spin_lock_init(&info->lock_callback);
 	ret = request_irq(info->irqno, &disp_syncgen_irqhandler,
 			IRQF_DISABLED, DEV_NAME_DISP, info);
 	if (ret) {

@@ -36,10 +36,10 @@
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-//	{ 1600000, 1200 },
-//	{ 1500000, 1200 },
-//	{ 1400000, 1200 },
-//	{ 1300000, 1200 },
+	//{ 1600000, 1200 },
+	{ 1500000, 1200 },
+	{ 1400000, 1200 },
+	{ 1300000, 1200 },
 	{ 1200000, 1200 },
 	{ 1100000, 1200 },
 	{ 1000000, 1200 },
@@ -58,8 +58,8 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP4330_CPUFREQ_PLLDEV,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1200*1000,
-	.max_retention  =   30*1000,
+	.max_cpufreq    = 1500*1000,
+	.max_retention  =   20*1000,
 	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
 };
@@ -524,7 +524,7 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1200000, 1, 12);	/* 1.2V ARM */
+NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1250000, 1, 12);	/* 1.2V ARM */
 NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1, 14);	/* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1600000, 1, -1);	/* 1.6V DDR */
@@ -541,7 +541,7 @@ NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 1, 1, 2800000, 0,  1);	/* 2.8V
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
 NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V VID */
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
-NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 1, 1, 3300000, 0,  0);	/* 3.3V VCAM */
+NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 1, 1, 2800000, 0,  0);	/* 3.3V VCAM */
 NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
 NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
@@ -1258,10 +1258,10 @@ static struct dw_mci_board _dwmci1_data = {
 						DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 100 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
-	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
+	//.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
 	.detect_delay_ms= 200,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(3) | DW_MMC_SAMPLE_PHASE(0),
 	.init			= _dwmci0_init,
 	.get_ro         = _dwmci_get_ro,
 	.get_cd			= _dwmci0_get_cd,

@@ -379,6 +379,7 @@ int32_t dwc_otg_handle_session_req_intr(dwc_otg_core_if_t * core_if)
 
 	if (dwc_otg_is_device_mode(core_if)) {
 		DWC_PRINTF("SRP: Device mode\n");
+
         // psw0523 test for charging mode
 #if 0
         {
@@ -692,13 +693,13 @@ static int32_t dwc_otg_handle_pwrdn_idsts_change(dwc_otg_device_t *otg_dev)
 		uint8_t is_host = 0;
 		DWC_SPINUNLOCK(core_if->lock);
 		/* Change the core_if's lock to hcd/pcd lock depend on mode? */
-#ifndef DWC_HOST_ONLY		
+#ifndef DWC_HOST_ONLY
 		if (gpwrdn_temp.b.idsts)
 			core_if->lock = otg_dev->pcd->lock;
 #endif
 #ifndef DWC_DEVICE_ONLY
 		if (!gpwrdn_temp.b.idsts) {
-				core_if->lock = otg_dev->hcd->lock;	
+				core_if->lock = otg_dev->hcd->lock;
 				is_host = 1;
 		}
 #endif
@@ -1405,10 +1406,11 @@ int32_t dwc_otg_handle_common_intr(void *dev)
 	gpwrdn_data_t gpwrdn = {.d32 = 0 };
 	dwc_otg_device_t *otg_dev = dev;
 	dwc_otg_core_if_t *core_if = otg_dev->core_if;
+
 	gpwrdn.d32 = DWC_READ_REG32(&core_if->core_global_regs->gpwrdn);
 	if (dwc_otg_is_device_mode(core_if))
 		core_if->frame_num = dwc_otg_get_frame_number(core_if);
-		
+
 	if (core_if->lock)
 		DWC_SPINLOCK(core_if->lock);
 
@@ -1433,7 +1435,7 @@ int32_t dwc_otg_handle_common_intr(void *dev)
 		}
 		if (gintsts.b.conidstschng) {
 			retval |=
-			    dwc_otg_handle_conn_id_status_change_intr(core_if);
+				dwc_otg_handle_conn_id_status_change_intr(core_if);
 		}
 		if (gintsts.b.disconnect) {
 			retval |= dwc_otg_handle_disconnect_intr(core_if);
@@ -1454,7 +1456,7 @@ int32_t dwc_otg_handle_common_intr(void *dev)
 #endif
 		if (gintsts.b.restoredone) {
 			gintsts.d32 = 0;
-	                if (core_if->power_down == 2)
+			if (core_if->power_down == 2)
 				core_if->hibernation_suspend = -1;
 			else if (core_if->power_down == 3 && core_if->xhib == 2) {
 				gpwrdn_data_t gpwrdn = {.d32 = 0 };
@@ -1465,7 +1467,7 @@ int32_t dwc_otg_handle_common_intr(void *dev)
 						gintsts, 0xFFFFFFFF);
 
 				DWC_DEBUGPL(DBG_ANY,
-					    "RESTORE DONE generated\n");
+						"RESTORE DONE generated\n");
 
 				gpwrdn.b.restore = 1;
 				DWC_MODIFY_REG32(&core_if->core_global_regs->gpwrdn, gpwrdn.d32, 0);
@@ -1503,8 +1505,8 @@ int32_t dwc_otg_handle_common_intr(void *dev)
 				if (core_if->pcd_cb && core_if->pcd_cb->resume_wakeup) {
 					core_if->pcd_cb->resume_wakeup(core_if->pcd_cb->p);
 				}
-				DWC_SPINLOCK(core_if->lock);
 
+				DWC_SPINLOCK(core_if->lock);
 			}
 
 			gintsts.b.restoredone = 1;
@@ -1520,7 +1522,6 @@ int32_t dwc_otg_handle_common_intr(void *dev)
 			gintsts.b.portintr = 1;
 			DWC_WRITE_REG32(&core_if->core_global_regs->gintsts,gintsts.d32);
 			retval |= 1;
-
 		}
 	} else {
 		DWC_DEBUGPL(DBG_ANY, "gpwrdn=%08x\n", gpwrdn.d32);
@@ -1532,10 +1533,9 @@ int32_t dwc_otg_handle_common_intr(void *dev)
 			} else {
 				DWC_PRINTF("Disconnect detected while linestate is not 0\n");
 			}
-
 			retval |= 1;
 		}
-	 	if (gpwrdn.b.lnstschng && gpwrdn.b.lnstchng_msk) {
+		if (gpwrdn.b.lnstschng && gpwrdn.b.lnstchng_msk) {
 			CLEAR_GPWRDN_INTR(core_if, lnstschng);
 			/* remote wakeup from hibernation */
 			if (gpwrdn.b.linestate == 2 || gpwrdn.b.linestate == 1) {
@@ -1544,7 +1544,7 @@ int32_t dwc_otg_handle_common_intr(void *dev)
 				DWC_PRINTF("gpwrdn.linestate = %d\n", gpwrdn.b.linestate);
 			}
 			retval |= 1;
-	 	}
+		}
 		if (gpwrdn.b.rst_det && gpwrdn.b.rst_det_msk) {
 			CLEAR_GPWRDN_INTR(core_if, rst_det);
 			if (gpwrdn.b.linestate == 0) {

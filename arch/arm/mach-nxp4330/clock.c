@@ -869,6 +869,9 @@ unsigned int nxp_cpu_clock_hz(int type)
 	case  9: rate = core_hz[ 9];	break;	// MDCLK
 	case 10: rate = core_hz[10];	break;	// MBCLK
 	case 11: rate = core_hz[11];	break;	// MPCLK
+	case 12: rate = core_hz[12]; 	break;	// G3D BCLK
+	case 13: rate = core_hz[13]; 	break;	// MPG BCLK
+	case 14: rate = core_hz[14];	break;	// MPG PCLK
 	default: printk("unknown core clock type %d ...\n", type);
 			break;
 	};

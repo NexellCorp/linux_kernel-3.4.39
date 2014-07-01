@@ -753,7 +753,7 @@ static int dwc_otg_urb_enqueue(struct usb_hcd *hcd,
 	urb->hcpriv = dwc_otg_urb;
 	if (!dwc_otg_urb && urb->number_of_packets)
 		return -ENOMEM;
-        
+
 	dwc_otg_hcd_urb_set_pipeinfo(dwc_otg_urb, usb_pipedevice(urb->pipe),
 				     usb_pipeendpoint(urb->pipe), ep_type,
 				     usb_pipein(urb->pipe),
@@ -834,7 +834,7 @@ static int dwc_otg_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 {
 	dwc_irqflags_t flags;
 	dwc_otg_hcd_t *dwc_otg_hcd;
-        int rc;
+	int rc;
 
 	DWC_DEBUGPL(DBG_HCD, "DWC OTG HCD URB Dequeue\n");
 
@@ -850,36 +850,36 @@ static int dwc_otg_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 	rc = usb_hcd_check_unlink_urb(hcd, urb, status);
 	if (0 == rc) {
 		if(urb->hcpriv != NULL) {
-	                dwc_otg_hcd_urb_dequeue(dwc_otg_hcd,
-    	                                    (dwc_otg_hcd_urb_t *)urb->hcpriv);
+			dwc_otg_hcd_urb_dequeue(dwc_otg_hcd,
+					(dwc_otg_hcd_urb_t *)urb->hcpriv);
 
-        	        DWC_FREE(urb->hcpriv);
-            		urb->hcpriv = NULL;
-            	}
-        }
+			DWC_FREE(urb->hcpriv);
+			urb->hcpriv = NULL;
+		}
+	}
 
-        if (0 == rc) {
-        	/* Higher layer software sets URB status. */
+	if (0 == rc) {
+		/* Higher layer software sets URB status. */
 #if USB_URB_EP_LINKING
-                usb_hcd_unlink_urb_from_ep(hcd, urb);
+		usb_hcd_unlink_urb_from_ep(hcd, urb);
 #endif
-        	DWC_SPINUNLOCK_IRQRESTORE(dwc_otg_hcd->lock, flags);
+		DWC_SPINUNLOCK_IRQRESTORE(dwc_otg_hcd->lock, flags);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
-                usb_hcd_giveback_urb(hcd, urb);
+		usb_hcd_giveback_urb(hcd, urb);
 #else
-                usb_hcd_giveback_urb(hcd, urb, status);
+		usb_hcd_giveback_urb(hcd, urb, status);
 #endif
-                if (CHK_DEBUG_LEVEL(DBG_HCDV | DBG_HCD_URB)) {
-                        DWC_PRINTF("Called usb_hcd_giveback_urb() \n");
-                        DWC_PRINTF("  1urb->status = %d\n", urb->status);
-                }
-                DWC_DEBUGPL(DBG_HCD, "DWC OTG HCD URB Dequeue OK\n");
-        } else {
-        	DWC_SPINUNLOCK_IRQRESTORE(dwc_otg_hcd->lock, flags);
-                DWC_DEBUGPL(DBG_HCD, "DWC OTG HCD URB Dequeue failed - rc %d\n",
-                            rc);
-        }
-           
+		if (CHK_DEBUG_LEVEL(DBG_HCDV | DBG_HCD_URB)) {
+			DWC_PRINTF("Called usb_hcd_giveback_urb() \n");
+			DWC_PRINTF("  1urb->status = %d\n", urb->status);
+		}
+		DWC_DEBUGPL(DBG_HCD, "DWC OTG HCD URB Dequeue OK\n");
+	} else {
+		DWC_SPINUNLOCK_IRQRESTORE(dwc_otg_hcd->lock, flags);
+		DWC_DEBUGPL(DBG_HCD, "DWC OTG HCD URB Dequeue failed - rc %d\n",
+				rc);
+	}
+
 	return rc;
 }
 

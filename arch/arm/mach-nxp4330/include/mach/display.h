@@ -160,6 +160,14 @@ struct disp_process_dev {
 	}											\
 }
 
+#define RET_ASSERT_NULL(_expr_)	{			\
+	if (!(_expr_)) {								\
+		printk(KERN_ERR "%s(%d) : %s %s \n",		\
+			__func__, __LINE__, "ASSERT", #_expr_);	\
+		return NULL;										\
+	}											\
+}
+
 /* device string */
 extern const char *dev_to_str(enum disp_dev_type device);
 
@@ -357,6 +365,16 @@ union disp_dev_param {
 	struct disp_mipi_param 	mipi;
 	struct disp_hdmi_param 	hdmi;
 	struct disp_resc_param	resc;
+};
+
+/**
+ * for callback list
+ */
+typedef void (*disp_irq_handler)(void *);
+struct disp_irq_callback {
+    struct list_head list;
+    disp_irq_handler handler;
+    void *data;
 };
 
 #endif /* __DISPLAY_H__ */
