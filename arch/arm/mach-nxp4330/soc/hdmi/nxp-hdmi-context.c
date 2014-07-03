@@ -677,11 +677,8 @@ static irqreturn_t _hdmi_irq_handler(int irq, void *dev_data)
     }
 #endif
 
-    /* use delayed work when v4l2 hdmi configured */
-/*#if defined(CONFIG_NXP_OUT_HDMI)*/
     if (flag & (HDMI_INTC_FLAG_HPD_UNPLUG | HDMI_INTC_FLAG_HPD_PLUG))
         queue_delayed_work(system_nrt_wq, &me->hpd_work, msecs_to_jiffies(1000));
-/*#endif*/
 
     spin_lock(&me->lock_callback);
     if (!list_empty(&me->callback_list)) {
