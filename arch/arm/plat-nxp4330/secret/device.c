@@ -1560,7 +1560,7 @@ static struct dw_mci_board _dwmci1_data = {
 	.init			= _dwmci1_init,
 	.ext_cd_init	= _dwmci1_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci1_ext_cd_cleanup,
-	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(2),
 };
 
 #if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
