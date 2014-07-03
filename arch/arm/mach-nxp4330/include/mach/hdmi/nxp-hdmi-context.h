@@ -16,7 +16,7 @@ enum {
     HDMI_UNPLUGGED  = (1 << 0),
     HDMI_PLUGGED    = (1 << 1),
     HDMI_STOPPED    = (1 << 2),
-    HDMI_RUNNING    = (1 << 2),
+    HDMI_RUNNING    = (1 << 3),
 };
 
 struct hdmi_sync_param {
@@ -83,6 +83,10 @@ struct nxp_hdmi_context {
 
     /* hook : client must set this field */
     void (*set_hdmi_mux)(struct nxp_hdmi_context *);
+
+    /* hook ; hpd change notifier */
+    void (*notify_hpd_changed)(void *, int);
+    void *notify_data;
 };
 
 int hdmi_init_context(struct nxp_hdmi_context *, struct nxp_v4l2_i2c_board_info *, struct nxp_v4l2_i2c_board_info *);
@@ -101,6 +105,7 @@ bool hdmi_is_connected(void);
 uint32_t hdmi_get_edid_preset(struct nxp_hdmi_context *, uint32_t);
 struct hdmi_irq_callback *hdmi_register_irq_callback(int , int (*)(void *), void *);
 void hdmi_unregister_irq_callback(struct hdmi_irq_callback *);
+void hdmi_register_notifier_hpd_changed(struct nxp_hdmi_context *, void (*)(void *, int), void *);
 int hdmi_suspend(struct nxp_hdmi_context *);
 int hdmi_resume(struct nxp_hdmi_context *);
 

@@ -678,10 +678,10 @@ static irqreturn_t _hdmi_irq_handler(int irq, void *dev_data)
 #endif
 
     /* use delayed work when v4l2 hdmi configured */
-#if defined(CONFIG_NXP_OUT_HDMI)
+/*#if defined(CONFIG_NXP_OUT_HDMI)*/
     if (flag & (HDMI_INTC_FLAG_HPD_UNPLUG | HDMI_INTC_FLAG_HPD_PLUG))
         queue_delayed_work(system_nrt_wq, &me->hpd_work, msecs_to_jiffies(1000));
-#endif
+/*#endif*/
 
     spin_lock(&me->lock_callback);
     if (!list_empty(&me->callback_list)) {
@@ -731,6 +731,9 @@ static void _hdmi_hpd_changed(struct nxp_hdmi_context *me, int state)
     }
 
     switch_set_state(&me->hpd_switch, state);
+
+    if (me->notify_hpd_changed)
+        me->notify_hpd_changed(me->notify_data, state);
 }
 
 static void _hdmi_hpd_work(struct work_struct *work)
@@ -869,8 +872,10 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
 
     pr_debug("%s\n", __func__);
 
-    /*if (atomic_read(&me->state) == HDMI_RUNNING)*/
-        /*return 0;*/
+    if (atomic_read(&me->state) == HDMI_RUNNING) {
+        pr_warning("%s: hdmi already running!\n", __func__);
+        return 0;
+    }
     /**
      * [SEQ 5] set up the HDMI PHY to specific video clock.
      */
@@ -973,7 +978,7 @@ void hdmi_stop(struct nxp_hdmi_context *me)
     if (atomic_read(&me->state) != HDMI_RUNNING)
         return;
 
-#if defined(CONFIG_nxp_hdmi_context_USE_HDCP)
+#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NEXELL_DISPLAY_HDMI_USE_HDCP)
     me->hdcp.stop(&me->hdcp);
 #endif
 
@@ -1112,6 +1117,12 @@ void hdmi_unregister_irq_callback(struct hdmi_irq_callback *entry)
     list_del(&entry->list);
     spin_unlock_irqrestore(&me->lock_callback, flags);
     kfree(entry);
+}
+
+void hdmi_register_notifier_hpd_changed(struct nxp_hdmi_context *me, void (*notify)(void *, int), void *data)
+{
+    me->notify_hpd_changed = notify;
+    me->notify_data = data;
 }
 
 int hdmi_suspend(struct nxp_hdmi_context *me)

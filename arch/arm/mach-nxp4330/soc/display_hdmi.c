@@ -53,6 +53,7 @@ struct nxp_hdmi_display {
     struct nxp_hdmi_context ctx;
     struct nxp_lcd_plat_data *plat_data;
     enum disp_dev_type input;
+    bool first;
 };
 
 #define context_to_nxp_hdmi_display(ctx) \
@@ -79,10 +80,14 @@ static int hdmi_disp_enable(struct disp_process_dev *pdev, int enable)
 {
     struct nxp_hdmi_display *me = (struct nxp_hdmi_display *)pdev->priv;
     pr_debug("%s entered: %d, %p\n", __func__, enable, me);
-    if (enable)
-        hdmi_run(&me->ctx, false);
-    else
+    if (enable) {
+        if (hdmi_is_connected()) {
+            /*me->first = false;*/
+            hdmi_run(&me->ctx, false);
+        }
+    } else {
         hdmi_stop(&me->ctx);
+    }
     return 0;
 }
 
@@ -159,10 +164,31 @@ static void _set_hdmi_mux(struct nxp_hdmi_context *ctx)
     pr_debug("%s exit\n", __func__);
 }
 
+static void notify_hpd_changed(void *data, int state)
+{
+    struct nxp_hdmi_display *me = (struct nxp_hdmi_display *)data;
+
+    printk("%s: state %d\n", __func__, state);
+
+    if (state) {
+        /*hdmi_set_preset(&me->ctx, hdmi_get_edid_preset(&me->ctx, me->ctx.cur_preset));*/
+        hdmi_run(&me->ctx, true);
+        /*if (me->first) {*/
+            /*hdmi_run(&me->ctx, false);*/
+            /*me->first = false;*/
+        /*} else {*/
+            /*hdmi_run(&me->ctx, true);*/
+        /*}*/
+    } else {
+        hdmi_stop(&me->ctx);
+    }
+}
+
 static int hdmi_probe(struct platform_device *pdev)
 {
     struct nxp_lcd_plat_data *plat = pdev->dev.platform_data;
     struct nxp_hdmi_display *me = NULL;
+    u32 preferred_preset;
     int ret = 0;
 
     RET_ASSERT_VAL(plat, -EINVAL);
@@ -184,25 +210,27 @@ static int hdmi_probe(struct platform_device *pdev)
         return ret;
     }
 
-    if (hdmi_is_connected()) {
-        u32 preferred_preset;
 #if defined(CONFIG_NEXELL_DISPLAY_HDMI_1280_720P)
-        preferred_preset = V4L2_DV_720P60;
+    preferred_preset = V4L2_DV_720P60;
 #elif defined(CONFIG_NEXELL_DISPLAY_HDMI_1920_1080P)
-        preferred_preset = V4L2_DV_1080P60;
+    preferred_preset = V4L2_DV_1080P60;
 #else
 #error "***** NOT SPECIFIED HDMI RESOLUTION !!! *****"
 #endif
+
+    if (hdmi_is_connected())
         preferred_preset = hdmi_get_edid_preset(&me->ctx, preferred_preset);
-        hdmi_set_preset(&me->ctx, preferred_preset);
-    }
+
+    hdmi_set_preset(&me->ctx, preferred_preset);
 
     me->plat_data = plat;
+    me->first = true;
 
     /* sync param initialize */
     me->ctx.source_device = me->plat_data->display_in;
     hdmi_get_vsync(&me->ctx);
     hdmi_hook_set_mux(&me->ctx, _set_hdmi_mux);
+    hdmi_register_notifier_hpd_changed(&me->ctx, notify_hpd_changed, me);
 
     nxp_soc_disp_register_priv(DISP_DEVICE_HDMI, (void *)me);
     nxp_soc_disp_register_proc_ops(DISP_DEVICE_HDMI, &hdmi_ops);
