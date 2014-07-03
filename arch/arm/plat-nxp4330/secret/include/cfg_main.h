@@ -116,7 +116,7 @@
 #define CFG_DISP_PRI_CLKGEN0_DIV                12
 #else
 #define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL2
-#define CFG_DISP_PRI_CLKGEN0_DIV                14 //8
+#define CFG_DISP_PRI_CLKGEN0_DIV                10 //8
 #endif
 #define CFG_DISP_PRI_CLKGEN0_DELAY              0
 #define CFG_DISP_PRI_CLKGEN0_INVERT				0

@@ -498,16 +498,25 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
     volatile NX_DREX_REG *pdrex = (volatile NX_DREX_REG *)IO_ADDRESS(PHY_BASEADDR_DREX);
     volatile u32 *pl301_bot = (volatile u32 *)IO_ADDRESS(0xC0050000);
     int stop;
+    volatile u32 tmp;
 
 	if (dfs_bclk_manager.suspended)
 		return;
 
     _cpu_pll_change_frequency(pll_num, bclk);
 
+    WARN(0 != raw_smp_processor_id(), "BCLK Dynamic Frequency CPU.%d  conflict with BCLK DFS...\n",
+            raw_smp_processor_id());
+
     stop = cpu_down_force();
 
     preempt_disable();
     local_irq_disable();
+
+    tmp = *((u32*)clkpwr);
+    mb();
+    tmp = *((u32*)pl301_bot);
+    mb();
 
     pdrex->DIRECTCMD = ((DIRCMD_PALL << DIRCMD_TYPE_SHIFT) | (DIRCMD_CHIP_0 << DIRCMD_CHIP_SHIFT)); // precharge all cmd
     pdrex->CONCONTROL &= ~(0x1 << 5);
@@ -526,7 +535,6 @@ static inline void _disable_irq_and_set(uint32_t pll_num, uint32_t bclk)
         uint32_t S = PMS_S(s_p, s_l);
         u32 pll_data = (P << 24) | (M << 8) | (S << 2) | pll_num;
         real_change_pll((u32 *)clkpwr, (u32 *)pl301_bot, (u32 *)pdrex, pll_data);
-        nxp_cpu_clock_update_rate(pll_num);
         /*real_change_pll((u32 *)clkpwr, (u32 *)do_suspend, (u32 *)pdrex, pll_data);*/
         /*_real_change_pll((u32 *)clkpwr, pll_data);*/
     }
@@ -549,7 +557,8 @@ static int bclk_dfs_thread(void *unused)
     while (!kthread_should_stop()) {
         /*uint32_t bclk = dfs_bclk_manager.current_bclk;*/
 
-		set_current_state(TASK_UNINTERRUPTIBLE);
+        set_current_state(TASK_UNINTERRUPTIBLE);
+
         dfs_bclk_manager.current_bclk =
             dfs_bclk_manager.func(
                     dfs_bclk_manager.bclk_pll_num,
@@ -557,8 +566,6 @@ static int bclk_dfs_thread(void *unused)
                     atomic_read(&dfs_bclk_manager.user_bitmap),
                     dfs_bclk_manager.current_bclk
                     );
-		set_current_state(TASK_INTERRUPTIBLE);
-
         /*_disable_irq_and_set(pll, bclk);*/
         schedule();
 

@@ -173,6 +173,7 @@ static inline void core_pll_change_lock(bool lock)
 	}
 }
 
+#include <linux/delay.h>
 unsigned long nxp_cpu_pll_change_frequency(int no, unsigned long rate)
 {
 	struct pll_pms *p;
@@ -181,6 +182,9 @@ unsigned long nxp_cpu_pll_change_frequency(int no, unsigned long rate)
 
 	rate /= 1000;
 	DBGOUT("PLL.%d, %ld", no, rate);
+#ifdef CONFIG_NEXELL_DFS_BCLK
+    mdelay(1);
+#endif
 
 	switch (no) {
 	case 0 :
@@ -215,12 +219,19 @@ unsigned long nxp_cpu_pll_change_frequency(int no, unsigned long rate)
 		}
 	}
 
-	core_pll_change_lock(true);
+	/*core_pll_change_lock(true);*/
+    preempt_disable();
+    local_irq_disable();
 	core_pll_change(no, PMS_P(p, l), PMS_M(p, l), PMS_S(p, l));
-	core_pll_change_lock(false);
+    preempt_enable();
+    local_irq_enable();
+	/*core_pll_change_lock(false);*/
 
 	DBGOUT("(real %ld Khz, P=%d ,M=%3d, S=%d)\n",
 		PMS_RATE(p, l), PMS_P(p, l), PMS_M(p, l), PMS_S(p, l));
+#ifdef CONFIG_NEXELL_DFS_BCLK
+    mdelay(1);
+#endif
 
 	return PMS_RATE(p, l);
 }
