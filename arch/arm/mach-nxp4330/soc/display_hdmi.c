@@ -53,7 +53,6 @@ struct nxp_hdmi_display {
     struct nxp_hdmi_context ctx;
     struct nxp_lcd_plat_data *plat_data;
     enum disp_dev_type input;
-    bool first;
 };
 
 #define context_to_nxp_hdmi_display(ctx) \
@@ -82,7 +81,6 @@ static int hdmi_disp_enable(struct disp_process_dev *pdev, int enable)
     pr_debug("%s entered: %d, %p\n", __func__, enable, me);
     if (enable) {
         if (hdmi_is_connected()) {
-            /*me->first = false;*/
             hdmi_run(&me->ctx, false);
         }
     } else {
@@ -171,14 +169,7 @@ static void notify_hpd_changed(void *data, int state)
     printk("%s: state %d\n", __func__, state);
 
     if (state) {
-        /*hdmi_set_preset(&me->ctx, hdmi_get_edid_preset(&me->ctx, me->ctx.cur_preset));*/
         hdmi_run(&me->ctx, true);
-        /*if (me->first) {*/
-            /*hdmi_run(&me->ctx, false);*/
-            /*me->first = false;*/
-        /*} else {*/
-            /*hdmi_run(&me->ctx, true);*/
-        /*}*/
     } else {
         hdmi_stop(&me->ctx);
     }
@@ -224,7 +215,6 @@ static int hdmi_probe(struct platform_device *pdev)
     hdmi_set_preset(&me->ctx, preferred_preset);
 
     me->plat_data = plat;
-    me->first = true;
 
     /* sync param initialize */
     me->ctx.source_device = me->plat_data->display_in;

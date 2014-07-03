@@ -14,6 +14,7 @@
 #include <linux/clk.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
+#include <linux/wakelock.h>
 
 #include <mach/devices.h>
 #include <mach/ehci.h>
@@ -42,6 +43,7 @@ struct nxp_ehci_hcd {
 #ifdef CONFIG_USB_EHCI_NXP4330_RESUME_WORK
 	struct workqueue_struct *resume_wq;
 	struct delayed_work	resume_work;
+	struct wake_lock resume_lock;
 	int delay_time;
 	unsigned char backup_state[256];
 #endif
@@ -252,6 +254,7 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 		goto fail;
 
 	INIT_DELAYED_WORK(&nxp_ehci->resume_work, nxp_ehci_resume_work);
+ 	wake_lock_init(&nxp_ehci->resume_lock, WAKE_LOCK_SUSPEND, "nxp-ehci");
 #endif
 	return 0;
 
@@ -368,8 +371,10 @@ static void nxp_ehci_resume_work(struct work_struct *work)
 	struct nxp4330_ehci_platdata *pdata = pdev->dev.platform_data;
 	struct usb_device *udev = hcd->self.root_hub;
 
-	if (nxp_ehci->phy)
+	if (nxp_ehci->phy) {
+		wake_unlock(&nxp_ehci->resume_lock);
 		return;
+	}	
 
 #if defined( CONFIG_USB_HSIC_NXP4330 )
 	if (pdata && pdata->phy_init)
@@ -400,6 +405,7 @@ static void nxp_ehci_resume_work(struct work_struct *work)
 			mask &= ~STS_PCD;
 		ehci_writel(ehci, mask, &ehci->regs->intr_enable);
 		ehci_readl(ehci, &ehci->regs->intr_enable);
+		wake_unlock(&nxp_ehci->resume_lock);
 		return;
 	}
 
@@ -433,6 +439,7 @@ static void nxp_ehci_resume_work(struct work_struct *work)
 		nxp_ehci_resume_last(udev, nxp_ehci->backup_state, &step);
 		usb_unlock_device(udev);
 	}
+	wake_unlock(&nxp_ehci->resume_lock);
 }
 #endif
 
@@ -508,6 +515,7 @@ static int nxp_ehci_resume(struct device *dev)
 	int step = 0;
 
 	nxp_ehci_resume_previous(udev, nxp_ehci->backup_state, &step);
+	wake_lock(&nxp_ehci->resume_lock);
 	queue_delayed_work(nxp_ehci->resume_wq, &nxp_ehci->resume_work,
 				msecs_to_jiffies(nxp_ehci->delay_time));
 	#if (0)
