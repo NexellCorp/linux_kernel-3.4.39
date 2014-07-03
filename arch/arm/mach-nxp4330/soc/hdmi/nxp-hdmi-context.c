@@ -939,7 +939,7 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
     hdmi_set_infoframe(me);
     _hdmi_set_packets(me);
 
-#if defined(CONFIG_NXP_HDMI_AUDIO_I2S) || defined(CONFIG_NEXELL_DISPLAY_HDMI_AUDIO_SPDIF)
+#if defined(CONFIG_NXP_HDMI_AUDIO_I2S) || defined(CONFIG_NEXELL_DISPLAY_HDMI_AUDIO_I2S)
     hdmi_audio_i2s_init(me->sample_rate, me->bits_per_sample);
 #else
     /* default is SPDIF */
