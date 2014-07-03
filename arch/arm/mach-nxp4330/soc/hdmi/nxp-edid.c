@@ -301,7 +301,9 @@ static u32 nxp_edid_preferred_preset(struct nxp_edid *me)
 static bool nxp_edid_supports_hdmi(struct nxp_edid *me)
 {
     pr_debug("%s\n", __func__);
-    return me->edid_misc & FB_MISC_HDMI;
+    // fix : some hdmi monitor does not set this flag --> always return true
+    /*return me->edid_misc & FB_MISC_HDMI;*/
+    return true;
 }
 
 static int nxp_edid_max_audio_channels(struct nxp_edid *me)

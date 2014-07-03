@@ -97,6 +97,8 @@ void hdmi_set_infoframe(struct nxp_hdmi_context *);
 //int  hdmi_set_dv_preset(struct nxp_hdmi_context *, u32);
 int  hdmi_set_dv_preset(struct nxp_hdmi_context *, struct v4l2_dv_preset *);
 int  hdmi_set_preset(struct nxp_hdmi_context *, uint32_t );
+bool hdmi_is_connected(void);
+uint32_t hdmi_get_edid_preset(struct nxp_hdmi_context *, uint32_t);
 struct hdmi_irq_callback *hdmi_register_irq_callback(int , int (*)(void *), void *);
 void hdmi_unregister_irq_callback(struct hdmi_irq_callback *);
 int hdmi_suspend(struct nxp_hdmi_context *);

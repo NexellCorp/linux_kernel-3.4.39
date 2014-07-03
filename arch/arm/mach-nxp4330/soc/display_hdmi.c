@@ -184,13 +184,18 @@ static int hdmi_probe(struct platform_device *pdev)
         return ret;
     }
 
+    if (hdmi_is_connected()) {
+        u32 preferred_preset;
 #if defined(CONFIG_NEXELL_DISPLAY_HDMI_1280_720P)
-    hdmi_set_preset(&me->ctx, V4L2_DV_720P60);
+        preferred_preset = V4L2_DV_720P60;
 #elif defined(CONFIG_NEXELL_DISPLAY_HDMI_1920_1080P)
-    hdmi_set_preset(&me->ctx, V4L2_DV_1080P60);
+        preferred_preset = V4L2_DV_1080P60;
 #else
 #error "***** NOT SPECIFIED HDMI RESOLUTION !!! *****"
 #endif
+        preferred_preset = hdmi_get_edid_preset(&me->ctx, preferred_preset);
+        hdmi_set_preset(&me->ctx, preferred_preset);
+    }
 
     me->plat_data = plat;
 

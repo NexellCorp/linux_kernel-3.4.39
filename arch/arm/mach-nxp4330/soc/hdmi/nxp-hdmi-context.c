@@ -677,8 +677,11 @@ static irqreturn_t _hdmi_irq_handler(int irq, void *dev_data)
     }
 #endif
 
+    /* use delayed work when v4l2 hdmi configured */
+#if defined(CONFIG_NXP_OUT_HDMI)
     if (flag & (HDMI_INTC_FLAG_HPD_UNPLUG | HDMI_INTC_FLAG_HPD_PLUG))
         queue_delayed_work(system_nrt_wq, &me->hpd_work, msecs_to_jiffies(1000));
+#endif
 
     spin_lock(&me->lock_callback);
     if (!list_empty(&me->callback_list)) {
@@ -716,12 +719,11 @@ static void _hdmi_hpd_changed(struct nxp_hdmi_context *me, int state)
                 me->cur_preset = HDMI_DEFAULT_PRESET;
         } else {
             preset = me->edid.preferred_preset(&me->edid);
+            printk("%s: edid update success, preset %d\n", __func__, preset);
             if (preset == V4L2_DV_INVALID)
                 preset = HDMI_DEFAULT_PRESET;
 
-            // TODO psw0523 fix : edid error?
-            /*me->is_dvi = !me->edid.supports_hdmi(&me->edid);*/
-            me->is_dvi = false;
+            me->is_dvi = !me->edid.supports_hdmi(&me->edid);
             if (me->cur_preset == V4L2_DV_INVALID)
                 me->cur_preset = preset;
         }
@@ -1049,6 +1051,34 @@ int  hdmi_set_preset(struct nxp_hdmi_context *me, uint32_t preset_val)
     preset.preset = preset_val;
     me->cur_conf = (struct hdmi_preset_conf *)_hdmi_preset2conf(me->cur_preset);
     return hdmi_set_dv_preset(me, &preset);
+}
+
+bool hdmi_is_connected(void)
+{
+    int state = hdmi_hpd_status();
+    if (!nxp_cpu_version()) {
+        /* no revision */
+        /* state is invert!!! */
+        state = !state;
+    }
+    if (state) return true;
+    return false;
+}
+
+uint32_t hdmi_get_edid_preset(struct nxp_hdmi_context *me, uint32_t preferred_preset)
+{
+    if (me->edid.update(&me->edid) < 0) {
+        pr_err("%s: failed to edid update\n", __func__);
+        return preferred_preset;
+    }
+
+    if(me->edid.supports_preset(&me->edid, preferred_preset)) {
+        pr_err("%s: preferred_preset is supported\n", __func__);
+        return preferred_preset;
+    }
+
+    printk("%s: preferred_preset %d is not supported, use edid preferred preset\n", __func__, preferred_preset);
+    return me->edid.preferred_preset(&me->edid);
 }
 
 struct hdmi_irq_callback *hdmi_register_irq_callback(int irq_num, int (*callback)(void *), void *data)

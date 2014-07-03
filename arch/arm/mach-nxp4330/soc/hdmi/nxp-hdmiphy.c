@@ -143,8 +143,10 @@ static int _hdmiphy_reg_set(struct nxp_hdmiphy *me,
     NX_HDMI_SetReg(0, HDMI_PHY_Reg04, (0<<4)); NX_HDMI_SetReg(0, HDMI_PHY_Reg04, (0<<4));
     NX_HDMI_SetReg(0, HDMI_PHY_Reg24, (1<<7)); NX_HDMI_SetReg(0, HDMI_PHY_Reg24, (1<<7));
 
-    for (i = 0, reg_addr = HDMI_PHY_Reg04; i < size; i++, reg_addr += 4)
-        NX_HDMI_SetReg(0, reg_addr, data[i]); NX_HDMI_SetReg(0, reg_addr, data[i]);
+    for (i = 0, reg_addr = HDMI_PHY_Reg04; i < size; i++, reg_addr += 4) {
+        NX_HDMI_SetReg(0, reg_addr, data[i]);
+        NX_HDMI_SetReg(0, reg_addr, data[i]);
+    }
     NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, 0x80); NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, 0x80);
     NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (1<<7)); NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (1<<7));
     return 0;
