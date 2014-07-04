@@ -717,6 +717,8 @@ static int  disp_syncgen_enable(struct disp_process_dev *pdev, int enable)
 		disp_syncgen_prepare(info);
 		disp_syncgen_irqenable(info->module, 1);
 
+        if (module == 0)
+            NX_DPC_SetRegFlush(module);
 		NX_DPC_SetDPCEnable(module, CTRUE);				/* START: DPC */
 		NX_DPC_SetClockDivisorEnable(module, CTRUE);	/* START: CLKGEN */
 
