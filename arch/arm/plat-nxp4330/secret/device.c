@@ -1560,7 +1560,7 @@ static struct dw_mci_board _dwmci1_data = {
 	.init			= _dwmci1_init,
 	.ext_cd_init	= _dwmci1_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci1_ext_cd_cleanup,
-	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(2),
 };
 
 #if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
@@ -1678,7 +1678,7 @@ static struct dw_mci_board _dwmci2_data = {
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
 	.clk_dly		= DW_MMC_DRIVE_DELAY(0x0) | DW_MMC_SAMPLE_DELAY(0x1c) | 	\
-						DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(1),	// 100 = (1) (1), 200 = (0) (2)
+						DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),	// 100 = (1) (1), 200 = (0) (2)
 
 };
 #endif
