@@ -38,7 +38,6 @@
 /*----------------------------------------------------------------------------
  *  Define interrupt priority
  */
-
 #define NXP_IRQ_PRIORITY_HIGHEST        0
 #define NXP_IRQ_PRIORITY_LOWEST         15
 
@@ -57,13 +56,18 @@
 
 //----------------------------------------------------------------------------
 
-
+#ifdef CONFIG_ARM_GIC
+static void __init __gic_init(void __iomem *dist_base, void __iomem *cpu_base);
+#endif
 static void __init gpio_init(void __iomem *base, unsigned int irq_start,
 							u32 irq_sources, u32 resume_sources);
 static void __init alive_init(void __iomem *base, unsigned int irq_start,
 							u32 irq_sources, u32 resume_sources);
-static void __init __gic_init(void __iomem *dist_base, void __iomem *cpu_base);
 
+static void __init __vic_set_irq_chip(void);
+
+int nxp_cpu_vic_priority(void);
+int nxp_cpu_vic_table(void);
 /*----------------------------------------------------------------------------
  *  cpu irq handler
  */
@@ -87,6 +91,43 @@ static void __init __gic_init(void __iomem *dist_base, void __iomem *cpu_base);
 
 /*
  *  cpu irq handler
+ */
+void __init nxp_cpu_init_irq(void)
+{
+	pr_debug("%s\n", __func__);
+
+	nxp_cpu_vic_priority();
+	nxp_cpu_vic_table();
+
+#ifndef CONFIG_ARM_GIC
+	/* VIC to core */
+	writel_relaxed(0, GIC_CPUI_BASE);
+#endif
+
+	vic_init  (VIC0_INT_BASE ,  0, VIC0_INT_MASK, VIC0_INT_RESUME);	/*  0 ~ 31 */
+	vic_init  (VIC1_INT_BASE , 32, VIC1_INT_MASK, VIC1_INT_RESUME);	/* 32 ~ 59 */
+	gpio_init (GPIO_INT_BASE , IRQ_GPIO_START, GPIO_INT_MASK, 0);	/* 64 ~ 223 (A,B,C,D,E) */
+	alive_init(ALIVE_INT_BASE, IRQ_ALIVE_START, ALIVE_INT_MASK, 0); /* 224 ~ 231 */
+
+#ifdef CONFIG_ARM_GIC
+	__gic_init(GIC_DIST_BASE, (void __iomem *)GIC_CPUI_BASE);
+#endif
+
+#ifdef CONFIG_FIQ
+	init_FIQ();
+#endif
+
+	__vic_set_irq_chip();
+
+	/* wake up source from idle */
+	irq_set_irq_wake(IRQ_PHY_CLKPWR_ALIVEIRQ, 1);
+#if PM_RTC_WAKE
+	irq_set_irq_wake(IRQ_PHY_CLKPWR_RTCIRQ, 1);
+#endif
+}
+
+/*
+ *  vic priority
  */
 static u16 g_vic_priority [64] = {
 	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_MCUSTOP
@@ -155,7 +196,7 @@ static u16 g_vic_priority [64] = {
 	NXP_IRQ_PRIORITY_LOWEST			// 63
 };
 
-int nxp_cpu_init_vic_priority(void)
+int nxp_cpu_vic_priority(void)
 {
 	void __iomem *base = (void __iomem *)VIC0_INT_BASE;
 	int i, j;
@@ -163,15 +204,13 @@ int nxp_cpu_init_vic_priority(void)
 	for (j = 0; j < 2; j++) {
 		for (i = 0; i < 32; i++)
 			writel_relaxed(g_vic_priority[(j*32) + i], base + VIC_VECT_CNTL0 + (i<<2));
-
 		base = (void __iomem *)VIC1_INT_BASE;
 	}
-
 	return 0;
 }
-EXPORT_SYMBOL(nxp_cpu_init_vic_priority);
+EXPORT_SYMBOL(nxp_cpu_vic_priority);
 
-int nxp_cpu_init_vic_table(void)
+int nxp_cpu_vic_table(void)
 {
 	void __iomem *base = (void __iomem *)VIC0_INT_BASE;
 	int i, j;
@@ -181,62 +220,30 @@ int nxp_cpu_init_vic_table(void)
 			writel_relaxed((j*32) + i, base + VIC_VECT_ADDR0 + (i<<2));
 
 		writel_relaxed(0, base + VIC_PL192_VECT_ADDR);
-
 		base = (void __iomem *)VIC1_INT_BASE;
 	}
-
 	return 0;
 }
-EXPORT_SYMBOL(nxp_cpu_init_vic_table);
-
-void __init nxp_cpu_init_irq(void)
-{
-	pr_debug("%s\n", __func__);
-
-	nxp_cpu_init_vic_priority();
-	nxp_cpu_init_vic_table();
-
-	vic_init  (VIC0_INT_BASE ,  0, VIC0_INT_MASK, VIC0_INT_RESUME);	/*  0 ~ 31 */
-	vic_init  (VIC1_INT_BASE , 32, VIC1_INT_MASK, VIC1_INT_RESUME);	/* 32 ~ 59 */
-	gpio_init (GPIO_INT_BASE , IRQ_GPIO_START, GPIO_INT_MASK, 0);	/* 64 ~ 223 (A,B,C,D,E) */
-	alive_init(ALIVE_INT_BASE, IRQ_ALIVE_START, ALIVE_INT_MASK, 0); /* 224 ~ 231 */
+EXPORT_SYMBOL(nxp_cpu_vic_table);
 
 #ifdef CONFIG_ARM_GIC
-	__gic_init(GIC_DIST_BASE, (void __iomem *)GIC_CPUI_BASE);
-#endif
-
-	/*
-	 * wake up source from idle
-	 */
-	irq_set_irq_wake(IRQ_PHY_CLKPWR_ALIVEIRQ, 1);
-#if PM_RTC_WAKE
-	irq_set_irq_wake(IRQ_PHY_CLKPWR_RTCIRQ, 1);
-#endif
-}
-
-#ifdef CONFIG_ARM_GIC
-static u32 g_toggling = 1;
-static void vic_handler(unsigned int irq, struct irq_desc *desc)
+static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 {
 	void __iomem *base[2];
 	volatile u32 stat, gic = irq;
 	volatile int i = 0;
+	static u32 g_toggling = 1;
 
 	g_toggling = (~g_toggling) & 1;
-
-	if (g_toggling)
-	{
+	if (g_toggling)	{
 		base[0] = (void __iomem *)VIC1_INT_BASE;
 		base[1] = (void __iomem *)VIC0_INT_BASE;
-	}
-	else
-	{
+	} else {
 		base[0] = (void __iomem *)VIC0_INT_BASE;
 		base[1] = (void __iomem *)VIC1_INT_BASE;
 	}
 
-	for (i = 0; i < 2; i++)
-	{
+	for (i = 0; i < 2; i++)	{
 		stat = readl_relaxed(base[i] + VIC_IRQ_STATUS);
 		if (stat) {
 			irq = readl_relaxed(base[i] + VIC_PL192_VECT_ADDR);
@@ -274,9 +281,51 @@ static void __init __gic_init(void __iomem *dist_base, void __iomem *cpu_base)
 		dist_base, IRQ_GIC_START, (irq-IRQ_GIC_START));
 
 	gic_init(0, IRQ_GIC_PPI_START, dist_base, cpu_base);
-	irq_set_chained_handler(irq, vic_handler);	/* enable vic, note irq must be align 32 */
+	irq_set_chained_handler(irq, __vic_handler);	/* enable vic, note irq must be align 32 */
 }
 #endif
+
+static void __vic_irq_enable(struct irq_data *d)
+{
+	void __iomem *base = irq_data_get_irq_chip_data(d);
+	int irq = d->hwirq;
+
+	writel(1 << irq, base + VIC_INT_ENABLE);
+}
+
+static void __vic_irq_disable(struct irq_data *d)
+{
+	void __iomem *base = irq_data_get_irq_chip_data(d);
+	int irq = d->hwirq;
+
+	writel(1 << irq, base + VIC_INT_ENABLE_CLEAR);
+}
+
+static void __init __vic_set_irq_chip(void)
+{
+	struct irq_chip *d = NULL;
+	int i = 0, num = 2;
+
+	for (i = 0; num > i; i++) {
+		d = irq_get_chip(i * 32);	/* VIC.0, 1 */
+		if (d) {
+			if (!d->irq_enable)
+				d->irq_enable  = __vic_irq_enable;
+			if (!d->irq_disable)
+				d->irq_disable = __vic_irq_disable;
+		}
+	}
+
+#if 0
+	d = irq_get_chip(IRQ_GIC_PPI_START);
+	if (d) {
+		if (!d->irq_enable)
+			d->irq_enable  = __gic_irq_enable;
+		if (!d->irq_disable)
+			d->irq_disable = __gic_irq_disable;
+	}
+#endif
+}
 
 /*----------------------------------------------------------------------------
  *  ALIVE irq chain handler
@@ -654,6 +703,11 @@ static void __init gpio_init(void __iomem *base, unsigned int irq_start,
 				set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
 			}
 		}
+		/* init gpio irq register  */
+		writel(0xFFFFFFFF, base + GPIO_INT_STATUS);
+		writel(0x0, base + GPIO_INT_ENB);
+		writel(0x0, base + GPIO_INT_DET);
+
 		/* register gpio irq handler data */
 		irq_set_handler_data(irq_gpio, base);
 

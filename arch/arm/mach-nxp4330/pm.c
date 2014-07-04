@@ -37,10 +37,6 @@
 
 #define SRAM_SAVE_SIZE		(0x4000)
 
-extern int nxp_cpu_init_vic_priority(void);
-extern int nxp_cpu_init_vic_table(void);
-
-
 static unsigned int  sramsave[SRAM_SAVE_SIZE/4];
 static unsigned int *sramptr;
 
@@ -521,6 +517,17 @@ static void suspend_clock(suspend_state_t stat)
 		nxp_cpu_clock_resume();
 }
 
+extern int nxp_cpu_vic_priority(void);
+extern int nxp_cpu_vic_table(void);
+
+static void suspend_intc(suspend_state_t stat)
+{
+	if (SUSPEND_RESUME == stat) {
+		nxp_cpu_vic_priority();
+		nxp_cpu_vic_table();
+	}
+}
+
 static int __powerdown(unsigned long arg)
 {
 	int ret = suspend_machine();
@@ -643,9 +650,7 @@ static int suspend_enter(suspend_state_t state)
 
 	resume_machine();
 
-	nxp_cpu_init_vic_priority();
-	nxp_cpu_init_vic_table();
-
+	suspend_intc(SUSPEND_RESUME);
 	suspend_alive(SUSPEND_RESUME);
 	suspend_gpio(SUSPEND_RESUME);
 	suspend_clock(SUSPEND_RESUME);
