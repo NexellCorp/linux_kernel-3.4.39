@@ -639,14 +639,12 @@ static inline void _hdmi_enable(struct nxp_hdmi_context *me)
     regval |= 0x01;
     NX_HDMI_SetReg(0, HDMI_LINK_HDMI_CON_0, regval);
 
+    msleep(20);
+
     NX_DISPLAYTOP_HDMI_SetVSyncStart(me->hdmi_sync_param.v_sync_start);
     NX_DISPLAYTOP_HDMI_SetHActiveStart(me->hdmi_sync_param.h_active_start);
     NX_DISPLAYTOP_HDMI_SetHActiveEnd(me->hdmi_sync_param.h_active_end);
     NX_DISPLAYTOP_HDMI_SetVSyncHSStartEnd(me->hdmi_sync_param.v_sync_hs_start_end0, me->hdmi_sync_param.v_sync_hs_start_end1);
-
-    /*regval = NX_HDMI_GetReg(0, HDMI_LINK_HDMI_CON_0);*/
-    /*regval |= 0x01;*/
-    /*NX_HDMI_SetReg(0, HDMI_LINK_HDMI_CON_0, regval);*/
 }
 
 /**
@@ -953,7 +951,7 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
 
     _hdmi_enable(me);
 
-    mdelay(5);
+    /*mdelay(5);*/
 
 #if defined(CONFIG_NX_HDMI_USE_HDCP)
     /* start HDCP */
