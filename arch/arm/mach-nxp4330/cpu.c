@@ -28,6 +28,7 @@
 #include <asm/mach/arch.h>
 #include <asm/pgtable.h>
 #include <asm/system_misc.h>
+#include <asm/hardware/vic.h>
 #include <asm/hardware/gic.h>
 #include <asm/hardware/cache-l2x0.h>
 
@@ -222,7 +223,11 @@ MACHINE_START(NXP4330, CFG_SYS_CPU_NAME)
 	.fixup			=  cpu_fixup,
 	.map_io			=  cpu_map_io,
 	.init_irq		=  nxp_cpu_init_irq,
+#ifdef CONFIG_ARM_GIC
 	.handle_irq 	=  gic_handle_irq,
+#else
+	.handle_irq 	=  vic_handle_irq,
+#endif
 	.timer			= &nxp_cpu_sys_timer,
 	.init_machine	=  cpu_init_machine,
 #if defined CONFIG_CMA && defined CONFIG_ION
