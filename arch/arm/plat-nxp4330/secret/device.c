@@ -1664,8 +1664,7 @@ static struct platform_device bcm_wifi_device = {
 
 #ifdef CONFIG_MMC_NEXELL_CH2
 static struct dw_mci_board _dwmci2_data = {
-	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
-				  	  DW_MCI_QUIRK_HIGHSPEED |
+	.quirks			= DW_MCI_QUIRK_HIGHSPEED |
 				  	  DW_MMC_QUIRK_HW_RESET_PW |
 				      DW_MCI_QUIRK_NO_DETECT_EBIT,
 	.bus_hz			= 200 * 1000 * 1000,

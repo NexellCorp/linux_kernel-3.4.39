@@ -1308,7 +1308,7 @@ static int _dwmci0_get_cd(u32 slot_id)
 }
 
 static struct dw_mci_board _dwmci0_data = {
-	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION | DW_MCI_QUIRK_HIGHSPEED,
+	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 70 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
@@ -1324,10 +1324,9 @@ static struct dw_mci_board _dwmci0_data = {
 
 #ifdef CONFIG_MMC_NEXELL_CH1
 static struct dw_mci_board _dwmci1_data = {
-	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
-						DW_MCI_QUIRK_HIGHSPEED |
-						DW_MMC_QUIRK_HW_RESET_PW |
-						DW_MCI_QUIRK_NO_DETECT_EBIT,
+	.quirks			= DW_MCI_QUIRK_HIGHSPEED |
+					  DW_MMC_QUIRK_HW_RESET_PW |
+					  DW_MCI_QUIRK_NO_DETECT_EBIT,
 	.bus_hz			= 80 * 1000 * 1000,
 	.caps			= MMC_CAP_UHS_DDR50 |
 						MMC_CAP_NONREMOVABLE |
