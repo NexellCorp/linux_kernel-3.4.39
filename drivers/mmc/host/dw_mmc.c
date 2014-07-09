@@ -51,7 +51,7 @@
 				 DW_MCI_CMD_ERROR_FLAGS  | SDMMC_INT_HLE)
 #define DW_MCI_SEND_STATUS	1
 #define DW_MCI_RECV_STATUS	2
-#define DW_MCI_DMA_THRESHOLD	16
+#define DW_MCI_DMA_THRESHOLD	8
 #define DW_MCI_HW_TIMEOUT		500	// ms
 
 #ifdef CONFIG_MMC_DW_IDMAC
@@ -138,6 +138,7 @@ struct dw_mci_slot {
 };
 
 static struct workqueue_struct *dw_mci_card_workqueue;
+
 
 #if defined(CONFIG_ESP8089)
 #include <mach/platform.h>
@@ -855,7 +856,7 @@ static void __dw_mci_start_request(struct dw_mci *host,
 		mci_writel(host, BLKSIZ, data->blksz);
 		timeout = data->timeout_ns / 1000000;
 	} else
-		timeout= cmd->cmd_timeout_ms;
+		timeout = cmd->cmd_timeout_ms;
 
 	/* s/w reset value adds 2 second to give opportunity to host controller */
 	mod_timer(&host->timer, jiffies +
@@ -914,28 +915,29 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	WARN_ON(slot->mrq);
 
-	do {
-		if (mrq->cmd->opcode == MMC_STOP_TRANSMISSION)
-			break;
-
-		status = mci_readl(host, STATUS);
-		if (!(status & BIT(9)))
-			break;
-
-		if (time_after(jiffies, timeout)) {
-			/* card is checked every 1s by CMD13 at least */
-			if (mrq->cmd->opcode == MMC_SEND_STATUS)
+	if (test_bit(DW_MMC_CARD_PRESENT, &slot->flags)) {
+		do {
+			if (mrq->cmd->opcode == MMC_STOP_TRANSMISSION)
 				break;
-			dev_err(&host->dev,
-				"Data0: Never released by cmd%d\n",
-				mrq->cmd->opcode);
-			mrq->cmd->error = -ENOTRECOVERABLE;
-			mmc_request_done(mmc, mrq);
-			return;
-		}
 
-		usleep_range(10, 20);
-	} while (1);
+			status = mci_readl(host, STATUS);
+			if (!(status & BIT(9)))
+				break;
+
+			if (time_after(jiffies, timeout)) {
+				/* card is checked every 1s by CMD13 at least */
+				if (mrq->cmd->opcode == MMC_SEND_STATUS)
+					break;
+				dev_err(&host->dev,
+					"Data0: Never released by cmd%d\n",
+					mrq->cmd->opcode);
+				mrq->cmd->error = -ENOTRECOVERABLE;
+				mmc_request_done(mmc, mrq);
+				return;
+			}
+			usleep_range(10, 20);
+		} while (1);
+	}
 
 	/*
 	 * The check for card presence and queueing of the request must be
@@ -1276,10 +1278,14 @@ static void dw_mci_request_end(struct dw_mci *host, struct mmc_request *mrq)
 		slot = list_entry(host->queue.next,
 				  struct dw_mci_slot, queue_node);
 		list_del(&slot->queue_node);
-		dev_vdbg(&host->dev, "list not empty: %s is next\n",
-			 mmc_hostname(slot->mmc));
-		host->state = STATE_SENDING_CMD;
-		dw_mci_start_request(host, slot);
+		if (test_bit(DW_MMC_CARD_PRESENT, &slot->flags)) {
+			dev_vdbg(&host->dev, "list not empty: %s is next\n",
+				 mmc_hostname(slot->mmc));
+			host->state = STATE_SENDING_CMD;
+			dw_mci_start_request(host, slot);
+		} else {
+			host->state = STATE_IDLE;
+		}
 	} else {
 		dev_vdbg(&host->dev, "list empty\n");
 		host->state = STATE_IDLE;
@@ -1559,7 +1565,6 @@ static void dw_mci_tasklet_func(unsigned long priv)
 	host->state = state;
 unlock:
 	spin_unlock(&host->lock);
-
 }
 
 /* push final bytes to part_buf, only use during push */
@@ -2073,19 +2078,20 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 
 		/* add hardware Lock interrupt : jhkim */
 		if (pending & SDMMC_INT_HLE) {
-			u32 ctrl;
 			mci_writel(host, RINTSTS, SDMMC_INT_HLE);
 			dev_err(&host->dev, "Hardware locked write error\n");
-
+#if 1
 			/* clear FIFO: jhkim */
-			ctrl = mci_readl(host, CTRL);
-			ctrl |= SDMMC_CTRL_FIFO_RESET;
-			mci_writel(host, CTRL, ctrl);
+			mci_writel(host, CTRL, mci_readl(host, CTRL) | SDMMC_CTRL_FIFO_RESET);
+#endif
 		}
 
 		/* Handle SDIO Interrupts */
 		for (i = 0; i < host->num_slots; i++) {
 			struct dw_mci_slot *slot = host->slot[i];
+			if (!test_bit(DW_MMC_CARD_PRESENT, &slot->flags))
+				pass_count = 5;
+
 			if (pending & SDMMC_INT_SDIO(i)) {
 				mci_writel(host, RINTSTS, SDMMC_INT_SDIO(i));
 				mmc_signal_sdio_irq(slot->mmc);
@@ -2121,8 +2127,9 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 
 		present = dw_mci_get_cd(mmc);
 		while (present != slot->last_detect_state) {
-			dev_dbg(&slot->mmc->class_dev, "card %s\n",
-				present ? "inserted" : "removed");
+			del_timer(&host->timer);
+			dev_dbg(&slot->mmc->class_dev, "card %s host state=%d\n",
+				present ? "inserted" : "removed", host->state);
 
 			/* Power up slot (before spin_lock, may sleep) */
 			if (present != 0 && host->pdata->setpower)
@@ -2138,7 +2145,10 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 				if (host->pdata->setpower)
 					host->pdata->setpower(slot->id,
 							      mmc->ocr_avail);
-				set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+			} else {
+				if (mmc && mmc->card)
+					mmc_card_set_removed(mmc->card);
+				clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
 			}
 
 			/* Clean up queue if present */
@@ -2184,17 +2194,15 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 					spin_unlock(&host->lock);
 					mmc_request_done(slot->mmc, mrq);
 					spin_lock(&host->lock);
+					host->state = STATE_IDLE;
 				}
 			}
 
+			dw_mci_wait_reset(&host->dev, host, SDMMC_CTRL_RESET | SDMMC_CTRL_FIFO_RESET);
+			mci_writel(host, BMOD, SDMMC_IDMAC_SWRESET);
+
 			/* Power down slot */
 			if (present == 0) {
-				/* set removed card status : jhkim */
-				if (mmc && mmc->card)
-					mmc_card_set_removed(mmc->card);
-
-				clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
-
 				/*
 				 * Clear down the FIFO - doing so generates a
 				 * block interrupt, hence setting the
@@ -2202,8 +2210,8 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 				 */
 				sg_miter_stop(&host->sg_miter);
 				host->sg = NULL;
-
-				dw_mci_wait_fifo_reset(&host->dev, host);
+			} else {
+				set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
 			}
 
 			spin_unlock_bh(&host->lock);
@@ -2211,8 +2219,6 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 			/* Power down slot (after spin_unlock, may sleep) */
 			if (present == 0 && host->pdata->setpower)
 				host->pdata->setpower(slot->id, 0);
-
-			present = dw_mci_get_cd(mmc);
 		}
 
 		mmc_detect_change(slot->mmc,
@@ -2478,7 +2484,7 @@ int dw_mci_probe(struct dw_mci *host)
 			"Platform data must supply bus speed\n");
 		return -ENODEV;
 	}
-
+		
 	host->bus_hz = host->pdata->bus_hz/2;	/* jhkim: nexell clock */
 	host->quirks = host->pdata->quirks;
 
@@ -2741,6 +2747,7 @@ int dw_mci_resume(struct dw_mci *host)
 	int i;
 #endif
 
+	
 	if (host->pdata->resume)
 		host->pdata->resume(host);
 
@@ -2773,6 +2780,7 @@ int dw_mci_resume(struct dw_mci *host)
 	/*
  	 * call delayed work to save resume time
  	 */
+ 	 
 #ifndef MMC_RESUME_WORK_QUEUE
 	for (i = 0; i < host->num_slots; i++) {
 		struct dw_mci_slot *slot = host->slot[i];
