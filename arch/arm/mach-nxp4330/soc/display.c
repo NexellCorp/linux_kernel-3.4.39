@@ -717,6 +717,8 @@ static int  disp_syncgen_enable(struct disp_process_dev *pdev, int enable)
 		disp_syncgen_prepare(info);
 		disp_syncgen_irqenable(info->module, 1);
 
+        if (module == 0)
+            NX_DPC_SetRegFlush(module);
 		NX_DPC_SetDPCEnable(module, CTRUE);				/* START: DPC */
 		NX_DPC_SetClockDivisorEnable(module, CTRUE);	/* START: CLKGEN */
 
@@ -1575,7 +1577,7 @@ int	nxp_soc_disp_device_connect_to(enum disp_dev_type device,
 {
 	struct disp_process_dev *pdev, *sdev;
 	struct disp_process_ops *ops;
-	struct list_head *head, *new;
+	struct list_head *head, *new, *obj;
 	int ret = 0;
 
 	RET_ASSERT_VAL(device != to, -EINVAL);
@@ -1591,24 +1593,6 @@ int	nxp_soc_disp_device_connect_to(enum disp_dev_type device,
 
 	spin_lock(&sdev->lock);
 
-	if (psync) {
-		/* source sync */
-		ops = sdev->disp_ops;
-		if (ops && ops->set_vsync) {
-			ret = ops->set_vsync(sdev, psync);
-			if (0 > ret)
-				goto _exit;
-		}
-
-		/* device operation */
-		ops = pdev->disp_ops;
-		if (ops && ops->set_vsync) {
-			ret = ops->set_vsync(pdev, psync);
-			if (0 > ret)
-				goto _exit;
-		}
-	}
-
 	/* list add */
 	if (DISP_DEVICE_SYNCGEN0 == sdev->dev_id ||
 		DISP_DEVICE_SYNCGEN1 == sdev->dev_id) {
@@ -1616,6 +1600,34 @@ int	nxp_soc_disp_device_connect_to(enum disp_dev_type device,
 		head = &info->link;
 	} else {
 		head = &disp_resconv_link;
+	}
+
+	/* check connect status */
+	list_for_each(obj, head) {
+		struct disp_process_dev *dev = container_of(obj,
+					struct disp_process_dev, list);
+		if (dev == pdev) {
+			printk(KERN_ERR "Fail, %s is already connected to %s ...\n",
+				dev_to_str(dev->dev_id), dev_to_str(sdev->dev_id));
+			ret = -EINVAL;
+			goto _exit;
+		}
+	}
+
+	if (psync) {
+		ops = sdev->disp_ops;	/* source sync */
+		if (ops && ops->set_vsync) {
+			ret = ops->set_vsync(sdev, psync);
+			if (0 > ret)
+				goto _exit;
+		}
+
+		ops = pdev->disp_ops;	/* device operation */
+		if (ops && ops->set_vsync) {
+			ret = ops->set_vsync(pdev, psync);
+			if (0 > ret)
+				goto _exit;
+		}
 	}
 
 	new	= &pdev->list;
@@ -2018,6 +2030,16 @@ void nxp_soc_disp_register_proc_ops(enum disp_dev_type device, struct disp_proce
 	printk(KERN_INFO "Display %s register operation \n", dev_to_str(device));
 }
 
+void nxp_soc_disp_register_priv(enum disp_dev_type device, void *priv)
+{
+    struct disp_process_dev *pdev = get_display_ptr(device);
+    RET_ASSERT(DEVICE_SIZE > device);
+    RET_ASSERT(device == pdev->dev_id);
+
+    pdev->priv = priv;
+    DBGOUT("%s: %p\n", __func__, priv);
+}
+
 void nxp_soc_disp_register_lcd_ops(int module, struct lcd_operation *ops)
 {
 	DISP_CONTROL_INFO(module, info);
@@ -2028,41 +2050,37 @@ struct disp_irq_callback *nxp_soc_disp_register_irq_callback(int module, void (*
 {
     unsigned long flags;
     struct disp_irq_callback *entry = NULL;
-	struct disp_control_info *info = get_module_to_info(module);
-	RET_ASSERT_NULL(0 == module || 1 == module);
-	RET_ASSERT_NULL(callback);
+    struct disp_control_info *info = get_module_to_info(module);
+    RET_ASSERT_NULL(0 == module || 1 == module);
+    RET_ASSERT_NULL(callback);
 
-	DBGOUT("%s: display.%d\n", __func__, module);
-#if 0
-	info->callback = callback;
-	info->callback_data = data;
-#else
+    DBGOUT("%s: display.%d\n", __func__, module);
+
     entry = (struct disp_irq_callback *)kmalloc(sizeof(struct disp_irq_callback), GFP_KERNEL);
+    if (!entry) {
+        printk("%s: failed to allocate disp_irq_callback entry\n", __func__);
+        return NULL;
+    }
     entry->handler = callback;
     entry->data = data;
     spin_lock_irqsave(&info->lock_callback, flags);
     list_add_tail(&entry->list, &info->callback_list);
     spin_unlock_irqrestore(&info->lock_callback, flags);
     return entry;
-#endif
 }
 
 void nxp_soc_disp_unregister_irq_callback(int module, struct disp_irq_callback *callback)
 {
     unsigned long flags;
-	struct disp_control_info *info = get_module_to_info(module);
-	RET_ASSERT(0 == module || 1 == module);
+    struct disp_control_info *info = get_module_to_info(module);
+    RET_ASSERT(0 == module || 1 == module);
 
-	DBGOUT("%s: display.%d\n", __func__, module);
-#if 0
-	info->callback = NULL;
-	info->callback_data = NULL;
-#else
+    DBGOUT("%s: display.%d\n", __func__, module);
+
     spin_lock_irqsave(&info->lock_callback, flags);
     list_del(&callback->list);
     spin_unlock_irqrestore(&info->lock_callback, flags);
     kfree(callback);
-#endif
 }
 
 void nxp_soc_disp_device_framebuffer(int module, int fb)
@@ -2133,6 +2151,7 @@ EXPORT_SYMBOL(nxp_soc_disp_device_enable_all);
 EXPORT_SYMBOL(nxp_soc_disp_device_reset_top);
 EXPORT_SYMBOL(nxp_soc_disp_register_lcd_ops);
 EXPORT_SYMBOL(nxp_soc_disp_register_proc_ops);
+EXPORT_SYMBOL(nxp_soc_disp_register_priv);
 
 /*
  * Notify vertical sync en/disable

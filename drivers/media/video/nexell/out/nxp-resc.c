@@ -51,11 +51,11 @@ static inline void _get_hdmi_width_height(uint32_t preset, uint32_t *width, uint
     switch (preset) {
     case V4L2_DV_480P59_94:
     case V4L2_DV_480P60:
-        *width = 640;
+        *width = 720;
         *height = 480;
         break;
     case V4L2_DV_576P50:
-        *width = 704;
+        *width = 720;
         *height = 576;
         break;
     case V4L2_DV_720P24:
@@ -103,7 +103,7 @@ static inline void _get_hdmi_width_height(uint32_t preset, uint32_t *width, uint
     case V4L2_DV_1080P30_SB_HALF:
     case V4L2_DV_1080P30_TB:
         *width = 1920;
-        *height = 10280;
+        *height = 1080;
         break;
     }
 }

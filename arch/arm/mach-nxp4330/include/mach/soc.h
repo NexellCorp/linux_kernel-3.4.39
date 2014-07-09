@@ -138,6 +138,7 @@ void		 nxp_soc_disp_unregister_irq_callback(int module, struct disp_irq_callback
  * device 0=resconv, 1=lcd, 2=hdmi, 3=mipi, 4=lvds, 5=syncgen0, 6=syncgen1
  */
 void 		 nxp_soc_disp_register_proc_ops(enum disp_dev_type device, struct disp_process_ops *ops);
+void         nxp_soc_disp_register_priv(enum disp_dev_type device, void *priv);
 int			 nxp_soc_disp_device_connect_to(enum disp_dev_type device, enum disp_dev_type to, struct disp_vsync_info *vsync);
 void	     nxp_soc_disp_device_disconnect(enum disp_dev_type device, enum disp_dev_type to);
 

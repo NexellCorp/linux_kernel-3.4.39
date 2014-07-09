@@ -2027,6 +2027,9 @@ static void rt5631_setup(struct snd_soc_codec *codec)
 static int rt5631_set_bias_level(struct snd_soc_codec *codec,
 			enum snd_soc_bias_level level)
 {
+#if !defined(CONFIG_ANDROID)
+	struct rt5631_priv *rt5631 = snd_soc_codec_get_drvdata(codec);
+#endif
 	switch (level) {
 	case SND_SOC_BIAS_ON:
 #ifdef	VMID_ADD_WIDGET
@@ -2042,6 +2045,15 @@ static int rt5631_set_bias_level(struct snd_soc_codec *codec,
 			snd_soc_update_bits(codec, RT5631_PWR_MANAG_ADD2,
 				RT5631_PWR_MICBIAS1_VOL | RT5631_PWR_MICBIAS2_VOL,
 				RT5631_PWR_MICBIAS1_VOL | RT5631_PWR_MICBIAS2_VOL);
+#if !defined(CONFIG_ANDROID)
+			if (rt5631->codec_version) {
+				onebit_depop_power_stage(codec, 1);
+				onebit_depop_mute_stage(codec, 1);
+			} else {
+				depop_seq_power_stage(codec, 1);
+				depop_seq_mute_stage(codec, 1);
+			}
+#endif
 		}
 		break;
 

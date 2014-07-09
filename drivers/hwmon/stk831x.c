@@ -16,10 +16,12 @@
 #include <linux/fcntl.h>
 #include <linux/syscalls.h>
 #include <linux/uaccess.h>
+#include <linux/wakelock.h>
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
 #endif
 
+#define SENSOR_RESUME_WORK
 #ifdef	CONFIG_SENSORS_STK8312_ROTATE
 #define SKT_ROTATE		CONFIG_SENSORS_STK8312_ROTATE	// -1, 0, 1, 2, 3, 4
 #else
@@ -219,7 +221,10 @@ struct stk831x_data
 		atomic_t				fir_en;
 		struct data_filter		fir;
 #endif
+#ifdef SENSOR_RESUME_WORK
+	struct wake_lock resume_lock;
 	struct work_struct	resume_work;
+#endif
 };
 
 
@@ -2239,7 +2244,7 @@ static struct attribute_group stk831x_attribute_group = {
 	.attrs = stk831x_attributes,
 };
 
-
+#ifdef SENSOR_RESUME_WORK
 static void STK831X_work_resume(struct work_struct *work)
 {
 	struct stk831x_data *stk = container_of(work, struct stk831x_data, resume_work);
@@ -2262,7 +2267,9 @@ static void STK831X_work_resume(struct work_struct *work)
 		stk->re_enable = false;
 		STK831X_SetEnable(stk, 1);
 	}
+	wake_unlock(&stk->resume_lock);
 }
+#endif
 
 static int stk831x_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -2366,8 +2373,11 @@ static int stk831x_probe(struct i2c_client *client, const struct i2c_device_id *
 
 	/* add by jhkim, default enable */
 	STK831X_SetEnable(stk, 1);
-
+#ifdef SENSOR_RESUME_WORK
 	INIT_WORK(&stk->resume_work, STK831X_work_resume);
+	wake_lock_init(&stk->resume_lock, WAKE_LOCK_SUSPEND, "stk831x");
+#endif
+
 	printk(KERN_INFO "stk831x probe successfully (delay:%dms)\n", atomic_read(&stk->delay1));
 	return 0;
 
@@ -2923,7 +2933,10 @@ static int stk831x_resume(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct stk831x_data *stk = i2c_get_clientdata(client);
-#if (0)
+#ifdef SENSOR_RESUME_WORK
+	wake_lock(&stk->resume_lock);
+	schedule_work(&stk->resume_work);
+#else
 	#ifdef STK_RESUME_RE_INIT
 	int error;
 	#endif
@@ -2944,8 +2957,6 @@ static int stk831x_resume(struct device *dev)
 		STK831X_SetEnable(stk, 1);
 
 	}
-#else
-	schedule_work(&stk->resume_work);
 #endif
 
 	return 0;

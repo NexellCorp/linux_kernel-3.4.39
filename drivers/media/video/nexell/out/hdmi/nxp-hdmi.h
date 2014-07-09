@@ -98,6 +98,10 @@ struct nxp_hdmi {
 #ifdef CONFIG_ANDROID
     struct wake_lock wake_lock;
 #endif
+
+    int (*callback)(void *);
+    void *callback_data;
+    int irq_num_of_callback;
 };
 
 /**

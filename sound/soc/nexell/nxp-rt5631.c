@@ -163,7 +163,8 @@ static int rt5631_dai_init(struct snd_soc_pcm_runtime *rtd)
 				SND_JACK_HEADPHONE, &hp_jack);
 	if (ret)
 		return ret;
-
+#if defined(CONFIG_PLAT_NXP4330_SECRET) || !defined(CONFIG_ANDROID)
+	printk("==enable jack switch for linux\n==");
 	ret = snd_soc_jack_add_pins(&hp_jack, ARRAY_SIZE(jack_pins), jack_pins);
 	if (ret)
 		return ret;
@@ -171,7 +172,7 @@ static int rt5631_dai_init(struct snd_soc_pcm_runtime *rtd)
 	/* to power up rt5631 (HP Depop: hp_event) */
 	snd_soc_dapm_enable_pin(dapm, "Headphone Jack");
 	snd_soc_dapm_sync(dapm);
-
+#endif
 	ret = snd_soc_jack_add_gpios(&hp_jack, 1, jack);
 	if (ret)
 		printk("Fail, register audio jack detect, io [%d]...\n", jack->gpio);

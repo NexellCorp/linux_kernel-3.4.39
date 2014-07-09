@@ -10,7 +10,6 @@
 *  Create by   : wuhaijun
 *
 **************************************************************************/
-
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
@@ -26,6 +25,8 @@
 
 #include <linux/interrupt.h>
 #include <linux/delay.h>
+#include <linux/wakelock.h>
+
 #include <asm/uaccess.h>
 
 #include <mach/platform.h>
@@ -34,6 +35,7 @@
 #include "aw5306_userpara.h"
 
 
+#define TOUCH_RESUME_WORK
 #define TOUCH_RESET_PIN        CFG_IO_TOUCH_RESET_PIN
 //#define TOUCH_WAKE_PIN       CFG_IO_TOUCH_WAKE_PIN
 
@@ -93,6 +95,7 @@ struct AW5306_ts_data {
 	char y_invert_flag;
 	char xy_exchange_flag;
 
+	struct wake_lock resume_lock;       /* add by jhkim */
 	struct work_struct	resume_work;
 };
 
@@ -721,6 +724,7 @@ static int AW5306_create_sysfs(struct i2c_client *client)
 }
 #endif
 
+#ifdef TOUCH_RESUME_WORK
 static void AW5306_ts_work_resume(struct work_struct *work)
 {
 	struct AW5306_ts_data *ts = container_of(work, struct AW5306_ts_data, resume_work);
@@ -745,8 +749,11 @@ static void AW5306_ts_work_resume(struct work_struct *work)
 		ts->touch_timer.expires = jiffies + 10;
 		add_timer(&ts->touch_timer);
 	}
+	wake_unlock(&ts->resume_lock);
+
 	PM_DBGOUT("-%s\n", __func__);
 }
+#endif
 
 static int AW5306_ts_open(struct input_dev *dev)
 {
@@ -816,13 +823,38 @@ static int AW5306_ts_suspend(struct i2c_client *client, pm_message_t state)
 	PM_DBGOUT("%s (flag=%d)\n", __func__, suspend_flag);
 	if (suspend_flag != 1)
 		suspend_flag = 1;
+
+	gpio_direction_output(TOUCH_RESET_PIN, 0);
 	return 0;
 }
 
 static int AW5306_ts_resume(struct i2c_client *client)
 {
 	struct AW5306_ts_data *ts = i2c_get_clientdata(this_client);
+#ifdef TOUCH_RESUME_WORK
+	wake_lock(&ts->resume_lock);
 	schedule_work(&ts->resume_work);
+#else
+	gpio_direction_output(TOUCH_RESET_PIN, 1);
+	msleep(1);
+	gpio_direction_output(TOUCH_RESET_PIN, 0);
+	msleep(30);
+
+	if (suspend_flag != 0 && ts->open_count) {
+	    msleep(50);
+		AW5306_User_Cfg1();
+		msleep(50);
+		AW5306_TP_Reinit();
+
+		tp_idlecnt = 0;
+		tp_SlowMode = 0;
+		suspend_flag = 0;
+		Resume_NoInit = 0;
+		Resume_Init = 0;
+		ts->touch_timer.expires = jiffies + 10;
+		add_timer(&ts->touch_timer);
+	}
+#endif
 	return 0;
 }
 #else
@@ -956,7 +988,12 @@ AW5306_ts_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	input_set_drvdata(input, ts);
 #endif
 
+#ifdef TOUCH_RESUME_WORK
 	INIT_WORK(&ts->resume_work, AW5306_ts_work_resume);
+ 	wake_lock_init(&ts->resume_lock, WAKE_LOCK_SUSPEND, "aw5306_ts");
+#else
+	device_enable_async_suspend(&client->dev);
+#endif
 	pr_debug("-%s\n", __func__);
 	return 0;
 

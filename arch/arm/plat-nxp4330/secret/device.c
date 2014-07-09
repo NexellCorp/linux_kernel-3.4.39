@@ -616,7 +616,11 @@ static struct disp_mipi_param mipi_param = {
 
 static struct platform_pwm_backlight_data bl_plat_data = {
 	.pwm_id			= CFG_LCD_PRI_PWM_CH,
+#if defined(CONFIG_SECRET_2P1ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)||defined(CONFIG_SECRET_3P1RD_BOARD)
+	.max_brightness = 255,		/* 255 is 100% */
+#else
 	.max_brightness = 255 + 255,	/* 255 is 100%, set over 100% */
+#endif
 	.dft_brightness = 128,	/* 50% */
 	.pwm_period_ns	= 1000000000/CFG_LCD_PRI_PWM_FREQ,
 };
@@ -1209,7 +1213,7 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 #endif
 		.ch_vrchg		= 0x03,	/* VRCHG	= 0 - 4 (3.85v, 3.90v, 3.95v, 4.00v, 4.10v) */
 		.ch_vbatovset	= 0xFF,	/* VBATOVSET	= 0 or 1 (0 : 4.38v(up)/3.95v(down) 1: 4.53v(up)/4.10v(down)) */
-		.ch_ichg 		= 0x07,	/* ICHG		= 0 - 0x1D (100mA - 3000mA) */
+		.ch_ichg 		= 0x0E,	/* ICHG		= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_adp 	= 0x18,	/* ILIM_ADP	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_usb 	= 0x04,	/* ILIM_USB	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_icchg		= 0x03,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
@@ -1674,7 +1678,7 @@ static struct dw_mci_board _dwmci2_data = {
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
 	.clk_dly		= DW_MMC_DRIVE_DELAY(0x0) | DW_MMC_SAMPLE_DELAY(0x1c) | 	\
-						DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(1),	// 100 = (1) (1), 200 = (0) (2)
+						DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),	// 100 = (1) (1), 200 = (0) (2)
 
 };
 #endif
