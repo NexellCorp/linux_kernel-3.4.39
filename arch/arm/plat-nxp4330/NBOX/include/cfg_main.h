@@ -214,7 +214,7 @@
  * 	WIFI
  */
 #define CFG_WIFI_POWER_IO					(PAD_GPIO_A + 9)		/* GPIO */
-#define CFG_WIFI_SDIO_ID 					2
+#define CFG_WIFI_SDIO_ID 					1
 
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
