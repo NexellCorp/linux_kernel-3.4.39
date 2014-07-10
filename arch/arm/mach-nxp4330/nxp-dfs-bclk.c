@@ -9,6 +9,7 @@
 #include <linux/delay.h>
 #include <linux/sched.h>
 #include <linux/suspend.h>
+#include <linux/notifier.h>
 
 // serializing
 #include <linux/list.h>
@@ -58,6 +59,27 @@ static struct dfs_bclk_manager {
     .func = default_dfs_bclk_func,
 };
 
+/**
+ * notifier interface
+ */
+static ATOMIC_NOTIFIER_HEAD(bclk_dfs_notifier_list);
+
+void bclk_dfs_register_notify(struct notifier_block *nb)
+{
+     atomic_notifier_chain_register(&bclk_dfs_notifier_list, nb);
+}
+EXPORT_SYMBOL_GPL(bclk_dfs_register_notify);
+
+void bclk_dfs_unregister_notify(struct notifier_block *nb)
+{
+     atomic_notifier_chain_unregister(&bclk_dfs_notifier_list, nb);
+}
+EXPORT_SYMBOL_GPL(bclk_dfs_unregister_notify);
+
+void bclk_dfs_notify_change(uint32_t *clk_hz)
+{
+    atomic_notifier_call_chain(&bclk_dfs_notifier_list, BCLK_CHANGED, clk_hz);
+}
 /**
  * sysfs attributes
  */
@@ -625,8 +647,10 @@ static int default_dfs_bclk_func(uint32_t pll_num, uint32_t counter, uint32_t us
         bclk = bclk_min;
     }
 
-    if (bclk != current_bclk)
+    if (bclk != current_bclk) {
         _disable_irq_and_set(pll_num, bclk);
+        bclk_dfs_notify_change(&dfs_bclk_manager.current_bclk);
+    }
 
     return bclk;
 }
