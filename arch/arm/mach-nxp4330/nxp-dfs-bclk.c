@@ -577,7 +577,7 @@ static int bclk_dfs_thread(void *unused)
 {
     /*uint32_t pll = dfs_bclk_manager.bclk_pll_num;*/
     while (!kthread_should_stop()) {
-        /*uint32_t bclk = dfs_bclk_manager.current_bclk;*/
+        uint32_t bclk = dfs_bclk_manager.current_bclk;
 
         set_current_state(TASK_UNINTERRUPTIBLE);
 
@@ -588,7 +588,8 @@ static int bclk_dfs_thread(void *unused)
                     atomic_read(&dfs_bclk_manager.user_bitmap),
                     dfs_bclk_manager.current_bclk
                     );
-        bclk_dfs_notify_change(&dfs_bclk_manager.current_bclk);
+        if (bclk != dfs_bclk_manager.current_bclk)
+            bclk_dfs_notify_change(&dfs_bclk_manager.current_bclk);
         /*_disable_irq_and_set(pll, bclk);*/
         schedule();
 

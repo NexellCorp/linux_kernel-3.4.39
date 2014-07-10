@@ -1324,7 +1324,8 @@ static struct dw_mci_board _dwmci0_data = {
 
 #ifdef CONFIG_MMC_NEXELL_CH1
 static struct dw_mci_board _dwmci1_data = {
-	.quirks			= DW_MCI_QUIRK_HIGHSPEED |
+	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
+					  DW_MCI_QUIRK_HIGHSPEED |
 					  DW_MMC_QUIRK_HW_RESET_PW |
 					  DW_MCI_QUIRK_NO_DETECT_EBIT,
 	.bus_hz			= 80 * 1000 * 1000,
