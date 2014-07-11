@@ -118,7 +118,7 @@ static int _get_preset(struct nxp_resc *me)
     uint32_t hdmi_height = 0;
     _get_hdmi_width_height(me->remote_preset, &hdmi_width, &hdmi_height);
 
-    printk("%s: mlc %dx%d, resc %dx%d, hdmi %dx%d\n",
+    pr_debug("%s: mlc %dx%d, resc %dx%d, hdmi %dx%d\n",
             __func__, mlc_width, mlc_height, resc_width, resc_height, hdmi_width, hdmi_height);
     me->preset = NULL;
     me->preset = nxp_out_find_sync_preset(mlc_width, mlc_height,
@@ -138,18 +138,15 @@ static int _hw_set_with_preset(struct nxp_resc *me)
     u32 src_crop_l, src_crop_r, src_crop_t, src_crop_b;
     u32 sg_hdelay, sg_hoffset, sg_s2in_vs;
     u32 delta_x, delta_y;
-#if 0
-    bool is_crop_x = false;
-    bool is_crop_y = false;
-#endif
 
     struct sync_preset *preset = me->preset;
 
-    printk("%s: entered\n", __func__);
+    pr_debug("%s: entered\n", __func__);
+
     src_hsize  = preset->mlc_resol.width;
     src_vsize  = preset->mlc_resol.height;
-    dst_hsize  = preset->resc_resol.width;
-    dst_vsize  = preset->resc_resol.height;
+    dst_hsize  = preset->resc_sync_param.hact;
+    dst_vsize  = preset->resc_sync_param.vact;
     sg_hav = dst_hsize;
     sg_vav = dst_vsize;
 
@@ -161,50 +158,32 @@ static int _hw_set_with_preset(struct nxp_resc *me)
     sg_hs   = preset->resc_sync_param.hsw;
     sg_hbp  = preset->resc_sync_param.hbp;
 
-#if 0
-    printk("crop left %d, width %d, top %d, height %d\n",
-            me->crop[NXP_RESC_PAD_SINK].left,
-            me->crop[NXP_RESC_PAD_SINK].width,
-            me->crop[NXP_RESC_PAD_SINK].top,
-            me->crop[NXP_RESC_PAD_SINK].height);
-    src_crop_l = me->crop[NXP_RESC_PAD_SINK].left;
-    src_crop_r = src_crop_l + me->crop[NXP_RESC_PAD_SINK].width;
-    if (src_crop_r > src_hsize || src_crop_r == 0)
-        src_crop_r = src_hsize;
-    if (src_crop_l > 0 || src_crop_r < src_hsize)
-        is_crop_x = true;
-
-    src_crop_t = me->crop[NXP_RESC_PAD_SINK].top;
-    src_crop_b = src_crop_t + me->crop[NXP_RESC_PAD_SINK].height;
-    if (src_crop_b > src_vsize || src_crop_b == 0)
-        src_crop_b = src_vsize;
-    if (src_crop_t > 0 || src_crop_b < src_vsize)
-        is_crop_y = true;
-
-    printk("%s: src(%dx%d), dst(%dx%d), crop(%d,%d,%d,%d)\n",
-            __func__, src_hsize, src_vsize, dst_hsize, dst_vsize,
-            src_crop_l, src_crop_r, src_crop_t, src_crop_b);
-
-    if (is_crop_x)
-        delta_x = ((src_hsize/-src_crop_l-src_crop_r)*FIXED_POINT+dst_hsize/2)/(dst_hsize-1);
-    else
-        delta_x = (src_hsize*FIXED_POINT+dst_hsize/2)/(dst_hsize-1);
-    if (is_crop_y)
-        delta_y = ((src_vsize/-src_crop_t-src_crop_b)*FIXED_POINT+dst_vsize/2)/(dst_vsize-1);
-    else
-        delta_y = (src_vsize*FIXED_POINT+dst_vsize/2)/(dst_vsize-1);
-#else
     src_crop_l = 0;
     src_crop_r = 0;
     src_crop_t = 0;
     src_crop_b = 0;
-    delta_x = (src_hsize*FIXED_POINT+dst_hsize/2)/(dst_hsize-1);
-    delta_y = (src_vsize*FIXED_POINT+dst_vsize/2)/(dst_vsize-1);
-#endif
+    if (src_hsize >= dst_hsize) {
+        // scale down
+        pr_debug("%s: scale down\n", __func__);
+        delta_x = (src_hsize*FIXED_POINT+dst_hsize/2)/(dst_hsize);
+        delta_y = (src_vsize*FIXED_POINT+dst_vsize/2)/(dst_vsize);
+    } else {
+        // scale up
+        pr_debug("%s: scale up\n", __func__);
+        delta_x = (src_hsize*FIXED_POINT+dst_hsize/2)/(dst_hsize-1);
+        delta_y = (src_vsize*FIXED_POINT+dst_vsize/2)/(dst_vsize-1);
+    }
 
     sg_hdelay  = preset->resc_sync_param.hdelay;
     sg_hoffset = preset->resc_sync_param.hoffset;
     sg_s2in_vs = 0;
+
+    pr_debug("%s: sg_vfp %d, sg_vs %d, sg_vbp %d, sg_hfp %d, sg_hbp %d, sg_hs %d\n",
+            __func__, sg_vfp, sg_vs, sg_vbp, sg_hfp, sg_hbp, sg_hs);
+    pr_debug("%s: src_hsize %d, src_vsize %d, st_hsize %d, dst_vsize %d, sg_hav %d, sg_vav %d\n",
+            __func__, src_hsize, src_vsize, dst_hsize, dst_vsize, sg_hav, sg_vav);
+    pr_debug("%s: sg_hdelay %d, sg_hoffset %d, sg_s2in_vs %d\n",
+            __func__, sg_hdelay, sg_hoffset, sg_s2in_vs);
 
     NX_RSTCON_SetnRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_nDISABLE);
     NX_RSTCON_SetnRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_nENABLE);
@@ -246,7 +225,7 @@ static int _hw_set_with_preset(struct nxp_resc *me)
             sg_hoffset,
             sg_hdelay);
 
-    printk("%s: exit\n", __func__);
+    pr_debug("%s: exit\n", __func__);
     return 0;
 
 }
@@ -258,6 +237,7 @@ static int _hw_set(struct nxp_resc *me)
     u32 src_crop_l, src_crop_r, src_crop_t, src_crop_b;
     u32 sg_hdelay, sg_hoffset, sg_s2in_vs;
     u32 delta_x, delta_y;
+    u32 v_diff, h_diff;
 
     src_hsize  = me->format[NXP_RESC_PAD_SINK].width;
     src_vsize  = me->format[NXP_RESC_PAD_SINK].height;
@@ -266,43 +246,29 @@ static int _hw_set(struct nxp_resc *me)
     sg_hav = dst_hsize;
     sg_vav = dst_vsize;
 
-    sg_vfp  = 5;
+    v_diff = src_vsize - dst_vsize;
+    h_diff = src_hsize - dst_hsize;
+
+    sg_vfp  = 4 + v_diff/2;;
     sg_vs   = 5;
-    sg_vbp  = 20;
+    sg_vbp  = 36 + v_diff/2;
 
-    sg_hfp  = 110;
-    sg_hbp  = 220;
-    sg_hs   = 40;
+    sg_hfp  = 88 + h_diff/2;
+    sg_hs   = 44;
+    sg_hbp  = 148 + h_diff/2;
 
-    src_crop_l = me->crop[NXP_RESC_PAD_SINK].left;
-    if (src_hsize > (src_crop_l + me->crop[NXP_RESC_PAD_SINK].width))
-        src_crop_r = src_hsize - (src_crop_l + me->crop[NXP_RESC_PAD_SINK].width);
-    else
-        src_crop_r = 0;
+    src_crop_l = 0;
+    src_crop_r = 0;
+    src_crop_t = 0;
+    src_crop_b = 0;
+    delta_x = (src_hsize*FIXED_POINT+dst_hsize/2)/(dst_hsize);
+    delta_y = (src_vsize*FIXED_POINT+dst_vsize/2)/(dst_vsize);
 
-    src_crop_t = me->crop[NXP_RESC_PAD_SINK].top;
-    if (src_vsize > (src_crop_t + me->crop[NXP_RESC_PAD_SINK].height))
-        src_crop_b = src_vsize - (src_crop_t + me->crop[NXP_RESC_PAD_SINK].height);
-    else
-        src_crop_b = 0;
-
-    printk("%s: src(%dx%d), dst(%dx%d), crop(%d,%d,%d,%d)\n",
-            __func__, src_hsize, src_vsize, dst_hsize, dst_vsize,
-            src_crop_l, src_crop_r, src_crop_t, src_crop_b);
-
-    sg_hdelay  = 3;
+    sg_hdelay  = 1;
     sg_hoffset = 0;
     sg_s2in_vs = 0;
 
-    if (src_crop_l || src_crop_r)
-        delta_x = ((src_hsize/-src_crop_l-src_crop_r)*FIXED_POINT+dst_hsize/2)/(dst_hsize-1);
-    else
-        delta_x = (src_hsize*FIXED_POINT+dst_hsize/2)/(dst_hsize-1);
-    if (src_crop_t || src_crop_b)
-        delta_y = ((src_vsize/-src_crop_t-src_crop_b)*FIXED_POINT+dst_vsize/2)/(dst_vsize-1);
-    else
-        delta_y = (src_vsize*FIXED_POINT+dst_vsize/2)/(dst_vsize-1);
-
+    NX_RSTCON_SetnRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_nDISABLE);
     NX_RSTCON_SetnRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_nENABLE);
 
     NX_RESCONV_Initialize();
@@ -312,7 +278,10 @@ static int _hw_set(struct nxp_resc *me)
     NX_RESCONV_FIFO_Init(me->id, CTRUE);
     NX_RESCONV_FIFO_Init(me->id, CFALSE);
 
+    NX_RESCONV_SetS2IN_VS(me->id, CFALSE);
+
     NX_RESCONV_FINIT(me->id);
+
     NX_RESCONV_INIT(me->id,
             src_hsize,
             src_vsize,
@@ -413,6 +382,34 @@ _get_pad_crop(struct nxp_resc *me, struct v4l2_subdev_fh *fh,
     }
 }
 
+static inline unsigned long _get_clk_hz(int preset)
+{
+    switch (preset) {
+    case V4L2_DV_480P59_94:
+        return 27000000;
+    case V4L2_DV_480P60:
+        return 27027000;
+    case V4L2_DV_576P50:
+        return 27000000;
+    case V4L2_DV_720P50:
+        return 74250000;
+    case V4L2_DV_720P59_94:
+        return 74175000;
+    case V4L2_DV_720P60:
+        return 74250000;
+    case V4L2_DV_1080P50:
+        return 148500000;
+    case V4L2_DV_1080P59_94:
+        return 148352000;
+    case V4L2_DV_1080P60:
+        return 148500000;
+    default:
+        pr_err("%s: invalid preset 0x%x\n", __func__, preset);
+        return 0;
+    }
+}
+
+// same to hdmi setting part
 static int _get_vsync_info(struct nxp_resc *me, int device,
         struct disp_vsync_info *vsync, struct disp_syncgen_par *par)
 {
@@ -424,24 +421,59 @@ static int _get_vsync_info(struct nxp_resc *me, int device,
     vsync->h_active_len = width;
     vsync->v_active_len = height;
 
-    /* TODO: calculate by src/dest width,height instead of switch hardcoding */
-    switch (width) {
-    case 1024:
-        vsync->h_front_porch    = 1;
-        vsync->h_sync_width     = 954;
-        vsync->h_back_porch     = 1;
-        vsync->v_front_porch    = 4;
-        vsync->v_sync_width     = 15;
-        vsync->v_back_porch     = 6;
+    switch (height) {
+    case 1080:
+        vsync->h_active_len = 1920;
+        vsync->h_sync_width = 44;
+        vsync->h_back_porch = 148;
+        vsync->h_front_porch = 88;
+        vsync->h_sync_invert = 0;
+        vsync->v_active_len = 1080;
+        vsync->v_sync_width = 5;
+        vsync->v_back_porch = 36;
+        vsync->v_front_porch = 4;
+        vsync->v_sync_invert = 0;
         break;
-    case 1280:
-        vsync->h_front_porch    = 1;
-        vsync->h_sync_width     = 203;
-        vsync->h_back_porch     = 1;
-        vsync->v_front_porch    = 7;
-        vsync->v_sync_width     = 20;
-        vsync->v_back_porch     = 6;
+
+    case 720:
+        vsync->h_active_len = 1280;
+        vsync->h_sync_width = 40;
+        vsync->h_back_porch = 220;
+        vsync->h_front_porch = 110;
+        vsync->h_sync_invert = 0;
+        vsync->v_active_len = 720;
+        vsync->v_sync_width = 5;
+        vsync->v_back_porch = 20;
+        vsync->v_front_porch = 5;
+        vsync->v_sync_invert = 0;
         break;
+
+    case 576:
+        vsync->h_active_len = 720;
+        vsync->h_sync_width = 64;
+        vsync->h_back_porch = 68;
+        vsync->h_front_porch = 12;
+        vsync->h_sync_invert = 0;
+        vsync->v_active_len = 576;
+        vsync->v_sync_width = 5;
+        vsync->v_back_porch = 39;
+        vsync->v_front_porch = 5;
+        vsync->v_sync_invert = 0;
+        break;
+
+    case 480:
+        vsync->h_active_len = 720;
+        vsync->h_sync_width = 62;
+        vsync->h_back_porch = 60;
+        vsync->h_front_porch = 16;
+        vsync->h_sync_invert = 0;
+        vsync->v_active_len = 480;
+        vsync->v_sync_width = 6;
+        vsync->v_back_porch = 30;
+        vsync->v_front_porch = 9;
+        vsync->v_sync_invert = 0;
+        break;
+
     default:
         pr_err("%s: invalid wxh(%dx%d)\n", __func__, width, height);
         return -EINVAL;
@@ -452,9 +484,11 @@ static int _get_vsync_info(struct nxp_resc *me, int device,
 
     vsync->interlace = 0;
 
+    vsync->pixel_clock_hz = _get_clk_hz(me->remote_preset);
     vsync->clk_src_lv0 = 4; /* hdmi */
     vsync->clk_div_lv0 = 1;
     vsync->clk_src_lv1 = 4;
+    /*vsync->clk_src_lv1 = 7;*/
     vsync->clk_div_lv1 = 1;
 
     par->out_format = OUTPUTFORMAT_RGB888;
@@ -465,9 +499,13 @@ static int _get_vsync_info(struct nxp_resc *me, int device,
     par->d_vsync_fram = 0;
     par->d_de_cp2 = 7;
 
-    par->vs_start_offset = 0;
+    //	HFP + HSW + HBP + AVWidth-VSCLRPIXEL- 1;
+    par->vs_start_offset = (vsync->h_front_porch + vsync->h_sync_width +
+            vsync->h_back_porch + vsync->h_active_len - 1);
     par->vs_end_offset = 0;
-    par->ev_start_offset = 0;
+    // HFP + HSW + HBP + AVWidth-EVENVSCLRPIXEL- 1
+    par->ev_start_offset = (vsync->h_front_porch + vsync->h_sync_width +
+            vsync->h_back_porch + vsync->h_active_len - 1);
     par->ev_end_offset = 0;
 
     return 0;
@@ -494,6 +532,7 @@ static int _get_vsync_info_with_preset(struct nxp_resc *me, int device,
 
     vsync->interlace = 0;
 
+    vsync->pixel_clock_hz = _get_clk_hz(me->remote_preset);
     vsync->clk_src_lv0 = preset->clk_src_lv0;
     vsync->clk_div_lv0 = preset->clk_div_lv0;
     vsync->clk_src_lv1 = preset->clk_src_lv1;
@@ -540,11 +579,12 @@ static int _set_remote_sync(struct nxp_resc *me)
             NX_DISPLAYTOP_SetRESCONVMUX(CTRUE, SecondaryMLC);
         }
         me->dpc_module_num = module;
+        pr_debug("%s: dpc module num %d\n", __func__, module);
 
         if (me->preset) {
             ret = _get_vsync_info_with_preset(me, source_device, &vsync, &param);
             if (ret) {
-                pr_err("%s: failed to _get_vsync_info()\n", __func__);
+                pr_err("%s: failed to _get_vsync_info_with_preset()\n", __func__);
                 return ret;
             }
         } else {
@@ -563,7 +603,7 @@ static int _set_remote_sync(struct nxp_resc *me)
         }
 
         me->dynamic_change_count = 0;
-        if (me->preset->dpc_sync_param.use_dynamic)
+        if (me->preset && me->preset->dpc_sync_param.use_dynamic)
             me->callback = nxp_soc_disp_register_irq_callback(me->dpc_module_num, _resc_intr_callback, me);
 
         ret = nxp_soc_disp_device_connect_to(DISP_DEVICE_RESCONV, source_device, &vsync);
@@ -653,58 +693,56 @@ static int nxp_resc_s_stream(struct v4l2_subdev *sd, int enable)
         if (!me->streaming) {
             _set_resc_clkgen_pre(me, true, true);
 
-#if 1
             if (remote_sink) {
                 struct v4l2_dv_preset preset;
+                // test
+#if 0
+                {
+                    extern void hdmi_set_hsync_offset(int offset);
+                    hdmi_set_hsync_offset(-100);
+                }
+#endif
                 v4l2_subdev_call(remote_sink, video, s_stream, 1);
                 v4l2_subdev_call(remote_sink, video, g_dv_preset, &preset);
                 me->remote_preset = preset.preset;
-                printk("%s: remote_preset 0x%x\n", __func__, me->remote_preset);
+                pr_debug("%s: remote_preset 0x%x\n", __func__, me->remote_preset);
             }
 
             if (_get_preset(me) < 0) {
                 printk(KERN_ERR "%s: failed to _get_preset()\n", __func__);
                 _hw_set(me);
+                // if downscale, use hdmi clk
+                _set_resc_clkgen_post(me, 4, 1);
             } else {
+                _set_remote_sync(me);
                 _hw_set_with_preset(me);
+                // if upscale, use max 250MHz clk
+                if (me->preset->mlc_resol.width > me->preset->resc_resol.width) {
+                    // scale down
+                    pr_debug("scale down clk set\n");
+                    _set_resc_clkgen_post(me, 4, 1);
+                } else {
+                    // scale up
+                    // TODO: find source clock
+                    pr_debug("scale up clk set\n");
+                    _set_resc_clkgen_post(me, 0, 4);
+                }
             }
-            _set_resc_clkgen_post(me, 0, 4);
+
             _hw_run(me);
-
-            _set_remote_sync(me);
-
-#if 0
-            if (remote_sink) {
-                v4l2_subdev_call(remote_sink, video, s_stream, 0);
-                v4l2_subdev_call(remote_sink, video, s_stream, 1);
-            }
-#else
-            if (remote_sink) {
-                struct v4l2_control ctrl;
-                ctrl.id = V4L2_CID_HDMI_ON_OFF;
-                ctrl.value = 0;
-                v4l2_subdev_call(remote_sink, core, s_ctrl, &ctrl);
-                mdelay(10);
-                ctrl.value = 1;
-                v4l2_subdev_call(remote_sink, core, s_ctrl, &ctrl);
-            }
-#endif
-#else
-            if (remote_sink) {
-                struct v4l2_dv_preset preset;
-                v4l2_subdev_call(remote_sink, video, s_stream, 1);
-                v4l2_subdev_call(remote_sink, video, g_dv_preset, &preset);
-                me->remote_preset = preset.preset;
-                printk("%s: remote_preset 0x%x\n", __func__, me->remote_preset);
-            }
-            _get_preset(me);
-            _set_remote_sync(me);
-            _hw_set_with_preset(me);
-            _set_resc_clkgen_post(me, 0, 4);
-            _hw_run(me);
-#endif
-
             me->streaming = true;
+
+            {
+                int count = 10;
+                do {
+                    mdelay(5);
+                    printk("%s: over %d, under %d\n",
+                            __func__,
+                            NX_RESCONV_IsOverFlow(0),
+                            NX_RESCONV_IsUnderFlow(0));
+                    count--;
+                } while (count > 0);
+            }
         }
     } else {
         if (me->streaming) {
@@ -717,7 +755,7 @@ static int nxp_resc_s_stream(struct v4l2_subdev *sd, int enable)
 
             nxp_soc_disp_device_enable(me->source_device, 0);
             nxp_soc_disp_device_disconnect(DISP_DEVICE_RESCONV, me->source_device);
-            if (me->preset->dpc_sync_param.use_dynamic) {
+            if (me->preset && me->preset->dpc_sync_param.use_dynamic) {
                 nxp_soc_disp_unregister_irq_callback(me->dpc_module_num, me->callback);
                 me->callback = NULL;
             }
