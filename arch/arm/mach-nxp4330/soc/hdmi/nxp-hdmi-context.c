@@ -128,10 +128,14 @@ static inline void _hdmi_reset(struct nxp_hdmi_context *me)
     NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_VIDEO), RSTCON_nDISABLE);
     NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_SPDIF), RSTCON_nDISABLE);
     NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_TMDS), RSTCON_nDISABLE);
+    NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_PHY), RSTCON_nDISABLE);
+    NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST), RSTCON_nDISABLE);
 
     NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_VIDEO), RSTCON_nENABLE);
     NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_SPDIF), RSTCON_nENABLE);
     NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_TMDS), RSTCON_nENABLE);
+    NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_PHY), RSTCON_nENABLE);
+    NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST), RSTCON_nENABLE);
 }
 
 static inline bool _wait_for_hdmiphy_ready(void)
@@ -283,13 +287,13 @@ static int _set_remote_sync(struct nxp_hdmi_context *me)
 {
     int ret;
 
-    if (me->source_device != DISP_DEVICE_RESCONV) {
-        ret = _get_vsync_info(me);
-        if (ret) {
-            pr_err("%s: failed to _get_vsync_info()\n", __func__);
-            return ret;
-        }
+    ret = _get_vsync_info(me);
+    if (ret) {
+        pr_err("%s: failed to _get_vsync_info()\n", __func__);
+        return ret;
+    }
 
+    if (me->source_device != DISP_DEVICE_RESCONV) {
         /*me->dpc_sync_info.interlace = me->cur_conf->mbus_fmt.field == V4L2_FIELD_INTERLACED;*/
         me->dpc_sync_info.interlace = false; // nxp4330 don't support interlace
 
@@ -339,16 +343,33 @@ static inline void _hdmi_sync_init(struct nxp_hdmi_context *me)
     NX_DISPLAYTOP_HDMI_SetHActiveEnd(0);
 }
 
+static int _h_sync_offset = 0;
+
 static inline void _calc_hdmi_sync_param(struct nxp_hdmi_context *me)
 {
     struct hdmi_sync_param *param = &me->hdmi_sync_param;
     struct disp_vsync_info *vsync = &me->dpc_sync_info;
 
+#if 0
     param->v_sync_start = vsync->v_sync_width + vsync->v_back_porch + vsync->v_active_len - 1;
     param->h_active_start = vsync->h_sync_width + vsync->h_back_porch;
     param->h_active_end = vsync->h_active_len + vsync->h_sync_width + vsync->h_back_porch;
     param->v_sync_hs_start_end0 = vsync->h_sync_width + vsync->h_back_porch + 1;
     param->v_sync_hs_start_end1 = param->v_sync_hs_start_end0 + 1;
+#else
+    // this is test
+    printk("%s: _h_sync_offset %d\n", __func__, _h_sync_offset);
+    param->v_sync_start = vsync->v_sync_width + vsync->v_back_porch + vsync->v_active_len - 1;
+    param->h_active_start = vsync->h_sync_width + vsync->h_back_porch + _h_sync_offset;
+    param->h_active_end = vsync->h_active_len + vsync->h_sync_width + vsync->h_back_porch + _h_sync_offset;
+    param->v_sync_hs_start_end0 = vsync->h_sync_width + vsync->h_back_porch + 1 + _h_sync_offset;
+    param->v_sync_hs_start_end1 = param->v_sync_hs_start_end0 + 1;
+#endif
+}
+
+void hdmi_set_hsync_offset(int offset)
+{
+    _h_sync_offset = offset;
 }
 
 static void _config_hdmi(struct nxp_hdmi_context *me)
@@ -502,6 +523,7 @@ static void _config_hdmi(struct nxp_hdmi_context *me)
     /* Set VIDEO_PATTERN_GEN to 0x00 */
     NX_HDMI_SetReg(0, HDMI_LINK_VIDEO_PATTERN_GEN, 0x0);
     /*NX_HDMI_SetReg(0, HDMI_LINK_VIDEO_PATTERN_GEN, 0x1);*/
+    /*NX_HDMI_SetReg(0, HDMI_LINK_VIDEO_PATTERN_GEN, 0x3); // internal*/
 
     NX_HDMI_SetReg(0, HDMI_LINK_GCP_CON, 0x0a);
 
@@ -641,6 +663,9 @@ static inline void _hdmi_enable(struct nxp_hdmi_context *me)
 
     msleep(20);
 
+    pr_debug("%s: v_sync_start %d, h_active_start %d, h_active_end %d, v_sync_hs_start_end0 %d, v_sync_hs_start_end1 %d\n", __func__,
+            me->hdmi_sync_param.v_sync_start, me->hdmi_sync_param.h_active_start, me->hdmi_sync_param.h_active_end,
+            me->hdmi_sync_param.v_sync_hs_start_end0, me->hdmi_sync_param.v_sync_hs_start_end1);
     NX_DISPLAYTOP_HDMI_SetVSyncStart(me->hdmi_sync_param.v_sync_start);
     NX_DISPLAYTOP_HDMI_SetHActiveStart(me->hdmi_sync_param.h_active_start);
     NX_DISPLAYTOP_HDMI_SetHActiveEnd(me->hdmi_sync_param.h_active_end);
@@ -660,7 +685,7 @@ static irqreturn_t _hdmi_irq_handler(int irq, void *dev_data)
     if (flag & HDMI_INTC_FLAG_HPD_UNPLUG) {
 #if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NEXELL_DISPLAY_HDMI_USE_HDCP)
         /* stop HDCP */
-        me->hdcp.stop(&me->hdcp);
+        /*me->hdcp.stop(&me->hdcp);*/
 #endif
         hdmi_write_mask(HDMI_LINK_INTC_FLAG_0, ~0, HDMI_INTC_FLAG_HPD_UNPLUG);
     }
@@ -671,7 +696,7 @@ static irqreturn_t _hdmi_irq_handler(int irq, void *dev_data)
     if (flag & HDMI_INTC_FLAG_HDCP) {
         pr_debug("%s: hdcp interrupt occur\n", __func__);
         me->hdcp.irq_handler(&me->hdcp);
-        hdmi_write_mask(HDMI_LINK_INTC_FLAG_0, ~0, HDMI_INTC_FLAG_HDCP);
+        /*hdmi_write_mask(HDMI_LINK_INTC_FLAG_0, ~0, HDMI_INTC_FLAG_HDCP);*/
     }
 #endif
 
@@ -865,16 +890,18 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
 {
     int ret;
 
-    pr_debug("%s\n", __func__);
+    printk("%s entered\n", __func__);
 
     if (atomic_read(&me->state) == HDMI_RUNNING) {
         pr_warning("%s: hdmi already running!\n", __func__);
         return 0;
     }
+
+    _hdmi_reset(me);
+
     /**
      * [SEQ 5] set up the HDMI PHY to specific video clock.
      */
-    /* me->phy.s_dv_preset(&me->phy, me->preset); */
     ret = me->phy.s_stream(&me->phy, 1);
     if (ret < 0) {
         pr_err("%s: phy->s_stream() failed\n", __func__);
@@ -898,7 +925,7 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
     /**
      * [SEQ 8] release the resets of HDMI.i_VIDEO_nRST and HDMI.i_SPDIF_nRST and HDMI.i_TMDS_nRST
      */
-    _hdmi_reset(me);
+    /*_hdmi_reset(me);*/
 
     /**
      * [SEQ 9] Wait for HDMI PHY ready (wait until 0xC0200020.[0], 1)
@@ -912,10 +939,10 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
     if (me->set_hdmi_mux) {
         me->set_hdmi_mux(me);
     } else {
-        pr_warn("%s: set_hdmi_mux hook callback not set, use default(PrimaryMLC)\n", __func__);
-        me->source_dpc_module_num = 0;
+        pr_warn("%s: set_hdmi_mux hook callback not set, use RESC\n", __func__);
+        me->source_dpc_module_num = 1;
         me->source_device = DISP_DEVICE_SYNCGEN0;
-        NX_DISPLAYTOP_SetHDMIMUX(CTRUE, PrimaryMLC);
+        NX_DISPLAYTOP_SetHDMIMUX(CTRUE, ResolutionConv);
     }
 
     /**
@@ -923,6 +950,7 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
      */
     _set_hdmi_clkgen(me); /* set hdmi link clk to clkgen : default is hdmi phy clk */
     _set_audio_clkgen(me);
+
     _hdmi_sync_init(me);
 
     /**
@@ -953,7 +981,7 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
 
     /*mdelay(5);*/
 
-#if defined(CONFIG_NX_HDMI_USE_HDCP)
+#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NEXELL_DISPLAY_HDMI_USE_HDCP)
     /* start HDCP */
     ret = me->hdcp.start(&me->hdcp);
     if (ret < 0) {
@@ -963,12 +991,14 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
 #endif
 
     atomic_set(&me->state, HDMI_RUNNING);
+    printk("%s exit\n", __func__);
     return 0;
 }
 
 void hdmi_stop(struct nxp_hdmi_context *me)
 {
     pr_debug("%s\n", __func__);
+    printk("%s entered\n", __func__);
 
     if (atomic_read(&me->state) != HDMI_RUNNING)
         return;
@@ -976,6 +1006,9 @@ void hdmi_stop(struct nxp_hdmi_context *me)
 #if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NEXELL_DISPLAY_HDMI_USE_HDCP)
     me->hdcp.stop(&me->hdcp);
 #endif
+
+    _hdmi_sync_init(me);
+    mdelay(100);
 
     hdmi_audio_enable(false);
     hdmi_enable(false);
@@ -988,8 +1021,31 @@ void hdmi_stop(struct nxp_hdmi_context *me)
         nxp_soc_disp_device_disconnect(DISP_DEVICE_HDMI, me->source_device);
     }
 
+    _h_sync_offset = 0;
+
     atomic_set(&me->state, HDMI_STOPPED);
+    printk("%s exit\n", __func__);
 }
+
+#if 0
+void hdmi_stop_dummy(void)
+{
+    struct nxp_hdmi_context *me = __me;
+
+    _hdmi_sync_init(me);
+    mdelay(100);
+
+    hdmi_enable(false);
+
+    /*atomic_set(&me->state, HDMI_STOPPED);*/
+}
+
+void hdmi_start_dummy(void)
+{
+    struct nxp_hdmi_context *me = __me;
+    _hdmi_enable(me);
+}
+#endif
 
 void hdmi_enable_audio(struct nxp_hdmi_context *me, bool enable)
 {

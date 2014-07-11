@@ -46,6 +46,7 @@ static void _set_hdmi_mux(struct nxp_hdmi_context *ctx)
     remote = _get_remote_source_subdev(me);
 
     printk("%s: entered: me %p, remote %p\n", __func__, me, remote);
+#if 1
     if (!strncmp(remote->name, "NXP MLC", 7)) {
         /* connect DPC -> HDMI */
         char *numchar = remote->name + 7;
@@ -68,6 +69,14 @@ static void _set_hdmi_mux(struct nxp_hdmi_context *ctx)
         ctx->source_dpc_module_num = 0;
         printk("source device : RESCONV\n");
     }
+#else
+    // test
+    ctx->source_device = DISP_DEVICE_RESCONV;
+    NX_DISPLAYTOP_SetHDMIMUX(CTRUE, ResolutionConv);
+    // not meaningful, source dpc module checked by resolution converter
+    ctx->source_dpc_module_num = 0;
+    printk("source device : RESCONV\n");
+#endif
     printk("%s: exit\n", __func__);
 }
 

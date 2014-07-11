@@ -197,6 +197,220 @@ struct sync_preset nxp_out_sync_presets[] = {
             .hoffset = 0
         }
     },
+    /*
+     * MLC         RESC       HDMI
+     * 1920x1080 | 1728x972 | 1920x1080
+     */
+    {
+        .index     = 4,
+        .mlc_resol = {
+            .width  = 1920,
+            .height = 1080
+        },
+        .resc_resol = {
+            .width  = 1728,
+            .height = 972
+        },
+        .hdmi_resol = {
+            .width  = 1920,
+            .height = 1080
+        },
+        .dpc_sync_param = {
+            .hact   = 1920,
+            .vact   = 1080,
+            .hfp    = 20,
+            .hsw    = 20,
+            .hbp    = 20,
+            .vfp    = 67,
+            .vsw    = 5,
+            .vbp    = 98,
+            .use_dynamic    = false,
+            .dynamic_change_num = 0,
+            .dynamic_tbl    = NULL,
+            .clk_src_lv0 = 4,
+            .clk_div_lv0 = 1,
+            .clk_src_lv1 = 4,
+            .clk_div_lv1 = 1
+        },
+        .resc_sync_param = {
+            .hact   = 1728,
+            .vact   = 972,
+            .hfp    = 184,
+            .hsw    = 44,
+            .hbp    = 244,
+            .vfp    = 58,
+            .vsw    = 5,
+            .vbp    = 90,
+            .hdelay = 0,
+            .hoffset = 0
+        }
+    },
+    /*
+     * MLC         RESC       HDMI
+     * 1280x720 | 1066x600 | 1280x720
+     */
+    {
+        .index     = 5,
+        .mlc_resol = {
+            .width  = 1280,
+            .height = 720
+        },
+        .resc_resol = {
+            .width  = 1066,
+            .height = 600,
+        },
+        .hdmi_resol = {
+            .width  = 1280,
+            .height = 720
+        },
+        .dpc_sync_param = {
+            .hact   = 1280,
+            .vact   = 720,
+            .hfp    = 32,
+            .hsw    = 31,
+            .hbp    = 32,
+            .vfp    = 85,
+            .vsw    = 5,
+            .vbp    = 90,
+            .use_dynamic    = false,
+            .dynamic_change_num = 0,
+            .dynamic_tbl    = NULL,
+            .clk_src_lv0 = 4,
+            .clk_div_lv0 = 1,
+            .clk_src_lv1 = 4,
+            .clk_div_lv1 = 1
+        },
+        .resc_sync_param = {
+            .hact   = 1066,
+            .vact   = 600,
+            .hfp    = 217,
+            .hsw    = 140,
+            .hbp    = 227,
+            .vfp    = 65,
+            .vsw    = 5,
+            .vbp    = 80,
+            .hdelay = 0,
+            .hoffset = 0
+        }
+    },
+    /*
+     * MLC         RESC       HDMI
+     * 720x576 | 624x500 | 720x576
+     */
+    {
+        .index     = 6,
+        .mlc_resol = {
+            .width  = 720,
+            .height = 576
+        },
+        .resc_resol = {
+            .width  = 624,
+            .height = 500,
+        },
+        .hdmi_resol = {
+            .width  = 720,
+            .height = 576
+        },
+        .dpc_sync_param = {
+#if 0
+            .hact   = 720,
+            .vact   = 576,
+            .hfp    = 32,
+            .hsw    = 32,
+            .hbp    = 32,
+            .vfp    = 51,
+            .vsw    = 5,
+            .vbp    = 88,
+#else
+            .hact   = 720,
+            .vact   = 576,
+            .hfp    = 12,
+            .hsw    = 64,
+            .hbp    = 68,
+            .vfp    = 5,
+            .vsw    = 5,
+            .vbp    = 39,
+#endif
+            .use_dynamic    = false,
+            .dynamic_change_num = 0,
+            .dynamic_tbl    = NULL,
+            .clk_src_lv0 = 4,
+            .clk_div_lv0 = 1,
+            .clk_src_lv1 = 4,
+            .clk_div_lv1 = 1
+        },
+        .resc_sync_param = {
+#if 0
+            .hact   = 624,
+            .vact   = 500,
+            .hfp    = 12,
+            .hsw    = 64,
+            .hbp    = 68,
+            .vfp    = 43,
+            .vsw    = 5,
+            .vbp    = 77,
+#else
+            .hact   = 720,
+            .vact   = 576,
+            .hfp    = 12,
+            .hsw    = 64,
+            .hbp    = 68,
+            .vfp    = 5,
+            .vsw    = 5,
+            .vbp    = 39,
+#endif
+            .hdelay = 0,
+            .hoffset = 0
+        }
+    },
+    /*
+     * MLC         RESC       HDMI
+     * 720x480 | 720x480 | 720x480
+     */
+    {
+        .index     = 7,
+        .mlc_resol = {
+            .width  = 720,
+            .height = 480
+        },
+        .resc_resol = {
+            .width  = 720,
+            .height = 480,
+        },
+        .hdmi_resol = {
+            .width  = 720,
+            .height = 480
+        },
+        .dpc_sync_param = {
+            .hact   = 720,
+            .vact   = 480,
+            .hfp    = 16,
+            .hsw    = 62,
+            .hbp    = 60,
+            .vfp    = 9,
+            .vsw    = 6,
+            .vbp    = 30,
+            .use_dynamic    = false,
+            .dynamic_change_num = 0,
+            .dynamic_tbl    = NULL,
+            .clk_src_lv0 = 4,
+            .clk_div_lv0 = 1,
+            .clk_src_lv1 = 4,
+            .clk_div_lv1 = 1
+        },
+        .resc_sync_param = {
+            .hact   = 720,
+            .vact   = 480,
+            .hfp    = 16,
+            .hsw    = 62,
+            .hbp    = 60,
+            .vfp    = 9,
+            .vsw    = 6,
+            .vbp    = 30,
+            .hdelay = 0,
+            .hoffset = 0
+        }
+    },
     {
         .index = -1,
     },

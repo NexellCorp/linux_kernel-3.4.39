@@ -12,6 +12,8 @@
 #include <mach/hdmi/hdmi-priv.h>
 #include <mach/hdmi/nxp-hdmiphy.h>
 
+#include <nx_rstcon.h>
+
 #define NXP_HDMIPHY_PRESET_TABLE_SIZE   30
 
 /**
@@ -122,6 +124,7 @@ static int _hdmiphy_enable_pad(struct nxp_hdmiphy *me)
 static int _hdmiphy_reset(struct nxp_hdmiphy *me)
 {
     pr_debug("%s\n", __func__);
+    NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_PHY), RSTCON_nDISABLE);
     return 0;
 }
 
@@ -199,6 +202,8 @@ static int nxp_hdmiphy_s_stream(struct nxp_hdmiphy *me, int enable)
             pr_err("%s: failed to _hdmiphy_reg_set()\n", __func__);
             return ret;
         }
+    } else {
+        _hdmiphy_reset(me);
     }
 
     return 0;
