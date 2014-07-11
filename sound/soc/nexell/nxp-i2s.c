@@ -254,7 +254,8 @@ static int i2s_start(struct nxp_i2s_snd_param *par, int stream)
 	pr_debug("%s\n", __func__);
 	spin_lock(&par->lock);
 
-	supply_master_clock(par);
+	if (!par->pre_supply_mclk)
+		supply_master_clock(par);
 
 	if (SNDRV_PCM_STREAM_PLAYBACK == stream) {
 		FIC |= (1 << 15);	/* flush fifo */
@@ -307,7 +308,8 @@ static void i2s_stop(struct nxp_i2s_snd_param *par, int stream)
 	}
 
 	if (!(par->status & SNDDEV_STATUS_RUNNING)) {
-		i2s->CON &= ~(1 << CON_I2SACTIVE_POS);
+		if (!par->pre_supply_mclk)
+			i2s->CON &= ~(1 << CON_I2SACTIVE_POS);
 		i2s->CSR |=  (3 << CSR_TXR_POS);		/* no tx/rx */
 	}
 

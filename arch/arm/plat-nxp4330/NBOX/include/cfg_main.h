@@ -143,7 +143,7 @@
 #define	CFG_AUDIO_I2S0_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
 #define	CFG_AUDIO_I2S0_FRAME_BIT				48		// 32, 48
 #define	CFG_AUDIO_I2S0_SAMPLE_RATE				48000
-#define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			0
+#define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			1
 
 #define	CFG_AUDIO_I2S1_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S1_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
@@ -214,7 +214,7 @@
  * 	WIFI
  */
 #define CFG_WIFI_POWER_IO					(PAD_GPIO_A + 9)		/* GPIO */
-#define CFG_WIFI_SDIO_ID 					2
+#define CFG_WIFI_SDIO_ID 					1
 
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC

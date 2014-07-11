@@ -37,15 +37,16 @@
 #include <linux/clk.h>
 #include <linux/uaccess.h>
 #include <linux/io.h>
-#include <linux/cpufreq.h>
 #include <linux/slab.h>
 #include <linux/err.h>
 
 #include <mach/platform.h>
 #include <mach/devices.h>
 #include <mach/soc.h>
+#include <mach/nxp-dfs-bclk.h>
 
-#define CONFIG_NXP4330_WATCHDOG_DEFAULT_TIME	(1)
+#define CONFIG_NXP4330_WATCHDOG_DEFAULT_TIME	(10)
+#define CONFIG_NXP4330_WATCHDOG_MAX_TIME		(10)
 
 #if !defined(CFG_WATCHDOG_MAGICCLOSE_OFF)
 #define OPTIONS (WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE)
@@ -80,6 +81,7 @@ static bool nowayout	= WATCHDOG_NOWAYOUT;
 static int tmr_margin	= CONFIG_NXP4330_WATCHDOG_DEFAULT_TIME;
 static int soft_noboot;
 static int debug;
+static unsigned long wdt_freq;
 
 module_param(tmr_margin,  int, 0);
 module_param(nowayout,   bool, 0);
@@ -176,13 +178,16 @@ static inline int nxp4330wdt_is_running(void)
 
 static int nxp4330wdt_set_heartbeat(struct watchdog_device *wdd, unsigned timeout)
 {
-	unsigned long freq = clk_get_rate(wdt_clock);
+	unsigned long freq = wdt_freq;
 	unsigned int count;
 	unsigned int divisor = 1;
 	unsigned long wtcon;
 
-	if (timeout < 1)
+
+	if (timeout < 1| timeout > CONFIG_NXP4330_WATCHDOG_MAX_TIME){
+		dev_err(wdt_dev, "timeout %d invalid value\n", timeout);
 		return -EINVAL;
+	}
 
 	freq /= 128;
 	count = timeout * freq;
@@ -254,24 +259,21 @@ static irqreturn_t nxp4330wdt_irq(int irqno, void *param)
 	return IRQ_HANDLED;
 }
 
-#ifdef CONFIG_CPU_FREQ
+#ifdef CONFIG_NEXELL_DFS_BCLK
 
-static int nxp4330wdt_cpufreq_transition(struct notifier_block *nb,
+static int nxp4330wdt_bclk_dfs_transition(struct notifier_block *nb,
 					  unsigned long val, void *data)
 {
 	int ret;
 
+	DBG("%s val=%lu,data=%lu WDT_STA=%d\n", __func__, val, *(uint32_t *)data, (bool)nxp4330wdt_is_running());
+
+	wdt_freq = (*(uint32_t *)data)/2;
+
 	if (!nxp4330wdt_is_running())
 		goto done;
 
-	if (val == CPUFREQ_PRECHANGE) {
-		/* To ensure that over the change we don't cause the
-		 * watchdog to trigger, we perform an keep-alive if
-		 * the watchdog is running.
-		 */
-
-		nxp4330wdt_keepalive(&nxp4330_wdd);
-	} else if (val == CPUFREQ_POSTCHANGE) {
+	if (val == BCLK_CHANGED) {
 		nxp4330wdt_stop(&nxp4330_wdd);
 
 		ret = nxp4330wdt_set_heartbeat(&nxp4330_wdd, nxp4330_wdd.timeout);
@@ -281,39 +283,47 @@ static int nxp4330wdt_cpufreq_transition(struct notifier_block *nb,
 		else
 			goto err;
 	}
+	else {
+		/* To ensure that over the change we don't cause the
+		 * watchdog to trigger, we perform an keep-alive if
+		 * the watchdog is running.
+		 */
 
+		nxp4330wdt_keepalive(&nxp4330_wdd);
+	}
 done:
 	return 0;
 
  err:
-	dev_err(wdt_dev, "cannot set new value for timeout %d\n",
+	dev_err(wdt_dev, "cannot set new value for timeout %d. and restart(default timeout value) \n",
 				nxp4330_wdd.timeout);
+	nxp4330wdt_set_heartbeat(&nxp4330_wdd, CONFIG_NXP4330_WATCHDOG_DEFAULT_TIME);
+	nxp4330wdt_start(&nxp4330_wdd);
+
 	return ret;
 }
 
-static struct notifier_block nxp4330wdt_cpufreq_transition_nb = {
-	.notifier_call	= nxp4330wdt_cpufreq_transition,
+static struct notifier_block nxp4330wdt_bclk_dfs_transition_nb = {
+	.notifier_call	= nxp4330wdt_bclk_dfs_transition,
 };
 
-static inline int nxp4330wdt_cpufreq_register(void)
+static inline void nxp4330wdt_bclk_dfs_register(void)
 {
-	return cpufreq_register_notifier(&nxp4330wdt_cpufreq_transition_nb,
-					 CPUFREQ_TRANSITION_NOTIFIER);
+	bclk_dfs_register_notify(&nxp4330wdt_bclk_dfs_transition_nb);
 }
 
-static inline void nxp4330wdt_cpufreq_deregister(void)
+static inline void nxp4330wdt_bclk_dfs_deregister(void)
 {
-	cpufreq_unregister_notifier(&nxp4330wdt_cpufreq_transition_nb,
-				    CPUFREQ_TRANSITION_NOTIFIER);
+	bclk_dfs_unregister_notify(&nxp4330wdt_bclk_dfs_transition_nb);
 }
 
 #else
-static inline int nxp4330wdt_cpufreq_register(void)
+static inline int nxp4330wdt_bclk_dfs_register(void)
 {
 	return 0;
 }
 
-static inline void nxp4330wdt_cpufreq_deregister(void)
+static inline void nxp4330wdt_bclk_dfs_deregister(void)
 {
 }
 #endif
@@ -353,7 +363,7 @@ static int __devinit nxp4330wdt_probe(struct platform_device *pdev)
 		goto err;
 	}
 
-	wdt_clock = clk_get(&pdev->dev, "watchdog");
+	wdt_clock = clk_get(NULL, "pclk");
 	if (IS_ERR(wdt_clock)) {
 		dev_err(dev, "failed to find watchdog clock source\n");
 		ret = PTR_ERR(wdt_clock);
@@ -361,12 +371,17 @@ static int __devinit nxp4330wdt_probe(struct platform_device *pdev)
 	}
 
 	clk_enable(wdt_clock);
+	wdt_freq = clk_get_rate(wdt_clock);
 
-	ret = nxp4330wdt_cpufreq_register();
-	if (ret < 0) {
-		pr_err("failed to register cpufreq\n");
-		goto err_clk;
-	}
+	nxp4330wdt_bclk_dfs_register();
+
+	nxp_soc_rsc_reset(RESET_ID_WDT);
+	nxp_soc_rsc_reset(RESET_ID_WDT_POR);
+
+	/* if we're not enabling the watchdog, then ensure it is
+	 * disabled if it has been left running from the bootloader
+	 * or other source */
+	nxp4330wdt_stop(&nxp4330_wdd);
 
 	/* see if we can actually set the requested timer margin, and if
 	 * not, try the default value */
@@ -387,7 +402,7 @@ static int __devinit nxp4330wdt_probe(struct platform_device *pdev)
 	ret = request_irq(wdt_irq->start, nxp4330wdt_irq, 0, pdev->name, pdev);
 	if (ret != 0) {
 		dev_err(dev, "failed to install irq (%d)\n", ret);
-		goto err_cpufreq;
+		goto err_clk;
 	}
 
 	watchdog_set_nowayout(&nxp4330_wdd, nowayout);
@@ -398,12 +413,6 @@ static int __devinit nxp4330wdt_probe(struct platform_device *pdev)
 		goto err_irq;
 	}
 
-	nxp_soc_rsc_reset(RESET_ID_WDT);
-
-	/* if we're not enabling the watchdog, then ensure it is
-	 * disabled if it has been left running from the bootloader
-	 * or other source */
-	nxp4330wdt_stop(&nxp4330_wdd);
 
 	/* print out a statement of readiness */
 
@@ -418,9 +427,6 @@ static int __devinit nxp4330wdt_probe(struct platform_device *pdev)
 
  err_irq:
 	free_irq(wdt_irq->start, pdev);
-
- err_cpufreq:
-	nxp4330wdt_cpufreq_deregister();
 
  err_clk:
 	clk_disable(wdt_clock);
@@ -442,7 +448,7 @@ static int __devexit nxp4330wdt_remove(struct platform_device *dev)
 
 	free_irq(wdt_irq->start, dev);
 
-	nxp4330wdt_cpufreq_deregister();
+	nxp4330wdt_bclk_dfs_deregister();
 
 	clk_disable(wdt_clock);
 	clk_put(wdt_clock);
@@ -468,7 +474,6 @@ static int nxp4330wdt_suspend(struct platform_device *dev, pm_message_t state)
 {
 	/* Save watchdog state, and turn it off. */
 	wtcon_save = readl(NXP4330_WTCON);
-	wtdat_save = readl(NXP4330_WTDAT);
 
 	/* Note that WTCNT doesn't need to be saved. */
 	nxp4330wdt_stop(&nxp4330_wdd);
@@ -479,9 +484,22 @@ static int nxp4330wdt_suspend(struct platform_device *dev, pm_message_t state)
 static int nxp4330wdt_resume(struct platform_device *dev)
 {
 	/* Restore watchdog state. */
+	if (!nxp_soc_rsc_status(RESET_ID_WDT))
+		nxp_soc_rsc_reset(RESET_ID_WDT);
+	if (!nxp_soc_rsc_status(RESET_ID_WDT_POR))
+		nxp_soc_rsc_reset(RESET_ID_WDT_POR);
 
-	writel(wtdat_save, NXP4330_WTDAT);
+	/* Note that WTCNT doesn't need to be saved. */
+	nxp4330wdt_stop(&nxp4330_wdd);
+
+	wdt_freq = clk_get_rate(wdt_clock);
+	nxp4330wdt_set_heartbeat(&nxp4330_wdd, nxp4330_wdd.timeout);
+
+	wtdat_save = readl(NXP4330_WTDAT);
 	writel(wtdat_save, NXP4330_WTCNT); /* Reset count */
+
+	wtcon_save &= 0xff;
+	wtcon_save |= readl(NXP4330_WTCON)&NXP4330_WTCON_PRESCALE_MASK;
 	writel(wtcon_save, NXP4330_WTCON);
 
 	pr_info("watchdog %sabled\n",
