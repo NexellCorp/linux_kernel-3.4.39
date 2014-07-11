@@ -331,6 +331,7 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 	static struct snd_soc_dai_driver *dai = &i2s_dai_driver;
 	struct i2s_register *i2s = &par->i2s;
 	unsigned int sample_rate = par->sample_rate;
+	unsigned int base = par->base_addr;
 	unsigned long request = 0, rate_hz = 0;
 	int divide = 0, prescale = 0;
 	int en_pclk = 0, i = 0;
@@ -419,8 +420,11 @@ done:
 
 	i2s_reset(par);
 
-	if (par->pre_supply_mclk)
+	if (par->pre_supply_mclk){
 		supply_master_clock(par);
+		i2s->CON |=  1 << CON_I2SACTIVE_POS;
+		writel(i2s->CON, (base+I2S_CON_OFFSET));
+	}
 
 	/* i2s support format */
 	if (RFS == RATIO_256 || BFS != BFS_48BIT) {
