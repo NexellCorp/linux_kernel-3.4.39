@@ -656,7 +656,7 @@ static int hdmi_read_hpd_gpio(int gpio)
 static struct nxp_out_platformdata out_plat_data = {
     .hdmi = {
         .internal_irq = 0,
-        .external_irq = PAD_GPIO_A + 19,
+//        .external_irq = PAD_GPIO_A + 19,
         .set_int_external = hdmi_set_int_external,
         .set_int_internal = hdmi_set_int_internal,
         .read_hpd_gpio = hdmi_read_hpd_gpio,
@@ -711,13 +711,25 @@ static struct dw_mci_board _dwmci0_data = {
 				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-	.sdr_timing		= 0x03020001,
-	.ddr_timing		= 0x03030002,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0x1c) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 };
 #endif
 
 #ifdef CONFIG_MMC_NEXELL_CH1
-static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
+
+static struct dw_mci_board _dwmci1_data = {
+	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION,
+	.bus_hz			= 100 * 1000 * 1000,
+	.caps = MMC_CAP_CMD23|MMC_CAP_NONREMOVABLE,
+	.detect_delay_ms= 200,
+	.cd_type = DW_MCI_CD_NONE,
+	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(0),
+};
+#endif
+
+#ifdef CONFIG_MMC_NEXELL_CH2
+static int _dwmci2_init(u32 slot_id, irq_handler_t handler, void *data)
 {
 	struct dw_mci *host = (struct dw_mci *)data;
 	int io  = CFG_SDMMC0_DETECT_IO;
@@ -727,18 +739,19 @@ static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 	printk("dw_mmc dw_mmc.%d: Using external card detect irq %3d (io %2d)\n", id, irq, io);
 
 	ret  = request_irq(irq, handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
-				DEV_NAME_SDHC "0", (void*)host->slot[slot_id]);
+				DEV_NAME_SDHC "2", (void*)host->slot[slot_id]);
 	if (0 > ret)
 		pr_err("dw_mmc dw_mmc.%d: fail request interrupt %d ...\n", id, irq);
 	return 0;
 }
 
-static int _dwmci0_get_cd(u32 slot_id)
+static int _dwmci2_get_cd(u32 slot_id)
 {
 	int io = CFG_SDMMC0_DETECT_IO;
 	return nxp_soc_gpio_get_in_value(io);
 }
-static struct dw_mci_board _dwmci1_data = {
+
+static struct dw_mci_board _dwmci2_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION,
 	.bus_hz			= 100 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
@@ -746,26 +759,16 @@ static struct dw_mci_board _dwmci1_data = {
 //	.sdr_timing		= 0x03020001,
 //	.ddr_timing		= 0x03030002,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(0),
-	.init			= _dwmci0_init,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.init			= _dwmci2_init,
 	.get_ro         = _dwmci_get_ro,
-	.get_cd			= _dwmci0_get_cd,
+	.get_cd			= _dwmci2_get_cd,
 	.ext_cd_init	= _dwmci_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
 };
 #endif
 
-#ifdef CONFIG_MMC_NEXELL_CH2
-static struct dw_mci_board _dwmci2_data = {
-	.quirks	= DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz	= 50 * 1000 * 1000,
-	.caps = MMC_CAP_CMD23|MMC_CAP_NONREMOVABLE,
-	.detect_delay_ms = 200,
-	.cd_type = DW_MCI_CD_NONE,
-	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
-//	.clk_dly		= DW_MMC_DRIVE_DELAY(1) | DW_MMC_SAMPLE_DELAY(2) | DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(0),
-};
-#endif
+
 
 #endif /* CONFIG_MMC_DW */
 
