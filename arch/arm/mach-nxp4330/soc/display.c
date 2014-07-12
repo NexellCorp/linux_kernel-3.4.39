@@ -582,26 +582,30 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 
 	int module = info->module;
 	unsigned int out_format = psgen->out_format;
+	unsigned int delay_mask = psgen->delay_mask;
+#if 0
 	int 	   invert_field = psgen->invert_field;
 	int 		 swap_RB    = psgen->swap_RB;
 	unsigned int yc_order   = psgen->yc_order;
-	unsigned int delay_mask = psgen->delay_mask;
+#endif	
 
 	int rgb_pvd = 0, hsync_cp1 = 7, vsync_fram = 7, de_cp2 = 7;
 	int v_vso = 1, v_veo = 1, e_vso = 1, e_veo = 1;
+#if 0
 	int interlace = psgen->interlace;
-
+#endif
 	int clk_src_lv0 = psync->clk_src_lv0;
 	int clk_div_lv0 = psync->clk_div_lv0;
 	int clk_src_lv1 = psync->clk_src_lv1;
 	int clk_div_lv1 = psync->clk_div_lv1;
 	int clk_dly_lv0 = psgen->clk_delay_lv0;
 	int clk_dly_lv1 = psgen->clk_delay_lv1;
+#if 0
 	int vclk_select = psgen->vclk_select;
 	int vclk_invert = psgen->clk_inv_lv0 | psgen->clk_inv_lv1;
-
-	CBOOL RGBMode = CFALSE;
 	CBOOL EmbSync = (out_format == DPC_FORMAT_CCIR656 ? CTRUE : CFALSE);
+#endif	
+	CBOOL RGBMode = CFALSE;
 	NX_DPC_DITHER RDither, GDither, BDither;
 
 	/* set delay mask */
