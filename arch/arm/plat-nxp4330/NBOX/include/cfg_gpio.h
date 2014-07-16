@@ -227,7 +227,7 @@
  -----------------------------------------------------------------------------*/
 #define PAD_GPIOALV0    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
 #define PAD_GPIOALV1    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
-#define PAD_GPIOALV2    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
+#define PAD_GPIOALV2    (PAD_MODE_OUT  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
 #define PAD_GPIOALV3    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
 #define PAD_GPIOALV4    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
 #define PAD_GPIOALV5    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
