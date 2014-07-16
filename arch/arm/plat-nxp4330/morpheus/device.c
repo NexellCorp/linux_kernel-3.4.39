@@ -32,6 +32,46 @@
 #include <mach/soc.h>
 
 /*------------------------------------------------------------------------------
+ * BUS Configure
+ */
+#if (CFG_BUS_RECONFIG_ENB == 1)
+#include <mach/nxp4330_bus.h>
+
+const u16 g_DrexQoS[2] = {
+	0x100,		// S0
+	0xFFF		// S1, Default value
+};
+
+const u8 g_TopBusSI[8] = {
+	TOPBUS_SI_SLOT_DMAC0,
+	TOPBUS_SI_SLOT_USBOTG,
+	TOPBUS_SI_SLOT_USBHOST0,
+	TOPBUS_SI_SLOT_DMAC1,
+	TOPBUS_SI_SLOT_SDMMC,
+	TOPBUS_SI_SLOT_USBOTG,
+	TOPBUS_SI_SLOT_USBHOST1,
+	TOPBUS_SI_SLOT_USBOTG
+};
+
+const u8 g_BottomBusSI[8] = {
+	BOTBUS_SI_SLOT_1ST_ARM,
+	BOTBUS_SI_SLOT_MALI,
+	BOTBUS_SI_SLOT_DEINTERLACE,
+	BOTBUS_SI_SLOT_1ST_CODA,
+	BOTBUS_SI_SLOT_2ND_ARM,
+	BOTBUS_SI_SLOT_SCALER,
+	BOTBUS_SI_SLOT_TOP,
+	BOTBUS_SI_SLOT_2ND_CODA
+};
+
+const u8 g_DispBusSI[3] = {
+	DISBUS_SI_SLOT_1ST_DISPLAY,
+	DISBUS_SI_SLOT_2ND_DISPLAY,
+	DISBUS_SI_SLOT_2ND_DISPLAY  //DISBUS_SI_SLOT_GMAC
+};
+#endif	/* #if (CFG_BUS_RECONFIG_ENB == 1) */
+
+/*------------------------------------------------------------------------------
  * Network DM9000
  */
 #if defined(CONFIG_DM9000) || defined(CONFIG_DM9000_MODULE)

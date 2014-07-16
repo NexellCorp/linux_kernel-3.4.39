@@ -34,12 +34,106 @@
 #include <mach/platform.h>
 #include <mach/devices.h>
 #include <mach/pm.h>
+#include <mach/nxp4330_bus.h>
 
 #if (0)	/* default on */
 #define DBGOUT(msg...)		{ printk("cpu: " msg); }
 #else
 #define DBGOUT(msg...)		do {} while (0)
 #endif
+
+#if (CFG_BUS_RECONFIG_ENB == 1)
+void nxp_set_bus_config(void)
+{
+	u32 num_si, num_mi;
+	u32 i_slot;
+
+	/* ------------- DREX QoS -------------- */
+	for (i_slot = 0; i_slot < 2; i_slot++)
+	{
+		writel( g_DrexQoS[i_slot], (NX_VA_BASE_REG_DREX + NX_DREX_QOS_OFFSET + (i_slot<<3)) );
+	}
+
+	/* ------------- Display BUS ----------- */
+	num_si = readl(NX_VA_BASE_REG_PL301_DISP + 0xFC0);
+	num_mi = readl(NX_VA_BASE_REG_PL301_DISP + 0xFC4);
+
+	/* Set progamming for AR */
+	// Slave Interface
+	for (i_slot = 0; i_slot < num_si; i_slot++)
+	{
+		writel( (i_slot << SLOT_NUM_POS) | (g_DispBusSI[i_slot] << SI_IF_NUM_POS),  NX_BASE_REG_PL301_DISP_AR );
+	}
+
+	/* Set progamming for AW */
+	// Slave Interface
+	for (i_slot = 0; i_slot < num_si; i_slot++)
+	{
+		writel( (i_slot << SLOT_NUM_POS) | (g_DispBusSI[i_slot] << SI_IF_NUM_POS),  NX_BASE_REG_PL301_DISP_AW );
+	}
+
+	/* ------------- Bottom BUS ------------ */
+	num_si = readl(NX_VA_BASE_REG_PL301_BOTT + 0xFC0);
+	num_mi = readl(NX_VA_BASE_REG_PL301_BOTT + 0xFC4);
+
+	/* Set progamming for AR */
+	// Master Interface
+	for (i_slot = 0; i_slot < num_mi; i_slot++)
+	{
+		writel( (i_slot << SLOT_NUM_POS) | (i_slot << SI_IF_NUM_POS),  NX_BASE_REG_PL301_BOTT_AR );
+	}
+
+	// Slave Interface
+	for (i_slot = 0; i_slot < num_si; i_slot++)
+	{
+		writel( (i_slot << SLOT_NUM_POS) | (g_BottomBusSI[i_slot] << SI_IF_NUM_POS),  (NX_BASE_REG_PL301_BOTT_AR + 0x20) );
+	}
+
+	/* Set progamming for AW */
+	// Master Interface
+	for (i_slot = 0; i_slot < num_mi; i_slot++)
+	{
+		writel( (i_slot << SLOT_NUM_POS) | (i_slot << SI_IF_NUM_POS),  NX_BASE_REG_PL301_BOTT_AW );
+	}
+
+	// Slave Interface
+	for (i_slot = 0; i_slot < num_si; i_slot++)
+	{
+		writel( (i_slot << SLOT_NUM_POS) | (g_BottomBusSI[i_slot] << SI_IF_NUM_POS),  (NX_BASE_REG_PL301_BOTT_AW + 0x20) );
+	}
+
+	/* ------------- Top BUS ------------ */
+	num_si = readl(NX_VA_BASE_REG_PL301_TOP + 0xFC0);
+	num_mi = readl(NX_VA_BASE_REG_PL301_TOP + 0xFC4);
+	/* Set progamming for AR */
+	// Master Interface
+	for (i_slot = 0; i_slot < num_mi; i_slot++)
+	{
+		writel( (i_slot << SLOT_NUM_POS) | (i_slot << SI_IF_NUM_POS),  NX_BASE_REG_PL301_TOP_AR );
+	}
+
+	// Slave Interface
+	for (i_slot = 0; i_slot < num_si; i_slot++)
+	{
+		writel( (i_slot << SLOT_NUM_POS) | (g_TopBusSI[i_slot] << SI_IF_NUM_POS),  (NX_BASE_REG_PL301_TOP_AR + 0x20) );
+	}
+
+	/* Set progamming for AW */
+	// Master Interface
+	for (i_slot = 0; i_slot < num_mi; i_slot++)
+	{
+		writel( (i_slot << SLOT_NUM_POS) | (i_slot << SI_IF_NUM_POS),  NX_BASE_REG_PL301_TOP_AW );
+	}
+
+	// Slave Interface
+	for (i_slot = 0; i_slot < num_si; i_slot++)
+	{
+		writel( (i_slot << SLOT_NUM_POS) | (g_TopBusSI[i_slot] << SI_IF_NUM_POS),  (NX_BASE_REG_PL301_TOP_AW + 0x20) );
+	}
+
+	return;
+}
+#endif	/* #if (CFG_BUS_RECONFIG_ENB == 1) */
 
 static void cpu_base_init(void)
 {
@@ -71,7 +165,7 @@ static void cpu_base_init(void)
 
 	/*
 	 * NOTE> ALIVE Power Gate must enable for RTC register access.
-     * 		 must be clear wfi jump address
+	 * 		 must be clear wfi jump address
 	 */
 	NX_ALIVE_SetWriteEnable(CTRUE);
 	__raw_writel(0xFFFFFFFF, SCR_ARM_SECOND_BOOT);
@@ -175,8 +269,8 @@ void nxp_cpu_reset(char str, const char *cmd)
 	}
 
 	NX_ALIVE_SetWriteEnable(CFALSE);	/* close alive gate */
-    NX_CLKPWR_SetSoftwareResetEnable(CTRUE);
-    NX_CLKPWR_DoSoftwareReset();
+	NX_CLKPWR_SetSoftwareResetEnable(CTRUE);
+	NX_CLKPWR_DoSoftwareReset();
 }
 
 /*
@@ -397,9 +491,13 @@ void nxp_cpu_base_init(void)
 	//writel(0x0018, __PB_IO_MAP_REGS_VIRT + 0x11080);	// ACP Bus Enable
 	writel(0x0000, __PB_IO_MAP_REGS_VIRT + 0x11080);	// ACP Bus Disable
 	writel(0xffff, __PB_IO_MAP_MPPR_VIRT + 0x0c);		// SCU
-	writel(0x000f, __PB_IO_MAP_MPPR_VIRT + 0x50);		// SCU
 	writel(0x0009, __PB_IO_MAP_MPPR_VIRT + 0x00);		// SCU L2 Spec... Enable.
 #endif
+
+#if (CFG_BUS_RECONFIG_ENB == 1)
+	nxp_set_bus_config();
+#endif
+
 	/* Check version */
 	if (-1 != cpu_vers_no)
 		return;
