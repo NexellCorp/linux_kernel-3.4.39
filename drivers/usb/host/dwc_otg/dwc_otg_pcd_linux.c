@@ -374,26 +374,28 @@ static int ep_queue(struct usb_ep *usb_ep, struct usb_request *usb_req,
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
 	dma_addr = usb_req->dma;
 #else
-	dma_addr = usb_req->dma;
-    if (GET_CORE_IF(pcd)->dma_enable) {
-        dwc_otg_device_t *otg_dev = gadget_wrapper->pcd->otg_dev;
-        struct device *dev = NULL;
+	if (GET_CORE_IF(pcd)->dma_enable) {
+                dwc_otg_device_t *otg_dev = gadget_wrapper->pcd->otg_dev;
+                struct device *dev = NULL;
 
-        if (otg_dev != NULL)
-            dev = DWC_OTG_OS_GETDEV(otg_dev->os_dep);
-
-        if (usb_req->length != 0 &&
-                usb_req->dma == DWC_DMA_ADDR_INVALID) {
-            dma_addr = dma_map_single(dev, usb_req->buf,
-                    usb_req->length,
-                    ep->dwc_ep.is_in ?
-                    DMA_TO_DEVICE:
-                    DMA_FROM_DEVICE);
-            // psw0523 debugging
-            //if (dma_addr & 3) printk("%s: dma_addr not aligned(0x%x), virt(%p), length(%d)\n", __func__, dma_addr, usb_req->buf, usb_req->length);
-            // end psw0523
-        }
-    }
+                if (otg_dev != NULL)
+                        dev = DWC_OTG_OS_GETDEV(otg_dev->os_dep);
+				if (usb_req->length != 0 &&
+#if defined(CONFIG_ARCH_CPU_NEXELL)
+					!((unsigned int)usb_req->buf & 0x3) &&
+#endif
+                    usb_req->dma == DWC_DMA_ADDR_INVALID)
+                    {
+                        dma_addr = dma_map_single(dev, usb_req->buf,
+                                                  usb_req->length,
+                                                  ep->dwc_ep.is_in ?
+                                                  DMA_TO_DEVICE:
+                                                  DMA_FROM_DEVICE);
+                   		DWC_DEBUGPL(DBG_PCD, "%s: dma_map_single (usb req %p) %p:%d dma %x (%s)\n",
+                    			__func__, usb_req, usb_req->buf, usb_req->length, dma_addr,
+                    			ep->dwc_ep.is_in?"in":"out");
+					}
+	}
 #endif
 
 #ifdef DWC_UTE_PER_IO
@@ -1027,6 +1029,7 @@ static int _xisoc_complete(dwc_otg_pcd_t * pcd, void *ep_handle,
 static int _complete(dwc_otg_pcd_t * pcd, void *ep_handle,
 		     void *req_handle, int32_t status, uint32_t actual)
 {
+#if !defined(CONFIG_ARCH_CPU_NEXELL)
 	struct usb_request *req = (struct usb_request *)req_handle;
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,27)
 	struct dwc_otg_pcd_ep *ep = NULL;
@@ -1056,28 +1059,74 @@ static int _complete(dwc_otg_pcd_t * pcd, void *ep_handle,
 		req->complete(ep_handle, req);
 		DWC_SPINLOCK(pcd->lock);
 	}
-    // psw0523 fix
-#if 1
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,27)
 	ep = ep_from_handle(pcd, ep_handle);
 	if (GET_CORE_IF(pcd)->dma_enable) {
-		if (req->length != 0) {
-			dwc_otg_device_t *otg_dev = gadget_wrapper->pcd->otg_dev;
-			struct device *dev = NULL;
+                if (req->length != 0) {
+                        dwc_otg_device_t *otg_dev = gadget_wrapper->pcd->otg_dev;
+                        struct device *dev = NULL;
 
-			if (otg_dev != NULL)
-				dev = DWC_OTG_OS_GETDEV(otg_dev->os_dep);
+                        if (otg_dev != NULL)
+                                  dev = DWC_OTG_OS_GETDEV(otg_dev->os_dep);
 
-			// psw0523 add
-			if (req->dma != DWC_DMA_ADDR_INVALID)
-				dma_unmap_single(dev, req->dma, req->length,
-						ep->dwc_ep.is_in ?
-						DMA_TO_DEVICE: DMA_FROM_DEVICE);
-		}
+			dma_unmap_single(dev, req->dma, req->length,
+                                         ep->dwc_ep.is_in ?
+                                                DMA_TO_DEVICE: DMA_FROM_DEVICE);
+                }
 	}
 #endif
-#endif
+#else /* !CONFIG_ARCH_CPU_NEXELL */
+	dwc_otg_pcd_request_t *dwc_otg_req = (dwc_otg_pcd_request_t *)req_handle;
+	struct usb_request *req = dwc_otg_req->priv;
+	struct dwc_otg_pcd_ep *ep = NULL;
 
+	if (req && req->complete) {
+		switch (status) {
+		case -DWC_E_SHUTDOWN:
+			req->status = -ESHUTDOWN;
+			break;
+		case -DWC_E_RESTART:
+			req->status = -ECONNRESET;
+			break;
+		case -DWC_E_INVALID:
+			req->status = -EINVAL;
+			break;
+		case -DWC_E_TIMEOUT:
+			req->status = -ETIMEDOUT;
+			break;
+		default:
+			req->status = status;
+		}
+		req->actual = actual;
+	}
+
+	ep = ep_from_handle(pcd, ep_handle);
+	if (GET_CORE_IF(pcd)->dma_enable) {
+    	if (req->length != 0) {
+        	dwc_otg_device_t *otg_dev = gadget_wrapper->pcd->otg_dev;
+            struct device *dev = NULL;
+
+			if (otg_dev != NULL)
+            	dev = DWC_OTG_OS_GETDEV(otg_dev->os_dep);
+
+			if (req->dma == DWC_DMA_ADDR_INVALID &&
+				dwc_otg_req->dma != DWC_DMA_ADDR_INVALID) {
+				DWC_DEBUGPL(DBG_PCD, "%s: dma_unmap_single (usb req %p) %p:%d  dma %x:%x (%s)\n",
+					__func__, req, req->buf, req->length, req->dma, dwc_otg_req->dma,
+					ep->dwc_ep.is_in?"in":"out");
+				dma_unmap_single(dev, dwc_otg_req->dma, dwc_otg_req->length,
+             			ep->dwc_ep.is_in ?
+                       DMA_TO_DEVICE: DMA_FROM_DEVICE);
+            	req->dma = DWC_DMA_ADDR_INVALID;
+			}
+		}
+	}
+
+	DWC_SPINUNLOCK(pcd->lock);
+	req->complete(ep_handle, req);
+	DWC_SPINLOCK(pcd->lock);
+
+#endif /* CONFIG_ARCH_CPU_NEXELL */
 	return 0;
 }
 
