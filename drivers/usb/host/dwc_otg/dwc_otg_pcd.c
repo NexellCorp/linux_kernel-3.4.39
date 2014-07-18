@@ -108,8 +108,13 @@ void dwc_otg_request_done(dwc_otg_pcd_ep_t * ep, dwc_otg_pcd_request_t * req,
 	/* don't modify queue heads during completion callback */
 	ep->stopped = 1;
 	/* spin_unlock/spin_lock now done in fops->complete() */
+#if defined(CONFIG_ARCH_CPU_NEXELL)
+	ep->pcd->fops->complete(ep->pcd, ep->priv, req, status,
+				req->actual);
+#else
 	ep->pcd->fops->complete(ep->pcd, ep->priv, req->priv, status,
 				req->actual);
+#endif
 
 	if (ep->pcd->request_pending > 0) {
 		--ep->pcd->request_pending;

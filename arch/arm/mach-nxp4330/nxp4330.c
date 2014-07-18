@@ -156,8 +156,11 @@ void nxp_cpu_shutdown(void)
 	}
 
 	printk(KERN_INFO "cpu.%d shutdown ...\n", cur);
-	NX_ALIVE_SetWriteEnable(CFALSE);		/* close alive gate */
+	NX_ALIVE_SetWriteEnable(CTRUE);			/* close alive gate */
 	NX_ALIVE_SetVDDPWRON(CFALSE, CFALSE);	/* Core power down */
+	NX_ALIVE_SetWriteEnable(CFALSE);			/* close alive gate */
+	nxp_cpu_core_shutdown(cur);
+	halt();
 }
 
 void nxp_cpu_reset(char str, const char *cmd)

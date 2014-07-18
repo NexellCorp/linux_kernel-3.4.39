@@ -211,9 +211,9 @@
 #define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
 
 /*------------------------------------------------------------------------------
- * 	WIFI
+ * 	WIFI 
  */
-#define CFG_WIFI_POWER_IO					(PAD_GPIO_A + 9)		/* GPIO */
+#define CFG_WIFI_POWER_IO					(PAD_GPIO_ALV + 2)		/* GPIO */
 #define CFG_WIFI_SDIO_ID 					1
 
 /*------------------------------------------------------------------------------
@@ -241,13 +241,13 @@
 /* Wakeup Source : ALIVE [0~7] */
 #define CFG_PWR_WAKEUP_SRC_ALIVE0				CTRUE					/* KEY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE0				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE1				CTRUE
+#define CFG_PWR_WAKEUP_SRC_ALIVE1				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_BOTHEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE2				CTRUE					/* PMIC - VUSB*/
+#define CFG_PWR_WAKEUP_SRC_ALIVE2				CFALSE					/* PMIC - VUSB*/
 #define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE3				CTRUE					/* PMIC - CRITICAL LOW BATTERY */
+#define CFG_PWR_WAKEUP_SRC_ALIVE3				CFALSE					/* PMIC - CRITICAL LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_ASYNC_LOWLEVEL
-#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR - LOW BATTERY */
+#define CFG_PWR_WAKEUP_SRC_ALIVE4				CFALSE					/* PMIC INTR - LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE
