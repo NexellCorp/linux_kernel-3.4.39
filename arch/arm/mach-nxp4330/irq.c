@@ -38,6 +38,7 @@
 /*----------------------------------------------------------------------------
  *  Define interrupt priority
  */
+
 #define NXP_IRQ_PRIORITY_HIGHEST        0
 #define NXP_IRQ_PRIORITY_LOWEST         15
 
@@ -246,7 +247,6 @@ static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 
 		writel_relaxed(0, (VIC1_INT_BASE + VIC_PL192_VECT_ADDR) );
 	}
-#if 1
 	else if (readl_relaxed(VIC0_INT_BASE + VIC_IRQ_STATUS) & (1<<IRQ_PHY_TIMER_INT1))
 	{
 		stat = (1<<IRQ_PHY_TIMER_INT1);
@@ -254,7 +254,6 @@ static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 
 		writel_relaxed(0, (VIC0_INT_BASE + VIC_PL192_VECT_ADDR) );
 	}
-#endif
 	else
 	{
 		/* Round Robin */

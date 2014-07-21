@@ -101,7 +101,7 @@ void __attribute__ ((naked)) dwc_otg_hcd_handle_fiq(void)
 			g_work_expected = 1;
 			/* To enable the MPHI interrupt  (INT 32)
 			 */
-			FIQ_WRITE(  c_mphi_regs.outdda, (int) dummy_send);
+			FIQ_WRITE( c_mphi_regs.outdda, (int) dummy_send);
 			FIQ_WRITE( c_mphi_regs.outddb, (1 << 29));
 
 			mphi_int_count++;
@@ -176,6 +176,7 @@ int32_t dwc_otg_hcd_handle_intr(dwc_otg_hcd_t * dwc_otg_hcd)
 		else if (gintsts.b.sofintr) {
 			retval |= dwc_otg_hcd_handle_sof_intr(dwc_otg_hcd, g_work_expected);
 		}
+
 		if (gintsts.b.rxstsqlvl) {
 			retval |=
 			    dwc_otg_hcd_handle_rx_status_q_level_intr
@@ -329,6 +330,7 @@ int32_t dwc_otg_hcd_handle_sof_intr(dwc_otg_hcd_t * hcd, int32_t work_expected)
 		qh = DWC_LIST_ENTRY(qh_entry, dwc_otg_qh_t, qh_list_entry);
 		qh_entry = qh_entry->next;
 		if (dwc_frame_num_le(qh->sched_frame, hcd->frame_number)) {
+
 			/*
 			 * Move QH to the ready list to be executed next
 			 * (micro)frame.
@@ -476,7 +478,7 @@ int32_t dwc_otg_hcd_handle_port_intr(dwc_otg_hcd_t * dwc_otg_hcd)
 
 	if (hprt0.b.prtconndet) {
 		/** @todo - check if steps performed in 'else' block should be perfromed regardles adp */
-		if (dwc_otg_hcd->core_if->adp_enable && 	
+		if (dwc_otg_hcd->core_if->adp_enable &&
 				dwc_otg_hcd->core_if->adp.vbuson_timer_started == 1) {
 			DWC_PRINTF("PORT CONNECT DETECTED ----------------\n");
 			DWC_TIMER_CANCEL(dwc_otg_hcd->core_if->adp.vbuson_timer);
@@ -490,13 +492,13 @@ int32_t dwc_otg_hcd_handle_port_intr(dwc_otg_hcd_t * dwc_otg_hcd)
 			dwc_otg_enable_global_interrupts(dwc_otg_hcd->core_if);
 			cil_hcd_start(dwc_otg_hcd->core_if);*/
 		} else {
-		
+
 			DWC_DEBUGPL(DBG_HCD, "--Port Interrupt HPRT0=0x%08x "
 				    "Port Connect Detected--\n", hprt0.d32);
 			dwc_otg_hcd->flags.b.port_connect_status_change = 1;
 			dwc_otg_hcd->flags.b.port_connect_status = 1;
 			hprt0_modify.b.prtconndet = 1;
-	
+
 			/* B-Device has connected, Delete the connection timer. */
 			DWC_TIMER_CANCEL(dwc_otg_hcd->conn_timer);
 		}
@@ -520,7 +522,7 @@ int32_t dwc_otg_hcd_handle_port_intr(dwc_otg_hcd_t * dwc_otg_hcd)
 			    dwc_otg_hcd->core_if->core_global_regs;
 			dwc_otg_host_if_t *host_if =
 			    dwc_otg_hcd->core_if->host_if;
-			    
+
 			/* Every time when port enables calculate
 			 * HFIR.FrInterval
 			 */
@@ -734,7 +736,6 @@ static int update_urb_state_xfer_comp(dwc_hc_t * hc,
 					     DWC_OTG_HC_XFER_COMPLETE,
 					     &short_read);
 
-
 	/* non DWORD-aligned buffer case handling. */
 	if (hc->align_buff && xfer_length && hc->ep_is_in) {
 		dwc_memcpy(urb->buf + urb->actual_length, hc->qh->dw_align_buf,
@@ -752,7 +753,7 @@ static int update_urb_state_xfer_comp(dwc_hc_t * hc,
 		xfer_done = 1;
 		urb->status = 0;
 	}
-	
+
 #ifdef DEBUG
 	{
 		hctsiz_data_t hctsiz;
@@ -841,7 +842,7 @@ update_isoc_urb_state(dwc_otg_hcd_t * hcd,
 			dwc_memcpy(urb->buf + frame_desc->offset + qtd->isoc_split_offset,
 				   hc->qh->dw_align_buf, frame_desc->actual_length);
 		}
-		
+
 		break;
 	case DWC_OTG_HC_XFER_FRAME_OVERRUN:
 		urb->error_count++;
@@ -1640,13 +1641,13 @@ static int32_t handle_hc_nyet_intr(dwc_otg_hcd_t * hcd,
 			qtd->isoc_split_offset = 0;
 			if (++qtd->isoc_frame_index == qtd->urb->packet_count) {
 				hcd->fops->complete(hcd, qtd->urb->priv, qtd->urb, 0);
-				release_channel(hcd, hc, qtd, DWC_OTG_HC_XFER_URB_COMPLETE);	
+				release_channel(hcd, hc, qtd, DWC_OTG_HC_XFER_URB_COMPLETE);
 			}
 			else
-				release_channel(hcd, hc, qtd, DWC_OTG_HC_XFER_NO_HALT_STATUS);	
+				release_channel(hcd, hc, qtd, DWC_OTG_HC_XFER_NO_HALT_STATUS);
 			goto handle_nyet_done;
 		}
-		
+
 		if (hc->ep_type == DWC_OTG_EP_TYPE_INTR ||
 		    hc->ep_type == DWC_OTG_EP_TYPE_ISOC) {
 			int frnum = dwc_otg_hcd_get_frame_number(hcd);

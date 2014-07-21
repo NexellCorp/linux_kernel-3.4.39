@@ -117,14 +117,14 @@ extern int hub_control(struct usb_hcd *hcd,
 #ifdef CONFIG_PM
 int dwc_otg_hcd_bus_suspend(struct usb_hcd *hcd)
 {
-    printk("%s\n", __func__);
-    return 0;
+	printk("%s\n", __func__);
+	return 0;
 }
 
 int dwc_otg_hcd_bus_resume(struct usb_hcd *hcd)
 {
-    printk("%s\n", __func__);
-    return 0;
+	printk("%s\n", __func__);
+	return 0;
 }
 #endif
 
@@ -144,10 +144,10 @@ static struct hc_driver dwc_otg_hc_driver = {
 
 	.flags = HCD_MEMORY | HCD_USB2,
 
-	//.reset =              
+	//.reset =
 	.start = hcd_start,
-	//.suspend =            
-	//.resume =             
+	//.suspend =
+	//.resume =
 	.stop = hcd_stop,
 
 	.urb_enqueue = dwc_otg_urb_enqueue,
@@ -162,7 +162,7 @@ static struct hc_driver dwc_otg_hc_driver = {
 	.hub_control = hub_control,
 // psw0523 add
 #ifdef CONFIG_PM
-	.bus_suspend = dwc_otg_hcd_bus_suspend,                
+	.bus_suspend = dwc_otg_hcd_bus_suspend,
 	.bus_resume = dwc_otg_hcd_bus_resume,
 #endif
 };
@@ -401,7 +401,7 @@ static struct dwc_otg_hcd_function_ops hcd_fops = {
 // psw0523 fix
 #if 0
 static struct fiq_handler fh = {
-  .name = "usb_fiq",
+	.name = "usb_fiq",
 };
 static uint8_t fiqStack[1024];
 #endif
@@ -410,7 +410,7 @@ static uint8_t fiqStack[1024];
 #ifdef CONFIG_PM
 struct dwc_otg_hcd_function_ops *get_hcd_fops(void)
 {
-    return &hcd_fops;
+	return &hcd_fops;
 }
 #endif
 
@@ -427,7 +427,7 @@ int hcd_init(dwc_bus_dev_t *_dev)
 	dwc_otg_hcd_t *dwc_otg_hcd = NULL;
 	dwc_otg_device_t *otg_dev = DWC_OTG_BUSDRVDATA(_dev);
 	int retval = 0;
-    u64 dmamask;
+	u64 dmamask;
     // psw0523 fix
 	//struct pt_regs regs;
 
@@ -438,7 +438,7 @@ int hcd_init(dwc_bus_dev_t *_dev)
 		dmamask = DMA_BIT_MASK(32);
 	else
 		dmamask = 0;
-              
+
 #if    defined(LM_INTERFACE) || defined(PLATFORM_INTERFACE)
 	dma_set_mask(&_dev->dev, dmamask);
 	dma_set_coherent_mask(&_dev->dev, dmamask);
@@ -899,7 +899,7 @@ static void endpoint_disable(struct usb_hcd *hcd, struct usb_host_endpoint *ep)
 }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
-/* Resets endpoint specific parameter values, in current version used to reset 
+/* Resets endpoint specific parameter values, in current version used to reset
  * the data toggle(as a WA). This function can be called from usb_clear_halt routine */
 static void endpoint_reset(struct usb_hcd *hcd, struct usb_host_endpoint *ep)
 {
@@ -909,7 +909,7 @@ static void endpoint_reset(struct usb_hcd *hcd, struct usb_host_endpoint *ep)
 	int is_out = usb_endpoint_dir_out(&ep->desc);
 	int is_control = usb_endpoint_xfer_control(&ep->desc);
 	dwc_otg_hcd_t *dwc_otg_hcd = hcd_to_dwc_otg_hcd(hcd);
-        struct device *dev = DWC_OTG_OS_GETDEV(dwc_otg_hcd->otg_dev->os_dep);
+	struct device *dev = DWC_OTG_OS_GETDEV(dwc_otg_hcd->otg_dev->os_dep);
 
 	if (dev)
 		udev = to_usb_device(dev);

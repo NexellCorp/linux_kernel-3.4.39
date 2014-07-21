@@ -83,11 +83,11 @@ void dwc_otg_hcd_qh_free(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 	return;
 }
 
-#define BitStuffTime(bytecount)  ((8 * 7* bytecount) / 6)
-#define HS_HOST_DELAY		5	/* nanoseconds */
-#define FS_LS_HOST_DELAY	1000	/* nanoseconds */
-#define HUB_LS_SETUP		333	/* nanoseconds */
-#define NS_TO_US(ns)		((ns + 500) / 1000)
+#define BitStuffTime(bytecount)		((8 * 7 * bytecount) / 6)
+#define HS_HOST_DELAY				5		/* nanoseconds */
+#define FS_LS_HOST_DELAY			1000	/* nanoseconds */
+#define HUB_LS_SETUP				333		/* nanoseconds */
+#define NS_TO_US(ns)				((ns + 500) / 1000)
 				/* convert & round nanoseconds to microseconds */
 
 static uint32_t calc_bus_time(int speed, int is_in, int is_isoc, int bytecount)
@@ -480,31 +480,31 @@ loop:
 		 */
 		xtime= _hcd->frame_usecs[i];
 		for (j = i+1 ; j < 8 ; j++ ) {
-                       /*
-                        * if we add this frame remaining time to xtime we may
-                        * be OK, if not we need to test j for a complete frame
-                        */
-                       if ((xtime+_hcd->frame_usecs[j]) < utime) {
-                               if (_hcd->frame_usecs[j] < max_uframe_usecs[j]) {
-                                       j = 8;
-                                       ret = -1;
-                                       continue;
-                               }
-                       }
-                       if (xtime >= utime) {
-                               ret = i;
-                               j = 8;  /* stop loop with a good value ret */
-                               continue;
-                       }
-                       /* add the frame time to x time */
-                       xtime += _hcd->frame_usecs[j];
-		       /* we must have a fully available next frame or break */
-		       if ((xtime < utime)
-				       && (_hcd->frame_usecs[j] == max_uframe_usecs[j])) {
-			       ret = -1;
-			       j = 8;  /* stop loop with a bad value ret */
-			       continue;
-		       }
+			/*
+			 * if we add this frame remaining time to xtime we may
+			 * be OK, if not we need to test j for a complete frame
+			 */
+			if ((xtime+_hcd->frame_usecs[j]) < utime) {
+				if (_hcd->frame_usecs[j] < max_uframe_usecs[j]) {
+					j = 8;
+					ret = -1;
+					continue;
+				}
+			}
+			if (xtime >= utime) {
+				ret = i;
+				j = 8;  /* stop loop with a good value ret */
+				continue;
+			}
+			/* add the frame time to x time */
+			xtime += _hcd->frame_usecs[j];
+			/* we must have a fully available next frame or break */
+			if ((xtime < utime)
+					&& (_hcd->frame_usecs[j] == max_uframe_usecs[j])) {
+				ret = -1;
+				j = 8;  /* stop loop with a bad value ret */
+				continue;
+			}
 		}
 		if (ret >= 0) {
 			t_left = utime;
