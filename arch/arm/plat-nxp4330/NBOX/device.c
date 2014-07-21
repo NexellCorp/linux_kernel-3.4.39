@@ -762,7 +762,7 @@ static struct dw_mci_board _dwmci0_data = {
 
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION,
-	.bus_hz			= 100 * 1000 * 1000,
+	.bus_hz			= 50 * 1000 * 1000,
 	.caps = MMC_CAP_CMD23|MMC_CAP_NONREMOVABLE,
 	.detect_delay_ms= 200,
 	.cd_type = DW_MCI_CD_NONE,

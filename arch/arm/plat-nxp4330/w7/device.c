@@ -1458,8 +1458,7 @@ static int _dwmci1_get_cd(u32 slot_id)
 	return nxp_soc_gpio_get_in_value(io);
 }
 static struct dw_mci_board _dwmci1_data = {
-	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
-						DW_MCI_QUIRK_HIGHSPEED,
+	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 100 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,

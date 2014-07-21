@@ -717,6 +717,12 @@ static irqreturn_t _hdmi_irq_handler(int irq, void *dev_data)
     return IRQ_HANDLED;
 }
 
+u32 hdmi_get_edid_cec_phy_address(void)
+{
+    return __me->edid.cec_phy_address;
+}
+
+
 /**
  * hpd work functions
  */
