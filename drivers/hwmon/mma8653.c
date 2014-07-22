@@ -206,7 +206,7 @@ enum {
 #define ABSMAX						31
 #define FUZZ						1
 #define LSG							21
-#define MAX_DELAY					200
+#define MAX_DELAY					50
 
 // constant define
 #define MMA8653_MODE_STANDBY		0x00
@@ -460,7 +460,7 @@ static int mma8653_read_data(struct i2c_client *client, struct mma8653_acc *acc)
 
 	acc->x = -(short)(acc->x) >> 6;
 	acc->y = -(short)(acc->y) >> 6;
-	acc->z = -(short)(acc->z) >> 6;
+	acc->z =  (short)(acc->z) >> 6;
 
 
 	/*if (mma_status.mode == MODE_4G){
