@@ -128,11 +128,11 @@ struct dwc_iso_xreq_port {
  * psw0523 add for dw_align_buf free
  */
 struct free_dw_align_buf {
-    uint8_t   *buf;
-    dwc_dma_t  dma;
-    uint32_t   length;
+	uint8_t   *buf;
+	dwc_dma_t  dma;
+	uint32_t   length;
 
-    struct list_head list;
+	struct list_head list;
 };
 
 /** DWC_otg request structure.
@@ -164,9 +164,9 @@ DWC_CIRCLEQ_HEAD(req_list, dwc_otg_pcd_request);
 //--> kook - [20130910] fixed on 4330
 #if 0 //defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
 typedef struct dwc_otg_buf_info {
-    uint8_t   *dw_align_buf;
-    dwc_dma_t  dw_align_buf_dma;
-    uint32_t   length;
+	uint8_t   *dw_align_buf;
+	dwc_dma_t  dw_align_buf_dma;
+	uint32_t   length;
 } dwc_otg_buf_info_t;
 #endif
 //<-- kook - [20130910] fixed on 4330
@@ -279,9 +279,9 @@ struct dwc_otg_pcd {
 	struct cfiobject *cfi;
 #endif
 
-    /** psw0523 add for dw_align_buf free work queue */
-    dwc_workq_t *work_align_buf_free;
-    struct list_head free_list;
+	/** psw0523 add for dw_align_buf free work queue */
+	dwc_workq_t *work_align_buf_free;
+	struct list_head free_list;
 };
 
 //FIXME this functions should be static, and this prototypes should be removed

@@ -7,6 +7,7 @@ struct nxp_v4l2_i2c_board_info;
 struct nxp_edid {
     u32 preset;
     u32 edid_misc;
+    u32 cec_phy_address;
     int max_audio_ch;
     int bus_id;
     struct i2c_client *client;

@@ -32,6 +32,11 @@
 #define	CFG_SYS_BOARD_NAME						"nxp4330-blackbox"
 
 /*------------------------------------------------------------------------------
+ * 	BUS config
+ */
+#define CFG_BUS_RECONFIG_ENB					0
+
+/*------------------------------------------------------------------------------
  * 	Uart
  */
 #define CFG_UART_DEBUG_CH						0	/* For Low level debug */

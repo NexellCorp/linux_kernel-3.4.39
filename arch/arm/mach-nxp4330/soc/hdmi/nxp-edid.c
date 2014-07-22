@@ -49,6 +49,7 @@ static struct edid_preset {
 /**
  * internal function
  */
+#if 0
 static int _edid_i2c_read(struct nxp_edid *me, u8 segment, u8 offset,
         u8 *buf, size_t len)
 {
@@ -96,6 +97,55 @@ static int _edid_i2c_read(struct nxp_edid *me, u8 segment, u8 offset,
 
     return 0;
 }
+#else
+static int _edid_i2c_read(struct nxp_edid *me, u8 segment, u8 offset,
+						   u8 *buf, size_t len)
+{
+    struct i2c_client *i2c = me->client;
+	int cnt = 0;
+	int ret;
+	struct i2c_msg msg[] = {
+		{
+			.addr = EDID_SEGMENT_ADDR,
+			.flags = segment ? 0 : I2C_M_IGNORE_NAK,
+			.len = 1,
+			.buf = &segment
+		},
+		{
+			.addr = EDID_ADDR,
+			.flags = 0,
+			.len = 1,
+			.buf = &offset
+		},
+		{
+			.addr = EDID_ADDR,
+			.flags = I2C_M_RD,
+			.len = len,
+			.buf = buf
+		}
+	};
+
+	if (!i2c)
+		return -ENODEV;
+
+	do {
+		ret = i2c_transfer(i2c->adapter, msg, ARRAY_SIZE(msg));
+		if (ret == ARRAY_SIZE(msg))
+			break;
+
+		pr_debug("%s: can't read data, retry %d\n", __func__, cnt);
+		msleep(25);
+		cnt++;
+	} while (cnt < 5);
+
+	if (cnt == 5) {
+		pr_err("%s: can't read data, timeout\n", __func__);
+		return -ETIME;
+	}
+
+	return 0;
+}
+#endif
 
 static int _edid_read_block(struct nxp_edid *me, int block, u8 *buf, size_t len)
 {
@@ -104,12 +154,18 @@ static int _edid_read_block(struct nxp_edid *me, int block, u8 *buf, size_t len)
     u8 offset = EDID_OFFSET(block);
     u8 sum = 0;
 
-    if (len < EDID_BLOCK_SIZE)
+    pr_debug("%s: block %d, segment %d, offset %d\n", __func__, block, segment, offset);
+
+    if (len < EDID_BLOCK_SIZE) {
+        printk("%s: invalid len %d\n", __func__, len);
         return -EINVAL;
+    }
 
     ret = _edid_i2c_read(me, segment, offset, buf, EDID_BLOCK_SIZE);
-    if (ret)
+    if (ret) {
+        printk("%s: failed to _edid_i2c_read ret %d\n", __func__, ret);
         return ret;
+    }
 
     for (i = 0; i < EDID_BLOCK_SIZE; i++)
         sum += buf[i];
@@ -190,6 +246,32 @@ static void _edid_use_default_preset(struct nxp_edid *me)
     me->max_audio_ch = 2;
 }
 
+static bool _edid_find_target_cec_address(u8 *data, int data_len, int *address)
+{
+    int i;
+    bool find = false;
+    int cec_physical_address = 0;
+    for (i = 0; i < (data_len - 2); i++) {
+        if (data[i] == 0x03 && data[i+1] == 0x0c && data[i+2] == 0x00) {
+            printk("find cec header!");
+            find = true;
+            break;
+        }
+    }
+
+    if (!find)
+        return false;
+
+    cec_physical_address = data[i+3];
+    cec_physical_address <<= 8;
+    cec_physical_address |= data[i+4];
+    *address = cec_physical_address;
+    printk("%s: cec physical address %x\n", __func__, cec_physical_address);
+
+    return true;
+}
+
+/*edid = kmalloc(block_cnt * EDID_BLOCK_SIZE, GFP_KERNEL);*/
 /**
  * member functions
  */
@@ -202,6 +284,7 @@ static int nxp_edid_update(struct nxp_edid *me)
     int channels_max = 0;
     int ret = 0;
     int i;
+    u32 cec_phy_address;
 
     pr_debug("%s\n", __func__);
 
@@ -213,6 +296,9 @@ static int nxp_edid_update(struct nxp_edid *me)
 
     print_hex_dump_bytes("EDID: ", DUMP_PREFIX_OFFSET, edid,
             ret * EDID_BLOCK_SIZE);
+
+    if (_edid_find_target_cec_address(edid, ret * EDID_BLOCK_SIZE, &cec_phy_address) == true)
+        me->cec_phy_address = cec_phy_address;
 
     fb_edid_to_monspecs(edid, &specs);
     for (i = 0; i < ret; i++)

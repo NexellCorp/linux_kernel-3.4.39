@@ -33,10 +33,53 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
+/*------------------------------------------------------------------------------
+ * BUS Configure
+ */
+#if (CFG_BUS_RECONFIG_ENB == 1)
+#include <mach/nxp4330_bus.h>
+
+const u16 g_DrexQoS[2] = {
+	0x100,		// S0
+	0xFFF		// S1, Default value
+};
+
+const u8 g_TopBusSI[8] = {
+	TOPBUS_SI_SLOT_DMAC0,
+	TOPBUS_SI_SLOT_USBOTG,
+	TOPBUS_SI_SLOT_USBHOST0,
+	TOPBUS_SI_SLOT_DMAC1,
+	TOPBUS_SI_SLOT_SDMMC,
+	TOPBUS_SI_SLOT_USBOTG,
+	TOPBUS_SI_SLOT_USBHOST1,
+	TOPBUS_SI_SLOT_USBOTG
+};
+
+const u8 g_BottomBusSI[8] = {
+	BOTBUS_SI_SLOT_1ST_ARM,
+	BOTBUS_SI_SLOT_MALI,
+	BOTBUS_SI_SLOT_DEINTERLACE,
+	BOTBUS_SI_SLOT_1ST_CODA,
+	BOTBUS_SI_SLOT_2ND_ARM,
+	BOTBUS_SI_SLOT_SCALER,
+	BOTBUS_SI_SLOT_TOP,
+	BOTBUS_SI_SLOT_2ND_CODA
+};
+
+const u8 g_DispBusSI[3] = {
+	DISBUS_SI_SLOT_1ST_DISPLAY,
+	DISBUS_SI_SLOT_2ND_DISPLAY,
+	DISBUS_SI_SLOT_2ND_DISPLAY  //DISBUS_SI_SLOT_GMAC
+};
+#endif	/* #if (CFG_BUS_RECONFIG_ENB == 1) */
+
+/*------------------------------------------------------------------------------
+ * CPU Frequence
+ */
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-//    { 1600000, 1200 },
+//	{ 1600000, 1200 },
 //	{ 1500000, 1200 },
 //	{ 1400000, 1200 },
 //	{ 1300000, 1200 },
@@ -112,7 +155,9 @@ static struct platform_device dm9000_plat_device = {
 };
 #endif	/* CONFIG_DM9000 || CONFIG_DM9000_MODULE */
 
-
+/*------------------------------------------------------------------------------
+ * DW GMAC board config
+ */
 #if defined(CONFIG_NXPMAC_ETH)
 #include <linux/phy.h>
 #include <linux/nxpmac.h>
@@ -394,8 +439,6 @@ static struct platform_device spdif_trans_dai = {
 	}
 };
 #endif
-
-
 
 /*------------------------------------------------------------------------------
  *  * reserve mem
@@ -718,8 +761,8 @@ static struct dw_mci_board _dwmci0_data = {
 #ifdef CONFIG_MMC_NEXELL_CH1
 
 static struct dw_mci_board _dwmci1_data = {
-	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 100 * 1000 * 1000,
+	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION,
+	.bus_hz			= 50 * 1000 * 1000,
 	.caps = MMC_CAP_CMD23|MMC_CAP_NONREMOVABLE,
 	.detect_delay_ms= 200,
 	.cd_type = DW_MCI_CD_NONE,

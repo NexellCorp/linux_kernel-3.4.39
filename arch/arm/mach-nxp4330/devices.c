@@ -998,6 +998,13 @@ void otg_phy_init(void)
     writel(readl(SOC_VA_RSTCON + 0x04) |  (1<<25), SOC_VA_RSTCON + 0x04);     // reset off
     udelay(10);
 
+    // 1-1. VBUS reconfig - Over current Issue
+#if 1
+    temp  = readl(SOC_VA_TIEOFF + 0x38) & ~(0x7<<23);
+    temp |= (0x3<<23);
+    writel(temp, SOC_VA_TIEOFF + 0x38);
+#endif
+
     // 2. Program scale mode to real mode
     writel(readl(SOC_VA_TIEOFF + 0x30) & ~(3<<0), SOC_VA_TIEOFF + 0x30);
 

@@ -530,6 +530,8 @@ int dwc_otg_hcd_urb_dequeue(dwc_otg_hcd_t * hcd,
 {
 	dwc_otg_qh_t *qh;
 	dwc_otg_qtd_t *urb_qtd;
+	BUG_ON(!hcd);
+	BUG_ON(!dwc_otg_urb);
 
 #ifdef DEBUG /* integrity checks (Broadcom) */
 
@@ -546,14 +548,17 @@ int dwc_otg_hcd_urb_dequeue(dwc_otg_hcd_t * hcd,
 		return -DWC_E_INVALID;
 	}
 	urb_qtd = dwc_otg_urb->qtd;
+	BUG_ON(!urb_qtd);
 	if (urb_qtd->qh == NULL) { 
 		DWC_ERROR("**** DWC OTG HCD URB Dequeue with QTD with NULL Q handler\n");
 		return -DWC_E_INVALID;
 	}
 #else
 	urb_qtd = dwc_otg_urb->qtd;
+	BUG_ON(!urb_qtd);
 #endif
 	qh = urb_qtd->qh;
+	BUG_ON(!qh);
 	if (CHK_DEBUG_LEVEL(DBG_HCDV | DBG_HCD_URB)) {
 		if (urb_qtd->in_process) {
 			dump_channel_info(hcd, qh);
@@ -3177,17 +3182,17 @@ dwc_otg_hcd_urb_t *dwc_otg_hcd_urb_alloc(dwc_otg_hcd_t * hcd,
 	else
 		dwc_otg_urb = DWC_ALLOC(size);
 
-    if (NULL != dwc_otg_urb)
-        dwc_otg_urb->packet_count = iso_desc_count;
-    else {
-        // psw0523 fix
-        //dwc_otg_urb->packet_count = 0;
-        if (size != 0) {
-            DWC_ERROR("**** DWC OTG HCD URB alloc - "
-                    "%salloc of %db failed\n",
-                    atomic_alloc?"atomic ":"", size);
-        }
-    }
+	if (NULL != dwc_otg_urb)
+		dwc_otg_urb->packet_count = iso_desc_count;
+	else {
+		// psw0523 fix
+		//dwc_otg_urb->packet_count = 0;
+		if (size != 0) {
+			DWC_ERROR("**** DWC OTG HCD URB alloc - "
+					"%salloc of %db failed\n",
+					atomic_alloc?"atomic ":"", size);
+		}
+	}
 
 	return dwc_otg_urb;
 }

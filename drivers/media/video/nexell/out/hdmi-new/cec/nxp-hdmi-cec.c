@@ -149,7 +149,8 @@ static inline void _cec_disable_tx_intr(void)
 static inline void _cec_set_threshold(u8 val)
 {
     hdmi_writeb(HDMI_CEC_RX_FILTER_TH, val);
-    hdmi_writeb(HDMI_CEC_RX_FILTER_CTRL, 0);
+    /*hdmi_writeb(HDMI_CEC_RX_FILTER_CTRL, 0);*/
+    hdmi_writeb(HDMI_CEC_RX_FILTER_CTRL, 1);
 }
 
 static void _cec_tx(char *data, size_t count)
@@ -241,6 +242,8 @@ static int _irq_callback(void *data)
     u32 tx_status = _cec_get_tx_status();
     u32 rx_status = _cec_get_rx_status();
 
+    /*_cec_disable_irq();*/
+
     pr_debug("%s: tx_status 0x%x, rx_status 0x%x\n", __func__, tx_status, rx_status);
     if (tx_status & HDMI_CEC_STATUS_TX_DONE) {
         if (tx_status & HDMI_CEC_STATUS_TX_ERROR) {
@@ -273,6 +276,8 @@ static int _irq_callback(void *data)
         _cec_clr_pending_rx();
         wake_up_interruptible(&me->waitq_rx);
     }
+    /*_cec_enable_irq();*/
+    pr_debug("%s: exit\n", __func__);
 
     return 0;
 }
@@ -343,7 +348,7 @@ static ssize_t nxp_hdmi_cec_read(struct file *file, char __user *buffer, size_t 
     ssize_t ret = -1;
     struct nxp_hdmi_cec *me = file->private_data;
 
-    pr_debug("%s entered\n", __func__);
+    /*pr_debug("%s entered\n", __func__);*/
 
     /*_cec_set_rx_state(STATE_RX);*/
 
@@ -352,14 +357,27 @@ static ssize_t nxp_hdmi_cec_read(struct file *file, char __user *buffer, size_t 
         printk("%s: return -ERESTARTSYS\n", __func__);
         return -ERESTARTSYS;
     }
-    pr_debug("rx state ==> 0x%x\n", atomic_read(&me->state_rx));
+    /*pr_debug("rx state ==> 0x%x\n", atomic_read(&me->state_rx));*/
 
     spin_lock_irqsave(&me->lock_rx, flags);
 
     if (me->size_rx > count) {
+        printk("%s: invalid size size_rx(%d), count(%d)\n", __func__, me->size_rx, count);
         ret = -EINVAL;
         goto err_out;
     }
+
+    // for debugging
+#if 0
+    {
+        int i;
+        printk("=====> DUMP RX Buffer (%d)\n", me->size_rx);
+        for (i = 0; i < me->size_rx; i++) {
+            printk("0x%x, ", me->buffer_rx[i]);
+        }
+        printk("\n");
+    }
+#endif
 
     if (copy_to_user(buffer, me->buffer_rx, me->size_rx)) {
         ret = -EFAULT;
@@ -379,7 +397,7 @@ static ssize_t nxp_hdmi_cec_write(struct file *file, const char __user *buffer, 
     char *data;
     struct nxp_hdmi_cec *me = file->private_data;
 
-    printk("%s entered\n", __func__);
+    pr_debug("%s entered\n", __func__);
 
     if (count > CEC_TX_BUFF_SIZE || count == 0) {
         pr_err("%s: invalid tx count %d\n", __func__, count);
@@ -401,6 +419,18 @@ static ssize_t nxp_hdmi_cec_write(struct file *file, const char __user *buffer, 
     _cec_set_tx_state(STATE_TX);
     _cec_tx(data, count);
 
+    // debugging
+#if 0
+    {
+        int i;
+        printk("tx ====> %d\n", count);
+        for (i = 0; i < count; i++) {
+            printk("0x%x, ", data[i]);
+        }
+        printk("\n");
+    }
+#endif
+
     kfree(data);
 
     if (wait_event_interruptible(me->waitq_tx, atomic_read(&me->state_tx) != STATE_TX)) {
@@ -418,13 +448,18 @@ static long nxp_hdmi_cec_ioctl(struct file *file, unsigned int cmd, unsigned lon
     u32 laddr;
     /*struct nxp_hdmi_cec *me = file->private_data;*/
 
-    printk("%s entered\n", __func__);
+    pr_debug("%s entered\n", __func__);
 
     switch (cmd) {
     case IOCTL_HDMI_CEC_SETLADDR:
         if (get_user(laddr, (u32 __user *)arg))
             return -EFAULT;
         _cec_set_addr(laddr);
+        break;
+
+    case IOCTL_HDMI_CEC_GETPADDR:
+        if (put_user(hdmi_get_edid_cec_phy_address(), (u32 __user *)arg))
+            return -EFAULT;
         break;
 
     default:
@@ -438,12 +473,12 @@ static u32 nxp_hdmi_cec_poll(struct file *file, poll_table *wait)
 {
     struct nxp_hdmi_cec *me = file->private_data;
 
-    printk("%s entered\n", __func__);
-
     poll_wait(file, &me->waitq_rx, wait);
 
-    if (atomic_read(&me->state_rx) == STATE_DONE)
+    if (atomic_read(&me->state_rx) == STATE_DONE) {
+        pr_debug("%s: rx in\n", __func__);
         return POLLIN | POLLRDNORM;
+    }
 
     return 0;
 }
@@ -482,8 +517,9 @@ static int __devinit nxp_hdmi_cec_probe(struct platform_device *pdev)
     /* gpio setting */
     uint32_t io = PAD_GPIO_C + 3;
     nxp_soc_gpio_set_io_func(io, NX_GPIO_PADFUNC_2);
-    nxp_soc_gpio_set_io_pull_sel(io, 1); // pull up select
-    nxp_soc_gpio_set_io_pull_enb(io, 1); // enable
+    /* use internal pull up : 100k */
+    /*nxp_soc_gpio_set_io_pull_sel(io, 1); // pull up select*/
+    /*nxp_soc_gpio_set_io_pull_enb(io, 1); // enable*/
 
     __me = (struct nxp_hdmi_cec *)kzalloc(sizeof(struct nxp_hdmi_cec), GFP_KERNEL);
     if (!__me) {

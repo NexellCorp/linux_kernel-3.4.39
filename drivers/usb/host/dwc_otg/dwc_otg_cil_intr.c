@@ -380,13 +380,13 @@ int32_t dwc_otg_handle_session_req_intr(dwc_otg_core_if_t * core_if)
 	if (dwc_otg_is_device_mode(core_if)) {
 		DWC_PRINTF("SRP: Device mode\n");
 
-        // psw0523 test for charging mode
+		// psw0523 test for charging mode
 #if 0
-        {
-            hprt0_data_t hprt0 = {.d32 = 0 };
-            hprt0.d32 = DWC_READ_REG32(core_if->host_if->hprt0);
-            printk("=======> hprt: 0x%x\n", hprt0.d32);
-        }
+		{
+			hprt0_data_t hprt0 = {.d32 = 0 };
+			hprt0.d32 = DWC_READ_REG32(core_if->host_if->hprt0);
+			printk("=======> hprt: 0x%x\n", hprt0.d32);
+		}
 #endif
 	} else {
 		hprt0_data_t hprt0;
@@ -1348,8 +1348,8 @@ static inline uint32_t dwc_otg_read_common_intr(dwc_otg_core_if_t * core_if)
 #endif
 	gintmsk_common.b.restoredone = 1;
 	/** @todo: The port interrupt occurs while in device
-         * mode. Added code to CIL to clear the interrupt for now!
-         */
+	 * mode. Added code to CIL to clear the interrupt for now!
+	 */
 	gintmsk_common.b.portintr = 1;
 
 	gintsts.d32 = DWC_READ_REG32(&core_if->core_global_regs->gintsts);
@@ -1533,6 +1533,7 @@ int32_t dwc_otg_handle_common_intr(void *dev)
 			} else {
 				DWC_PRINTF("Disconnect detected while linestate is not 0\n");
 			}
+
 			retval |= 1;
 		}
 		if (gpwrdn.b.lnstschng && gpwrdn.b.lnstchng_msk) {

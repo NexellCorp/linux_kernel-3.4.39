@@ -108,5 +108,6 @@ void hdmi_unregister_irq_callback(struct hdmi_irq_callback *);
 void hdmi_register_notifier_hpd_changed(struct nxp_hdmi_context *, void (*)(void *, int), void *);
 int hdmi_suspend(struct nxp_hdmi_context *);
 int hdmi_resume(struct nxp_hdmi_context *);
+u32 hdmi_get_edid_cec_phy_address(void);
 
 #endif
