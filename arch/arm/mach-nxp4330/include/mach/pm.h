@@ -87,4 +87,6 @@ extern void (*nxp_board_pre_shutdown)(void);
 extern void (*nxp_board_suspend_mark)(struct suspend_mark_up *mark, int suspend);
 extern void (*nxp_board_reset)(char str, const char *cmd);
 
+extern void nxp_cpu_goto_stop(void);
+
 #endif /* __BOARD_PM_H__ */
