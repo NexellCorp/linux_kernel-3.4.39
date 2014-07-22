@@ -130,7 +130,7 @@
 #define	CFG_AUDIO_I2S0_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
 #define	CFG_AUDIO_I2S0_FRAME_BIT				48		// 32, 48
 #define	CFG_AUDIO_I2S0_SAMPLE_RATE				48000
-#define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			0
+#define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			1
 
 #define	CFG_AUDIO_I2S1_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S1_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
@@ -203,7 +203,7 @@
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
  */
-#define CFG_SW_UBC_ENABLE						(0)
+#define CFG_SW_UBC_ENABLE						(1)
 
 /**
  * 0 : GPIO interrupt (CFG_GPIO_PMIC_VUSB_DET)
