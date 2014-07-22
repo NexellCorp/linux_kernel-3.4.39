@@ -20,6 +20,8 @@
 #include <mach/platform.h>
 #include <mach/soc.h>
 #include <mach/pm.h>
+#include <linux/suspend.h>
+#include <linux/mfd/nxe2000.h>
 
 #define DEVICE_NAME	"pm-micom"
 #define DEVICE_ADDR	0x30
@@ -79,6 +81,84 @@ static struct drvPXMICOM {
 } *drvPXMICOM;
 
 static struct i2c_client *mi_client = NULL;
+
+extern void (*pm_power_off)(void);
+static void (*nxe2000_pm_power_off)(void);
+
+int hib_enable;
+void micom_pm_hibernation_off(void)
+{
+	int ret;
+	uint8_t reg_val = 0;
+
+	printk("%s enter, hib %d\n", __func__, hib_enable);
+
+#if defined(CONFIG_BATTERY_NXE2000)
+	reg_val = g_soc;
+	reg_val &= 0x7f;
+
+	ret = nxe2000_pm_write(NXE2000_PSWR, reg_val);
+	if (ret < 0)
+		pr_err("Error in writing PSWR_REG\n");
+
+	if (g_fg_on_mode == 0) {
+		/* Clear NXE2000_FG_CTRL 0x01 bit */
+		ret = nxe2000_pm_read(NXE2000_FG_CTRL, &reg_val);
+		if (reg_val & 0x01) {
+			reg_val &= ~0x01;
+			ret = nxe2000_pm_write(NXE2000_FG_CTRL, reg_val);
+		}
+		if (ret < 0)
+			pr_err("Error in writing FG_CTRL\n");
+	}
+#endif
+
+	/* set rapid timer 300 min */
+	ret = nxe2000_pm_read(TIMSET_REG, &reg_val);
+	if (ret < 0)
+		ret = nxe2000_pm_read(TIMSET_REG, &reg_val);
+
+	reg_val |= 0x03;
+
+	ret = nxe2000_pm_write(TIMSET_REG, reg_val);
+	if (ret < 0)
+		ret = nxe2000_pm_write(TIMSET_REG, reg_val);
+	if (ret < 0)
+		pr_err("Error in writing the TIMSET_Reg\n");
+
+	/* Disable all Interrupt */
+	ret = nxe2000_pm_write(NXE2000_INTC_INTEN, 0);
+	if (ret < 0)
+		ret = nxe2000_pm_write(NXE2000_INTC_INTEN, 0);
+
+	/* Not repeat power ON after power off(Power Off/N_OE) */
+	ret = nxe2000_pm_write(NXE2000_PWR_REP_CNT, 0x0);
+	if (ret < 0)
+		ret = nxe2000_pm_write(NXE2000_PWR_REP_CNT, 0x0);
+
+	if(hib_enable) {
+		/* [START] set Suspend to FLASH mode */
+		ret = nxe2000_pm_read(NXE2000_PWR_DC4_SLOT, &reg_val);
+		if (ret < 0)
+			ret = nxe2000_pm_read(NXE2000_PWR_DC4_SLOT, &reg_val);
+	
+		reg_val &= 0xf0;
+	
+		ret = nxe2000_pm_write(NXE2000_PWR_DC4_SLOT, reg_val);
+		/* [END] set Suspend to FLASH mode */
+
+		nxp_cpu_goto_stop();
+	}
+	else {
+		/* Power OFF */
+		ret = nxe2000_pm_write(NXE2000_PWR_SLP_CNT, 0x1);
+		if (ret < 0)
+			ret = nxe2000_pm_write(NXE2000_PWR_SLP_CNT, 0x1);
+	}
+
+    nxp_cpu_shutdown();
+
+}
 
 static int micom_smbus_read_byte(struct i2c_client *client, unsigned char reg_addr, unsigned char *data)
 {
@@ -481,6 +561,11 @@ static int __init micom_init(void)
 	printk(KERN_ALERT"pm-micom.c: i2c_add_driver return : %d\r\n", result);	
 
 	nxp_board_suspend_register(&micom_pm_ops);
+
+	nxe2000_pm_power_off = pm_power_off;
+	pm_power_off = micom_pm_hibernation_off;
+	hib_enable = 0;
+	
 	return result;
 }
 

@@ -730,3 +730,25 @@ static int pm_check_wakeup_dev(char *dev, int io)
 int (*nxp_check_pm_wakeup_dev)(char *dev, int io) = pm_check_wakeup_dev;
 EXPORT_SYMBOL(nxp_check_pm_wakeup_dev);
 
+void nxp_cpu_goto_stop(void)
+{
+	printk("%s enter\n", __func__);
+
+	suspend_clock(SUSPEND_SUSPEND);
+	suspend_gpio(SUSPEND_SUSPEND);
+	suspend_alive(SUSPEND_SUSPEND);
+	suspend_l2cache(SUSPEND_SUSPEND);
+#ifndef CONFIG_SUSPEND_IDLE
+	suspend_mark(SUSPEND_SUSPEND);
+#endif
+
+	/* SMP power down */
+	suspend_cores(SUSPEND_SUSPEND);
+
+	/*
+	 * goto suspend off
+	 */
+	cpu_suspend(0, __powerdown);
+}
+EXPORT_SYMBOL(nxp_cpu_goto_stop);
+

@@ -684,7 +684,7 @@ static struct mxt_platform_data mxt_platform_data = {
 	.irqflags = 0, // irq high or low
 	.boot_address = 0x26,
 	.revision = 0x01,
-#if defined(CONFIG_TOUCHSCREEN_SMAC)
+#if 1//defined(CONFIG_TOUCHSCREEN_SMAC)
 	.firmware_name = MXT_SMAC_FIRMWARE_NAME,		// MXT_SMAC_FIRMWARE_NAME or MXT_TRAIS_FIRMWARE_NAME
 #else
 	.firmware_name = MXT_TRAIS_FIRMWARE_NAME,		// MXT_SMAC_FIRMWARE_NAME or MXT_TRAIS_FIRMWARE_NAME
