@@ -89,6 +89,11 @@ config ARM_NXP4330_CPUFREQ_DEBUG
 	depends on ARM_NXP4330_CPUFREQ
 	default n
 
+config ARM_NXP4330_CPUFREQ_VOLTAGE_DEBUG
+	bool "Dynamic Voltage scaling debug message"
+	depends on ARM_NXP4330_CPUFREQ
+	default n
+
 choice
 	prompt "Select CPU PLL device"
 	depends on ARM_NXP4330_CPUFREQ

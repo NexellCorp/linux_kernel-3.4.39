@@ -96,7 +96,8 @@ unsigned int 	nxp_cpu_version(void);
 void __init 	nxp_cpu_devices_register(void);
 void __init 	nxp_board_devices_register(void);
 void		 	nxp_cpu_periph_register_clock(int id, long ext1, long ext2);
-unsigned long 	nxp_cpu_pll_change_frequency(int no, unsigned long rate);
+unsigned long 	nxp_cpu_pll_change_frequency(int pllno, unsigned long rate);
+unsigned long 	nxp_cpu_pll_round_frequency (int pllno, unsigned long rate, int *p, int *m, int *s);
 
 extern int (*nxp_check_pm_wakeup_dev)(char *dev, int io);
 extern int   nxp_check_pm_wakeup_alive(int alive_no);

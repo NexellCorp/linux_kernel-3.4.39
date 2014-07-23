@@ -173,25 +173,21 @@ static inline void core_pll_change_lock(bool lock)
 	}
 }
 
-#include <linux/delay.h>
-unsigned long nxp_cpu_pll_change_frequency(int no, unsigned long rate)
+unsigned long nxp_cpu_pll_round_frequency(int pllno, unsigned long rate, int *p, int *m, int *s)
 {
-	struct pll_pms *p;
+	struct pll_pms *pms;
 	int len, i = 0, n = 0, l = 0;
 	long freq = 0;
 
 	rate /= 1000;
-	DBGOUT("PLL.%d, %ld", no, rate);
-#ifdef CONFIG_NEXELL_DFS_BCLK
-    mdelay(1);
-#endif
+	DBGOUT("PLL.%d, %ld", pllno, rate);
 
-	switch (no) {
+	switch (pllno) {
 	case 0 :
-	case 1 : p = pll0_1_pms; len = PLL0_1_SIZE; break;
+	case 1 : pms = pll0_1_pms; len = PLL0_1_SIZE; break;
 	case 2 :
-	case 3 : p = pll2_3_pms; len = PLL2_3_SIZE; break;
-	default: printk(KERN_ERR "Not support pll.%d (0~3)\n", no);
+	case 3 : pms = pll2_3_pms; len = PLL2_3_SIZE; break;
+	default: printk(KERN_ERR "Not support pll.%d (0~3)\n", pllno);
 		return 0;
 	}
 
@@ -199,7 +195,7 @@ unsigned long nxp_cpu_pll_change_frequency(int no, unsigned long rate)
 
 	while (1) {
 		l = n + i;
-		freq = PMS_RATE(p, l);
+		freq = PMS_RATE(pms, l);
 		if (freq == rate)
 			break;
 
@@ -210,30 +206,49 @@ unsigned long nxp_cpu_pll_change_frequency(int no, unsigned long rate)
 
 		if (0 == i) {
 			int k = l;
-			if (abs(rate - freq) > abs(rate - PMS_RATE(p, k+1)))
+			if (abs(rate - freq) > abs(rate - PMS_RATE(pms, k+1)))
 				k += 1;
-			if (abs(rate - PMS_RATE(p, k)) >= abs(rate - PMS_RATE(p, k-1)))
+			if (abs(rate - PMS_RATE(pms, k)) >= abs(rate - PMS_RATE(pms, k-1)))
 				k -= 1;
 			l = k;
 			break;
 		}
 	}
 
-	/*core_pll_change_lock(true);*/
-    preempt_disable();
-    local_irq_disable();
-	core_pll_change(no, PMS_P(p, l), PMS_M(p, l), PMS_S(p, l));
-    preempt_enable();
-    local_irq_enable();
-	/*core_pll_change_lock(false);*/
+	if (p) *p = PMS_P(pms, l);
+	if (m) *m = PMS_M(pms, l);
+	if (s) *s = PMS_S(pms, l);
 
 	DBGOUT("(real %ld Khz, P=%d ,M=%3d, S=%d)\n",
-		PMS_RATE(p, l), PMS_P(p, l), PMS_M(p, l), PMS_S(p, l));
+		PMS_RATE(pms, l), PMS_P(pms, l), PMS_M(pms, l), PMS_S(pms, l));
+
+	return PMS_RATE(pms, l);
+}
+
+unsigned long nxp_cpu_pll_change_frequency(int pllno, unsigned long rate)
+{
+	int p = 0, m = 0, s = 0;
+	unsigned long freq;
+
 #ifdef CONFIG_NEXELL_DFS_BCLK
     mdelay(1);
 #endif
 
-	return PMS_RATE(p, l);
+	freq = nxp_cpu_pll_round_frequency(pllno, rate, &p, &m, &s);
+
+	/*core_pll_change_lock(true);*/
+    preempt_disable();
+    local_irq_disable();
+	core_pll_change(pllno, p, m, s);
+    preempt_enable();
+    local_irq_enable();
+	/*core_pll_change_lock(false);*/
+
+#ifdef CONFIG_NEXELL_DFS_BCLK
+    mdelay(1);
+#endif
+
+	return freq;
 }
 
 void nxp_cpu_pll_change_lock(void)
