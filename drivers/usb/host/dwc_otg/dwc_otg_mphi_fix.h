@@ -12,7 +12,7 @@ typedef struct {
 	volatile void* outdda;
 	volatile void* outddb;
 	volatile void* intstat;
-} mphi_regs_t; 
+} mphi_regs_t;
 
 void dwc_debug_print_core_int_reg(gintsts_data_t gintsts, const char* function_name);
 void dwc_debug_core_int_mask(gintsts_data_t gintmsk, const char* function_name);

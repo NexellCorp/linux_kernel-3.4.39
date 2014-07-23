@@ -26,6 +26,8 @@
 #include <linux/kthread.h>
 #include <linux/sysrq.h>
 #include <linux/platform_device.h>
+#include <linux/regulator/consumer.h>
+#include <mach/platform.h>
 #include <mach/devices.h>
 
 /*
@@ -34,7 +36,7 @@
 
 struct cpufreq_dvfs_data {
 	struct cpufreq_frequency_table *freq_table;
-	unsigned long (*freq_volts)[2];
+	unsigned long (*freq_volts)[2];	/* khz freq (khz): voltage(uV): voltage (us) */
 	struct clk *clk;
 	cpumask_var_t cpus;
 	int cpu;
@@ -51,6 +53,9 @@ struct cpufreq_dvfs_data {
    	struct task_struct *rest_p;
 	struct mutex lock;
     int  run_monitor;
+    struct regulator *volt;
+    int table_size;
+    long supply_delay_us;
 };
 
 static struct cpufreq_dvfs_data	*cpufreq_dvfs;
@@ -99,14 +104,61 @@ static enum hrtimer_restart nxp4330_cpufreq_rest_timer(struct hrtimer *hrtimer)
 	return HRTIMER_NORESTART;
 }
 
+unsigned int nxp4330_cpufreq_voltage(unsigned long freqhz)
+{
+	struct cpufreq_dvfs_data *dvfs = get_cpufreq_data();
+ 	unsigned long (*freq_volts)[2] = (unsigned long(*)[2])dvfs->freq_volts;
+ 	int pll = CONFIG_NXP4330_CPUFREQ_PLLDEV;
+	int len = dvfs->table_size;
+	int i = 0;
+	long rate = 0;
+	long mS = 0, uS = 0, uV = 0, wT = 0;
+
+	if (!dvfs->volt)
+		return 0;
+
+	rate = nxp_cpu_pll_round_frequency(pll, freqhz, NULL, NULL, NULL);
+
+	for (i = 0; len > i; i++) {
+		if (rate == freq_volts[i][0])
+			break;
+
+		if (rate > freq_volts[i][0]) {
+			if (i != 0) i -= 1;
+			break;
+		}
+	}
+
+	uV = freq_volts[i][1], wT = dvfs->supply_delay_us;
+
+	regulator_set_voltage(dvfs->volt, uV, uV);
+
+	if (wT) {
+		mS = wT/1000;
+		uS = wT%1000;
+		if (mS) mdelay(mS);
+		if (uS) udelay(uS);
+	}
+
+#ifdef CONFIG_ARM_NXP4330_CPUFREQ_VOLTAGE_DEBUG
+	printk(" volt (%lukhz %ld.%06ld V, %ld.%03ld us)\n",
+		freq_volts[i][0], uV/1000000, uV%1000000, mS, uS);
+#endif
+
+	return uV;
+}
+
 static void nxp4330_cpufreq_update(struct cpufreq_dvfs_data *dvfs)
 {
 	struct cpufreq_freqs freqs;
 	struct clk *clk = dvfs->clk;
 	int cpu = dvfs->cpu;
+	unsigned long rate = 0;
 
 	if (!dvfs->new_cpufreq)
 		return;
+
+	pr_debug("cpufreq : update %ldkhz\n", dvfs->new_cpufreq);
 
 	mutex_lock(&dvfs->lock);
 	set_current_state(TASK_UNINTERRUPTIBLE);
@@ -114,15 +166,22 @@ static void nxp4330_cpufreq_update(struct cpufreq_dvfs_data *dvfs)
 	freqs.new = dvfs->new_cpufreq;
 	freqs.old = clk_get_rate(clk) / 1000;
 	freqs.cpu = cpu;
-	pr_debug("cpufreq : update %ldkhz\n", dvfs->new_cpufreq);
+
+	/* pre voltage */
+	if (freqs.new > freqs.old)
+		nxp4330_cpufreq_voltage(freqs.new*1000);
 
 	for_each_cpu(freqs.cpu, dvfs->cpus)
 	cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
 
-	clk_set_rate(clk, freqs.new*1000);
+	rate = clk_set_rate(clk, freqs.new*1000);
 
 	for_each_cpu(freqs.cpu, dvfs->cpus)
 	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+
+	/* post voltage */
+	if (freqs.old > freqs.new)
+		nxp4330_cpufreq_voltage(freqs.new*1000);
 
 	set_current_state(TASK_INTERRUPTIBLE);
 	mutex_unlock(&dvfs->lock);
@@ -214,6 +273,7 @@ static int nxp4330_cpufreq_target(struct cpufreq_policy *policy,
 	struct cpufreq_frequency_table *table;
 	struct cpufreq_freqs freqs;
 	struct clk *clk = dvfs->clk;
+	unsigned long rate = 0;
 	long ts;
 	int ret = 0, i = 0;
 
@@ -276,21 +336,30 @@ static int nxp4330_cpufreq_target(struct cpufreq_policy *policy,
 	}
 
 _cpu_freq:
+	pr_debug(", set rate %ukhz\n", freqs.new);
+
+	/* pre voltage */
+	if (freqs.new > freqs.old)
+		nxp4330_cpufreq_voltage(freqs.new*1000);
+
 	/* pre-change notification */
 	for_each_cpu(freqs.cpu, policy->cpus)
 		cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
 
 	/* Change frequency */
-	pr_debug(", set rate %ukhz\n", freqs.new);
-	ret = clk_set_rate(clk, freqs.new * 1000);
+	rate = clk_set_rate(clk, freqs.new * 1000);
 
 	/* post change notification */
 	for_each_cpu(freqs.cpu, policy->cpus)
 		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
 
+	/* post voltage */
+	if (freqs.old > freqs.new)
+		nxp4330_cpufreq_voltage(freqs.new*1000);
+
 	mutex_unlock(&dvfs->lock);
 
-	return ret;
+	return rate;
 }
 
 static int __cpuinit nxp4330_cpufreq_init(struct cpufreq_policy *policy)
@@ -390,6 +459,8 @@ static int nxp4330_cpufreq_probe(struct platform_device *pdev)
 	dvfs->rest_retention = plat->rest_retention;
 	dvfs->rest_ktime = ktime_set(0, 0);
 	dvfs->run_monitor = 0;
+	dvfs->table_size = size;
+	dvfs->supply_delay_us = plat->supply_delay_us;
 
 	/*
      * make frequency table with platform data
@@ -398,16 +469,31 @@ static int nxp4330_cpufreq_probe(struct platform_device *pdev)
 		table->index = i;
 		table->frequency = dvfs->freq_volts[i][0];
 		table++;
-		pr_debug("[%s] %2d = %8ldkhz, %8ld mV\n",
-			name, i, dvfs->freq_volts[i][0], dvfs->freq_volts[i][1]);
+		pr_debug("[%s] %2d = %8ldkhz, %8ld uV (%lu us)\n",
+			name, i, dvfs->freq_volts[i][0], dvfs->freq_volts[i][1],
+			dvfs->supply_delay_us);
 	}
 	table->index = i;
 	table->frequency = CPUFREQ_TABLE_END;
 
+	/*
+     * get voltage regulator table with platform data
+	 */
+	if (plat->supply_name) {
+		dvfs->volt = regulator_get(NULL, plat->supply_name);
+		if (IS_ERR(dvfs->volt)) {
+			dev_err(&pdev->dev, "%s: Cannot get regulator for DVS supply %s\n",
+				__func__, plat->supply_name);
+			kfree(table);
+			kfree(dvfs);
+			return -1;
+		}
+	}
+
 	if (0 > nxp4330_cpufreq_setup(dvfs))
 		return -EINVAL;
 
-	printk("DVFS: cpu dvfs with PLL.%d\n", plat->pll_dev);
+	printk("DVFS: cpu dvfs with PLL.%d [tables=%d]\n", plat->pll_dev, dvfs->table_size);
 	return cpufreq_register_driver(&nxp4330_cpufreq_driver);
 }
 

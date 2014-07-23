@@ -193,6 +193,8 @@ struct nxp_cpufreq_plat_data {
     long rest_retention;    /* unit msec */
     long hotplug_trigger_out;
     long hotplug_trigger_in;
+	char *supply_name;		/* voltage regulator name */
+	long supply_delay_us;
 };
 
 /*

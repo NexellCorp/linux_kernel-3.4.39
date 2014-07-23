@@ -109,11 +109,8 @@ extern int32_t dwc_otg_get_param_dma_enable(dwc_otg_core_if_t * core_if);
 extern int dwc_otg_set_param_dma_desc_enable(dwc_otg_core_if_t * core_if,
 					     int32_t val);
 extern int32_t dwc_otg_get_param_dma_desc_enable(dwc_otg_core_if_t * core_if);
-#if defined(CONFIG_ARCH_NXP4330) && defined(CONFIG_USB_VIDEO_CLASS)
-#define dwc_param_dma_desc_enable_default 1 // org
-#else
+//#define dwc_param_dma_desc_enable_default 1 // org
 #define dwc_param_dma_desc_enable_default 0 // Broadcom BCM2708, Nexell NXP4330
-#endif
 
 /** The DMA Burst size (applicable only for External DMA
  * Mode). 1, 4, 8 16, 32, 64, 128, 256 (default 32)
@@ -194,9 +191,9 @@ extern int32_t dwc_otg_get_param_data_fifo_size(dwc_otg_core_if_t * core_if);
 extern int dwc_otg_set_param_dev_rx_fifo_size(dwc_otg_core_if_t * core_if,
 					      int32_t val);
 extern int32_t dwc_otg_get_param_dev_rx_fifo_size(dwc_otg_core_if_t * core_if);
-#define dwc_param_dev_rx_fifo_size_default 1064   // org
-//#define dwc_param_dev_rx_fifo_size_default 512  // psw0523 fix
-//#define dwc_param_dev_rx_fifo_size_default 798  // kook
+#define dwc_param_dev_rx_fifo_size_default 1064		// org
+//#define dwc_param_dev_rx_fifo_size_default 512	// psw0523 fix
+//#define dwc_param_dev_rx_fifo_size_default 798	// kook
 
 /** Number of 4-byte words in the non-periodic Tx FIFO in device mode
  * when dynamic FIFO sizing is enabled.

@@ -118,6 +118,7 @@ static const struct snd_soc_dapm_route rt5631_audio_map[] = {
 	{"Ext Spk", NULL, "SPOL"},
 };
 
+#if defined(CONFIG_PLAT_NXP4330_SECRET) || !defined(CONFIG_ANDROID)
 /* Headphones jack detection DAPM pin */
 static struct snd_soc_jack_pin jack_pins[] = {
 	{
@@ -130,6 +131,7 @@ static struct snd_soc_jack_pin jack_pins[] = {
 		.invert	= 1,				// when insert disalbe
 	},
 };
+#endif
 
 /* Headphones jack detection GPIO */
 static struct snd_soc_jack_gpio jack_gpio = {

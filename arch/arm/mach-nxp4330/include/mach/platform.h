@@ -88,6 +88,7 @@ void 			nxp_cpu_clock_update_rate(int pll);
 unsigned int 	nxp_cpu_clock_hz(int type);			/* 0=PLL0, 1=PLL1, 2=FCLK, 3=MCLK, 4=BCLK, 5=PCLK */
 void 		 	nxp_cpu_shutdown(void);
 void 		 	nxp_cpu_core_shutdown(int core);
+void			nxp_cpu_goto_stop(void);
 void 		 	nxp_cpu_reset(char str, const char *cmd);
 unsigned int 	nxp_cpu_version(void);
 
@@ -95,7 +96,8 @@ unsigned int 	nxp_cpu_version(void);
 void __init 	nxp_cpu_devices_register(void);
 void __init 	nxp_board_devices_register(void);
 void		 	nxp_cpu_periph_register_clock(int id, long ext1, long ext2);
-unsigned long 	nxp_cpu_pll_change_frequency(int no, unsigned long rate);
+unsigned long 	nxp_cpu_pll_change_frequency(int pllno, unsigned long rate);
+unsigned long 	nxp_cpu_pll_round_frequency (int pllno, unsigned long rate, int *p, int *m, int *s);
 
 extern int (*nxp_check_pm_wakeup_dev)(char *dev, int io);
 extern int   nxp_check_pm_wakeup_alive(int alive_no);

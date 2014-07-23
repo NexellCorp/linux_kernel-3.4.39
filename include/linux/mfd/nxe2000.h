@@ -45,6 +45,7 @@
 #define NXE2000_PWR_ON_TIMSET		0x10
 #define NXE2000_PWR_NOE_TIMSET		0x11
 #define NXE2000_PWR_IRSEL		0x15
+#define NXE2000_PWR_DC4_SLOT	0x19
 
 /* Interrupt enable register */
 #define NXE2000_INT_EN_SYS		0x12
@@ -323,12 +324,14 @@ extern int g_soc;
 extern int g_fg_on_mode;
 #endif
 
+extern int nxe2000_pm_read(uint8_t reg, uint8_t *val);
 extern int nxe2000_read(struct device *dev, uint8_t reg, uint8_t *val);
 extern int nxe2000_read_bank1(struct device *dev, uint8_t reg, uint8_t *val);
 extern int nxe2000_bulk_reads(struct device *dev, u8 reg, u8 count,
 								uint8_t *val);
 extern int nxe2000_bulk_reads_bank1(struct device *dev, u8 reg, u8 count,
 								uint8_t *val);
+extern int nxe2000_pm_write(u8 reg, uint8_t val);
 extern int nxe2000_write(struct device *dev, u8 reg, uint8_t val);
 extern int nxe2000_write_bank1(struct device *dev, u8 reg, uint8_t val);
 extern int nxe2000_bulk_writes(struct device *dev, u8 reg, u8 count,

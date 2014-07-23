@@ -33,13 +33,56 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
+/*------------------------------------------------------------------------------
+ * BUS Configure
+ */
+#if (CFG_BUS_RECONFIG_ENB == 1)
+#include <mach/nxp4330_bus.h>
+
+const u16 g_DrexQoS[2] = {
+	0x100,		// S0
+	0xFFF		// S1, Default value
+};
+
+const u8 g_TopBusSI[8] = {
+	TOPBUS_SI_SLOT_DMAC0,
+	TOPBUS_SI_SLOT_USBOTG,
+	TOPBUS_SI_SLOT_USBHOST0,
+	TOPBUS_SI_SLOT_DMAC1,
+	TOPBUS_SI_SLOT_SDMMC,
+	TOPBUS_SI_SLOT_USBOTG,
+	TOPBUS_SI_SLOT_USBHOST1,
+	TOPBUS_SI_SLOT_USBOTG
+};
+
+const u8 g_BottomBusSI[8] = {
+	BOTBUS_SI_SLOT_1ST_ARM,
+	BOTBUS_SI_SLOT_MALI,
+	BOTBUS_SI_SLOT_DEINTERLACE,
+	BOTBUS_SI_SLOT_1ST_CODA,
+	BOTBUS_SI_SLOT_2ND_ARM,
+	BOTBUS_SI_SLOT_SCALER,
+	BOTBUS_SI_SLOT_TOP,
+	BOTBUS_SI_SLOT_2ND_CODA
+};
+
+const u8 g_DispBusSI[3] = {
+	DISBUS_SI_SLOT_1ST_DISPLAY,
+	DISBUS_SI_SLOT_2ND_DISPLAY,
+	DISBUS_SI_SLOT_2ND_DISPLAY  //DISBUS_SI_SLOT_GMAC
+};
+#endif	/* #if (CFG_BUS_RECONFIG_ENB == 1) */
+
+/*------------------------------------------------------------------------------
+ * CPU Frequence
+ */
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
 	//{ 1600000, 1200 },
-	{ 1500000, 1200 },
-	{ 1400000, 1200 },
-	{ 1300000, 1200 },
+	//{ 1500000, 1200 },
+	//{ 1400000, 1200 },
+	//{ 1300000, 1200 },
 	{ 1200000, 1200 },
 	{ 1100000, 1200 },
 	{ 1000000, 1200 },
@@ -58,7 +101,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP4330_CPUFREQ_PLLDEV,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1500*1000,
+	.max_cpufreq    = 1200*1000,
 	.max_retention  =   20*1000,
 	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
@@ -292,6 +335,38 @@ static struct platform_device wm8976_dai = {
 };
 #endif
 
+#if defined(CONFIG_SND_CODEC_ALC5623)
+#include <linux/i2c.h>
+
+#define	WM8976_I2C_BUS		(0)
+
+/* CODEC */
+static struct i2c_board_info __initdata alc5623_i2c_bdi = {
+	.type	= "alc562x-codec",			// compatilbe with wm8976
+	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
+};
+
+/* DAI */
+struct nxp_snd_dai_plat_data i2s_dai_data = {
+	.i2s_ch	= 0,
+	.sample_rate	= 48000,
+	.hp_jack 		= {
+		.support    	= 1,
+		.detect_io		= PAD_GPIO_E + 8,
+		.detect_level	= 1,
+	},
+};
+
+static struct platform_device alc5623_dai = {
+	.name			= "alc5623-audio",
+	.id				= 0,
+	.dev			= {
+		.platform_data	= &i2s_dai_data,
+	}
+};
+#endif
+
+
 #if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)
 static struct platform_device spdif_transciever = {
 	.name	= "spdif-dit",
@@ -524,7 +599,7 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1250000, 1, 12);	/* 1.2V ARM */
+NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1200000, 1, 12);	/* 1.2V ARM */
 NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1, 14);	/* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1600000, 1, -1);	/* 1.6V DDR */
@@ -602,7 +677,7 @@ static struct nxe2000_pwrkey_platform_data nxe2000_pwrkey_data = {
 static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 	.irq 				= NXE2000_IRQ_BASE,
 
-	.input_power_type	= INPUT_POWER_TYPE_ADP,
+	.input_power_type	= INPUT_POWER_TYPE_ADP_UBC,
 
 	.gpio_otg_usbid		= CFG_GPIO_OTG_USBID_DET,
 	.gpio_otg_vbus		= CFG_GPIO_OTG_VBUS_DET,
@@ -1213,25 +1288,6 @@ static int _dwmci_get_ro(u32 slot_id)
 	return 0;
 }
 
-#ifdef CONFIG_MMC_NEXELL_CH0
-static struct dw_mci_board _dwmci0_data = {
-    .quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
-				  	  DW_MCI_QUIRK_HIGHSPEED |
-				  	  DW_MMC_QUIRK_HW_RESET_PW |
-				      DW_MCI_QUIRK_NO_DETECT_EBIT,
-	.bus_hz			= 50 * 1000 * 1000,
-	.caps			= MMC_CAP_UHS_DDR50 |
-					  MMC_CAP_NONREMOVABLE |
-			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
-				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
-	.desc_sz		= 4,
-	.detect_delay_ms= 200,
-	.sdr_timing		= 0x01010001,
-	.ddr_timing		= 0x03030002,
-};
-#endif
-
-#ifdef CONFIG_MMC_NEXELL_CH1
 static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 {
 	struct dw_mci *host = (struct dw_mci *)data;
@@ -1247,13 +1303,47 @@ static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 		pr_err("dw_mmc dw_mmc.%d: fail request interrupt %d ...\n", id, irq);
 	return 0;
 }
-
 static int _dwmci0_get_cd(u32 slot_id)
 {
 	int io = CFG_SDMMC0_DETECT_IO;
 	return nxp_soc_gpio_get_in_value(io);
 }
+
+
+#ifdef CONFIG_MMC_NEXELL_CH0
+static struct dw_mci_board _dwmci0_data = {
+    .quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
+				  	  DW_MCI_QUIRK_HIGHSPEED |
+				  	  DW_MMC_QUIRK_HW_RESET_PW |
+				      DW_MCI_QUIRK_NO_DETECT_EBIT,
+	.bus_hz			= 100 * 1000 * 1000,
+	.caps			= MMC_CAP_UHS_DDR50 |
+					  MMC_CAP_NONREMOVABLE |
+			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
+				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0x1c) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+
+	.desc_sz		= 4,
+	.detect_delay_ms= 200,
+	.sdr_timing		= 0x01010001,
+	.ddr_timing		= 0x03030002,
+};
+#endif
+
+#ifdef CONFIG_MMC_NEXELL_CH1
 static struct dw_mci_board _dwmci1_data = {
+	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
+	.bus_hz			= 100 * 1000 * 1000,
+	.caps = MMC_CAP_CMD23|MMC_CAP_NONREMOVABLE,
+	.detect_delay_ms= 200,
+	.cd_type = DW_MCI_CD_NONE,
+	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(0),
+};
+#endif
+
+#ifdef CONFIG_MMC_NEXELL_CH2
+static struct dw_mci_board _dwmci2_data = {
 	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 100 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
@@ -1265,27 +1355,6 @@ static struct dw_mci_board _dwmci1_data = {
 	.get_cd			= _dwmci0_get_cd,
 	.ext_cd_init	= _dwmci_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
-};
-#endif
-
-#ifdef CONFIG_MMC_NEXELL_CH2
-void SDCH2_cfg_gpio(int width)
-{
-    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  18, NX_GPIO_PADFUNC_2);
-    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  19, NX_GPIO_PADFUNC_2);
-    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  20, NX_GPIO_PADFUNC_2);
-    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  21, NX_GPIO_PADFUNC_2);
-    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  22, NX_GPIO_PADFUNC_2);
-    nxp_soc_gpio_set_io_func(PAD_GPIO_C +  23, NX_GPIO_PADFUNC_2);
-}
-
-static struct dw_mci_board _dwmci2_data = {
-	.quirks	= DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz	= 10 * 1000 * 1000,
-	.caps = MMC_CAP_CMD23|MMC_CAP_NONREMOVABLE,
-	.detect_delay_ms = 200,
-	.cd_type = DW_MCI_CD_NONE,
-	.cfg_gpio = SDCH2_cfg_gpio,
 };
 #endif
 
@@ -1349,7 +1418,10 @@ void __init nxp_board_devices_register(void)
 	#ifdef CONFIG_MMC_NEXELL_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
-	#ifdef CONFIG_MMC_NEXELL_CH1
+    #ifdef CONFIG_MMC_NEXELL_CH2
+	nxp_mmc_add_device(2, &_dwmci2_data);
+	#endif
+    #ifdef CONFIG_MMC_NEXELL_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
 	#endif
 #endif
@@ -1386,6 +1458,12 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device asoc-wm8976\n");
 	i2c_register_board_info(WM8976_I2C_BUS, &wm8976_i2c_bdi, 1);
 	platform_device_register(&wm8976_dai);
+#endif
+
+#if defined(CONFIG_SND_CODEC_ALC5623) || defined(CONFIG_SND_CODEC_ALC5623_MODULE)
+	printk("plat: add device asoc-alc5623\n");
+	i2c_register_board_info(0, &alc5623_i2c_bdi, 1);
+	platform_device_register(&alc5623_dai);
 #endif
 
 #if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)
