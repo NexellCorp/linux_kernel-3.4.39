@@ -75,3 +75,4 @@ obj-$(CONFIG_TOUCHSCREEN_FT5X0X)	+= ft5x0x_ts.o
 obj-$(CONFIG_TOUCHSCREEN_AW5306)	+= aw5306_ts.o aw5306_userpara.o libs/libaw5306.obj
 obj-$(CONFIG_TOUCHSCREEN_GSLX680)	+= gslX680.o gsl_point_id
 obj-$(CONFIG_TOUCHSCREEN_ATMEL_MXT640T)	+= mxts.o mxts_patch.o
+obj-$(CONFIG_TOUCHSCREEN_GOODIX)	+= gt9xx.o gt9xx_update.o goodix_tool.o

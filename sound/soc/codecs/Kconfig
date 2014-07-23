@@ -175,6 +175,8 @@ config SND_SOC_ALC5623
        tristate
 config SND_SOC_ALC5632
 	tristate
+config SND_SOC_ALC5633
+	tristate
 
 config SND_SOC_CQ0093VC
 	tristate
