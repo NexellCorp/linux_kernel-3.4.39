@@ -77,12 +77,31 @@ static int ion_nxp_contig_heap_allocate(struct ion_heap *heap,
     return 0;
 }
 
-static void ion_nxp_contig_heap_free(struct ion_buffer *buffer)
+static int ion_nxp_reserve_heap_allocate(struct ion_heap *heap,
+                    struct ion_buffer *buffer,
+                    unsigned long len,
+                    unsigned long align,
+                    unsigned long flags)
+{
+    char *type = "ion-reserve"; /* CMA type */
+
+    buffer->priv_phys = cma_alloc(s_nxp_ion_dev, type, len, align);
+    if (IS_ERR_VALUE(buffer->priv_phys)) {
+        pr_err("%s error: %d\n", __func__, (int)buffer->priv_phys);
+        return (int)buffer->priv_phys;
+    }
+    buffer->flags = flags;
+
+    return 0;
+}
+
+
+static void ion_nxp_heap_free(struct ion_buffer *buffer)
 {
     cma_free(buffer->priv_phys);
 }
 
-static int ion_nxp_contig_heap_phys(struct ion_heap *heap,
+static int ion_nxp_heap_phys(struct ion_heap *heap,
                     struct ion_buffer *buffer,
                     ion_phys_addr_t *addr, size_t *len)
 {
@@ -91,7 +110,7 @@ static int ion_nxp_contig_heap_phys(struct ion_heap *heap,
     return 0;
 }
 
-static struct sg_table *ion_nxp_contig_heap_map_dma(struct ion_heap *heap,
+static struct sg_table *ion_nxp_heap_map_dma(struct ion_heap *heap,
                     struct ion_buffer *buffer)
 {
     struct sg_table *table;
@@ -111,7 +130,7 @@ static struct sg_table *ion_nxp_contig_heap_map_dma(struct ion_heap *heap,
     return table;
 }
 
-static void ion_nxp_contig_heap_unmap_dma(struct ion_heap *heap,
+static void ion_nxp_heap_unmap_dma(struct ion_heap *heap,
                     struct ion_buffer *buffer)
 {
     if (buffer->sg_table) {
@@ -119,18 +138,18 @@ static void ion_nxp_contig_heap_unmap_dma(struct ion_heap *heap,
     }
 }
 
-static void *ion_nxp_contig_heap_map_kernel(struct ion_heap *heap,
+static void *ion_nxp_heap_map_kernel(struct ion_heap *heap,
                     struct ion_buffer *buffer)
 {
     return phys_to_virt(buffer->priv_phys);
 }
 
-static void ion_nxp_contig_heap_unmap_kernel(struct ion_heap *heap,
+static void ion_nxp_heap_unmap_kernel(struct ion_heap *heap,
                     struct ion_buffer *buffer)
 {
 }
 
-static int ion_nxp_contig_heap_map_user(struct ion_heap *heap,
+static int ion_nxp_heap_map_user(struct ion_heap *heap,
                     struct ion_buffer *buffer,
                     struct vm_area_struct *vma)
 {
@@ -142,30 +161,54 @@ static int ion_nxp_contig_heap_map_user(struct ion_heap *heap,
 
 static struct ion_heap_ops contig_heap_ops = {
     .allocate   = ion_nxp_contig_heap_allocate,
-    .free       = ion_nxp_contig_heap_free,
-    .phys       = ion_nxp_contig_heap_phys,
-    .map_dma    = ion_nxp_contig_heap_map_dma,
-    .unmap_dma  = ion_nxp_contig_heap_unmap_dma,
-    .map_kernel = ion_nxp_contig_heap_map_kernel,
-    .unmap_kernel = ion_nxp_contig_heap_unmap_kernel,
-    .map_user   = ion_nxp_contig_heap_map_user,
+    .free       = ion_nxp_heap_free,
+    .phys       = ion_nxp_heap_phys,
+    .map_dma    = ion_nxp_heap_map_dma,
+    .unmap_dma  = ion_nxp_heap_unmap_dma,
+    .map_kernel = ion_nxp_heap_map_kernel,
+    .unmap_kernel = ion_nxp_heap_unmap_kernel,
+    .map_user   = ion_nxp_heap_map_user,
 };
 
-static struct ion_heap *ion_nxp_contig_heap_create(struct ion_platform_heap *unused)
+static struct ion_heap_ops reserve_heap_ops = {
+    .allocate   = ion_nxp_reserve_heap_allocate,
+    .free       = ion_nxp_heap_free,
+    .phys       = ion_nxp_heap_phys,
+    .map_dma    = ion_nxp_heap_map_dma,
+    .unmap_dma  = ion_nxp_heap_unmap_dma,
+    .map_kernel = ion_nxp_heap_map_kernel,
+    .unmap_kernel = ion_nxp_heap_unmap_kernel,
+    .map_user   = ion_nxp_heap_map_user,
+};
+
+static struct ion_heap *ion_nxp_heap_create(int type)
 {
     struct ion_heap *heap;
-
     heap = kzalloc(sizeof(struct ion_heap), GFP_KERNEL);
     if (!heap) {
         pr_err("%s: fail to kzalloc size(%d)\n", __func__, sizeof(struct ion_heap));
         return ERR_PTR(-ENOMEM);
     }
-    heap->ops  = &contig_heap_ops;
-    heap->type = ION_HEAP_TYPE_NXP_CONTIG;
+
+    switch (type) {
+    case ION_HEAP_TYPE_NXP_CONTIG:
+        heap->ops  = &contig_heap_ops;
+        heap->type = ION_HEAP_TYPE_NXP_CONTIG;
+        break;
+    case ION_HEAP_TYPE_NXP_RESERVE:
+        heap->ops  = &reserve_heap_ops;
+        heap->type = ION_HEAP_TYPE_NXP_RESERVE;
+        break;
+    default:
+        printk("%s: invalid type 0x%x\n", __func__, type);
+        kfree(heap);
+        return NULL;
+    }
+
     return heap;
 }
 
-static void ion_nxp_contig_heap_destroy(struct ion_heap *heap)
+static void ion_nxp_heap_destroy(struct ion_heap *heap)
 {
     kfree(heap);
 }
@@ -177,14 +220,17 @@ static void ion_nxp_contig_heap_destroy(struct ion_heap *heap)
 static struct ion_heap *_ion_heap_create(struct ion_platform_heap *heap_data)
 {
     struct ion_heap *heap = NULL;
+    int heap_type = heap_data->type;
 
     /*
      * current supported custom heap type
      *   - ION_HEAP_TYPE_NXP_CONTIG
      */
-    switch (heap_data->type) {
+    /*switch (heap_data->type) {*/
+    switch (heap_type) {
     case ION_HEAP_TYPE_NXP_CONTIG:
-        heap = ion_nxp_contig_heap_create(heap_data);
+    case ION_HEAP_TYPE_NXP_RESERVE:
+        heap = ion_nxp_heap_create(heap_data->type);
         break;
     default:
         return ion_heap_create(heap_data);
@@ -205,12 +251,17 @@ static struct ion_heap *_ion_heap_create(struct ion_platform_heap *heap_data)
 
 static void _ion_heap_destroy(struct ion_heap *heap)
 {
+    int heap_type;
+
     if (!heap)
         return;
 
-    switch (heap->type) {
+    heap_type = heap->type;
+
+    switch (heap_type) {
     case ION_HEAP_TYPE_NXP_CONTIG:
-        ion_nxp_contig_heap_destroy(heap);
+    case ION_HEAP_TYPE_NXP_RESERVE:
+        ion_nxp_heap_destroy(heap);
         break;
     default:
         ion_heap_destroy(heap);

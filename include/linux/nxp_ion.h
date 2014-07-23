@@ -4,12 +4,12 @@
 #include <linux/ion.h>
 
 enum {
-    /* fix for compile warning : -Wswtich */
     ION_HEAP_TYPE_NXP_CONTIG = ION_HEAP_TYPE_CUSTOM + 1,
-    // ION_HEAP_TYPE_NXP_CONTIG = ION_HEAP_TYPE_CUSTOM,
+    ION_HEAP_TYPE_NXP_RESERVE,
 };
 
-#define ION_HEAP_NXP_CONTIG_MASK    (1 << ION_HEAP_TYPE_NXP_CONTIG)
+#define ION_HEAP_NXP_CONTIG_MASK        (1 << ION_HEAP_TYPE_NXP_CONTIG)
+#define ION_HEAP_NXP_RESERVE_MASK       (1 << ION_HEAP_TYPE_NXP_RESERVE)
 
 /* for private ioctl */
 /* cmd */
