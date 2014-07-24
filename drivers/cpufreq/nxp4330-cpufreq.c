@@ -172,12 +172,12 @@ static void nxp4330_cpufreq_update(struct cpufreq_dvfs_data *dvfs)
 		nxp4330_cpufreq_voltage(freqs.new*1000);
 
 	for_each_cpu(freqs.cpu, dvfs->cpus)
-	cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
+		cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
 
 	rate = clk_set_rate(clk, freqs.new*1000);
 
 	for_each_cpu(freqs.cpu, dvfs->cpus)
-	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
 
 	/* post voltage */
 	if (freqs.old > freqs.new)
@@ -342,14 +342,14 @@ _cpu_freq:
 	if (freqs.new > freqs.old)
 		nxp4330_cpufreq_voltage(freqs.new*1000);
 
-	/* pre-change notification */
+	/* pre-change notification: each cpu */
 	for_each_cpu(freqs.cpu, policy->cpus)
 		cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
 
 	/* Change frequency */
 	rate = clk_set_rate(clk, freqs.new * 1000);
 
-	/* post change notification */
+	/* post change notification: each cpu */
 	for_each_cpu(freqs.cpu, policy->cpus)
 		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
 
