@@ -752,7 +752,7 @@ static CodecRegister Set_Codec_Reg_Init1[]=
 
 static void init_codec(struct i2c_client *client)
 {
-    int i;
+   /* int i;
     u16 PowerDownState=0;
     u32 Vender1,Vender2;
     ALC5625_write_IIC(client,0,0xffff);
@@ -781,7 +781,32 @@ static void init_codec(struct i2c_client *client)
 	//ALC5625_write_IICMask(client,RT5621_HP_OUT_VOL, RT_L_MUTE|RT_R_MUTE,RT_L_MUTE|RT_R_MUTE);	//Mute headphone right/left channel
 	//ALC5625_write_IICMask(client,RT5621_SPK_OUT_VOL,RT_L_MUTE|RT_R_MUTE,RT_L_MUTE|RT_R_MUTE);	//Mute Speaker right/left channel
 
-    printk("%s .....%d.......\n",__func__,__LINE__);
+    printk("%s .....%d.......\n",__func__,__LINE__);*/
+
+
+    ALC5625_write_IIC(client,0x3C,0x2000);
+    ALC5625_write_IIC(client,0x3E,0x8000);
+    ALC5625_write_IIC(client,0x1C,0x0740);
+    ALC5625_write_IIC(client,0x14,0x3F3F);
+    ALC5625_write_IIC(client,0x0C,0x0808);
+    ALC5625_write_IIC(client,0x04,0x8888);
+    ALC5625_write_IIC(client,0x02,0x8080);
+    ALC5625_write_IIC(client,0x34,0x8000);
+    ALC5625_write_IIC(client,0x36,0x066D);
+    ALC5625_write_IIC(client,0x40,0x5F00);
+
+    ALC5625_write_IIC(client,0x3A,0x8830);
+    ALC5625_write_IIC(client,0x3C,0xA7F7); //6734 class d
+    ALC5625_write_IIC(client,0x3E,0x960A);
+    ALC5625_write_IIC(client,0x34,0x8000);
+    ALC5625_write_IIC(client,0x0C,0x4808);
+    ALC5625_write_IIC(client,0x1C,0x8F00); //AF00 class d
+    ALC5625_write_IIC(client,0x02,0x0000);
+    ALC5625_write_IIC(client,0x04,0x0000);
+    ALC5625_write_IIC(client,0x10,0xF0E0);
+    ALC5625_write_IIC(client,0x22,0x0800); // mic1 boost +30db
+    ALC5625_write_IIC(client,0x14,0x3F3F);
+    ALC5625_write_IIC(client,0x12,0xF58B); //FF9F FB16 F58B
 
 }
 
@@ -1010,15 +1035,15 @@ static int alc5623_set_bias_level(struct snd_soc_codec *codec,
     printk("%s .....%d.......\n",__func__,__LINE__);
 	switch (level) {
 	case SND_SOC_BIAS_ON:
-        //init_codec(i2c);
-        ALC5625_write_IIC(i2c,RT5621_PWR_MANAG_ADD1,0xcd60);
+        init_codec(i2c);
+       /* ALC5625_write_IIC(i2c,RT5621_PWR_MANAG_ADD1,0xcd60);
         ALC5625_write_IIC(i2c,RT5621_PWR_MANAG_ADD2,0xf7ff);
         ALC5625_write_IIC(i2c,RT5621_PWR_MANAG_ADD3,0xf6ff);
         ALC5625_write_IICMask(i2c,RT5621_SPK_OUT_VOL		,~(RT_L_MUTE|RT_R_MUTE),RT_L_MUTE|RT_R_MUTE);	//Mute Speaker right/left channel
         ALC5625_write_IICMask(i2c,RT5621_HP_OUT_VOL 		,~(RT_L_MUTE|RT_R_MUTE),RT_L_MUTE|RT_R_MUTE);	//Mute headphone right/left channel
         //ALC5625_write_IICMask(client,RT5621_MONO_AUX_OUT_VOL,0,RT_L_MUTE|RT_R_MUTE);	//Mute Aux/Mono right/left channel
         ALC5625_write_IIC(i2c,RT5621_STEREO_DAC_VOL	,0x0808);	//Mute DAC to HP,Speaker,Mono Mixer
-        enable_power_depop(codec);
+        enable_power_depop(codec);*/
 		break;
 	case SND_SOC_BIAS_PREPARE:
 		break;
