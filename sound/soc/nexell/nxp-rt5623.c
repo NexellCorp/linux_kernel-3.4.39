@@ -126,14 +126,14 @@ static int alc5623_hw_params(struct snd_pcm_substream *substream,
 	int ret = 0;
 
 //	printk("%s\n", __func__);
-	ret = snd_soc_dai_set_sysclk(codec_dai, 0, freq, SND_SOC_CLOCK_IN);
-	if (0 > ret)
-		return ret;
+//	ret = snd_soc_dai_set_sysclk(codec_dai, 0, freq, SND_SOC_CLOCK_IN);
+//	if (0 > ret)
+//		return ret;
 
-	ret = snd_soc_dai_set_fmt(codec_dai, fmt);
-	if (0 > ret)
-		return ret;
-    
+//	ret = snd_soc_dai_set_fmt(codec_dai, fmt);
+//	if (0 > ret)
+//		return ret;
+ //  
 //    printk("%s ....line:%d....ret :%d...\n",__func__,__LINE__,ret);
 	return ret;
 }
@@ -149,12 +149,6 @@ static int alc5623_startup(struct snd_pcm_substream *substream)
 
 	pr_debug("%s\n", __func__);
 
-	/* set jack detect gpio2 */
-	//snd_soc_update_bits(codec, WM8978_JACK_DETECT_CONTROL_1, 0x30, 0x10);
-	//snd_soc_update_bits(codec, WM8978_JACK_DETECT_CONTROL_1, 0x40, 0x00);	// disable jack detection
-
-	//if (stream == SNDRV_PCM_STREAM_CAPTURE)
-	//	snd_soc_update_bits(codec, WM8978_POWER_MANAGEMENT_1, 0x10, 0x10);	// MICBIASEN
 
 	if(invert)
 		level = !level;
@@ -185,10 +179,6 @@ static void alc5623_shutdown(struct snd_pcm_substream *substream)
 	struct snd_soc_codec *codec = rtd->codec;
 	int stream = substream->stream;
 
-//	printk("%s\n", __func__);
-
-	//if (stream == SNDRV_PCM_STREAM_CAPTURE)
-	//	snd_soc_update_bits(codec, WM8978_POWER_MANAGEMENT_1, 0x10, 0x00);	// MICBIASEN
 
     if (stream == SNDRV_PCM_STREAM_PLAYBACK)
 {
