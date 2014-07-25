@@ -131,7 +131,13 @@
  * MAX(Physical+Virtual) Interrupt Number
  */
 #define IRQ_SYSTEM_END			IRQ_GIC_END
-#define IRQ_SYSTEM_RESERVED		100					// NXE1100 PMIC
+
+#if defined (CONFIG_REGULATOR_NXE2000)
+#define	IRQ_RESERVED_OFFSET		72		// refer NXE2000_NR_IRQS <linux/mfd/nxe2000.h>
+#else
+#define	IRQ_RESERVED_OFFSET		0
+#endif
+#define IRQ_SYSTEM_RESERVED		IRQ_RESERVED_OFFSET
 
 #define IRQ_TOTAL_MAX_COUNT  	(IRQ_SYSTEM_END + IRQ_SYSTEM_RESERVED)
 
