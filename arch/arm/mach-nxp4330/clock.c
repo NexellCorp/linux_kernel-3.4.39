@@ -399,6 +399,12 @@ static inline void core_update_rate(int pll)
 		return;
 	}
 
+	/* PLL rate */
+	cdev = clk_dev_get(pll);
+	clk  = &cdev->clk;
+	clk->rate = core_hz[pll] = PLLN_RATE (pll);
+
+	/* PLL connected rate */
 	head = &clk_core[pll].list;
 	list_for_each(list, head) {
 		core = container_of(list, struct clk_core, list);
@@ -423,7 +429,7 @@ static inline void core_update_rate(int pll)
 		case 14: clk->rate = core_hz[14] = MPG_PCLK_RATE(14); break;	// MPG PCLK
 		};
 
-		pr_debug("clk: pll.%d - %s update %u khz\n", pll, cdev->name, clk->rate/1000);
+		pr_debug("clk : pll.%d - %s update %u khz\n", pll, cdev->name, clk->rate/1000);
 	}
 }
 
@@ -485,29 +491,29 @@ static void core_clock_init(void)
 	core_hz[13] = MPG_BCLK_RATE(13); 	// MPG BCLK
 	core_hz[14] = MPG_PCLK_RATE(14); 	// MPG PCLK
 
-	/* CPU */
+	/* CPU : FCLK, HCLK */
 	pll = pll_get_dvo(0);
 	list_add_tail(&clk_core[4].list, &clk_core[pll].list);
 	list_add_tail(&clk_core[8].list, &clk_core[pll].list);
 
-	/* BUS */
-	pll = pll_get_dvo (1);
+	/* BUS : BCLK, PCLK  */
+	pll = pll_get_dvo(1);
 	list_add_tail(&clk_core[6].list, &clk_core[pll].list);
 	list_add_tail(&clk_core[7].list, &clk_core[pll].list);
 
-	/* MEM */
-	pll = pll_get_dvo (2);
+	/* MEM : MCLK, DCLK, BCLK, PCLK */
+	pll = pll_get_dvo(2);
 	list_add_tail(&clk_core[ 5].list, &clk_core[pll].list);
 	list_add_tail(&clk_core[ 9].list, &clk_core[pll].list);
 	list_add_tail(&clk_core[10].list, &clk_core[pll].list);
 	list_add_tail(&clk_core[11].list, &clk_core[pll].list);
 
-	/* G3D */
-	pll = pll_get_dvo (3);
+	/* G3D : BCLK */
+	pll = pll_get_dvo(3);
 	list_add_tail(&clk_core[12].list, &clk_core[pll].list);
 
-	/* MPEG */
-	pll = pll_get_dvo (4);
+	/* MPEG : BCLK, PCLK */
+	pll = pll_get_dvo(4);
 	list_add_tail(&clk_core[13].list, &clk_core[pll].list);
 	list_add_tail(&clk_core[14].list, &clk_core[pll].list);
 }

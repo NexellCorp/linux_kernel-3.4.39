@@ -73,10 +73,15 @@ void __init nxp_cma_region_reserve(struct cma_region *regions, const char *map)
             pr_debug("NXP/CMA: "
                     "Reserved 0x%08x/0x%08x for '%s'\n",
                     reg->start, reg->size, reg->name);
+            printk("NXP/CMA: "
+                    "Reserved 0x%08x/0x%08x for '%s'\n",
+                    reg->start, reg->size, reg->name);
 
             if (0 == cma_early_region_register(reg)) {
                 paddr_last = min(paddr, paddr_last);
                 pr_debug("NXP/CMA: success register cma region for '%s'\n",
+                        reg->name);
+                printk("NXP/CMA: success register cma region for '%s'\n",
                         reg->name);
             } else {
                 pr_err("NXP/CMA: failed to cma_early_region_register for '%s'\n",

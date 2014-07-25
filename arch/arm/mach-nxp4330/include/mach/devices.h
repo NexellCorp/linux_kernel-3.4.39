@@ -191,8 +191,8 @@ struct nxp_cpufreq_plat_data {
     long max_retention;     /* unit msec */
     long rest_cpufreq;      /* unit Khz */
     long rest_retention;    /* unit msec */
-    long hotplug_trigger_out;
-    long hotplug_trigger_in;
+	char *supply_name;		/* voltage regulator name */
+	long supply_delay_us;
 };
 
 /*
@@ -288,5 +288,17 @@ struct nxp_rfkill_plat_data {
  *  ram console
  */
 extern int __init persistent_ram_console_reserve(void);
+
+/*
+ *  cpufreq limit
+ */
+struct nxp_cpufreq_limit_data {
+    char **limit_name;
+    int limit_num;
+    long aval_max_freq;     /* unit Khz */
+    long op_max_freq; 		/* unit Khz */
+    long sched_duration;	/* unit ms */
+    long sched_timeout;		/* unit ms */
+};
 
 #endif    /* __DEVICES_H__ */

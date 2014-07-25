@@ -27,14 +27,12 @@
 #include <mach/platform.h>
 #include "nxp-i2s.h"
 
-#include "../codecs/rt5631.h"
+//#define HP_DET
 
 static char str_dai_name[16] = DEV_NAME_I2S;
 static int (*cpu_resume_fn)(struct snd_soc_dai *dai) = NULL;
-static struct snd_soc_codec *rt5631 = NULL;
-static int codec_bias_level = 0;
 
-static int rt5631_hw_params(struct snd_pcm_substream *substream,
+static int alc5633_hw_params(struct snd_pcm_substream *substream,
 				struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
@@ -54,11 +52,9 @@ static int rt5631_hw_params(struct snd_pcm_substream *substream,
 	return ret;
 }
 
-static int rt5631_resume_pre(struct snd_soc_card *card)
+static int alc5633_resume_pre(struct snd_soc_card *card)
 {
 	struct snd_soc_dai *cpu_dai = card->rtd->cpu_dai;
-    struct snd_soc_codec *codec = rt5631;
-
 	int ret = 0;
 	PM_DBGOUT("+%s\n", __func__);
 
@@ -74,41 +70,28 @@ static int rt5631_resume_pre(struct snd_soc_card *card)
 		ret = cpu_resume_fn(cpu_dai);
 
 	PM_DBGOUT("-%s\n", __func__);
-    codec_bias_level = codec->dapm.bias_level;
-
 	return ret;
 }
 
-static int rt5631_resume_post(struct snd_soc_card *card)
-{
-    struct snd_soc_codec *codec = rt5631;
-    PM_DBGOUT("%s BAIAS=%d, PRE=%d\n", __func__, codec->dapm.bias_level, codec_bias_level);
-
-    if (SND_SOC_BIAS_OFF != codec_bias_level)
-        codec->driver->resume(codec);
-
-    return 0;
-}
-
-static struct snd_soc_ops rt5631_ops = {
-	.hw_params 		= rt5631_hw_params,
+static struct snd_soc_ops alc5633_ops = {
+	.hw_params 		= alc5633_hw_params,
 };
 
-static int rt5631_spk_event(struct snd_soc_dapm_widget *w,
+static int alc5633_spk_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *k, int event)
 {
 	pr_debug("%s:%d (event:%d)\n", __func__, __LINE__, event);
 	return 0;
 }
 
-/* rt5631 machine dapm widgets */
-static const struct snd_soc_dapm_widget rt5631_dapm_widgets[] = {
-	SND_SOC_DAPM_SPK("Ext Spk", rt5631_spk_event),
+/* alc5633 machine dapm widgets */
+static const struct snd_soc_dapm_widget alc5633_dapm_widgets[] = {
+	SND_SOC_DAPM_SPK("Ext Spk", alc5633_spk_event),
 	SND_SOC_DAPM_HP("Headphone Jack", NULL),
 };
 
 /* Corgi machine audio map (connections to the codec pins) */
-static const struct snd_soc_dapm_route rt5631_audio_map[] = {
+static const struct snd_soc_dapm_route alc5633_audio_map[] = {
 	/* headphone connected to HPOL, HPOR */
 	{"Headphone Jack", NULL, "HPOL"},
 	{"Headphone Jack", NULL, "HPOR"},
@@ -118,7 +101,7 @@ static const struct snd_soc_dapm_route rt5631_audio_map[] = {
 	{"Ext Spk", NULL, "SPOL"},
 };
 
-#if defined(CONFIG_PLAT_NXP4330_SECRET) || !defined(CONFIG_ANDROID)
+#ifdef HP_DET
 /* Headphones jack detection DAPM pin */
 static struct snd_soc_jack_pin jack_pins[] = {
 	{
@@ -131,7 +114,6 @@ static struct snd_soc_jack_pin jack_pins[] = {
 		.invert	= 1,				// when insert disalbe
 	},
 };
-#endif
 
 /* Headphones jack detection GPIO */
 static struct snd_soc_jack_gpio jack_gpio = {
@@ -142,21 +124,21 @@ static struct snd_soc_jack_gpio jack_gpio = {
 };
 
 static struct snd_soc_jack hp_jack;
+#endif
 
-static int rt5631_dai_init(struct snd_soc_pcm_runtime *rtd)
+static int alc5633_dai_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_codec *codec = rtd->codec;
 	struct snd_soc_dapm_context *dapm = &codec->dapm;
+#ifdef HP_DET
 	struct snd_soc_jack_gpio *jack = &jack_gpio;
+#endif
 	int ret;
 
-	rt5631 = codec;
-
 	/* set endpoints to not connected */
-	snd_soc_dapm_nc_pin(dapm, "AUXO1");
-	snd_soc_dapm_nc_pin(dapm, "AUXO2");
-	snd_soc_dapm_nc_pin(dapm, "MONO");
+	snd_soc_dapm_nc_pin(dapm, "AUXO");
 
+#ifdef HP_DET
 	if (NULL == jack->name)
 		return 0;
 
@@ -165,78 +147,65 @@ static int rt5631_dai_init(struct snd_soc_pcm_runtime *rtd)
 				SND_JACK_HEADPHONE, &hp_jack);
 	if (ret)
 		return ret;
-#if defined(CONFIG_PLAT_NXP4330_SECRET) || !defined(CONFIG_ANDROID)
-	printk("==enable jack switch for linux\n==");
+
 	ret = snd_soc_jack_add_pins(&hp_jack, ARRAY_SIZE(jack_pins), jack_pins);
 	if (ret)
 		return ret;
 
-	/* to power up rt5631 (HP Depop: hp_event) */
+	/* to power up alc5633 (HP Depop: hp_event) */
 	snd_soc_dapm_enable_pin(dapm, "Headphone Jack");
 	snd_soc_dapm_sync(dapm);
-#endif
+
 	ret = snd_soc_jack_add_gpios(&hp_jack, 1, jack);
 	if (ret)
 		printk("Fail, register audio jack detect, io [%d]...\n", jack->gpio);
+#endif
 
 	return 0;
 }
 
-static struct snd_soc_dai_link rt5631_dai_link = {
-	.name 			= "ASOC-RT5631",
-	.stream_name 	= "rt5631 HiFi",
+static struct snd_soc_dai_link alc5633_dai_link = {
+	.name 		= "ASOC-ALC5633",
+	.stream_name 	= "alc5633 HiFi",
 	.cpu_dai_name 	= str_dai_name,			/* nxp_snd_i2s_driver name */
 	.platform_name  = DEV_NAME_PCM,			/* nxp_snd_pcm_driver name */
-	.codec_dai_name = "rt5631-hifi",		/* rt5631_dai's name */
-	.codec_name 	= "rt5631.0-001a",		/* rt5631_i2c_driver name + '.' + bus + '-' + address(7bit) */
-	.ops 			= &rt5631_ops,
+	.codec_dai_name = "alc5633-hifi",		/* alc5633_dai's name */
+	.codec_name 	= "alc5633.0-001c",		/* alc5633_i2c_driver name + '.' + bus + '-' + address(7bit) */
+	.ops 		= &alc5633_ops,
 	.symmetric_rates = 1,
-	.init		= rt5631_dai_init,
+	.init		= alc5633_dai_init,
 };
 
-static struct snd_soc_card rt5631_card = {
-	.name 				= "I2S-RT5631",		/* proc/asound/cards */
+static struct snd_soc_card alc5633_card = {
+	.name 				= "I2S-ALC5633",		/* proc/asound/cards */
 	.owner 				= THIS_MODULE,
-	.dai_link 			= &rt5631_dai_link,
+	.dai_link 			= &alc5633_dai_link,
 	.num_links 			= 1,
-	.resume_pre			= &rt5631_resume_pre,
-	.resume_post		= &rt5631_resume_post,
-	.dapm_widgets 		= rt5631_dapm_widgets,
-	.num_dapm_widgets 	= ARRAY_SIZE(rt5631_dapm_widgets),
-	.dapm_routes 		= rt5631_audio_map,
-	.num_dapm_routes 	= ARRAY_SIZE(rt5631_audio_map),
+	.resume_pre			= &alc5633_resume_pre,
+	.dapm_widgets 		= alc5633_dapm_widgets,
+	.num_dapm_widgets 	= ARRAY_SIZE(alc5633_dapm_widgets),
+	.dapm_routes 		= alc5633_audio_map,
+	.num_dapm_routes 	= ARRAY_SIZE(alc5633_audio_map),
 };
 
 /*
  * codec driver
  */
-static int rt5631_probe(struct platform_device *pdev)
+static int alc5633_probe(struct platform_device *pdev)
 {
 	struct nxp_snd_dai_plat_data *plat = pdev->dev.platform_data;
-	struct snd_soc_card *card = &rt5631_card;
-	struct snd_soc_jack_gpio *jack = &jack_gpio;
+	struct snd_soc_card *card = &alc5633_card;
 	struct snd_soc_dai_driver *i2s_dai = NULL;
+#ifdef HP_DET
+	struct snd_soc_jack_gpio *jack = &jack_gpio;
 	struct nxp_snd_jack_pin *hpin = NULL;
+#endif
 	unsigned int rates = 0, format = 0;
 	int ret;
 
 	/* set I2S name */
 	if (plat)
 		sprintf(str_dai_name, "%s.%d", DEV_NAME_I2S, plat->i2s_ch);
-
-	if (plat) {
-		rates = plat->sample_rate;
-		format = plat->pcm_format;
-		hpin = &plat->hp_jack;
-		if (hpin->support) {
-			jack->gpio = hpin->detect_io;
-			jack->invert = hpin->detect_level ?  false : true;
-			jack->debounce_time = hpin->debounce_time ?
-					hpin->debounce_time : 200;
-		} else {
-			jack->name = NULL;
-		}
-	}
 
 	card->dev = &pdev->dev;
 	ret = snd_soc_register_card(card);
@@ -245,12 +214,30 @@ static int rt5631_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+	if (plat) {
+		rates = plat->sample_rate;
+		format = plat->pcm_format;
+#ifdef HP_DET
+		hpin = &plat->hp_jack;
+		if (hpin->support) {
+			jack->gpio = hpin->detect_io;
+			jack->invert = hpin->detect_level ?  false : true;
+			jack->debounce_time = hpin->debounce_time ?
+					hpin->debounce_time : 200;
+		} 
+		else 
+		{
+			jack->name = NULL;
+		}
+#endif
+	}
+
 	if (card->rtd) {
 		struct snd_soc_dai *cpu_dai = card->rtd->cpu_dai;
 		if (cpu_dai)
 			i2s_dai = cpu_dai->driver;
 	}
-	pr_debug("rt5631-dai: register card %s -> %s\n",
+	pr_debug("alc5633-dai: register card %s -> %s\n",
 		card->dai_link->codec_dai_name, card->dai_link->cpu_dai_name);
 
 	if (NULL == i2s_dai)
@@ -280,24 +267,24 @@ static int rt5631_probe(struct platform_device *pdev)
 	return ret;
 }
 
-static int rt5631_remove(struct platform_device *pdev)
+static int alc5633_remove(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = platform_get_drvdata(pdev);
 	snd_soc_unregister_card(card);
 	return 0;
 }
 
-static struct platform_driver rt5631_driver = {
+static struct platform_driver alc5633_driver = {
 	.driver		= {
-		.name	= "rt5631-audio",
+		.name	= "alc5633-audio",
 		.owner	= THIS_MODULE,
 		.pm 	= &snd_soc_pm_ops,	/* for suspend */
 	},
-	.probe		= rt5631_probe,
-	.remove		= __devexit_p(rt5631_remove),
+	.probe		= alc5633_probe,
+	.remove		= __devexit_p(alc5633_remove),
 };
-module_platform_driver(rt5631_driver);
+module_platform_driver(alc5633_driver);
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound codec-rt5631 driver for the Nexell");
+MODULE_DESCRIPTION("Sound codec-alc5633 driver for the Nexell");
 MODULE_LICENSE("GPL");

@@ -915,4 +915,12 @@ config TOUCHSCREEN_SMAC
 
 	  If unsure, say N.
 
+config TOUCHSCREEN_GOODIX
+        tristate "GOODIX touchscreen"
+        depends on I2C
+        default n
+        help
+          Say Y here if you have the GOODIX touchscreen.
+
+          If unsure, say N.
 endif

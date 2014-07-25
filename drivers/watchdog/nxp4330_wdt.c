@@ -184,7 +184,7 @@ static int nxp4330wdt_set_heartbeat(struct watchdog_device *wdd, unsigned timeou
 	unsigned long wtcon;
 
 
-	if (timeout < 1| timeout > CONFIG_NXP4330_WATCHDOG_MAX_TIME){
+	if ((timeout < 1) || (timeout > CONFIG_NXP4330_WATCHDOG_MAX_TIME)){
 		dev_err(wdt_dev, "timeout %d invalid value\n", timeout);
 		return -EINVAL;
 	}
@@ -266,7 +266,7 @@ static int nxp4330wdt_bclk_dfs_transition(struct notifier_block *nb,
 {
 	int ret;
 
-	DBG("%s val=%lu,data=%lu WDT_STA=%d\n", __func__, val, *(uint32_t *)data, (bool)nxp4330wdt_is_running());
+	DBG("%s val=%lu,data=%u WDT_STA=%d\n", __func__, val, *(uint32_t *)data, (bool)nxp4330wdt_is_running());
 
 	wdt_freq = (*(uint32_t *)data)/2;
 
