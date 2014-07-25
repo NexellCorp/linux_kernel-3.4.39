@@ -131,7 +131,7 @@
  * MAX(Physical+Virtual) Interrupt Number
  */
 #define IRQ_SYSTEM_END			IRQ_GIC_END
-#define IRQ_SYSTEM_RESERVED		55					// NXE1100 PMIC
+#define IRQ_SYSTEM_RESERVED		100					// NXE1100 PMIC
 
 #define IRQ_TOTAL_MAX_COUNT  	(IRQ_SYSTEM_END + IRQ_SYSTEM_RESERVED)
 
