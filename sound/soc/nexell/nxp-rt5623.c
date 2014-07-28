@@ -89,6 +89,7 @@ static int alc5623_jack_status_check(void)
 		/***************************************/
 		NXL_JackInOut = 0x00; // 1: jack In
 #endif
+        snd_soc_update_bits(codec, 0x04, 0x8080, 0x8080);
 		gpio_direction_output(AUDIO_AMP_POWER, 1);
 	} else {
 #if defined(CONFIG_PLAT_NXP4330_NBOX)
@@ -97,6 +98,7 @@ static int alc5623_jack_status_check(void)
 		/***************************************/
 		NXL_JackInOut = 0x02; // 1: jack In
 #endif
+        snd_soc_update_bits(codec, 0x04, 0x8080, 0);
 		gpio_direction_output(AUDIO_AMP_POWER, 0);
 	}
 

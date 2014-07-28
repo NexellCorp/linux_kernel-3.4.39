@@ -800,13 +800,14 @@ static void init_codec(struct i2c_client *client)
     ALC5625_write_IIC(client,0x3E,0x960A);
     ALC5625_write_IIC(client,0x34,0x8000);
     ALC5625_write_IIC(client,0x0C,0x4808);
-    ALC5625_write_IIC(client,0x1C,0x8F00); //AF00 class d
+    ALC5625_write_IIC(client,0x1C,0x9F00); //AF00 class d
     ALC5625_write_IIC(client,0x02,0x0000);
     ALC5625_write_IIC(client,0x04,0x0000);
     ALC5625_write_IIC(client,0x10,0xF0E0);
     ALC5625_write_IIC(client,0x22,0x0800); // mic1 boost +30db
     ALC5625_write_IIC(client,0x14,0x3F3F);
     ALC5625_write_IIC(client,0x12,0xF58B); //FF9F FB16 F58B
+    //ALC5625_write_IIC(client,0x5A,0x8880);
 
 }
 
