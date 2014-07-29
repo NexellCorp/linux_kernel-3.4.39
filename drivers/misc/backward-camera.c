@@ -11,6 +11,10 @@
 #include <mach/soc.h>
 #include <mach/nxp-backward-camera.h>
 
+#ifndef MLC_LAYER_RGB_OVERLAY
+#define MLC_LAYER_RGB_OVERLAY 0
+#endif
+
 static struct nxp_backward_camera_context {
     struct nxp_backward_camera_platform_data *plat_data;
     int irq;
@@ -47,16 +51,32 @@ static void mlc_stop(int module)
     NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
 }
 
+static void mlc_overlay_run(int module)
+{
+    u32 layer = MLC_LAYER_RGB_OVERLAY;
+    NX_MLC_SetLayerEnable(module, layer, CTRUE);
+    NX_MLC_SetDirtyFlag(module, layer);
+}
+
+static void mlc_overlay_stop(int module)
+{
+    u32 layer = MLC_LAYER_RGB_OVERLAY;
+    NX_MLC_SetLayerEnable(module, layer, CFALSE);
+    NX_MLC_SetDirtyFlag(module, layer);
+}
+
 static void _turn_on(struct nxp_backward_camera_context *me)
 {
     printk("%s\n", __func__);
     vip_run(me->plat_data->vip_module_num);
+    mlc_overlay_run(me->plat_data->mlc_module_num);
     mlc_run(me->plat_data->mlc_module_num);
 }
 
 static void _turn_off(struct nxp_backward_camera_context *me)
 {
     printk("%s\n", __func__);
+    mlc_overlay_stop(me->plat_data->mlc_module_num);
     mlc_stop(me->plat_data->mlc_module_num);
     vip_stop(me->plat_data->vip_module_num);
 }
@@ -313,7 +333,8 @@ static void _mlc_video_set_param(int module, struct nxp_backward_camera_platform
             (CBOOL)hf, (CBOOL)hf, (CBOOL)vf, (CBOOL)vf);
     NX_MLC_SetPosition(module, MLC_LAYER_VIDEO,
             0, 0, dstw - 1, dsth - 1);
-    NX_MLC_SetLayerPriority(module, 0);
+    /*NX_MLC_SetLayerPriority(module, 0);*/
+    NX_MLC_SetLayerPriority(module, 1);
     NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
     printk("%s exit\n", __func__);
 }
@@ -328,13 +349,74 @@ static void _mlc_video_set_addr(int module, u32 lu_a, u32 cb_a, u32 cr_a, u32 lu
     printk("%s exit\n", __func__);
 }
 
-/*static void _mlc_video_run(int module)*/
-/*{*/
-	/*NX_MLC_SetTopDirtyFlag(module);*/
-    /*NX_MLC_SetLayerEnable(module, MLC_LAYER_VIDEO, CTRUE);*/
-    /*NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);*/
-    /*printk("%s exit\n", __func__);*/
-/*}*/
+static inline u32 _get_pixel_byte(u32 nxp_rgb_format)
+{
+    switch (nxp_rgb_format) {
+        case NX_MLC_RGBFMT_R5G6B5:
+        case NX_MLC_RGBFMT_B5G6R5:
+        case NX_MLC_RGBFMT_X1R5G5B5:
+        case NX_MLC_RGBFMT_X1B5G5R5:
+        case NX_MLC_RGBFMT_X4R4G4B4:
+        case NX_MLC_RGBFMT_X4B4G4R4:
+        case NX_MLC_RGBFMT_X8R3G3B2:
+        case NX_MLC_RGBFMT_X8B3G3R2:
+        case NX_MLC_RGBFMT_A1R5G5B5:
+        case NX_MLC_RGBFMT_A1B5G5R5:
+        case NX_MLC_RGBFMT_A4R4G4B4:
+        case NX_MLC_RGBFMT_A4B4G4R4:
+        case NX_MLC_RGBFMT_A8R3G3B2:
+        case NX_MLC_RGBFMT_A8B3G3R2:
+            return 2;
+
+        case NX_MLC_RGBFMT_R8G8B8:
+        case NX_MLC_RGBFMT_B8G8R8:
+            return 3;
+
+        case NX_MLC_RGBFMT_A8R8G8B8:
+        case NX_MLC_RGBFMT_A8B8G8R8:
+            return 4;
+
+        default:
+            pr_err("%s: invalid nxp_rgb_format(0x%x)\n", __func__, nxp_rgb_format);
+            return 0;
+    }
+}
+
+static void _mlc_rgb_overlay_set_param(int module, struct nxp_backward_camera_platform_data *param)
+{
+    u32 format = param->rgb_format;
+    u32 pixelbyte = _get_pixel_byte(format);
+    u32 stride = param->width * pixelbyte;
+    u32 layer = MLC_LAYER_RGB_OVERLAY;
+    CBOOL EnAlpha = CFALSE;
+
+    if (format == MLC_RGBFMT_A1R5G5B5 ||
+        format == MLC_RGBFMT_A1B5G5R5 ||
+        format == MLC_RGBFMT_A4R4G4B4 ||
+        format == MLC_RGBFMT_A4B4G4R4 ||
+        format == MLC_RGBFMT_A8R3G3B2 ||
+        format == MLC_RGBFMT_A8B3G3R2 ||
+        format == MLC_RGBFMT_A8R8G8B8 ||
+        format == MLC_RGBFMT_A8B8G8R8)
+        EnAlpha = CTRUE;
+
+    NX_MLC_SetColorInversion(module, layer, CFALSE, 0);
+    NX_MLC_SetAlphaBlending(module, layer, EnAlpha, 0);
+    NX_MLC_SetFormatRGB(module, layer, (NX_MLC_RGBFMT)format);
+    NX_MLC_SetRGBLayerInvalidPosition(module, layer, 0, 0, 0, 0, 0, CFALSE);
+    NX_MLC_SetRGBLayerInvalidPosition(module, layer, 1, 0, 0, 0, 0, CFALSE);
+    NX_MLC_SetPosition(module, layer, 0, 0, param->width-1, param->height-1);
+
+    NX_MLC_SetRGBLayerStride (module, layer, pixelbyte, stride);
+    NX_MLC_SetRGBLayerAddress(module, layer, param->rgb_addr);
+    NX_MLC_SetDirtyFlag(module, layer);
+}
+
+static void _mlc_rgb_overlay_draw(int module, struct nxp_backward_camera_platform_data *param)
+{
+    if (param->draw_rgb_overlay)
+        param->draw_rgb_overlay(param);
+}
 
 static void _resume_work(struct work_struct *work)
 {
@@ -355,6 +437,9 @@ static void _resume_work(struct work_struct *work)
 
     _mlc_video_set_param(mlc_module_num, me->plat_data);
     _mlc_video_set_addr(mlc_module_num, lu_addr, cb_addr, cr_addr, lu_stride, cb_stride, cr_stride);
+
+    _mlc_rgb_overlay_set_param(mlc_module_num, me->plat_data);
+    _mlc_rgb_overlay_draw(mlc_module_num, me->plat_data);
 
     _decide(me);
     printk("%s: exit\n", __func__);

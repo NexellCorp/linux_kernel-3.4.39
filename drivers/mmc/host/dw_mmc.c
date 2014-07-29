@@ -2742,6 +2742,7 @@ EXPORT_SYMBOL(dw_mci_suspend);
 
 int dw_mci_resume(struct dw_mci *host)
 {
+
 	int ret = 0;
 #ifndef MMC_RESUME_WORK_QUEUE
 	int i;
@@ -2784,14 +2785,24 @@ int dw_mci_resume(struct dw_mci *host)
 #ifndef MMC_RESUME_WORK_QUEUE
 	for (i = 0; i < host->num_slots; i++) {
 		struct dw_mci_slot *slot = host->slot[i];
+		struct mmc_host *mmc = slot->mmc;
+		int present =0;
 		if (!slot)
 			continue;
+		if (host->pdata->cd_type == DW_MCI_CD_EXTERNAL){
+			if(dw_mci_get_cd(mmc)){
+			set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+			slot->last_detect_state = 1;
+
+			dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
+			dw_mci_setup_bus(slot, true);
+			}
+		}
 
 		if (slot->mmc->pm_flags & MMC_PM_KEEP_POWER) {
 			dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
 			dw_mci_setup_bus(slot, true);
 		}
-
 		ret = mmc_resume_host(host->slot[i]->mmc);
 		if (ret < 0)
 			return ret;

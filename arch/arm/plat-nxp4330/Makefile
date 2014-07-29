@@ -47,6 +47,10 @@ ifeq ($(CONFIG_PLAT_NXP4330_KAR),y)
 PLATBOARD :=kar
 endif
 
+ifeq ($(CONFIG_PLAT_NXP4330_MOON),y)
+PLATBOARD :=moon
+endif
+
 #
 # Build options
 #

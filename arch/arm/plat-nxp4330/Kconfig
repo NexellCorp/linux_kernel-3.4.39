@@ -72,6 +72,11 @@ choice
 		help
    	 		Support for the kar board.
 
+    config PLAT_NXP4330_MOON
+		bool "MOON: Linux CCTV board"
+		help
+   	 		Support for the moon board.
+
 endchoice
 
 #

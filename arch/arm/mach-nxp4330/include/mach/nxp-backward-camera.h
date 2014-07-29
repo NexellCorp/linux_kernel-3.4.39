@@ -45,6 +45,13 @@ struct nxp_backward_camera_platform_data {
     u32 lu_stride;
     u32 cb_stride;
     u32 cr_stride;
+
+    u32 rgb_format;
+    u32 width;
+    u32 height;
+    u32 rgb_addr;
+
+    void (*draw_rgb_overlay)(struct nxp_backward_camera_platform_data *);
 };
 
 #endif
