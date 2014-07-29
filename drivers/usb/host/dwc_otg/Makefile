@@ -4,7 +4,7 @@
 
 ifneq ($(KERNELRELEASE),)
 
-# Use the BUS_INTERFACE variable to compile the software for either 
+# Use the BUS_INTERFACE variable to compile the software for either
 # PCI(PCI_INTERFACE) or LM(LM_INTERFACE) bus.
 ifeq ($(BUS_INTERFACE),)
 #	BUS_INTERFACE = -DPCI_INTERFACE
@@ -12,23 +12,24 @@ ifeq ($(BUS_INTERFACE),)
 	BUS_INTERFACE = -DPLATFORM_INTERFACE
 endif
 
-#EXTRA_CFLAGS	+= -DDEBUG
-#EXTRA_CFLAGS	+= -DDWC_OTG_DEBUGLEV=1 # reduce common debug msgs
+#ccflags-y	+= -DDEBUG
+#ccflags-y	+= -DDWC_OTG_DEBUGLEV=1 # reduce common debug msgs
+ccflags-y	+= -DCFG_USE_FREE_LIST
 
 # Use one of the following flags to compile the software in host-only or
 # device-only mode.
-#EXTRA_CFLAGS	+= -DDWC_HOST_ONLY
-#EXTRA_CFLAGS	+= -DDWC_DEVICE_ONLY
+#ccflags-y	+= -DDWC_HOST_ONLY
+#ccflags-y	+= -DDWC_DEVICE_ONLY
 
-EXTRA_CFLAGS	+= -Dlinux -DDWC_HS_ELECT_TST
-#EXTRA_CFLAGS	+= -DDWC_EN_ISOC
-EXTRA_CFLAGS	+= -I$(obj)/../dwc_common_port
-#EXTRA_CFLAGS	+= -I$(PORTLIB)
-EXTRA_CFLAGS	+= -DDWC_LINUX
-EXTRA_CFLAGS	+= $(CFI)
-EXTRA_CFLAGS	+= $(BUS_INTERFACE)
-#EXTRA_CFLAGS	+= -DDWC_DEV_SRPCAP
-#EXTRA_CFLAGS	+= -DPARTIAL_POWER_DOWN
+ccflags-y	+= -Dlinux -DDWC_HS_ELECT_TST
+#ccflags-y	+= -DDWC_EN_ISOC
+ccflags-y	+= -I$(obj)/../dwc_common_port
+#ccflags-y	+= -I$(PORTLIB)
+ccflags-y	+= -DDWC_LINUX
+ccflags-y	+= $(CFI)
+ccflags-y	+= $(BUS_INTERFACE)
+#ccflags-y	+= -DDWC_DEV_SRPCAP
+#ccflags-y	+= -DPARTIAL_POWER_DOWN
 
 obj-$(CONFIG_USB_DWCOTG) += dwc_otg.o
 
@@ -46,7 +47,7 @@ kernrelwd := $(subst ., ,$(KERNELRELEASE))
 kernrel3 := $(word 1,$(kernrelwd)).$(word 2,$(kernrelwd)).$(word 3,$(kernrelwd))
 
 ifneq ($(kernrel3),2.6.20)
-EXTRA_CFLAGS += $(CPPFLAGS)
+ccflags-y += $(CPPFLAGS)
 endif
 
 else
@@ -63,7 +64,7 @@ default: portlib
 
 install: default
 	$(MAKE) -C$(KDIR) M=$(PORTLIB) modules_install
-	$(MAKE) -C$(KDIR) M=$(PWD) modules_install	
+	$(MAKE) -C$(KDIR) M=$(PWD) modules_install
 
 portlib:
 	$(MAKE) -C$(KDIR) M=$(PORTLIB) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) modules

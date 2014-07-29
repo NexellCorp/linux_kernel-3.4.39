@@ -3673,7 +3673,7 @@ static void init_dma_desc_chain(dwc_otg_core_if_t * core_if, dwc_ep_t * ep)
 					dma_desc->status.b.bytes = xfer_est;
 				else
 					dma_desc->status.b.bytes =
-				    		xfer_est + ((4 - (xfer_est & 0x3)) & 0x3);
+						xfer_est + ((4 - (xfer_est & 0x3)) & 0x3);
 			}
 
 			dma_desc->buf = ep->dma_addr + offset;
@@ -3780,7 +3780,7 @@ void dwc_otg_ep_start_transfer(dwc_otg_core_if_t * core_if, dwc_ep_t * ep)
 
 		if (ep->maxpacket > ep->maxxfer / MAX_PKT_CNT)
 			ep->xfer_len += (ep->maxxfer < (ep->total_len - ep->xfer_len)) ?
-		    		ep->maxxfer : (ep->total_len - ep->xfer_len);
+				ep->maxxfer : (ep->total_len - ep->xfer_len);
 		else
 			ep->xfer_len += (MAX_PKT_CNT * ep->maxpacket < (ep->total_len - ep->xfer_len)) ?
 				 MAX_PKT_CNT * ep->maxpacket : (ep->total_len - ep->xfer_len);
@@ -3901,8 +3901,8 @@ void dwc_otg_ep_start_transfer(dwc_otg_core_if_t * core_if, dwc_ep_t * ep)
 				ep->xfer_len += (ep->maxxfer < (ep->total_len - ep->xfer_len)) ?
 					ep->maxxfer : (ep->total_len - ep->xfer_len);
 			else
-				ep->xfer_len += (MAX_PKT_CNT * ep->maxpacket < (ep->total_len
-					- ep->xfer_len)) ? MAX_PKT_CNT * ep->maxpacket : (ep->total_len - ep->xfer_len);
+				ep->xfer_len += (MAX_PKT_CNT * ep->maxpacket < (ep->total_len - ep->xfer_len)) ?
+					MAX_PKT_CNT * ep->maxpacket : (ep->total_len - ep->xfer_len);
 		}
 
 		/* Program the transfer size and packet count as follows:
@@ -3923,7 +3923,7 @@ void dwc_otg_ep_start_transfer(dwc_otg_core_if_t * core_if, dwc_ep_t * ep)
 			}
 			if (!core_if->dma_desc_enable) {
 				ep->xfer_len =
-			    		deptsiz.b.pktcnt * ep->maxpacket + ep->xfer_count;
+					deptsiz.b.pktcnt * ep->maxpacket + ep->xfer_count;
 			}
 			deptsiz.b.xfersize = ep->xfer_len - ep->xfer_count;
 		}
