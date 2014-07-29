@@ -1190,6 +1190,12 @@ static void _sensor_setup_io(void)
     }
 }
 
+// This is callback function for rgb overlay drawing
+static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data)
+{
+    printk("%s\n", __func__);
+}
+
 #define BACKWARD_CAM_WIDTH  704
 #define BACKWARD_CAM_HEIGHT 480
 
@@ -1222,13 +1228,19 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .data_order         = 0,
     .interlace          = true,
 
-    .lu_addr            = 0x7FEF2000,
-    .cb_addr            = 0x7FF62800,
-    .cr_addr            = 0x7FF79000,
+    .lu_addr            = 0x7FD28000,
+    .cb_addr            = 0x7FD7A800,
+    .cr_addr            = 0x7FD91000,
 
     .lu_stride          = 704,
     .cb_stride          = 384,
-    .cr_stride          = 384
+    .cr_stride          = 384,
+
+    .rgb_format         = MLC_RGBFMT_A8R8G8B8,
+    .width              = 1024,
+    .height             = 600,
+    .rgb_addr           = 0x7FDA8000,
+    .draw_rgb_overlay   = _draw_rgb_overlay,
 };
 
 static struct platform_device backward_camera_device = {
