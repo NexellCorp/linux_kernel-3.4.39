@@ -221,6 +221,18 @@ static int _get_vsync_info(struct nxp_hdmi_context *me)
         break;
 
     case V4L2_DV_720P50:
+        vsync->h_active_len = 1280;
+        vsync->h_sync_width = 40;
+        vsync->h_back_porch = 220;
+        vsync->h_front_porch = 440;
+        vsync->h_sync_invert = 0;
+        vsync->v_active_len = 720;
+        vsync->v_sync_width = 5;
+        vsync->v_back_porch = 20;
+        vsync->v_front_porch = 5;
+        vsync->v_sync_invert = 0;
+        break;
+
     case V4L2_DV_720P59_94:
     case V4L2_DV_720P60:
         /* 720p: 1280x720 */
