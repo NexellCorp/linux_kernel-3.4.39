@@ -41,11 +41,14 @@
 #ifdef DWC_UTE_PER_IO
 extern void complete_xiso_ep(dwc_otg_pcd_ep_t * ep);
 #endif
+
 //#define PRINT_CFI_DMA_DESCS
 
 //#define DEBUG_EP0
 
+#ifdef CFG_USE_FREE_LIST
 extern void add_free_list(dwc_otg_pcd_ep_t *ep, uint8_t *buf, dwc_dma_t dma, uint32_t length);
+#endif
 
 /**
  * This function updates OTG.
@@ -2506,26 +2509,18 @@ static void complete_ep(dwc_otg_pcd_ep_t * ep)
 		if (req->dw_align_buf) {
 			if (!ep->dwc_ep.is_in) {
 				dwc_memcpy(req->buf, req->dw_align_buf, req->length);
-
-//--> kook - [20130909] fixed on 4330
-#if 0 //defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
-				if (ep->ep_buf_info[ep->dwc_ep.num].dw_align_buf != NULL)
-					req->dw_align_buf = NULL;
-#endif
-//<-- kook - [20130909] fixed on 4330
 			}
 			DWC_DEBUGPL(DBG_PCD, "%s: DWC_DMA_FREE (req %p) %p:%d dma %x (align %p:%x)\n",
 				__func__, req, req->buf, req->length, req->dma,
 				req->dw_align_buf, req->dw_align_buf_dma);
 
-#if 0
+#ifdef CFG_USE_FREE_LIST
+			add_free_list(ep, req->dw_align_buf, req->dw_align_buf_dma, req->length);
+#else
 			DWC_DMA_FREE(req->length, req->dw_align_buf,
 					req->dw_align_buf_dma);
-			req->dw_align_buf = NULL;
-#else
-			add_free_list(ep, req->dw_align_buf, req->dw_align_buf_dma, req->length);
-			req->dw_align_buf = NULL;
 #endif
+			req->dw_align_buf = NULL;
 		}
 
 		dwc_otg_request_done(ep, req, 0);
@@ -3684,7 +3679,7 @@ static inline void handle_in_ep_disable_intr(dwc_otg_pcd_t * pcd,
 				i = core_if->nextep_seq[i];
 			} while (i != core_if->first_in_nextep_seq);
 		} else { // dma_desc_enable
-				DWC_PRINTF("%s Learning Queue not supported in DDMA\n", __func__);
+			DWC_PRINTF("%s Learning Queue not supported in DDMA\n", __func__);
 		}
 
 		/* Restart transfers in predicted sequences */
@@ -4902,7 +4897,7 @@ int32_t dwc_otg_pcd_handle_incomplete_isoc_out_intr(dwc_otg_pcd_t * pcd)
 		/* Unmask it */
 		intr_mask.b.goutnakeff = 1;
 		DWC_WRITE_REG32(&core_if->core_global_regs->gintmsk, intr_mask.d32);
- 	}
+	}
 	if (!gintsts.b.goutnakeff) {
 		dctl.b.sgoutnak = 1;
 	}

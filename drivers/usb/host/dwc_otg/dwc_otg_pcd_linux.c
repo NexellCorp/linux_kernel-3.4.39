@@ -381,16 +381,12 @@ static int ep_queue(struct usb_ep *usb_ep, struct usb_request *usb_req,
 			dev = DWC_OTG_OS_GETDEV(otg_dev->os_dep);
 
 		if (usb_req->length != 0 &&
-#if 0	//defined(CONFIG_ARCH_CPU_NEXELL)
-			!((unsigned int)usb_req->buf & 0x3) &&
-#endif
 			usb_req->dma == DWC_DMA_ADDR_INVALID)
 		{
 			dma_addr = dma_map_single(dev, usb_req->buf,
 					usb_req->length,
 					ep->dwc_ep.is_in ?
-					DMA_TO_DEVICE:
-					DMA_FROM_DEVICE);
+						DMA_TO_DEVICE : DMA_FROM_DEVICE);
 
 			/* do this so _complete() will call dma_unmap_single() */
 			usb_req->dma = dma_addr;
@@ -1077,7 +1073,7 @@ static int _complete(dwc_otg_pcd_t * pcd, void *ep_handle,
 						__func__, req, req->buf, req->length, req->dma);
 				dma_unmap_single(dev, req->dma, req->length,
 						ep->dwc_ep.is_in ?
-						DMA_TO_DEVICE: DMA_FROM_DEVICE);
+							DMA_TO_DEVICE : DMA_FROM_DEVICE);
 				req->dma = DWC_DMA_ADDR_INVALID;
 			}
 		}
@@ -1480,22 +1476,22 @@ int pcd_init(dwc_bus_dev_t *_dev)
 	 */
 #ifdef PLATFORM_INTERFACE
 	DWC_DEBUGPL(DBG_ANY, "registering handler for irq%d\n",
-                    platform_get_irq(_dev, 0));
+					platform_get_irq(_dev, 0));
 	retval = request_irq(platform_get_irq(_dev, 0), dwc_otg_pcd_irq,
-			     IRQF_SHARED, gadget_wrapper->gadget.name,
-			     otg_dev->pcd);
+				 IRQF_SHARED, gadget_wrapper->gadget.name,
+				 otg_dev->pcd);
 	if (retval != 0) {
 		DWC_ERROR("request of irq%d failed\n",
-                          platform_get_irq(_dev, 0));
+						platform_get_irq(_dev, 0));
 		free_wrapper(gadget_wrapper);
 		return -EBUSY;
 	}
 #else
 	DWC_DEBUGPL(DBG_ANY, "registering handler for irq%d\n",
-                    _dev->irq);
+					_dev->irq);
 	retval = request_irq(_dev->irq, dwc_otg_pcd_irq,
-			     IRQF_SHARED | IRQF_DISABLED,
-			     gadget_wrapper->gadget.name, otg_dev->pcd);
+				 IRQF_SHARED | IRQF_DISABLED,
+				 gadget_wrapper->gadget.name, otg_dev->pcd);
 	if (retval != 0) {
 		DWC_ERROR("request of irq%d failed\n", _dev->irq);
 		free_wrapper(gadget_wrapper);
@@ -1554,8 +1550,6 @@ void pcd_remove(dwc_bus_dev_t *_dev)
 //	otg_dev->pcd = NULL;
 }
 
-// psw0523 fix
-#if 0
 /**
  * This function registers a gadget driver with the PCD.
  *
@@ -1567,26 +1561,16 @@ void pcd_remove(dwc_bus_dev_t *_dev)
  * @param driver The driver being registered
  * @param bind The bind function of gadget driver
  */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,37)
-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
-#else
-int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
-		int (*bind)(struct usb_gadget *))
-#endif
+#if 0
+int usb_gadget_probe_driver(struct usb_gadget_driver *driver)
 {
 	int retval;
 
 	DWC_DEBUGPL(DBG_PCD, "registering gadget driver '%s'\n",
 		    driver->driver.name);
 
-// psw0523 fix
-#if 0
 	if (!driver || driver->max_speed == USB_SPEED_UNKNOWN ||
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,37)
 	    !driver->bind ||
-#else
-		!bind ||
-#endif
 	    !driver->unbind || !driver->disconnect || !driver->setup) {
 		DWC_DEBUGPL(DBG_PCDV, "EINVAL\n");
 		return -EINVAL;
@@ -1599,18 +1583,13 @@ int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
 		DWC_DEBUGPL(DBG_PCDV, "EBUSY (%p)\n", gadget_wrapper->driver);
 		return -EBUSY;
 	}
-#endif
 
 	/* hook up the driver */
 	gadget_wrapper->driver = driver;
 	gadget_wrapper->gadget.dev.driver = &driver->driver;
 
 	DWC_DEBUGPL(DBG_PCD, "bind to driver %s\n", driver->driver.name);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,37)
-	retval = driver->bind(&gadget_wrapper->gadget);
-#else
-	retval = bind(&gadget_wrapper->gadget);
-#endif
+	retval = driver->bind(&gadget_wrapper->gadget, gadget_wrapper->driver);
 	if (retval) {
 		DWC_ERROR("bind to driver %s --> error %d\n",
 			  driver->driver.name, retval);
@@ -1622,11 +1601,7 @@ int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
 		    driver->driver.name);
 	return 0;
 }
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,37)
-EXPORT_SYMBOL(usb_gadget_register_driver);
-#else
 EXPORT_SYMBOL(usb_gadget_probe_driver);
-#endif
 
 /**
  * This function unregisters a gadget driver
@@ -1656,6 +1631,6 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
 }
 
 EXPORT_SYMBOL(usb_gadget_unregister_driver);
-#endif // psw0523
+#endif
 
 #endif /* DWC_HOST_ONLY */

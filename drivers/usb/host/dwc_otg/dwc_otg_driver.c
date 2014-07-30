@@ -763,7 +763,7 @@ static int dwc_otg_driver_resume(struct platform_device *_dev)
 
 static int dwc_otg_driver_probe(
 		struct platform_device *_dev
-		)
+	)
 {
 	int retval = 0;
 	dwc_otg_device_t *dwc_otg_device;

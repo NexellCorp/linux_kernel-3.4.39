@@ -597,7 +597,7 @@ static __u32 dh_b[] = {
 	0x6fa452cd,
 	0x2df89d30,
 	0xc75f1b0f,
-	0x8ce3578f, 
+	0x8ce3578f,
 	0x7980a324,
 	0x5daec786,
 };

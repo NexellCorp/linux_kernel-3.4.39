@@ -78,6 +78,7 @@ static dwc_otg_pcd_ep_t *get_ep_from_handle(dwc_otg_pcd_t * pcd, void *handle)
 /**
  * psw0523 add for free align buf
  */
+#ifdef CFG_USE_FREE_LIST
 static void free_align_buf(void *p)
 {
 	dwc_otg_pcd_t *pcd = p;
@@ -108,6 +109,7 @@ void add_free_list(dwc_otg_pcd_ep_t *ep, uint8_t *buf, dwc_dma_t dma, uint32_t l
 
 	return;
 }
+#endif
 
 /**
  * This function completes a request.  It call's the request call back.
@@ -124,13 +126,8 @@ void dwc_otg_request_done(dwc_otg_pcd_ep_t * ep, dwc_otg_pcd_request_t * req,
 	/* don't modify queue heads during completion callback */
 	ep->stopped = 1;
 	/* spin_unlock/spin_lock now done in fops->complete() */
-#if 0	//defined(CONFIG_ARCH_CPU_NEXELL)
-	ep->pcd->fops->complete(ep->pcd, ep->priv, req, status,
-				req->actual);
-#else
 	ep->pcd->fops->complete(ep->pcd, ep->priv, req->priv, status,
 				req->actual);
-#endif
 
 	if (ep->pcd->request_pending > 0) {
 		--ep->pcd->request_pending;
@@ -139,15 +136,11 @@ void dwc_otg_request_done(dwc_otg_pcd_ep_t * ep, dwc_otg_pcd_request_t * req,
 	ep->stopped = stopped;
 
 // psw0523 fix
+#ifdef CFG_USE_FREE_LIST
 	if (req->dw_align_buf) {
-#if 0
-		DWC_DMA_FREE(req->length, req->dw_align_buf,
-				req->dw_align_buf_dma);
-		req->dw_align_buf = NULL;
-#else
 		add_free_list(ep, req->dw_align_buf, req->dw_align_buf_dma, req->length);
-#endif
 	}
+#endif
 // end psw0523
 	DWC_FREE(req);
 	req = NULL;
@@ -162,25 +155,9 @@ void dwc_otg_request_nuke(dwc_otg_pcd_ep_t * ep)
 
 	ep->stopped = 1;
 
-#if 0 //defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
-	if ((ep->ep_buf_info[ep->dwc_ep.num].dw_align_buf != NULL)
-		&& (!ep->dwc_ep.is_in))
-	{
-		ep->ep_buf_info[ep->dwc_ep.num].length           = 0;
-		ep->ep_buf_info[ep->dwc_ep.num].dw_align_buf     = 0;
-		ep->ep_buf_info[ep->dwc_ep.num].dw_align_buf_dma = 0;
-	}
-#endif
-
 	/* called with irqs blocked?? */
 	while (!DWC_CIRCLEQ_EMPTY(&ep->queue)) {
 		req = DWC_CIRCLEQ_FIRST(&ep->queue);
-
-#if 0 //defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
-	if (!ep->dwc_ep.is_in)
-		req->dw_align_buf = 0;
-#endif
-
 		dwc_otg_request_done(ep, req, -DWC_E_SHUTDOWN);
 	}
 }
@@ -1348,8 +1325,10 @@ dwc_otg_pcd_t *dwc_otg_pcd_init(dwc_otg_core_if_t * core_if)
 	//dwc_otg_dump_dev_registers(core_if);
 
 	/* psw0523 add for align_buf free work */
+#ifdef CFG_USE_FREE_LIST
 	pcd->work_align_buf_free = DWC_WORKQ_ALLOC("dwc_otg_free_alignbuf");
 	INIT_LIST_HEAD(&pcd->free_list);
+#endif
 // end psw0523
 
 	return pcd;
@@ -1457,7 +1436,9 @@ void dwc_otg_pcd_remove(dwc_otg_pcd_t * pcd)
 
 // psw0523 debugging
 	/* psw0523 add for align buf free work */
+#ifdef CFG_USE_FREE_LIST
 	DWC_WORKQ_FREE(pcd->work_align_buf_free);
+#endif
 // end psw0523
 
 	DWC_FREE(pcd);
@@ -1769,7 +1750,7 @@ int dwc_otg_pcd_ep_disable(dwc_otg_pcd_t * pcd, void *ep_handle)
 			dptxfsiz.d32 =
 			    (DWC_READ_REG32
 			     (&GET_CORE_IF(pcd)->
-		      		core_global_regs->dtxfsiz[ep->dwc_ep.tx_fifo_num-1]) >> 16);
+				core_global_regs->dtxfsiz[ep->dwc_ep.tx_fifo_num-1]) >> 16);
 			gdfifocfg.b.epinfobase = gdfifocfgbase.d32 - dptxfsiz.d32;
 			if (GET_CORE_IF(pcd)->snpsid <= OTG_CORE_REV_2_94a) {
 				DWC_WRITE_REG32(&GET_CORE_IF(pcd)->core_global_regs->gdfifocfg,
@@ -1790,6 +1771,7 @@ int dwc_otg_pcd_ep_disable(dwc_otg_pcd_t * pcd, void *ep_handle)
 			DWC_SPINUNLOCK_IRQRESTORE(pcd->lock, flags);
 			dwc_otg_ep_free_desc_chain(desc_addr, dma_desc_addr,
 						   MAX_DMA_DESC_CNT);
+
 			goto out_unlocked;
 		}
 	}
@@ -2226,49 +2208,10 @@ int dwc_otg_pcd_ep_queue(dwc_otg_pcd_t * pcd, void *ep_handle,
 	req->length = buflen;
 	req->sent_zlp = zero;
 	req->priv = req_handle;
+	req->dw_align_buf = NULL;
 
-//--> kook - [20130910] fixed on 4330
-#if 0 //defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
-	if ((GET_CORE_IF(pcd)->dma_enable
-		&& (!ep->dwc_ep.is_in)
-		&& (buflen != 0)
-		&& (dma_buf != DWC_DMA_ADDR_INVALID)
-		&& !GET_CORE_IF(pcd)->dma_desc_enable)) {
-
-		if (ep->ep_buf_info[ep->dwc_ep.num].dw_align_buf != NULL)
-		{
-			req->dw_align_buf      = ep->ep_buf_info[ep->dwc_ep.num].dw_align_buf;
-			req->dw_align_buf_dma  = ep->ep_buf_info[ep->dwc_ep.num].dw_align_buf_dma;
-		}
-		else
-		{
-			if (atomic_alloc)
-			{
-				req->dw_align_buf = DWC_DMA_ALLOC_ATOMIC(buflen,
-						 &req->dw_align_buf_dma);
-			}
-			else
-			{
-				req->dw_align_buf = DWC_DMA_ALLOC(buflen,
-						 &req->dw_align_buf_dma);
-			}
-			if (!req->dw_align_buf) {
-				DWC_ERROR
-					("%s: Failed to allocate memory to handle "
-					 "non-dword aligned buffer case\n",
-					 __func__);
-				return -DWC_E_NO_MEMORY;
-			}
-
-			ep->ep_buf_info[ep->dwc_ep.num].dw_align_buf     = req->dw_align_buf;
-			ep->ep_buf_info[ep->dwc_ep.num].dw_align_buf_dma = req->dw_align_buf_dma;
-			ep->ep_buf_info[ep->dwc_ep.num].length           = req->length;
-		}
-//<-- kook - [20130910] fixed on 4330
-
-#else
-
-	if ((dma_buf & 0x3) && buflen && GET_CORE_IF(pcd)->dma_enable) {
+	if ((dma_buf & 0x3) && buflen && GET_CORE_IF(pcd)->dma_enable
+			&& !GET_CORE_IF(pcd)->dma_desc_enable) {
 		req->dw_align_buf = DWC_DMA_ALLOC(buflen,
 				 &req->dw_align_buf_dma);
 
@@ -2283,7 +2226,6 @@ int dwc_otg_pcd_ep_queue(dwc_otg_pcd_t * pcd, void *ep_handle,
 				 __func__);
 			return -DWC_E_NO_MEMORY;
 		}
-#endif
 	}
 
 	DWC_SPINLOCK_IRQSAVE(pcd->lock, &flags);
@@ -2510,14 +2452,6 @@ int dwc_otg_pcd_ep_dequeue(dwc_otg_pcd_t * pcd, void *ep_handle,
 	}
 
 	if (!DWC_CIRCLEQ_EMPTY_ENTRY(req, queue_entry)) {
-
-//--> kook - [20130910] fixed on 4330
-#if 0 //defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
-	if (!ep->dwc_ep.is_in)
-		req->dw_align_buf = 0;
-#endif
-//<-- kook - [20130910] fixed on 4330
-
 		dwc_otg_request_done(ep, req, -DWC_E_RESTART);
 	} else {
 		req = NULL;

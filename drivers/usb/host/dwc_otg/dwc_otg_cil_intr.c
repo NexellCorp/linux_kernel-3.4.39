@@ -316,7 +316,7 @@ void w_conn_id_status_change(void *p)
  * This function handles the Connector ID Status Change Interrupt.  It
  * reads the OTG Interrupt Register (GOTCTL) to determine whether this
  * is a Device to Host Mode transition or a Host Mode to Device
- * Transition. 
+ * Transition.
  *
  * This only occurs when the cable is connected/removed from the PHY
  * connector.
@@ -342,7 +342,7 @@ int32_t dwc_otg_handle_conn_id_status_change_intr(dwc_otg_core_if_t * core_if)
 	DWC_DEBUGPL(DBG_CIL,
 		    " ++Connector ID Status Change Interrupt++  (%s)\n",
 		    (dwc_otg_is_host_mode(core_if) ? "Host" : "Device"));
-	
+
 	DWC_SPINUNLOCK(core_if->lock);
 
 	/*
@@ -704,13 +704,13 @@ static int32_t dwc_otg_handle_pwrdn_idsts_change(dwc_otg_device_t *otg_dev)
 		}
 #endif
 		DWC_PRINTF("RESTART ADP\n");
-		if (core_if->adp.probe_enabled)		
+		if (core_if->adp.probe_enabled)
 			dwc_otg_adp_probe_stop(core_if);
-		if (core_if->adp.sense_enabled)		
+		if (core_if->adp.sense_enabled)
 			dwc_otg_adp_sense_stop(core_if);
-		if (core_if->adp.sense_timer_started)		
+		if (core_if->adp.sense_timer_started)
 			DWC_TIMER_CANCEL(core_if->adp.sense_timer);
-		if (core_if->adp.vbuson_timer_started)		
+		if (core_if->adp.vbuson_timer_started)
 			DWC_TIMER_CANCEL(core_if->adp.vbuson_timer);
 		core_if->adp.probe_timer_values[0] = -1;
 		core_if->adp.probe_timer_values[1] = -1;
@@ -718,7 +718,7 @@ static int32_t dwc_otg_handle_pwrdn_idsts_change(dwc_otg_device_t *otg_dev)
 		core_if->adp.vbuson_timer_started = 0;
 		core_if->adp.probe_counter = 0;
 		core_if->adp.gpwrdn = 0;
-		
+
 		/* Disable PMU and restart ADP */
 		gpwrdn_temp.d32 = 0;
 		gpwrdn_temp.b.pmuactv = 1;
@@ -729,7 +729,7 @@ static int32_t dwc_otg_handle_pwrdn_idsts_change(dwc_otg_device_t *otg_dev)
 		dwc_otg_adp_start(core_if, is_host);
 		DWC_SPINLOCK(core_if->lock);
 	}
-	
+
 
 	return 1;
 }
@@ -805,7 +805,7 @@ static int32_t dwc_otg_handle_pwrdn_session_change(dwc_otg_core_if_t * core_if)
 			/*
 			 * Initiate SRP after initial ADP probe.
 			 */
-			dwc_otg_initiate_srp(core_if);	
+			dwc_otg_initiate_srp(core_if);
 		}
 	}
 
@@ -823,7 +823,7 @@ static uint32_t dwc_otg_handle_pwrdn_stschng_intr(dwc_otg_device_t *otg_dev)
 	dwc_otg_core_if_t *core_if = otg_dev->core_if;
 
 	DWC_PRINTF("%s called\n", __FUNCTION__);
-	
+
 	if (core_if->power_down == 2) {
 		if (core_if->hibernation_suspend <= 0) {
 			DWC_PRINTF("Already exited from Hibernation\n");
@@ -836,7 +836,7 @@ static uint32_t dwc_otg_handle_pwrdn_stschng_intr(dwc_otg_device_t *otg_dev)
 	}
 
 	gpwrdn.d32 = DWC_READ_REG32(&core_if->core_global_regs->gpwrdn);
-	
+
 	if (gpwrdn.b.idsts ^ gpwrdn_temp.b.idsts) {
 		retval = dwc_otg_handle_pwrdn_idsts_change(otg_dev);
 	} else if (gpwrdn.b.bsessvld ^ gpwrdn_temp.b.bsessvld) {
@@ -1406,8 +1406,8 @@ int32_t dwc_otg_handle_common_intr(void *dev)
 	gpwrdn_data_t gpwrdn = {.d32 = 0 };
 	dwc_otg_device_t *otg_dev = dev;
 	dwc_otg_core_if_t *core_if = otg_dev->core_if;
-
 	gpwrdn.d32 = DWC_READ_REG32(&core_if->core_global_regs->gpwrdn);
+
 	if (dwc_otg_is_device_mode(core_if))
 		core_if->frame_num = dwc_otg_get_frame_number(core_if);
 

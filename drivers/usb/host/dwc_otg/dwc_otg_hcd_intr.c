@@ -836,7 +836,7 @@ update_isoc_urb_state(dwc_otg_hcd_t * hcd,
         }
 #endif
         // end psw0523
-        
+
 		/* non DWORD-aligned buffer case handling. */
 		if (hc->align_buff && frame_desc->actual_length && hc->ep_is_in) {
 			dwc_memcpy(urb->buf + frame_desc->offset + qtd->isoc_split_offset,
