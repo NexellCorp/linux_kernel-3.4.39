@@ -245,9 +245,12 @@ static int nxp_hdmi_enum_dv_presets(struct v4l2_subdev *sd,
 
     preset = ctx->edid.enum_presets(&ctx->edid, enum_preset->index);
 
-    if (preset == V4L2_DV_INVALID)
+    if (preset == V4L2_DV_INVALID) {
+        printk("error invalid\n");
         return -EINVAL;
+    }
 
+    pr_debug("%s: supported %d\n", __func__, preset);
     return v4l_fill_dv_preset_info(preset, enum_preset);
 }
 
