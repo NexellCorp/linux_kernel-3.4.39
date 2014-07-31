@@ -1119,7 +1119,7 @@ void otg_phy_suspend(void)
 EXPORT_SYMBOL(otg_phy_suspend);
 
 static struct resource otg_resources[] = {
-    [0] = DEFINE_RES_MEM(PHY_BASEADDR_HSOTG, SZ_128K),
+    [0] = DEFINE_RES_MEM(PHY_BASEADDR_HSOTG, SZ_64K + SZ_4K),
     [1] = DEFINE_RES_IRQ(IRQ_PHY_USB20OTG),
 };
 

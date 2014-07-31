@@ -66,6 +66,16 @@ const u8 g_BottomBusSI[8] = {
 	BOTBUS_SI_SLOT_2ND_CODA
 };
 
+const u8 g_BottomQoSSI[2] = {
+	1,	// Tidemark
+	(1<<BOTBUS_SI_SLOT_1ST_ARM) |	// Control
+	(1<<BOTBUS_SI_SLOT_2ND_ARM) |
+	(1<<BOTBUS_SI_SLOT_MALI) |
+	(1<<BOTBUS_SI_SLOT_TOP) |
+	(1<<BOTBUS_SI_SLOT_DEINTERLACE) |
+	(1<<BOTBUS_SI_SLOT_1ST_CODA)
+};
+
 const u8 g_DispBusSI[3] = {
 	DISBUS_SI_SLOT_1ST_DISPLAY,
 	DISBUS_SI_SLOT_2ND_DISPLAY,

@@ -73,6 +73,7 @@ extern const u16    g_DrexQoS[];
 extern const u8     g_TopBusSI[];
 extern const u8     g_BottomBusSI[];
 extern const u8     g_DispBusSI[];
+extern const u8     g_BottomQoSSI[];
 
 
 #endif  //__NXP4330_BUS_HEADER__
