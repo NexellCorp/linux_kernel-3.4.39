@@ -25,6 +25,8 @@
 #include <linux/clk.h>
 #include <linux/kthread.h>
 #include <linux/sysrq.h>
+#include <linux/suspend.h>
+#include <linux/notifier.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
 #include <mach/platform.h>
@@ -56,6 +58,12 @@ struct cpufreq_dvfs_data {
     struct regulator *volt;
     int table_size;
     long supply_delay_us;
+    struct notifier_block pm_notifier;
+    unsigned long resume_state;
+};
+
+enum {
+	STATE_RESUME_DONE = 0,
 };
 
 static struct cpufreq_dvfs_data	*cpufreq_dvfs;
@@ -104,7 +112,7 @@ static enum hrtimer_restart nxp4330_cpufreq_rest_timer(struct hrtimer *hrtimer)
 	return HRTIMER_NORESTART;
 }
 
-unsigned int nxp4330_cpufreq_voltage(unsigned long freqhz)
+unsigned int nxp4330_cpufreq_voltage(unsigned long freqhz, int force)
 {
 	struct cpufreq_dvfs_data *dvfs = get_cpufreq_data();
  	unsigned long (*freq_volts)[2] = (unsigned long(*)[2])dvfs->freq_volts;
@@ -116,6 +124,10 @@ unsigned int nxp4330_cpufreq_voltage(unsigned long freqhz)
 
 	if (!dvfs->volt)
 		return 0;
+
+ 	if (!force && !test_bit(STATE_RESUME_DONE,
+ 			&dvfs->resume_state))
+ 		return 0;
 
 	rate = nxp_cpu_pll_round_frequency(pll, freqhz, NULL, NULL, NULL);
 
@@ -148,6 +160,27 @@ unsigned int nxp4330_cpufreq_voltage(unsigned long freqhz)
 	return uV;
 }
 
+static int nxp4330_cpufreq_pm_notify(struct notifier_block *this,
+        unsigned long mode, void *unused)
+{
+	struct cpufreq_dvfs_data *dvfs = container_of(this,
+					struct cpufreq_dvfs_data, pm_notifier);
+	struct cpufreq_frequency_table *freq_table = dvfs->freq_table;
+	struct cpufreq_frequency_table *table = &freq_table[0];
+	long max_freq = table->frequency*1000;
+
+    switch(mode) {
+    case PM_SUSPEND_PREPARE:
+    	clear_bit(STATE_RESUME_DONE, &dvfs->resume_state);
+    	nxp4330_cpufreq_voltage(max_freq, 1);
+    	break;
+    case PM_POST_SUSPEND:
+    	set_bit(STATE_RESUME_DONE, &dvfs->resume_state);
+    	break;
+    }
+    return 0;
+}
+
 static void nxp4330_cpufreq_update(struct cpufreq_dvfs_data *dvfs)
 {
 	struct cpufreq_freqs freqs;
@@ -169,7 +202,7 @@ static void nxp4330_cpufreq_update(struct cpufreq_dvfs_data *dvfs)
 
 	/* pre voltage */
 	if (freqs.new > freqs.old)
-		nxp4330_cpufreq_voltage(freqs.new*1000);
+		nxp4330_cpufreq_voltage(freqs.new*1000, 0);
 
 	for_each_cpu(freqs.cpu, dvfs->cpus)
 		cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
@@ -181,7 +214,7 @@ static void nxp4330_cpufreq_update(struct cpufreq_dvfs_data *dvfs)
 
 	/* post voltage */
 	if (freqs.old > freqs.new)
-		nxp4330_cpufreq_voltage(freqs.new*1000);
+		nxp4330_cpufreq_voltage(freqs.new*1000, 0);
 
 	set_current_state(TASK_INTERRUPTIBLE);
 	mutex_unlock(&dvfs->lock);
@@ -340,7 +373,7 @@ _cpu_freq:
 
 	/* pre voltage */
 	if (freqs.new > freqs.old)
-		nxp4330_cpufreq_voltage(freqs.new*1000);
+		nxp4330_cpufreq_voltage(freqs.new*1000, 0);
 
 	/* pre-change notification: each cpu */
 	for_each_cpu(freqs.cpu, policy->cpus)
@@ -355,7 +388,7 @@ _cpu_freq:
 
 	/* post voltage */
 	if (freqs.old > freqs.new)
-		nxp4330_cpufreq_voltage(freqs.new*1000);
+		nxp4330_cpufreq_voltage(freqs.new*1000, 0);
 
 	mutex_unlock(&dvfs->lock);
 
@@ -421,6 +454,7 @@ static struct cpufreq_driver nxp4330_cpufreq_driver = {
 static int nxp4330_cpufreq_probe(struct platform_device *pdev)
 {
 	struct nxp_cpufreq_plat_data *plat = pdev->dev.platform_data;
+	static struct notifier_block *pm_notifier;
 	struct cpufreq_dvfs_data *dvfs;
 	struct cpufreq_frequency_table *table;
 	char name[16];
@@ -488,6 +522,14 @@ static int nxp4330_cpufreq_probe(struct platform_device *pdev)
 			kfree(dvfs);
 			return -1;
 		}
+		pm_notifier = &dvfs->pm_notifier;
+		pm_notifier->notifier_call = nxp4330_cpufreq_pm_notify;
+		if (register_pm_notifier(pm_notifier)) {
+			dev_err(&pdev->dev, "%s: Cannot pm notifier %s\n",
+				__func__, plat->supply_name);
+			return -1;
+		}
+		set_bit(STATE_RESUME_DONE, &dvfs->resume_state);
 	}
 
 	if (0 > nxp4330_cpufreq_setup(dvfs))
