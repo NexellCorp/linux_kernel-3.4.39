@@ -535,7 +535,9 @@ static int nxp4330_cpufreq_probe(struct platform_device *pdev)
 	if (0 > nxp4330_cpufreq_setup(dvfs))
 		return -EINVAL;
 
-	printk("DVFS: cpu dvfs with PLL.%d [tables=%d]\n", plat->pll_dev, dvfs->table_size);
+	printk("DVFS: cpu %s with PLL.%d [tables=%d]\n",
+		dvfs->volt?"DVFS":"DFS", plat->pll_dev, dvfs->table_size);
+
 	return cpufreq_register_driver(&nxp4330_cpufreq_driver);
 }
 
