@@ -60,6 +60,7 @@
 #include "dwc_os.h"
 #include "dwc_otg_regs.h"
 #include "dwc_otg_cil.h"
+#include <linux/power/nxe2000_battery.h>
 
 static int dwc_otg_setup_params(dwc_otg_core_if_t * core_if);
 
@@ -2259,11 +2260,14 @@ void dwc_otg_core_host_init(dwc_otg_core_if_t * core_if)
 	/* Turn on the vbus power. */
 	DWC_PRINTF("Init: Port Power? op_state=%d\n", core_if->op_state);
 	if (core_if->op_state == A_HOST) {
+		otgid_power_control_by_dwc(1);
+		dwc_mdelay(1);
 		hprt0.d32 = dwc_otg_read_hprt0(core_if);
 		DWC_PRINTF("Init: Power Port (%d)\n", hprt0.b.prtpwr);
 		if (hprt0.b.prtpwr == 0) {
 			hprt0.b.prtpwr = 1;
 			DWC_WRITE_REG32(host_if->hprt0, hprt0.d32);
+			dwc_mdelay(1);
 		}
 	}
 
@@ -5126,7 +5130,8 @@ void dwc_otg_core_reset(dwc_otg_core_if_t * core_if)
 	DWC_DEBUGPL(DBG_CILV, "%s\n", __func__);
 	/* Wait for AHB master IDLE state. */
 	do {
-		dwc_udelay(10);
+		if(core_if->host_flag)
+			dwc_udelay(10);
 		greset.d32 = DWC_READ_REG32(&global_regs->grstctl);
 		if (++count > 100000) {
 			DWC_WARN("%s() HANG! AHB Idle GRSTCTL=%0x\n", __func__,
@@ -5147,12 +5152,14 @@ void dwc_otg_core_reset(dwc_otg_core_if_t * core_if)
 				 __func__, greset.d32);
 			break;
 		}
-		dwc_udelay(1);
+		if(core_if->host_flag)
+			dwc_udelay(1);
 	}
 	while (greset.b.csftrst == 1);
 
 	/* Wait for 3 PHY Clocks */
-	dwc_mdelay(100);
+	if(core_if->host_flag)
+		dwc_mdelay(150);
 }
 
 uint8_t dwc_otg_is_device_mode(dwc_otg_core_if_t * _core_if)
@@ -6868,6 +6875,7 @@ void dwc_otg_set_prtpower(dwc_otg_core_if_t * core_if, uint32_t val)
 	hprt0.d32 = dwc_otg_read_hprt0(core_if);
 	hprt0.b.prtpwr = val;
 	DWC_WRITE_REG32(core_if->host_if->hprt0, hprt0.d32);
+	dwc_mdelay(1);
 }
 
 uint32_t dwc_otg_get_prtsuspend(dwc_otg_core_if_t * core_if)

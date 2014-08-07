@@ -314,6 +314,7 @@ static int BatteryTableFlageDef=0;
 static int BatteryTypeDef=0;
 
 #if defined(CONFIG_USB_DWCOTG)
+static struct nxe2000_battery_info *info_by_dwc;
 extern void otg_phy_init(void);
 extern void otg_phy_off(void);
 extern void otg_phy_suspend(void);
@@ -3432,19 +3433,10 @@ static int set_otg_power_control(struct nxe2000_battery_info *info, int otg_id)
 	uint8_t clr_val = 0;
 	uint8_t set_val = 0;
 
-	clr_val = (0x1 << NXE2000_POS_CHGCTL1_CHGP);
-
-	set_val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
-			| (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN)
-			| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN)
-			| (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
-
 	ret= nxe2000_read(info->dev->parent, CHGSTATE_REG, &pwr_path);
 	if (ret < 0)
 		ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &pwr_path);
 
-	clr_val = 0;
-	set_val = 0;
 
 	if (otg_id)
 	{
@@ -3467,11 +3459,17 @@ static int set_otg_power_control(struct nxe2000_battery_info *info, int otg_id)
 		{
 			set_val |= (0x1 << NXE2000_POS_CHGCTL1_CHGP);
 		}
+
+		ret = nxe2000_set_bits(info->dev->parent, NXE2000_REG_CHGCTL1, set_val);
+		if (ret < 0)
+			ret = nxe2000_set_bits(info->dev->parent, NXE2000_REG_CHGCTL1, set_val);
+
+		ret = nxe2000_clr_bits(info->dev->parent, NXE2000_REG_CHGCTL1, clr_val);
+		if (ret < 0)
+			ret = nxe2000_clr_bits(info->dev->parent, NXE2000_REG_CHGCTL1, clr_val);
 	}
 	else
 	{
-		/* OTG POWER ON */
-		gpio_set_value(info->gpio_otg_vbus, 1);
 
 		set_val |= (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
 		set_val |= (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
@@ -3486,15 +3484,18 @@ static int set_otg_power_control(struct nxe2000_battery_info *info, int otg_id)
 		{
 			set_val |= (0x1 << NXE2000_POS_CHGCTL1_CHGP);
 		}
-	}
-
-	ret = nxe2000_set_bits(info->dev->parent, NXE2000_REG_CHGCTL1, set_val);
-	if (ret < 0)
+		
 		ret = nxe2000_set_bits(info->dev->parent, NXE2000_REG_CHGCTL1, set_val);
+		if (ret < 0)
+			ret = nxe2000_set_bits(info->dev->parent, NXE2000_REG_CHGCTL1, set_val);
 
-	ret = nxe2000_clr_bits(info->dev->parent, NXE2000_REG_CHGCTL1, clr_val);
-	if (ret < 0)
 		ret = nxe2000_clr_bits(info->dev->parent, NXE2000_REG_CHGCTL1, clr_val);
+		if (ret < 0)
+			ret = nxe2000_clr_bits(info->dev->parent, NXE2000_REG_CHGCTL1, clr_val);
+
+		/* OTG POWER ON */
+		gpio_set_value(info->gpio_otg_vbus, 1);
+	}
 
 	return ret;
 }
@@ -3824,17 +3825,17 @@ static void charger_irq_work(struct work_struct *work)
 #endif
 
 	if ( pmic_vbus && otg_id )
-	{
+	{	
+		/* OTG DEVICE MODE */
+		if (info->gpio_otg_vbus > -1)
+			gpio_set_value(info->gpio_otg_vbus, 0);
+
 #ifdef KOOK_ADP_ONLY_MODE
 		val     = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
 				| (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN)
 				| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN);
 		nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
 #endif
-
-		/* OTG DEVICE MODE */
-		if (info->gpio_otg_vbus > -1)
-			gpio_set_value(info->gpio_otg_vbus, 0);
 
 /* ======================================================= */
 
@@ -3893,16 +3894,16 @@ static void charger_irq_work(struct work_struct *work)
 	}
 	else if (otg_id == 0)
 	{
-		/* OTG HOST MODE */
-		if (info->gpio_otg_vbus > -1)
-			gpio_set_value(info->gpio_otg_vbus, 1);
-
 		val = (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN)
 			| (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
 		nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, val);
 
 		val = (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
 		nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, val);
+		
+		/* OTG HOST MODE */
+		if (info->gpio_otg_vbus > -1)
+			gpio_set_value(info->gpio_otg_vbus, 1);
 	}
 #ifdef KOOK_UBC_CHECK
 	else
@@ -3933,6 +3934,18 @@ static void otgid_detect_irq_work(struct work_struct *work)
 
 	msleep(10);
 }
+
+void otgid_power_control_by_dwc(int enable)
+{
+	
+	if (enable){
+		set_otg_power_control(info_by_dwc, 0);
+	}
+	else{
+		set_otg_power_control(info_by_dwc, 1);
+	}
+}
+EXPORT_SYMBOL(otgid_power_control_by_dwc);
 
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION) || defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
 static void low_battery_irq_work(struct work_struct *work)
@@ -4046,14 +4059,14 @@ static irqreturn_t sw_ubc_isr(int irq, void *battery_info)
 	return IRQ_HANDLED;
 }
 #endif
-
+#if 0 // by hsjung
 static irqreturn_t otgid_det_isr(int irq, void *battery_info)
 {
 	struct nxe2000_battery_info *info = battery_info;
 	queue_delayed_work(info->monitor_wqueue, &info->otgid_detect_work, msecs_to_jiffies(20));
 	return IRQ_HANDLED;
 }
-
+#endif
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION) || defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
 /*************************************************************/
 /* for Detecting Low Battery                                 */
@@ -5101,6 +5114,8 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 		goto out;
 
 	ret = nxe2000_init_battery(info);
+
+	info_by_dwc = info;
 	if (ret)
 		goto out;
 
@@ -5181,6 +5196,7 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 
 	/* Supported for OTG VBUS. */
 	if (info->gpio_otg_usbid > -1) {
+#if 0 // by hsjung
 		nxp_soc_gpio_set_int_enable(info->gpio_otg_usbid, 0);
 
 		ret = request_irq(gpio_to_irq(info->gpio_otg_usbid), otgid_det_isr,
@@ -5190,7 +5206,7 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 				"Can't get CHG_INT IRQ for chrager: %d\n", ret);
 			goto out;
 		}
-
+#endif
 		INIT_DELAYED_WORK_DEFERRABLE(&info->otgid_detect_work,
 						otgid_detect_irq_work);
 	}
@@ -5294,9 +5310,11 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 	queue_work(info->workqueue, &info->irq_work);
 #endif
 
+#if 0 // by hsjung
 	if (info->gpio_otg_usbid > -1) {
 		queue_delayed_work(info->monitor_wqueue, &info->otgid_detect_work, msecs_to_jiffies(20));
 	}
+#endif
 
 #if (CFG_SW_UBC_ENABLE == 1)
 #if (CFG_USB_DET_FROM_PMIC_INT == 1)
@@ -6037,11 +6055,11 @@ static int nxe2000_battery_resume(struct device *dev) {
 	info->ubc_check_count	= 1;
 	info->chg_ctr			= 0x03;
 	queue_work(info->workqueue, &info->irq_work);
-
+#if 0 // by hsjung
 	if (info->gpio_otg_usbid > -1) {
 		queue_delayed_work(info->monitor_wqueue, &info->otgid_detect_work, msecs_to_jiffies(20));
 	}
-
+#endif
 #if (CFG_SW_UBC_ENABLE == 1)
 #if (CFG_USB_DET_FROM_PMIC_INT == 1)
 	dwc_otg_pcd_clear_ep0_state();

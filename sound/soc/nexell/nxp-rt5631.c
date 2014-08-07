@@ -166,7 +166,7 @@ static int rt5631_dai_init(struct snd_soc_pcm_runtime *rtd)
 	if (ret)
 		return ret;
 #if defined(CONFIG_PLAT_NXP4330_SECRET) || !defined(CONFIG_ANDROID)
-	printk("==enable jack switch for linux\n==");
+	printk("==enable jack switch for linux==\n");
 	ret = snd_soc_jack_add_pins(&hp_jack, ARRAY_SIZE(jack_pins), jack_pins);
 	if (ret)
 		return ret;

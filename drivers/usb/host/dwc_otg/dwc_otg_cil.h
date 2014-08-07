@@ -1002,6 +1002,8 @@ struct dwc_otg_core_if {
 	/** Frame number while entering to ISR - needed for ISOCs **/
 	uint32_t frame_num;
 
+	uint8_t host_flag;
+
 };
 
 #ifdef DEBUG
