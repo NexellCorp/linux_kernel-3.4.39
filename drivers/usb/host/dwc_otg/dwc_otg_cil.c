@@ -2260,7 +2260,9 @@ void dwc_otg_core_host_init(dwc_otg_core_if_t * core_if)
 	/* Turn on the vbus power. */
 	DWC_PRINTF("Init: Port Power? op_state=%d\n", core_if->op_state);
 	if (core_if->op_state == A_HOST) {
+#ifdef CONFIG_BATTERY_NXE2000
 		otgid_power_control_by_dwc(1);
+#endif
 		dwc_mdelay(1);
 		hprt0.d32 = dwc_otg_read_hprt0(core_if);
 		DWC_PRINTF("Init: Power Port (%d)\n", hprt0.b.prtpwr);
