@@ -424,7 +424,8 @@ void __init nxp_reserve_mem(void)
         // pattern
         // devname/type=region
         "ion-nxp/ion-reserve=ion-reserve;"
-        "ion-nxp/ion-nxp=ion;";
+        "ion-nxp/ion-nxp=ion;"
+        "nx_vpu=ion;";
 
 #ifdef CONFIG_ION_NXP_RESERVEHEAP_SIZE
     printk("%s: reserve CMA: size %d\n", __func__, CONFIG_ION_NXP_RESERVEHEAP_SIZE * SZ_1K);
