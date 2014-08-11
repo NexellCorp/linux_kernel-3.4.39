@@ -60,7 +60,10 @@
 #include "dwc_os.h"
 #include "dwc_otg_regs.h"
 #include "dwc_otg_cil.h"
+
+#ifdef CONFIG_BATTERY_NXE2000
 #include <linux/power/nxe2000_battery.h>
+#endif
 
 static int dwc_otg_setup_params(dwc_otg_core_if_t * core_if);
 
@@ -1435,10 +1438,10 @@ void dwc_otg_core_init(dwc_otg_core_if_t * core_if)
 
 	core_if->pti_enh_enable = core_if->core_params->pti_enable != 0;
 	core_if->multiproc_int_enable = core_if->core_params->mpi_enable;
-	DWC_PRINTF("Periodic Transfer Interrupt Enhancement - %s\n",
-		   ((core_if->pti_enh_enable) ? "enabled" : "disabled"));
-	DWC_PRINTF("Multiprocessor Interrupt Enhancement - %s\n",
-		   ((core_if->multiproc_int_enable) ? "enabled" : "disabled"));
+//	DWC_PRINTF("Periodic Transfer Interrupt Enhancement - %s\n",
+//		   ((core_if->pti_enh_enable) ? "enabled" : "disabled"));
+//	DWC_PRINTF("Multiprocessor Interrupt Enhancement - %s\n",
+//		   ((core_if->multiproc_int_enable) ? "enabled" : "disabled"));
 
 	/*
 	 * Program the GUSBCFG register.
@@ -1520,8 +1523,8 @@ void dwc_otg_core_init(dwc_otg_core_if_t * core_if)
 				 gotgctl.d32);
 		/* Set OTG version supported */
 		core_if->otg_ver = core_if->core_params->otg_ver;
-		DWC_PRINTF("OTG VER PARAM: %d, OTG VER FLAG: %d\n",
-			   core_if->core_params->otg_ver, core_if->otg_ver);
+//		DWC_PRINTF("OTG VER PARAM: %d, OTG VER FLAG: %d\n",
+//			   core_if->core_params->otg_ver, core_if->otg_ver);
 	}
 
 
@@ -2262,8 +2265,8 @@ void dwc_otg_core_host_init(dwc_otg_core_if_t * core_if)
 	if (core_if->op_state == A_HOST) {
 #ifdef CONFIG_BATTERY_NXE2000
 		otgid_power_control_by_dwc(1);
-#endif
 		dwc_mdelay(1);
+#endif		
 		hprt0.d32 = dwc_otg_read_hprt0(core_if);
 		DWC_PRINTF("Init: Power Port (%d)\n", hprt0.b.prtpwr);
 		if (hprt0.b.prtpwr == 0) {
