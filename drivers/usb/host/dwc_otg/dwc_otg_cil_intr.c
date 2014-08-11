@@ -46,7 +46,10 @@
 #include "dwc_otg_pcd.h"
 #include "dwc_otg_hcd.h"
 #include "dwc_otg_mphi_fix.h"
+
+#ifdef CONFIG_BATTERY_NXE2000 
 #include <linux/power/nxe2000_battery.h>
+#endif
 
 extern bool fiq_fix_enable;
 
@@ -288,11 +291,10 @@ void w_conn_id_status_change(void *p)
 		DWC_ASSERT(++count < 10000,
 			   "Connection id status change timed out");
 		core_if->op_state = B_PERIPHERAL;
-#ifdef CONFIG_BATTERY_NXE2000
+#ifdef CONFIG_BATTERY_NXE2000 
 		otgid_power_control_by_dwc(0);
 #endif
-		dwc_otg_set_prtpower(core_if, 0);
-		dwc_mdelay(1);
+		cil_hcd_disconnect(core_if);
 		core_if->host_flag = 0;
 		dwc_otg_core_init(core_if);
 		dwc_otg_enable_global_interrupts(core_if);
