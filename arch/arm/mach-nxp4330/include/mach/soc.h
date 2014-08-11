@@ -160,6 +160,7 @@ int 		 nxp_soc_disp_device_enable_all	(int module, int enable);
 int 		 nxp_soc_disp_device_suspend_all(int module);
 void 		 nxp_soc_disp_device_resume_all	(int module);
 void 		 nxp_soc_disp_device_reset_top	(void);
+int 		 nxp_soc_disp_device_enable_all_saved(int module, int enable);
 
 void 		 nxp_soc_disp_register_lcd_ops(int module, struct lcd_operation *pops);
 

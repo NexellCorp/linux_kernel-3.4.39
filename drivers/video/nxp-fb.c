@@ -266,6 +266,18 @@ static int nxp_fb_dev_resume(struct nxp_fb_param *par)
 	return 0;
 }
 
+static int nxp_fb_dev_output(struct nxp_fb_param *par, int enable)
+{
+#ifdef CONFIG_NEXELL_DISPLAY
+	int module = par->fb_dev.device_id;
+	if (-1 == module)
+		return 0;
+
+	pr_debug("%s: %d %s\n", __func__, module, enable?"ON":"OFF");
+	return nxp_soc_disp_device_enable_all_saved(module, enable);
+#endif
+}
+
 #if defined(CONFIG_LOGO_NEXELL_COPY)
 static inline void *fb_copy_map(struct page *page, unsigned int phys, int size)
 {
@@ -399,8 +411,7 @@ static void inline nxp_fb_set_base(struct fb_info *info)
 	par->status = FB_STAT_INIT;
 }
 
-static void inline
-nxp_fb_update_buffer(struct fb_info *info, int waitvsync)
+static void inline nxp_fb_update_buffer(struct fb_info *info, int waitvsync)
 {
 	struct nxp_fb_param *par = info->par;
 	int phys = par->fb_dev.fb_pan_phys;
@@ -414,8 +425,7 @@ nxp_fb_update_buffer(struct fb_info *info, int waitvsync)
 		info->fix.id, phys, par->status&FB_STAT_INIT?"yes":"no");
 }
 
-static int inline
-nxp_fb_verify_var(struct fb_var_screeninfo *var, struct fb_info *info)
+static int inline nxp_fb_verify_var(struct fb_var_screeninfo *var, struct fb_info *info)
 {
 	return 0;
 }
@@ -1025,10 +1035,24 @@ static int nxp_fb_set_par(struct fb_info *info)
  */
 static int nxp_fb_blank(int blank_mode, struct fb_info *info)
 {
-	pr_debug("%s (mode=%d)\n", __func__, blank_mode);
+	struct nxp_fb_param  *par = info->par;
+	int enable = 0;
 
-	/* en/disable LCD */
-	return 0;
+	pr_debug("%s (blank_mode:%d)\n", __func__, blank_mode);
+
+	switch (blank_mode) {
+	case FB_BLANK_UNBLANK:
+	case FB_BLANK_NORMAL:
+			enable = 1; break;
+	case FB_BLANK_VSYNC_SUSPEND:
+	case FB_BLANK_HSYNC_SUSPEND:
+	case FB_BLANK_POWERDOWN:
+			enable = 0; break;
+	default:
+			return -1;
+	}
+
+	return nxp_fb_dev_output(par, enable);
 }
 
 /**

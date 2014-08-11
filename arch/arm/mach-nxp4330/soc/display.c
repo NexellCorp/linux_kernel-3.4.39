@@ -587,7 +587,7 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 	int 	   invert_field = psgen->invert_field;
 	int 		 swap_RB    = psgen->swap_RB;
 	unsigned int yc_order   = psgen->yc_order;
-#endif	
+#endif
 
 	int rgb_pvd = 0, hsync_cp1 = 7, vsync_fram = 7, de_cp2 = 7;
 	int v_vso = 1, v_veo = 1, e_vso = 1, e_veo = 1;
@@ -604,7 +604,7 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 	int vclk_select = psgen->vclk_select;
 	int vclk_invert = psgen->clk_inv_lv0 | psgen->clk_inv_lv1;
 	CBOOL EmbSync = (out_format == DPC_FORMAT_CCIR656 ? CTRUE : CFALSE);
-#endif	
+#endif
 	CBOOL RGBMode = CFALSE;
 	NX_DPC_DITHER RDither, GDither, BDither;
 
@@ -704,8 +704,8 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 	DBGOUT("%s: display.%d (y=%4d, vfp=%3d, vbp=%3d, vsw=%3d)\n",
 		__func__, module, psync->v_active_len, psync->v_front_porch,
 		psync->v_back_porch, psync->v_sync_width);
-	DBGOUT("%s: display.%d clk 0[s=%d, d=%3d], 1[s=%d, d=%3d], vclksel=%d, inv[%d:%d]\n",
-		__func__, module, clk_src_lv0, clk_div_lv0, clk_src_lv1, clk_div_lv1, vclk_select,
+	DBGOUT("%s: display.%d clk 0[s=%d, d=%3d], 1[s=%d, d=%3d], inv[%d:%d]\n",
+		__func__, module, clk_src_lv0, clk_div_lv0, clk_src_lv1, clk_div_lv1,
 		psgen->clk_inv_lv0, psgen->clk_inv_lv1);
 	DBGOUT("%s: display.%d v_vso=%d, v_veo=%d, e_vso=%d, e_veo=%d\n",
 		__func__, module, v_vso, v_veo, e_vso, e_veo);
@@ -792,6 +792,54 @@ static int  disp_syncgen_stat_enable(struct disp_process_dev *pdev)
 		pdev->status & PROC_STATUS_ENABLE?"ON":"OFF");
 
 	return ret;
+}
+
+static int  disp_multily_suspend(struct disp_process_dev *pdev)
+{
+	struct disp_control_info *info = get_device_to_info(pdev);
+	struct disp_multily_dev *pmly = &info->multilayer;
+	int mlc_len = sizeof(struct NX_MLC_RegisterSet);
+	int module = info->module;
+
+	PM_DBGOUT("%s display.%d (MLC:%s, DPC:%s)\n",
+		__func__, module, pmly->enable?"ON":"OFF", pdev->status & PROC_STATUS_ENABLE?"ON":"OFF");
+
+	NX_MLC_SetMLCEnable(module, CFALSE);
+	NX_MLC_SetTopDirtyFlag(module);
+
+	memcpy((void*)pmly->save_addr, (const void*)pmly->base_addr, mlc_len);
+
+	return 0;
+}
+
+static void disp_multily_resume(struct disp_process_dev *pdev)
+{
+	struct disp_control_info *info = get_device_to_info(pdev);
+	struct disp_multily_dev *pmly = &info->multilayer;
+	int mlc_len = sizeof(struct NX_MLC_RegisterSet);
+	int module = info->module;
+	int i = 0;
+
+	PM_DBGOUT("%s display.%d (MLC:%s, DPC:%s)\n",
+		__func__, module, pmly->enable?"ON":"OFF",
+				pdev->status & PROC_STATUS_ENABLE?"ON":"OFF");
+
+	/* restore */
+	NX_MLC_SetClockPClkMode(module, NX_PCLKMODE_ALWAYS);
+	NX_MLC_SetClockBClkMode(module, NX_BCLKMODE_ALWAYS);
+	memcpy((void*)pmly->base_addr, (const void*)pmly->save_addr, mlc_len);
+
+	if (pmly->enable) {
+		NX_MLC_SetTopPowerMode(module, CTRUE);
+   		NX_MLC_SetTopSleepMode(module, CFALSE);
+		NX_MLC_SetMLCEnable(module, CTRUE);
+
+		for (i = 0; LAYER_RGB_NUM > i; i++)
+			NX_MLC_SetDirtyFlag(module, i);
+
+		NX_MLC_SetDirtyFlag(module, LAYER_VID_NUM);
+		NX_MLC_SetTopDirtyFlag(module);
+	}
 }
 
 static int  disp_syncgen_suspend(struct disp_process_dev *pdev)
@@ -1982,7 +2030,7 @@ int nxp_soc_disp_device_enable_all(int module, int enable)
 {
 	struct disp_control_info *info = get_module_to_info(module);
 	struct lcd_operation *lcd = info->lcd_ops;
-	enum disp_dev_type device;
+	enum disp_dev_type device = (0 == module ? DISP_DEVICE_SYNCGEN0 : DISP_DEVICE_SYNCGEN1);
 	int ret = 0;
 
 	RET_ASSERT_VAL(0 == module || 1 == module, -EINVAL);
@@ -2019,6 +2067,69 @@ int nxp_soc_disp_device_enable_all(int module, int enable)
 		disp_ops_enable_devs(&disp_resconv_link, 1);
 
 	} else {
+		disp_ops_enable_devs(&disp_resconv_link, 0);
+		disp_ops_enable_devs(&info->link, 0);
+	}
+
+	/* LCD control */
+	if (enable) {
+		if (lcd && lcd->backlight_on)
+			lcd->backlight_on(module, lcd->data);
+	} else {
+		if (lcd && lcd->lcd_poweroff)
+			lcd->lcd_poweroff(module, lcd->data);
+	}
+
+	return 0;
+}
+
+int nxp_soc_disp_device_enable_all_saved(int module, int enable)
+{
+	struct disp_control_info *info = get_module_to_info(module);
+	struct lcd_operation *lcd = info->lcd_ops;
+	enum disp_dev_type device = (0 == module ? DISP_DEVICE_SYNCGEN0 : DISP_DEVICE_SYNCGEN1);
+	struct disp_process_dev *pdev = get_display_ptr(device);
+	int ret = 0;
+
+	RET_ASSERT_VAL(0 == module || 1 == module, -EINVAL);
+	DBGOUT("%s: display.%d, %s\n", __func__, module, enable?"ON":"OFF");
+
+	if (pdev->status & PROC_STATUS_ENABLE)
+		return 0;
+
+	/* LCD control */
+	if (enable) {
+		if (lcd && lcd->lcd_poweron)
+			lcd->lcd_poweron(module, lcd->data);
+	} else {
+		if (lcd && lcd->backlight_off)
+			lcd->backlight_off(module, lcd->data);
+	}
+
+	/* device control */
+	if (list_empty(&info->link)) {
+		device = (0 == module ? DISP_DEVICE_SYNCGEN0 : DISP_DEVICE_SYNCGEN1);
+		printk("display:%9s not connected display out ...\n",
+			dev_to_str(((struct disp_process_dev *)get_display_ptr(device))->dev_id));
+		nxp_soc_disp_device_enable(device, 0);
+		return 0;
+	}
+
+	if (enable) {
+		ret = disp_ops_prepare_devs(&disp_resconv_link);
+		if (ret)
+			return -EINVAL;
+
+		ret = disp_ops_prepare_devs(&info->link);
+		if (ret)
+			return -EINVAL;
+
+		disp_multily_resume(pdev);	/* restore multiple layer */
+		disp_ops_enable_devs(&info->link, 1);
+		disp_ops_enable_devs(&disp_resconv_link, 1);
+
+	} else {
+		disp_multily_suspend(pdev);	/* save multiple layer */
 		disp_ops_enable_devs(&disp_resconv_link, 0);
 		disp_ops_enable_devs(&info->link, 0);
 	}
@@ -2180,6 +2291,7 @@ EXPORT_SYMBOL(nxp_soc_disp_device_resume_all);
 EXPORT_SYMBOL(nxp_soc_disp_device_enable);
 EXPORT_SYMBOL(nxp_soc_disp_device_stat_enable);
 EXPORT_SYMBOL(nxp_soc_disp_device_enable_all);
+EXPORT_SYMBOL(nxp_soc_disp_device_enable_all_saved);
 EXPORT_SYMBOL(nxp_soc_disp_device_reset_top);
 EXPORT_SYMBOL(nxp_soc_disp_register_lcd_ops);
 EXPORT_SYMBOL(nxp_soc_disp_register_proc_ops);
