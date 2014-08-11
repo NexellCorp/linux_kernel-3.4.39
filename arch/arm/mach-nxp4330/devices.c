@@ -611,10 +611,14 @@ static struct platform_device vr_gpu_device =
  * Alsa sound platform device (I2S-PCM)
  */
 #if defined(CONFIG_SND_NEXELL_I2S) || defined(CONFIG_SND_NEXELL_I2S_MODULE)
+#ifndef CFG_AUDIO_I2S0_MASTER_CLOCK_IN
+#define CFG_AUDIO_I2S0_MASTER_CLOCK_IN		0
+#endif
 
 #if defined (CONFIG_SND_NEXELL_I2S_CH0)
 static struct nxp_i2s_plat_data i2s_data_ch0 = {
 	.master_mode		= CFG_AUDIO_I2S0_MASTER_MODE,
+	.master_clock_in	= CFG_AUDIO_I2S0_MASTER_CLOCK_IN,
 	.trans_mode			= CFG_AUDIO_I2S0_TRANS_MODE,
 	.frame_bit			= CFG_AUDIO_I2S0_FRAME_BIT,
 	.sample_rate		= CFG_AUDIO_I2S0_SAMPLE_RATE,
@@ -634,8 +638,13 @@ static struct platform_device i2s_device_ch0 = {
 };
 #endif
 #if defined (CONFIG_SND_NEXELL_I2S_CH1)
+#ifndef CFG_AUDIO_I2S1_MASTER_CLOCK_IN
+#define CFG_AUDIO_I2S1_MASTER_CLOCK_IN		0
+#endif
+
 static struct nxp_i2s_plat_data i2s_data_ch1 = {
 	.master_mode		= CFG_AUDIO_I2S1_MASTER_MODE,
+	.master_clock_in	= CFG_AUDIO_I2S1_MASTER_CLOCK_IN,
 	.trans_mode			= CFG_AUDIO_I2S1_TRANS_MODE,
 	.frame_bit			= CFG_AUDIO_I2S1_FRAME_BIT,
 	.sample_rate		= CFG_AUDIO_I2S1_SAMPLE_RATE,
@@ -655,8 +664,13 @@ static struct platform_device i2s_device_ch1 = {
 };
 #endif
 #if defined (CONFIG_SND_NEXELL_I2S_CH2)
+#ifndef CFG_AUDIO_I2S2_MASTER_CLOCK_IN
+#define CFG_AUDIO_I2S2_MASTER_CLOCK_IN		0
+#endif
+
 static struct nxp_i2s_plat_data i2s_data_ch2 = {
 	.master_mode		= CFG_AUDIO_I2S2_MASTER_MODE,
+	.master_clock_in	= CFG_AUDIO_I2S2_MASTER_CLOCK_IN,
 	.trans_mode			= CFG_AUDIO_I2S2_TRANS_MODE,
 	.frame_bit			= CFG_AUDIO_I2S2_FRAME_BIT,
 	.sample_rate		= CFG_AUDIO_I2S2_SAMPLE_RATE,

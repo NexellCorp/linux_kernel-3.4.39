@@ -112,6 +112,7 @@ extern void nxp_platform_disp_device_data(enum disp_dev_type device,
 /* I2S */
 struct nxp_i2s_plat_data {
     int     master_mode;
+    int     master_clock_in;
     int     trans_mode;                 /* 0:I2S, 1:Left 2:Right justified */
     int     sample_rate;
     int     sample_bit;                 /* support only 8, 16, 24 */

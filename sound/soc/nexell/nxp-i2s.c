@@ -132,6 +132,7 @@ static struct clock_ratio clk_ratio [] = {
 struct nxp_i2s_snd_param {
 	int channel;
     int master_mode;   	/* 0 = master_mode, 1 = slave */
+    int mclk_in;   	
     int trans_mode; 	/* 0 = I2S, 2 = Left-Justified, 3 = Right-Justified  */
     int sample_rate;
     int	frame_bit;		/* 16, 24, 32, 48 */
@@ -341,11 +342,14 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 
 	IMS = par->master_mode ? 0 : IMS_BIT_SLAVE;
 	SDF = par->trans_mode & 0x03;	/* 0:I2S, 1:Left 2:Right justfied */
-	OEN = par->master_mode ? 0 : 1;	/* Active low : MLCK out enable */
 	LRP = par->LR_pol_inv ? 1 : 0;
 
-	if (!par->master_mode)
+	if (!par->master_mode) {
+		OEN = 1;	/* Active low : MLCK out enable */
 		goto done;
+	} else {
+		OEN = par->mclk_in; 
+	}
 
 	switch (par->frame_bit) {
 	case 32: BFS = BFS_32BIT; break;
@@ -445,6 +449,7 @@ static int nxp_i2s_set_plat_param(struct nxp_i2s_snd_param *par, void *data)
 
 	par->channel = pdev->id;
     par->master_mode = plat->master_mode;
+    par->mclk_in = plat->master_clock_in;
     par->trans_mode = plat->trans_mode;
     par->sample_rate = plat->sample_rate ? plat->sample_rate : DEF_SAMPLE_RATE;
     par->frame_bit = plat->frame_bit ? plat->frame_bit : DEF_FRAME_BIT;
