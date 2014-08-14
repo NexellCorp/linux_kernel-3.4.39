@@ -56,8 +56,8 @@ extern int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
  * is supported now. If you add a chip with bigger oobsize/page
  * adjust this accordingly.
  */
-#define NAND_MAX_OOBSIZE	576
-#define NAND_MAX_PAGESIZE	8192
+#define NAND_MAX_OOBSIZE	1664
+#define NAND_MAX_PAGESIZE	16384
 
 /*
  * Constants for hardware specific CLE/ALE/NCE function
@@ -92,6 +92,8 @@ extern int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
 #define NAND_CMD_READID		0x90
 #define NAND_CMD_ERASE2		0xd0
 #define NAND_CMD_PARAM		0xec
+#define NAND_CMD_GET_FEATURES	0xee
+#define NAND_CMD_SET_FEATURES	0xef
 #define NAND_CMD_RESET		0xff
 
 #define NAND_CMD_LOCK		0x2a
@@ -161,8 +163,6 @@ typedef enum {
  * Option constants for bizarre disfunctionality and real
  * features.
  */
-/* Chip can not auto increment pages */
-#define NAND_NO_AUTOINCR	0x00000001
 /* Buswidth is 16 bit */
 #define NAND_BUSWIDTH_16	0x00000002
 /* Device supports partial programming without padding */
@@ -202,18 +202,21 @@ typedef enum {
 /* Device behaves just like nand, but is readonly */
 #define NAND_ROM		0x00000800
 
+/* Device supports subpage reads */
+#define NAND_SUBPAGE_READ      0x00001000
+
 /* Options valid for Samsung large page devices */
 #define NAND_SAMSUNG_LP_OPTIONS \
 	(NAND_NO_PADDING | NAND_CACHEPRG | NAND_COPYBACK)
 
 /* Macros to identify the above */
-#define NAND_CANAUTOINCR(chip) (!(chip->options & NAND_NO_AUTOINCR))
 #define NAND_MUST_PAD(chip) (!(chip->options & NAND_NO_PADDING))
 #define NAND_HAS_CACHEPROG(chip) ((chip->options & NAND_CACHEPRG))
 #define NAND_HAS_COPYBACK(chip) ((chip->options & NAND_COPYBACK))
-/* Large page NAND with SOFT_ECC should support subpage reads */
-#define NAND_SUBPAGE_READ(chip) ((chip->ecc.mode == NAND_ECC_SOFT) \
-					&& (chip->page_shift > 9))
+#define NAND_HAS_SUBPAGE_READ(chip) ((chip->options & NAND_SUBPAGE_READ))
+
+/* Mask to zero out the chip options, which come from the id table */
+#define NAND_CHIPOPTIONS_MSK	0x0000ffff
 
 /* Non chip related options */
 /* This option skips the bbt scan during initialization. */
@@ -225,6 +228,13 @@ typedef enum {
 #define NAND_OWN_BUFFERS	0x00020000
 /* Chip may not exist, so silence any errors in scan */
 #define NAND_SCAN_SILENT_NODEV	0x00040000
+/*
+ * Autodetect nand buswidth with readid/onfi.
+ * This suppose the driver will configure the hardware in 8 bits mode
+ * when calling nand_scan_ident, and update its configuration
+ * before calling nand_scan_tail.
+ */
+#define NAND_BUSWIDTH_AUTO      0x00080000
 
 /* Options set by nand scan */
 /* Nand scan has allocated controller struct */
@@ -233,9 +243,35 @@ typedef enum {
 /* Cell info constants */
 #define NAND_CI_CHIPNR_MSK	0x03
 #define NAND_CI_CELLTYPE_MSK	0x0C
+#define NAND_CI_CELLTYPE_SHIFT	2
 
 /* Keep gcc happy */
 struct nand_chip;
+
+/* ONFI features */
+#define ONFI_FEATURE_16_BIT_BUS		(1 << 0)
+#define ONFI_FEATURE_EXT_PARAM_PAGE	(1 << 7)
+
+/* ONFI timing mode, used in both asynchronous and synchronous mode */
+#define ONFI_TIMING_MODE_0		(1 << 0)
+#define ONFI_TIMING_MODE_1		(1 << 1)
+#define ONFI_TIMING_MODE_2		(1 << 2)
+#define ONFI_TIMING_MODE_3		(1 << 3)
+#define ONFI_TIMING_MODE_4		(1 << 4)
+#define ONFI_TIMING_MODE_5		(1 << 5)
+#define ONFI_TIMING_MODE_UNKNOWN	(1 << 6)
+
+/* ONFI feature address */
+#define ONFI_FEATURE_ADDR_TIMING_MODE	0x1
+
+/* Vendor-specific feature address (Micron) */
+#define ONFI_FEATURE_ADDR_READ_RETRY	0x89
+
+/* ONFI subfeature parameters length */
+#define ONFI_SUBFEATURE_PARAM_LEN	4
+
+/* ONFI optional commands SET/GET FEATURES supported? */
+#define ONFI_OPT_CMD_SET_GET_FEATURES	(1 << 2)
 
 struct nand_onfi_params {
 	/* rev info and features block */
@@ -244,7 +280,10 @@ struct nand_onfi_params {
 	__le16 revision;
 	__le16 features;
 	__le16 opt_cmd;
-	u8 reserved[22];
+	u8 reserved0[2];
+	__le16 ext_param_page_length; /* since ONFI 2.1 */
+	u8 num_of_param_pages;        /* since ONFI 2.1 */
+	u8 reserved1[17];
 
 	/* manufacturer information block */
 	char manufacturer[12];
@@ -288,18 +327,73 @@ struct nand_onfi_params {
 	__le16 io_pin_capacitance_typ;
 	__le16 input_pin_capacitance_typ;
 	u8 input_pin_capacitance_max;
-	u8 driver_strenght_support;
+	u8 driver_strength_support;
 	__le16 t_int_r;
 	__le16 t_ald;
 	u8 reserved4[7];
 
 	/* vendor */
-	u8 reserved5[90];
+	__le16 vendor_revision;
+	u8 vendor[88];
 
 	__le16 crc;
 } __attribute__((packed));
 
 #define ONFI_CRC_BASE	0x4F4E
+
+/* Extended ECC information Block Definition (since ONFI 2.1) */
+struct onfi_ext_ecc_info {
+	u8 ecc_bits;
+	u8 codeword_size;
+	__le16 bb_per_lun;
+	__le16 block_endurance;
+	u8 reserved[2];
+} __packed;
+
+#define ONFI_SECTION_TYPE_0	0	/* Unused section. */
+#define ONFI_SECTION_TYPE_1	1	/* for additional sections. */
+#define ONFI_SECTION_TYPE_2	2	/* for ECC information. */
+struct onfi_ext_section {
+	u8 type;
+	u8 length;
+} __packed;
+
+#define ONFI_EXT_SECTION_MAX 8
+
+/* Extended Parameter Page Definition (since ONFI 2.1) */
+struct onfi_ext_param_page {
+	__le16 crc;
+	u8 sig[4];             /* 'E' 'P' 'P' 'S' */
+	u8 reserved0[10];
+	struct onfi_ext_section sections[ONFI_EXT_SECTION_MAX];
+
+	/*
+	 * The actual size of the Extended Parameter Page is in
+	 * @ext_param_page_length of nand_onfi_params{}.
+	 * The following are the variable length sections.
+	 * So we do not add any fields below. Please see the ONFI spec.
+	 */
+} __packed;
+
+struct nand_onfi_vendor_micron {
+	u8 two_plane_read;
+	u8 read_cache;
+	u8 read_unique_id;
+	u8 dq_imped;
+	u8 dq_imped_num_settings;
+	u8 dq_imped_feat_addr;
+	u8 rb_pulldown_strength;
+	u8 rb_pulldown_strength_feat_addr;
+	u8 rb_pulldown_strength_num_settings;
+	u8 otp_mode;
+	u8 otp_page_start;
+	u8 otp_data_prot_addr;
+	u8 otp_num_pages;
+	u8 otp_feat_addr;
+	u8 read_retry_options;
+	u8 reserved[72];
+	u8 param_revision;
+} __packed;
 
 /**
  * struct nand_hw_control - Control structure for hardware controller (e.g ECC generator) shared among independent devices
@@ -360,21 +454,20 @@ struct nand_ecc_ctrl {
 	int (*correct)(struct mtd_info *mtd, uint8_t *dat, uint8_t *read_ecc,
 			uint8_t *calc_ecc);
 	int (*read_page_raw)(struct mtd_info *mtd, struct nand_chip *chip,
-			uint8_t *buf, int page);
-	void (*write_page_raw)(struct mtd_info *mtd, struct nand_chip *chip,
-			const uint8_t *buf);
+			uint8_t *buf, int oob_required, int page);
+	int (*write_page_raw)(struct mtd_info *mtd, struct nand_chip *chip,
+			const uint8_t *buf, int oob_required);
 	int (*read_page)(struct mtd_info *mtd, struct nand_chip *chip,
-			uint8_t *buf, int page);
+			uint8_t *buf, int oob_required, int page);
 	int (*read_subpage)(struct mtd_info *mtd, struct nand_chip *chip,
 			uint32_t offs, uint32_t len, uint8_t *buf);
-	void (*write_page)(struct mtd_info *mtd, struct nand_chip *chip,
-			const uint8_t *buf);
+	int (*write_page)(struct mtd_info *mtd, struct nand_chip *chip,
+			const uint8_t *buf, int oob_required);
 	int (*write_oob_raw)(struct mtd_info *mtd, struct nand_chip *chip,
 			int page);
 	int (*read_oob_raw)(struct mtd_info *mtd, struct nand_chip *chip,
-			int page, int sndcmd);
-	int (*read_oob)(struct mtd_info *mtd, struct nand_chip *chip, int page,
-			int sndcmd);
+			int page);
+	int (*read_oob)(struct mtd_info *mtd, struct nand_chip *chip, int page);
 	int (*write_oob)(struct mtd_info *mtd, struct nand_chip *chip,
 			int page);
 };
@@ -402,13 +495,15 @@ struct nand_buffers {
  *			flash device.
  * @read_byte:		[REPLACEABLE] read one byte from the chip
  * @read_word:		[REPLACEABLE] read one word from the chip
+ * @write_byte:		[REPLACEABLE] write a single byte to the chip on the
+ *			low 8 I/O lines
  * @write_buf:		[REPLACEABLE] write data from the buffer to the chip
  * @read_buf:		[REPLACEABLE] read data from the chip into the buffer
  * @verify_buf:		[REPLACEABLE] verify buffer contents against the chip
  *			data.
  * @select_chip:	[REPLACEABLE] select chip nr
- * @block_bad:		[REPLACEABLE] check, if the block is bad
- * @block_markbad:	[REPLACEABLE] mark the block bad
+ * @block_bad:		[REPLACEABLE] check if a block is bad, using OOB markers
+ * @block_markbad:	[REPLACEABLE] mark a block bad
  * @cmd_ctrl:		[BOARDSPECIFIC] hardwarespecific function for controlling
  *			ALE/CLE/nCE. Also used to write command and address
  * @init_size:		[BOARDSPECIFIC] hardwarespecific function for setting
@@ -423,6 +518,8 @@ struct nand_buffers {
  *			commands to the chip.
  * @waitfunc:		[REPLACEABLE] hardwarespecific function for wait on
  *			ready.
+ * @setup_read_retry:	[FLASHSPECIFIC] flash (vendor) specific function for
+ *			setting the read-retry mode. Mostly needed for MLC NAND.
  * @ecc:		[BOARDSPECIFIC] ECC control structure
  * @buffers:		buffer structure for read/write
  * @hwcontrol:		platform-specific hardware control structure
@@ -450,17 +547,23 @@ struct nand_buffers {
  * @badblockbits:	[INTERN] minimum number of set bits in a good block's
  *			bad block marker position; i.e., BBM == 11110111b is
  *			not bad when badblockbits == 7
+ * @bits_per_cell:	[INTERN] number of bits per cell. i.e., 1 means SLC.
  * @cellinfo:		[INTERN] MLC/multichip data from chip ident
  * @numchips:		[INTERN] number of physical chips
  * @chipsize:		[INTERN] the size of one chip for multichip arrays
  * @pagemask:		[INTERN] page number mask = number of (pages / chip) - 1
  * @pagebuf:		[INTERN] holds the pagenumber which is currently in
  *			data_buf.
+ * @pagebuf_bitflips:	[INTERN] holds the bitflip count for the page which is
+ *			currently in data_buf.
  * @subpagesize:	[INTERN] holds the subpagesize
  * @onfi_version:	[INTERN] holds the chip ONFI version (BCD encoded),
  *			non 0 if ONFI supported.
  * @onfi_params:	[INTERN] holds the ONFI page parameter when ONFI is
  *			supported, 0 otherwise.
+ * @read_retries:	[INTERN] the number of read retry modes supported
+ * @onfi_set_features:	[REPLACEABLE] set the features for ONFI nand
+ * @onfi_get_features:	[REPLACEABLE] get the features for ONFI nand
  * @ecclayout:		[REPLACEABLE] the default ECC placement scheme
  * @bbt:		[INTERN] bad block table pointer
  * @bbt_td:		[REPLACEABLE] bad block table descriptor for flash
@@ -484,6 +587,7 @@ struct nand_chip {
 
 	uint8_t (*read_byte)(struct mtd_info *mtd);
 	u16 (*read_word)(struct mtd_info *mtd);
+	void (*write_byte)(struct mtd_info *mtd, uint8_t byte);
 	void (*write_buf)(struct mtd_info *mtd, const uint8_t *buf, int len);
 	void (*read_buf)(struct mtd_info *mtd, uint8_t *buf, int len);
 	int (*verify_buf)(struct mtd_info *mtd, const uint8_t *buf, int len);
@@ -502,7 +606,16 @@ struct nand_chip {
 	int (*errstat)(struct mtd_info *mtd, struct nand_chip *this, int state,
 			int status, int page);
 	int (*write_page)(struct mtd_info *mtd, struct nand_chip *chip,
-			const uint8_t *buf, int page, int cached, int raw);
+			const uint8_t *buf, int oob_required, int page,
+			int cached, int raw);
+	int (*onfi_set_features)(struct mtd_info *mtd, struct nand_chip *chip,
+			int feature_addr, uint8_t *subfeature_para);
+	int (*onfi_get_features)(struct mtd_info *mtd, struct nand_chip *chip,
+			int feature_addr, uint8_t *subfeature_para);
+	int (*setup_read_retry)(struct mtd_info *mtd, int retry_mode);
+	void (*manuf_cleanup)(struct mtd_info *mtd);
+
+	void *manuf_priv;
 
 	int chip_delay;
 	unsigned int options;
@@ -516,13 +629,19 @@ struct nand_chip {
 	uint64_t chipsize;
 	int pagemask;
 	int pagebuf;
+	unsigned int pagebuf_bitflips;
 	int subpagesize;
+	uint8_t bits_per_cell;
 	uint8_t cellinfo;
 	int badblockpos;
 	int badblockbits;
 
 	int onfi_version;
 	struct nand_onfi_params	onfi_params;
+
+	int read_retries;
+	int read_retry_mode;
+	int need_save_read_retries;
 
 	flstate_t state;
 
@@ -556,7 +675,7 @@ struct nand_chip {
 #define NAND_MFR_MICRON		0x2c
 #define NAND_MFR_AMD		0x01
 #define NAND_MFR_MACRONIX	0xc2
-
+#define NAND_MFR_EON		0x92
 /**
  * struct nand_flash_dev - NAND Flash Device ID Structure
  * @name:	Identify the device type
@@ -586,14 +705,17 @@ struct nand_flash_dev {
 struct nand_manufacturers {
 	int id;
 	char *name;
+	int (*init)(struct mtd_info *mtd, const uint8_t *id);
 };
 
 extern struct nand_flash_dev nand_flash_ids[];
 extern struct nand_manufacturers nand_manuf_ids[];
 
+int hynix_nand_init(struct mtd_info *mtd, const uint8_t *id);
+
 extern int nand_scan_bbt(struct mtd_info *mtd, struct nand_bbt_descr *bd);
-extern int nand_update_bbt(struct mtd_info *mtd, loff_t offs);
 extern int nand_default_bbt(struct mtd_info *mtd);
+extern int nand_markbad_bbt(struct mtd_info *mtd, loff_t offs);
 extern int nand_isbad_bbt(struct mtd_info *mtd, loff_t offs, int allowbbt);
 extern int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 			   int allowbbt);
@@ -651,6 +773,7 @@ struct platform_nand_ctrl {
 	void (*cmd_ctrl)(struct mtd_info *mtd, int dat, unsigned int ctrl);
 	void (*write_buf)(struct mtd_info *mtd, const uint8_t *buf, int len);
 	void (*read_buf)(struct mtd_info *mtd, uint8_t *buf, int len);
+	unsigned char (*read_byte)(struct mtd_info *mtd);
 	void *priv;
 };
 
@@ -673,4 +796,35 @@ struct platform_nand_chip *get_platform_nandchip(struct mtd_info *mtd)
 	return chip->priv;
 }
 
+/* return the supported features. */
+static inline int onfi_feature(struct nand_chip *chip)
+{
+	return chip->onfi_version ? le16_to_cpu(chip->onfi_params.features) : 0;
+}
+
+/* return the supported asynchronous timing mode. */
+static inline int onfi_get_async_timing_mode(struct nand_chip *chip)
+{
+	if (!chip->onfi_version)
+		return ONFI_TIMING_MODE_UNKNOWN;
+	return le16_to_cpu(chip->onfi_params.async_timing_mode);
+}
+
+/* return the supported synchronous timing mode. */
+static inline int onfi_get_sync_timing_mode(struct nand_chip *chip)
+{
+	if (!chip->onfi_version)
+		return ONFI_TIMING_MODE_UNKNOWN;
+	return le16_to_cpu(chip->onfi_params.src_sync_timing_mode);
+}
+
+/*
+ * Check if it is a SLC nand.
+ * The !nand_is_slc() can be used to check the MLC/TLC nand chips.
+ * We do not distinguish the MLC and TLC now.
+ */
+static inline bool nand_is_slc(struct nand_chip *chip)
+{
+	return chip->bits_per_cell == 1;
+}
 #endif /* __LINUX_MTD_NAND_H */

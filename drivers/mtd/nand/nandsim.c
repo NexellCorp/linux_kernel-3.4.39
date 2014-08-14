@@ -42,17 +42,56 @@
 #include <linux/sched.h>
 #include <linux/fs.h>
 #include <linux/pagemap.h>
+#include <linux/version.h>
 
 /* Default simulator parameters values */
 #if !defined(CONFIG_NANDSIM_FIRST_ID_BYTE)  || \
     !defined(CONFIG_NANDSIM_SECOND_ID_BYTE) || \
     !defined(CONFIG_NANDSIM_THIRD_ID_BYTE)  || \
-    !defined(CONFIG_NANDSIM_FOURTH_ID_BYTE)
-#define CONFIG_NANDSIM_FIRST_ID_BYTE  0x98
-#define CONFIG_NANDSIM_SECOND_ID_BYTE 0x39
-#define CONFIG_NANDSIM_THIRD_ID_BYTE  0xFF /* No byte */
-#define CONFIG_NANDSIM_FOURTH_ID_BYTE 0xFF /* No byte */
+    !defined(CONFIG_NANDSIM_FOURTH_ID_BYTE) || \
+    !defined(CONFIG_NANDSIM_FIFTH_ID_BYTE) || \
+    !defined(CONFIG_NANDSIM_SIXTH_ID_BYTE)
+#define CONFIG_NANDSIM_FIRST_ID_BYTE  0xad
+#define CONFIG_NANDSIM_SECOND_ID_BYTE 0xde
+#define CONFIG_NANDSIM_THIRD_ID_BYTE  0x94
+#define CONFIG_NANDSIM_FOURTH_ID_BYTE 0xda
+#define CONFIG_NANDSIM_FIFTH_ID_BYTE 0x74
+#define CONFIG_NANDSIM_SIXTH_ID_BYTE 0xc4
 #endif
+
+#if (1)
+#ifndef CONFIG_NANDSIM_ACCESS_DELAY
+#define CONFIG_NANDSIM_ACCESS_DELAY 25
+#endif
+#ifndef CONFIG_NANDSIM_PROGRAMM_DELAY
+#define CONFIG_NANDSIM_PROGRAMM_DELAY 200
+#endif
+#ifndef CONFIG_NANDSIM_ERASE_DELAY
+#define CONFIG_NANDSIM_ERASE_DELAY 2
+#endif
+#ifndef CONFIG_NANDSIM_OUTPUT_CYCLE
+#define CONFIG_NANDSIM_OUTPUT_CYCLE 40
+#endif
+#ifndef CONFIG_NANDSIM_INPUT_CYCLE
+#define CONFIG_NANDSIM_INPUT_CYCLE  50
+#endif
+#ifndef CONFIG_NANDSIM_BUS_WIDTH
+#define CONFIG_NANDSIM_BUS_WIDTH  8
+#endif
+#ifndef CONFIG_NANDSIM_DO_DELAYS
+#define CONFIG_NANDSIM_DO_DELAYS  0
+#endif
+#ifndef CONFIG_NANDSIM_LOG
+#define CONFIG_NANDSIM_LOG        1
+#endif
+#ifndef CONFIG_NANDSIM_DBG
+#define CONFIG_NANDSIM_DBG        1
+#endif
+#ifndef CONFIG_NANDSIM_MAX_PARTS
+#define CONFIG_NANDSIM_MAX_PARTS  32
+#endif
+
+#else
 
 #ifndef CONFIG_NANDSIM_ACCESS_DELAY
 #define CONFIG_NANDSIM_ACCESS_DELAY 25
@@ -84,11 +123,14 @@
 #ifndef CONFIG_NANDSIM_MAX_PARTS
 #define CONFIG_NANDSIM_MAX_PARTS  32
 #endif
+#endif
 
 static uint first_id_byte  = CONFIG_NANDSIM_FIRST_ID_BYTE;
 static uint second_id_byte = CONFIG_NANDSIM_SECOND_ID_BYTE;
 static uint third_id_byte  = CONFIG_NANDSIM_THIRD_ID_BYTE;
 static uint fourth_id_byte = CONFIG_NANDSIM_FOURTH_ID_BYTE;
+static uint fifth_id_byte  = CONFIG_NANDSIM_FIFTH_ID_BYTE;
+static uint sixth_id_byte  = CONFIG_NANDSIM_SIXTH_ID_BYTE;
 static uint access_delay   = CONFIG_NANDSIM_ACCESS_DELAY;
 static uint programm_delay = CONFIG_NANDSIM_PROGRAMM_DELAY;
 static uint erase_delay    = CONFIG_NANDSIM_ERASE_DELAY;
@@ -172,7 +214,7 @@ MODULE_PARM_DESC(bch,		 "Enable BCH ecc and set how many bits should "
 				 "be correctable in 512-byte blocks");
 
 /* The largest possible page size */
-#define NS_LARGEST_PAGE_SIZE	4096
+#define NS_LARGEST_PAGE_SIZE	16384
 
 /* The prefix for simulator output */
 #define NS_OUTPUT_PREFIX "[nandsim]"
@@ -268,10 +310,11 @@ MODULE_PARM_DESC(bch,		 "Enable BCH ecc and set how many bits should "
 #define OPT_PAGE512      0x00000002 /* 512-byte  page chips */
 #define OPT_PAGE2048     0x00000008 /* 2048-byte page chips */
 #define OPT_SMARTMEDIA   0x00000010 /* SmartMedia technology chips */
-#define OPT_AUTOINCR     0x00000020 /* page number auto incrementation is possible */
 #define OPT_PAGE512_8BIT 0x00000040 /* 512-byte page chips with 8-bit bus width */
 #define OPT_PAGE4096     0x00000080 /* 4096-byte page chips */
-#define OPT_LARGEPAGE    (OPT_PAGE2048 | OPT_PAGE4096) /* 2048 & 4096-byte page chips */
+#define OPT_PAGE8192     0x00000100 /* 8192-byte page chips */
+#define OPT_PAGE16384    0x00000200 /* 16384-byte page chips */
+#define OPT_LARGEPAGE    (OPT_PAGE2048 | OPT_PAGE4096 | OPT_PAGE8192 | OPT_PAGE16384) /* over 2048-byte */
 #define OPT_SMALLPAGE    (OPT_PAGE256  | OPT_PAGE512)  /* 256 and 512-byte page chips */
 
 /* Remove action bits from state */
@@ -303,7 +346,7 @@ struct nandsim {
 	unsigned int nbparts;
 
 	uint busw;              /* flash chip bus width (8 or 16) */
-	u_char ids[4];          /* chip's ID bytes */
+	u_char ids[6];          /* chip's ID bytes */
 	uint32_t options;       /* chip's characteristic bits */
 	uint32_t state;         /* current chip state */
 	uint32_t nxstate;       /* next expected state */
@@ -588,13 +631,17 @@ static int init_nandsim(struct mtd_info *mtd)
 		ns->options |= OPT_PAGE256;
 	}
 	else if (ns->geom.pgsz == 512) {
-		ns->options |= (OPT_PAGE512 | OPT_AUTOINCR);
+		ns->options |= OPT_PAGE512;
 		if (ns->busw == 8)
 			ns->options |= OPT_PAGE512_8BIT;
 	} else if (ns->geom.pgsz == 2048) {
 		ns->options |= OPT_PAGE2048;
 	} else if (ns->geom.pgsz == 4096) {
 		ns->options |= OPT_PAGE4096;
+	} else if (ns->geom.pgsz == 8192) {
+		ns->options |= OPT_PAGE8192;
+	} else if (ns->geom.pgsz == 16384) {
+		ns->options |= OPT_PAGE16384;
 	} else {
 		NS_ERR("init_nandsim: unknown page size %u\n", ns->geom.pgsz);
 		return -EIO;
@@ -657,8 +704,6 @@ static int init_nandsim(struct mtd_info *mtd)
         for (i = 0; nand_flash_ids[i].name != NULL; i++) {
                 if (second_id_byte != nand_flash_ids[i].id)
                         continue;
-		if (!(nand_flash_ids[i].options & NAND_NO_AUTOINCR))
-			ns->options |= OPT_AUTOINCR;
 	}
 
 	if (ns->busw == 16)
@@ -1402,10 +1447,14 @@ int do_read_error(struct nandsim *ns, int num)
 	unsigned int page_no = ns->regs.row;
 
 	if (read_error(page_no)) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
+		prandom_bytes(ns->buf.byte, num);
+#else
 		int i;
 		memset(ns->buf.byte, 0xFF, num);
 		for (i = 0; i < num; ++i)
 			ns->buf.byte[i] = random32();
+#endif
 		NS_WARN("simulating read error in page %u\n", page_no);
 		return 1;
 	}
@@ -1930,20 +1979,8 @@ static u_char ns_nand_read_byte(struct mtd_info *mtd)
 	if (ns->regs.count == ns->regs.num) {
 		NS_DBG("read_byte: all bytes were read\n");
 
-		/*
-		 * The OPT_AUTOINCR allows to read next consecutive pages without
-		 * new read operation cycle.
-		 */
-		if ((ns->options & OPT_AUTOINCR) && NS_STATE(ns->state) == STATE_DATAOUT) {
-			ns->regs.count = 0;
-			if (ns->regs.row + 1 < ns->geom.pgnum)
-				ns->regs.row += 1;
-			NS_DBG("read_byte: switch to the next page (%#x)\n", ns->regs.row);
-			do_state_action(ns, ACTION_CPY);
-		}
-		else if (NS_STATE(ns->nxstate) == STATE_READY)
+		if (NS_STATE(ns->nxstate) == STATE_READY)
 			switch_state(ns);
-
 	}
 
 	return outb;
@@ -2197,14 +2234,7 @@ static void ns_nand_read_buf(struct mtd_info *mtd, u_char *buf, int len)
 	ns->regs.count += len;
 
 	if (ns->regs.count == ns->regs.num) {
-		if ((ns->options & OPT_AUTOINCR) && NS_STATE(ns->state) == STATE_DATAOUT) {
-			ns->regs.count = 0;
-			if (ns->regs.row + 1 < ns->geom.pgnum)
-				ns->regs.row += 1;
-			NS_DBG("read_buf: switch to the next page (%#x)\n", ns->regs.row);
-			do_state_action(ns, ACTION_CPY);
-		}
-		else if (NS_STATE(ns->nxstate) == STATE_READY)
+		if (NS_STATE(ns->nxstate) == STATE_READY)
 			switch_state(ns);
 	}
 
@@ -2292,6 +2322,8 @@ static int __init ns_init_module(void)
 	nand->ids[1] = second_id_byte;
 	nand->ids[2] = third_id_byte;
 	nand->ids[3] = fourth_id_byte;
+	nand->ids[4] = fifth_id_byte;
+	nand->ids[5] = sixth_id_byte;
 	if (bus_width == 16) {
 		nand->busw = 16;
 		chip->options |= NAND_BUSWIDTH_16;
@@ -2355,7 +2387,6 @@ static int __init ns_init_module(void)
 		uint64_t new_size = (uint64_t)nsmtd->erasesize << overridesize;
 		if (new_size >> overridesize != nsmtd->erasesize) {
 			NS_ERR("overridesize is too big\n");
-			retval = -EINVAL;
 			goto err_exit;
 		}
 		/* N.B. This relies on nand_scan not doing anything with the size before we change it */
@@ -2371,8 +2402,12 @@ static int __init ns_init_module(void)
 	if ((retval = init_nandsim(nsmtd)) != 0)
 		goto err_exit;
 
-	if ((retval = nand_default_bbt(nsmtd)) != 0)
+// compile warning fixup.
+//	if ((retval = nand_default_bbt(nsmtd)) != 0)
+//		goto err_exit;
+	if ((retval = chip->scan_bbt(nsmtd)) != 0)
 		goto err_exit;
+
 
 	if ((retval = parse_badblocks(nand, nsmtd)) != 0)
 		goto err_exit;

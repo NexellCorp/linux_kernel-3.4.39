@@ -125,7 +125,8 @@ struct mtd_write_req {
 struct mtd_info_user {
 	__u8 type;
 	__u32 flags;
-	__u32 size;	/* Total size of the MTD */
+//	__u32 size;	/* Total size of the MTD */
+	__u64 size;	/* freestyle: Total size of the MTD */
 	__u32 erasesize;
 	__u32 writesize;
 	__u32 oobsize;	/* Amount of OOB data per block (e.g. 16) */
@@ -133,8 +134,9 @@ struct mtd_info_user {
 };
 
 struct region_info_user {
-	__u32 offset;		/* At which this region starts,
-				 * from the beginning of the MTD */
+//	__u32 offset;		/* At which this region starts,
+//				 * from the beginning of the MTD */
+	__u64 offset;		/* freestyle: At which this region starts, */
 	__u32 erasesize;	/* For this region */
 	__u32 numblocks;	/* Number of blocks in this region */
 	__u32 regionindex;
