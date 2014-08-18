@@ -251,9 +251,16 @@ static void suspend_cores(suspend_state_t stat)
 {
 	unsigned int core = 0, clamp = 0;
 	unsigned int reset = 0;
-	int cpu = 1, num = nr_cpu_ids;
+	int cpu = 0, num = nr_cpu_ids;
+	int cur = smp_processor_id();
 
-	for (; num > cpu; cpu++) {
+	for (cpu = 0; num > cpu; cpu++) {
+		if (cpu == cur) {
+			if (0 != cur)
+				lldebugout("suspend cpu.%d\n", cur);
+			continue;
+		}
+
 		switch (cpu) {
 		case 1:	clamp  = TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CLAMPCPU1;
 				core  = TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CPU1PWRDOWN;
@@ -556,7 +563,7 @@ static int __powerdown(unsigned long arg)
 		return 0;
 	}
 
-	lldebugout("suspend machine\n", __func__);
+	lldebugout("suspend machine\n");
 	power_down = (void (*)(ulong, ulong))((ulong)do_suspend + 0x220);
 	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
 
