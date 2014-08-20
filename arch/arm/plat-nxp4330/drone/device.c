@@ -1283,42 +1283,6 @@ static struct spi_board_info spi_plat_board[] __initdata = {
  * DW MMC board config
  */
 #if defined(CONFIG_MMC_DW)
-static int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
-{
-	return 0;
-}
-
-static int _dwmci_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
-{
-	return 0;
-}
-
-static int _dwmci_get_ro(u32 slot_id)
-{
-	return 0;
-}
-
-static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
-{
-	struct dw_mci *host = (struct dw_mci *)data;
-	int io  = CFG_SDMMC0_DETECT_IO;
-	int irq = IRQ_GPIO_START + io;
-	int id  = 0, ret = 0;
-
-	printk("dw_mmc dw_mmc.%d: Using external card detect irq %3d (io %2d)\n", id, irq, io);
-
-	ret  = request_irq(irq, handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
-				DEV_NAME_SDHC "0", (void*)host->slot[slot_id]);
-	if (0 > ret)
-		pr_err("dw_mmc dw_mmc.%d: fail request interrupt %d ...\n", id, irq);
-	return 0;
-}
-static int _dwmci0_get_cd(u32 slot_id)
-{
-	int io = CFG_SDMMC0_DETECT_IO;
-	return nxp_soc_gpio_get_in_value(io);
-}
-
 
 #ifdef CONFIG_MMC_NEXELL_CH0
 static struct dw_mci_board _dwmci0_data = {
@@ -1353,16 +1317,53 @@ static struct dw_mci_board _dwmci1_data = {
 #endif
 
 #ifdef CONFIG_MMC_NEXELL_CH2
+static int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
+{
+	return 0;
+}
+
+static int _dwmci_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
+{
+	return 0;
+}
+
+static int _dwmci_get_ro(u32 slot_id)
+{
+	return 0;
+}
+
+static int _dwmci2_init(u32 slot_id, irq_handler_t handler, void *data)
+{
+	struct dw_mci *host = (struct dw_mci *)data;
+	int io  = CFG_SDMMC2_DETECT_IO;
+	int irq = IRQ_GPIO_START + io;
+	int id  = 0, ret = 0;
+
+	printk("dw_mmc dw_mmc.%d: Using external card detect irq %3d (io %2d)\n", id, irq, io);
+
+	ret  = request_irq(irq, handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+				DEV_NAME_SDHC "2", (void*)host->slot[slot_id]);
+	if (0 > ret)
+		pr_err("dw_mmc dw_mmc.%d: fail request interrupt %d ...\n", id, irq);
+	return 0;
+}
+
+static int _dwmci2_get_cd(u32 slot_id)
+{
+	int io = CFG_SDMMC2_DETECT_IO;
+	return nxp_soc_gpio_get_in_value(io);
+}
+
 static struct dw_mci_board _dwmci2_data = {
 	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 100 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(3) | DW_MMC_SAMPLE_PHASE(0),
-	.init			= _dwmci0_init,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.init			= _dwmci2_init,
 	.get_ro         = _dwmci_get_ro,
-	.get_cd			= _dwmci0_get_cd,
+	.get_cd			= _dwmci2_get_cd,
 	.ext_cd_init	= _dwmci_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
 };
