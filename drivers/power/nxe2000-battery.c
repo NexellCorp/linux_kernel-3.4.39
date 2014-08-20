@@ -2208,10 +2208,10 @@ static void nxe2000_sw_ubc_work(struct work_struct *work)
 	}
 #else
 
-	if (val == info->is_sdp_type)
-		temp = info->ch_ilim_usb;
+	if (info->is_sdp_type)
+		temp = (val & 0xE0) | info->ch_ilim_usb;
 	else
-		temp = info->ch_ilim_dcp;
+		temp = (val & 0xE0) | info->ch_ilim_dcp;
 
 	if (val != temp)
 		info->flag_set_ilimit = false;
