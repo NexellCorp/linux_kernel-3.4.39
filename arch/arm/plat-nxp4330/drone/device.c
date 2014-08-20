@@ -33,6 +33,10 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
+#if defined(CONFIG_NXP_HDMI_CEC)
+#include <mach/nxp-hdmi-cec.h>
+#endif
+
 /*------------------------------------------------------------------------------
  * BUS Configure
  */
@@ -612,8 +616,8 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1200000, 1, 12);	/* 1.2V ARM */
 NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1, 14);	/* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
-NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.6V DDR */
-NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  8);	/* 1.6V SYS */
+NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
+NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  8);	/* 1.5V SYS */
 #if defined(CONFIG_RFKILL_NEXELL)
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 0,  2);	/* 3.3V GPS */
 #else
@@ -1409,6 +1413,15 @@ int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on)
 EXPORT_SYMBOL(nxp_hsic_phy_pwr_on);
 
 /*------------------------------------------------------------------------------
+ * HDMI CEC driver
+ */
+#if defined(CONFIG_NXP_HDMI_CEC)
+static struct platform_device hdmi_cec_device = {
+	.name			= NXP_HDMI_CEC_DRV_NAME,
+};
+#endif /* CONFIG_NXP_HDMI_CEC */
+
+/*------------------------------------------------------------------------------
  * register board platform devices
  */
 void __init nxp_board_devices_register(void)
@@ -1509,6 +1522,11 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_RFKILL_NEXELL)
     printk("plat: add device rfkill\n");
     platform_device_register(&rfkill_device);
+#endif
+
+#if defined(CONFIG_NXP_HDMI_CEC)
+    printk("plat: add device hdmi-cec\n");
+    platform_device_register(&hdmi_cec_device);
 #endif
 
 	/* END */
