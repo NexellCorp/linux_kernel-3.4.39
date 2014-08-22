@@ -33,6 +33,10 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
+#if defined(CONFIG_NXP_HDMI_CEC)
+#include <mach/nxp-hdmi-cec.h>
+#endif
+
 /*------------------------------------------------------------------------------
  * BUS Configure
  */
@@ -612,8 +616,8 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1200000, 1, 12);	/* 1.2V ARM */
 NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1, 14);	/* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
-NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1600000, 1, -1);	/* 1.6V DDR */
-NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1600000, 1,  8);	/* 1.6V SYS */
+NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
+NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  8);	/* 1.5V SYS */
 #if defined(CONFIG_RFKILL_NEXELL)
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 0,  2);	/* 3.3V GPS */
 #else
@@ -694,10 +698,10 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 	.gpio_pmic_vbus		= CFG_GPIO_PMIC_VUSB_DET,
 	.gpio_pmic_lowbat	= CFG_GPIO_PMIC_LOWBAT_DET,
 
-	.alarm_vol_mv		= 3400,
+	.alarm_vol_mv		= 3450,
 //	.alarm_vol_mv		= 3412,
 	.bat_impe			= 1500,
-	.slp_ibat			= 3400,
+	.slp_ibat			= 3600,
 //	.adc_channel		= NXE2000_ADC_CHANNEL_VBAT,
 	.multiple			= 100,	//100%
 	.monitor_time		= 60,
@@ -712,7 +716,7 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 		.ch_icchg		= 0x03,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
 		.fg_target_vsys	= 3450,	/* This value is the target one to DSOC=0% */
 		.fg_target_ibat	= 1000,	/* This value is the target one to DSOC=0% */
-		.fg_poff_vbat	= 0,	/* setting value of 0 per Vbat */
+		.fg_poff_vbat	= 3450,	/* setting value of 0 per Vbat */
 		.jt_en			= 0,	/* JEITA Enable	  = 0 or 1 (1:enable, 0:disable) */
 		.jt_hw_sw		= 1,	/* JEITA HW or SW = 0 or 1 (1:HardWare, 0:SoftWare) */
 		.jt_temp_h		= 50,	/* degree C */
@@ -1283,42 +1287,6 @@ static struct spi_board_info spi_plat_board[] __initdata = {
  * DW MMC board config
  */
 #if defined(CONFIG_MMC_DW)
-static int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
-{
-	return 0;
-}
-
-static int _dwmci_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
-{
-	return 0;
-}
-
-static int _dwmci_get_ro(u32 slot_id)
-{
-	return 0;
-}
-
-static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
-{
-	struct dw_mci *host = (struct dw_mci *)data;
-	int io  = CFG_SDMMC0_DETECT_IO;
-	int irq = IRQ_GPIO_START + io;
-	int id  = 0, ret = 0;
-
-	printk("dw_mmc dw_mmc.%d: Using external card detect irq %3d (io %2d)\n", id, irq, io);
-
-	ret  = request_irq(irq, handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
-				DEV_NAME_SDHC "0", (void*)host->slot[slot_id]);
-	if (0 > ret)
-		pr_err("dw_mmc dw_mmc.%d: fail request interrupt %d ...\n", id, irq);
-	return 0;
-}
-static int _dwmci0_get_cd(u32 slot_id)
-{
-	int io = CFG_SDMMC0_DETECT_IO;
-	return nxp_soc_gpio_get_in_value(io);
-}
-
 
 #ifdef CONFIG_MMC_NEXELL_CH0
 static struct dw_mci_board _dwmci0_data = {
@@ -1353,16 +1321,53 @@ static struct dw_mci_board _dwmci1_data = {
 #endif
 
 #ifdef CONFIG_MMC_NEXELL_CH2
+static int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
+{
+	return 0;
+}
+
+static int _dwmci_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
+{
+	return 0;
+}
+
+static int _dwmci_get_ro(u32 slot_id)
+{
+	return 0;
+}
+
+static int _dwmci2_init(u32 slot_id, irq_handler_t handler, void *data)
+{
+	struct dw_mci *host = (struct dw_mci *)data;
+	int io  = CFG_SDMMC2_DETECT_IO;
+	int irq = IRQ_GPIO_START + io;
+	int id  = 0, ret = 0;
+
+	printk("dw_mmc dw_mmc.%d: Using external card detect irq %3d (io %2d)\n", id, irq, io);
+
+	ret  = request_irq(irq, handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+				DEV_NAME_SDHC "2", (void*)host->slot[slot_id]);
+	if (0 > ret)
+		pr_err("dw_mmc dw_mmc.%d: fail request interrupt %d ...\n", id, irq);
+	return 0;
+}
+
+static int _dwmci2_get_cd(u32 slot_id)
+{
+	int io = CFG_SDMMC2_DETECT_IO;
+	return nxp_soc_gpio_get_in_value(io);
+}
+
 static struct dw_mci_board _dwmci2_data = {
 	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 100 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(3) | DW_MMC_SAMPLE_PHASE(0),
-	.init			= _dwmci0_init,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.init			= _dwmci2_init,
 	.get_ro         = _dwmci_get_ro,
-	.get_cd			= _dwmci0_get_cd,
+	.get_cd			= _dwmci2_get_cd,
 	.ext_cd_init	= _dwmci_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
 };
@@ -1406,6 +1411,15 @@ int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on)
 	return 0;
 }
 EXPORT_SYMBOL(nxp_hsic_phy_pwr_on);
+
+/*------------------------------------------------------------------------------
+ * HDMI CEC driver
+ */
+#if defined(CONFIG_NXP_HDMI_CEC)
+static struct platform_device hdmi_cec_device = {
+	.name			= NXP_HDMI_CEC_DRV_NAME,
+};
+#endif /* CONFIG_NXP_HDMI_CEC */
 
 /*------------------------------------------------------------------------------
  * register board platform devices
@@ -1508,6 +1522,11 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_RFKILL_NEXELL)
     printk("plat: add device rfkill\n");
     platform_device_register(&rfkill_device);
+#endif
+
+#if defined(CONFIG_NXP_HDMI_CEC)
+    printk("plat: add device hdmi-cec\n");
+    platform_device_register(&hdmi_cec_device);
 #endif
 
 	/* END */

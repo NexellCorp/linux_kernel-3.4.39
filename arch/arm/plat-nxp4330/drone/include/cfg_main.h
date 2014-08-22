@@ -202,7 +202,7 @@
 /*------------------------------------------------------------------------------
  * 	SDHC
  */
-#define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
+#define	CFG_SDMMC2_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
 
 
 /*------------------------------------------------------------------------------
@@ -232,7 +232,7 @@
 #define CFG_PWR_WAKEUP_MOD_ALIVE0				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE1				CTRUE
 #define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_BOTHEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE2				CFALSE					/* PMIC - VUSB*/
+#define CFG_PWR_WAKEUP_SRC_ALIVE2				CTRUE					/* PMIC - VUSB*/
 #define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE3				CFALSE					/* PMIC - CRITICAL LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_ASYNC_LOWLEVEL
