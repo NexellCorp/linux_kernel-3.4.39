@@ -244,8 +244,8 @@ typedef struct dwc_otg_qtd {
 	/** Number of DMA descriptors for this QTD */
 	uint8_t n_desc;
 
-	/**
-	 * Last activated frame(packet) index.
+	/** 
+	 * Last activated frame(packet) index. 
 	 * Used in Descriptor DMA mode only.
 	 */
 	uint16_t isoc_frame_index_last;
@@ -331,8 +331,8 @@ typedef struct dwc_otg_qh {
 
 	/** @} */
 
-	/**
-	 * Used instead of original buffer if
+	/** 
+	 * Used instead of original buffer if 
 	 * it(physical address) is not dword-aligned.
 	 */
 	uint8_t *dw_align_buf;
@@ -350,9 +350,9 @@ typedef struct dwc_otg_qh {
 	/** Descriptor List physical address. */
 	dwc_dma_t desc_list_dma;
 
-	/**
+	/** 
 	 * Xfer Bytes array.
-	 * Each element corresponds to a descriptor and indicates
+	 * Each element corresponds to a descriptor and indicates 
 	 * original XferSize size value for the descriptor.
 	 */
 	uint32_t *n_bytes;
@@ -370,6 +370,8 @@ typedef struct dwc_otg_qh {
 
 	uint16_t speed;
 	uint16_t frame_usecs[8];
+
+	uint32_t skip_count;
 } dwc_otg_qh_t;
 
 DWC_CIRCLEQ_HEAD(hc_list, dwc_hc);
@@ -574,6 +576,12 @@ struct dwc_otg_hcd {
 	/** Frame List */
 	uint32_t *frame_list;
 
+	/** Hub - Port assignment */
+	int hub_port[128];
+#ifdef FIQ_DEBUG
+	int hub_port_alloc[2048];
+#endif
+
 	/** Frame List DMA address */
 	dma_addr_t frame_list_dma;
 
@@ -595,11 +603,6 @@ struct dwc_otg_hcd {
 	uint32_t hfnum_other_samples_b;
 	uint64_t hfnum_other_frrem_accum_b;
 #endif
-
-    // psw0523 add for pm
-#ifdef CONFIG_PM
-    struct notifier_block pm_notify;
-#endif
 };
 
 /** @name Transaction Execution Functions */
@@ -609,12 +612,16 @@ extern dwc_otg_transaction_type_e dwc_otg_hcd_select_transactions(dwc_otg_hcd_t
 extern void dwc_otg_hcd_queue_transactions(dwc_otg_hcd_t * hcd,
 					   dwc_otg_transaction_type_e tr_type);
 
+int dwc_otg_hcd_allocate_port(dwc_otg_hcd_t * hcd, dwc_otg_qh_t *qh);
+void dwc_otg_hcd_release_port(dwc_otg_hcd_t * dwc_otg_hcd, dwc_otg_qh_t *qh);
+
+
 /** @} */
 
 /** @name Interrupt Handler Functions */
 /** @{ */
 extern int32_t dwc_otg_hcd_handle_intr(dwc_otg_hcd_t * dwc_otg_hcd);
-extern int32_t dwc_otg_hcd_handle_sof_intr(dwc_otg_hcd_t * dwc_otg_hcd, int32_t);
+extern int32_t dwc_otg_hcd_handle_sof_intr(dwc_otg_hcd_t * dwc_otg_hcd);
 extern int32_t dwc_otg_hcd_handle_rx_status_q_level_intr(dwc_otg_hcd_t *
 							 dwc_otg_hcd);
 extern int32_t dwc_otg_hcd_handle_np_tx_fifo_empty_intr(dwc_otg_hcd_t *
@@ -690,7 +697,6 @@ static inline dwc_otg_qtd_t *dwc_otg_hcd_qtd_alloc(int atomic_alloc)
 static inline void dwc_otg_hcd_qtd_free(dwc_otg_qtd_t * qtd)
 {
 	DWC_FREE(qtd);
-	qtd = NULL;
 }
 
 /** Removes a QTD from list.
@@ -705,8 +711,8 @@ static inline void dwc_otg_hcd_qtd_remove(dwc_otg_hcd_t * hcd,
 	DWC_CIRCLEQ_REMOVE(&qh->qtd_list, qtd, qtd_list_entry);
 }
 
-/** Remove and free a QTD
-  * Need to disable IRQ and hold hcd lock while calling this function out of
+/** Remove and free a QTD 
+  * Need to disable IRQ and hold hcd lock while calling this function out of 
   * interrupt servicing chain */
 static inline void dwc_otg_hcd_qtd_remove_and_free(dwc_otg_hcd_t * hcd,
 						   dwc_otg_qtd_t * qtd,

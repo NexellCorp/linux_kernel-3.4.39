@@ -3441,7 +3441,7 @@ static int set_otg_power_control(struct nxe2000_battery_info *info, int otg_id)
 	if (otg_id)
 	{
 		/* OTG POWER OFF */
-//		gpio_set_value(info->gpio_otg_vbus, 0);
+		gpio_set_value(info->gpio_otg_vbus, 0);
 
 		clr_val = (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN)
 				| (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
@@ -3935,18 +3935,20 @@ static void otgid_detect_irq_work(struct work_struct *work)
 	msleep(10);
 }
 
-void otgid_power_control_by_dwc(int enable)
+int otgid_power_control_by_dwc(int enable)
 {
+	if(info_by_dwc == NULL)
+		return -ENODEV;
+
 	if (info_by_dwc->gpio_otg_usbid > -1) {		
 		if (enable){
 			set_otg_power_control(info_by_dwc, 0);
 		}
 		else{
-			gpio_set_value(info_by_dwc->gpio_otg_vbus, 0);
-			queue_delayed_work(info_by_dwc->monitor_wqueue, &info_by_dwc->otgid_detect_work, msecs_to_jiffies(20));
-	//		set_otg_power_control(info_by_dwc, 1);
+			set_otg_power_control(info_by_dwc, 1);
 		}
 	}
+	return 0;
 }
 EXPORT_SYMBOL(otgid_power_control_by_dwc);
 

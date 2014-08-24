@@ -162,7 +162,7 @@ fail:
 
 
 /**
- * usb_gadget_get_string - fill out a string descriptor
+ * usb_gadget_get_string - fill out a string descriptor 
  * @table: of c strings encoded using UTF-8
  * @id: string id, from low byte of wValue in get string descriptor
  * @buf: at least 256 bytes
@@ -284,7 +284,7 @@ int usb_gadget_config_buf(
 	/* config descriptor first */
 	if (length < USB_DT_CONFIG_SIZE || !desc)
 		return -EINVAL;
-	*cp = *config;
+	*cp = *config; 
 
 	/* then interface/endpoint/class/vendor/... */
 	len = usb_descriptor_fillbuf(USB_DT_CONFIG_SIZE + (u8*)buf,
@@ -596,7 +596,7 @@ static const struct usb_cs_as_general_descriptor
 z_audio_cs_as_if_desc = {
 	.bLength = 7,
 	.bDescriptorType = 0x24,
-
+	
 	.bDescriptorSubType = 0x01,
 	.bTerminalLink = 0x01,
 	.bDelay = 0x0,
@@ -604,11 +604,11 @@ z_audio_cs_as_if_desc = {
 };
 
 
-static const struct usb_cs_as_format_descriptor
+static const struct usb_cs_as_format_descriptor 
 z_audio_cs_as_format_desc = {
 	.bLength = 0xe,
 	.bDescriptorType = 0x24,
-
+	
 	.bDescriptorSubType = 2,
 	.bFormatType = 1,
 	.bNrChannels = 1,
@@ -619,7 +619,7 @@ z_audio_cs_as_format_desc = {
 	.tUpperSamFreq = {0xe2, 0xd6, 0x00},
 };
 
-static const struct usb_endpoint_descriptor
+static const struct usb_endpoint_descriptor 
 z_iso_ep = {
 	.bLength = 0x09,
 	.bDescriptorType = 0x05,
@@ -628,31 +628,31 @@ z_iso_ep = {
 	.wMaxPacketSize = 0x0038,
 	.bInterval = 0x01,
 	.bRefresh = 0x00,
-	.bSynchAddress = 0x00,
+	.bSynchAddress = 0x00,	
 };
 
 static char z_iso_ep2[] = {0x07, 0x25, 0x01, 0x00, 0x02, 0x00, 0x02};
 
 // 9 bytes
-static char z_ac_interface_header_desc[] =
+static char z_ac_interface_header_desc[] = 
 { 0x09, 0x24, 0x01, 0x00, 0x01, 0x2b, 0x00, 0x01, 0x01 };
 
 // 12 bytes
-static char z_0[] = {0x0c, 0x24, 0x02, 0x01, 0x01, 0x01, 0x00, 0x02,
+static char z_0[] = {0x0c, 0x24, 0x02, 0x01, 0x01, 0x01, 0x00, 0x02, 
 		     0x03, 0x00, 0x00, 0x00};
 // 13 bytes
-static char z_1[] = {0x0d, 0x24, 0x06, 0x02, 0x01, 0x02, 0x15, 0x00,
+static char z_1[] = {0x0d, 0x24, 0x06, 0x02, 0x01, 0x02, 0x15, 0x00, 
 		     0x02, 0x00, 0x02, 0x00, 0x00};
 // 9 bytes
-static char z_2[] = {0x09, 0x24, 0x03, 0x03, 0x01, 0x03, 0x00, 0x02,
+static char z_2[] = {0x09, 0x24, 0x03, 0x03, 0x01, 0x03, 0x00, 0x02, 
 		     0x00};
 
-static char za_0[] = {0x09, 0x04, 0x01, 0x02, 0x01, 0x01, 0x02, 0x00,
+static char za_0[] = {0x09, 0x04, 0x01, 0x02, 0x01, 0x01, 0x02, 0x00, 
 		      0x00};
 
 static char za_1[] = {0x07, 0x24, 0x01, 0x01, 0x00, 0x01, 0x00};
 
-static char za_2[] = {0x0e, 0x24, 0x02, 0x01, 0x02, 0x01, 0x08, 0x00,
+static char za_2[] = {0x0e, 0x24, 0x02, 0x01, 0x02, 0x01, 0x08, 0x00, 
 		      0x7e, 0x13, 0x00, 0xe2, 0xd6, 0x00};
 
 static char za_3[] = {0x09, 0x05, 0x04, 0x09, 0x70, 0x00, 0x01, 0x00,
@@ -686,12 +686,12 @@ static char za_13[] = {0x09, 0x05, 0x04, 0x09, 0xe0, 0x00, 0x01, 0x00,
 
 static char za_14[] = {0x07, 0x25, 0x01, 0x00, 0x02, 0x00, 0x02};
 
-static char za_15[] = {0x09, 0x04, 0x01, 0x05, 0x01, 0x01, 0x02, 0x00,
+static char za_15[] = {0x09, 0x04, 0x01, 0x05, 0x01, 0x01, 0x02, 0x00, 
 		       0x00};
 
 static char za_16[] = {0x07, 0x24, 0x01, 0x01, 0x00, 0x01, 0x00};
 
-static char za_17[] = {0x0e, 0x24, 0x02, 0x01, 0x01, 0x03, 0x14, 0x00,
+static char za_17[] = {0x0e, 0x24, 0x02, 0x01, 0x01, 0x03, 0x14, 0x00, 
 		       0x7e, 0x13, 0x00, 0xe2, 0xd6, 0x00};
 
 static char za_18[] = {0x09, 0x05, 0x04, 0x09, 0xa8, 0x00, 0x01, 0x00,
@@ -704,7 +704,7 @@ static char za_20[] = {0x09, 0x04, 0x01, 0x06, 0x01, 0x01, 0x02, 0x00,
 
 static char za_21[] = {0x07, 0x24, 0x01, 0x01, 0x00, 0x01, 0x00};
 
-static char za_22[] = {0x0e, 0x24, 0x02, 0x01, 0x02, 0x03, 0x14, 0x00,
+static char za_22[] = {0x0e, 0x24, 0x02, 0x01, 0x02, 0x03, 0x14, 0x00, 
 		       0x7e, 0x13, 0x00, 0xe2, 0xd6, 0x00};
 
 static char za_23[] = {0x09, 0x05, 0x04, 0x09, 0x50, 0x01, 0x01, 0x00,
@@ -806,7 +806,7 @@ config_buf (struct usb_gadget *gadget, u8 *buf, u8 type, unsigned index)
 {
 	int len;
 	const struct usb_descriptor_header **function;
-
+	
 	function = z_function;
 	len = usb_gadget_config_buf (&z_config, buf, USB_BUFSIZ, function);
 	if (len < 0)
@@ -906,7 +906,7 @@ static void zero_reset_config (struct zero_dev *dev)
 
 #define _write(f, buf, sz) (f->f_op->write(f, buf, sz, &f->f_pos))
 
-static void
+static void 
 zero_isoc_complete (struct usb_ep *ep, struct usb_request *req)
 {
 	struct zero_dev	*dev = ep->driver_data;
@@ -1253,7 +1253,7 @@ zero_setup (struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		case 0x0300:
 			((u8*)req->buf)[0] = 0x60;
 			break;
-		case 0x0500:
+		case 0x0500:	
 			((u8*)req->buf)[0] = 0x18;
 			break;
 		}
@@ -1283,7 +1283,7 @@ zero_setup (struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		value = ctrl->wLength;
 		break;
 
-
+	
 	default:
 unknown:
 		printk("unknown control req%02x.%02x v%04x i%04x l%d\n",
@@ -1521,7 +1521,7 @@ static int isoc_read_data (char *page, char **start,
 		page[i] = rbuf[(c+s) % RBUF_LEN];
 	}
 	*start = page;
-
+	
 	if (c >= rbuf_len) {
 		*eof = 1;
 		done = 1;
@@ -1568,7 +1568,7 @@ static void __exit cleanup (void)
 {
 
 	usb_gadget_unregister_driver (&zero_driver);
-
+	
 	remove_proc_entry("isoc_data", pdir);
 	remove_proc_entry("isoc_test", NULL);
 }

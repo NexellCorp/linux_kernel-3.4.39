@@ -334,8 +334,6 @@ extern void dwc_otg_pcd_remote_wakeup(dwc_otg_pcd_t * pcd, int set);
 
 /** Starts micorsecond soft disconnect. */
 extern void dwc_otg_pcd_disconnect_us(dwc_otg_pcd_t * pcd, int no_of_usecs);
-// add by kook - for android gadget [20130419]
-extern void dwc_otg_pcd_softconnect(dwc_otg_pcd_t * pcd, int is_set);
 /** This function returns whether device is dualspeed.*/
 extern uint32_t dwc_otg_pcd_is_dualspeed(dwc_otg_pcd_t * pcd);
 

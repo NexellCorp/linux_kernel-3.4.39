@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-#
+# 
 # Run this program on the integrator
 # - Tests select sysfs attributes.
 # - Todo ... test more attributes, hnp/srp, buspower/bussuspend, etc.

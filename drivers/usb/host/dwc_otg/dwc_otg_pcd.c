@@ -76,42 +76,6 @@ static dwc_otg_pcd_ep_t *get_ep_from_handle(dwc_otg_pcd_t * pcd, void *handle)
 }
 
 /**
- * psw0523 add for free align buf
- */
-#ifdef CFG_USE_FREE_LIST
-static void free_align_buf(void *p)
-{
-	dwc_otg_pcd_t *pcd = p;
-	struct list_head *plist = &pcd->free_list;
-	struct free_dw_align_buf *buf = NULL;
-
-	while (!list_empty(plist)) {
-		buf = list_first_entry(plist, struct free_dw_align_buf, list);
-		if (buf) {
-			DWC_DMA_FREE(buf->length, buf->buf, buf->dma);
-			list_del(&buf->list);
-			kfree(buf);
-			buf = NULL;
-		}
-	}
-}
-
-void add_free_list(dwc_otg_pcd_ep_t *ep, uint8_t *buf, dwc_dma_t dma, uint32_t length)
-{
-	struct free_dw_align_buf *free_buf = kzalloc(sizeof(struct free_dw_align_buf), GFP_KERNEL);
-
-	free_buf->buf = buf;
-	free_buf->dma = dma;
-	free_buf->length = length;
-
-	list_add_tail(&free_buf->list, &ep->pcd->free_list);
-	DWC_WORKQ_SCHEDULE(ep->pcd->work_align_buf_free, free_align_buf, ep->pcd, "free dwc align buf");
-
-	return;
-}
-#endif
-
-/**
  * This function completes a request.  It call's the request call back.
  */
 void dwc_otg_request_done(dwc_otg_pcd_ep_t * ep, dwc_otg_pcd_request_t * req,
@@ -119,31 +83,28 @@ void dwc_otg_request_done(dwc_otg_pcd_ep_t * ep, dwc_otg_pcd_request_t * req,
 {
 	unsigned stopped = ep->stopped;
 
-	DWC_DEBUGPL(DBG_PCDV, "%s(ep %p req (%p - %p) %p:%d to %x, align buf %p\n",
-		__func__, ep, req, req->priv, req->buf, req->length, req->dma, req->dw_align_buf);
+	DWC_DEBUGPL(DBG_PCD, "%s(ep %p req (%p - %p) %p:%d to %x, align buf %p (%s)\n",
+		__func__, ep, req, req->priv, req->buf, req->length, req->dma,
+		req->dw_align_buf, ep->dwc_ep.is_in?"in":"out");
+
 	DWC_CIRCLEQ_REMOVE_INIT(&ep->queue, req, queue_entry);
 
 	/* don't modify queue heads during completion callback */
 	ep->stopped = 1;
 	/* spin_unlock/spin_lock now done in fops->complete() */
+#if defined(CONFIG_ARCH_CPU_NEXELL)
+	ep->pcd->fops->complete(ep->pcd, ep->priv, req, status,
+				req->actual);
+#else
 	ep->pcd->fops->complete(ep->pcd, ep->priv, req->priv, status,
 				req->actual);
-
+#endif
 	if (ep->pcd->request_pending > 0) {
 		--ep->pcd->request_pending;
 	}
 
 	ep->stopped = stopped;
-
-// psw0523 fix
-#ifdef CFG_USE_FREE_LIST
-	if (req->dw_align_buf) {
-		add_free_list(ep, req->dw_align_buf, req->dw_align_buf_dma, req->length);
-	}
-#endif
-// end psw0523
 	DWC_FREE(req);
-	req = NULL;
 }
 
 /**
@@ -286,7 +247,7 @@ static dwc_otg_cil_callbacks_t pcd_callbacks = {
 dwc_otg_dev_dma_desc_t *dwc_otg_ep_alloc_desc_chain(dwc_dma_t * dma_desc_addr,
 						    uint32_t count)
 {
-	return DWC_DMA_ALLOC_ATOMIC(count * sizeof(dwc_otg_dev_dma_desc_t),
+	return DWC_DMA_ALLOC_ATOMIC(count * sizeof(dwc_otg_dev_dma_desc_t), 
 							dma_desc_addr);
 }
 
@@ -614,7 +575,7 @@ void dwc_otg_iso_ep_start_buf_transfer(dwc_otg_core_if_t * core_if,
 			/* Program the transfer size and packet count
 			 *      as follows: xfersize = N * maxpacket +
 			 *      short_packet pktcnt = N + (short_packet
-			 *      exist ? 1 : 0)
+			 *      exist ? 1 : 0) 
 			 */
 			deptsiz.b.mc = ep->pkt_per_frm;
 			deptsiz.b.xfersize = ep->xfer_len;
@@ -697,7 +658,7 @@ static void dwc_otg_iso_ep_start_transfer(dwc_otg_core_if_t * core_if,
 
 /**
  * This function stops transfer for an EP and
- * resets the ep's variables.
+ * resets the ep's variables. 
  *
  * @param core_if Programming view of DWC_otg controller.
  * @param ep The EP to start the transfer on.
@@ -873,7 +834,6 @@ int dwc_otg_pcd_iso_ep_stop(dwc_otg_pcd_t * pcd, void *ep_handle,
 	dwc_otg_iso_ep_stop_transfer(GET_CORE_IF(pcd), dwc_ep);
 
 	DWC_FREE(dwc_ep->pkt_info);
-	dwc_ep->pkt_info = NULL;
 	DWC_SPINLOCK_IRQSAVE(pcd->lock, &flags);
 	if (ep->iso_req_handle != req_handle) {
 		DWC_SPINUNLOCK_IRQRESTORE(pcd->lock, flags);
@@ -1049,7 +1009,7 @@ static void srp_timeout(void *ptr)
 	gotgctl.d32 = DWC_READ_REG32(addr);
 
 	core_if->srp_timer_started = 0;
-
+	
 	if (core_if->adp_enable) {
 		if (gotgctl.b.bsesvld == 0) {
 			gpwrdn_data_t gpwrdn = {.d32 = 0 };
@@ -1168,8 +1128,8 @@ dwc_otg_pcd_t *dwc_otg_pcd_init(dwc_otg_core_if_t * core_if)
 	}
 
 	pcd->lock = DWC_SPINLOCK_ALLOC();
-	DWC_DEBUGPL(DBG_HCDV, "Init of PCD %p given core_if %p\n",
-			pcd, core_if);//GRAYG
+        DWC_DEBUGPL(DBG_HCDV, "Init of PCD %p given core_if %p\n",
+                    pcd, core_if);//GRAYG
 	if (!pcd->lock) {
 		DWC_ERROR("Could not allocate lock for pcd");
 		DWC_FREE(pcd);
@@ -1189,9 +1149,9 @@ dwc_otg_pcd_t *dwc_otg_pcd_init(dwc_otg_core_if_t * core_if)
 	}
 
 	/*
-	 * Initialized the Core for Device mode here if there is nod ADP support.
+	 * Initialized the Core for Device mode here if there is nod ADP support. 
 	 * Otherwise it will be done later in dwc_otg_adp_start routine.
-	 */
+	 */																				 
 	if (dwc_otg_is_device_mode(core_if) /*&& !core_if->adp_enable*/) {
 		dwc_otg_core_dev_init(core_if);
 	}
@@ -1308,9 +1268,9 @@ dwc_otg_pcd_t *dwc_otg_pcd_init(dwc_otg_core_if_t * core_if)
 
 	/* Initialize SRP timer */
 	core_if->srp_timer = DWC_TIMER_ALLOC("SRP TIMER", srp_timeout, core_if);
-
+	
 	if (core_if->core_params->dev_out_nak) {
-		/**
+		/** 
 		* Initialize xfer timeout timer. Implemented for
 		* 2.93a feature "Device DDMA OUT NAK Enhancement"
 		*/
@@ -1320,54 +1280,23 @@ dwc_otg_pcd_t *dwc_otg_pcd_init(dwc_otg_core_if_t * core_if)
 				&pcd->core_if->ep_xfer_info[i]);
 		}
 	}
-
-// psw0523 debugging
-	//dwc_otg_dump_dev_registers(core_if);
-
-	/* psw0523 add for align_buf free work */
-#ifdef CFG_USE_FREE_LIST
-	pcd->work_align_buf_free = DWC_WORKQ_ALLOC("dwc_otg_free_alignbuf");
-	INIT_LIST_HEAD(&pcd->free_list);
-#endif
-// end psw0523
-
+	
 	return pcd;
 #ifdef DWC_UTE_CFI
 fail:
 #endif
-	if (GET_CORE_IF(pcd)->dma_enable) {
-		DWC_DMA_FREE(sizeof(*pcd->setup_pkt) * 5,
-				pcd->setup_pkt,
-				pcd->setup_pkt_dma_handle);
-		DWC_DMA_FREE(sizeof(uint16_t),
-				pcd->status_buf,
-				pcd->status_buf_dma_handle);
-		if (GET_CORE_IF(pcd)->dma_desc_enable) {
-			dwc_otg_ep_free_desc_chain(
-							dev_if->setup_desc_addr[0],
-							dev_if->dma_setup_desc_addr[0], 1);
-			dwc_otg_ep_free_desc_chain(
-							dev_if->setup_desc_addr[1],
-							dev_if->dma_setup_desc_addr[1], 1);
-			dwc_otg_ep_free_desc_chain(
-							dev_if->in_desc_addr,
-							dev_if->dma_in_desc_addr, 1);
-			dwc_otg_ep_free_desc_chain(
-							dev_if->out_desc_addr,
-							dev_if->dma_out_desc_addr, 1);
-		}
-	} else {
+	if (pcd->setup_pkt)
 		DWC_FREE(pcd->setup_pkt);
+	if (pcd->status_buf)
 		DWC_FREE(pcd->status_buf);
-	}
 #ifdef DWC_UTE_CFI
 	if (pcd->cfi)
 		DWC_FREE(pcd->cfi);
 #endif
 	if (pcd)
 		DWC_FREE(pcd);
-
 	return NULL;
+
 }
 
 /**
@@ -1377,7 +1306,6 @@ void dwc_otg_pcd_remove(dwc_otg_pcd_t * pcd)
 {
 	dwc_otg_dev_if_t *dev_if = GET_CORE_IF(pcd)->dev_if;
 	int i;
-
 	if (pcd->core_if->core_params->dev_out_nak) {
 		for (i = 0; i < MAX_EPS_CHANNELS; i++) {
 			DWC_TIMER_CANCEL(pcd->core_if->ep_xfer_timer[i]);
@@ -1386,33 +1314,27 @@ void dwc_otg_pcd_remove(dwc_otg_pcd_t * pcd)
 	}
 
 	if (GET_CORE_IF(pcd)->dma_enable) {
-		DWC_DMA_FREE(sizeof(*pcd->setup_pkt) * 5,
-				pcd->setup_pkt,
-				pcd->setup_pkt_dma_handle);
-		DWC_DMA_FREE(sizeof(uint16_t),
-				pcd->status_buf,
-				pcd->status_buf_dma_handle);
+		DWC_DMA_FREE(sizeof(*pcd->setup_pkt) * 5, pcd->setup_pkt,
+			     pcd->setup_pkt_dma_handle);
+		DWC_DMA_FREE(sizeof(uint16_t), pcd->status_buf,
+			     pcd->status_buf_dma_handle);
 		if (GET_CORE_IF(pcd)->dma_desc_enable) {
-			dwc_otg_ep_free_desc_chain(
-							dev_if->setup_desc_addr[0],
-							dev_if->dma_setup_desc_addr[0], 1);
-			dwc_otg_ep_free_desc_chain(
-							dev_if->setup_desc_addr[1],
-							dev_if->dma_setup_desc_addr[1], 1);
-			dwc_otg_ep_free_desc_chain(
-							dev_if->in_desc_addr,
-							dev_if->dma_in_desc_addr, 1);
-			dwc_otg_ep_free_desc_chain(
-							dev_if->out_desc_addr,
-							dev_if->dma_out_desc_addr, 1);
+			dwc_otg_ep_free_desc_chain(dev_if->setup_desc_addr[0],
+						   dev_if->dma_setup_desc_addr
+						   [0], 1);
+			dwc_otg_ep_free_desc_chain(dev_if->setup_desc_addr[1],
+						   dev_if->dma_setup_desc_addr
+						   [1], 1);
+			dwc_otg_ep_free_desc_chain(dev_if->in_desc_addr,
+						   dev_if->dma_in_desc_addr, 1);
+			dwc_otg_ep_free_desc_chain(dev_if->out_desc_addr,
+						   dev_if->dma_out_desc_addr,
+						   1);
 		}
 	} else {
 		DWC_FREE(pcd->setup_pkt);
 		DWC_FREE(pcd->status_buf);
 	}
-	pcd->setup_pkt = NULL;
-	pcd->status_buf = NULL;
-
 	DWC_SPINLOCK_FREE(pcd->lock);
 	/* Set core_if's lock pointer to NULL */
 	pcd->core_if->lock = NULL;
@@ -1434,15 +1356,7 @@ void dwc_otg_pcd_remove(dwc_otg_pcd_t * pcd)
 	}
 #endif
 
-// psw0523 debugging
-	/* psw0523 add for align buf free work */
-#ifdef CFG_USE_FREE_LIST
-	DWC_WORKQ_FREE(pcd->work_align_buf_free);
-#endif
-// end psw0523
-
 	DWC_FREE(pcd);
-	pcd = NULL;
 }
 
 /**
@@ -1537,7 +1451,7 @@ static void release_tx_fifo(dwc_otg_core_if_t * core_if, uint32_t fifo_num)
 }
 
 /**
- * This function is being called from gadget
+ * This function is being called from gadget 
  * to enable PCD endpoint.
  */
 int dwc_otg_pcd_ep_enable(dwc_otg_pcd_t * pcd,
@@ -1684,7 +1598,7 @@ int dwc_otg_pcd_ep_enable(dwc_otg_pcd_t * pcd,
 	if (ep->dwc_ep.type == DWC_OTG_EP_TYPE_ISOC) {
 		ep->dwc_ep.bInterval = 1 << (ep->desc->bInterval - 1);
 		ep->dwc_ep.frame_num = 0xFFFFFFFF;
-	}
+	}	 	
 
 	dwc_otg_ep_activate(GET_CORE_IF(pcd), &ep->dwc_ep);
 
@@ -1701,7 +1615,7 @@ out:
 }
 
 /**
- * This function is being called from gadget
+ * This function is being called from gadget 
  * to disable PCD endpoint.
  */
 int dwc_otg_pcd_ep_disable(dwc_otg_pcd_t * pcd, void *ep_handle)
@@ -1750,7 +1664,7 @@ int dwc_otg_pcd_ep_disable(dwc_otg_pcd_t * pcd, void *ep_handle)
 			dptxfsiz.d32 =
 			    (DWC_READ_REG32
 			     (&GET_CORE_IF(pcd)->
-				core_global_regs->dtxfsiz[ep->dwc_ep.tx_fifo_num-1]) >> 16);
+		      		core_global_regs->dtxfsiz[ep->dwc_ep.tx_fifo_num-1]) >> 16);
 			gdfifocfg.b.epinfobase = gdfifocfgbase.d32 - dptxfsiz.d32;
 			if (GET_CORE_IF(pcd)->snpsid <= OTG_CORE_REV_2_94a) {
 				DWC_WRITE_REG32(&GET_CORE_IF(pcd)->core_global_regs->gdfifocfg,
@@ -1759,25 +1673,35 @@ int dwc_otg_pcd_ep_disable(dwc_otg_pcd_t * pcd, void *ep_handle)
 		}
 	}
 
-//-> remark by kook [20140626] - for do not recognized of mass storage.
-#if 0
 	/* Free DMA Descriptors */
 	if (GET_CORE_IF(pcd)->dma_desc_enable) {
 		if (ep->dwc_ep.type != UE_ISOCHRONOUS) {
+#ifdef CONFIG_ARCH_CPU_NEXELL
+			int irqoff = irqs_disabled();
+#endif
 			desc_addr = ep->dwc_ep.desc_addr;
 			dma_desc_addr = ep->dwc_ep.dma_desc_addr;
 
 			/* Cannot call dma_free_coherent() with IRQs disabled */
 			DWC_SPINUNLOCK_IRQRESTORE(pcd->lock, flags);
+#ifdef CONFIG_ARCH_CPU_NEXELL
+			if (irqoff) {
+				DWC_WARN(" irqs disabled, force irqs enable  (in interrupt %s)...\n",
+					in_interrupt() ? "O":"X");
+				local_irq_enable();
+			}
+#endif
 			dwc_otg_ep_free_desc_chain(desc_addr, dma_desc_addr,
 						   MAX_DMA_DESC_CNT);
-
+#ifdef CONFIG_ARCH_CPU_NEXELL
+			if (irqoff) {
+				DWC_WARN(" restore irqs disabled status ...\n");
+				local_irq_disable();
+			}
+#endif
 			goto out_unlocked;
 		}
 	}
-#endif
-//<- remark by kook [20140626] - for do not recognized of mass storage.
-
 	DWC_SPINUNLOCK_IRQRESTORE(pcd->lock, flags);
 
 out_unlocked:
@@ -1797,9 +1721,7 @@ out_unlocked:
 void dwc_pcd_xiso_ereq_free(dwc_otg_pcd_ep_t * ep, dwc_otg_pcd_request_t * req)
 {
 	DWC_FREE(req->ext_req.per_io_frame_descs);
-	req->ext_req.per_io_frame_descs = NULL;
 	DWC_FREE(req);
-	req = NULL;
 }
 
 /**
@@ -1822,7 +1744,7 @@ int dwc_otg_pcd_xiso_start_next_request(dwc_otg_pcd_t * pcd,
 	if (dwcep->xiso_active_xfers > 0) {
 #if 0	//Disable this to decrease s/w overhead that is crucial for Isoc transfers
 		DWC_WARN("There are currently active transfers for EP%d \
-				(active=%d; queued=%d)", dwcep->num, dwcep->xiso_active_xfers,
+				(active=%d; queued=%d)", dwcep->num, dwcep->xiso_active_xfers, 
 				dwcep->xiso_queued_xfers);
 #endif
 		return 0;
@@ -1889,7 +1811,7 @@ int dwc_otg_pcd_xiso_start_next_request(dwc_otg_pcd_t * pcd,
 			/* Setup DMA Descriptor chain for OUT Isoc request */
 			for (i = 0; i < ereq->pio_pkt_count; i++) {
 				//if ((i % (nat + 1)) == 0)
-				dwcep->xiso_frame_num = (dwcep->xiso_bInterval +
+				dwcep->xiso_frame_num = (dwcep->xiso_bInterval + 
 										dwcep->xiso_frame_num) & 0x3FFF;
 				dwcep->desc_addr[i].buf =
 				    req->dma + ddesc_iso[i].offset;
@@ -1906,14 +1828,14 @@ int dwc_otg_pcd_xiso_start_next_request(dwc_otg_pcd_t * pcd,
 				dwcep->desc_addr[i].status.b_iso_out.ioc = 0;
 				dwcep->desc_addr[i].status.b_iso_out.pid = nat + 1;
 				dwcep->desc_addr[i].status.b_iso_out.l = 0;
-
+				
 				/* Process the last descriptor */
 				if (i == ereq->pio_pkt_count - 1) {
 					dwcep->desc_addr[i].status.b_iso_out.ioc = 1;
 					dwcep->desc_addr[i].status.b_iso_out.l = 1;
-				}
+				}			
 			}
-
+			
 			/* Setup and start the transfer for this endpoint */
 			dwcep->xiso_active_xfers++;
 			DWC_WRITE_REG32(&GET_CORE_IF(pcd)->
@@ -2210,32 +2132,26 @@ int dwc_otg_pcd_ep_queue(dwc_otg_pcd_t * pcd, void *ep_handle,
 	req->priv = req_handle;
 	req->dw_align_buf = NULL;
 
-	if ((dma_buf & 0x3) && buflen && GET_CORE_IF(pcd)->dma_enable
+#if defined(CONFIG_ARCH_CPU_NEXELL)
+	if (buflen &&
+		(((unsigned int)buf & 0x3) || (dma_buf & 0x3)) && GET_CORE_IF(pcd)->dma_enable
+#else
+	if ((dma_buf & 0x3) && GET_CORE_IF(pcd)->dma_enable
+#endif
 			&& !GET_CORE_IF(pcd)->dma_desc_enable) {
 		req->dw_align_buf = DWC_DMA_ALLOC(buflen,
 				 &req->dw_align_buf_dma);
-
-		DWC_DEBUGPL(DBG_PCD, "%s: DWC_DMA_ALLOC (req %p) %p:%d dma %x (align %p:%x)\n",
-			__func__, req_handle, req->buf, req->length, req->dma,
-			req->dw_align_buf, req->dw_align_buf_dma);
-
-		if (!req->dw_align_buf) {
-			DWC_ERROR
-				("%s: Failed to allocate memory to handle "
-				 "non-dword aligned buffer case\n",
-				 __func__);
-			return -DWC_E_NO_MEMORY;
-		}
+		DWC_WARN( "%s: DWC_DMA_ALLOC (req %p) %p:%d dma %x (align %p:%x)\n",
+        	__func__, req_handle, req->buf, req->length, req->dma,
+        	req->dw_align_buf, req->dw_align_buf_dma);
 	}
 
 	DWC_SPINLOCK_IRQSAVE(pcd->lock, &flags);
-
 	DWC_DEBUGPL(DBG_PCD, "%s:  (req %p - %p) %p:%d to %x, align buf %p\n",
-		__func__, req, usb_req, req->buf, req->length, req->dma, req->dw_align_buf);
-
+    	__func__, req, req_handle, req->buf, req->length, req->dma, req->dw_align_buf);
 	/*
 	 * After adding request to the queue for IN ISOC wait for In Token Received
-	 * when TX FIFO is empty interrupt and for OUT ISOC wait for OUT Token
+	 * when TX FIFO is empty interrupt and for OUT ISOC wait for OUT Token 
 	 * Received when EP is disabled interrupt to obtain starting microframe
 	 * (odd/even) start transfer
 	 */
@@ -2254,7 +2170,7 @@ int dwc_otg_pcd_ep_queue(dwc_otg_pcd_t * pcd, void *ep_handle,
 						in_ep_regs[ep->dwc_ep.num]->
 						diepctl, depctl.d32);
 			}
-
+			
 			DWC_SPINUNLOCK_IRQRESTORE(pcd->lock, flags);
 		}
 		return 0;
@@ -2350,7 +2266,7 @@ int dwc_otg_pcd_ep_queue(dwc_otg_pcd_t * pcd, void *ep_handle,
 				} else {
 					ep->dwc_ep.dma_addr = dma_buf;
 					ep->dwc_ep.start_xfer_buff = buf;
-					ep->dwc_ep.xfer_buff = buf;
+                                        ep->dwc_ep.xfer_buff = buf;	
 				}
 				ep->dwc_ep.xfer_len = 0;
 				ep->dwc_ep.xfer_count = 0;
@@ -2362,7 +2278,6 @@ int dwc_otg_pcd_ep_queue(dwc_otg_pcd_t * pcd, void *ep_handle,
 					uint32_t out_max_xfer =
 					    DDMA_MAX_TRANSFER_SIZE -
 					    (DDMA_MAX_TRANSFER_SIZE % 4);
-
 					if (ep->dwc_ep.is_in) {
 						if (ep->dwc_ep.maxxfer >
 						    DDMA_MAX_TRANSFER_SIZE) {
@@ -2492,7 +2407,7 @@ int dwc_otg_pcd_ep_wedge(dwc_otg_pcd_t * pcd, void *ep_handle)
 			 ep->dwc_ep.is_in ? "IN" : "OUT");
 		retval = -DWC_E_AGAIN;
 	} else {
-		/* This code needs to be reviewed */
+                /* This code needs to be reviewed */
 		if (ep->dwc_ep.is_in == 1 && GET_CORE_IF(pcd)->dma_desc_enable) {
 			dtxfsts_data_t txstatus;
 			fifosize_data_t txfifosize;
@@ -2532,7 +2447,7 @@ int dwc_otg_pcd_ep_wedge(dwc_otg_pcd_t * pcd, void *ep_handle)
 
 	return retval;
 }
-
+   
 int dwc_otg_pcd_ep_halt(dwc_otg_pcd_t * pcd, void *ep_handle, int value)
 {
 	dwc_otg_pcd_ep_t *ep;
@@ -2741,34 +2656,13 @@ void dwc_otg_pcd_disconnect_us(dwc_otg_pcd_t * pcd, int no_of_usecs)
 		DWC_MODIFY_REG32(&core_if->dev_if->dev_global_regs->dctl, 0, dctl.d32);
 		dwc_udelay(no_of_usecs);
 		DWC_MODIFY_REG32(&core_if->dev_if->dev_global_regs->dctl, dctl.d32,0);
-	} else {
-		DWC_PRINTF("NOT SUPPORTED IN HOST MODE\n");
-	}
-	return;
-}
-
-//--> add by kook - for android gadget [20130419]
-void dwc_otg_pcd_softconnect(dwc_otg_pcd_t * pcd, int is_set)
-{
-	dwc_otg_core_if_t *core_if = GET_CORE_IF(pcd);
-	dwc_irqflags_t flags;
-	dctl_data_t dctl = { 0 };
-
-	if (dwc_otg_is_device_mode(core_if)) {
-		DWC_SPINLOCK_IRQSAVE(pcd->lock, &flags);
-		dctl.b.sftdiscon = 1;
-		if (is_set) {
-			DWC_MODIFY_REG32(&core_if->dev_if->dev_global_regs->dctl, dctl.d32, 0);
-		} else {
-			DWC_MODIFY_REG32(&core_if->dev_if->dev_global_regs->dctl, 0, dctl.d32);
-		}
-		DWC_SPINUNLOCK_IRQRESTORE(pcd->lock, flags);
+		
 	} else{
 		DWC_PRINTF("NOT SUPPORTED IN HOST MODE\n");
 	}
 	return;
+
 }
-//<-- add by kook - for android gadget [20130419]
 
 int dwc_otg_pcd_wakeup(dwc_otg_pcd_t * pcd)
 {

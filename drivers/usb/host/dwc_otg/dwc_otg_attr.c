@@ -214,28 +214,28 @@
 
  <tr>
  <td> rem_wakeup_pwrdn </td>
- <td> On read, shows the status core - hibernated or not. On write, initiates
+ <td> On read, shows the status core - hibernated or not. On write, initiates 
  a remote wakeup of the device from Hibernation. </td>
  <td> Read/Write</td>
  </tr>
 
  <tr>
  <td> mode_ch_tim_en </td>
- <td> This bit is used to enable or disable the host core to wait for 200 PHY
+ <td> This bit is used to enable or disable the host core to wait for 200 PHY 
  clock cycles at the end of Resume to change the opmode signal to the PHY to 00
  after Suspend or LPM. </td>
  <td> Read/Write</td>
  </tr>
-
+ 
  <tr>
  <td> fr_interval </td>
- <td> On read, shows the value of HFIR Frame Interval. On write, dynamically
+ <td> On read, shows the value of HFIR Frame Interval. On write, dynamically 
  reload HFIR register during runtime. The application can write a value to this
- register only after the Port Enable bit of the Host Port Control and Status
+ register only after the Port Enable bit of the Host Port Control and Status 
  register (HPRT.PrtEnaPort) has been set </td>
  <td> Read/Write</td>
  </tr>
-
+ 
  <tr>
  <td> disconnect_us </td>
  <td> On read, shows the status of disconnect_device_us. On write, sets disconnect_us
@@ -839,7 +839,7 @@ DEVICE_ATTR(remote_wakeup, S_IRUGO | S_IWUSR, remote_wakeup_show,
 	    remote_wakeup_store);
 
 /**
- * Show the whether core is hibernated or not.
+ * Show the whether core is hibernated or not. 					
  */
 static ssize_t rem_wakeup_pwrdn_show(struct device *_dev,
 				     struct device_attribute *attr, char *buf)
@@ -1073,7 +1073,7 @@ static ssize_t sleepstatus_show(struct device *_dev,
 {
 	dwc_otg_device_t *otg_dev = dwc_otg_drvdev(_dev);
 	return sprintf(buf, "Sleep Status = %d\n",
-				dwc_otg_get_lpm_portsleepstatus(otg_dev->core_if));
+			dwc_otg_get_lpm_portsleepstatus(otg_dev->core_if));
 }
 
 /**

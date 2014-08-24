@@ -107,7 +107,7 @@ typedef struct os_dependent {
 
 	/** Start address of a PCI region */
 	resource_size_t rsrc_start;
-
+	
 	/** Length address of a PCI region */
 	resource_size_t rsrc_len;
 #elif  defined(PLATFORM_INTERFACE)

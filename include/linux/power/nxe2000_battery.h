@@ -174,6 +174,6 @@ struct nxe2000_battery_platform_data {
 	struct nxe2000_battery_type_data type[BATTERY_TYPE_NUM];
 };
 
-extern void otgid_power_control_by_dwc(int enable);
+extern int otgid_power_control_by_dwc(int enable);
 
 #endif

@@ -48,13 +48,6 @@
  * device.
  */
 
-// psw0523 add for dev_dbg
-//#define DEBUG
-#include <linux/device.h>
-#ifdef CONFIG_PM
-#include <linux/suspend.h>
-#endif
-// end psw0523
 #include "dwc_otg_os_dep.h"
 #include "dwc_os.h"
 #include "dwc_otg_dbg.h"
@@ -66,32 +59,69 @@
 #include "dwc_otg_regs.h"
 #include "dwc_otg_cil.h"
 
-/* nexell soc headers */
-#include <mach/platform.h>
+/*
+void __DWC_DEBUG(char *format, ...)
+{
+    va_list args;
+
+    va_start(args, format);
+    DWC_PRINTF(KERN_DEBUG);
+    DWC_VPRINTF(format, args);
+    va_end(args);
+}
+*/
+
+/* ADD by jhkim */
+#define	dev_dbg(d, m...)		printk(m)
+#define	KERN_DEBUG				KERN_INFO
 
 #define DWC_DRIVER_VERSION	"3.00a 10-AUG-2012"
 #define DWC_DRIVER_DESC		"HS OTG USB Controller driver"
 
-bool microframe_schedule=true;      // org
+bool microframe_schedule=true;
 
 static const char dwc_driver_name[] = "dwc_otg";
 
 extern void* dummy_send;
 
 extern int pcd_init(
-		struct platform_device *dev
-	);
+#ifdef LM_INTERFACE
+			   struct lm_device *_dev
+#elif  defined(PCI_INTERFACE)
+			   struct pci_dev *_dev
+#elif  defined(PLATFORM_INTERFACE)
+	struct platform_device *dev
+#endif
+    );
 extern int hcd_init(
-		struct platform_device *dev
-	);
+#ifdef LM_INTERFACE
+			   struct lm_device *_dev
+#elif  defined(PCI_INTERFACE)
+			   struct pci_dev *_dev
+#elif  defined(PLATFORM_INTERFACE)
+	struct platform_device *dev
+#endif
+    );
 
 extern int pcd_remove(
-		struct platform_device *_dev
-	);
+#ifdef LM_INTERFACE
+			     struct lm_device *_dev
+#elif  defined(PCI_INTERFACE)
+			     struct pci_dev *_dev
+#elif  defined(PLATFORM_INTERFACE)
+	struct platform_device *_dev
+#endif
+    );
 
 extern void hcd_remove(
-		struct platform_device *_dev
-	);
+#ifdef LM_INTERFACE
+			      struct lm_device *_dev
+#elif  defined(PCI_INTERFACE)
+			      struct pci_dev *_dev
+#elif  defined(PLATFORM_INTERFACE)
+	struct platform_device *_dev
+#endif
+    );
 
 extern void dwc_otg_adp_start(dwc_otg_core_if_t * core_if, uint8_t is_host);
 
@@ -149,7 +179,11 @@ static struct dwc_otg_driver_module_params dwc_otg_module_params = {
 	.opt = -1,
 	.otg_cap = -1,
 	.dma_enable = -1,
+#ifdef CONFIG_ARCH_CPU_NEXELL
 	.dma_desc_enable = -1,
+#else
+	.dma_desc_enable = -1,
+#endif
 	.dma_burst_size = -1,
 	.speed = -1,
 	.host_support_fs_ls_low_power = -1,
@@ -157,11 +191,10 @@ static struct dwc_otg_driver_module_params dwc_otg_module_params = {
 	.enable_dynamic_fifo = -1,
 	.data_fifo_size = -1,
 	.dev_rx_fifo_size = -1,
-	// psw0523 fix
-#if 0
-	.dev_nperio_tx_fifo_size = -1,
+#ifdef CONFIG_ARCH_CPU_NEXELL
+    .dev_nperio_tx_fifo_size = 0x200,
 #else
-	.dev_nperio_tx_fifo_size = 0x200,
+    .dev_nperio_tx_fifo_size = -1,
 #endif
 	.dev_perio_tx_fifo_size = {
 			/* dev_perio_tx_fifo_size_1 */
@@ -197,47 +230,46 @@ static struct dwc_otg_driver_module_params dwc_otg_module_params = {
 	.ulpi_fs_ls = -1,
 	.ts_dline = -1,
 	.en_multiple_tx_fifo = -1,
-	// psw0523 fix
-#if 0
+#ifdef CONFIG_ARCH_CPU_NEXELL
 	.dev_tx_fifo_size = {
-			/* dev_tx_fifo_size */
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1
-			/* 15 */
+			     /* dev_tx_fifo_size */
+        		0x200,
+        		0x200,
+				-1,
+			    -1,
+			    -1,
+			    -1,
+			    -1,
+			    -1,
+			    -1,
+			    -1,
+			    -1,
+			    -1,
+			    -1,
+			    -1,
+			    -1
+			     /* 15 */
 	},
 #else
-	.dev_tx_fifo_size = {
-			/* dev_tx_fifo_size */
-			0x200,
-			0x200,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1,
-			-1
-			/* 15 */
-	},
+    .dev_tx_fifo_size = {
+       		 /* dev_tx_fifo_size */
+        		-1,
+        		-1,
+        		-1,
+        		-1,
+        		-1,
+        		-1,
+        		-1,
+        		-1,
+        		-1,
+        		-1,
+        		-1,
+        		-1,
+        		-1,
+        		-1,
+        		-1
+            	/* 15 */
+    },
 #endif
 	.thr_ctl = -1,
 	.tx_thr_length = -1,
@@ -256,12 +288,166 @@ static struct dwc_otg_driver_module_params dwc_otg_module_params = {
 	.adp_enable = -1,
 };
 
-//Global variable to switch the fiq fix on or off
-bool fiq_fix_enable = false;
-
-//Global variable to switch the nak holdoff on or off
+#ifdef CONFIG_ARCH_CPU_NEXELL
+bool fiq_fix_enable = false;		// false
+bool fiq_split_enable = false;		// false
 bool nak_holdoff_enable = true;
 
+extern void otg_phy_init(void);
+extern void otg_phy_off(void);
+extern void otg_clk_enable(void);
+extern void otg_clk_disable(void);
+#else
+//Global variable to switch the fiq fix on or off (declared in bcm2708.c)
+extern bool fiq_fix_enable;
+// Global variable to enable the split transaction fix
+bool fiq_split_enable = true;
+//Global variable to switch the nak holdoff on or off
+bool nak_holdoff_enable = true;
+#endif
+
+#ifdef CONFIG_ARCH_CPU_NEXELL
+static dwc_otg_core_global_regs_t save_global_regs = {0, };
+
+static void dwc_otg_driver_suspend_regs(dwc_otg_core_if_t *core_if, int suspend)
+{
+    dwc_otg_core_global_regs_t *global_regs = core_if->core_global_regs;
+	dwc_otg_core_global_regs_t *regs = &save_global_regs;
+	int i = 0;
+
+	if (suspend) {
+		regs->gotgctl = DWC_READ_REG32(&global_regs->gotgctl);
+		regs->gotgint = DWC_READ_REG32(&global_regs->gotgint);
+		regs->gahbcfg = DWC_READ_REG32(&global_regs->gahbcfg);
+		regs->gusbcfg = DWC_READ_REG32(&global_regs->gusbcfg);
+		regs->grstctl = DWC_READ_REG32(&global_regs->grstctl);
+	//	regs->gintsts = DWC_READ_REG32(&global_regs->gintsts);
+		regs->gintmsk = DWC_READ_REG32(&global_regs->gintmsk);
+	//	regs->grxstsr = DWC_READ_REG32(&global_regs->grxstsr);
+	//	regs->grxstsp = DWC_READ_REG32(&global_regs->grxstsp);
+		regs->grxfsiz = DWC_READ_REG32(&global_regs->grxfsiz);
+		regs->gnptxfsiz = DWC_READ_REG32(&global_regs->gnptxfsiz);
+	//	regs->gnptxsts = DWC_READ_REG32(&global_regs->gnptxsts);
+		regs->gi2cctl = DWC_READ_REG32(&global_regs->gi2cctl);
+		regs->gpvndctl = DWC_READ_REG32(&global_regs->gpvndctl);
+		regs->ggpio = DWC_READ_REG32(&global_regs->ggpio);
+	//	regs->guid = DWC_READ_REG32(&global_regs->guid);
+	//	regs->gsnpsid = DWC_READ_REG32(&global_regs->gsnpsid);
+		regs->ghwcfg1 = DWC_READ_REG32(&global_regs->ghwcfg1);
+		regs->ghwcfg2 = DWC_READ_REG32(&global_regs->ghwcfg2);
+		regs->ghwcfg3 = DWC_READ_REG32(&global_regs->ghwcfg3);
+		regs->ghwcfg4 = DWC_READ_REG32(&global_regs->ghwcfg4);
+		regs->glpmcfg = DWC_READ_REG32(&global_regs->glpmcfg);
+		regs->gpwrdn = DWC_READ_REG32(&global_regs->gpwrdn);
+		regs->gdfifocfg = DWC_READ_REG32(&global_regs->gdfifocfg);
+		regs->adpctl = DWC_READ_REG32(&global_regs->adpctl);
+	//	regs->reserved39[39] = DWC_READ_REG32(&global_regs->reserved39[39]);
+		regs->hptxfsiz = DWC_READ_REG32(&global_regs->hptxfsiz);
+		for (i = 0; 16 > i; i++)
+			regs->dtxfsiz[i] = DWC_READ_REG32(&global_regs->dtxfsiz[i]);	// 0~15
+	} else {
+		DWC_WRITE_REG32(&global_regs->gotgctl, regs->gotgctl);
+		DWC_WRITE_REG32(&global_regs->gotgint, regs->gotgint);
+		DWC_WRITE_REG32(&global_regs->gahbcfg, regs->gahbcfg);
+		DWC_WRITE_REG32(&global_regs->gusbcfg, regs->gusbcfg);
+		DWC_WRITE_REG32(&global_regs->grstctl, regs->grstctl);
+	//	DWC_WRITE_REG32(&global_regs->gintsts, regs->gintsts);
+		DWC_WRITE_REG32(&global_regs->gintmsk, regs->gintmsk);
+	//	DWC_WRITE_REG32(&global_regs->grxstsr, regs->grxstsr);
+	//	DWC_WRITE_REG32(&global_regs->grxstsp, regs->grxstsp);
+		DWC_WRITE_REG32(&global_regs->grxfsiz, regs->grxfsiz);
+		DWC_WRITE_REG32(&global_regs->gnptxfsiz, regs->gnptxfsiz);
+	//	DWC_WRITE_REG32(&global_regs->gnptxsts, regs->gnptxsts);
+		DWC_WRITE_REG32(&global_regs->gi2cctl, regs->gi2cctl);
+		DWC_WRITE_REG32(&global_regs->gpvndctl, regs->gpvndctl);
+		DWC_WRITE_REG32(&global_regs->ggpio, regs->ggpio);
+	//	DWC_WRITE_REG32(&global_regs->guid, regs->guid);
+	//	DWC_WRITE_REG32(&global_regs->gsnpsid, regs->gsnpsid);
+		DWC_WRITE_REG32(&global_regs->ghwcfg1, regs->ghwcfg1);
+		DWC_WRITE_REG32(&global_regs->ghwcfg2, regs->ghwcfg2);
+		DWC_WRITE_REG32(&global_regs->ghwcfg3, regs->ghwcfg3);
+		DWC_WRITE_REG32(&global_regs->ghwcfg4, regs->ghwcfg4);
+		DWC_WRITE_REG32(&global_regs->glpmcfg, regs->glpmcfg);
+		DWC_WRITE_REG32(&global_regs->gpwrdn, regs->gpwrdn);
+		DWC_WRITE_REG32(&global_regs->gdfifocfg, regs->gdfifocfg);
+		DWC_WRITE_REG32(&global_regs->adpctl, regs->adpctl);
+	//	DWC_WRITE_REG32(&global_regs->reserved39[39], regs->reserved39[39]);
+		DWC_WRITE_REG32(&global_regs->hptxfsiz, regs->hptxfsiz);
+		for (i = 0; 16 > i; i++)
+			DWC_WRITE_REG32(&global_regs->dtxfsiz[i], regs->dtxfsiz[i]);	// 0~15
+	}
+}
+
+static int dwc_otg_driver_suspend(struct platform_device *_dev , pm_message_t state)
+{
+	dwc_otg_device_t *otg_dev = platform_get_drvdata(_dev);
+    dwc_otg_core_if_t *core_if = otg_dev->core_if;
+
+	DWC_PRINTF("+ %s\n", __func__);
+
+    if(core_if->op_state == A_HOST) {
+    	DWC_PRINTF("%s,A_HOST mode\n", __func__);
+    	otg_phy_off();	// diabled clock at dwc_otg_hcd_linux.c
+    	return 0;
+    }
+
+	dwc_otg_driver_suspend_regs(core_if, 1);
+
+    /* Clear any pending interrupts */
+    DWC_WRITE_REG32(&core_if->core_global_regs->gintsts, 0xFFFFFFFF);
+    dwc_otg_disable_global_interrupts(core_if);
+
+    otg_clk_disable();
+    otg_phy_off();
+
+    DWC_PRINTF("- %s\n", __func__);
+    return 0;
+}
+
+static int dwc_otg_driver_resume(struct platform_device *_dev )
+{
+	dwc_otg_device_t *otg_dev = platform_get_drvdata(_dev);
+    dwc_otg_core_if_t *core_if = otg_dev->core_if;
+
+    dwc_otg_core_global_regs_t *global_regs = core_if->core_global_regs;
+
+	DWC_PRINTF("+ %s\n", __func__);
+
+	otg_clk_enable();
+    otg_phy_init();
+
+    if(core_if->op_state == A_HOST) {
+    	DWC_PRINTF("%s,A_HOST mode\n", __func__);
+    	return 0;
+    }
+
+    DWC_WRITE_REG32(&core_if->core_global_regs->gintsts, 0xFFFFFFFF);
+    dwc_otg_disable_global_interrupts(core_if);
+
+	dwc_otg_driver_suspend_regs(core_if, 0);
+
+#if 0
+    /* soft disconnect */
+    /* 20100226,HSL@RK,if not disconnect,when usb cable in,will auto reconnect
+     *  besause now USB PHY is enable,and get USB RESET irq.
+    */
+    /* soft disconnect */
+    {
+    dctl_data_t dctl = {.d32=0};
+    dctl.d32 = DWC_READ_REG32(&core_if->dev_if->dev_global_regs->dctl);
+    dctl.b.sftdiscon = 1;
+    DWC_WRITE_REG32(&core_if->dev_if->dev_global_regs->dctl, dctl.d32);
+	}
+#endif
+
+    /* Clear any pending interrupts */
+    DWC_WRITE_REG32( &global_regs->gintsts, 0xeFFFFFFF);
+    dwc_otg_enable_global_interrupts(core_if);
+
+    DWC_PRINTF("- %s\n", __func__);
+    return 0;
+}
+#endif	/* CONFIG_ARCH_CPU_NEXELL */
 
 /**
  * This function shows the Driver Version.
@@ -277,19 +463,7 @@ static DRIVER_ATTR(version, S_IRUGO, version_show, NULL);
 /**
  * Global Debug Level Mask.
  */
-uint32_t g_dbg_lvl	= (
-					//DBG_USER |
-					//DBG_CIL |
-					//DBG_CILV |
-					//DBG_PCD |
-					//DBG_PCDV |
-					//DBG_HCD |
-					//DBG_HCDV |
-					//DBG_HCD_URB |
-					//DBG_HCDI |
-					0
-					);
-
+uint32_t g_dbg_lvl = DBG_ANY;		/* OFF */
 
 /**
  * This function shows the driver Debug Level.
@@ -303,14 +477,14 @@ static ssize_t dbg_level_show(struct device_driver *drv, char *buf)
  * This function stores the driver Debug Level.
  */
 static ssize_t dbg_level_store(struct device_driver *drv, const char *buf,
-		size_t count)
+			       size_t count)
 {
 	g_dbg_lvl = simple_strtoul(buf, NULL, 16);
 	return count;
 }
 
 static DRIVER_ATTR(debuglevel, S_IRUGO | S_IWUSR, dbg_level_show,
-		dbg_level_store);
+		   dbg_level_store);
 
 /**
  * This function is called during module intialization
@@ -323,258 +497,261 @@ static int set_parameters(dwc_otg_core_if_t * core_if)
 
 	if (dwc_otg_module_params.otg_cap != -1) {
 		retval +=
-			dwc_otg_set_param_otg_cap(core_if,
-					dwc_otg_module_params.otg_cap);
+		    dwc_otg_set_param_otg_cap(core_if,
+					      dwc_otg_module_params.otg_cap);
 	}
 	if (dwc_otg_module_params.dma_enable != -1) {
 		retval +=
-			dwc_otg_set_param_dma_enable(core_if,
-					dwc_otg_module_params.
-					dma_enable);
+		    dwc_otg_set_param_dma_enable(core_if,
+						 dwc_otg_module_params.
+						 dma_enable);
 	}
 	if (dwc_otg_module_params.dma_desc_enable != -1) {
 		retval +=
-			dwc_otg_set_param_dma_desc_enable(core_if,
-					dwc_otg_module_params.
-					dma_desc_enable);
+		    dwc_otg_set_param_dma_desc_enable(core_if,
+						      dwc_otg_module_params.
+						      dma_desc_enable);
 	}
 	if (dwc_otg_module_params.opt != -1) {
 		retval +=
-			dwc_otg_set_param_opt(core_if, dwc_otg_module_params.opt);
+		    dwc_otg_set_param_opt(core_if, dwc_otg_module_params.opt);
 	}
 	if (dwc_otg_module_params.dma_burst_size != -1) {
 		retval +=
-			dwc_otg_set_param_dma_burst_size(core_if,
-					dwc_otg_module_params.
-					dma_burst_size);
+		    dwc_otg_set_param_dma_burst_size(core_if,
+						     dwc_otg_module_params.
+						     dma_burst_size);
 	}
 	if (dwc_otg_module_params.host_support_fs_ls_low_power != -1) {
 		retval +=
-			dwc_otg_set_param_host_support_fs_ls_low_power(core_if,
-					dwc_otg_module_params.
-					host_support_fs_ls_low_power);
+		    dwc_otg_set_param_host_support_fs_ls_low_power(core_if,
+								   dwc_otg_module_params.
+								   host_support_fs_ls_low_power);
 	}
 	if (dwc_otg_module_params.enable_dynamic_fifo != -1) {
 		retval +=
-			dwc_otg_set_param_enable_dynamic_fifo(core_if,
-					dwc_otg_module_params.
-					enable_dynamic_fifo);
+		    dwc_otg_set_param_enable_dynamic_fifo(core_if,
+							  dwc_otg_module_params.
+							  enable_dynamic_fifo);
 	}
 	if (dwc_otg_module_params.data_fifo_size != -1) {
 		retval +=
-			dwc_otg_set_param_data_fifo_size(core_if,
-					dwc_otg_module_params.
-					data_fifo_size);
+		    dwc_otg_set_param_data_fifo_size(core_if,
+						     dwc_otg_module_params.
+						     data_fifo_size);
 	}
 	if (dwc_otg_module_params.dev_rx_fifo_size != -1) {
 		retval +=
-			dwc_otg_set_param_dev_rx_fifo_size(core_if,
-					dwc_otg_module_params.
-					dev_rx_fifo_size);
+		    dwc_otg_set_param_dev_rx_fifo_size(core_if,
+						       dwc_otg_module_params.
+						       dev_rx_fifo_size);
 	}
 	if (dwc_otg_module_params.dev_nperio_tx_fifo_size != -1) {
 		retval +=
-			dwc_otg_set_param_dev_nperio_tx_fifo_size(core_if,
-					dwc_otg_module_params.
-					dev_nperio_tx_fifo_size);
+		    dwc_otg_set_param_dev_nperio_tx_fifo_size(core_if,
+							      dwc_otg_module_params.
+							      dev_nperio_tx_fifo_size);
 	}
 	if (dwc_otg_module_params.host_rx_fifo_size != -1) {
 		retval +=
-			dwc_otg_set_param_host_rx_fifo_size(core_if,
-					dwc_otg_module_params.host_rx_fifo_size);
+		    dwc_otg_set_param_host_rx_fifo_size(core_if,
+							dwc_otg_module_params.host_rx_fifo_size);
 	}
 	if (dwc_otg_module_params.host_nperio_tx_fifo_size != -1) {
 		retval +=
-			dwc_otg_set_param_host_nperio_tx_fifo_size(core_if,
-					dwc_otg_module_params.
-					host_nperio_tx_fifo_size);
+		    dwc_otg_set_param_host_nperio_tx_fifo_size(core_if,
+							       dwc_otg_module_params.
+							       host_nperio_tx_fifo_size);
 	}
 	if (dwc_otg_module_params.host_perio_tx_fifo_size != -1) {
 		retval +=
-			dwc_otg_set_param_host_perio_tx_fifo_size(core_if,
-					dwc_otg_module_params.
-					host_perio_tx_fifo_size);
+		    dwc_otg_set_param_host_perio_tx_fifo_size(core_if,
+							      dwc_otg_module_params.
+							      host_perio_tx_fifo_size);
 	}
 	if (dwc_otg_module_params.max_transfer_size != -1) {
 		retval +=
-			dwc_otg_set_param_max_transfer_size(core_if,
-					dwc_otg_module_params.
-					max_transfer_size);
+		    dwc_otg_set_param_max_transfer_size(core_if,
+							dwc_otg_module_params.
+							max_transfer_size);
 	}
 	if (dwc_otg_module_params.max_packet_count != -1) {
 		retval +=
-			dwc_otg_set_param_max_packet_count(core_if,
-					dwc_otg_module_params.
-					max_packet_count);
+		    dwc_otg_set_param_max_packet_count(core_if,
+						       dwc_otg_module_params.
+						       max_packet_count);
 	}
 	if (dwc_otg_module_params.host_channels != -1) {
 		retval +=
-			dwc_otg_set_param_host_channels(core_if,
-					dwc_otg_module_params.
-					host_channels);
+		    dwc_otg_set_param_host_channels(core_if,
+						    dwc_otg_module_params.
+						    host_channels);
 	}
 	if (dwc_otg_module_params.dev_endpoints != -1) {
 		retval +=
-			dwc_otg_set_param_dev_endpoints(core_if,
-					dwc_otg_module_params.
-					dev_endpoints);
+		    dwc_otg_set_param_dev_endpoints(core_if,
+						    dwc_otg_module_params.
+						    dev_endpoints);
 	}
 	if (dwc_otg_module_params.phy_type != -1) {
 		retval +=
-			dwc_otg_set_param_phy_type(core_if,
-					dwc_otg_module_params.phy_type);
+		    dwc_otg_set_param_phy_type(core_if,
+					       dwc_otg_module_params.phy_type);
 	}
 	if (dwc_otg_module_params.speed != -1) {
 		retval +=
-			dwc_otg_set_param_speed(core_if,
-					dwc_otg_module_params.speed);
+		    dwc_otg_set_param_speed(core_if,
+					    dwc_otg_module_params.speed);
 	}
 	if (dwc_otg_module_params.host_ls_low_power_phy_clk != -1) {
 		retval +=
-			dwc_otg_set_param_host_ls_low_power_phy_clk(core_if,
-					dwc_otg_module_params.
-					host_ls_low_power_phy_clk);
+		    dwc_otg_set_param_host_ls_low_power_phy_clk(core_if,
+								dwc_otg_module_params.
+								host_ls_low_power_phy_clk);
 	}
 	if (dwc_otg_module_params.phy_ulpi_ddr != -1) {
 		retval +=
-			dwc_otg_set_param_phy_ulpi_ddr(core_if,
-					dwc_otg_module_params.
-					phy_ulpi_ddr);
+		    dwc_otg_set_param_phy_ulpi_ddr(core_if,
+						   dwc_otg_module_params.
+						   phy_ulpi_ddr);
 	}
 	if (dwc_otg_module_params.phy_ulpi_ext_vbus != -1) {
 		retval +=
-			dwc_otg_set_param_phy_ulpi_ext_vbus(core_if,
-					dwc_otg_module_params.
-					phy_ulpi_ext_vbus);
+		    dwc_otg_set_param_phy_ulpi_ext_vbus(core_if,
+							dwc_otg_module_params.
+							phy_ulpi_ext_vbus);
 	}
 	if (dwc_otg_module_params.phy_utmi_width != -1) {
 		retval +=
-			dwc_otg_set_param_phy_utmi_width(core_if,
-					dwc_otg_module_params.
-					phy_utmi_width);
+		    dwc_otg_set_param_phy_utmi_width(core_if,
+						     dwc_otg_module_params.
+						     phy_utmi_width);
 	}
 	if (dwc_otg_module_params.ulpi_fs_ls != -1) {
 		retval +=
-			dwc_otg_set_param_ulpi_fs_ls(core_if,
-					dwc_otg_module_params.ulpi_fs_ls);
+		    dwc_otg_set_param_ulpi_fs_ls(core_if,
+						 dwc_otg_module_params.ulpi_fs_ls);
 	}
 	if (dwc_otg_module_params.ts_dline != -1) {
 		retval +=
-			dwc_otg_set_param_ts_dline(core_if,
-					dwc_otg_module_params.ts_dline);
+		    dwc_otg_set_param_ts_dline(core_if,
+					       dwc_otg_module_params.ts_dline);
 	}
 	if (dwc_otg_module_params.i2c_enable != -1) {
 		retval +=
-			dwc_otg_set_param_i2c_enable(core_if,
-					dwc_otg_module_params.
-					i2c_enable);
+		    dwc_otg_set_param_i2c_enable(core_if,
+						 dwc_otg_module_params.
+						 i2c_enable);
 	}
 	if (dwc_otg_module_params.en_multiple_tx_fifo != -1) {
 		retval +=
-			dwc_otg_set_param_en_multiple_tx_fifo(core_if,
-					dwc_otg_module_params.
-					en_multiple_tx_fifo);
+		    dwc_otg_set_param_en_multiple_tx_fifo(core_if,
+							  dwc_otg_module_params.
+							  en_multiple_tx_fifo);
 	}
 	for (i = 0; i < 15; i++) {
 		if (dwc_otg_module_params.dev_perio_tx_fifo_size[i] != -1) {
 			retval +=
-				dwc_otg_set_param_dev_perio_tx_fifo_size(core_if,
-						dwc_otg_module_params.
-						dev_perio_tx_fifo_size
-						[i], i);
+			    dwc_otg_set_param_dev_perio_tx_fifo_size(core_if,
+								     dwc_otg_module_params.
+								     dev_perio_tx_fifo_size
+								     [i], i);
 		}
 	}
 
 	for (i = 0; i < 15; i++) {
 		if (dwc_otg_module_params.dev_tx_fifo_size[i] != -1) {
 			retval += dwc_otg_set_param_dev_tx_fifo_size(core_if,
-						dwc_otg_module_params.
-						dev_tx_fifo_size
-						[i], i);
+								     dwc_otg_module_params.
+								     dev_tx_fifo_size
+								     [i], i);
 		}
 	}
 	if (dwc_otg_module_params.thr_ctl != -1) {
 		retval +=
-			dwc_otg_set_param_thr_ctl(core_if,
-					dwc_otg_module_params.thr_ctl);
+		    dwc_otg_set_param_thr_ctl(core_if,
+					      dwc_otg_module_params.thr_ctl);
 	}
 	if (dwc_otg_module_params.mpi_enable != -1) {
 		retval +=
-			dwc_otg_set_param_mpi_enable(core_if,
-					dwc_otg_module_params.
-					mpi_enable);
+		    dwc_otg_set_param_mpi_enable(core_if,
+						 dwc_otg_module_params.
+						 mpi_enable);
 	}
 	if (dwc_otg_module_params.pti_enable != -1) {
 		retval +=
-			dwc_otg_set_param_pti_enable(core_if,
-					dwc_otg_module_params.
-					pti_enable);
+		    dwc_otg_set_param_pti_enable(core_if,
+						 dwc_otg_module_params.
+						 pti_enable);
 	}
 	if (dwc_otg_module_params.lpm_enable != -1) {
 		retval +=
-			dwc_otg_set_param_lpm_enable(core_if,
-					dwc_otg_module_params.
-					lpm_enable);
+		    dwc_otg_set_param_lpm_enable(core_if,
+						 dwc_otg_module_params.
+						 lpm_enable);
 	}
 	if (dwc_otg_module_params.ic_usb_cap != -1) {
 		retval +=
-			dwc_otg_set_param_ic_usb_cap(core_if,
-					dwc_otg_module_params.
-					ic_usb_cap);
+		    dwc_otg_set_param_ic_usb_cap(core_if,
+						 dwc_otg_module_params.
+						 ic_usb_cap);
 	}
 	if (dwc_otg_module_params.tx_thr_length != -1) {
 		retval +=
-			dwc_otg_set_param_tx_thr_length(core_if,
-					dwc_otg_module_params.tx_thr_length);
+		    dwc_otg_set_param_tx_thr_length(core_if,
+						    dwc_otg_module_params.tx_thr_length);
 	}
 	if (dwc_otg_module_params.rx_thr_length != -1) {
 		retval +=
-			dwc_otg_set_param_rx_thr_length(core_if,
-					dwc_otg_module_params.
-					rx_thr_length);
+		    dwc_otg_set_param_rx_thr_length(core_if,
+						    dwc_otg_module_params.
+						    rx_thr_length);
 	}
 	if (dwc_otg_module_params.ahb_thr_ratio != -1) {
 		retval +=
-			dwc_otg_set_param_ahb_thr_ratio(core_if,
-					dwc_otg_module_params.ahb_thr_ratio);
+		    dwc_otg_set_param_ahb_thr_ratio(core_if,
+						    dwc_otg_module_params.ahb_thr_ratio);
 	}
 	if (dwc_otg_module_params.power_down != -1) {
 		retval +=
-			dwc_otg_set_param_power_down(core_if,
-					dwc_otg_module_params.power_down);
+		    dwc_otg_set_param_power_down(core_if,
+						 dwc_otg_module_params.power_down);
 	}
 	if (dwc_otg_module_params.reload_ctl != -1) {
 		retval +=
-			dwc_otg_set_param_reload_ctl(core_if,
-					dwc_otg_module_params.reload_ctl);
+		    dwc_otg_set_param_reload_ctl(core_if,
+						 dwc_otg_module_params.reload_ctl);
 	}
+
 	if (dwc_otg_module_params.dev_out_nak != -1) {
 		retval +=
 			dwc_otg_set_param_dev_out_nak(core_if,
-					dwc_otg_module_params.dev_out_nak);
+			dwc_otg_module_params.dev_out_nak);
 	}
+
 	if (dwc_otg_module_params.cont_on_bna != -1) {
 		retval +=
 			dwc_otg_set_param_cont_on_bna(core_if,
-					dwc_otg_module_params.cont_on_bna);
+			dwc_otg_module_params.cont_on_bna);
 	}
+
 	if (dwc_otg_module_params.ahb_single != -1) {
 		retval +=
 			dwc_otg_set_param_ahb_single(core_if,
-					dwc_otg_module_params.ahb_single);
+			dwc_otg_module_params.ahb_single);
 	}
+
 	if (dwc_otg_module_params.otg_ver != -1) {
 		retval +=
-			dwc_otg_set_param_otg_ver(core_if,
-					dwc_otg_module_params.otg_ver);
+		    dwc_otg_set_param_otg_ver(core_if,
+					      dwc_otg_module_params.otg_ver);
 	}
 	if (dwc_otg_module_params.adp_enable != -1) {
 		retval +=
-			dwc_otg_set_param_adp_enable(core_if,
-					dwc_otg_module_params.
-					adp_enable);
+		    dwc_otg_set_param_adp_enable(core_if,
+						 dwc_otg_module_params.
+						 adp_enable);
 	}
-
 	return retval;
 }
 
@@ -602,32 +779,33 @@ static irqreturn_t dwc_otg_common_irq(int irq, void *dev)
  *
  * @param _dev
  */
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
-extern void otg_phy_init(void);
-extern void otg_phy_off(void);
-extern void otg_clk_enable(void);
-extern void otg_clk_disable(void);
-static dwc_otg_device_t *dwc_otg_dev;
-#endif
-
+#ifdef LM_INTERFACE
+#define REM_RETVAL(n)
+static void dwc_otg_driver_remove(	 struct lm_device *_dev )
+{       dwc_otg_device_t *otg_dev = lm_get_drvdata(_dev);
+#elif  defined(PCI_INTERFACE)
+#define REM_RETVAL(n)
+static void dwc_otg_driver_remove(	 struct pci_dev *_dev )
+{	dwc_otg_device_t *otg_dev = pci_get_drvdata(_dev);
+#elif  defined(PLATFORM_INTERFACE)
 #define REM_RETVAL(n) n
-static int dwc_otg_driver_remove(struct platform_device *_dev )
-{
-	dwc_otg_device_t *otg_dev = dwc_otg_dev;
+static int dwc_otg_driver_remove(        struct platform_device *_dev )
+{       dwc_otg_device_t *otg_dev = platform_get_drvdata(_dev);
+#endif
 
 	DWC_DEBUGPL(DBG_ANY, "%s(%p) otg_dev %p\n", __func__, _dev, otg_dev);
 
 	if (!otg_dev) {
 		/* Memory allocation for the dwc_otg_device failed. */
 		DWC_DEBUGPL(DBG_ANY, "%s: otg_dev NULL!\n", __func__);
-		return REM_RETVAL(-ENOMEM);
+                return REM_RETVAL(-ENOMEM);
 	}
 #ifndef DWC_DEVICE_ONLY
 	if (otg_dev->hcd) {
 		hcd_remove(_dev);
 	} else {
 		DWC_DEBUGPL(DBG_ANY, "%s: otg_dev->hcd NULL!\n", __func__);
-		return REM_RETVAL(-EINVAL);
+                return REM_RETVAL(-EINVAL);
 	}
 #endif
 
@@ -636,16 +814,19 @@ static int dwc_otg_driver_remove(struct platform_device *_dev )
 		pcd_remove(_dev);
 	} else {
 		DWC_DEBUGPL(DBG_ANY, "%s: otg_dev->pcd NULL!\n", __func__);
-		return REM_RETVAL(-EINVAL);
+                return REM_RETVAL(-EINVAL);
 	}
 #endif
-
 	/*
 	 * Free the IRQ
 	 */
 	if (otg_dev->common_irq_installed) {
+#ifdef PLATFORM_INTERFACE
 		free_irq(platform_get_irq(_dev, 0), otg_dev);
-	} else {
+#else
+		free_irq(_dev->irq, otg_dev);
+#endif
+        } else {
 		DWC_DEBUGPL(DBG_ANY, "%s: There is no installed irq!\n", __func__);
 		return REM_RETVAL(-ENXIO);
 	}
@@ -673,14 +854,16 @@ static int dwc_otg_driver_remove(struct platform_device *_dev )
 	/*
 	 * Clear the drvdata pointer.
 	 */
-	platform_set_drvdata(_dev, 0);
-
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
-	otg_clk_disable();
-	otg_phy_off();
+#ifdef LM_INTERFACE
+	lm_set_drvdata(_dev, 0);
+#elif defined(PCI_INTERFACE)
+        release_mem_region(otg_dev->os_dep.rsrc_start,
+                           otg_dev->os_dep.rsrc_len);
+	pci_set_drvdata(_dev, 0);
+#elif  defined(PLATFORM_INTERFACE)
+        platform_set_drvdata(_dev, 0);
 #endif
-
-	return REM_RETVAL(0);
+        return REM_RETVAL(0);
 }
 
 /**
@@ -694,85 +877,42 @@ static int dwc_otg_driver_remove(struct platform_device *_dev )
  *
  * @param _dev Bus device
  */
-// psw0523 add
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
-#define CFG_OTG_MODE_HOST   1
-#define CFG_OTG_MODE_DEVICE 0
-
-extern void set_otg_mode(unsigned int mode, int is_force);
-extern unsigned int get_otg_mode(void);
-
-#ifdef CONFIG_PM
-#if 1   //defined(CONFIG_USB_G_ANDROID)
-//static int dwc_otg_driver_remove(struct platform_device *_dev);
-static int dwc_otg_driver_probe(struct platform_device *_dev);
-static struct platform_device *s_pdev = NULL;
-extern void dwc_udc_resume(void);
-extern void dwc_udc_suspend(void);
-#if defined(CONFIG_USB_G_ANDROID)
-extern void nxp_wake_lock_timeout(void);
-#endif
-#endif  /* CONFIG_USB_G_ANDROID */
-
-static int dwc_otg_driver_suspend(struct platform_device *_dev, pm_message_t state)
-{
-	PM_DBGOUT("+%s\n", __func__);
-
-	if (s_pdev) {
-		dwc_otg_device_t *otg_dev = dwc_otg_dev;
-		dwc_otg_core_if_t * core_if = otg_dev->core_if;
-
-		/* Disable all interrupts */
-		DWC_MODIFY_REG32(&core_if->core_global_regs->gahbcfg, 1, 0);
-		DWC_WRITE_REG32(&core_if->core_global_regs->gintmsk, 0);
-
-		otg_clk_disable();
-		otg_phy_off();
-	}
-
-	PM_DBGOUT("-%s\n", __func__);
-
-	return 0;
-}
-
-static int dwc_otg_driver_resume(struct platform_device *_dev)
-{
-	PM_DBGOUT("+%s\n", __func__);
-
-	if (s_pdev) {
-		otg_clk_enable();
-		otg_phy_init();
-		mdelay(10);
-
-		dwc_udc_suspend();
-		platform_set_drvdata(_dev, dwc_otg_dev);
-		dwc_otg_driver_remove(s_pdev);
-		dwc_otg_driver_probe(s_pdev);
-		dwc_udc_resume();
-#if defined(CONFIG_USB_G_ANDROID)
-		nxp_wake_lock_timeout();
-#endif
-	}
-
-	PM_DBGOUT("-%s\n", __func__);
-
-	return 0;
-}
-#endif /* CONFIG_PM */
-#endif /* CONFIG_ARCH_NXP3200 */
-
 static int dwc_otg_driver_probe(
-		struct platform_device *_dev
-	)
+#ifdef LM_INTERFACE
+				       struct lm_device *_dev
+#elif defined(PCI_INTERFACE)
+				       struct pci_dev *_dev,
+				       const struct pci_device_id *id
+#elif  defined(PLATFORM_INTERFACE)
+                                       struct platform_device *_dev
+#endif
+    )
 {
 	int retval = 0;
 	dwc_otg_device_t *dwc_otg_device;
-	int devirq;
+        int devirq;
 
 	dev_dbg(&_dev->dev, "dwc_otg_driver_probe(%p)\n", _dev);
+#ifdef LM_INTERFACE
+	dev_dbg(&_dev->dev, "start=0x%08x\n", (unsigned)_dev->resource.start);
+#elif defined(PCI_INTERFACE)
+	if (!id) {
+		DWC_ERROR("Invalid pci_device_id %p", id);
+		return -EINVAL;
+	}
+
+	if (!_dev || (pci_enable_device(_dev) < 0)) {
+		DWC_ERROR("Invalid pci_device %p", _dev);
+		return -ENODEV;
+	}
+	dev_dbg(&_dev->dev, "start=0x%08x\n", (unsigned)pci_resource_start(_dev,0));
+	/* other stuff needed as well? */
+
+#elif  defined(PLATFORM_INTERFACE)
 	dev_dbg(&_dev->dev, "start=0x%08x (len 0x%x)\n",
-			(unsigned)_dev->resource->start,
-			(unsigned)(_dev->resource->end - _dev->resource->start));
+                (unsigned)_dev->resource->start,
+                (unsigned)(_dev->resource->end - _dev->resource->start));
+#endif
 
 	dwc_otg_device = DWC_ALLOC(sizeof(dwc_otg_device_t));
 
@@ -787,47 +927,140 @@ static int dwc_otg_driver_probe(
 	/*
 	 * Map the DWC_otg Core memory into virtual address space.
 	 */
-	DWC_DEBUGPL(DBG_ANY,"Platform resource: start=%08x, len=%08x\n",
-			_dev->resource->start,
-			_dev->resource->end - _dev->resource->start + 1);
+#ifdef LM_INTERFACE
+	dwc_otg_device->os_dep.base = ioremap(_dev->resource.start, SZ_256K);
 
-	if (!request_mem_region(_dev->resource[0].start,
-				_dev->resource[0].end - _dev->resource[0].start + 1,
-				"dwc_otg")) {
-		dev_err(&_dev->dev, "error reserving mapped memory\n");
-	// psw0523 fix
-#if !defined(CONFIG_ARCH_NXP3200) && !defined(CONFIG_ARCH_NXP4330)
-		retval = -EFAULT;
-		goto fail;
-#endif
+	if (!dwc_otg_device->os_dep.base) {
+		dev_err(&_dev->dev, "ioremap() failed\n");
+		DWC_FREE(dwc_otg_device);
+		return -ENOMEM;
+	}
+	dev_dbg(&_dev->dev, "base=0x%08x\n",
+		(unsigned)dwc_otg_device->os_dep.base);
+#elif defined(PCI_INTERFACE)
+	_dev->current_state = PCI_D0;
+	_dev->dev.power.power_state = PMSG_ON;
+
+	if (!_dev->irq) {
+		DWC_ERROR("Found HC with no IRQ. Check BIOS/PCI %s setup!",
+			  pci_name(_dev));
+		iounmap(dwc_otg_device->os_dep.base);
+		DWC_FREE(dwc_otg_device);
+		return -ENODEV;
 	}
 
-	dwc_otg_device->os_dep.base = ioremap_nocache(_dev->resource[0].start,
-												  _dev->resource[0].end -
-												  _dev->resource[0].start+1);
+	dwc_otg_device->os_dep.rsrc_start = pci_resource_start(_dev, 0);
+	dwc_otg_device->os_dep.rsrc_len = pci_resource_len(_dev, 0);
+	DWC_DEBUGPL(DBG_ANY, "PCI resource: start=%08x, len=%08x\n",
+		    (unsigned)dwc_otg_device->os_dep.rsrc_start,
+		    (unsigned)dwc_otg_device->os_dep.rsrc_len);
+	if (!request_mem_region
+	    (dwc_otg_device->os_dep.rsrc_start, dwc_otg_device->os_dep.rsrc_len,
+	     "dwc_otg")) {
+		dev_dbg(&_dev->dev, "error requesting memory\n");
+		iounmap(dwc_otg_device->os_dep.base);
+		DWC_FREE(dwc_otg_device);
+		return -EFAULT;
+	}
 
+	dwc_otg_device->os_dep.base =
+	    ioremap_nocache(dwc_otg_device->os_dep.rsrc_start,
+			    dwc_otg_device->os_dep.rsrc_len);
+	if (dwc_otg_device->os_dep.base == NULL) {
+		dev_dbg(&_dev->dev, "error mapping memory\n");
+		release_mem_region(dwc_otg_device->os_dep.rsrc_start,
+				   dwc_otg_device->os_dep.rsrc_len);
+		iounmap(dwc_otg_device->os_dep.base);
+		DWC_FREE(dwc_otg_device);
+		return -EFAULT;
+	}
+	dev_dbg(&_dev->dev, "base=0x%p (before adjust) \n",
+		dwc_otg_device->os_dep.base);
+	dwc_otg_device->os_dep.base = (char *)dwc_otg_device->os_dep.base;
+	dev_dbg(&_dev->dev, "base=0x%p (after adjust) \n",
+		dwc_otg_device->os_dep.base);
+	dev_dbg(&_dev->dev, "%s: mapped PA 0x%x to VA 0x%p\n", __func__,
+		(unsigned)dwc_otg_device->os_dep.rsrc_start,
+		dwc_otg_device->os_dep.base);
+
+	pci_set_master(_dev);
+	pci_set_drvdata(_dev, dwc_otg_device);
+#elif defined(PLATFORM_INTERFACE)
+        DWC_DEBUGPL(DBG_ANY,"Platform resource: start=%08x, len=%08x\n",
+                    _dev->resource->start,
+                    _dev->resource->end - _dev->resource->start + 1);
+#if 1
+        if (!request_mem_region(_dev->resource[0].start,
+                                _dev->resource[0].end - _dev->resource[0].start + 1,
+                                "dwc_otg")) {
+#ifndef CONFIG_ARCH_CPU_NEXELL
+          dev_dbg(&_dev->dev, "error reserving mapped memory 0(0x%x~0x%x)\n",
+          	_dev->resource[0].start, _dev->resource[0].end);
+          retval = -EFAULT;
+          goto fail;
+#endif
+        }
+
+	dwc_otg_device->os_dep.base = ioremap_nocache(_dev->resource[0].start,
+                                                      _dev->resource[0].end -
+                                                      _dev->resource[0].start+1);
+	if (fiq_fix_enable)
+	{
+		if (!request_mem_region(_dev->resource[1].start,
+	                                _dev->resource[1].end - _dev->resource[1].start + 1,
+	                                "dwc_otg")) {
+	          dev_dbg(&_dev->dev, "error reserving mapped memory 1(0x%x~0x%x)\n",
+          		_dev->resource[1].start, _dev->resource[1].end);
+	          retval = -EFAULT;
+	          goto fail;
+	}
+
+		dwc_otg_device->os_dep.mphi_base = ioremap_nocache(_dev->resource[1].start,
+							    _dev->resource[1].end -
+							    _dev->resource[1].start + 1);
+		dummy_send = (void *) kmalloc(16, GFP_ATOMIC);
+	}
+
+#ifdef CONFIG_ARCH_CPU_NEXELL
+    otg_clk_enable();
+    otg_phy_init();
+#endif
+
+#else
+        {
+                struct map_desc desc = {
+                    .virtual = IO_ADDRESS((unsigned)_dev->resource->start),
+                    .pfn     = __phys_to_pfn((unsigned)_dev->resource->start),
+                    .length  = SZ_128K,
+                    .type    = MT_DEVICE
+                };
+                iotable_init(&desc, 1);
+                dwc_otg_device->os_dep.base = (void *)desc.virtual;
+        }
+#endif
 	if (!dwc_otg_device->os_dep.base) {
 		dev_err(&_dev->dev, "ioremap() failed\n");
 		retval = -ENOMEM;
 		goto fail;
 	}
 	dev_dbg(&_dev->dev, "base=0x%08x\n",
-			(unsigned)dwc_otg_device->os_dep.base);
-
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
-	otg_clk_enable();
-	otg_phy_init();
+                (unsigned)dwc_otg_device->os_dep.base);
 #endif
+
 	/*
 	 * Initialize driver data to point to the global DWC_otg
 	 * Device structure.
 	 */
+#ifdef LM_INTERFACE
+	lm_set_drvdata(_dev, dwc_otg_device);
+#elif defined(PLATFORM_INTERFACE)
 	platform_set_drvdata(_dev, dwc_otg_device);
+#endif
 	dev_dbg(&_dev->dev, "dwc_otg_device=0x%p\n", dwc_otg_device);
 
 	dwc_otg_device->core_if = dwc_otg_cil_init(dwc_otg_device->os_dep.base);
-	DWC_DEBUGPL(DBG_HCDV, "probe of device %p given core_if %p\n",
-			dwc_otg_device, dwc_otg_device->core_if);//GRAYG
+        DWC_DEBUGPL(DBG_HCDV, "probe of device %p given core_if %p\n",
+                    dwc_otg_device, dwc_otg_device->core_if);//GRAYG
 
 	if (!dwc_otg_device->core_if) {
 		dev_err(&_dev->dev, "CIL initialization failed!\n");
@@ -878,13 +1111,17 @@ static int dwc_otg_driver_probe(
 	 * enabling common interrupts in core_init below.
 	 */
 
-	devirq = platform_get_irq(_dev, 0);
+#if defined(PLATFORM_INTERFACE)
+        devirq = platform_get_irq(_dev, 0);
+#else
+        devirq = _dev->irq;
+#endif
 	DWC_DEBUGPL(DBG_CIL, "registering (common) handler for irq%d\n",
 		    devirq);
 	dev_dbg(&_dev->dev, "Calling request_irq(%d)\n", devirq);
 	retval = request_irq(devirq, dwc_otg_common_irq,
-			IRQF_SHARED,
-			"dwc_otg", dwc_otg_device);
+                             IRQF_SHARED,
+                             "dwc_otg", dwc_otg_device);
 	if (retval) {
 		DWC_ERROR("request of irq%d failed\n", devirq);
 		retval = -EBUSY;
@@ -894,14 +1131,16 @@ static int dwc_otg_driver_probe(
 	}
 
 #ifndef IRQF_TRIGGER_LOW
+#if defined(LM_INTERFACE) || defined(PLATFORM_INTERFACE)
 	dev_dbg(&_dev->dev, "Calling set_irq_type\n");
 	set_irq_type(devirq,
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,30))
-						IRQT_LOW
+                     IRQT_LOW
 #else
-						IRQ_TYPE_LEVEL_LOW
+                     IRQ_TYPE_LEVEL_LOW
 #endif
-						);
+                    );
+#endif
 #endif /*IRQF_TRIGGER_LOW*/
 
 	/*
@@ -934,8 +1173,15 @@ static int dwc_otg_driver_probe(
 		goto fail;
 	}
 #endif
-	/* Recover from drvdata having been overwritten by hcd_init() */
+        /* Recover from drvdata having been overwritten by hcd_init() */
+#ifdef LM_INTERFACE
+	lm_set_drvdata(_dev, dwc_otg_device);
+#elif defined(PLATFORM_INTERFACE)
 	platform_set_drvdata(_dev, dwc_otg_device);
+#elif defined(PCI_INTERFACE)
+	pci_set_drvdata(_dev, dwc_otg_device);
+	dwc_otg_device->os_dep.pcidev = _dev;
+#endif
 
 	/*
 	 * Enable the global interrupt after all the interrupt
@@ -950,15 +1196,7 @@ static int dwc_otg_driver_probe(
 		dwc_otg_adp_start(dwc_otg_device->core_if,
 							dwc_otg_is_host_mode(dwc_otg_device->core_if));
 
-	// psw0523 add for pm
-#if defined(CONFIG_PM) && defined(CONFIG_ARCH_NXP4330)
-	if (s_pdev == NULL)
-		s_pdev = _dev;
-
-	dwc_otg_dev = dwc_otg_device;
 	device_enable_async_suspend(&_dev->dev);
-#endif
-
 	return 0;
 
 fail:
@@ -977,35 +1215,62 @@ fail:
  * to this driver. The remove function is called when a device is
  * unregistered with the bus driver.
  */
+#ifdef LM_INTERFACE
+static struct lm_driver dwc_otg_driver = {
+	.drv = {.name = (char *)dwc_driver_name,},
+	.probe = dwc_otg_driver_probe,
+	.remove = dwc_otg_driver_remove,
+        // 'suspend' and 'resume' absent
+};
+#elif defined(PCI_INTERFACE)
+static const struct pci_device_id pci_ids[] = { {
+						 PCI_DEVICE(0x16c3, 0xabcd),
+						 .driver_data =
+						 (unsigned long)0xdeadbeef,
+						 }, { /* end: all zeroes */ }
+};
+
+MODULE_DEVICE_TABLE(pci, pci_ids);
+
+/* pci driver glue; this is a "new style" PCI driver module */
+static struct pci_driver dwc_otg_driver = {
+	.name = "dwc_otg",
+	.id_table = pci_ids,
+
+	.probe = dwc_otg_driver_probe,
+	.remove = dwc_otg_driver_remove,
+
+	.driver = {
+		   .name = (char *)dwc_driver_name,
+		   },
+};
+#elif defined(PLATFORM_INTERFACE)
+#ifndef CONFIG_ARCH_CPU_NEXELL
 static struct platform_device_id platform_ids[] = {
-	{
-		.name = "bcm2708_usb",
-		.driver_data = (kernel_ulong_t) 0xdeadbeef,
-	},
-	// psw0523 add
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
-	{
-		.name = "dwc_otg",
-		.driver_data = (kernel_ulong_t) 0xdeadbeef,
-	},
-#endif
-	{ /* end: all zeroes */ }
+        {
+              .name = "bcm2708_usb",
+              .driver_data = (kernel_ulong_t) 0xdeadbeef,
+        },
+        { /* end: all zeroes */ }
 };
 MODULE_DEVICE_TABLE(platform, platform_ids);
+#endif
 
 static struct platform_driver dwc_otg_driver = {
 	.driver = {
 		.name = (char *)dwc_driver_name,
-	},
-	.id_table = platform_ids,
+		},
+	#ifndef CONFIG_ARCH_CPU_NEXELL
+        .id_table = platform_ids,
+	#endif
 	.probe = dwc_otg_driver_probe,
 	.remove = dwc_otg_driver_remove,
-#ifdef CONFIG_PM
+#ifdef CONFIG_ARCH_CPU_NEXELL
 	.suspend = dwc_otg_driver_suspend,
 	.resume = dwc_otg_driver_resume,
 #endif
-	// no 'shutdown', 'suspend', 'resume', 'suspend_late' or 'resume_early'
 };
+#endif
 
 /**
  * This function is called when the dwc_otg_driver is installed with the
@@ -1021,31 +1286,35 @@ static int __init dwc_otg_driver_init(void)
 {
 	int retval = 0;
 	int error;
-	struct device_driver *drv;
+        struct device_driver *drv;
 
-#if defined(CONFIG_ARCH_NXP4330)
-	microframe_schedule=true;
-#if defined(CONFIG_USB_VIDEO_CLASS) && defined(CONFIG_USB_G_ANDROID)
-	microframe_schedule=false;
-#endif
-#endif
-
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
-#ifdef CONFIG_PM
-	s_pdev = NULL;
-#endif
-#endif
+	if(fiq_split_enable && !fiq_fix_enable) {
+		printk(KERN_WARNING "dwc_otg: fiq_split_enable was set without fiq_fix_enable! Correcting.\n");
+		fiq_fix_enable = 1;
+	}
 
 	printk(KERN_INFO "%s: version %s (%s bus)\n", dwc_driver_name,
-			DWC_DRIVER_VERSION, "platform");
-
+	       DWC_DRIVER_VERSION,
+#ifdef LM_INTERFACE
+               "logicmodule");
+	retval = lm_driver_register(&dwc_otg_driver);
+        drv = &dwc_otg_driver.drv;
+#elif defined(PCI_INTERFACE)
+               "pci");
+	retval = pci_register_driver(&dwc_otg_driver);
+        drv = &dwc_otg_driver.driver;
+#elif defined(PLATFORM_INTERFACE)
+               "platform");
 	retval = platform_driver_register(&dwc_otg_driver);
-	drv = &dwc_otg_driver.driver;
+        drv = &dwc_otg_driver.driver;
+#endif
 	if (retval < 0) {
 		printk(KERN_ERR "%s retval=%d\n", __func__, retval);
 		return retval;
 	}
 	printk(KERN_DEBUG "dwc_otg: FIQ %s\n", fiq_fix_enable ? "enabled":"disabled");
+	printk(KERN_DEBUG "dwc_otg: NAK holdoff %s\n", nak_holdoff_enable ? "enabled":"disabled");
+	printk(KERN_DEBUG "dwc_otg: FIQ split fix %s\n", fiq_split_enable ? "enabled":"disabled");
 
 	error = driver_create_file(drv, &driver_attr_version);
 #ifdef DEBUG
@@ -1066,14 +1335,18 @@ static void __exit dwc_otg_driver_cleanup(void)
 {
 	printk(KERN_DEBUG "dwc_otg_driver_cleanup()\n");
 
+#ifdef LM_INTERFACE
+	driver_remove_file(&dwc_otg_driver.drv, &driver_attr_debuglevel);
+	driver_remove_file(&dwc_otg_driver.drv, &driver_attr_version);
+	lm_driver_unregister(&dwc_otg_driver);
+#elif defined(PCI_INTERFACE)
+	driver_remove_file(&dwc_otg_driver.driver, &driver_attr_debuglevel);
+	driver_remove_file(&dwc_otg_driver.driver, &driver_attr_version);
+	pci_unregister_driver(&dwc_otg_driver);
+#elif defined(PLATFORM_INTERFACE)
 	driver_remove_file(&dwc_otg_driver.driver, &driver_attr_debuglevel);
 	driver_remove_file(&dwc_otg_driver.driver, &driver_attr_version);
 	platform_driver_unregister(&dwc_otg_driver);
-
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
-#ifdef CONFIG_PM
-	s_pdev = NULL;
-#endif
 #endif
 
 	printk(KERN_INFO "%s module removed\n", dwc_driver_name);
@@ -1093,139 +1366,139 @@ module_param_named(dma_enable, dwc_otg_module_params.dma_enable, int, 0444);
 MODULE_PARM_DESC(dma_enable, "DMA Mode 0=Slave 1=DMA enabled");
 
 module_param_named(dma_desc_enable, dwc_otg_module_params.dma_desc_enable, int,
-		0444);
+		   0444);
 MODULE_PARM_DESC(dma_desc_enable,
-		"DMA Desc Mode 0=Address DMA 1=DMA Descriptor enabled");
+		 "DMA Desc Mode 0=Address DMA 1=DMA Descriptor enabled");
 
 module_param_named(dma_burst_size, dwc_otg_module_params.dma_burst_size, int,
-		0444);
+		   0444);
 MODULE_PARM_DESC(dma_burst_size,
-		"DMA Burst Size 1, 4, 8, 16, 32, 64, 128, 256");
+		 "DMA Burst Size 1, 4, 8, 16, 32, 64, 128, 256");
 module_param_named(speed, dwc_otg_module_params.speed, int, 0444);
 MODULE_PARM_DESC(speed, "Speed 0=High Speed 1=Full Speed");
 module_param_named(host_support_fs_ls_low_power,
-		dwc_otg_module_params.host_support_fs_ls_low_power, int,
-		0444);
+		   dwc_otg_module_params.host_support_fs_ls_low_power, int,
+		   0444);
 MODULE_PARM_DESC(host_support_fs_ls_low_power,
-		"Support Low Power w/FS or LS 0=Support 1=Don't Support");
+		 "Support Low Power w/FS or LS 0=Support 1=Don't Support");
 module_param_named(host_ls_low_power_phy_clk,
-		dwc_otg_module_params.host_ls_low_power_phy_clk, int, 0444);
+		   dwc_otg_module_params.host_ls_low_power_phy_clk, int, 0444);
 MODULE_PARM_DESC(host_ls_low_power_phy_clk,
-		"Low Speed Low Power Clock 0=48Mhz 1=6Mhz");
+		 "Low Speed Low Power Clock 0=48Mhz 1=6Mhz");
 module_param_named(enable_dynamic_fifo,
-		dwc_otg_module_params.enable_dynamic_fifo, int, 0444);
+		   dwc_otg_module_params.enable_dynamic_fifo, int, 0444);
 MODULE_PARM_DESC(enable_dynamic_fifo, "0=cC Setting 1=Allow Dynamic Sizing");
 module_param_named(data_fifo_size, dwc_otg_module_params.data_fifo_size, int,
-		0444);
+		   0444);
 MODULE_PARM_DESC(data_fifo_size,
-		"Total number of words in the data FIFO memory 32-32768");
+		 "Total number of words in the data FIFO memory 32-32768");
 module_param_named(dev_rx_fifo_size, dwc_otg_module_params.dev_rx_fifo_size,
-		int, 0444);
+		   int, 0444);
 MODULE_PARM_DESC(dev_rx_fifo_size, "Number of words in the Rx FIFO 16-32768");
 module_param_named(dev_nperio_tx_fifo_size,
-		dwc_otg_module_params.dev_nperio_tx_fifo_size, int, 0444);
+		   dwc_otg_module_params.dev_nperio_tx_fifo_size, int, 0444);
 MODULE_PARM_DESC(dev_nperio_tx_fifo_size,
-		"Number of words in the non-periodic Tx FIFO 16-32768");
+		 "Number of words in the non-periodic Tx FIFO 16-32768");
 module_param_named(dev_perio_tx_fifo_size_1,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[0], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[0], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_1,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(dev_perio_tx_fifo_size_2,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[1], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[1], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_2,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(dev_perio_tx_fifo_size_3,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[2], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[2], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_3,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(dev_perio_tx_fifo_size_4,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[3], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[3], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_4,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(dev_perio_tx_fifo_size_5,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[4], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[4], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_5,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(dev_perio_tx_fifo_size_6,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[5], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[5], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_6,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(dev_perio_tx_fifo_size_7,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[6], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[6], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_7,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(dev_perio_tx_fifo_size_8,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[7], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[7], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_8,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(dev_perio_tx_fifo_size_9,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[8], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[8], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_9,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(dev_perio_tx_fifo_size_10,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[9], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[9], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_10,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(dev_perio_tx_fifo_size_11,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[10], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[10], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_11,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(dev_perio_tx_fifo_size_12,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[11], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[11], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_12,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(dev_perio_tx_fifo_size_13,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[12], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[12], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_13,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(dev_perio_tx_fifo_size_14,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[13], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[13], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_14,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(dev_perio_tx_fifo_size_15,
-		dwc_otg_module_params.dev_perio_tx_fifo_size[14], int, 0444);
+		   dwc_otg_module_params.dev_perio_tx_fifo_size[14], int, 0444);
 MODULE_PARM_DESC(dev_perio_tx_fifo_size_15,
-		"Number of words in the periodic Tx FIFO 4-768");
+		 "Number of words in the periodic Tx FIFO 4-768");
 module_param_named(host_rx_fifo_size, dwc_otg_module_params.host_rx_fifo_size,
-		int, 0444);
+		   int, 0444);
 MODULE_PARM_DESC(host_rx_fifo_size, "Number of words in the Rx FIFO 16-32768");
 module_param_named(host_nperio_tx_fifo_size,
-		dwc_otg_module_params.host_nperio_tx_fifo_size, int, 0444);
+		   dwc_otg_module_params.host_nperio_tx_fifo_size, int, 0444);
 MODULE_PARM_DESC(host_nperio_tx_fifo_size,
-		"Number of words in the non-periodic Tx FIFO 16-32768");
+		 "Number of words in the non-periodic Tx FIFO 16-32768");
 module_param_named(host_perio_tx_fifo_size,
-		dwc_otg_module_params.host_perio_tx_fifo_size, int, 0444);
+		   dwc_otg_module_params.host_perio_tx_fifo_size, int, 0444);
 MODULE_PARM_DESC(host_perio_tx_fifo_size,
-		"Number of words in the host periodic Tx FIFO 16-32768");
+		 "Number of words in the host periodic Tx FIFO 16-32768");
 module_param_named(max_transfer_size, dwc_otg_module_params.max_transfer_size,
-		int, 0444);
+		   int, 0444);
 /** @todo Set the max to 512K, modify checks */
 MODULE_PARM_DESC(max_transfer_size,
-		"The maximum transfer size supported in bytes 2047-65535");
+		 "The maximum transfer size supported in bytes 2047-65535");
 module_param_named(max_packet_count, dwc_otg_module_params.max_packet_count,
-		int, 0444);
+		   int, 0444);
 MODULE_PARM_DESC(max_packet_count,
-		"The maximum number of packets in a transfer 15-511");
+		 "The maximum number of packets in a transfer 15-511");
 module_param_named(host_channels, dwc_otg_module_params.host_channels, int,
-		0444);
+		   0444);
 MODULE_PARM_DESC(host_channels,
-		"The number of host channel registers to use 1-16");
+		 "The number of host channel registers to use 1-16");
 module_param_named(dev_endpoints, dwc_otg_module_params.dev_endpoints, int,
-		0444);
+		   0444);
 MODULE_PARM_DESC(dev_endpoints,
-		"The number of endpoints in addition to EP0 available for device mode 1-15");
+		 "The number of endpoints in addition to EP0 available for device mode 1-15");
 module_param_named(phy_type, dwc_otg_module_params.phy_type, int, 0444);
 MODULE_PARM_DESC(phy_type, "0=Reserved 1=UTMI+ 2=ULPI");
 module_param_named(phy_utmi_width, dwc_otg_module_params.phy_utmi_width, int,
-		0444);
+		   0444);
 MODULE_PARM_DESC(phy_utmi_width, "Specifies the UTMI+ Data Width 8 or 16 bits");
 module_param_named(phy_ulpi_ddr, dwc_otg_module_params.phy_ulpi_ddr, int, 0444);
 MODULE_PARM_DESC(phy_ulpi_ddr,
-		"ULPI at double or single data rate 0=Single 1=Double");
+		 "ULPI at double or single data rate 0=Single 1=Double");
 module_param_named(phy_ulpi_ext_vbus, dwc_otg_module_params.phy_ulpi_ext_vbus,
-		int, 0444);
+		   int, 0444);
 MODULE_PARM_DESC(phy_ulpi_ext_vbus,
-		"ULPI PHY using internal or external vbus 0=Internal");
+		 "ULPI PHY using internal or external vbus 0=Internal");
 module_param_named(i2c_enable, dwc_otg_module_params.i2c_enable, int, 0444);
 MODULE_PARM_DESC(i2c_enable, "FS PHY Interface");
 module_param_named(ulpi_fs_ls, dwc_otg_module_params.ulpi_fs_ls, int, 0444);
@@ -1236,63 +1509,63 @@ module_param_named(debug, g_dbg_lvl, int, 0444);
 MODULE_PARM_DESC(debug, "");
 
 module_param_named(en_multiple_tx_fifo,
-		dwc_otg_module_params.en_multiple_tx_fifo, int, 0444);
+		   dwc_otg_module_params.en_multiple_tx_fifo, int, 0444);
 MODULE_PARM_DESC(en_multiple_tx_fifo,
-		"Dedicated Non Periodic Tx FIFOs 0=disabled 1=enabled");
+		 "Dedicated Non Periodic Tx FIFOs 0=disabled 1=enabled");
 module_param_named(dev_tx_fifo_size_1,
-		dwc_otg_module_params.dev_tx_fifo_size[0], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[0], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_1, "Number of words in the Tx FIFO 4-768");
 module_param_named(dev_tx_fifo_size_2,
-		dwc_otg_module_params.dev_tx_fifo_size[1], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[1], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_2, "Number of words in the Tx FIFO 4-768");
 module_param_named(dev_tx_fifo_size_3,
-		dwc_otg_module_params.dev_tx_fifo_size[2], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[2], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_3, "Number of words in the Tx FIFO 4-768");
 module_param_named(dev_tx_fifo_size_4,
-		dwc_otg_module_params.dev_tx_fifo_size[3], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[3], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_4, "Number of words in the Tx FIFO 4-768");
 module_param_named(dev_tx_fifo_size_5,
-		dwc_otg_module_params.dev_tx_fifo_size[4], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[4], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_5, "Number of words in the Tx FIFO 4-768");
 module_param_named(dev_tx_fifo_size_6,
-		dwc_otg_module_params.dev_tx_fifo_size[5], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[5], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_6, "Number of words in the Tx FIFO 4-768");
 module_param_named(dev_tx_fifo_size_7,
-		dwc_otg_module_params.dev_tx_fifo_size[6], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[6], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_7, "Number of words in the Tx FIFO 4-768");
 module_param_named(dev_tx_fifo_size_8,
-		dwc_otg_module_params.dev_tx_fifo_size[7], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[7], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_8, "Number of words in the Tx FIFO 4-768");
 module_param_named(dev_tx_fifo_size_9,
-		dwc_otg_module_params.dev_tx_fifo_size[8], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[8], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_9, "Number of words in the Tx FIFO 4-768");
 module_param_named(dev_tx_fifo_size_10,
-		dwc_otg_module_params.dev_tx_fifo_size[9], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[9], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_10, "Number of words in the Tx FIFO 4-768");
 module_param_named(dev_tx_fifo_size_11,
-		dwc_otg_module_params.dev_tx_fifo_size[10], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[10], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_11, "Number of words in the Tx FIFO 4-768");
 module_param_named(dev_tx_fifo_size_12,
-		dwc_otg_module_params.dev_tx_fifo_size[11], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[11], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_12, "Number of words in the Tx FIFO 4-768");
 module_param_named(dev_tx_fifo_size_13,
-		dwc_otg_module_params.dev_tx_fifo_size[12], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[12], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_13, "Number of words in the Tx FIFO 4-768");
 module_param_named(dev_tx_fifo_size_14,
-		dwc_otg_module_params.dev_tx_fifo_size[13], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[13], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_14, "Number of words in the Tx FIFO 4-768");
 module_param_named(dev_tx_fifo_size_15,
-		dwc_otg_module_params.dev_tx_fifo_size[14], int, 0444);
+		   dwc_otg_module_params.dev_tx_fifo_size[14], int, 0444);
 MODULE_PARM_DESC(dev_tx_fifo_size_15, "Number of words in the Tx FIFO 4-768");
 
 module_param_named(thr_ctl, dwc_otg_module_params.thr_ctl, int, 0444);
 MODULE_PARM_DESC(thr_ctl,
-		"Thresholding enable flag bit 0 - non ISO Tx thr., 1 - ISO Tx thr., 2 - Rx thr.- bit 0=disabled 1=enabled");
+		 "Thresholding enable flag bit 0 - non ISO Tx thr., 1 - ISO Tx thr., 2 - Rx thr.- bit 0=disabled 1=enabled");
 module_param_named(tx_thr_length, dwc_otg_module_params.tx_thr_length, int,
-		0444);
+		   0444);
 MODULE_PARM_DESC(tx_thr_length, "Tx Threshold length in 32 bit DWORDs");
 module_param_named(rx_thr_length, dwc_otg_module_params.rx_thr_length, int,
-		0444);
+		   0444);
 MODULE_PARM_DESC(rx_thr_length, "Rx Threshold length in 32 bit DWORDs");
 
 module_param_named(pti_enable, dwc_otg_module_params.pti_enable, int, 0444);
@@ -1301,9 +1574,9 @@ module_param_named(lpm_enable, dwc_otg_module_params.lpm_enable, int, 0444);
 MODULE_PARM_DESC(lpm_enable, "LPM Enable 0=LPM Disabled 1=LPM Enabled");
 module_param_named(ic_usb_cap, dwc_otg_module_params.ic_usb_cap, int, 0444);
 MODULE_PARM_DESC(ic_usb_cap,
-		"IC_USB Capability 0=IC_USB Disabled 1=IC_USB Enabled");
+		 "IC_USB Capability 0=IC_USB Disabled 1=IC_USB Enabled");
 module_param_named(ahb_thr_ratio, dwc_otg_module_params.ahb_thr_ratio, int,
-		0444);
+		   0444);
 MODULE_PARM_DESC(ahb_thr_ratio, "AHB Threshold Ratio");
 module_param_named(power_down, dwc_otg_module_params.power_down, int, 0444);
 MODULE_PARM_DESC(power_down, "Power Down Mode");
@@ -1326,6 +1599,8 @@ module_param(fiq_fix_enable, bool, 0444);
 MODULE_PARM_DESC(fiq_fix_enable, "Enable the fiq fix");
 module_param(nak_holdoff_enable, bool, 0444);
 MODULE_PARM_DESC(nak_holdoff_enable, "Enable the NAK holdoff");
+module_param(fiq_split_enable, bool, 0444);
+MODULE_PARM_DESC(fiq_split_enable, "Enable the FIQ fix on split transactions");
 
 /** @page "Module Parameters"
  *
