@@ -82,6 +82,20 @@ struct nxp_adc_info {
 	int support_interrupt;
 	int irq;
 	struct iio_map *map;
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+	struct iio_dev *iio;
+	struct workqueue_struct *monitoring_wqueue;
+	struct delayed_work monitoring_work;
+
+	int board_temperature;
+	int tmp_voltage;
+	int prev_board_temperature;
+
+	int isValid;
+	int bFirst;
+	int isCheckedCount;
+	
+#endif
 };
 
 static const char *str_adc_ch[] = {
@@ -203,6 +217,7 @@ static int nxp_adc_setup(struct nxp_adc_info *adc, struct platform_device *pdev)
 	adc->max_sampele_rate = ADC_MAX_SAMPLE_RATE;
 	adc->min_sampele_rate = min_rate;
 	adc->prescale = prescale;
+	spin_lock_init(&adc->lock);
 
 	ADC_HW_RESET();
 	adcon = ((prescale & 0xFF) << APSV_BITP) |
@@ -314,6 +329,101 @@ static int nxp_adc_resume(struct platform_device *pdev)
 	return 0;
 }
 
+
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+int eBoard_temperature = 0;
+int NXL_Get_BoardTemperature(void)
+{	
+	return eBoard_temperature;
+}
+EXPORT_SYMBOL_GPL(NXL_Get_BoardTemperature);
+
+void nxl_monitor_work_func(struct work_struct *work)
+{
+	struct nxp_adc_info *adc = container_of(work, struct nxp_adc_info, monitoring_work.work);
+	struct iio_chan_spec const *chan;
+	int val = 0;
+	int val2 = 0;
+	int i;
+
+	chan = &nxp_adc_iio_channels[2];
+	nxp_read_raw(adc->iio, chan, &val, &val2, 0); 
+
+	adc->tmp_voltage = (18*val*1000)/4096;
+	if(adc->tmp_voltage > 12900) adc->board_temperature = 25;
+	else if(adc->tmp_voltage > 12245) adc->board_temperature = 30;
+	else if(adc->tmp_voltage > 10700) adc->board_temperature = 35;
+	else if(adc->tmp_voltage > 9900) adc->board_temperature = 40;
+	else if(adc->tmp_voltage > 9100) adc->board_temperature = 45;
+	else if(adc->tmp_voltage > 8400) adc->board_temperature = 50;
+	else if(adc->tmp_voltage > 7700) adc->board_temperature = 55;
+	else if(adc->tmp_voltage > 7000) adc->board_temperature = 60;
+	else if(adc->tmp_voltage > 6300) adc->board_temperature = 65;
+	else if(adc->tmp_voltage > 5700) adc->board_temperature = 70;
+	else if(adc->tmp_voltage > 5200) adc->board_temperature = 75;
+	else if(adc->tmp_voltage > 4700) adc->board_temperature = 80;
+	else if(adc->tmp_voltage > 4200) adc->board_temperature = 85;
+	else if(adc->tmp_voltage > 3800) adc->board_temperature = 90;
+	else adc->board_temperature = 95;
+
+	if(adc->isValid == 0)
+	{
+		if(adc->bFirst == 0)
+		{
+			adc->bFirst = 1;
+			adc->prev_board_temperature = adc->board_temperature;
+		}
+		else
+		{
+			if(adc->prev_board_temperature == adc->board_temperature)
+				adc->isCheckedCount++;
+			else
+				adc->isCheckedCount = 0;
+			adc->prev_board_temperature = adc->board_temperature;
+
+			if(adc->isCheckedCount == 3)
+				adc->isValid = 1;
+		}
+		if(adc->isValid == 0) 
+		{
+			queue_delayed_work(adc->monitoring_wqueue, &adc->monitoring_work, HZ);
+			return;
+		}
+	}
+
+	
+	if(adc->prev_board_temperature <= adc->board_temperature)
+	{
+		int gap = adc->board_temperature - adc->prev_board_temperature;
+		if(gap > 5) // ignore.
+		{
+			adc->board_temperature = adc->prev_board_temperature;
+		}
+		else
+		{
+			adc->prev_board_temperature = adc->board_temperature;
+		}	
+	}
+	else
+	{
+		int gap = adc->prev_board_temperature  - adc->board_temperature;
+		if(gap > 5) // ignore.
+		{
+			adc->board_temperature = adc->prev_board_temperature;
+		}
+		else
+		{
+			adc->prev_board_temperature = adc->board_temperature;
+		}	
+	}
+
+	eBoard_temperature = adc->board_temperature;
+	
+	queue_delayed_work(adc->monitoring_wqueue, &adc->monitoring_work, HZ);
+
+}
+#endif
+
 static int __devinit nxp_adc_probe(struct platform_device *pdev)
 {
 	struct iio_dev *iio = NULL;
@@ -369,6 +479,20 @@ static int __devinit nxp_adc_probe(struct platform_device *pdev)
         goto err_iio_register;
 
 	adc->map = nxp_adc_iio_maps;
+
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+	adc->isCheckedCount = 0;
+	adc->isValid = 0;
+	adc->bFirst = 0;
+
+	adc->iio = iio;
+	adc->monitoring_wqueue = create_singlethread_workqueue("monitoring_wqueue");
+	INIT_DELAYED_WORK_DEFERRABLE(&adc->monitoring_work, nxl_monitor_work_func);
+	queue_delayed_work(adc->monitoring_wqueue, &adc->monitoring_work, 15*HZ);
+#endif
+
+	printk("+++++++ success init of ADC\n");
+
 	return 0;
 
 err_iio_register:

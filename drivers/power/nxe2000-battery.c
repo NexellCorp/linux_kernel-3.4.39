@@ -47,6 +47,16 @@
  */
 //#define BAT_RESUME_WORK_QUEUE
 
+#define ENABLE_BATCHGCUR_CTRL // Jimmy@zhongwei. 20140801
+
+#ifdef ENABLE_BATCHGCUR_CTRL
+#define CHARGE_CURRENT_100MA	0xC0
+#define CHARGE_CURRENT_300MA	0xC2
+#define CHARGE_CURRENT_500MA	0xC4
+#define CHARGE_CURRENT_800MA	0xC7
+#define CHARGE_CURRENT_1500MA	0xCE
+#endif
+
 /*
  * Debug
  */
@@ -3500,6 +3510,23 @@ static int set_otg_power_control(struct nxe2000_battery_info *info, int otg_id)
 	return ret;
 }
 
+////////////////////////////////////////////
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+int pmic_occur_dieError=0;
+int isOccured_dieError(void)
+{
+	return pmic_occur_dieError;
+}
+EXPORT_SYMBOL_GPL(isOccured_dieError);
+
+void isReset_dieErrorFlag(void)
+{
+	pmic_occur_dieError =0;
+}
+EXPORT_SYMBOL_GPL(isReset_dieErrorFlag);
+#endif
+////////////////////////////////////////////
+
 static int get_power_supply_status(struct nxe2000_battery_info *info)
 {
 	uint8_t status;
@@ -3574,6 +3601,14 @@ static int get_power_supply_status(struct nxe2000_battery_info *info)
 		case	CHG_STATE_DIE_ERR:
 				info->soca->chg_status
 					= POWER_SUPPLY_STATUS_NOT_CHARGING;
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+				pmic_occur_dieError=1;
+				{
+				uint8_t dieTempReg;
+				extern int NXL_Get_BoardTemperature(void);
+				printk("________die Error. dieTempReg:0x%x, temp(%d)\n", dieTempReg, NXL_Get_BoardTemperature());
+				}
+#endif
 				break;
 		case	CHG_STATE_DIE_SHUTDOWN:
 				info->soca->chg_status
@@ -3712,6 +3747,9 @@ static void charger_irq_work(struct work_struct *work)
 
 				info->ubc_check_count = 0;
 
+#ifdef ENABLE_BATCHGCUR_CTRL
+				ret = nxe2000_write(info->dev->parent, NXE2000_REG_CHGISET, CHARGE_CURRENT_100MA); 
+#endif
 				return;
 			}
 #endif
@@ -3758,6 +3796,9 @@ static void charger_irq_work(struct work_struct *work)
 				}
 
 				info->ubc_check_count = 0;
+#ifdef ENABLE_BATCHGCUR_CTRL
+				ret = nxe2000_write(info->dev->parent, NXE2000_REG_CHGISET, CHARGE_CURRENT_100MA); 
+#endif
 
 				return;
 			}
@@ -5321,6 +5362,10 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 	}
 #endif
 
+#ifdef ENABLE_BATCHGCUR_CTRL
+	ret = nxe2000_write(info->dev->parent, NXE2000_REG_CHGISET, CHARGE_CURRENT_100MA); 
+#endif
+
 #if (CFG_SW_UBC_ENABLE == 1)
 #if (CFG_USB_DET_FROM_PMIC_INT == 1)
 	dwc_otg_pcd_clear_ep0_state();
@@ -5457,6 +5502,10 @@ static int nxe2000_battery_suspend(struct device *dev)
 	bool is_charging = true;
 	int displayed_soc_temp;
 	int otg_id = 1;
+
+#ifdef ENABLE_BATCHGCUR_CTRL
+	ret = nxe2000_write(info->dev->parent, NXE2000_REG_CHGISET, CHARGE_CURRENT_1500MA); // Charging current set to 800mA. Sleep is 1500 mA.
+#endif
 
 	PM_DBGOUT("PMU: ++ %s\n", __func__);
 
@@ -5831,6 +5880,10 @@ static int nxe2000_battery_resume(struct device *dev) {
 		ret = nxe2000_set_bits(info->dev->parent, 0x90, 0x10);
 	#endif
 #endif
+#endif
+
+#ifdef ENABLE_BATCHGCUR_CTRL
+	ret = nxe2000_write(info->dev->parent, NXE2000_REG_CHGISET, CHARGE_CURRENT_100MA); // Charging current set to 300mA. Sleep is 1500 mA.
 #endif
 
 #ifdef ENABLE_MASKING_INTERRUPT_IN_SLEEP

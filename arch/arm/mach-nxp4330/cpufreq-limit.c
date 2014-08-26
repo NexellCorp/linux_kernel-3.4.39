@@ -39,8 +39,16 @@ struct cpufreq_limit_data {
     int limit_num;
     long aval_max_freq;     /* unit Khz */
     long op_max_freq; 		/* unit Khz */
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) 
+	long limit_level0_freq; 	/* unit Khz */
+	long limit_level1_freq; 	/* unit Khz */
+	long min_max_freq;			/* unit Khz */
+#endif
     long timer_duration;	/* unit ms */
     long op_timeout;		/* unit ms */
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) 
+	int timer_chkcpu_mod;
+#endif
     long time_stamp;
     long frequency;			/* unit Khz */
     long pre_max_freq;		/* unit Khz */
@@ -100,6 +108,12 @@ out:
 	return res;
 }
 
+
+
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+long cpuUsage_Process(struct cpufreq_limit_data *limit, int boost);
+int curMaxCpu = 0;
+#endif
 static void cpufreq_set_max_frequency(struct cpufreq_limit_data *limit, int boost)
 {
 	int fd;
@@ -108,10 +122,20 @@ static void cpufreq_set_max_frequency(struct cpufreq_limit_data *limit, int boos
 	long sc_max_freq = 0, max_freq = 0;
 	int cpu;
 
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+	limit->timer_chkcpu_mod = 1-limit->timer_chkcpu_mod;
+	if(limit->timer_chkcpu_mod)
+	{
+		limit->op_max_freq = cpuUsage_Process(limit, boost);
+	}
+#endif
 	max_freq = boost ? limit->aval_max_freq : limit->op_max_freq;
 	if (limit->pre_max_freq == max_freq)
 		return;
 
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+	curMaxCpu = max_freq;
+#endif	
 	for_each_possible_cpu(cpu) {
 		fd = sys_open(sys_scaling_path[cpu], O_RDWR, 0);
     	old_fs = get_fs();
@@ -251,6 +275,13 @@ static int cpufreq_limit_probe(struct platform_device *pdev)
 	limit->timer_duration = plat->sched_duration ? : DEFAULT_LM_CHECK_TIME;
 	limit->op_timeout = plat->sched_timeout ? : LM_TASK_CHECK_SLEEP_TIME;
 	limit->limit_nb.notifier_call = cpufreq_limit_transition;
+	
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+	limit->limit_level0_freq = plat->limit_level0_freq;
+	limit->limit_level1_freq = plat->limit_level1_freq;
+	limit->min_max_freq = plat->min_max_freq;
+	limit->timer_chkcpu_mod = 1; // every 1 second, check .
+#endif
 
 	INIT_WORK(&limit->limit_work, cpufreq_limit_work);
 

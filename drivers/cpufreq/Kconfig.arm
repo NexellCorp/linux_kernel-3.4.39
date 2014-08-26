@@ -94,6 +94,11 @@ config ARM_NXP4330_CPUFREQ_VOLTAGE_DEBUG
 	depends on ARM_NXP4330_CPUFREQ
 	default n
 
+config ARM_NXP4330_CPUFREQ_BY_RESOURCE
+	bool "Dynamic Voltage scaling by cpu resource & board temperature"
+	depends on ARM_NXP4330_CPUFREQ
+	default n
+
 choice
 	prompt "Select CPU PLL device"
 	depends on ARM_NXP4330_CPUFREQ

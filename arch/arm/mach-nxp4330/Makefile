@@ -10,6 +10,7 @@ obj-$(CONFIG_HOTPLUG_CPU)			+= hotplug.o
 obj-$(CONFIG_SMP)					+= platsmp.o headsmp.o
 obj-$(CONFIG_PM)					+= pm.o lldebug.o
 obj-$(CONFIG_ARM_NXP4330_CPUFREQ)   += cpufreq.o cpufreq-limit.o
+obj-$(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)   += cpufreq_resource.o
 obj-$(CONFIG_MMC_DW)				+= dev-mmc.o
 obj-$(CONFIG_HAVE_PWM)				+= pwm.o
 obj-$(CONFIG_CMA)					+= cma_reserve_mem.o
