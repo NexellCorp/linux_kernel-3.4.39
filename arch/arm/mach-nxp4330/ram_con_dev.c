@@ -78,7 +78,7 @@ int __init persistent_ram_console_reserve(void)
 
 	if (!start || memblock_is_region_reserved(start, size)) {
 		new = memblock_find_in_range(CFG_MEM_PHY_SYSTEM_BASE,
-				MEMBLOCK_ALLOC_ACCESSIBLE, size, PERSISTENT_RAM_SIZE);
+				MEMBLOCK_ALLOC_ACCESSIBLE, size, PAGE_SIZE);
 	}
 	ram->start = new;
 	ram->size  = size;
