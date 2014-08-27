@@ -50,6 +50,7 @@ struct cpufreq_limit_data {
 	int timer_chkcpu_mod;
 #endif
     long time_stamp;
+    long current_time_stamp;
     long frequency;			/* unit Khz */
     long pre_max_freq;		/* unit Khz */
     struct hrtimer limit_timer;
@@ -169,7 +170,9 @@ static void cpufreq_limit_work(struct work_struct *work)
 	char **s = limit->limit_name;
 	char *comm = task_comm;
 	int cpu, i = 0, len = limit->limit_num;
-
+	
+	//memset(task_comm, NULL, PAGE_SIZE);
+	task_comm[0]=NULL;
 	for_each_possible_cpu(cpu) {
      	p = curr_task(cpu);
 	   	t = find_task_by_vpid(task_tgid_vnr(p));	/* parent */
@@ -183,7 +186,7 @@ static void cpufreq_limit_work(struct work_struct *work)
 			continue;
 
 		cpufreq_cmdline(p, comm);
-     	pr_debug("cpu %d current (%d) %s", cpu, p->pid, comm);
+     	pr_debug("cpu %d  current (%d) %s\n", cpu, p->pid, comm);
 
 		for (i = 0; len > i; i++) {
 			/* boost : task is running */
@@ -194,7 +197,7 @@ static void cpufreq_limit_work(struct work_struct *work)
 				goto _exit;
 			}
 		}
-		pr_debug("\n");
+		//pr_debug("\n");
 	}
 
 	for_each_process(p) {
@@ -209,12 +212,13 @@ static void cpufreq_limit_work(struct work_struct *work)
 			if (!strncmp(comm, s[i], strlen(s[i]))) {
 				pr_debug("detect %s:%s [%ld.%ld ms]\n",
 					s[i], comm, limit->time_stamp, limit->time_stamp%1000);
+				
+				limit->current_time_stamp = ktime_to_ms(ktime_get());
 				if (0 == limit->time_stamp) {
-					limit->time_stamp = ktime_to_ms(ktime_get());
+					limit->time_stamp = limit->current_time_stamp;
 				} else {
 					/* restore : task is sleep status */
-					if ((ktime_to_ms(ktime_get()) - limit->time_stamp) >
-						limit->op_timeout)
+					if ((limit->current_time_stamp - limit->time_stamp) > limit->op_timeout)
 						cpufreq_set_max_frequency(limit, 0);
 				}
 				goto _exit;
