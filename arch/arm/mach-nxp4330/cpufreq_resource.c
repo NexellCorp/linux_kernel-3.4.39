@@ -34,10 +34,10 @@
 */
 
 // Limited Temperature Throthold for Drone.
-#define TEMPERTURE_LIMIT_NONE	60 
-#define TEMPERTURE_LIMIT_LEVEL0	65 
-#define TEMPERTURE_LIMIT_LEVEL1	70 
-#define TEMPERTURE_LIMIT_LEVEL2	75 
+#define TEMPERTURE_LIMIT_NONE	60
+#define TEMPERTURE_LIMIT_LEVEL0	65
+#define TEMPERTURE_LIMIT_LEVEL1	70
+#define TEMPERTURE_LIMIT_LEVEL2	75
 
 // CPU Usage Throthold for Drone.
 #define	CPU_OVER_USAGELEVEL		49
@@ -93,15 +93,15 @@ typedef struct nxp_cpuLimit_control {
 	int cpuUsageNx4330;
 	int board_temperature;
 	int tmp_voltage;
-	
+
 	int prev_board_temperature;
-	
+
 	int overCnt_temperature;
 	int underCnt_temperature;
 	int overTemperature;
 	int dieErrorFlag;
 	int OccuredDieError;
-	
+
 	procstat_t m_prev;
 	procstat_t m_curr;
 	int usageOverContinuousCount;
@@ -162,7 +162,7 @@ void diff_proc_stat(procstat_t *a, procstat_t *b, procstat_t *d)
 int cpuUsage_getToken(char *buf, int *offset_usage)
 {
 	int cnt = 0;
-	
+
 	while(1)
 	{
 		if(buf[cnt]==' ')
@@ -184,8 +184,8 @@ int cpuUsage_getToken(char *buf, int *offset_usage)
 			}
 		}
 	}
-	
-	return *offset_usage;	
+
+	return *offset_usage;
 }
 
 
@@ -195,12 +195,12 @@ void cpuUsage_getValue(char *buf, int *offsetUsage)
 	unsigned long long value[11];
 	int value_cnt =0;
 	int bFinish=0;
-	
+
 	value_cnt = 0;
 _reParsing:
 
 	value[value_cnt] = 0;
-	
+
 	// get the value
 	while(1)
 	{
@@ -211,7 +211,7 @@ _reParsing:
 			bFinish = 1;
 			break;
 		}
-		
+
 		value[value_cnt] = 10*value[value_cnt] + (buf[cnt]-'0');
 		cnt++;
 	}
@@ -227,7 +227,7 @@ _reParsing:
 	    ctrl_cpuTemp.m_curr.zero = value[7];
 		return;
 	}
-	
+
 	cnt++;
 	while(1)
 	{
@@ -241,7 +241,7 @@ _reParsing:
 			break;
 		cnt++;
 	}
-	
+
 	*offsetUsage += cnt;
 
 	if(bFinish)
@@ -260,14 +260,14 @@ _reParsing:
 	value_cnt++;
 goto _reParsing;
 
-	return ;	
+	return ;
 }
 
 static int _read_statfile(char *path, char *buf, int size)
 {
 	int fd;
 	mm_segment_t old_fs;
-	
+
 	fd = sys_open(path, O_RDONLY, 0);
 	old_fs = get_fs();
 	if (0 > fd)
@@ -278,9 +278,9 @@ static int _read_statfile(char *path, char *buf, int size)
 
 	set_fs(old_fs);
 	sys_close(fd);
-		
+
 	return 0;
-		
+
 }
 
 void GetCPUInfo(char *buf)
@@ -289,11 +289,11 @@ void GetCPUInfo(char *buf)
     procstat_t u100; /* percentages(%x100) per total */
     long total, usage100;
 	int offset_usage;
-	
+
 	cpuUsage_getToken(buf, &offset_usage);
 	cpuUsage_getValue(&buf[offset_usage], &offset_usage);
 
-    diff_proc_stat(&ctrl_cpuTemp.m_curr, &ctrl_cpuTemp.m_prev, &d);	
+    diff_proc_stat(&ctrl_cpuTemp.m_curr, &ctrl_cpuTemp.m_prev, &d);
     total = d.user + d.system + d.nice + d.idle + d.wait + d.hi + d.si;
     u100.user   = d.user * 10000 / total;
     u100.system = d.system * 10000 / total;
@@ -305,7 +305,9 @@ void GetCPUInfo(char *buf)
     usage100 = 10000 - u100.idle;
  	ctrl_cpuTemp.cpuUsageNx4330 = usage100;
 
-    pr_debug("cpuusage :%02d.%02d %% curMaxCpu(%d) temperature(%d) die(%d)ntic(%d)\n", (usage100/100), (usage100%100), curMaxCpu, NXL_Get_BoardTemperature(), isOccured_dieError(), max_limit_dangerous);
+    pr_debug("cpuusage :%02d.%02d %% curMaxCpu(%d) temperature(%d) die(%d)ntic(%d)\n",
+    	(usage100/100), (usage100%100), curMaxCpu, NXL_Get_BoardTemperature(),
+    	isOccured_dieError(), max_limit_dangerous);
 
     ctrl_cpuTemp.m_prev.user = ctrl_cpuTemp.m_curr.user ;
     ctrl_cpuTemp.m_prev.system =  ctrl_cpuTemp.m_curr.system ;
@@ -314,7 +316,7 @@ void GetCPUInfo(char *buf)
     ctrl_cpuTemp.m_prev.wait = ctrl_cpuTemp.m_curr.wait;
     ctrl_cpuTemp.m_prev.hi = ctrl_cpuTemp.m_curr.hi;
     ctrl_cpuTemp.m_prev.si = ctrl_cpuTemp.m_curr.si;
-    ctrl_cpuTemp.m_prev.zero = ctrl_cpuTemp.m_curr.zero;	
+    ctrl_cpuTemp.m_prev.zero = ctrl_cpuTemp.m_curr.zero;
 
 }
 
@@ -334,7 +336,7 @@ long funcGetMaxFreq(struct cpufreq_limit_data *limit)
 
 	if(temperature < TEMPERTURE_LIMIT_NONE)
 		isReset_LimitMaxUner();
-	
+
 	if(temperature < TEMPERTURE_LIMIT_LEVEL0)
 	{
 		max_limit_dangerous = 0;
@@ -366,7 +368,7 @@ long funcGetMaxFreq(struct cpufreq_limit_data *limit)
 		isSet_LimitMaxUner();
 		if(cpuUsage>CPU_OVER_USAGELEVEL)
 		{
-		
+
 			if(isGet_LimitMin() == 0)
 				max_freq = limit->limit_level0_freq;
 			else
@@ -383,18 +385,18 @@ long funcGetMaxFreq(struct cpufreq_limit_data *limit)
 		else
 			max_freq = limit->min_max_freq;
 	}
-	else // Over Threthold -> set the min max_freq. 
+	else // Over Threthold -> set the min max_freq.
 	{
 		max_limit_dangerous = 1;
 	}
 
-	
+
 	if(isOccured_dieError() || max_limit_dangerous) // DieError
 	{
 		return limit->min_max_freq;
 	}
 
-	
+
 	return max_freq;
 
 }
