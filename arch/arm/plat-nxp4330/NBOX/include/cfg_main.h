@@ -58,8 +58,8 @@
 /*------------------------------------------------------------------------------
  * 	GMAC PHY
  */
-#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				(-1)//(IRQ_GPIO_D_START + 17)
-#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_C + 12)
+#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				-1//(IRQ_GPIO_E_START + 23)//(IRQ_GPIO_D_START + 17)
+#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_C+12)//(PAD_GPIO_E + 22)
 
 /*------------------------------------------------------------------------------
  * 	Nand (HWECC)
