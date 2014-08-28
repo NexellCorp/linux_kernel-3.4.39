@@ -3184,7 +3184,7 @@ static void nand_decode_ext_id(struct mtd_info *mtd, struct nand_chip *chip,
 
 	id_len = nand_id_len(id_data, 8);
 
-#if (1)	/* FIXME: remove debug msg */
+#if (0)	/* FIXME: remove debug msg */
 	printk("[READ ID] 1:[%02x] 2:[%02x] 3:[%02x] 4:[%02x] 5:[%02x] 6:[%02x] 7:[%02x]\n",
 			id_data[0], id_data[1], id_data[2], id_data[3], id_data[4], id_data[5], id_data[6]);
 	printk("  EXT BIT 7:[%x] 6:[%x] 5:[%x] 4:[%x] 3:[%x] 2:[%x] 1:[%x] 0:[%x]\n",

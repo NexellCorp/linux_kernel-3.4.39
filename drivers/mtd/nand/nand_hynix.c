@@ -75,9 +75,9 @@ int nand_setup_read_retry_hynix(struct mtd_info *mtd, int retry_mode)
 		int column = hynix->read_retry.regs[i];
 		nand_direct_command(mtd, NAND_CMD_NONE, column, -1);
 		chip->write_byte(mtd, hynix->read_retry.values[offset + i]);
-		printk(" %02x", hynix->read_retry.values[offset + i]);	/* FIXME: remove debug msg */
+		//printk(" %02x", hynix->read_retry.values[offset + i]);	/* FIXME: remove debug msg */
 	}
-	printk ("\n");												/* FIXME: remove debug msg */
+	//printk ("\n");												/* FIXME: remove debug msg */
 	chip->cmdfunc(mtd, 0x16, -1, -1);
 
 	ndelay(100);
