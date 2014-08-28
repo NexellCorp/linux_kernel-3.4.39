@@ -491,7 +491,7 @@ static int __devinit nxp_adc_probe(struct platform_device *pdev)
 	queue_delayed_work(adc->monitoring_wqueue, &adc->monitoring_work, 15*HZ);
 #endif
 
-	printk("+++++++ success init of ADC\n");
+	pr_debug("ADC init success\n");
 
 	return 0;
 
