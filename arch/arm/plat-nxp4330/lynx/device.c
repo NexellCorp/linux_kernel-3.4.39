@@ -122,6 +122,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.max_retention  =   20*1000,
 	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
+	.supply_name 	= "vdd_arm_1.3V",
 };
 
 static struct platform_device dfs_plat_device = {

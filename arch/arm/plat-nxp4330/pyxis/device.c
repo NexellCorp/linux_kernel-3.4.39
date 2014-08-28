@@ -92,17 +92,23 @@ const u8 g_DispBusSI[3] = {
  */
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
+
 static unsigned long dfs_freq_table[][2] = {
-	{ 1200000, 1200 },
-	{ 1100000, 1200 },
-	{ 1000000, 1200 },
-	{  900000, 1200 },
-	{  800000, 1200 },
-	{  780000, 1200 },
-	{  562000, 1200 },
-	{  533000, 1200 },
-	{  490000, 1200 },
-	{  400000, 1200 },
+	{ 1600000, 1300000, },
+	{ 1500000, 1300000, },
+	{ 1400000, 1200000, },
+	{ 1300000, 1200000, },
+	{ 1200000, 1100000, },
+	{ 1100000, 1100000, },
+	{ 1000000, 1000000, },
+	{  900000, 1000000, },
+	{  800000, 1000000, },
+	{  700000,  960000, },
+	{  666000,  960000, },
+	{  600000,  960000, },
+	{  533000,  960000, },
+	{  500000,  960000, },
+	{  400000,  960000, },
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
@@ -113,12 +119,30 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.max_retention  =   20*1000,
 	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
+	.supply_name 	= "vdd_arm_1.3V",
 };
 
 static struct platform_device dfs_plat_device = {
 	.name			= DEV_NAME_CPUFREQ,
 	.dev			= {
 		.platform_data	= &dfs_plat_data,
+	}
+};
+
+/* cpu over scaling */
+static char *freq_proct_list[] = { "com.antutu", };
+
+static struct nxp_cpufreq_limit_data freq_limit_data = {
+	.limit_name		= freq_proct_list,
+	.limit_num 		= ARRAY_SIZE(freq_proct_list),
+	.aval_max_freq 	= 1600000,
+	.op_max_freq	= 1200000,
+};
+
+static struct platform_device freq_limit_device = {
+	.name			= "cpufreq-limit",
+	.dev			= {
+		.platform_data	= &freq_limit_data,
 	}
 };
 
@@ -577,7 +601,7 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1200000, 1, 12);	/* 1.2V ARM */
+NXE2000_PDATA_INIT(dc1,      0,	 950000, 2000000, 1, 1, 1200000, 1, 12);	/* 1.2V ARM */
 NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1, 14);	/* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
@@ -1324,7 +1348,7 @@ static struct dw_mci_board _dwmci1_data = {
 				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(3) | DW_MMC_SAMPLE_PHASE(0),
 };
 #endif
 
@@ -1386,6 +1410,7 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 	printk("plat: add dynamic frequency (pll.%d)\n", dfs_plat_data.pll_dev);
 	platform_device_register(&dfs_plat_device);
+	platform_device_register(&freq_limit_device);
 #endif
 
 #if defined (CONFIG_FB_NEXELL)
