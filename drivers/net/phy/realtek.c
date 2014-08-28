@@ -43,11 +43,14 @@ MODULE_LICENSE("GPL");
 
 static int rtl8201f_ack_interrupt(struct phy_device *phydev)
 {
+#if 0
 	int err;
 
 	err = phy_read(phydev, RTL8201F_INSR);
 
-	return (err < 0) ? err : 0;
+    return (err < 0) ? err : 0; 
+#endif 
+    return 0;
 }
 
 static int rtl821x_ack_interrupt(struct phy_device *phydev)
@@ -61,6 +64,7 @@ static int rtl821x_ack_interrupt(struct phy_device *phydev)
 
 static int rtl8201f_config_intr(struct phy_device *phydev)
 {
+#if 0
 	int err;
 
 	phy_write(phydev, RTL8201F_PGSR, 0x0007);	/* select page 7 */
@@ -75,6 +79,8 @@ static int rtl8201f_config_intr(struct phy_device *phydev)
 	phy_write(phydev, RTL8201F_PGSR, 0x0000);	/* back to page 0 */
 
 	return err;
+#endif
+    return 0;
 }
 
 static int rtl8211b_config_intr(struct phy_device *phydev)
@@ -114,7 +120,7 @@ static struct phy_driver rtl8201f_driver = {
 	.name		= "RTL8201F 10/100Mbps Ethernet",
 	.phy_id_mask	= 0x001fffff,
 	.features	= PHY_BASIC_FEATURES,
-	.flags		= PHY_HAS_INTERRUPT,
+	.flags		= 0,
 	.config_aneg	= &genphy_config_aneg,
 	.read_status	= &genphy_read_status,
 	.ack_interrupt	= &rtl8201f_ack_interrupt,
