@@ -25,6 +25,8 @@
 #include <linux/slab.h>
 #include <linux/syscalls.h>
 #include <linux/fs.h>
+#include <linux/suspend.h>
+#include <linux/notifier.h>
 #include <linux/oom.h>
 #include <linux/platform_device.h>
 #include <mach/platform.h>
@@ -55,7 +57,12 @@ struct cpufreq_limit_data {
     long pre_max_freq;		/* unit Khz */
     struct hrtimer limit_timer;
     struct work_struct limit_work;
-    struct notifier_block limit_nb;
+    struct notifier_block pm_notifier;
+    unsigned long resume_state;
+};
+
+enum {
+	STATE_RESUME_DONE = 0,
 };
 
 #define	LM_TASK_CHECK_SLEEP_TIME	(5 * USEC_PER_MSEC)		/* sec */
@@ -119,7 +126,7 @@ static void cpufreq_set_max_frequency(struct cpufreq_limit_data *limit, int boos
 {
 	int fd;
 	mm_segment_t old_fs;
-	char buf[16];
+	char buf[32];
 	long sc_max_freq = 0, max_freq = 0;
 	int cpu;
 
@@ -170,7 +177,10 @@ static void cpufreq_limit_work(struct work_struct *work)
 	char *comm = task_comm;
 	int cpu, i = 0, len = limit->limit_num;
 
-	task_comm[0] = NULL;
+	if (!test_bit(STATE_RESUME_DONE, &limit->resume_state))
+		goto _exit;
+
+	task_comm[0] = 0;
 	for_each_possible_cpu(cpu) {
      	p = curr_task(cpu);
 	   	t = find_task_by_vpid(task_tgid_vnr(p));	/* parent */
@@ -195,7 +205,6 @@ static void cpufreq_limit_work(struct work_struct *work)
 				goto _exit;
 			}
 		}
-		//pr_debug("\n");
 	}
 
 	for_each_process(p) {
@@ -241,15 +250,22 @@ static enum hrtimer_restart cpufreq_limit_timer(struct hrtimer *hrtimer)
 	return HRTIMER_NORESTART;
 }
 
-static int cpufreq_limit_transition(struct notifier_block *nb,
-					  unsigned long val, void *data)
+static int cpufreq_limit_pm_notify(struct notifier_block *this,
+					  unsigned long mode, void *unused)
 {
-	struct cpufreq_freqs *freq = data;
-	struct cpufreq_limit_data *limit = container_of(nb,
-						struct cpufreq_limit_data, limit_nb);
+	struct cpufreq_limit_data *limit = container_of(this,
+						struct cpufreq_limit_data, pm_notifier);
 
-	if (freq->cpu == 0 && val == CPUFREQ_POSTCHANGE)
-		limit->frequency = freq->new;
+	pr_debug("%s: %s\n", __func__, mode==PM_SUSPEND_PREPARE?"suspend":"resume");
+
+    switch(mode) {
+    case PM_SUSPEND_PREPARE:
+    	clear_bit(STATE_RESUME_DONE, &limit->resume_state);
+    	break;
+    case PM_POST_SUSPEND:
+    	set_bit(STATE_RESUME_DONE, &limit->resume_state);
+    	break;
+    }
 	return 0;
 }
 
@@ -276,7 +292,7 @@ static int cpufreq_limit_probe(struct platform_device *pdev)
 	limit->op_max_freq = plat->op_max_freq;
 	limit->timer_duration = plat->sched_duration ? : DEFAULT_LM_CHECK_TIME;
 	limit->op_timeout = plat->sched_timeout ? : LM_TASK_CHECK_SLEEP_TIME;
-	limit->limit_nb.notifier_call = cpufreq_limit_transition;
+	limit->pm_notifier.notifier_call = cpufreq_limit_pm_notify;
 
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
 	limit->limit_level0_freq = plat->limit_level0_freq;
@@ -284,6 +300,8 @@ static int cpufreq_limit_probe(struct platform_device *pdev)
 	limit->min_max_freq = plat->min_max_freq;
 	limit->timer_chkcpu_mod = 1; // every 1 second, check .
 #endif
+	register_pm_notifier(&limit->pm_notifier);
+	set_bit(STATE_RESUME_DONE, &limit->resume_state);
 
 	INIT_WORK(&limit->limit_work, cpufreq_limit_work);
 
@@ -295,10 +313,7 @@ static int cpufreq_limit_probe(struct platform_device *pdev)
 		HRTIMER_MODE_REL_PINNED);
 	printk("LIMIT: timer %ld ms, op %ld ms\n",
 		limit->timer_duration, limit->op_timeout);
-/*
-	return cpufreq_register_notifier(&limit->limit_nb,
-			CPUFREQ_TRANSITION_NOTIFIER);
-*/
+
 	return 0;
 }
 
