@@ -58,8 +58,12 @@
 /*------------------------------------------------------------------------------
  * 	GMAC PHY
  */
-#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				-1//(IRQ_GPIO_E_START + 23)//(IRQ_GPIO_D_START + 17)
-#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_C+12)//(PAD_GPIO_E + 22)
+ /*for rtl8211*/
+//#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				(IRQ_GPIO_E_START + 23)//(IRQ_GPIO_D_START + 17)
+//#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_E + 22) //(PAD_GPIO_C+12)
+/*for rtl8201*/
+#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				-1
+#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_C+12)
 
 /*------------------------------------------------------------------------------
  * 	Nand (HWECC)
