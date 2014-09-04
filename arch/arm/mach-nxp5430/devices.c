@@ -1003,11 +1003,33 @@ static struct platform_device wdt_device = {
 #endif
 
 /*------------------------------------------------------------------------------
+ * The order of device declaration may be important, since some devices
+ * have dependencies on other devices being initialized first.
+ */
+#if defined(CONFIG_ARM_AMBA)
+#include "dev-dmac.c"
+static struct amba_device *amba_devices[] __initdata = {
+#if defined (CONFIG_AMBA_PL08X)
+	&dmac0_device,
+	&dmac1_device,
+#endif
+};
+#endif
+
+/*------------------------------------------------------------------------------
  * register cpu platform devices
  */
 void __init nxp_cpu_devs_register(void)
 {
+	int i = 0;
 	printk("[Register machine platform devices]\n");
+#if defined(CONFIG_ARM_AMBA)
+	for (i = 0; i < ARRAY_SIZE(amba_devices); i++) {
+	struct amba_device *d = amba_devices[i];
+	printk("mach: add amba device %s \n", d->dev.init_name);
+	amba_device_register(d, &iomem_resource);
+	}
+#endif
 
 	/* default uart hw prepare */
 #if defined(CONFIG_SERIAL_NXP_S3C_UART0)
