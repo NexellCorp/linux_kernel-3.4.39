@@ -35,7 +35,7 @@
 */
 
 #define	INTC_BASE		(void __iomem *)IO_ADDRESS(PHY_BASEADDR_INTC)
-#define	GIC_PHY_OFFSET	(32)
+#define	GIC_PHY_OFFSET	(0)
 
 //----------------------------------------------------------------------------
 static void __init __gic_init(void __iomem *dist_base, void __iomem *cpu_base);
@@ -115,7 +115,7 @@ static void __init __gic_init(void __iomem *dist_base, void __iomem *cpu_base)
 static void alive_ack_irq(struct irq_data *d)
 {
 	void __iomem *base = irq_data_get_irq_chip_data(d);
-	int bit = (d->irq & 0x1F);
+	int bit = (d->irq - IRQ_ALIVE_START) & 0x1F;
 	pr_debug("%s: alive irq = %d, io = %d\n", __func__, d->irq, bit);
 
 	/* alive ack : irq pend clear */
@@ -126,7 +126,7 @@ static void alive_ack_irq(struct irq_data *d)
 static void alive_mask_irq(struct irq_data *d)
 {
 	void __iomem *base = irq_data_get_irq_chip_data(d);
-	int bit = (d->irq & 0x1F);
+	int bit = (d->irq - IRQ_ALIVE_START) & 0x1F;
 	pr_debug("%s: alive irq = %d, io = %d\n", __func__, d->irq, bit);
 
 	/* alive mask : irq reset (disable) */
@@ -136,7 +136,7 @@ static void alive_mask_irq(struct irq_data *d)
 static void alive_unmask_irq(struct irq_data *d)
 {
 	void __iomem *base = irq_data_get_irq_chip_data(d);
-	int bit = (d->irq & 0x1F);
+	int bit = (d->irq - IRQ_ALIVE_START) & 0x1F;
 	pr_debug("%s: alive irq = %d, io = %d\n", __func__, d->irq, bit);
 
 	/* alive unmask : irq set (enable) */
@@ -148,7 +148,7 @@ static int alive_set_type_irq(struct irq_data *d, unsigned int type)
 {
 	void __iomem *base = irq_data_get_irq_chip_data(d);
 	u32 reg = 0;
-	int bit = (d->irq & 0x1F);
+	int bit = (d->irq - IRQ_ALIVE_START) & 0x1F;
 	int offs = 0, i = 0;
 	NX_ALIVE_DETECTMODE mode = 0;
 
@@ -191,7 +191,7 @@ static int alive_set_wake(struct irq_data *d, unsigned int on)
 {
 #if (0)
 	void __iomem *base = irq_data_get_irq_chip_data(d);
-	int bit = (d->irq & 0x1F);
+	int bit = (d->irq - IRQ_ALIVE_START) & 0x1F;
 
 	pr_info("%s: alive irq = %d, io = %d wake %s\n",
 		__func__, d->irq, bit, on?"on":"off");
@@ -226,7 +226,7 @@ static void alive_handler(unsigned int irq, struct irq_desc *desc)
 		printk(KERN_ERR "Unknown alive irq=%d, stat=0x%08x, mask=0x%02x\r\n",
 			phy, stat, mask);
 		writel(-1, (base + ALIVE_INT_STATUS));	/* clear alive status all */
-//		writel(1<<phy, (VIC0_INT_BASE + VIC_INT_SOFT_CLEAR));
+		writel_relaxed(phy, GIC_CPUI_BASE + GIC_CPU_EOI);
 		return;
 	}
 
@@ -242,10 +242,10 @@ static void alive_handler(unsigned int irq, struct irq_desc *desc)
 			irq, phy, bit);
 		writel(readl(base + ALIVE_INT_SET) & ~(1<<bit), base + ALIVE_INT_SET);		/* alive mask : irq disable */
 		writel(readl(base + ALIVE_INT_STATUS) | (1<<bit), base + ALIVE_INT_STATUS);	/* alive ack  : irq pend clear */
-//		writel(1<<phy, (VIC0_INT_BASE + VIC_INT_SOFT_CLEAR));
 		readl(base + ALIVE_INT_STATUS);	/* Guarantee */
 	}
 
+	writel_relaxed(phy, GIC_CPUI_BASE + GIC_CPU_EOI);
 	return;
 }
 
@@ -303,7 +303,7 @@ static const char *io_name[] = { "GPIOA", "GPIOB", "GPIOC", "GPIOD", "GPIOE", };
 static void gpio_ack_irq(struct irq_data *d)
 {
 	void __iomem *base = irq_data_get_irq_chip_data(d);
-	int bit = (d->irq & 0x1F);
+	int bit = (d->irq - IRQ_GPIO_START) & 0x1F;
 	pr_debug("%s: gpio irq = %d, %s.%d\n", __func__, d->irq, VIO_NAME(d->irq), bit);
 
 	/* gpio ack : irq pend clear */
@@ -314,7 +314,7 @@ static void gpio_ack_irq(struct irq_data *d)
 static void gpio_mask_irq(struct irq_data *d)
 {
 	void __iomem *base = irq_data_get_irq_chip_data(d);
-	int bit = (d->irq & 0x1F);
+	int bit = (d->irq - IRQ_GPIO_START) & 0x1F;
 	pr_debug("%s: gpio irq = %d, %s.%d\n", __func__, d->irq, VIO_NAME(d->irq), bit);
 
 	/* gpio mask : irq disable */
@@ -325,7 +325,7 @@ static void gpio_mask_irq(struct irq_data *d)
 static void gpio_unmask_irq(struct irq_data *d)
 {
 	void __iomem *base = irq_data_get_irq_chip_data(d);
-	int bit = (d->irq & 0x1F);
+	int bit = (d->irq - IRQ_GPIO_START) & 0x1F;
 	pr_debug("%s: gpio irq = %d, %s.%d\n", __func__, d->irq, VIO_NAME(d->irq), bit);
 
 	/* gpio unmask : irq enable */
@@ -337,7 +337,7 @@ static void gpio_unmask_irq(struct irq_data *d)
 static int gpio_set_type_irq(struct irq_data *d, unsigned int type)
 {
 	void __iomem *base = irq_data_get_irq_chip_data(d);
-	int bit = (d->irq & 0x1F);
+	int bit = (d->irq - IRQ_GPIO_START) & 0x1F;
 	unsigned int reg, val, alt;
 	NX_GPIO_INTMODE mode = 0;
 	pr_debug("%s: gpio irq = %d, %s.%d, type=0x%x\n",
@@ -389,7 +389,7 @@ static int gpio_set_wake(struct irq_data *d, unsigned int on)
 {
 #if (0)
 	void __iomem *base = irq_data_get_irq_chip_data(d);
-	int bit = (d->irq & 0x1F);
+	int bit = (d->irq - IRQ_GPIO_START) & 0x1F;
 	pr_debug("%s: gpio irq = %d, %s.%d wake %s\n",
 		__func__, d->irq, VIO_NAME(d->irq), bit, on?"on":"off");
 #endif
@@ -423,7 +423,7 @@ static void gpio_handler(unsigned int irq, struct irq_desc *desc)
 		printk(KERN_ERR "Unknown gpio phy irq=%d, status=0x%08x, mask=0x%08x\r\n",
 			phy, stat, mask);
 		writel(-1, (base + GPIO_INT_STATUS));	/* clear gpio status all */
-//    	writel(1<<phy, (VIC1_INT_BASE + VIC_INT_SOFT_CLEAR));
+		writel_relaxed(phy, GIC_CPUI_BASE + GIC_CPU_EOI);
 		return;
 	}
 
@@ -440,10 +440,10 @@ static void gpio_handler(unsigned int irq, struct irq_desc *desc)
 			irq, PIO_NAME(phy), bit);
 		writel(readl(base + GPIO_INT_ENB) & ~(1<<bit), base + GPIO_INT_ENB);		/* gpio mask : irq disable */
 		writel(readl(base + GPIO_INT_STATUS) | (1<<bit), base + GPIO_INT_STATUS);	/* gpio ack  : irq pend clear */
- //   	writel(1<<phy, (VIC1_INT_BASE + VIC_INT_SOFT_CLEAR));
 		readl(base + GPIO_INT_STATUS);	/* Guarantee */
 	}
 
+	writel_relaxed(phy, GIC_CPUI_BASE + GIC_CPU_EOI);
 	return;
 }
 

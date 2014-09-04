@@ -269,80 +269,80 @@ static struct platform_device *pwm_devices[] = {
 #if defined(CONFIG_GPIO_NXP)
 #if	defined(CONFIG_GPIO_NXP_GROUP_A)
 static struct resource gpio_resource_A = {
-	.start  	=  0,
-	.end   	 	= 32,
-	.flags  	= IORESOURCE_IO,
+	.start  =  0,
+	.end   	= 32,
+	.flags  = IORESOURCE_IO,
 };
 static struct platform_device gpio_device_A = {
-	.name			= DEV_NAME_GPIO,
-	.id				= 0,
-	.resource		= &gpio_resource_A,
+	.name = DEV_NAME_GPIO,
+	.id	= 0,
+	.resource = &gpio_resource_A,
 	.num_resources  = 1,
 };
 #endif
 #if	defined(CONFIG_GPIO_NXP_GROUP_B)
 static struct resource gpio_resource_B = {
-	.start  	=  0,
-	.end   	 	= 32,
-	.flags  	= IORESOURCE_IO,
+	.start =  0,
+	.end = 32,
+	.flags = IORESOURCE_IO,
 };
 static struct platform_device gpio_device_B = {
-	.name			= DEV_NAME_GPIO,
-	.id				= 1,
-	.resource		= &gpio_resource_B,
-	.num_resources  = 1,
+	.name = DEV_NAME_GPIO,
+	.id	= 1,
+	.resource = &gpio_resource_B,
+	.num_resources = 1,
 };
 #endif
 #if	defined(CONFIG_GPIO_NXP_GROUP_C)
 static struct resource gpio_resource_C = {
-	.start  	=  0,
-	.end   	 	= 32,
-	.flags  	= IORESOURCE_IO,
+	.start =  0,
+	.end = 32,
+	.flags = IORESOURCE_IO,
 };
 static struct platform_device gpio_device_C  = {
-	.name			= DEV_NAME_GPIO,
-	.id				= 2,
-	.resource		= &gpio_resource_C,
-	.num_resources  = 1,
+	.name = DEV_NAME_GPIO,
+	.id	= 2,
+	.resource = &gpio_resource_C,
+	.num_resources = 1,
 };
 #endif
 #if	defined(CONFIG_GPIO_NXP_GROUP_D)
 static struct resource gpio_resource_D = {
-	.start  	=  0,
-	.end   	 	= 32,
-	.flags  	= IORESOURCE_IO,
+	.start =  0,
+	.end = 32,
+	.flags = IORESOURCE_IO,
 };
 static struct platform_device gpio_device_D  = {
-	.name			= DEV_NAME_GPIO,
-	.id				= 3,
-	.resource		= &gpio_resource_D,
-	.num_resources  = 1,
+	.name = DEV_NAME_GPIO,
+	.id	= 3,
+	.resource = &gpio_resource_D,
+	.num_resources = 1,
 };
 #endif
 #if	defined(CONFIG_GPIO_NXP_GROUP_E)
 static struct resource gpio_resource_E = {
-	.start  	=  0,
-	.end   	 	= 32,
-	.flags  	= IORESOURCE_IO,
+	.start =  0,
+	.end = 32,
+	.flags = IORESOURCE_IO,
 };
 static struct platform_device gpio_device_E  = {
-	.name			= DEV_NAME_GPIO,
-	.id				= 4,
-	.resource		= &gpio_resource_E,
+	.name = DEV_NAME_GPIO,
+	.id	= 4,
+	.resource = &gpio_resource_E,
 	.num_resources  = 1,
 };
 #endif
 #if	defined(CONFIG_GPIO_NXP_GROUP_ALV)
 static struct resource gpio_resource_ALV = {
-	.start  	=  0,
-	.end   	 	=  8,
-	.flags  	= IORESOURCE_IO,
+	.start =  0,
+	.end =  6,
+	.flags = IORESOURCE_IO,
 };
 static struct platform_device gpio_device_ALV  = {
-	.name			= DEV_NAME_GPIO,
-	.id				= 5,
-	.resource		= &gpio_resource_ALV,
-	.num_resources  = 1,
+	.name = DEV_NAME_GPIO,
+	.id	 = 5,
+	.resource = &gpio_resource_ALV,
+	.num_resources = 1,
 };
 #endif
 
