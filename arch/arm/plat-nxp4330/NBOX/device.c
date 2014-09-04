@@ -93,10 +93,10 @@ static unsigned long dfs_freq_table[][2] = {
 //	{ 1500000, 1200 },
 //	{ 1400000, 1200 },
 //	{ 1300000, 1200 },
-//	{ 1200000, 1200 },
-//	{ 1100000, 1200 },
-//	{ 1000000, 1200 },
-//	{  900000, 1200 },
+	{ 1200000, 1200 },
+	{ 1100000, 1200 },
+	{ 1000000, 1200 },
+	{  900000, 1200 },
 	{  800000, 1200 },
 #if 1
 	{  780000, 1200 },
@@ -111,7 +111,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP4330_CPUFREQ_PLLDEV,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 800*1000,
+	.max_cpufreq    = 1200*1000,
 	.max_retention  =   30*1000,
 	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
@@ -176,87 +176,69 @@ static struct platform_device dm9000_plat_device = {
 int  nxpmac_init(struct platform_device *pdev)
 {
     u32 addr;
-  
-#if 1	// 20140515
-	// 100 & 10Base-T
+#if 0
+    int grp_e = PAD_GET_GROUP(PAD_GPIO_E);
 
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 7, 0 );        // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 8, 0 );        // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 9, 0 );        // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+10, 0 );        // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+11, 0 );        // PAD_GPIOE11,    GMAC0_PHY_TXEN
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+12, 3 );        // PAD_GPIOE12,    GMAC0_PHY_TXER
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+13, 3 );        // PAD_GPIOE13,    GMAC0_PHY_COL
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+14, 2 );        // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+15, 2 );        // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+16, 2 );        // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+17, 2 );        // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+18, 3 );        // PAD_GPIOE18,    GMAC0_RX_CLK
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+19, 3);        // PAD_GPIOE19,    GMAC0_PHY_RX_DV
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+20, 3 );        // PAD_GPIOE20,    GMAC0_GMII_MDC
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+21, 3 );        // PAD_GPIOE21,    GMAC0_GMII_MDI
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+22, 3 );        // PAD_GPIOE22,    GMAC0_PHY_RXER
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+23, 3 );        // PAD_GPIOE23,    GMAC0_PHY_CRS
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+24, 0 );        // PAD_GPIOE24,    GMAC0_GTX_CLK
+    NX_GPIO_SetPullUpEnable( grp_e,  7, CFALSE );   // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
+    NX_GPIO_SetPullUpEnable( grp_e,  8, CFALSE );   // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
+    NX_GPIO_SetPullUpEnable( grp_e,  9, CFALSE );   // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
+    NX_GPIO_SetPullUpEnable( grp_e, 10, CFALSE );   // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
+    NX_GPIO_SetPullUpEnable( grp_e, 11, CFALSE );   // PAD_GPIOE11,    GMAC0_PHY_TXEN
+//    NX_GPIO_SetPullUpEnable( grp_e, 12, CFALSE );   // PAD_GPIOE12,    GMAC0_PHY_TXER
+//    NX_GPIO_SetPullUpEnable( grp_e, 13, CFALSE );   // PAD_GPIOE13,    GMAC0_PHY_COL
+    NX_GPIO_SetPullUpEnable( grp_e, 14, CFALSE );   // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
+    NX_GPIO_SetPullUpEnable( grp_e, 15, CFALSE );   // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
+    NX_GPIO_SetPullUpEnable( grp_e, 16, CFALSE );   // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
+    NX_GPIO_SetPullUpEnable( grp_e, 17, CFALSE );   // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
+    NX_GPIO_SetPullUpEnable( grp_e, 18, CFALSE );   // PAD_GPIOE18,    GMAC0_CLK_RX
+    NX_GPIO_SetPullUpEnable( grp_e, 19, CFALSE );   // PAD_GPIOE19,    GMAC0_PHY_RX_DV
+    NX_GPIO_SetPullUpEnable( grp_e, 20, CFALSE );   // PAD_GPIOE20,    GMAC0_GMII_MDC
+    NX_GPIO_SetPullUpEnable( grp_e, 21, CFALSE );   // PAD_GPIOE21,    GMAC0_GMII_MDI
+//    NX_GPIO_SetPullUpEnable( grp_e, 22, CFALSE );   // PAD_GPIOE22,    GMAC0_PHY_RXER
+//    NX_GPIO_SetPullUpEnable( grp_e, 23, CFALSE );   // PAD_GPIOE23,    GMAC0_PHY_CRS
+    NX_GPIO_SetPullUpEnable( grp_e, 24, CFALSE );   // PAD_GPIOE24,    GMAC0_GTX_CLK
 
+    NX_GPIO_SetPadFunction( grp_e,  7, 1 );         // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
+    NX_GPIO_SetPadFunction( grp_e,  8, 1 );         // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
+    NX_GPIO_SetPadFunction( grp_e,  9, 1 );         // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
+    NX_GPIO_SetPadFunction( grp_e, 10, 1 );         // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
+    NX_GPIO_SetPadFunction( grp_e, 11, 1 );         // PAD_GPIOE11,    GMAC0_PHY_TXEN
+//    NX_GPIO_SetPadFunction( grp_e, 12, 1 );         // PAD_GPIOE12,    GMAC0_PHY_TXER
+//    NX_GPIO_SetPadFunction( grp_e, 13, 1 );         // PAD_GPIOE13,    GMAC0_PHY_COL
+    NX_GPIO_SetPadFunction( grp_e, 14, 1 );         // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
+    NX_GPIO_SetPadFunction( grp_e, 15, 1 );         // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
+    NX_GPIO_SetPadFunction( grp_e, 16, 1 );         // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
+    NX_GPIO_SetPadFunction( grp_e, 17, 1 );         // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
+    NX_GPIO_SetPadFunction( grp_e, 18, 1 );         // PAD_GPIOE18,    GMAC0_CLK_RX
+    NX_GPIO_SetPadFunction( grp_e, 19, 1 );         // PAD_GPIOE19,    GMAC0_PHY_RX_DV
+    NX_GPIO_SetPadFunction( grp_e, 20, 1 );         // PAD_GPIOE20,    GMAC0_GMII_MDC
+    NX_GPIO_SetPadFunction( grp_e, 21, 1 );         // PAD_GPIOE21,    GMAC0_GMII_MDI
+//    NX_GPIO_SetPadFunction( grp_e, 22, 1 );     // PAD_GPIOE22,    GMAC0_PHY_RXER
+//    NX_GPIO_SetPadFunction( grp_e, 23, 1 );     // PAD_GPIOE23,    GMAC0_PHY_CRS
+    NX_GPIO_SetPadFunction( grp_e, 24, 1 );         // PAD_GPIOE24,    GMAC0_GTX_CLK
 #endif
 
-#if 0	// 1000Base-T
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  7), 3 );     // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  8), 3 );     // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  9), 3 );     // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 10), 3 );     // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 11), 3 );     // PAD_GPIOE11,    GMAC0_PHY_TXEN
-//	nxp_gpio_set_drv( (PAD_GPIO_E + 12), GPIO_DRV_1X );     // PAD_GPIOE12,    GMAC0_PHY_TXER
-//	nxp_gpio_set_drv( (PAD_GPIO_E + 13), GPIO_DRV_1X );     // PAD_GPIOE13,    GMAC0_PHY_COL
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 14), 3 );     // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 15), 3 );     // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 16), 3 );     // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 17), 3 );     // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 18), 3 );     // PAD_GPIOE18,    GMAC0_RX_CLK
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 19), 3 );     // PAD_GPIOE19,    GMAC0_PHY_RX_DV
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 20), 3 );     // PAD_GPIOE20,    GMAC0_GMII_MDC
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 21), 3 );     // PAD_GPIOE21,    GMAC0_GMII_MDI
-//	nxp_gpio_set_drv( (PAD_GPIO_E + 22), GPIO_DRV_1X );     // PAD_GPIOE22,    GMAC0_PHY_RXER
-//	nxp_gpio_set_drv( (PAD_GPIO_E + 23), GPIO_DRV_1X );     // PAD_GPIOE23,    GMAC0_PHY_CRS
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 24), 3 );     // PAD_GPIOE24,    GMAC0_GTX_CLK
-#endif
+    // Clock control
+    NX_CLKGEN_Initialize();
+    addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
+    NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (u32)IO_ADDRESS(addr) );
+    NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 4);     // Sync mode for 100 & 10Base-T : External RX_clk
+    NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);    // Sync mode for 100 & 10Base-T
+    NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);    // TX Clk invert off
+//    NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CTRUE);     // TX clk invert on : 100 & 10Base-T, Strength 0
 
+    NX_CLKGEN_SetClockDivisorEnable( CLOCKINDEX_OF_DWC_GMAC_MODULE, CTRUE);
 
-	// Clock control
-	NX_CLKGEN_Initialize();
-	addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
-	NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (u32)IO_ADDRESS(addr) );
-
-	NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 4);     // Sync mode for 100 & 10Base-T : External RX_clk
-	NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);    // Sync mode for 100 & 10Base-T
-
-	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);    // TX Clk invert off : 100 & 10Base-T
-//	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CTRUE);     // TX clk invert on : 100 & 10Base-T
-
-	NX_CLKGEN_SetClockDivisorEnable( CLOCKINDEX_OF_DWC_GMAC_MODULE, CTRUE);
-
-	// Reset control
-	NX_RSTCON_Initialize();
-	addr = NX_RSTCON_GetPhysicalAddress();
-	NX_RSTCON_SetBaseAddress( (u32)IO_ADDRESS(addr) );
-	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
-	udelay(100);
-	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_DISABLE);
-	udelay(100);
-	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
-	udelay(100);
-
-
-    gpio_request(CFG_ETHER_GMAC_PHY_RST_NUM,"Ethernet Rst pin");
-	gpio_direction_output(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
-	udelay( 100 );
-	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 0 );
-	udelay( 100 );
-	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
-
-    gpio_free(CFG_ETHER_GMAC_PHY_RST_NUM);
-
+    // Reset control
+    NX_RSTCON_Initialize();
+    addr = NX_RSTCON_GetPhysicalAddress();
+    NX_RSTCON_SetBaseAddress( (u32)IO_ADDRESS(addr) );
+    NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
+    udelay(100);
+    NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_DISABLE);
+    udelay(100);
+    NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
+    udelay(100);
      printk("NXP mac init ..................\n");
 	return 0;
 }
@@ -281,15 +263,14 @@ static struct stmmac_mdio_bus_data nxpmac0_mdio_bus = {
 };
 
 static struct plat_stmmacenet_data nxpmac_plat_data = {
-   // .phy_addr = 7,// 7 for 8211 3 for 8201
-	.phy_addr = 3,  // 7 for 8211 3 for 8201
-	.interface = PHY_INTERFACE_MODE_RGMII,
-	.autoneg = AUTONEG_ENABLE, //AUTONEG_ENABLE or AUTONEG_DISABLE
-	.speed = SPEED_100,
+	.phy_addr = 3,
+	.interface = PHY_INTERFACE_MODE_RMII,
+	.autoneg = AUTONEG_DISABLE, //AUTONEG_ENABLE or AUTONEG_DISABLE
+	.speed = SPEED_10,
 	.duplex = DUPLEX_FULL,
 	.pbl = 16,          /* burst 16 */
-	.clk_csr = 0x25, //0x28 for 1000M PHY 0x5 for 100M PHY /* clk_csr_i = 20-35MHz & MDC = clk_csr_i/8 */
-	.has_gmac = 1,      /* GMAC ethernet    */
+	.clk_csr = 0x28,    /* clk_csr_i = 20-35MHz & MDC = clk_csr_i/8 */
+	.has_gmac = 0,      /* GMAC ethernet    */
 	.enh_desc = 0,
 	.mdio_bus_data = &nxpmac0_mdio_bus,
 	.init = &nxpmac_init,
@@ -320,10 +301,10 @@ struct platform_device nxp_gmac_dev = {
 /*------------------------------------------------------------------------------
  * DISPLAY (LVDS) / FB
  */
-#if defined (CONFIG_FB_NEXELL)
-#if defined (CONFIG_FB0_NEXELL)
+#if defined (CONFIG_FB_NXP)
+#if defined (CONFIG_FB0_NXP)
 static struct nxp_fb_plat_data fb0_plat_data = {
-	.module			= CONFIG_FB0_NEXELL_DISPOUT,
+	.module			= CONFIG_FB0_NXP_DISPOUT,
 	.layer			= CFG_DISP_PRI_SCREEN_LAYER,
 	.format			= CFG_DISP_PRI_SCREEN_RGB_FORMAT,
 	.bgcolor		= CFG_DISP_PRI_BACK_GROUND_COLOR,
@@ -351,17 +332,17 @@ static struct platform_device fb0_device = {
 #endif
 
 static struct platform_device *fb_devices[] = {
-	#if defined (CONFIG_FB0_NEXELL)
+	#if defined (CONFIG_FB0_NXP)
 	&fb0_device,
 	#endif
 };
-#endif /* CONFIG_FB_NEXELL */
+#endif /* CONFIG_FB_NXP */
 
 
 /*------------------------------------------------------------------------------
  * Keypad platform device
  */
-#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 
 #include <linux/input.h>
 
@@ -382,7 +363,7 @@ static struct platform_device key_plat_device = {
 		.platform_data	= &key_plat_data
 	},
 };
-#endif	/* CONFIG_KEYBOARD_NEXELL_KEY || CONFIG_KEYBOARD_NEXELL_KEY_MODULE */
+#endif	/* CONFIG_KEYBOARD_NXP_KEY || CONFIG_KEYBOARD_NXP_KEY_MODULE */
 
 /*------------------------------------------------------------------------------
  * ASoC Codec platform device
@@ -770,7 +751,7 @@ static int _dwmci_get_ro(u32 slot_id)
 	return 0;
 }
 
-#ifdef CONFIG_MMC_NEXELL_CH0
+#ifdef CONFIG_MMC_DW_NXP_CH0
 static struct dw_mci_board _dwmci0_data = {
     .quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 				  	  DW_MCI_QUIRK_HIGHSPEED |
@@ -783,12 +764,11 @@ static struct dw_mci_board _dwmci0_data = {
 				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-	//.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0x1c) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
-    .clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(3) | DW_MMC_SAMPLE_PHASE(0),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0x1c) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 };
 #endif
 
-#ifdef CONFIG_MMC_NEXELL_CH1
+#ifdef CONFIG_MMC_DW_NXP_CH1
 
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION,
@@ -801,7 +781,7 @@ static struct dw_mci_board _dwmci1_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_NEXELL_CH2
+#ifdef CONFIG_MMC_DW_NXP_CH2
 static int _dwmci2_init(u32 slot_id, irq_handler_t handler, void *data)
 {
 	struct dw_mci *host = (struct dw_mci *)data;
@@ -848,7 +828,7 @@ static struct dw_mci_board _dwmci2_data = {
 /*------------------------------------------------------------------------------
  * RFKILL driver
  */
-#if defined(CONFIG_RFKILL_NEXELL)
+#if defined(CONFIG_NXP_RFKILL)
 
 struct rfkill_dev_data  rfkill_dev_data =
 {
@@ -871,7 +851,7 @@ static struct platform_device rfkill_device = {
 		.platform_data	= &rfkill_plat_data,
 	}
 };
-#endif	/* CONFIG_RFKILL_NEXELL */
+#endif	/* CONFIG_NXP_RFKILL */
 
 #if defined(CONFIG_PPM_NEXELL)
 #include <mach/ppm.h>
@@ -908,24 +888,24 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&dfs_plat_device);
 #endif
 
-#if defined (CONFIG_FB_NEXELL)
+#if defined (CONFIG_FB_NXP)
 	printk("plat: add framebuffer\n");
 	platform_add_devices(fb_devices, ARRAY_SIZE(fb_devices));
 #endif
 
 #if defined(CONFIG_MMC_DW)
-	#ifdef CONFIG_MMC_NEXELL_CH0
+	#ifdef CONFIG_MMC_DW_NXP_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
-	#ifdef CONFIG_MMC_NEXELL_CH1
+	#ifdef CONFIG_MMC_DW_NXP_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
 	#endif
-	#ifdef CONFIG_MMC_NEXELL_CH2
+	#ifdef CONFIG_MMC_DW_NXP_CH2
 	nxp_mmc_add_device(2, &_dwmci2_data);
 	#endif
 #endif
 
-#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 	printk("plat: add device keypad\n");
 	platform_device_register(&key_plat_device);
 #endif
@@ -953,7 +933,7 @@ void __init nxp_board_devices_register(void)
     platform_device_register(&nxp_v4l2_dev);
 #endif
 
-#if defined(CONFIG_RFKILL_NEXELL)
+#if defined(CONFIG_NXP_RFKILL)
     printk("plat: add device rfkill\n");
     platform_device_register(&rfkill_device);
 #endif

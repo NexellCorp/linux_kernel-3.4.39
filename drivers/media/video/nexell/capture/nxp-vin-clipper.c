@@ -27,7 +27,6 @@
 #include <mach/iomap.h>
 #else
 #include <mach/platform.h>
-#include <mach/nxp4330.h>
 #include <mach/soc.h>
 #endif
 
@@ -192,9 +191,13 @@ static int _hw_set_clock(struct nxp_vin_clipper *me, bool on)
         /* printk("RSTCON Base: 0x%x\n", NX_RSTCON_GetBaseAddress()); */
         /* printk("RSTCON VIP %d Reset Number %d, REG Number %d\n", module, NX_VIP_GetResetNumber(module), NX_VIP_GetResetNumber(module)>>5); */
         /* printk("CLKGEN Base: 0x%x\n", clkgen_base); */
+#if defined(CONFIG_ARCH_NXP4330)
         NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nDISABLE);
         NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nENABLE);
-
+#elif defined(CONFIG_ARCH_NXP4330)
+        NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_ASSERT);
+        NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_NIGATE);
+#endif
         if (me->platdata->is_mipi) {
             pr_debug("%s: apply mipi csi clock!!!\n", __func__);
             NX_CLKGEN_SetClockSource(NX_VIP_GetClockNumber(module), 0, 2); /* external PCLK */

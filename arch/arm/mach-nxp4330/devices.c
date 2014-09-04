@@ -48,17 +48,17 @@
 	char name[16];										\
 	sprintf(name, "nxp-uart.%d", ch);					\
 	clk = clk_get(NULL, name);							\
-	if (!nxp_soc_rsc_status(RESET_ID_UART## ch)) {		\
+	if (!nxp_soc_peri_reset_stat(RESET_ID_UART## ch)) {		\
 		NX_TIEOFF_Set(TIEOFF_UART## ch ##_USERSMC , 0);	\
 		NX_TIEOFF_Set(TIEOFF_UART## ch ##_SMCTXENB, 0);	\
 		NX_TIEOFF_Set(TIEOFF_UART## ch ##_SMCRXENB, 0);	\
-		nxp_soc_rsc_reset(RESET_ID_UART## ch);			\
+		nxp_soc_peri_reset_set(RESET_ID_UART## ch);			\
 	}													\
 	clk_set_rate(clk, CFG_UART_CLKGEN_CLOCK_HZ);		\
 	clk_enable(clk);								\
 	} while (0)
 
-#if defined(CONFIG_SERIAL_NEXELL_UART0)
+#if defined(CONFIG_SERIAL_NXP_PL011_UART0)
 static void __pl011_uart0_prepare(void)
 {
 	NX_UART_CH_INIT(0);
@@ -76,7 +76,7 @@ void pl011_uart0_wake_peer(void *uport)	__attribute__((weak, alias("__pl011_uart
 void pl011_uart0_exit(void)				__attribute__((weak, alias("__pl011_uart0_exit")));
 
 static struct amba_pl011_data  pl011_data_ch0 = {
-	#if defined(CONFIG_SERIAL_NEXELL_UART0_DMA)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART0_DMA)
  	.dma_filter = pl08x_filter_id,
  	.dma_rx_param = (void *) DMA_PERIPHERAL_NAME_UART0_RX,
  	.dma_tx_param = (void *) DMA_PERIPHERAL_NAME_UART0_TX,
@@ -88,7 +88,7 @@ static struct amba_pl011_data  pl011_data_ch0 = {
 static AMBA_AHB_DEVICE(uart0, "uart-pl011.0", 0, PHY_BASEADDR_UART0, {IRQ_PHY_UART0}, &pl011_data_ch0);
 #endif
 
-#if defined(CONFIG_SERIAL_NEXELL_UART1)
+#if defined(CONFIG_SERIAL_NXP_PL011_UART1)
 static void __pl011_uart1_prepare(void)
 {
 	NX_UART_CH_INIT(1);
@@ -106,7 +106,7 @@ void pl011_uart1_wake_peer(void *uport)	__attribute__((weak, alias("__pl011_uart
 void pl011_uart1_exit(void)				__attribute__((weak, alias("__pl011_uart1_exit")));
 
 static struct amba_pl011_data  pl011_data_ch1 = {
-	#if defined(CONFIG_SERIAL_NEXELL_UART1_DMA)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART1_DMA)
  	.dma_filter = pl08x_filter_id,
  	.dma_rx_param = (void *) DMA_PERIPHERAL_NAME_UART1_RX,
  	.dma_tx_param = (void *) DMA_PERIPHERAL_NAME_UART1_TX,
@@ -118,7 +118,7 @@ static struct amba_pl011_data  pl011_data_ch1 = {
 static AMBA_AHB_DEVICE(uart1, "uart-pl011.1", 0, PHY_BASEADDR_UART1, {IRQ_PHY_UART1}, &pl011_data_ch1);
 #endif
 
-#if defined(CONFIG_SERIAL_NEXELL_UART2)
+#if defined(CONFIG_SERIAL_NXP_PL011_UART2)
 static void __pl011_uart2_prepare(void)
 {
 	NX_UART_CH_INIT(2);
@@ -136,7 +136,7 @@ void pl011_uart2_wake_peer(void *uport)	__attribute__((weak, alias("__pl011_uart
 void pl011_uart2_exit(void)				__attribute__((weak, alias("__pl011_uart2_exit")));
 
 static struct amba_pl011_data  pl011_data_ch2 = {
-	#if defined(CONFIG_SERIAL_NEXELL_UART2_DMA)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART2_DMA)
  	.dma_filter = pl08x_filter_id,
  	.dma_rx_param = (void *) DMA_PERIPHERAL_NAME_UART2_RX,
  	.dma_tx_param = (void *) DMA_PERIPHERAL_NAME_UART2_TX,
@@ -148,7 +148,7 @@ static struct amba_pl011_data  pl011_data_ch2 = {
 static AMBA_AHB_DEVICE(uart2, "uart-pl011.2", 0, PHY_BASEADDR_UART2, {IRQ_PHY_UART2}, &pl011_data_ch2);
 #endif
 
-#if defined(CONFIG_SERIAL_NEXELL_UART3)
+#if defined(CONFIG_SERIAL_NXP_PL011_UART3)
 static void __pl011_uart3_prepare(void)
 {
 	NX_UART_CH_INIT(3);
@@ -174,7 +174,7 @@ static struct amba_pl011_data  pl011_data_ch3 = {
 static AMBA_AHB_DEVICE(uart3, "uart-pl011.3", 0, PHY_BASEADDR_UART3, {IRQ_PHY_UART3}, &pl011_data_ch3);
 #endif
 
-#if defined(CONFIG_SERIAL_NEXELL_UART4)
+#if defined(CONFIG_SERIAL_NXP_PL011_UART4)
 static void __pl011_uart4_prepare(void)
 {
 	NX_UART_CH_INIT(4);
@@ -200,7 +200,7 @@ static struct amba_pl011_data  pl011_data_ch4 = {
 static AMBA_AHB_DEVICE(uart4, "uart-pl011.4", 0, PHY_BASEADDR_UART4, {IRQ_PHY_UART4}, &pl011_data_ch4);
 #endif
 
-#if defined(CONFIG_SERIAL_NEXELL_UART5)
+#if defined(CONFIG_SERIAL_NXP_PL011_UART5)
 static void __pl011_uart5_prepare(void)
 {
 	NX_UART_CH_INIT(5);
@@ -232,7 +232,7 @@ static AMBA_AHB_DEVICE(uart5, "uart-pl011.5", 0, PHY_BASEADDR_UART5, {IRQ_PHY_UA
  * I2C Bus platform device
  */
 
-#if defined(CONFIG_I2C_NEXELL)
+#if defined(CONFIG_I2C_NXP)
 #define I2CUDELAY(x)	1000000/x/2
 /* gpio i2c 0 */
 #ifdef CFG_IO_I2C0_SCL
@@ -268,7 +268,7 @@ static AMBA_AHB_DEVICE(uart5, "uart-pl011.5", 0, PHY_BASEADDR_UART5, {IRQ_PHY_UA
 #define	I2C2_SDA	NXP_I2C2_MOD_SDA
 #endif
 
-#if	defined(CONFIG_I2C_NEXELL_PORT0)
+#if	defined(CONFIG_I2C_NXP_PORT0)
 
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port0 = {
 	.sda_pin	= I2C0_SDA,
@@ -277,7 +277,7 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port0 = {
 	.timeout	= 10,
 };
 
-#if  defined(CONFIG_I2C_NEXELL_PORT0_GPIO_MODE)
+#if  defined(CONFIG_I2C_NXP_PORT0_GPIO_MODE)
 
 static struct platform_device i2c_device_ch0 = {
 	.name	= "i2c-gpio",
@@ -302,12 +302,12 @@ static struct platform_device i2c_device_ch0 = {
 		.platform_data	= &i2c_data_ch0
 	},
 };
-#endif /* CONFIG_I2C_NEXELL_PORT0 */
+#endif /* CONFIG_I2C_NXP_PORT0 */
 
 
 #endif
 
-#if	defined(CONFIG_I2C_NEXELL_PORT1)
+#if	defined(CONFIG_I2C_NXP_PORT1)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port1 = {
 	.sda_pin	= I2C1_SDA,
 	.scl_pin	= I2C1_SCL,
@@ -316,7 +316,7 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port1 = {
 };
 
 
-#if  defined(CONFIG_I2C_NEXELL_PORT1_GPIO_MODE)
+#if  defined(CONFIG_I2C_NXP_PORT1_GPIO_MODE)
 static struct platform_device i2c_device_ch1 = {
 	.name	= "i2c-gpio",
 	.id		= 1,
@@ -344,7 +344,7 @@ static struct platform_device i2c_device_ch1 = {
 #endif
 #endif
 
-#if	defined(CONFIG_I2C_NEXELL_PORT2)
+#if	defined(CONFIG_I2C_NXP_PORT2)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port2 = {
 	.sda_pin	= I2C2_SDA,
 	.scl_pin	= I2C2_SCL,
@@ -354,7 +354,7 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port2 = {
 };
 
 
-#if  defined(CONFIG_I2C_NEXELL_PORT2_GPIO_MODE)
+#if  defined(CONFIG_I2C_NXP_PORT2_GPIO_MODE)
 static struct platform_device i2c_device_ch2 = {
 	.name	= "i2c-gpio",
 	.id		= 2,
@@ -383,17 +383,17 @@ static struct platform_device i2c_device_ch2 = {
 #endif
 
 static struct platform_device *i2c_devices[] = {
-	#if	defined(CONFIG_I2C_NEXELL_PORT0)
+	#if	defined(CONFIG_I2C_NXP_PORT0)
 	&i2c_device_ch0,
 	#endif
-	#if	defined(CONFIG_I2C_NEXELL_PORT1)
+	#if	defined(CONFIG_I2C_NXP_PORT1)
 	&i2c_device_ch1,
 	#endif
-	#if	defined(CONFIG_I2C_NEXELL_PORT2)
+	#if	defined(CONFIG_I2C_NXP_PORT2)
 	&i2c_device_ch2,
 	#endif
 };
-#endif /* CONFIG_I2C_NEXELL */
+#endif /* CONFIG_I2C_NXP */
 
 /*------------------------------------------------------------------------------
    * RTC (Real Time Clock) platform device
@@ -454,8 +454,8 @@ static struct platform_device *pwm_devices[] = {
 /*------------------------------------------------------------------------------
  * GPIO device
  */
-#if defined(CONFIG_GPIO_NEXELL)
-#if	defined(CONFIG_GPIO_NEXELL_GROUP_A)
+#if defined(CONFIG_GPIO_NXP)
+#if	defined(CONFIG_GPIO_NXP_GROUP_A)
 static struct resource gpio_resource_A = {
 		.start  	=  0,
 		.end   	 	= 32,
@@ -468,7 +468,7 @@ static struct platform_device gpio_device_A = {
 	.num_resources  = 1,
 };
 #endif
-#if	defined(CONFIG_GPIO_NEXELL_GROUP_B)
+#if	defined(CONFIG_GPIO_NXP_GROUP_B)
 static struct resource gpio_resource_B = {
 		.start  	=  0,
 		.end   	 	= 32,
@@ -481,7 +481,7 @@ static struct platform_device gpio_device_B = {
 	.num_resources  = 1,
 };
 #endif
-#if	defined(CONFIG_GPIO_NEXELL_GROUP_C)
+#if	defined(CONFIG_GPIO_NXP_GROUP_C)
 static struct resource gpio_resource_C = {
 		.start  	=  0,
 		.end   	 	= 32,
@@ -494,7 +494,7 @@ static struct platform_device gpio_device_C  = {
 	.num_resources  = 1,
 };
 #endif
-#if	defined(CONFIG_GPIO_NEXELL_GROUP_D)
+#if	defined(CONFIG_GPIO_NXP_GROUP_D)
 static struct resource gpio_resource_D = {
 		.start  	=  0,
 		.end   	 	= 32,
@@ -507,7 +507,7 @@ static struct platform_device gpio_device_D  = {
 	.num_resources  = 1,
 };
 #endif
-#if	defined(CONFIG_GPIO_NEXELL_GROUP_E)
+#if	defined(CONFIG_GPIO_NXP_GROUP_E)
 static struct resource gpio_resource_E = {
 		.start  	=  0,
 		.end   	 	= 32,
@@ -520,7 +520,7 @@ static struct platform_device gpio_device_E  = {
 	.num_resources  = 1,
 };
 #endif
-#if	defined(CONFIG_GPIO_NEXELL_GROUP_ALV)
+#if	defined(CONFIG_GPIO_NXP_GROUP_ALV)
 static struct resource gpio_resource_ALV = {
 		.start  	=  0,
 		.end   	 	=  8,
@@ -535,26 +535,26 @@ static struct platform_device gpio_device_ALV  = {
 #endif
 
 static struct platform_device *gpio_devices[] = {
-	#if	defined(CONFIG_GPIO_NEXELL_GROUP_A)
+	#if	defined(CONFIG_GPIO_NXP_GROUP_A)
 	&gpio_device_A,
 	#endif
-	#if	defined(CONFIG_GPIO_NEXELL_GROUP_B)
+	#if	defined(CONFIG_GPIO_NXP_GROUP_B)
 	&gpio_device_B,
 	#endif
-	#if	defined(CONFIG_GPIO_NEXELL_GROUP_C)
+	#if	defined(CONFIG_GPIO_NXP_GROUP_C)
 	&gpio_device_C,
 	#endif
-	#if	defined(CONFIG_GPIO_NEXELL_GROUP_D)
+	#if	defined(CONFIG_GPIO_NXP_GROUP_D)
 	&gpio_device_D,
 	#endif
-	#if	defined(CONFIG_GPIO_NEXELL_GROUP_E)
+	#if	defined(CONFIG_GPIO_NXP_GROUP_E)
 	&gpio_device_E,
 	#endif
-	#if	defined(CONFIG_GPIO_NEXELL_GROUP_ALV)
+	#if	defined(CONFIG_GPIO_NXP_GROUP_ALV)
 	&gpio_device_ALV,
 	#endif
 };
-#endif	/* CONFIG_GPIO_NEXELL */
+#endif	/* CONFIG_GPIO_NXP */
 
 /*------------------------------------------------------------------------------
  * Graphic OpenGL|ES platform device(vr400)
@@ -610,12 +610,12 @@ static struct platform_device vr_gpu_device =
 /*------------------------------------------------------------------------------
  * Alsa sound platform device (I2S-PCM)
  */
-#if defined(CONFIG_SND_NEXELL_I2S) || defined(CONFIG_SND_NEXELL_I2S_MODULE)
+#if defined(CONFIG_SND_NXP_I2S) || defined(CONFIG_SND_NXP_I2S_MODULE)
 #ifndef CFG_AUDIO_I2S0_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S0_MASTER_CLOCK_IN		0
 #endif
 
-#if defined (CONFIG_SND_NEXELL_I2S_CH0)
+#if defined (CONFIG_SND_NXP_I2S_CH0)
 static struct nxp_i2s_plat_data i2s_data_ch0 = {
 	.master_mode		= CFG_AUDIO_I2S0_MASTER_MODE,
 	.master_clock_in	= CFG_AUDIO_I2S0_MASTER_CLOCK_IN,
@@ -637,7 +637,7 @@ static struct platform_device i2s_device_ch0 = {
 	},
 };
 #endif
-#if defined (CONFIG_SND_NEXELL_I2S_CH1)
+#if defined (CONFIG_SND_NXP_I2S_CH1)
 #ifndef CFG_AUDIO_I2S1_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S1_MASTER_CLOCK_IN		0
 #endif
@@ -663,7 +663,7 @@ static struct platform_device i2s_device_ch1 = {
 	},
 };
 #endif
-#if defined (CONFIG_SND_NEXELL_I2S_CH2)
+#if defined (CONFIG_SND_NXP_I2S_CH2)
 #ifndef CFG_AUDIO_I2S2_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S2_MASTER_CLOCK_IN		0
 #endif
@@ -691,22 +691,22 @@ static struct platform_device i2s_device_ch2 = {
 #endif
 
 static struct platform_device *i2s_devices[] __initdata = {
-	#if defined (CONFIG_SND_NEXELL_I2S_CH0)
+	#if defined (CONFIG_SND_NXP_I2S_CH0)
 	&i2s_device_ch0,
 	#endif
-	#if defined (CONFIG_SND_NEXELL_I2S_CH1)
+	#if defined (CONFIG_SND_NXP_I2S_CH1)
 	&i2s_device_ch1,
 	#endif
-	#if defined (CONFIG_SND_NEXELL_I2S_CH2)
+	#if defined (CONFIG_SND_NXP_I2S_CH2)
 	&i2s_device_ch2,
 	#endif
 };
-#endif /* CONFIG_SND_NEXELL_I2S || CONFIG_SND_NEXELL_I2S_MODULE */
+#endif /* CONFIG_SND_NXP_I2S || CONFIG_SND_NXP_I2S_MODULE */
 
 /*------------------------------------------------------------------------------
  * Alsa sound platform device (SPDIF)
  */
-#if defined(CONFIG_SND_NEXELL_SPDIF_TX) || defined(CONFIG_SND_NEXELL_SPDIF_TX_MODULE)
+#if defined(CONFIG_SND_NXP_SPDIF_TX) || defined(CONFIG_SND_NXP_SPDIF_TX_MODULE)
 static struct nxp_spdif_plat_data spdif_data_tx = {
 	.sample_rate	= CFG_AUDIO_SPDIF_TX_SAMPLE_RATE,
 	.hdmi_out		= CFG_AUDIO_SPDIF_TX_HDMI_OUT,
@@ -721,9 +721,9 @@ static struct platform_device spdif_device_tx = {
 		.platform_data	= &spdif_data_tx
 	},
 };
-#endif	/* CONFIG_SND_NEXELL_SPDIF_TX || CONFIG_SND_NEXELL_SPDIF_TX_MODULE */
+#endif	/* CONFIG_SND_NXP_SPDIF_TX || CONFIG_SND_NXP_SPDIF_TX_MODULE */
 
-#if defined(CONFIG_SND_NEXELL_SPDIF_RX) || defined(CONFIG_SND_NEXELL_SPDIF_RX_MODULE)
+#if defined(CONFIG_SND_NXP_SPDIF_RX) || defined(CONFIG_SND_NXP_SPDIF_RX_MODULE)
 static struct nxp_spdif_plat_data spdif_data_rx = {
 	.sample_rate	= CFG_AUDIO_SPDIF_RX_SAMPLE_RATE,
 	.dma_filter		= pl08x_filter_id,
@@ -737,7 +737,7 @@ static struct platform_device spdif_device_rx = {
 		.platform_data	= &spdif_data_rx
 	},
 };
-#endif	/* CONFIG_SND_NEXELL_SPDIF_RX || CONFIG_SND_NEXELL_SPDIF_RX_MODULE */
+#endif	/* CONFIG_SND_NXP_SPDIF_RX || CONFIG_SND_NXP_SPDIF_RX_MODULE */
 
 /*------------------------------------------------------------------------------
  * SSP/SPI
@@ -767,11 +767,11 @@ static void spi_init(int ch)
 
 	clk = clk_get(NULL,name);
 	clk_set_rate(clk,req_clk);
-	
-	nxp_soc_rsc_enter(reset[ch][0]);
-    nxp_soc_rsc_enter(reset[ch][1]);
-	nxp_soc_rsc_exit(reset[ch][0]);
-    nxp_soc_rsc_exit(reset[ch][1]);
+
+	nxp_soc_peri_reset_enter(reset[ch][0]);
+    nxp_soc_peri_reset_enter(reset[ch][1]);
+	nxp_soc_peri_reset_exit(reset[ch][0]);
+    nxp_soc_peri_reset_exit(reset[ch][1]);
 	clk_enable(clk);
 }
 
@@ -887,12 +887,10 @@ static struct amba_device spi2_device = {
  * USB device
  */
 
-#if defined( CONFIG_USB_EHCI_NXP4330 )
-#include <mach/ehci.h>
-#include <mach/usb-phy.h>
+#if defined( CONFIG_USB_EHCI_NXP_SYNOPSYS )
+#include <mach/usb.h>
 
 extern int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on);
-
 
 /* USB EHCI Host Controller registration */
 
@@ -901,16 +899,16 @@ static struct resource nxp4330_ehci_resource[] = {
     [1] = DEFINE_RES_IRQ(IRQ_PHY_USB20HOST),
 };
 
-struct nxp4330_ehci_platdata nxp4330_ehci_plat_data = {
-    .phy_init = nxp_usb_phy_init,
-    .phy_exit = nxp_usb_phy_exit,
+static struct nxp_ehci_plat_data nxp4330_ehci_plat_data = {
+    .phy_init = nxp_soc_usb_phy_init,
+    .phy_exit = nxp_soc_usb_phy_exit,
     .hsic_phy_pwr_on = nxp_hsic_phy_pwr_on,
 };
 
 static u64 nxp4330_ehci_dmamask = DMA_BIT_MASK(32);
 
 struct platform_device nxp4330_device_ehci = {
-    .name           = "nxp4330-ehci",
+    .name           = "nxp-ehci-synop",
     .id             = -1,
     .num_resources  = ARRAY_SIZE(nxp4330_ehci_resource),
     .resource       = nxp4330_ehci_resource,
@@ -920,11 +918,10 @@ struct platform_device nxp4330_device_ehci = {
         .platform_data      = &nxp4330_ehci_plat_data,
     }
 };
-#endif  /* CONFIG_USB_EHCI_NXP4330 */
+#endif  /* CONFIG_USB_EHCI_NXP_SYNOPSYS */
 
-#if defined( CONFIG_USB_OHCI_NXP4330 )
-#include <mach/ohci.h>
-#include <mach/usb-phy.h>
+#if defined( CONFIG_USB_OHCI_NXP_SYNOPSYS )
+#include <mach/usb.h>
 
 /* USB OHCI Host Controller registration */
 
@@ -933,7 +930,7 @@ static struct resource nxp4330_ohci_resource[] = {
     [1] = DEFINE_RES_IRQ(IRQ_PHY_USB20HOST),
 };
 
-struct nxp4330_ohci_platdata nxp4330_ohci_plat_data = {
+struct nxp_ohci_plat_data nxp4330_ohci_plat_data = {
     .phy_init = nxp_usb_phy_init,
     .phy_exit = nxp_usb_phy_exit,
 };
@@ -941,7 +938,7 @@ struct nxp4330_ohci_platdata nxp4330_ohci_plat_data = {
 static u64 nxp4330_ohci_dmamask = DMA_BIT_MASK(32);
 
 struct platform_device nxp4330_device_ohci = {
-    .name           = "nxp4330-ohci",
+    .name           = "nxp-ohci-synop",
     .id             = -1,
     .num_resources  = ARRAY_SIZE(nxp4330_ohci_resource),
     .resource       = nxp4330_ohci_resource,
@@ -951,7 +948,7 @@ struct platform_device nxp4330_device_ohci = {
         .platform_data      = &nxp4330_ohci_plat_data,
     }
 };
-#endif  /* CONFIG_USB_OHCI_NXP4330 */
+#endif  /* CONFIG_USB_OHCI_NXP_SYNOPSYS */
 
 /*------------------------------------------------------------------------------
  * USB OTG Host or Gadget
@@ -1188,22 +1185,22 @@ EXPORT_SYMBOL(set_otg_mode);
 
 static struct amba_device *amba_devices[] __initdata = {
 #if defined(CONFIG_SERIAL_AMBA_PL011)
-	#if defined(CONFIG_SERIAL_NEXELL_UART0)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART0)
 	&uart0_device,
 	#endif
-	#if defined(CONFIG_SERIAL_NEXELL_UART1)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART1)
 	&uart1_device,
 	#endif
-	#if defined(CONFIG_SERIAL_NEXELL_UART2)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART2)
 	&uart2_device,
 	#endif
-	#if defined(CONFIG_SERIAL_NEXELL_UART3)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART3)
 	&uart3_device,
 	#endif
-	#if defined(CONFIG_SERIAL_NEXELL_UART4)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART4)
 	&uart4_device,
 	#endif
-	#if defined(CONFIG_SERIAL_NEXELL_UART5)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART5)
 	&uart5_device,
 	#endif
 #endif
@@ -1278,7 +1275,7 @@ static struct platform_device adc_device = {
  * Watchdog Timer
  */
 
-#if defined(CONFIG_NXP4330_WATCHDOG)
+#if defined(CONFIG_NXP_WATCHDOG)
 
 static struct resource nxp_wdt_resource[] = {
         [0] = DEFINE_RES_MEM(PHY_BASEADDR_WDT, SZ_1K),
@@ -1308,61 +1305,61 @@ void __init nxp_cpu_devices_register(void)
 	}
 #endif
 	/* default uart hw prepare */
-	#if defined(CONFIG_SERIAL_NEXELL_UART0)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART0)
 	NX_UART_CH_INIT(0);
 	#endif
-	#if defined(CONFIG_SERIAL_NEXELL_UART1)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART1)
 	NX_UART_CH_INIT(1);
 	#endif
-	#if defined(CONFIG_SERIAL_NEXELL_UART2)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART2)
 	NX_UART_CH_INIT(2);
 	#endif
-	#if defined(CONFIG_SERIAL_NEXELL_UART3)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART3)
 	NX_UART_CH_INIT(3);
 	#endif
-	#if defined(CONFIG_SERIAL_NEXELL_UART4)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART4)
 	NX_UART_CH_INIT(4);
 	#endif
-	#if defined(CONFIG_SERIAL_NEXELL_UART5)
+	#if defined(CONFIG_SERIAL_NXP_PL011_UART5)
 	NX_UART_CH_INIT(5);
 	#endif
 
-#if defined(CONFIG_NEXELL_DISPLAY)
+#if defined(CONFIG_NXP_DISPLAY)
     printk("mach: add device syncgen [%d]\n", ARRAY_SIZE(syncgen_devices));
     platform_add_devices(syncgen_devices, ARRAY_SIZE(syncgen_devices));
 #endif
 
-#if defined(CONFIG_NEXELL_DISPLAY_LCD)
+#if defined(CONFIG_NXP_DISPLAY_LCD)
 	printk("mach: add device lcd \n");
 	platform_device_register(&lcd_device);
 #endif
 
-#if defined(CONFIG_NEXELL_DISPLAY_LVDS)
+#if defined(CONFIG_NXP_DISPLAY_LVDS)
 	printk("mach: add device lvds \n");
 	platform_device_register(&lvds_device);
 #endif
 
-#if defined(CONFIG_NEXELL_DISPLAY_MIPI)
+#if defined(CONFIG_NXP_DISPLAY_MIPI)
 	printk("mach: add device mipi \n");
 	platform_device_register(&mipi_device);
 #endif
 
-#if defined(CONFIG_NEXELL_DISPLAY_HDMI)
+#if defined(CONFIG_NXP_DISPLAY_HDMI)
 	printk("mach: add device hdmi \n");
 	platform_device_register(&hdmi_device);
 #endif
 
-#if defined(CONFIG_NEXELL_DISPLAY_RESC)
+#if defined(CONFIG_NXP_DISPLAY_RESC)
 	printk("mach: add device resolution convertor \n");
 	platform_device_register(&resc_device);
 #endif
 
-#if defined(CONFIG_SERIAL_NEXELL)
+#if defined(CONFIG_SERIAL_NXP)
     printk("mach: add device serial (array:%d)\n", ARRAY_SIZE(uart_devices));
     platform_add_devices(uart_devices, ARRAY_SIZE(uart_devices));
 #endif
 
-#if defined(CONFIG_I2C_NEXELL)
+#if defined(CONFIG_I2C_NXP)
     printk("mach: add device i2c bus (array:%d) \n", ARRAY_SIZE(i2c_devices));
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif
@@ -1376,32 +1373,32 @@ void __init nxp_cpu_devices_register(void)
     platform_add_devices(pwm_devices, ARRAY_SIZE(pwm_devices));
 #endif
 
-#if defined(CONFIG_GPIO_NEXELL)
+#if defined(CONFIG_GPIO_NXP)
     printk("mach: add device generic gpio (array:%d)\n", ARRAY_SIZE(gpio_devices));
     platform_add_devices(gpio_devices, ARRAY_SIZE(gpio_devices));
 #endif
 
-#if defined(CONFIG_SND_NEXELL_I2S) || defined(CONFIG_SND_NEXELL_I2S_MODULE)
+#if defined(CONFIG_SND_NXP_I2S) || defined(CONFIG_SND_NXP_I2S_MODULE)
     printk("mach: add device i2s (array:%d) \n", ARRAY_SIZE(i2s_devices));
     platform_add_devices(i2s_devices, ARRAY_SIZE(i2s_devices));
 #endif
 
-#if defined(CONFIG_SND_NEXELL_SPDIF_TX) || defined(CONFIG_SND_NEXELL_SPDIF_TX_MODULE)
+#if defined(CONFIG_SND_NXP_SPDIF_TX) || defined(CONFIG_SND_NXP_SPDIF_TX_MODULE)
     printk("mach: add device spdif tx\n");
     platform_device_register(&spdif_device_tx);
 #endif
 
-#if defined(CONFIG_SND_NEXELL_SPDIF_RX) || defined(CONFIG_SND_NEXELL_SPDIF_RX_MODULE)
+#if defined(CONFIG_SND_NXP_SPDIF_RX) || defined(CONFIG_SND_NXP_SPDIF_RX_MODULE)
     printk("mach: add device spdif rx\n");
     platform_device_register(&spdif_device_rx);
 #endif
 
-#if defined(CONFIG_USB_EHCI_NXP4330)
+#if defined(CONFIG_USB_EHCI_NXP_SYNOPSYS)
     printk("mach: add device usb_ehci\n");
     platform_device_register(&nxp4330_device_ehci);
 #endif
 
-#if defined(CONFIG_USB_OHCI_NXP4330)
+#if defined(CONFIG_USB_OHCI_NXP_SYNOPSYS)
     printk("mach: add device usb_ohci\n");
     platform_device_register(&nxp4330_device_ohci);
 #endif
@@ -1425,7 +1422,7 @@ void __init nxp_cpu_devices_register(void)
     printk("mach: add graphic device opengl|es\n");
     platform_device_register(&vr_gpu_device);
 
-#if defined(CONFIG_NXP4330_WATCHDOG)
+#if defined(CONFIG_NXP_WATCHDOG)
     printk("mach: add device watchdog\n");
     platform_device_register(&nxp_device_wdt);
 #endif

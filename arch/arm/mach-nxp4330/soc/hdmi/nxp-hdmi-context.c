@@ -695,7 +695,7 @@ static irqreturn_t _hdmi_irq_handler(int irq, void *dev_data)
     flag = hdmi_read(HDMI_LINK_INTC_FLAG_0);
     pr_debug("%s: flag 0x%x\n", __func__, flag);
     if (flag & HDMI_INTC_FLAG_HPD_UNPLUG) {
-#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NEXELL_DISPLAY_HDMI_USE_HDCP)
+#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NXP_DISPLAY_HDMI_USE_HDCP)
         /* stop HDCP */
         /*me->hdcp.stop(&me->hdcp);*/
 #endif
@@ -704,7 +704,7 @@ static irqreturn_t _hdmi_irq_handler(int irq, void *dev_data)
     if (flag & HDMI_INTC_FLAG_HPD_PLUG) {
         hdmi_write_mask(HDMI_LINK_INTC_FLAG_0, ~0, HDMI_INTC_FLAG_HPD_PLUG);
     }
-#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NEXELL_DISPLAY_HDMI_USE_HDCP)
+#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NXP_DISPLAY_HDMI_USE_HDCP)
     if (flag & HDMI_INTC_FLAG_HDCP) {
         pr_debug("%s: hdcp interrupt occur\n", __func__);
         me->hdcp.irq_handler(&me->hdcp);
@@ -797,7 +797,7 @@ int hdmi_init_context(struct nxp_hdmi_context *me,
 
     hdmi_set_base((void *)IO_ADDRESS(NX_HDMI_GetPhysicalAddress(0)));
 
-#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NEXELL_DISPLAY_HDMI_USE_HDCP)
+#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NXP_DISPLAY_HDMI_USE_HDCP)
     /* init HDCP */
     ret = nxp_hdcp_init(&me->hdcp, hdcp);
     if (ret < 0) {
@@ -852,7 +852,7 @@ int hdmi_init_context(struct nxp_hdmi_context *me,
     _hdmi_initialize(me);
     enable_irq(me->irq);
 
-#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NEXELL_DISPLAY_HDMI_USE_HDCP)
+#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NXP_DISPLAY_HDMI_USE_HDCP)
     /* prepare HDCP */
     ret = me->hdcp.prepare(&me->hdcp);
     if (ret < 0) {
@@ -863,7 +863,7 @@ int hdmi_init_context(struct nxp_hdmi_context *me,
 
     return 0;
 
-#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NEXELL_DISPLAY_HDMI_USE_HDCP)
+#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NXP_DISPLAY_HDMI_USE_HDCP)
 error_hdcp_prepare:
     free_irq(me->irq, me);
 #endif
@@ -874,7 +874,7 @@ error_hdmiphy_init:
     nxp_hdmiphy_cleanup(&me->phy);
 error_edid_init:
     nxp_edid_cleanup(&me->edid);
-#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NEXELL_DISPLAY_HDMI_USE_HDCP)
+#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NXP_DISPLAY_HDMI_USE_HDCP)
 error_hdcp_init:
     nxp_hdcp_cleanup(&me->hdcp);
 #endif
@@ -889,7 +889,7 @@ void hdmi_deinit_context(struct nxp_hdmi_context *me)
     switch_dev_unregister(&me->hpd_switch);
     nxp_hdmiphy_cleanup(&me->phy);
     nxp_edid_cleanup(&me->edid);
-#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NEXELL_DISPLAY_HDMI_USE_HDCP)
+#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NXP_DISPLAY_HDMI_USE_HDCP)
     nxp_hdcp_cleanup(&me->hdcp);
 #endif
 }
@@ -983,7 +983,7 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
     hdmi_set_infoframe(me);
     _hdmi_set_packets(me);
 
-#if defined(CONFIG_NXP_HDMI_AUDIO_I2S) || defined(CONFIG_NEXELL_DISPLAY_HDMI_AUDIO_I2S)
+#if defined(CONFIG_NXP_HDMI_AUDIO_I2S) || defined(CONFIG_NXP_DISPLAY_HDMI_AUDIO_I2S)
     hdmi_audio_i2s_init(me->sample_rate, me->bits_per_sample);
 #else
     /* default is SPDIF */
@@ -999,7 +999,7 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
 
     /*mdelay(5);*/
 
-#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NEXELL_DISPLAY_HDMI_USE_HDCP)
+#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NXP_DISPLAY_HDMI_USE_HDCP)
     /* start HDCP */
     ret = me->hdcp.start(&me->hdcp);
     if (ret < 0) {
@@ -1021,7 +1021,7 @@ void hdmi_stop(struct nxp_hdmi_context *me)
     if (atomic_read(&me->state) != HDMI_RUNNING)
         return;
 
-#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NEXELL_DISPLAY_HDMI_USE_HDCP)
+#if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NXP_DISPLAY_HDMI_USE_HDCP)
     me->hdcp.stop(&me->hdcp);
 #endif
 

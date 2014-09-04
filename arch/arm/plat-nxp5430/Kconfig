@@ -1,0 +1,28 @@
+#
+# Copyright 2009 Nexell.
+#
+# Configuration options for the NXP5430
+
+config PLAT_NXP5430
+	bool
+	default y
+
+#
+# Select Board
+#
+comment "Board features"
+
+choice
+    prompt "Platform board"
+    default PLAT_NXP5430_LYNX
+
+	config PLAT_NXP5430_DRONE
+		bool "DRONE: Android drone board"
+		help
+   	 		Support for the drone board.
+
+endchoice
+
+#
+# Board dependent configure
+#

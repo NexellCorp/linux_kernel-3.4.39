@@ -349,9 +349,9 @@ config IMX2_WDT
 	  To compile this driver as a module, choose M here: the
 	  module will be called imx2_wdt.
 
-config NXP4330_WATCHDOG
-        tristate "NXP4330 Watchdog"
-        depends on ARCH_NXP4330
+config NXP_WATCHDOG
+        tristate "Nexell Watchdog"
+        depends on ARCH_CPU_NEXELL
         select WATCHDOG_CORE
         help
           Watchdog timer block in the Nexell SoCs. This will reboot

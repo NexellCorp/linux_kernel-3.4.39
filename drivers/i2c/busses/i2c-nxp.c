@@ -661,7 +661,7 @@ static int	nxp_i2c_set_param(struct nxp_i2c_param *par, struct platform_device *
 	par->hw.clkscale = t_div;
 	par->clk = clk;
 
-	nxp_soc_rsc_reset(i2c_reset[plat->port]);
+	nxp_soc_peri_reset_set(i2c_reset[plat->port]);
 	/* init par resource */
 	mutex_init(&par->lock);
 	init_waitqueue_head(&par->wait_q);
@@ -733,7 +733,7 @@ static int nxp_i2c_remove(struct platform_device *pdev)
 	int rsc = i2c_reset[par->hw.port];
 	int irq = par->hw.irqno;
 
-	nxp_soc_rsc_enter(rsc);
+	nxp_soc_peri_reset_enter(rsc);
 	clk_disable(par->clk);
 
 	free_irq(irq, par);
@@ -749,7 +749,7 @@ static int nxp_i2c_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	struct nxp_i2c_param *par = platform_get_drvdata(pdev);
 	int rsc = i2c_reset[par->hw.port];
-	nxp_soc_rsc_enter(rsc);
+	nxp_soc_peri_reset_enter(rsc);
 	PM_DBGOUT("%s \n", __func__);
 	return 0;
 }
@@ -764,7 +764,7 @@ static int nxp_i2c_resume(struct platform_device *pdev)
 	PM_DBGOUT("%s\n", __func__);
 	nxp_soc_gpio_set_io_func(scl, 1);
 	nxp_soc_gpio_set_io_func(sda, 1);
-	nxp_soc_rsc_reset(rsc);
+	nxp_soc_peri_reset_set(rsc);
 
 	clk_enable(par->clk);
 	mdelay(1);

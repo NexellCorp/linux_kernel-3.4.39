@@ -16,7 +16,6 @@
 
 #include <mach/soc.h>
 #include <mach/platform.h>
-#include <mach/nxp4330.h>
 
 #define FIXED_POINT     (65536)
 #define SOFT_V          (8)
@@ -185,8 +184,13 @@ static int _hw_set_with_preset(struct nxp_resc *me)
     pr_debug("%s: sg_hdelay %d, sg_hoffset %d, sg_s2in_vs %d\n",
             __func__, sg_hdelay, sg_hoffset, sg_s2in_vs);
 
+#if defined(CONFIG_ARCH_NXP4330)
     NX_RSTCON_SetnRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_nDISABLE);
     NX_RSTCON_SetnRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_nENABLE);
+#elif defined(CONFIG_ARCH_NXP4330)
+    NX_RSTCON_SetRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_ASSERT);
+    NX_RSTCON_SetRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_NIGATE);
+#endif
 
     NX_RESCONV_Initialize();
     NX_RESCONV_SetBaseAddress(me->id,
@@ -268,8 +272,13 @@ static int _hw_set(struct nxp_resc *me)
     sg_hoffset = 0;
     sg_s2in_vs = 0;
 
+#if defined(CONFIG_ARCH_NXP4330)
     NX_RSTCON_SetnRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_nDISABLE);
     NX_RSTCON_SetnRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_nENABLE);
+#elif defined(CONFIG_ARCH_NXP4330)
+    NX_RSTCON_SetRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_ASSERT);
+    NX_RSTCON_SetRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_NIGATE);
+#endif
 
     NX_RESCONV_Initialize();
     NX_RESCONV_SetBaseAddress(me->id,

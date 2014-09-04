@@ -159,10 +159,10 @@ static struct platform_device dm9000_plat_device = {
 /*------------------------------------------------------------------------------
  * DISPLAY (LVDS) / FB
  */
-#if defined (CONFIG_FB_NEXELL)
-#if defined (CONFIG_FB0_NEXELL)
+#if defined (CONFIG_FB_NXP)
+#if defined (CONFIG_FB0_NXP)
 static struct nxp_fb_plat_data fb0_plat_data = {
-	.module			= CONFIG_FB0_NEXELL_DISPOUT,
+	.module			= CONFIG_FB0_NXP_DISPOUT,
 	.layer			= CFG_DISP_PRI_SCREEN_LAYER,
 	.format			= CFG_DISP_PRI_SCREEN_RGB_FORMAT,
 	.bgcolor		= CFG_DISP_PRI_BACK_GROUND_COLOR,
@@ -190,17 +190,17 @@ static struct platform_device fb0_device = {
 #endif
 
 static struct platform_device *fb_devices[] = {
-	#if defined (CONFIG_FB0_NEXELL)
+	#if defined (CONFIG_FB0_NXP)
 	&fb0_device,
 	#endif
 };
-#endif /* CONFIG_FB_NEXELL */
+#endif /* CONFIG_FB_NXP */
 
 
 /*------------------------------------------------------------------------------
  * DISPLAY MIPI device
  */
-#if defined (CONFIG_NEXELL_DISPLAY_MIPI)
+#if defined (CONFIG_NXP_DISPLAY_MIPI)
 #include <linux/delay.h>
 
 #if defined(CONFIG_SECRET_2P1ND_BOARD)||defined(CONFIG_SECRET_3RD_BOARD)||defined(CONFIG_SECRET_3P1RD_BOARD)
@@ -768,7 +768,7 @@ static struct i2c_board_info __initdata mxt604t_i2c_bdi = {
 /*------------------------------------------------------------------------------
  * Keypad platform device
  */
-#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 
 #include <linux/input.h>
 
@@ -795,7 +795,7 @@ static struct platform_device key_plat_device = {
 		.platform_data	= &key_plat_data
 	},
 };
-#endif	/* CONFIG_KEYBOARD_NEXELL_KEY || CONFIG_KEYBOARD_NEXELL_KEY_MODULE */
+#endif	/* CONFIG_KEYBOARD_NXP_KEY || CONFIG_KEYBOARD_NXP_KEY_MODULE */
 
 /*------------------------------------------------------------------------------
  * ASoC Codec platform device
@@ -974,7 +974,7 @@ void __init nxp_reserve_mem(void)
 #endif
 
 
-#if defined(CONFIG_I2C_NEXELL)
+#if defined(CONFIG_I2C_NXP)
 #define I2CUDELAY(x)	1000000/x/2
 /* gpio i2c 3 */
 #define	I2C3_SCL	PAD_GPIO_A + 25
@@ -999,7 +999,7 @@ static struct platform_device i2c_device_ch3 = {
 static struct platform_device *i2c_devices[] = {
 	&i2c_device_ch3,
 };
-#endif /* CONFIG_I2C_NEXELL */
+#endif /* CONFIG_I2C_NXP */
 
 
 /*------------------------------------------------------------------------------
@@ -1530,7 +1530,7 @@ static struct spi_board_info spi_plat_board[] __initdata = {
  * DW MMC board config
  */
 #if defined(CONFIG_MMC_DW)
-#ifdef CONFIG_MMC_NEXELL_CH0
+#ifdef CONFIG_MMC_DW_NXP_CH0
 static struct dw_mci_board _dwmci0_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 				  	  DW_MCI_QUIRK_HIGHSPEED |
@@ -1549,7 +1549,7 @@ static struct dw_mci_board _dwmci0_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_NEXELL_CH1
+#ifdef CONFIG_MMC_DW_NXP_CH1
 
 #include <linux/mmc/card.h>
 
@@ -1715,7 +1715,7 @@ static struct platform_device bcm_wifi_device = {
 #endif /* CONFIG_BROADCOM_WIFI */
 #endif
 
-#ifdef CONFIG_MMC_NEXELL_CH2
+#ifdef CONFIG_MMC_DW_NXP_CH2
 static struct dw_mci_board _dwmci2_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 					  DW_MCI_QUIRK_HIGHSPEED |
@@ -1760,27 +1760,27 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&dfs_plat_device);
 #endif
 
-#if defined (CONFIG_FB_NEXELL)
+#if defined (CONFIG_FB_NXP)
 	printk("plat: add framebuffer\n");
 	platform_add_devices(fb_devices, ARRAY_SIZE(fb_devices));
 #endif
 
-#if defined (CONFIG_NEXELL_DISPLAY_MIPI)
+#if defined (CONFIG_NXP_DISPLAY_MIPI)
 	nxp_platform_disp_device_data(DISP_DEVICE_MIPI, &mipi_vsync_param, (void*)&mipi_param, &mipi_syncgen_param);
 #endif
 
 #if defined(CONFIG_MMC_DW)
-	#ifdef CONFIG_MMC_NEXELL_CH0
+	#ifdef CONFIG_MMC_DW_NXP_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
-	#ifdef CONFIG_MMC_NEXELL_CH1
+	#ifdef CONFIG_MMC_DW_NXP_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
         #if defined(CONFIG_BROADCOM_WIFI) || defined(CONFIG_BCMDHD)
     printk("plat: register broadcom wifi device\n");
     platform_device_register(&bcm_wifi_device);
         #endif
 	#endif
-	#ifdef CONFIG_MMC_NEXELL_CH2
+	#ifdef CONFIG_MMC_DW_NXP_CH2
 	nxp_mmc_add_device(2, &_dwmci2_data);
 	#endif
 #endif
@@ -1795,12 +1795,12 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&bl_plat_device);
 #endif
 
-#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 	printk("plat: add device keypad\n");
 	platform_device_register(&key_plat_device);
 #endif
 
-#if defined(CONFIG_I2C_NEXELL)
+#if defined(CONFIG_I2C_NXP)
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif
 

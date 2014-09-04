@@ -1032,6 +1032,27 @@ config ARCH_NXP4330
 	help
 	  Support for nexell NXP4330 dual/quard core (ARM Cortex A9) platform
 
+config ARCH_NXP5430
+	bool "Nexell NXP5430"
+	select ARCH_CPU_NEXELL
+	select CPU_V7
+	select ARM_AMBA
+	select ARM_GIC
+	select HAVE_SMP
+	select MIGHT_HAVE_CACHE_L2X0
+	select ARCH_HAS_CPUFREQ
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ZONE_DMA
+	select HAVE_MACH_CLKDEV
+	select NEED_MACH_MEMORY_H
+	select NEED_MACH_IO_H
+	select ARCH_REQUIRE_GPIOLIB
+	select ARM_PATCH_PHYS_VIRT
+	help
+	  Support for nexell NXP5430 octa core (ARM Cortex A53) platform
+	  compatible with ARMv7
+
 endchoice
 
 #
@@ -1150,8 +1171,16 @@ source "arch/arm/mach-vt8500/Kconfig"
 
 source "arch/arm/mach-w90x900/Kconfig"
 
+if ARCH_CPU_NEXELL
+source "kernel/Kconfig.hz"
+endif
+
 if ARCH_NXP4330
 source "arch/arm/mach-nxp4330/Kconfig"
+endif
+
+if ARCH_NXP5430
+source "arch/arm/mach-nxp5430/Kconfig"
 endif
 
 # Definitions to make life easier

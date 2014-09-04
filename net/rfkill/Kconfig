@@ -48,7 +48,7 @@ config RFKILL_GPIO
 	  driver. The platform should fill in the appropriate fields in the
 	  rfkill_gpio_platform_data structure and pass that to the driver.
 
-config RFKILL_NEXELL
+config NXP_RFKILL
         bool "Nexell rfkill driver"
         depends on RFKILL
         help

@@ -116,8 +116,6 @@ out:
 	return res;
 }
 
-
-
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
 long cpuUsage_Process(struct cpufreq_limit_data *limit, int boost);
 int curMaxCpu = 0;

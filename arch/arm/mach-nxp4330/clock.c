@@ -52,21 +52,21 @@
 
 #define	INPUT_CLKS		6		/* PLL0, PLL1, PLL2, PLL3, EXT1, EXT2 */
 
-#if defined(CONFIG_NEXELL_DFS_BCLK)
-	#if defined(CONFIG_NXP4330_DFS_BCLK_PLL_0)
-	#define CONFIG_NXP4330_BCLKFREQ_PLLDEV 	0
-	#elif defined(CONFIG_NXP4330_DFS_BCLK_PLL_1)
-	#define CONFIG_NXP4330_BCLKFREQ_PLLDEV 	1
+#if defined(CONFIG_NXP_DFS_BCLK)
+	#if defined(CONFIG_NXP_DFS_BCLK_PLL_0)
+	#define CONFIG_NXP_BCLKFREQ_PLLDEV 	0
+	#elif defined(CONFIG_NXP_DFS_BCLK_PLL_1)
+	#define CONFIG_NXP_BCLKFREQ_PLLDEV 	1
 	#else
-	#define CONFIG_NXP4330_BCLKFREQ_PLLDEV	0
+	#define CONFIG_NXP_BCLKFREQ_PLLDEV	0
 	#endif
-#define	DVFS_BCLK_PLL	~(1<<CONFIG_NXP4330_BCLKFREQ_PLLDEV)
+#define	DVFS_BCLK_PLL	~(1<<CONFIG_NXP_BCLKFREQ_PLLDEV)
 #else
 #define	DVFS_BCLK_PLL	(-1UL)
 #endif
 
-#ifdef  CONFIG_ARM_NXP4330_CPUFREQ
-#define	DVFS_CPU_PLL	~(1<<CONFIG_NXP4330_CPUFREQ_PLLDEV)
+#ifdef  CONFIG_ARM_NXP_CPUFREQ
+#define	DVFS_CPU_PLL	~(1<<CONFIG_NXP_CPUFREQ_PLLDEV)
 #else
 #define	DVFS_CPU_PLL	(-1UL)
 #endif
@@ -268,12 +268,12 @@ static inline void peri_clk_rate(void *base, int level, int src, int div)
 	struct clkgen_register *preg = base;
 	register U32 val;
 
-#ifdef CONFIG_NXP4330_CPUFREQ_PLLDEV
-	if (CONFIG_NXP4330_CPUFREQ_PLLDEV == src)
+#ifdef CONFIG_NXP_CPUFREQ_PLLDEV
+	if (CONFIG_NXP_CPUFREQ_PLLDEV == src)
 		printk("*** %s: Fail pll.%d for CPU  DFS ***\n", __func__, src);
 #endif
-#ifdef CONFIG_NXP4330_BCLKFREQ_PLLDEV
-	if (CONFIG_NXP4330_BCLKFREQ_PLLDEV == src)
+#ifdef CONFIG_NXP_BCLKFREQ_PLLDEV
+	if (CONFIG_NXP_BCLKFREQ_PLLDEV == src)
 		printk("*** %s: Fail pll.%d for BCLK DFS ***\n", __func__, src);
 #endif
 
@@ -440,7 +440,7 @@ static inline long core_rate(int type)
 
 static inline long core_set_rate(struct clk *clk, long rate)
 {
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ)
+#if defined(CONFIG_ARM_NXP_CPUFREQ)
 	struct nxp_clk_dev *cdev = clk_container(clk);
 	char * c = (char *)cdev->name;
 	int pll = -1;
@@ -451,15 +451,15 @@ static inline long core_set_rate(struct clk *clk, long rate)
 		pll = simple_strtol(c, NULL, 10);
 
 	pr_debug("%s change pll.%d (dvfs pll.%d) %ld \n",
-		__func__, pll, CONFIG_NXP4330_CPUFREQ_PLLDEV, rate);
+		__func__, pll, CONFIG_NXP_CPUFREQ_PLLDEV, rate);
 
-#ifdef CONFIG_NEXELL_DFS_BCLK
+#ifdef CONFIG_NXP_DFS_BCLK
 	WARN(0 != raw_smp_processor_id(), "Dynamic Frequency CPU.%d  conflict with BCLK DFS...\n",
 		raw_smp_processor_id());
 #endif
 
 	if (pll != -1 &&
-		pll == CONFIG_NXP4330_CPUFREQ_PLLDEV) {
+		pll == CONFIG_NXP_CPUFREQ_PLLDEV) {
 		if (!support_dvfs) {
 			printk("Can't DVFS rate %10ld with PLL %d....\n", rate, pll);
 			return clk->rate;
@@ -966,8 +966,8 @@ void __init nxp_cpu_clock_init(void)
 	}
 
 	printk("CPU : Clock Generator= %d EA, ", CLK_DEVS_NUM);
-#ifdef CONFIG_ARM_NXP4330_CPUFREQ
-	printk("DVFS = %s, PLL.%d\n", support_dvfs?"support":"can't support", CONFIG_NXP4330_CPUFREQ_PLLDEV);
+#ifdef CONFIG_ARM_NXP_CPUFREQ
+	printk("DVFS = %s, PLL.%d\n", support_dvfs?"support":"can't support", CONFIG_NXP_CPUFREQ_PLLDEV);
 #else
 	printk("DVFS = Off\n");
 #endif
@@ -1016,7 +1016,7 @@ void nxp_cpu_clock_resume(void)
 		peri = &clk_periphs[i];
 		/* exception */
 		if (_GATE_PCLK_ & peri->clk_mask0) {
-	#ifdef CONFIG_I2C_NEXELL
+	#ifdef CONFIG_I2C_NXP
 			if (!strcmp("nxp-i2c", peri->dev_name))
 				peri_clk_pclk(peri->base_addr, 1);
 	#endif

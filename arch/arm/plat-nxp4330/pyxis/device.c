@@ -190,10 +190,10 @@ static struct platform_device dm9000_plat_device = {
 /*------------------------------------------------------------------------------
  * DISPLAY (LVDS) / FB
  */
-#if defined (CONFIG_FB_NEXELL)
-#if defined (CONFIG_FB0_NEXELL)
+#if defined (CONFIG_FB_NXP)
+#if defined (CONFIG_FB0_NXP)
 static struct nxp_fb_plat_data fb0_plat_data = {
-	.module			= CONFIG_FB0_NEXELL_DISPOUT,
+	.module			= CONFIG_FB0_NXP_DISPOUT,
 	.layer			= CFG_DISP_PRI_SCREEN_LAYER,
 	.format			= CFG_DISP_PRI_SCREEN_RGB_FORMAT,
 	.bgcolor		= CFG_DISP_PRI_BACK_GROUND_COLOR,
@@ -221,11 +221,11 @@ static struct platform_device fb0_device = {
 #endif
 
 static struct platform_device *fb_devices[] = {
-	#if defined (CONFIG_FB0_NEXELL)
+	#if defined (CONFIG_FB0_NXP)
 	&fb0_device,
 	#endif
 };
-#endif /* CONFIG_FB_NEXELL */
+#endif /* CONFIG_FB_NXP */
 
 /*------------------------------------------------------------------------------
  * backlight : generic pwm device
@@ -340,7 +340,7 @@ static struct platform_device android_timed_gpios = {
 /*------------------------------------------------------------------------------
  * Keypad platform device
  */
-#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 
 #include <linux/input.h>
 
@@ -361,7 +361,7 @@ static struct platform_device key_plat_device = {
 		.platform_data	= &key_plat_data
 	},
 };
-#endif	/* CONFIG_KEYBOARD_NEXELL_KEY || CONFIG_KEYBOARD_NEXELL_KEY_MODULE */
+#endif	/* CONFIG_KEYBOARD_NXP_KEY || CONFIG_KEYBOARD_NXP_KEY_MODULE */
 
 /*------------------------------------------------------------------------------
  * ASoC Codec platform device
@@ -606,7 +606,7 @@ NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1, 14);	/* 1.1V
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
 NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  8);	/* 1.5V SYS */
-#if defined(CONFIG_RFKILL_NEXELL)
+#if defined(CONFIG_NXP_RFKILL)
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 0,  2);	/* 3.3V GPS */
 #else
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 1,  2);	/* 3.3V GPS */
@@ -1296,7 +1296,7 @@ static int _dwmci_get_ro(u32 slot_id)
 	return 0;
 }
 
-#ifdef CONFIG_MMC_NEXELL_CH0
+#ifdef CONFIG_MMC_DW_NXP_CH0
 static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 {
 	struct dw_mci *host = (struct dw_mci *)data;
@@ -1334,7 +1334,7 @@ static struct dw_mci_board _dwmci0_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_NEXELL_CH1
+#ifdef CONFIG_MMC_DW_NXP_CH1
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 					  DW_MCI_QUIRK_HIGHSPEED |
@@ -1356,7 +1356,7 @@ static struct dw_mci_board _dwmci1_data = {
 /*------------------------------------------------------------------------------
  * RFKILL driver
  */
-#if defined(CONFIG_RFKILL_NEXELL)
+#if defined(CONFIG_NXP_RFKILL)
 
 struct rfkill_dev_data  rfkill_dev_data =
 {
@@ -1379,7 +1379,7 @@ static struct platform_device rfkill_device = {
 		.platform_data	= &rfkill_plat_data,
 	}
 };
-#endif	/* CONFIG_RFKILL_NEXELL */
+#endif	/* CONFIG_NXP_RFKILL */
 
 /*------------------------------------------------------------------------------
  * USB HSIC power control.
@@ -1412,16 +1412,16 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&freq_limit_device);
 #endif
 
-#if defined (CONFIG_FB_NEXELL)
+#if defined (CONFIG_FB_NXP)
 	printk("plat: add framebuffer\n");
 	platform_add_devices(fb_devices, ARRAY_SIZE(fb_devices));
 #endif
 
 #if defined(CONFIG_MMC_DW)
-	#ifdef CONFIG_MMC_NEXELL_CH0
+	#ifdef CONFIG_MMC_DW_NXP_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
-	#ifdef CONFIG_MMC_NEXELL_CH1
+	#ifdef CONFIG_MMC_DW_NXP_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
 	#endif
 #endif
@@ -1440,7 +1440,7 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&nand_plat_device);
 #endif
 
-#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 	printk("plat: add device keypad\n");
 	platform_device_register(&key_plat_device);
 #endif
@@ -1492,7 +1492,7 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(STK831X_I2C_BUS, &stk831x_i2c_bdi, 1);
 #endif
 
-#if defined(CONFIG_RFKILL_NEXELL)
+#if defined(CONFIG_NXP_RFKILL)
     printk("plat: add device rfkill\n");
     platform_device_register(&rfkill_device);
 #endif

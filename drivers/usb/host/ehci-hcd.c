@@ -1383,8 +1383,8 @@ MODULE_LICENSE ("GPL");
 #define PLATFORM_DRIVER		s5p_ehci_driver
 #endif
 
-#ifdef CONFIG_USB_EHCI_NXP4330
-#include "ehci-nxp4330.c"
+#ifdef CONFIG_USB_EHCI_NXP_SYNOPSYS
+#include "ehci-nxp-synp.c"
 #define PLATFORM_DRIVER		nxp_ehci_driver
 #endif
 

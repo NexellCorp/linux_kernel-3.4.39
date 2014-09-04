@@ -65,7 +65,7 @@ module_param(iSerialNumber, charp, 0);
 MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
 
 static char composite_manufacturer[50];
-#if defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_ARCH_CPU_NEXELL)
 static bool usb_config_wake_lock_held;
 static struct wake_lock usb_config_wake_lock;
 #endif
@@ -575,7 +575,7 @@ static void device_qual(struct usb_composite_dev *cdev)
 }
 
 /*-------------------------------------------------------------------------*/
-#if defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_ARCH_CPU_NEXELL)
 void nxp_wake_lock_timeout(void)
 {
 	if (usb_config_wake_lock_held == true)
@@ -598,7 +598,7 @@ static void reset_config(struct usb_composite_dev *cdev)
 	}
 	cdev->config = NULL;
 
-#if defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_ARCH_CPU_NEXELL)
 	wake_lock_timeout(&usb_config_wake_lock, 1*HZ);
 #endif
 }
@@ -623,7 +623,7 @@ static int set_config(struct usb_composite_dev *cdev,
 				if (cdev->config)
 					reset_config(cdev);
 
-#if defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_ARCH_CPU_NEXELL)
 				wake_lock(&usb_config_wake_lock);
 #endif
 
@@ -1398,7 +1398,7 @@ composite_unbind(struct usb_gadget *gadget)
 	 */
 	WARN_ON(cdev->config);
 
-#if defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_ARCH_CPU_NEXELL)
 	if (usb_config_wake_lock_held == true) {
 		wake_lock_destroy(&usb_config_wake_lock);
 		usb_config_wake_lock_held = false;
@@ -1529,7 +1529,7 @@ static int composite_bind(struct usb_gadget *gadget)
 	if (status)
 		goto fail;
 
-#if defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_ARCH_CPU_NEXELL)
 	if (usb_config_wake_lock_held == false) {
 		wake_lock_init(&usb_config_wake_lock, WAKE_LOCK_SUSPEND, "usb_config_wake_lock");
 		usb_config_wake_lock_held = true;

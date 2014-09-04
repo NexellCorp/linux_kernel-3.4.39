@@ -258,7 +258,7 @@ static struct platform_device android_timed_gpios = {
 /*------------------------------------------------------------------------------
  * Keypad platform device
  */
-#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 
 #include <linux/input.h>
 
@@ -279,7 +279,7 @@ static struct platform_device key_plat_device = {
 		.platform_data	= &key_plat_data
 	},
 };
-#endif	/* CONFIG_KEYBOARD_NEXELL_KEY || CONFIG_KEYBOARD_NEXELL_KEY_MODULE */
+#endif	/* CONFIG_KEYBOARD_NXP_KEY || CONFIG_KEYBOARD_NXP_KEY_MODULE */
 
 
 /*------------------------------------------------------------------------------
@@ -1462,7 +1462,7 @@ int _dwmci_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int stat
 	return 0;
 }
 
-#ifdef CONFIG_MMC_NEXELL_CH0
+#ifdef CONFIG_MMC_DW_NXP_CH0
 static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 {
 	struct dw_mci *host = (struct dw_mci *)data;
@@ -1500,7 +1500,7 @@ static struct dw_mci_board _dwmci0_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_NEXELL_CH1
+#ifdef CONFIG_MMC_DW_NXP_CH1
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 				  		DW_MCI_QUIRK_HIGHSPEED |
@@ -1535,10 +1535,10 @@ void __init nxp_board_devices_register(void)
 #endif
 
 #if defined(CONFIG_MMC_DW)
-	#ifdef CONFIG_MMC_NEXELL_CH0
+	#ifdef CONFIG_MMC_DW_NXP_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
-	#ifdef CONFIG_MMC_NEXELL_CH1
+	#ifdef CONFIG_MMC_DW_NXP_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
 	#endif
 #endif
@@ -1562,7 +1562,7 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&nand_plat_device);
 #endif
 
-#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 	printk("plat: add device keypad\n");
 	platform_device_register(&key_plat_device);
 #endif

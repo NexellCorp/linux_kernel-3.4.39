@@ -24,10 +24,10 @@
 /*------------------------------------------------------------------------------
  * Frame Buffer (Primary)
  */
-#if defined (CONFIG_FB_NEXELL)
-#if defined (CONFIG_FB0_NEXELL)
+#if defined (CONFIG_FB_NXP)
+#if defined (CONFIG_FB0_NXP)
 static struct nxp_fb_plat_data fb0_plat_data = {
-	.module			= CONFIG_FB0_NEXELL_DISPOUT,
+	.module			= CONFIG_FB0_NXP_DISPOUT,
 	.layer			= CFG_DISP_PRI_SCREEN_LAYER,
 	.format			= CFG_DISP_PRI_SCREEN_RGB_FORMAT,
 	.bgcolor		= CFG_DISP_PRI_BACK_GROUND_COLOR,
@@ -55,16 +55,16 @@ static struct platform_device fb0_device = {
 #endif
 
 static struct platform_device *fb_devices[] = {
-	#if defined (CONFIG_FB0_NEXELL)
+	#if defined (CONFIG_FB0_NXP)
 	&fb0_device,
 	#endif
 };
-#endif /* CONFIG_FB_NEXELL */
+#endif /* CONFIG_FB_NXP */
 
 /*------------------------------------------------------------------------------
  * MIPI device
  */
-#if defined (CONFIG_NEXELL_SOC_DISP_MIPI)
+#if defined (CONFIG_NXP_SOC_DISP_MIPI)
 #include <linux/delay.h>
 
 #define	MIPI_BITRATE_750M
@@ -141,12 +141,12 @@ static struct disp_mipi_param mipi_param = {
  */
 static void __init nxp_fb_device_register(void)
 {
-#if defined(CONFIG_FB_NEXELL)
+#if defined(CONFIG_FB_NXP)
 	printk("plat: add device frame buffer\n");
 	platform_add_devices(fb_devices, ARRAY_SIZE(fb_devices));
 #endif
 
-#if defined (CONFIG_NEXELL_SOC_DISP_MIPI)
+#if defined (CONFIG_NXP_SOC_DISP_MIPI)
 	printk("plat: add device mipi \n");
 	nxp_platform_disp_device_data(DISP_DEVICE_MIPI, NULL, (void*)mipi_param, mipi_syncgen_par);
 #endif

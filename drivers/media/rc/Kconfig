@@ -275,7 +275,7 @@ config IR_GPIO_CIR
 	   To compile this driver as a module, choose M here: the module will
 	   be called gpio-ir-recv.
 
-config PPM_NEXELL
+config PPM_NXP
 	tristate "NEXELL IR remote control"
 	depends on RC_CORE
 	---help---

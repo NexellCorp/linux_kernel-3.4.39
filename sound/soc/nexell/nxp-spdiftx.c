@@ -231,7 +231,7 @@ static void inline spdif_reset(struct nxp_spdif_snd_param *par)
 {
 	unsigned int base = par->base_addr;
 
-	nxp_soc_rsc_reset(RESET_ID_SPDIFTX);
+	nxp_soc_peri_reset_set(RESET_ID_SPDIFTX);
 	writel((1 << CON_SW_RESET_POS), (base+SPDIF_CON_OFFSET));
 }
 

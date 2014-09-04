@@ -15,7 +15,7 @@
 #include <linux/io.h>
 #include <linux/platform_device.h>
 
-#include <mach/usb-phy.h>
+#include <mach/usb.h>
 
 #include <mach/platform.h>
 #include <mach/iomap.h>
@@ -45,7 +45,7 @@
 	(HOST_SS_ENA_INCR4 | HOST_SS_ENA_INCRX_ALIGN)
 
 
-int nxp_usb_phy_init(struct platform_device *pdev, int type)
+int nxp_soc_usb_phy_init(struct platform_device *pdev, int type)
 {
 	PM_DBGOUT("++ %s\n", __func__);
 
@@ -182,7 +182,7 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 	return 0;
 }
 
-int nxp_usb_phy_exit(struct platform_device *pdev, int type)
+int nxp_soc_usb_phy_exit(struct platform_device *pdev, int type)
 {
 	u32 temp;
 

@@ -192,7 +192,11 @@ static int _hw_init(struct nxp_scaler *me)
     NX_CLKGEN_SetBaseAddress(NX_SCALER_GetClockNumber(0), IO_ADDRESS(NX_CLKGEN_GetPhysicalAddress(NX_SCALER_GetClockNumber(0))));
     NX_CLKGEN_SetClockBClkMode(NX_SCALER_GetClockNumber(0), NX_BCLKMODE_ALWAYS);
 #endif
+#if defined(CONFIG_ARCH_NXP4330)
     NX_RSTCON_SetnRST(NX_SCALER_GetResetNumber(0), RSTCON_nENABLE);
+#elif defined(CONFIG_ARCH_NXP4330)
+    NX_RSTCON_SetRST(NX_SCALER_GetResetNumber(0), RSTCON_NIGATE);
+#endif
     /* nxp_soc_rsc_reset(NX_SCALER_GetResetNumber(0)); */
 
     NX_SCALER_SetInterruptEnableAll(0, CFALSE);

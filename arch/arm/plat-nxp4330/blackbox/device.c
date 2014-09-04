@@ -100,7 +100,7 @@ static unsigned long dfs_freq_table[][2] = {
 	{  760000, 1200 },
 	{  740000, 1200 },
 	{  720000, 1200 },
-#else	
+#else
 	{  562000, 1200 },
 	{  533000, 1200 },
 	{  490000, 1200 },
@@ -122,7 +122,7 @@ static unsigned long dfs_freq_table[][2] = {
 	{  250000, 1200 },
 	{  220000, 1200 },
 	{  200000, 1200 },
-#endif	
+#endif
 	// {  166000, 1200 },
 	// {  147500, 1200 },
 	// {  133000, 1200 },
@@ -288,7 +288,7 @@ static struct platform_device android_timed_gpios = {
 /*------------------------------------------------------------------------------
  * Keypad platform device
  */
-#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 
 #include <linux/input.h>
 
@@ -309,7 +309,7 @@ static struct platform_device key_plat_device = {
 		.platform_data	= &key_plat_data
 	},
 };
-#endif	/* CONFIG_KEYBOARD_NEXELL_KEY || CONFIG_KEYBOARD_NEXELL_KEY_MODULE */
+#endif	/* CONFIG_KEYBOARD_NXP_KEY || CONFIG_KEYBOARD_NXP_KEY_MODULE */
 
 /*------------------------------------------------------------------------------
  * ASoC Codec platform device
@@ -780,7 +780,7 @@ static void vin_setup_io(int module, bool force)
 	const u_int VID1[][2] = {
 		/* VCLK, HSYNC, VSYNC */
 		{ PAD_GPIO_A + 28, NX_GPIO_PADFUNC_1 },
-		{ PAD_GPIO_E + 13, NX_GPIO_PADFUNC_2 }, 
+		{ PAD_GPIO_E + 13, NX_GPIO_PADFUNC_2 },
 		{ PAD_GPIO_E +   7, NX_GPIO_PADFUNC_2 },
 		/* DATA */
 		{ PAD_GPIO_A + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +   0, NX_GPIO_PADFUNC_1 },
@@ -1087,7 +1087,7 @@ static int _dwmci_get_ro(u32 slot_id)
 	return 0;
 }
 
-#ifdef CONFIG_MMC_NEXELL_CH0
+#ifdef CONFIG_MMC_DW_NXP_CH0
 static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 {
 	struct dw_mci *host = (struct dw_mci *)data;
@@ -1149,7 +1149,7 @@ void __init nxp_board_devices_register(void)
 #endif
 
 #if defined(CONFIG_MMC_DW)
-	#ifdef CONFIG_MMC_NEXELL_CH0
+	#ifdef CONFIG_MMC_DW_NXP_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
 #endif
@@ -1168,7 +1168,7 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&nand_plat_device);
 #endif
 
-#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 	printk("plat: add device keypad\n");
 	platform_device_register(&key_plat_device);
 #endif

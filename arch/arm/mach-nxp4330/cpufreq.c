@@ -230,7 +230,7 @@ unsigned long nxp_cpu_pll_change_frequency(int pllno, unsigned long rate)
 	int p = 0, m = 0, s = 0;
 	unsigned long freq;
 
-#ifdef CONFIG_NEXELL_DFS_BCLK
+#ifdef CONFIG_NXP_DFS_BCLK
     mdelay(1);
 #endif
 
@@ -244,7 +244,7 @@ unsigned long nxp_cpu_pll_change_frequency(int pllno, unsigned long rate)
     local_irq_enable();
 	/*core_pll_change_lock(false);*/
 
-#ifdef CONFIG_NEXELL_DFS_BCLK
+#ifdef CONFIG_NXP_DFS_BCLK
     mdelay(1);
 #endif
 

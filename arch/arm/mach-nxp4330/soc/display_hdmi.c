@@ -201,9 +201,9 @@ static int hdmi_probe(struct platform_device *pdev)
         return ret;
     }
 
-#if defined(CONFIG_NEXELL_DISPLAY_HDMI_1280_720P)
+#if defined(CONFIG_NXP_DISPLAY_HDMI_1280_720P)
     preferred_preset = V4L2_DV_720P60;
-#elif defined(CONFIG_NEXELL_DISPLAY_HDMI_1920_1080P)
+#elif defined(CONFIG_NXP_DISPLAY_HDMI_1920_1080P)
     preferred_preset = V4L2_DV_1080P60;
 #else
 #error "***** NOT SPECIFIED HDMI RESOLUTION !!! *****"

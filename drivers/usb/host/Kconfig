@@ -198,11 +198,16 @@ config USB_EHCI_S5P
 	---help---
 	  Enable support for the S5P SOC's on-chip EHCI controller.
 
-config USB_EHCI_NXP4330
-	boolean "NXP4330 EHCI support"
-	depends on USB_EHCI_HCD && ARCH_NXP4330
+config NXP_USB_PHY
+	bool
+	default n
+
+config USB_EHCI_NXP_SYNOPSYS
+	boolean "Nexell Sysnopsys EHCI"
+	depends on USB_EHCI_HCD && (ARCH_NXP4330 || ARCH_NXP5430)
+	select NXP_USB_PHY
 	---help---
-	  Enable support for the NEXELL NXP4330's on-chip EHCI controller.
+	  Enable support for the NEXELL on-chip EHCI controller.
 
 config USB_HSIC_NXP4330
 	boolean "NXP4330 HSIC support"
@@ -210,12 +215,12 @@ config USB_HSIC_NXP4330
 	---help---
 	  Enable support for the NEXELL NXP4330's on-chip HSIC controller.
 
-config USB_EHCI_NXP4330_RESUME_WORK
-	bool "Set resume delay for fast resume"
-	depends on USB_EHCI_NXP4330 && ARCH_NXP4330
+config USB_EHCI_NXP_RESUME_WORK
+	bool "Set delay resume to fast wakeup"
+	depends on USB_EHCI_NXP_SYNOPSYS
 		default n
 	help
-	  Use delay work function to save resume time when resume. but 
+	  Use delay work function to save resume time when resume. but
 	  could be lost resume log message, set delay time with platform data
 
 config USB_EHCI_MV
@@ -418,11 +423,12 @@ config USB_OHCI_EXYNOS
 	help
 	 Enable support for the Samsung Exynos SOC's on-chip OHCI controller.
 
-config USB_OHCI_NXP4330
-	boolean "OHCI support for NEXELL NXP4330"
-	depends on USB_OHCI_HCD && ARCH_NXP4330
+config USB_OHCI_NXP_SYNOPSYS
+	boolean "Nexell Sysnopsys OHCI"
+	depends on USB_OHCI_HCD && (ARCH_NXP4330 || ARCH_NXP5430)
+	select NXP_USB_PHY
 	help
-	 Enable support for the NEXELL NXP4330's on-chip OHCI controller.
+	 Enable support for the NEXELL on-chip OHCI controller.
 
 config USB_CNS3XXX_OHCI
 	bool "Cavium CNS3XXX OHCI Module"
@@ -550,7 +556,7 @@ config USB_SL811_HCD
 	help
 	  The SL811HS is a single-port USB controller that supports either
 	  host side or peripheral side roles.  Enable this option if your
-	  board has this chip, and you want to use it as a host controller. 
+	  board has this chip, and you want to use it as a host controller.
 	  If unsure, say N.
 
 	  To compile this driver as a module, choose M here: the
@@ -631,7 +637,7 @@ config USB_HWA_HCD
 
 config USB_DWCOTG
 	tristate "Synopsis DWC host support"
-	depends on USB 
+	depends on USB
 	help
 	  The Synopsis DWC controller is a dual-role
 	  host/peripheral/OTG ("On The Go") USB controllers.
@@ -639,7 +645,7 @@ config USB_DWCOTG
 	  Enable this option to support this IP in host controller mode.
 	  If unsure, say N.
 
-	  To compile this driver as a module, choose M here: the 
+	  To compile this driver as a module, choose M here: the
 	  modules built will be called dwc_otg and dwc_common_port.
 
 config USB_CONNECT_NXP_DRV

@@ -241,11 +241,11 @@ inline static void uart_init(void)
 	}
 
 	/* check reset */
-	if (!nxp_soc_rsc_status(RESET_UART_ID)) {
+	if (!nxp_soc_peri_reset_stat(RESET_UART_ID)) {
 		NX_TIEOFF_Set(TIEOFF_USESMC, 0);
 		NX_TIEOFF_Set(TIEOFF_SMCTXENB, 0);
 		NX_TIEOFF_Set(TIEOFF_SMCRXENB, 0);
-		nxp_soc_rsc_reset(RESET_UART_ID);
+		nxp_soc_peri_reset_set(RESET_UART_ID);
 	}
 
 	/* check pll */
@@ -458,8 +458,8 @@ void lltime_start(void)
 	if (true == __dbg_timer_run)
 		return;
 
-	if (!nxp_soc_rsc_status(RESET_ID_TIMER))
-		nxp_soc_rsc_reset(RESET_ID_TIMER);
+	if (!nxp_soc_peri_reset_stat(RESET_ID_TIMER))
+		nxp_soc_peri_reset_set(RESET_ID_TIMER);
 
 	/* clock gen : enable */
 	if (5 == mux) {

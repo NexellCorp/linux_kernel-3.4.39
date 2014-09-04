@@ -24,7 +24,7 @@
 #ifdef CONFIG_ARCH_NXP4330_3200
 #include <mach/nxp3200.h>
 #else
-#include <mach/nxp4330.h>
+#include <mach/platform.h>
 #endif
 #include <mach/fourcc.h>
 

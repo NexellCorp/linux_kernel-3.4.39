@@ -506,6 +506,14 @@ do_sect_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 static int
 do_bad(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 {
+	static int ret = 0;
+	printk("[ OCCUR DO BAD ]\n");
+#if 1
+	if (0 == ret) {
+		ret = 1;
+		return 0;
+	}
+#endif
 	return 1;
 }
 

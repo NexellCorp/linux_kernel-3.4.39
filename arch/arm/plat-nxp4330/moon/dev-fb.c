@@ -24,7 +24,7 @@
 /*------------------------------------------------------------------------------
  * LVDS device
  */
-#if defined (CONFIG_NEXELL_SOC_DISP_LVDS)
+#if defined (CONFIG_NXP_SOC_DISP_LVDS)
 static struct disp_vsync_info	lvds_vsync = {
 	.h_active_len	= CFG_DISP_PRI_RESOL_WIDTH,
 	.h_sync_width	= CFG_DISP_PRI_HSYNC_SYNC_WIDTH,
@@ -60,7 +60,7 @@ static struct platform_device lvds_device = {
 /*------------------------------------------------------------------------------
  * Frame Buffer (Primary)
  */
-#if defined (CONFIG_FB_NEXELL_PRI)
+#if defined (CONFIG_FB_NXP_PRI)
 static struct nxp_fb_plat_data pri_fb_plat_data = {
 	.module			= 0,
 	.layer			= CFG_DISP_PRI_SCREEN_LAYER,
@@ -78,7 +78,7 @@ static struct nxp_fb_plat_data pri_fb_plat_data = {
 	/* display sync for dpi */
 	.lcd_with_mm	= 152.4,
 	.lcd_height_mm	=  91.44,
-#if defined (CONFIG_NEXELL_SOC_DISP_LVDS)
+#if defined (CONFIG_NXP_SOC_DISP_LVDS)
 	.vsync	     	= &lvds_vsync,
 #endif
 };
@@ -91,19 +91,19 @@ static struct platform_device fb_primary = {
 		.platform_data		= &pri_fb_plat_data
 	},
 };
-#endif	/* CONFIG_FB_NEXELL_PRI */
+#endif	/* CONFIG_FB_NXP_PRI */
 
 /*------------------------------------------------------------------------------
  *	platform devices
  */
 static void __init nxp_fb_device_register(void)
 {
-#if defined(CONFIG_FB_NEXELL_PRI)
+#if defined(CONFIG_FB_NXP_PRI)
 	printk("plat: add device frame buffer\n");
 	platform_device_register(&fb_primary);
 #endif
 
-#if defined(CONFIG_NEXELL_SOC_DISP_LVDS)
+#if defined(CONFIG_NXP_SOC_DISP_LVDS)
 	printk("plat: add device lvds \n");
 	platform_device_register(&lvds_device);
 #endif
