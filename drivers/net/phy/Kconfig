@@ -77,6 +77,12 @@ config REALTEK_PHY
 	---help---
 	  Supports the Realtek 821x PHY.
 
+config REALTEK_PHY_RTL8201
+	bool "Drivers for Realtek rtl8201 100M PHYs"
+	depends on REALTEK_PHY
+	---help---
+	  Supports the Realtek 8201 PHY.If you use rtl8211,do not check this.
+
 config NATIONAL_PHY
 	tristate "Drivers for National Semiconductor PHYs"
 	---help---
