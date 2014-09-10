@@ -79,8 +79,10 @@ static int _hw_configure(struct nxp_decimator *me)
             me->src_width, me->src_height,
             me->target_width, me->target_height);
 
-    NX_VIP_SetDecimatorFormat(module,
-            _convert_to_vip_format(me->code) , false, false, false);
+    // psw0523 fix for nxp5430
+    /*NX_VIP_SetDecimatorFormat(module,*/
+            /*_convert_to_vip_format(me->code) , false, false, false);*/
+    NX_VIP_SetDecimatorFormat(module, _convert_to_vip_format(me->code));
 
     return 0;
 }

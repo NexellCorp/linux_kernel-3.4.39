@@ -578,6 +578,8 @@ int nxp_csi_init(struct nxp_csi *me, struct nxp_mipi_csi_platformdata *platdata)
         /* me->irq = platdata->irq; */
         /* me->regs = platdata->base; */
         me->irq = NX_MIPI_GetInterruptNumber(me->module);
+        // psw0523 for nxp5430
+        me->irq += 32;
         me->regs = (void __iomem *)IO_ADDRESS(NX_MIPI_GetPhysicalAddress(me->module));
     }
 

@@ -8,7 +8,7 @@
 #include <linux/v4l2-mediabus.h>
 #include <media/v4l2-subdev.h>
 
-// #define DEBUG_SYNC
+//#define DEBUG_SYNC
 
 struct list_head;
 struct nxp_capture;

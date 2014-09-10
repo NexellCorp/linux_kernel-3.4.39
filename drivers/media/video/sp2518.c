@@ -1039,8 +1039,10 @@ static int sp2518_write_array(struct i2c_client *client, const struct regval_lis
     int ret;
     while (vals->reg_num != 0xff) {
         ret = i2c_smbus_write_byte_data(client, vals->reg_num, vals->value);
-        if (ret < 0)
+        if (ret < 0) {
+            printk("%s: failed to i2c_smbus_write_byte_data ret %d\n", __func__, ret);
             return ret;
+        }
         vals++;
     }
     return 0;

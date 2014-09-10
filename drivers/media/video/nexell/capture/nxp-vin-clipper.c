@@ -194,9 +194,9 @@ static int _hw_set_clock(struct nxp_vin_clipper *me, bool on)
 #if defined(CONFIG_ARCH_NXP4330)
         NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nDISABLE);
         NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nENABLE);
-#elif defined(CONFIG_ARCH_NXP4330)
+#elif defined(CONFIG_ARCH_NXP5430)
         NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_ASSERT);
-        NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_NIGATE);
+        NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_NEGATE);
 #endif
         if (me->platdata->is_mipi) {
             pr_debug("%s: apply mipi csi clock!!!\n", __func__);
@@ -304,7 +304,9 @@ static int _hw_set_output_format(struct nxp_vin_clipper *me)
         }
     }
 
-    NX_VIP_SetClipperFormat(module, nx_format, 0, 0, 0);
+    // psw0523 fix for nxp5430
+    /*NX_VIP_SetClipperFormat(module, nx_format, 0, 0, 0);*/
+    NX_VIP_SetClipperFormat(module, nx_format);
 
     return 0;
 }
@@ -392,7 +394,8 @@ static int _hw_set_addr(struct nxp_vin_clipper *me, struct nxp_video_buffer *buf
         if (me->format[1].code == V4L2_MBUS_FMT_YUYV8_2X8) {
             /*printk("%s: clipper bufs 0x%x, stride %d\n",*/
             /*    __func__, buf->dma_addr[0], buf->stride[0]);*/
-            NX_VIP_SetClipperAddrYUYV(module, buf->dma_addr[0], buf->stride[0]>>1);
+            // psw0523 fix for nxp5430
+            /*NX_VIP_SetClipperAddrYUYV(module, buf->dma_addr[0], buf->stride[0]>>1);*/
         } else {
             u32 nx_format = _convert_to_nxp_vip_format(me->format[1].code);
             struct v4l2_rect *c = &me->crop;

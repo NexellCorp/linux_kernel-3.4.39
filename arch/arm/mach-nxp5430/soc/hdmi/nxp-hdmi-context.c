@@ -92,7 +92,7 @@ static void _hdmi_initialize(struct nxp_hdmi_context *me)
 
         NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_PHY), RSTCON_nENABLE);
         NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST), RSTCON_nENABLE);
-#elif defined (CONFIG_ARCH_NXP4330)
+#elif defined (CONFIG_ARCH_NXP5430)
         NX_RSTCON_SetRST(NX_HDMI_GetResetNumber(0, i_nRST_PHY), RSTCON_ASSERT);
         NX_RSTCON_SetRST(NX_HDMI_GetResetNumber(0, i_nRST), RSTCON_ASSERT);
 
@@ -144,7 +144,7 @@ static inline void _hdmi_reset(struct nxp_hdmi_context *me)
     NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_TMDS), RSTCON_nENABLE);
     NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_PHY), RSTCON_nENABLE);
     NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST), RSTCON_nENABLE);
-#elif defined (CONFIG_ARCH_NXP4330)
+#elif defined (CONFIG_ARCH_NXP5430)
     NX_RSTCON_SetRST(NX_HDMI_GetResetNumber(0, i_nRST_VIDEO), RSTCON_ASSERT);
     NX_RSTCON_SetRST(NX_HDMI_GetResetNumber(0, i_nRST_SPDIF), RSTCON_ASSERT);
     NX_RSTCON_SetRST(NX_HDMI_GetResetNumber(0, i_nRST_TMDS), RSTCON_ASSERT);
@@ -849,6 +849,8 @@ int hdmi_init_context(struct nxp_hdmi_context *me,
 
     me->initialized = false;
     me->irq = NX_HDMI_GetInterruptNumber(0);
+    // psw0523 add for nxp5430
+    me->irq += 32;
     atomic_set(&me->state, HDMI_UNPLUGGED);
 
     me->audio_enable = true;

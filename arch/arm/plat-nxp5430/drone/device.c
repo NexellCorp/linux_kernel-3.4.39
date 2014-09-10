@@ -1094,7 +1094,9 @@ static struct nxp_v4l2_i2c_board_info sensor[] = {
 static struct nxp_capture_platformdata capture_plat_data[] = {
     {
         /* back_camera 656 interface */
-        .module = 1,
+        // for 5430
+        /*.module = 1,*/
+        .module = 0,
         .sensor = &sensor[0],
         .type = NXP_CAPTURE_INF_PARALLEL,
         .parallel = {
@@ -1127,7 +1129,9 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
     },
     {
         /* front_camera 601 interface */
-        .module = 1,
+        // for 5430
+        /*.module = 1,*/
+        .module = 0,
         .sensor = &sensor[1],
         .type = NXP_CAPTURE_INF_PARALLEL,
         .parallel = {

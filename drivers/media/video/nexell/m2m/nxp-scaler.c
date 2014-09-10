@@ -184,6 +184,8 @@ static int _hw_init(struct nxp_scaler *me)
     /* NX_SCALER_OpenModule(0); */
 
     me->irq = NX_SCALER_GetInterruptNumber(0);
+    // psw0523 add for nxp5430
+    me->irq += 32;
 
 #if 0
     NX_SCALER_CLKGEN_SetBaseAddress(0, IO_ADDRESS(NX_SCALER_CLKGEN_GetPhysicalAddress(0)));
@@ -194,8 +196,8 @@ static int _hw_init(struct nxp_scaler *me)
 #endif
 #if defined(CONFIG_ARCH_NXP4330)
     NX_RSTCON_SetnRST(NX_SCALER_GetResetNumber(0), RSTCON_nENABLE);
-#elif defined(CONFIG_ARCH_NXP4330)
-    NX_RSTCON_SetRST(NX_SCALER_GetResetNumber(0), RSTCON_NIGATE);
+#elif defined(CONFIG_ARCH_NXP5430)
+    NX_RSTCON_SetRST(NX_SCALER_GetResetNumber(0), RSTCON_NEGATE);
 #endif
     /* nxp_soc_rsc_reset(NX_SCALER_GetResetNumber(0)); */
 

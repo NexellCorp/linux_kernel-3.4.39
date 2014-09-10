@@ -4,6 +4,7 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/videodev2.h>
+#include <linux/delay.h>
 
 /* for prototype */
 #include <nx_hdmi.h>
@@ -126,7 +127,7 @@ static int _hdmiphy_reset(struct nxp_hdmiphy *me)
     pr_debug("%s\n", __func__);
 #if defined (CONFIG_ARCH_NXP4330)
     NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_PHY), RSTCON_nDISABLE);
-#elif defined (CONFIG_ARCH_NXP4330)
+#elif defined (CONFIG_ARCH_NXP5430)
 	NX_RSTCON_SetRST(NX_HDMI_GetResetNumber(0, i_nRST_PHY), RSTCON_ASSERT);
 	mdelay(1);
 	NX_RSTCON_SetRST(NX_HDMI_GetResetNumber(0, i_nRST_PHY), RSTCON_NEGATE);
@@ -148,16 +149,19 @@ static int _hdmiphy_reg_set(struct nxp_hdmiphy *me,
     u32 reg_addr;
     pr_debug("%s\n", __func__);
 
-    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (0<<7)); NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (0<<7));
-    NX_HDMI_SetReg(0, HDMI_PHY_Reg04, (0<<4)); NX_HDMI_SetReg(0, HDMI_PHY_Reg04, (0<<4));
-    NX_HDMI_SetReg(0, HDMI_PHY_Reg24, (1<<7)); NX_HDMI_SetReg(0, HDMI_PHY_Reg24, (1<<7));
+    // for nxp5430
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (0<<7)); //NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (0<<7));
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg04, (0<<4)); //NX_HDMI_SetReg(0, HDMI_PHY_Reg04, (0<<4));
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg24, (1<<7)); //NX_HDMI_SetReg(0, HDMI_PHY_Reg24, (1<<7));
 
     for (i = 0, reg_addr = HDMI_PHY_Reg04; i < size; i++, reg_addr += 4) {
         NX_HDMI_SetReg(0, reg_addr, data[i]);
-        NX_HDMI_SetReg(0, reg_addr, data[i]);
+        // for nxp5430
+        /*NX_HDMI_SetReg(0, reg_addr, data[i]);*/
+        /*printk("reg 0x%x: write 0x%x, read 0x%x\n", reg_addr, data[i], NX_HDMI_GetReg(0, reg_addr));*/
     }
-    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, 0x80); NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, 0x80);
-    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (1<<7)); NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (1<<7));
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, 0x80); //NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, 0x80);
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (1<<7)); //NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (1<<7));
     return 0;
 }
 
