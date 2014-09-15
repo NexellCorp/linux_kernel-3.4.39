@@ -348,7 +348,7 @@ static struct platform_device wm8976_dai = {
 #if defined(CONFIG_SND_CODEC_ALC5623)
 #include <linux/i2c.h>
 
-#define	WM8976_I2C_BUS		(0)
+#define	ALC5623_I2C_BUS		(0)
 
 /* CODEC */
 static struct i2c_board_info __initdata alc5623_i2c_bdi = {
@@ -408,7 +408,7 @@ static struct platform_device spdif_trans_dai = {
 /* CODEC */
 static struct i2c_board_info __initdata mma865x_i2c_bdi = {
 	.type	= "mma8653",
-	.addr	= 0x1D//(0x4c),
+	.addr	= 0x1D//(0x3a),
 };
 
 #endif
@@ -477,7 +477,7 @@ void __init nxp_reserve_mem(void)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port3 = {
 	.sda_pin	= I2C3_SDA,
 	.scl_pin	= I2C3_SCL,
-	.udelay		= I2CUDELAY(CFG_I2C2_CLK),				/* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
+	.udelay		= I2CUDELAY(CFG_I2C3_CLK),				/* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
 
 	.timeout	= 10,
 };
@@ -1467,7 +1467,7 @@ void __init nxp_board_devs_register(void)
 
 #if defined(CONFIG_SND_CODEC_ALC5623) || defined(CONFIG_SND_CODEC_ALC5623_MODULE)
 	printk("plat: add device asoc-alc5623\n");
-	i2c_register_board_info(0, &alc5623_i2c_bdi, 1);
+	i2c_register_board_info(ALC5623_I2C_BUS, &alc5623_i2c_bdi, 1);
 	platform_device_register(&alc5623_dai);
 #endif
 

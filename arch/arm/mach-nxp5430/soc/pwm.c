@@ -39,10 +39,12 @@
  */
 struct pwm_device {
 	int ch;
+	int clk_tclk;		/* 0:pclk, 1:tclk */
 	unsigned long request;
 	unsigned long rate;
 	int 		  duty;		/* unit % 0% ~ 100% */
 	unsigned long pwm_hz;
+	unsigned int  tmux;
 	unsigned int  counter;
 	unsigned int  compare;
 	unsigned int  io;
@@ -58,24 +60,36 @@ static struct pwm_device devs_pwm[] = {
 		.io     = PAD_GPIO_D +  1,
 		.fn_io  = NX_GPIO_PADFUNC_0,
 		.fn_pwm = NX_GPIO_PADFUNC_1,
+#ifdef CFG_PWM0_CLK_SRC
+		.clk_tclk= 1,
+#endif		
 	},
 	[1] = {
 		.ch	    = 1,
 		.io     = PAD_GPIO_C + 13,
 		.fn_io  = NX_GPIO_PADFUNC_1,
 		.fn_pwm = NX_GPIO_PADFUNC_2,
+#ifdef CFG_PWM1_CLK_SRC
+		.clk_tclk= 1,
+#endif		
 	},
 	[2] = {
 		.ch	    = 2,
 		.io     = PAD_GPIO_C + 14,
 		.fn_io  = NX_GPIO_PADFUNC_1,
 		.fn_pwm = NX_GPIO_PADFUNC_2,
+#ifdef CFG_PWM2_CLK_SRC
+		.clk_tclk= 1,
+#endif		
 	},
 	[3] = {
 		.ch	    = 3,
 		.io     = PAD_GPIO_D +  0,
 		.fn_io  = NX_GPIO_PADFUNC_0,
 		.fn_pwm = NX_GPIO_PADFUNC_2,
+#ifdef CFG_PWM3_CLK_SRC
+		.clk_tclk= 1,
+#endif		
 	},
 };
 #define	PWN_CHANNELS	(4)
@@ -189,9 +203,10 @@ static inline void pwm_stop(int ch, int irqon)
 
 static void pwm_set_device(struct pwm_device *pwm)
 {
-	int ch = pwm->ch, tmux = 5, tscl = 1;
-	pr_debug("%s (ch:%d, rate:%ld, count:%d, cmp:%d)\n",
-	 	__func__, ch, pwm->rate, pwm->counter, pwm->compare);
+	int ch = pwm->ch;
+	unsigned int tmux = pwm->tmux, tscl = 1;
+	pr_debug("%s (ch:%d, rate:%ld, pwm_hz:%ld, count:%u, cmp:%u, tmux:%u)\n",
+	 	__func__, ch, pwm->rate, pwm->pwm_hz, pwm->counter, pwm->compare, tmux);
 
 	_LOCK_(ch);
 
@@ -206,7 +221,8 @@ static void pwm_set_device(struct pwm_device *pwm)
 		pwm_stop(ch, 0);
 		clk_disable(pwm->clk);
 	} else {
-		clk_set_rate(pwm->clk, pwm->rate);
+		if(pwm->clk_tclk)
+			clk_set_rate(pwm->clk, pwm->rate);
 		clk_enable(pwm->clk);
 
 		pwm_clock(ch, tmux, tscl);
@@ -233,9 +249,10 @@ static void pwm_set_device(struct pwm_device *pwm)
 unsigned long nxp_soc_pwm_set_frequency(int ch, unsigned int request, unsigned int duty)
 {
 	struct pwm_device *pwm = &devs_pwm[ch];
+	struct clk *clk = clk_get(NULL, CORECLK_NAME_PCLK);
 	volatile unsigned long rate, freq, clock = 0;
-	volatile unsigned long hz = 0, pwmhz = 0;
-	volatile unsigned int tcnt;
+	volatile unsigned long hz = 0, pwmhz = 0, mout;
+	volatile unsigned int tmux = 0, smux = 0, tscl = 1, tcnt;
 	int i, n, end = 0;
 
 	RET_ASSERT_VAL(PWN_CHANNELS > ch, -EINVAL);
@@ -264,26 +281,55 @@ unsigned long nxp_soc_pwm_set_frequency(int ch, unsigned int request, unsigned i
 	if (pwm->request == request && pwm->duty != duty) {
 		clock = pwm->rate;
 		pwmhz = pwm->pwm_hz;
-	/* set new pwm out */
 	} else {
-		for (n = 1; !end; n *= 10) {
-			for (i = (n == 1 ? DUTY_MIN_VAL : 1); 10 > i; i++) {
-				freq = request * i * n;
-				if (freq > clk_in_max) {
-					end = 1;
-					break;
-				}
-				rate = clk_round_rate(pwm->clk, freq);
-				tcnt = rate/request;
-				hz = rate/tcnt;
-				if (0 == rate%request) {
-					clock = rate, pwmhz = hz, end = 1;
-					break;
-				}
+		if(pwm->clk_tclk) {	
+		/* set new pwm out -- USE TCLK CLKGEN */ 
+			for (n = 1; !end; n *= 10) {
+				for (i = (n == 1 ? DUTY_MIN_VAL : 1); 10 > i; i++) {
+					freq = request * i * n;
+					if (freq > clk_in_max) {
+						end = 1;
+						break;
+					}
+					rate = clk_round_rate(pwm->clk, freq);
+					tcnt = rate/request;
+					if(tcnt == 1){
+						printk("generate lower frequency pwm clock than request clock\n");
+						tcnt = 2;
+					}
+					hz = rate/tcnt;
+					if (0 == rate%request) {
+						clock = rate, pwmhz = hz, end = 1;
+						break;
+					}
 
+					if (hz && (abs(hz-request) >= abs(pwmhz-request)))
+						continue;
+					clock = rate, pwmhz = hz;
+				}
+			}	
+			tmux = 5;
+		}
+		else {
+		/* set new pwm out -- USE PRESCALE AND MUX BASED ON PCLK*/ 
+			rate = clk_get_rate(clk);
+			for (smux = 0; 5 > smux; smux++) {
+				mout = rate/tscl/(1<<smux);
+				tcnt = mout/request;
+				if(tcnt == 1){
+					printk("generate lower frequency pwm clock than request clock\n");
+					tcnt = 2;
+				}
+				hz = mout/tcnt;
+				if (0 == mout%request) {
+					clock = mout, pwmhz = hz, tmux = smux;
+					break;
+				}	
+
+				pr_debug("diff(%ld) %d\n", abs(hz-request), smux);
 				if (hz && (abs(hz-request) >= abs(pwmhz-request)))
 					continue;
-				clock = rate, pwmhz = hz;
+				clock = mout, pwmhz = hz, tmux = smux;
 			}
 		}
 	}
@@ -293,7 +339,8 @@ unsigned long nxp_soc_pwm_set_frequency(int ch, unsigned int request, unsigned i
 		pwm->rate = clock;
 		pwm->duty = duty;
 		pwm->pwm_hz = pwmhz;
-		pwm->counter = clock/request;
+		pwm->tmux = tmux;
+		pwm->counter = clock/pwmhz;
 		pwm->compare = PWM_COMPARE(pwm->counter, duty) ? : 1;
 		pwm_set_device(pwm);
 	} else {
