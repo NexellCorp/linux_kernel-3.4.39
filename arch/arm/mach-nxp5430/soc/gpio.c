@@ -306,8 +306,7 @@ void nxp_soc_gpio_set_io_pull_sel(unsigned int io, int up)
 	case PAD_GPIO_D:
 	case PAD_GPIO_E:
 		IO_LOCK(grp);
-		NX_GPIO_SetPullEnable(grp, bit, CTRUE);
-		NX_GPIO_SetPullSelect(grp, bit, up ? CTRUE : CFALSE);
+		NX_GPIO_SetPullEnable(grp, bit, up);
 		IO_UNLOCK(grp);
 		break;
 
@@ -333,6 +332,7 @@ EXPORT_SYMBOL(nxp_soc_gpio_set_io_pull_sel);
  *	Return 		: -1 = invalid gpio.
  *		 		:  0 = pull down.
  *				:  1 = pull up.
+ *				:  2 = pull off. 
  */
 int nxp_soc_gpio_get_io_pull_sel(unsigned int io)
 {
@@ -348,7 +348,7 @@ int nxp_soc_gpio_get_io_pull_sel(unsigned int io)
 	case PAD_GPIO_D:
 	case PAD_GPIO_E:
 		IO_LOCK(grp);
-		up = NX_GPIO_GetPullSelect(grp, bit) ? 1 : 0;
+		up = NX_GPIO_GetPullEnable(grp, bit);
 		IO_UNLOCK(grp);
 		break;
 
