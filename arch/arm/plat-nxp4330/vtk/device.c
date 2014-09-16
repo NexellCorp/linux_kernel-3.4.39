@@ -349,6 +349,31 @@ static struct platform_device gpio_leds_device = {
 	},
 };
 #endif
+/*------------------------------------------------------------------------------
+ * Keypad platform device
+ */
+#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+
+#include <linux/input.h>
+
+static unsigned int  button_gpio[] = CFG_KEYPAD_KEY_BUTTON;
+static unsigned int  button_code[] = CFG_KEYPAD_KEY_CODE;
+
+struct nxp_key_plat_data key_plat_data = {
+	.bt_count	= ARRAY_SIZE(button_gpio),
+	.bt_io		= button_gpio,
+	.bt_code	= button_code,
+	.bt_repeat	= 0,
+};
+
+static struct platform_device key_plat_device = {
+	.name	= DEV_NAME_KEYPAD,
+	.id		= -1,
+	.dev    = {
+		.platform_data	= &key_plat_data
+	},
+};
+#endif	/* CONFIG_KEYBOARD_NEXELL_KEY || CONFIG_KEYBOARD_NEXELL_KEY_MODULE */
 
 /*------------------------------------------------------------------------------
  * ASoC Codec platform device
@@ -1350,6 +1375,11 @@ void __init nxp_board_devices_register(void)
 
 #if defined(CONFIG_MTD_NAND_NEXELL)
 	platform_device_register(&nand_plat_device);
+#endif
+
+#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+	printk("plat: add device keypad\n");
+	platform_device_register(&key_plat_device);
 #endif
 
 #if defined(CONFIG_TOUCHSCREEN_FT5X0X)
