@@ -139,6 +139,7 @@ struct nxp_i2s_snd_param {
 	int LR_pol_inv;
 	int in_clkgen;
 	int pre_supply_mclk;
+	int (*set_ext_mclk)(bool enable); 
 	int	status;
 	spinlock_t	lock;
 	/* clock control */
@@ -371,6 +372,10 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 		return -EINVAL;
 	}
 
+#ifdef CFG_AUDIO_I2S0_SUPPLY_EXT_MCLK
+    par->set_ext_mclk(CTRUE);
+#endif
+
  	/* 384 RATIO */
 	RFS = RATIO_384, request = clk_ratio[i].ratio_384;
 	en_pclk = set_sample_rate_clock(par->clk, request, &rate_hz, &divide);
@@ -456,6 +461,9 @@ static int nxp_i2s_set_plat_param(struct nxp_i2s_snd_param *par, void *data)
     par->sample_rate = plat->sample_rate;
     par->LR_pol_inv = plat->LR_pol_inv;
     par->pre_supply_mclk = plat->pre_supply_mclk;
+#ifdef CFG_AUDIO_I2S0_SUPPLY_EXT_MCLK
+	par->set_ext_mclk = plat->set_ext_mclk;
+#endif
 	par->base_addr = IO_ADDRESS(phy_base);
 	spin_lock_init(&par->lock);
 

@@ -31,6 +31,7 @@
 #include <linux/amba/serial.h>
 #include <linux/dma-mapping.h>
 #include <linux/pm_runtime.h>
+#include <linux/delay.h>
 
 /* nexell soc headers */
 #include <mach/platform.h>
@@ -423,6 +424,36 @@ static struct platform_device vr_gpu_device =
  * Alsa sound platform device (I2S-PCM)
  */
 #if defined(CONFIG_SND_NXP_I2S) || defined(CONFIG_SND_NXP_I2S_MODULE)
+
+#ifdef CFG_AUDIO_I2S0_SUPPLY_EXT_MCLK
+static int i2s_ext_mclk_set_clock(bool enable)
+{
+	int clk_rate;
+
+	if(CFG_AUDIO_I2S0_FRAME_BIT == 32)
+		clk_rate = 12287980;
+	else
+		clk_rate = 18432000;
+
+    PM_DBGOUT("%s: %d\n", __func__, (int)clk_rate);
+
+	// set input & gpio_mode of I2S0_CODCLK
+	nxp_soc_gpio_set_io_dir(PAD_GPIO_D + 13, 0);
+	nxp_soc_gpio_set_io_func(PAD_GPIO_D + 13, NX_GPIO_PADFUNC_0);
+
+    if (enable){
+        nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, clk_rate, 50); 
+		nxp_cpu_periph_clock_register(CLK_ID_I2S_0, clk_rate, 0);
+	}
+    else{ 
+        nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, 0, 0);
+
+	}
+    msleep(1);
+    return 0;
+}
+#endif
+
 #ifndef CFG_AUDIO_I2S0_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S0_MASTER_CLOCK_IN		0
 #endif
@@ -435,6 +466,11 @@ static struct nxp_i2s_plat_data i2s_data_ch0 = {
 	.frame_bit			= CFG_AUDIO_I2S0_FRAME_BIT,
 	.sample_rate		= CFG_AUDIO_I2S0_SAMPLE_RATE,
 	.pre_supply_mclk 	= CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK,
+#ifdef CFG_AUDIO_I2S0_SUPPLY_EXT_MCLK
+	.set_ext_mclk		= i2s_ext_mclk_set_clock,
+#else
+	.set_ext_mclk		= NULL,
+#endif
 	/* DMA */
 	.dma_filter			= pl08x_filter_id,
 	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S0_TX,

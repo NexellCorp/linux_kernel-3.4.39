@@ -177,9 +177,9 @@ static struct nxp_clk_periph clk_periphs [] = {
 	CLK_PERI_1S(DEV_NAME_UART		,  4, CLK_ID_UART_4	    , PHY_BASEADDR_CLKGEN26, (_PLL_0_2_)),
 	CLK_PERI_1S(DEV_NAME_UART		,  5, CLK_ID_UART_5	    , PHY_BASEADDR_CLKGEN27, (_PLL_0_2_)),
 	CLK_PERI_1S(DEV_NAME_PWM		,  0, CLK_ID_PWM_0	    , PHY_BASEADDR_CLKGEN13, (_PLL_0_2_)),
-	CLK_PERI_1S(DEV_NAME_PWM		,  1, CLK_ID_PWM_1	    , PHY_BASEADDR_CLKGEN3 , (_PLL_0_2_)),
-	CLK_PERI_1S(DEV_NAME_PWM		,  2, CLK_ID_PWM_2	    , PHY_BASEADDR_CLKGEN4 , (_PLL_0_2_)),
-	CLK_PERI_1S(DEV_NAME_PWM		,  3, CLK_ID_PWM_3	    , PHY_BASEADDR_CLKGEN5 , (_PLL_0_2_)),
+	CLK_PERI_1S(DEV_NAME_PWM		,  1, CLK_ID_PWM_1	    , PHY_BASEADDR_CLKGEN13, (_PLL_0_2_)),
+	CLK_PERI_1S(DEV_NAME_PWM		,  2, CLK_ID_PWM_2	    , PHY_BASEADDR_CLKGEN3 , (_PLL_0_2_)),
+	CLK_PERI_1S(DEV_NAME_PWM		,  3, CLK_ID_PWM_3	    , PHY_BASEADDR_CLKGEN3 , (_PLL_0_2_)),
 	CLK_PERI_1S(DEV_NAME_I2C		,  0, CLK_ID_I2C_0	    , PHY_BASEADDR_CLKGEN6 , (_GATE_PCLK_)),
 	CLK_PERI_1S(DEV_NAME_I2C		,  1, CLK_ID_I2C_1	    , PHY_BASEADDR_CLKGEN7 , (_GATE_PCLK_)),
 	CLK_PERI_1S(DEV_NAME_I2C		,  2, CLK_ID_I2C_2	    , PHY_BASEADDR_CLKGEN8 , (_GATE_PCLK_)),
@@ -276,6 +276,8 @@ static inline void peri_clk_rate(void *base, int level, int src, int div)
 	val |=  (src    << 2);	/* source */
 	val	&= ~(0xFF   << 5);
 	val	|=  (div-1) << 5;	/* divider */
+	if((src >= 3)&&(level==0))
+		val |= (0x1  << 15);
 	WriteIODW(&preg->CLKGEN[level<<1], val);
 }
 
@@ -878,7 +880,7 @@ unsigned int nxp_cpu_clock_hz(int type)
 	return rate;
 }
 
-void nxp_cpu_periph_register_clock(int id, long ext1, long ext2)
+void nxp_cpu_periph_clock_register(int id, long ext1, long ext2)
 {
 	struct nxp_clk_periph *peri;
 
