@@ -977,7 +977,17 @@ static int nxp_video_set_crop(struct file *file, void *fh,
         else
             subdev_crop.pad = a->pad;
     } else {
-        subdev_crop.pad = 1;
+        /* add for clipper cropping */
+        struct nxp_video_frame *frame;
+        frame = &me->frame[0];
+        frame->width = a->c.width;
+        frame->height = a->c.height;
+        /* end clipper cropping */
+
+        if (a->pad == 0)
+            subdev_crop.pad = 1;
+        else
+            subdev_crop.pad = a->pad;
     }
 #endif
     subdev_crop.rect = a->c;

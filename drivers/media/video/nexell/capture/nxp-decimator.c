@@ -659,13 +659,17 @@ static int nxp_decimator_set_crop(struct v4l2_subdev *sd,
         return -EINVAL;
     }
 
-    pr_debug("%s: tw(%d)xth(%d)\n", __func__, crop->rect.width, crop->rect.height);
-    me->target_width = crop->rect.width;
-    me->target_height = crop->rect.height;
-
-    {
+    if (crop->pad == 1) {
+        printk("%s: setting decimator scale down(target crop)\n", __func__);
+        printk("[%d:%d-%d:%d]\n", crop->rect.left, crop->rect.top, crop->rect.width, crop->rect.height);
+        me->target_width = crop->rect.width;
+        me->target_height = crop->rect.height;
+    } else if (crop->pad == 2) {
         struct v4l2_subdev *remote_source;
         int ret;
+
+        printk("%s: setting decimator source crop\n", __func__);
+        printk("[%d:%d-%d:%d]\n", crop->rect.left, crop->rect.top, crop->rect.width, crop->rect.height);
 
         remote_source = _get_remote_source_subdev(me);
         if (!remote_source) {
@@ -673,7 +677,7 @@ static int nxp_decimator_set_crop(struct v4l2_subdev *sd,
             return 0;
         }
         /* call to subdev */
-        crop->pad = 2;
+        /*crop->pad = 2;*/
         ret = v4l2_subdev_call(remote_source, pad, set_crop, NULL, crop);
         if (ret < 0) {
             pr_err("%s: failed to subdev set_fmt()\n", __func__);

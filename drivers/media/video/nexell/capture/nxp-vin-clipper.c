@@ -348,7 +348,7 @@ static int _hw_set_crop(struct nxp_vin_clipper *me)
     int module = parent->get_module_num(parent);
     struct v4l2_rect *c = &me->crop;
 
-    pr_debug("%s: l(%d), t(%d), w(%d), h(%d)\n", __func__, c->left, c->top, c->width, c->height);
+    printk("%s: l(%d), t(%d), w(%d), h(%d)\n", __func__, c->left, c->top, c->width, c->height);
 
     NX_VIP_SetClipRegion(module, c->left, c->top,
             c->left + c->width, c->top + c->height);
@@ -429,7 +429,7 @@ static int _configure(struct nxp_vin_clipper *me, int enable)
         return -EINVAL;
     }
 
-    down_interruptible(&me->s_stream_sem);
+    ret = down_interruptible(&me->s_stream_sem);
 
     printk("%s: enable %d\n", __func__, enable);
     if (enable) {
@@ -1121,7 +1121,7 @@ static int nxp_vin_clipper_set_crop(struct v4l2_subdev *sd,
     struct v4l2_mbus_framefmt *__format =
         _get_pad_format(me, fh, crop->pad, crop->which);
 
-    pr_debug("%s: %dx%d -- %dx%d\n",
+    printk("%s: %dx%d -- %dx%d\n",
            __func__, crop->rect.left, crop->rect.top, crop->rect.width, crop->rect.height);
     if ((crop->rect.left + crop->rect.width) > __format->width ||
         (crop->rect.top + crop->rect.height) > __format->height) {
@@ -1132,6 +1132,12 @@ static int nxp_vin_clipper_set_crop(struct v4l2_subdev *sd,
     }
 
     *__crop = crop->rect;
+
+    /* add for source crop */
+    if (crop->pad == 2)
+        _hw_set_crop(me);
+    /* end add for source crop */
+
     return 0;
 }
 
@@ -1467,7 +1473,7 @@ int nxp_vin_clipper_resume(struct nxp_vin_clipper *me)
 {
     struct nxp_capture *parent = nxp_vin_to_parent(me);
     int module = parent->get_module_num(parent);
-    struct v4l2_subdev *remote_source;
+    /*struct v4l2_subdev *remote_source;*/
 
     PM_DBGOUT("+%s\n", __func__);
 
