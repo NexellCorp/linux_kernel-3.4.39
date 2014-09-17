@@ -765,6 +765,8 @@ struct v4l2_cropcap {
 struct v4l2_crop {
 	enum v4l2_buf_type      type;
 	struct v4l2_rect        c;
+    /* psw0523 add for nexell set_crop_with_pad API */
+    int                     pad;
 };
 
 /* Hints for adjustments of selection rectangle */

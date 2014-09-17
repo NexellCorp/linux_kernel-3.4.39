@@ -963,7 +963,7 @@ static int nxp_video_set_crop(struct file *file, void *fh,
     struct v4l2_subdev_crop subdev_crop;
 
     /* pr_debug("%s\n", __func__); */
-    /* printk("%s: name %s\n", __func__, me->name); */
+     printk("%s: name %s, crop pad %d\n", __func__, me->name, a->pad);
 
     subdev_crop.which = V4L2_SUBDEV_FORMAT_ACTIVE;
     /* TODO */
@@ -972,17 +972,20 @@ static int nxp_video_set_crop(struct file *file, void *fh,
         (me->type == NXP_VIDEO_TYPE_M2M)) ? 1 : 0;
 #else
     if (me->type == NXP_VIDEO_TYPE_OUT) {
-        subdev_crop.pad = pad;
+        if (a->pad == 0)
+            subdev_crop.pad = pad;
+        else
+            subdev_crop.pad = a->pad;
     } else {
         subdev_crop.pad = 1;
     }
 #endif
     subdev_crop.rect = a->c;
 
-    /* printk("%s: call subdev set_crop\n", __func__); */
+     printk("%s: call subdev set_crop\n", __func__);
     ret = v4l2_subdev_call(subdev, pad, set_crop, NULL, &subdev_crop);
     if (ret < 0) {
-        pr_err("%s: failed to subdev set_crop\n", __func__);
+        pr_err("%s: failed to subdev set_crop, ret %d\n", __func__, ret);
         return ret;
     }
 

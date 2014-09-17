@@ -220,6 +220,14 @@ struct mlc_layer_info {
 	int			 top;
 	int			 right;
 	int			 bottom;
+
+    /* psw0523 add for source crop */
+    bool         en_source_crop;
+    int          src_crop_left;
+    int          src_crop_top;
+    int          src_crop_width;
+    int          src_crop_height;
+
 	/* color */
 	union {
 		struct {

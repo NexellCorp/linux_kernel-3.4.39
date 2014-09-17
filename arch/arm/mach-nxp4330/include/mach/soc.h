@@ -123,6 +123,9 @@ unsigned int nxp_soc_disp_video_stat_vfilter(int module);
 void 		 nxp_soc_disp_video_set_enable	(int module, int enable);
 int 		 nxp_soc_disp_video_stat_enable	(int module);
 
+/* psw0523 add for video out source crop */
+void         nxp_soc_disp_video_set_crop(int module, bool enable, int left, int top, int width, int height, int waitvsync);
+
 /* top layer control on multi layer */
 void 		 nxp_soc_disp_get_resolution(int module, int *w, int *h);
 void 		 nxp_soc_disp_set_bg_color(int module, unsigned int color);

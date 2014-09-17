@@ -1331,12 +1331,24 @@ void nxp_soc_disp_video_set_address(int module, unsigned int lu_a, unsigned int 
 	DBGOUT("%s: %s, lua=0x%x, cba=0x%x, cra=0x%x (lus=%d, cbs=%d, crs=%d), wait=%d\n",
 		__func__, pvid->name, lu_a, cb_a, cr_a, lu_s, cb_s, cr_s, waitvsync);
 
-	if (FOURCC_YUYV == pvid->format) {
-		NX_MLC_SetVideoLayerAddressYUYV(module, lu_a, lu_s);
-	} else {
-		NX_MLC_SetVideoLayerStride (module, lu_s, cb_s, cr_s);
-		NX_MLC_SetVideoLayerAddress(module, lu_a, cb_a, cr_a);
-	}
+    // psw0523 add for video source crop
+    if (pvid->en_source_crop) {
+        if (FOURCC_YUYV == pvid->format) {
+            lu_a += (pvid->src_crop_top * lu_s) + (pvid->src_crop_left << 1);
+        } else {
+            lu_a += (pvid->src_crop_top * lu_s) + pvid->src_crop_left;
+            cb_a += (pvid->src_crop_top * cb_s) + (pvid->src_crop_left >> 1);
+            cr_a += (pvid->src_crop_top * cr_s) + (pvid->src_crop_left >> 1);
+        }
+    }
+    // end psw0523
+
+    if (FOURCC_YUYV == pvid->format) {
+        NX_MLC_SetVideoLayerAddressYUYV(module, lu_a, lu_s);
+    } else {
+        NX_MLC_SetVideoLayerStride (module, lu_s, cb_s, cr_s);
+        NX_MLC_SetVideoLayerAddress(module, lu_a, cb_a, cr_a);
+    }
 
 	NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
 	disp_syncgen_waitsync(module, MLC_LAYER_VIDEO, waitvsync);
@@ -1396,6 +1408,13 @@ int nxp_soc_disp_video_set_position(int module, int left, int top,
 	pvid->hFilter = hf;
 	pvid->vFilter = vf;
 
+    /* psw0523 add for source crop : backup dstw */
+    pvid->left   = left;
+    pvid->top    = top;
+    pvid->right  = right;
+    pvid->bottom = bottom;
+    /* end psw0523 */
+
 	/* set scale */
 	NX_MLC_SetVideoLayerScale(module, srcw, srch, dstw, dsth,
 					(CBOOL)hf, (CBOOL)hf, (CBOOL)vf, (CBOOL)vf);
@@ -1404,6 +1423,44 @@ int nxp_soc_disp_video_set_position(int module, int left, int top,
 	disp_syncgen_waitsync(module, MLC_LAYER_VIDEO, waitvsync);
 
 	return 0;
+}
+
+void nxp_soc_disp_video_set_crop(int module, bool enable, int left, int top, int width, int height, int waitvsync)
+{
+	DISP_MULTILY_VID(module, pvid);
+
+    pvid->en_source_crop = enable;
+
+    if (enable) {
+        int srcw = width;
+        int srch = height;
+        int dstw = pvid->right - pvid->left;
+        int dsth = pvid->bottom - pvid->top;
+        int hf = 1, vf = 1;
+
+        if (dstw == 0)
+            dstw = pvid->width;
+        if (dsth == 0)
+            dsth = pvid->height;
+
+        printk("%s: %s, L=%d, T=%d, W=%d, H=%d, dstw=%d, dsth=%d, wait=%d\n",
+                __func__, pvid->name, left, top, width, height, dstw, dsth, waitvsync);
+
+        if (srcw == dstw && srch == dsth)
+            hf = 0, vf = 0;
+
+        pvid->hFilter = hf;
+        pvid->vFilter = vf;
+
+        /* set scale */
+        NX_MLC_SetVideoLayerScale(module, srcw, srch, dstw, dsth,
+                (CBOOL)hf, (CBOOL)hf, (CBOOL)vf, (CBOOL)vf);
+        NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
+        disp_syncgen_waitsync(module, MLC_LAYER_VIDEO, waitvsync);
+    } else {
+        nxp_soc_disp_video_set_position(module, pvid->left, pvid->top,
+                pvid->right, pvid->bottom, waitvsync);
+    }
 }
 
 int nxp_soc_disp_video_get_position(int module, int *left, int *top, int *right, int *bottom)
