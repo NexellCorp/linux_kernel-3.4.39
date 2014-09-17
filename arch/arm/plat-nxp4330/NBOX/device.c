@@ -177,9 +177,8 @@ int  nxpmac_init(struct platform_device *pdev)
 {
     u32 addr;
   
-#if 1	// 20140515
+#if defined (CONFIG_REALTEK_PHY_RTL8201)	// 20140515
 	// 100 & 10Base-T
-
     nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 7, 0 );        // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
     nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 8, 0 );        // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
     nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 9, 0 );        // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
@@ -199,16 +198,12 @@ int  nxpmac_init(struct platform_device *pdev)
 //  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+23, 3 );        // PAD_GPIOE23,    GMAC0_PHY_CRS
     nxp_soc_gpio_set_io_drv( PAD_GPIO_E+24, 0 );        // PAD_GPIOE24,    GMAC0_GTX_CLK
 
-#endif
-
-#if 0	// 1000Base-T
+#else	// 1000Base-T
 	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  7), 3 );     // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
 	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  8), 3 );     // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
 	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  9), 3 );     // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
 	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 10), 3 );     // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
 	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 11), 3 );     // PAD_GPIOE11,    GMAC0_PHY_TXEN
-//	nxp_gpio_set_drv( (PAD_GPIO_E + 12), GPIO_DRV_1X );     // PAD_GPIOE12,    GMAC0_PHY_TXER
-//	nxp_gpio_set_drv( (PAD_GPIO_E + 13), GPIO_DRV_1X );     // PAD_GPIOE13,    GMAC0_PHY_COL
 	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 14), 3 );     // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
 	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 15), 3 );     // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
 	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 16), 3 );     // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
@@ -217,8 +212,6 @@ int  nxpmac_init(struct platform_device *pdev)
 	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 19), 3 );     // PAD_GPIOE19,    GMAC0_PHY_RX_DV
 	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 20), 3 );     // PAD_GPIOE20,    GMAC0_GMII_MDC
 	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 21), 3 );     // PAD_GPIOE21,    GMAC0_GMII_MDI
-//	nxp_gpio_set_drv( (PAD_GPIO_E + 22), GPIO_DRV_1X );     // PAD_GPIOE22,    GMAC0_PHY_RXER
-//	nxp_gpio_set_drv( (PAD_GPIO_E + 23), GPIO_DRV_1X );     // PAD_GPIOE23,    GMAC0_PHY_CRS
 	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 24), 3 );     // PAD_GPIOE24,    GMAC0_GTX_CLK
 #endif
 
@@ -281,14 +274,19 @@ static struct stmmac_mdio_bus_data nxpmac0_mdio_bus = {
 };
 
 static struct plat_stmmacenet_data nxpmac_plat_data = {
-   // .phy_addr = 7,// 7 for 8211 3 for 8201
+#if defined (CONFIG_REALTEK_PHY_RTL8201)
 	.phy_addr = 3,  // 7 for 8211 3 for 8201
-	.interface = PHY_INTERFACE_MODE_RGMII,
+    .clk_csr = 0x25, 
+    .speed = SPEED_100,
+#else
+    .phy_addr = 7,// 7 for 8211 3 for 8201
+    .clk_csr = 0x28,
+    .speed = SPEED_1000,
+#endif
+    .interface = PHY_INTERFACE_MODE_RGMII,
 	.autoneg = AUTONEG_ENABLE, //AUTONEG_ENABLE or AUTONEG_DISABLE
-	.speed = SPEED_100,
 	.duplex = DUPLEX_FULL,
 	.pbl = 16,          /* burst 16 */
-	.clk_csr = 0x25, //0x28 for 1000M PHY 0x5 for 100M PHY /* clk_csr_i = 20-35MHz & MDC = clk_csr_i/8 */
 	.has_gmac = 1,      /* GMAC ethernet    */
 	.enh_desc = 0,
 	.mdio_bus_data = &nxpmac0_mdio_bus,

@@ -82,6 +82,58 @@ const u8 g_DispBusSI[3] = {
 #endif	/* #if (CFG_BUS_RECONFIG_ENB == 1) */
 
 /*------------------------------------------------------------------------------
+ * CPU Frequence
+ */
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ)
+
+static unsigned long dfs_freq_table[][2] = {
+	//{ 1400000, 1000000, },
+	//{ 1300000, 1000000, },
+	{ 1200000, 1000000, },
+	{ 1100000, 1000000, },
+	{ 1000000, 1000000, },
+	{  900000, 1000000, },
+	{  800000, 1000000, },
+};
+
+struct nxp_cpufreq_plat_data dfs_plat_data = {
+	.pll_dev	   	= CONFIG_NXP4330_CPUFREQ_PLLDEV,
+	.freq_table	   	= dfs_freq_table,
+	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
+	.max_cpufreq    = 1200*1000,
+	.max_retention  =   20*1000,
+	.rest_cpufreq   =  800*1000,
+	.rest_retention =    1*1000,
+	//.supply_name 	= "vdd_arm_1.3V",
+};
+
+static struct platform_device dfs_plat_device = {
+	.name			= DEV_NAME_CPUFREQ,
+	.dev			= {
+		.platform_data	= &dfs_plat_data,
+	}
+};
+
+/* cpu over scaling */
+static char *freq_proct_list[] = { "com.antutu", };
+
+static struct nxp_cpufreq_limit_data freq_limit_data = {
+	.limit_name		= freq_proct_list,
+	.limit_num 		= ARRAY_SIZE(freq_proct_list),
+	.aval_max_freq 	= 1600000,
+	.op_max_freq	= 1200000,
+};
+
+static struct platform_device freq_limit_device = {
+	.name			= "cpufreq-limit",
+	.dev			= {
+		.platform_data	= &freq_limit_data,
+	}
+};
+
+#endif
+
+/*------------------------------------------------------------------------------
  * Network DM9000
  */
 #if defined(CONFIG_DM9000) || defined(CONFIG_DM9000_MODULE)
@@ -268,60 +320,6 @@ static struct spi_board_info spi_plat_board[] __initdata = {
 
 #endif
 
-/*------------------------------------------------------------------------------
- * DW MMC board config
- */
-#if defined(CONFIG_MMC_DW)
-int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
-{
-	return 0;
-}
-
-int _dwmci_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
-{
-	return 0;
-}
-
-#ifdef CONFIG_MMC_NEXELL_CH0
-static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
-{
-	struct dw_mci *host = (struct dw_mci *)data;
-	int io  = CFG_SDMMC0_DETECT_IO;
-	int irq = IRQ_GPIO_START + io;
-	int id  = 0, ret = 0;
-
-	printk("dw_mmc dw_mmc.%d: Using external card detect irq %3d (io %2d)\n", id, irq, io);
-
-	ret  = request_irq(irq, handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
-				DEV_NAME_SDHC "0", (void*)host->slot[slot_id]);
-	if (0 > ret)
-		pr_err("dw_mmc dw_mmc.%d: fail request interrupt %d ...\n", id, irq);
-	return 0;
-}
-
-static int _dwmci0_get_cd(u32 slot_id)
-{
-	int io = CFG_SDMMC0_DETECT_IO;
-	int ret = nxp_soc_gpio_get_in_value(io);
-	return ret;
-}
-
-static struct dw_mci_board _dwmci0_data = {
-	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 100 * 1000 * 1000,
-	.caps			= MMC_CAP_CMD23,
-	.detect_delay_ms= 200,
-//	.sdr_timing		= 0x03020001,
-//	.ddr_timing		= 0x03030002,
-	.cd_type		= DW_MCI_CD_EXTERNAL,
-	.init			= _dwmci0_init,
-	.get_cd			= _dwmci0_get_cd,
-	.ext_cd_init	= _dwmci_ext_cd_init,
-	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
-};
-#endif
-
-#endif /* CONFIG_MMC_DW */
 
 /*------------------------------------------------------------------------------
  * LED GPIO
@@ -351,6 +349,31 @@ static struct platform_device gpio_leds_device = {
 	},
 };
 #endif
+/*------------------------------------------------------------------------------
+ * Keypad platform device
+ */
+#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+
+#include <linux/input.h>
+
+static unsigned int  button_gpio[] = CFG_KEYPAD_KEY_BUTTON;
+static unsigned int  button_code[] = CFG_KEYPAD_KEY_CODE;
+
+struct nxp_key_plat_data key_plat_data = {
+	.bt_count	= ARRAY_SIZE(button_gpio),
+	.bt_io		= button_gpio,
+	.bt_code	= button_code,
+	.bt_repeat	= 0,
+};
+
+static struct platform_device key_plat_device = {
+	.name	= DEV_NAME_KEYPAD,
+	.id		= -1,
+	.dev    = {
+		.platform_data	= &key_plat_data
+	},
+};
+#endif	/* CONFIG_KEYBOARD_NEXELL_KEY || CONFIG_KEYBOARD_NEXELL_KEY_MODULE */
 
 /*------------------------------------------------------------------------------
  * ASoC Codec platform device
@@ -1207,6 +1230,84 @@ void __init nxp_reserve_mem(void)
     nxp_cma_region_reserve(regions, map);
 }
 #endif
+/*------------------------------------------------------------------------------
+ * DW MMC board config
+ */
+#if defined(CONFIG_MMC_DW)
+#include <linux/mmc/dw_mmc.h>
+
+int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
+{
+	return 0;
+}
+
+int _dwmci_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
+{
+	return 0;
+}
+
+static int _dwmci_get_ro(u32 slot_id)
+{
+	return 0;
+}
+
+#ifdef CONFIG_MMC_NEXELL_CH0
+static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
+{
+	struct dw_mci *host = (struct dw_mci *)data;
+	int io  = CFG_SDMMC0_DETECT_IO;
+	int irq = IRQ_GPIO_START + io;
+	int id  = 0, ret = 0;
+
+	printk("dw_mmc dw_mmc.%d: Using external card detect irq %3d (io %2d)\n", id, irq, io);
+
+	ret  = request_irq(irq, handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+				DEV_NAME_SDHC "0", (void*)host->slot[slot_id]);
+	if (0 > ret)
+		pr_err("dw_mmc dw_mmc.%d: fail request interrupt %d ...\n", id, irq);
+	return 0;
+}
+
+static int _dwmci0_get_cd(u32 slot_id)
+{
+	int io = CFG_SDMMC0_DETECT_IO;
+	int ret = nxp_soc_gpio_get_in_value(io);
+	return ret;
+}
+
+static struct dw_mci_board _dwmci0_data = {
+	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
+	.bus_hz			= 40 * 1000 * 1000,
+	.caps			= MMC_CAP_CMD23,
+	.detect_delay_ms= 200,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(2),
+	.cd_type		= DW_MCI_CD_EXTERNAL,
+	.init			= _dwmci0_init,
+	.get_ro			= _dwmci_get_ro,
+	.get_cd			= _dwmci0_get_cd,
+	.ext_cd_init	= _dwmci_ext_cd_init,
+	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
+};
+#endif
+
+#ifdef CONFIG_MMC_NEXELL_CH1
+static struct dw_mci_board _dwmci1_data = {
+	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
+					  DW_MCI_QUIRK_HIGHSPEED |
+					  DW_MMC_QUIRK_HW_RESET_PW |
+					  DW_MCI_QUIRK_NO_DETECT_EBIT,
+	.bus_hz			= 80 * 1000 * 1000,
+	.caps			= MMC_CAP_UHS_DDR50 |
+						MMC_CAP_NONREMOVABLE |
+						MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
+						MMC_CAP_ERASE | MMC_CAP_HW_RESET,
+	.desc_sz		= 4,
+	.detect_delay_ms= 200,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(0),
+};
+#endif
+
+#endif /* CONFIG_MMC_DW */
 
 /*------------------------------------------------------------------------------
  * USB HSIC power control.
@@ -1224,11 +1325,23 @@ void __init nxp_board_devices_register(void)
 {
 	printk("[Register board platform devices]\n");
 
-	nxp_fb_device_register();
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ)
+	printk("plat: add dynamic frequency (pll.%d)\n", dfs_plat_data.pll_dev);
+	platform_device_register(&dfs_plat_device);
+	//platform_device_register(&freq_limit_device);
+#endif
+
+#if defined (CONFIG_FB_NEXELL)
+	printk("plat: add framebuffer\n");
+	platform_add_devices(fb_devices, ARRAY_SIZE(fb_devices));
+#endif
 
 #if defined(CONFIG_MMC_DW)
 	#ifdef CONFIG_MMC_NEXELL_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
+	#endif
+	#ifdef CONFIG_MMC_NEXELL_CH1
+	nxp_mmc_add_device(1, &_dwmci1_data);
 	#endif
 #endif
 
@@ -1262,6 +1375,11 @@ void __init nxp_board_devices_register(void)
 
 #if defined(CONFIG_MTD_NAND_NEXELL)
 	platform_device_register(&nand_plat_device);
+#endif
+
+#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+	printk("plat: add device keypad\n");
+	platform_device_register(&key_plat_device);
 #endif
 
 #if defined(CONFIG_TOUCHSCREEN_FT5X0X)
