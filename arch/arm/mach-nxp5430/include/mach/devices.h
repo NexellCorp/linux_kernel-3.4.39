@@ -169,6 +169,7 @@ struct nxp_i2c_plat_data {
     long rate;
     unsigned int base_addr;
     struct i2c_gpio_platform_data *gpio;
+	int sda_delay;
 };
 
 /*

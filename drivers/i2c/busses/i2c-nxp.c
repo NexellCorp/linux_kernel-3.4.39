@@ -40,11 +40,21 @@
 /*
 #define pr_debug(msg...)
 */
-
+#ifdef CONFIG_ARCH_NXP4330
 #define NOSTOP_GPIO 		(1)
+#else 
+
+#define NOSTOP_GPIO 		(0)
+#endif
 #define	I2C_CLOCK_RATE		(100000)	/* wait 50 msec */
 #define TRANS_RETRY_CNT		(1)
-#define	WAIT_ACK_TIME		(500)		/* wait 50 msec */
+#define	WAIT_ACK_TIME		(200)		/* wait 50 msec */
+
+#ifdef CONFIG_ARCH_NXP4330
+#define I2C_FAST_DIV	256
+#elif (CONFIG_ARCH_NXP5430)
+#define I2C_FAST_DIV	512	
+#endif
 
 const static int i2c_gpio [][2] = {
 	{ (PAD_GPIO_D + 2), (PAD_GPIO_D + 3) },
@@ -58,7 +68,11 @@ struct i2c_register {
     unsigned int ICSR;      ///< 0x04 : I2C Status Register
     unsigned int IAR;       ///< 0x08 : I2C Address Register
     unsigned int IDSR;      ///< 0x0C : I2C Data Register
+#ifdef CONFIG_ARCH_NXP4330
     unsigned int STOPCON;   ///< 0x10 : I2C Stop Control Register
+#elif (CONFIG_ARCH_NXP5430)
+    unsigned int LCCON;     ///< 0x10 : I2C Line Control Register
+#endif
 };
 
 /*
@@ -113,8 +127,11 @@ struct nxp_i2c_param {
 
 #define I2C_ICCR_OFFS		0x00
 #define I2C_ICSR_OFFS		0x04
+#define I2C_IAR_OFFS		0x08
 #define I2C_IDSR_OFFS		0x0C
 #define I2C_STOP_OFFS		0x10
+#define I2C_LC_OFFS			0x10	//for nxp5430
+#define I2C_VER_OFFS		0x40	
 
 #define ICCR_IRQ_CLR_POS	8
 #define ICCR_ACK_ENB_POS	7
@@ -134,6 +151,12 @@ struct nxp_i2c_param {
 #define STOP_DAT_REL_POS	1  /* only slave transmode */
 #define STOP_CLK_REL_POS	0  /* only master transmode */
 
+/* For nxp5430 */
+#define IICLC_FILTER_ON_POS 2
+#define IICLC_SDA_OUT_POS	0 
+
+#define IICLC_FILTER_ON		(1<< IICLC_FILTER_ON_POS)
+
 #define _SETDATA(p, d)		(((struct i2c_register *)p)->IDSR = d)
 #define _GETDATA(p)			(((struct i2c_register *)p)->IDSR)
 #define _BUSOFF(p)			(((struct i2c_register *)p)->ICSR & ~(1<<ICSR_OUT_ENB_POS))
@@ -141,15 +164,26 @@ struct nxp_i2c_param {
 #define _ARBITSTAT(p)		(((struct i2c_register *)p)->ICSR & (1<<ICSR_ARI_STA_POS))
 #define _INTSTAT(p)			(((struct i2c_register *)p)->ICCR & (1<<ICCR_IRQ_PND_POS))
 
+static void show_reg(struct nxp_i2c_param *par)
+{
+	unsigned int base = (unsigned int)par->hw.base_addr;
+	printk(" version : [%08x]\n", readl(base+I2C_VER_OFFS));
+	printk("ICCR : [%08x]\n", readl(base+I2C_ICCR_OFFS));
+	printk("ICSR : [%08x]\n", readl(base+I2C_ICSR_OFFS));
+	printk("IDSR : [%08x]\n", readl(base+I2C_IDSR_OFFS));
+	printk("LC   : [%08x]\n", readl(base+I2C_LC_OFFS));
+
+}
+
 static inline void i2c_start_dev(struct nxp_i2c_param *par)
 {
 	unsigned int base = (unsigned int)par->hw.base_addr;
 	unsigned int ICSR = 0, ICCR = 0;
-
 	ICSR = readl(base+I2C_ICSR_OFFS);
 	ICSR  =  (1<<ICSR_OUT_ENB_POS);
+	ICSR |= par->trans_mode << ICSR_MOD_SEL_POS;
 	writel(ICSR, (base+I2C_ICSR_OFFS));
-
+	
 	writel(par->pre_data, (base+I2C_IDSR_OFFS));
 
 	ICCR = readl(base+I2C_ICCR_OFFS);
@@ -162,17 +196,25 @@ static inline void i2c_start_dev(struct nxp_i2c_param *par)
 
 static inline void i2c_trans_dev(unsigned int base, unsigned int ack, int stop)
 {
-	unsigned int ICCR = 0, STOP = 0;
-
+	unsigned int ICCR = 0; 
+	
 	ICCR = readl(base+I2C_ICCR_OFFS);
 	ICCR &= ~(1<<ICCR_ACK_ENB_POS);
 	ICCR |= ack << ICCR_ACK_ENB_POS;
 
 	writel(ICCR, (base+I2C_ICCR_OFFS));
 	if (stop) {
+#ifdef CONFIG_ARCH_NXP4330
+		unsigned STOP = 0;
 		STOP  = readl(base+I2C_STOP_OFFS);
 		STOP |= 1<<STOP_ACK_GEM_POS;
 		writel(STOP, base+I2C_STOP_OFFS);
+#else
+
+	ICCR = readl(base+I2C_ICCR_OFFS);
+	ICCR &= ~(1<<ICCR_ACK_ENB_POS);
+	writel(ICCR, (base+I2C_ICCR_OFFS));
+#endif
 	}
 
 	ICCR  = readl((base+I2C_ICCR_OFFS));
@@ -185,20 +227,27 @@ static inline void i2c_trans_dev(unsigned int base, unsigned int ack, int stop)
 static int i2c_stop_scl(struct nxp_i2c_param *par)
 {
 	unsigned int base = (unsigned int)par->hw.base_addr;
-	unsigned int ICSR = 0, ICCR = 0, STOP = 0;
-	int gpio = par->hw.scl_io;
-	unsigned long start;
-	int timeout = 5, ret = 0;
+	unsigned int ICSR = 0, ICCR = 0;
+	int ret = 0;
+
+#ifdef CONFIG_ARCH_NXP4330
+	unsigned int STOP = 0;
 
 	STOP = (1<<STOP_CLK_REL_POS);
 	writel(STOP, (base+I2C_STOP_OFFS));
-	ICSR= readl(base+I2C_ICSR_OFFS);
-	ICSR &= ~(1<<ICSR_OUT_ENB_POS);
-	ICSR = par->trans_mode << ICSR_MOD_SEL_POS;
+#endif
+	//ICSR= readl(base+I2C_ICSR_OFFS);
+	ICSR |= (1<<ICSR_OUT_ENB_POS );
+	ICSR |= par->trans_mode << ICSR_MOD_SEL_POS;
 	writel(ICSR, (base+I2C_ICSR_OFFS));
 	ICCR = (1<<ICCR_IRQ_CLR_POS);
 	writel(ICCR, (base+I2C_ICCR_OFFS));
 
+#ifdef CONFIG_ARCH_NXP4330
+	int gpio = par->hw.scl_io;
+	unsigned long start;
+	int timeout = 5;
+	
 	if (!nxp_soc_gpio_get_in_value(gpio)) {
 		gpio_request(gpio,NULL);
 		gpio_direction_output(gpio, 1);
@@ -213,9 +262,12 @@ static int i2c_stop_scl(struct nxp_i2c_param *par)
 			cpu_relax();
 		}
 	}
+#endif
 
+#ifdef CONFIG_ARCH_NXP4330
 _stop_timeout:
 	nxp_soc_gpio_set_io_func(gpio, 1);
+#endif
 	return ret;
 }
 
@@ -223,38 +275,41 @@ static inline void i2c_stop_dev(struct nxp_i2c_param *par, int nostop, int read)
 {
 	unsigned int base = (unsigned int)par->hw.base_addr;
 	unsigned int ICSR = 0, ICCR = 0;
-
+	
 	if (!nostop) {
+#if (NOSTOP_GPIO)
 		gpio_request(par->hw.sda_io,NULL);		 //gpio_Request
 		gpio_direction_output(par->hw.sda_io,0); //SDA LOW
 		udelay(1);
-
+#endif
 		i2c_stop_scl(par);
 
+#if (NOSTOP_GPIO)
 		udelay(1);
 		gpio_set_value(par->hw.sda_io,1);			//STOP Signal Gen
 		nxp_soc_gpio_set_io_func(par->hw.sda_io, 1);
+#endif
 	} else {
-		#if (NOSTOP_GPIO)
+#if (NOSTOP_GPIO)
 		gpio_request(par->hw.sda_io,NULL);		 //gpio_Request
 		gpio_direction_output(par->hw.sda_io,1); //SDA LOW
 		udelay(1);
 		gpio_request(par->hw.scl_io,NULL);		 //gpio_Request
 		gpio_direction_output(par->hw.scl_io,1); //SDA LOW
-		#endif
+#endif
 		/*
 		ICSR  = readl(base+I2C_ICSR_OFFS);
 		ICSR &= ~(1<<ICSR_OUT_ENB_POS);
 		*/
-		ICSR  = par->trans_mode << ICSR_MOD_SEL_POS;
+		ICSR  = (par->trans_mode << ICSR_MOD_SEL_POS ) ;
 		writel(ICSR, (base+I2C_ICSR_OFFS));
 
 		ICCR = (1<<ICCR_IRQ_CLR_POS);
 		writel(ICCR, (base+I2C_ICCR_OFFS));
-		#if (NOSTOP_GPIO)
+#if (NOSTOP_GPIO)
 		nxp_soc_gpio_set_io_func(par->hw.sda_io, 1);
 		nxp_soc_gpio_set_io_func(par->hw.scl_io, 1);
-		#endif
+#endif
 	}
 }
 
@@ -396,6 +451,7 @@ __irq_end:
 	return IRQ_HANDLED;
 }
 
+#ifdef CONFIG_ARCH_NXP4330
 static irqreturn_t i2c_irq_handler(int irqno, void *dev_id)
 {
 	struct nxp_i2c_param *par = dev_id;
@@ -423,7 +479,7 @@ static irqreturn_t i2c_irq_handler(int irqno, void *dev_id)
 
 	return IRQ_WAKE_THREAD;
 }
-
+#endif
 static int i2c_trans_done(struct nxp_i2c_param *par)
 {
 	void *base = par->hw.base_addr;
@@ -451,14 +507,15 @@ static int i2c_trans_done(struct nxp_i2c_param *par)
 		if (I2C_TRANS_ERR == par->trans_status)
 			ret = -1;
 	} else {
+		
 		pr_err("Fail, i2c.%d %s [0x%02x] cond(%d) pend(%s) arbit(%s) mod(%s) tran(%d:%d,%d:%d) wait(%dms)\n",
 			par->hw.port, (msg->flags&I2C_M_RD)?"R":"W", (par->msg->addr<<1),
 			par->condition, _INTSTAT(base)?"yes":"no", _ARBITSTAT(base)?"busy":"free",
 			par->polling?"polling":"irq", par->trans_count, msg->len,
 			par->irq_count,	par->thd_count, par->timeout);
 		ret = -1;
+	show_reg(par);
 	}
-
 	if (0 > ret)
 		i2c_stop_dev(par, 0, 0);
 
@@ -609,7 +666,8 @@ static int	nxp_i2c_set_param(struct nxp_i2c_param *par, struct platform_device *
 	int div = 0 ;
 	struct clk *clk;
 	unsigned int i=0, src = 0;
-
+	unsigned long sda_delay = 0;
+	
 	/* set par hardware */
 	par->hw.port = plat->port;
 	par->hw.irqno = plat->irq;
@@ -633,16 +691,14 @@ static int	nxp_i2c_set_param(struct nxp_i2c_param *par, struct platform_device *
 
 	req_rate = par->rate;
 	t_clk = rate/16/2;
-
 	for (i = 0; i < 2; i ++) {
-		src	= (i== 0) ? 16: 256;
+		src	= (i== 0) ? 16: I2C_FAST_DIV;
 		for (div = 2 ; div < 16; div++) {
 			get_real_clk = rate/src/div;
 			if (get_real_clk > req_rate )
 				calc_clk = get_real_clk - req_rate;
 			else
 				calc_clk = req_rate - get_real_clk ;
-
 			if (calc_clk < t_clk) {
 				t_clk = calc_clk;
 				t_div = div;
@@ -661,7 +717,23 @@ static int	nxp_i2c_set_param(struct nxp_i2c_param *par, struct platform_device *
 	par->hw.clkscale = t_div;
 	par->clk = clk;
 
+#ifdef CONFIG_ARCH_NXP5430
+	/* nxp5430 i2c SDA out delay/ filter enable */
+	if(plat->sda_delay) {
+		sda_delay = rate * plat->sda_delay;
+		sda_delay = DIV_ROUND_UP(sda_delay, 1000000);
+		sda_delay = DIV_ROUND_UP(sda_delay, 5);
+		if(sda_delay > 3)
+			sda_delay = 3;
+		sda_delay |= IICLC_FILTER_ON ; // Filter On
+	} else 
+		sda_delay = 0;
+
+	writel(sda_delay, par->hw.base_addr+I2C_LC_OFFS );
+#endif																	
+
 	nxp_soc_peri_reset_set(i2c_reset[plat->port]);
+
 	/* init par resource */
 	mutex_init(&par->lock);
 	init_waitqueue_head(&par->wait_q);
@@ -669,9 +741,13 @@ static int	nxp_i2c_set_param(struct nxp_i2c_param *par, struct platform_device *
 	printk("%s.%d: %8ld hz [pclk=%ld, clk = %3d, scale=%2d, timeout=%4d ms]\n",
 		DEV_NAME_I2C, par->hw.port, rate/t_src/t_div,
 		rate, par->hw.clksrc, par->hw.clkscale-1, par->timeout);
-
+#ifdef CONFIG_ARCH_NXP4330
 	ret = request_threaded_irq(par->hw.irqno, i2c_irq_handler, i2c_irq_thread,
-				IRQF_DISABLED|IRQF_SHARED , DEV_NAME_I2C, par);
+			IRQF_DISABLED|IRQF_SHARED , DEV_NAME_I2C, par);
+#else	
+	ret = request_irq(par->hw.irqno, i2c_irq_thread,
+			IRQF_DISABLED|IRQF_SHARED , DEV_NAME_I2C, par);
+#endif
 	if (ret)
 		printk(KERN_ERR "Fail, i2c.%d request irq %d ...\n", par->hw.port, par->hw.irqno);
 
