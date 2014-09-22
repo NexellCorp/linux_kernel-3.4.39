@@ -683,6 +683,8 @@ static int nxp_decimator_set_crop(struct v4l2_subdev *sd,
             pr_err("%s: failed to subdev set_fmt()\n", __func__);
             return ret;
         }
+        me->src_width = crop->rect.width;
+        me->src_height = crop->rect.height;
     }
 
     return 0;
