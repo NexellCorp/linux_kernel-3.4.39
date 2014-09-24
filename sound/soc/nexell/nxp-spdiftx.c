@@ -277,6 +277,7 @@ static void spdif_stop(struct nxp_spdif_snd_param *par, int stream)
 static int nxp_spdif_check_param(struct nxp_spdif_snd_param *par)
 {
 	struct spdif_register *spdif = &par->spdif;
+	struct nxp_pcm_dma_param *dmap = &par->dma;
 	unsigned int  sample_rate = par->sample_rate;
 	unsigned long request = 0, rate_hz = 0;
 	int MCLK = 0; /* only support internal */
@@ -313,6 +314,8 @@ static int nxp_spdif_check_param(struct nxp_spdif_snd_param *par)
 
 	par->master_clock = rate_hz;
 	par->master_ratio = RATIO;
+
+	dmap->real_clock = rate_hz/(RATIO_256==RATIO?256:384);
 
 	spdif->clkcon 	= 	(MCLK << CLKCON_MCLK_SEL_POS);
 	spdif->con 		= 	(CON_FIFO_LEVEL_15 	<< CON_FIFO_TH_POS)	| \

@@ -331,6 +331,8 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 {
 	static struct snd_soc_dai_driver *dai = &i2s_dai_driver;
 	struct i2s_register *i2s = &par->i2s;
+	struct nxp_pcm_dma_param *dmap_play = &par->play;
+	struct nxp_pcm_dma_param *dmap_capt = &par->capt;
 	unsigned int sample_rate = par->sample_rate;
 	unsigned int base = par->base_addr;
 	unsigned long request = 0, rate_hz = 0;
@@ -414,6 +416,8 @@ done:
 				(BFS << CSR_BFS_POS);
 	i2s->PSR = 	((PSRAEN &0x1) << PSR_PSRAEN_POS) | ((prescale & 0x3f) << PSR_PSVALA_POS);
 
+	dmap_play->real_clock = rate_hz/(RATIO_256==RFS?256:384);
+	dmap_capt->real_clock = rate_hz/(RATIO_256==RFS?256:384);
 	printk("snd i2s: ch %d, %s, %s mode, %d(%ld)hz, %d FBITs, MCLK=%ldhz, RFS=%d\n",
 		par->channel, par->master_mode?"master":"slave",
 		par->trans_mode==0?"iis":(par->trans_mode==1?"left justified":"right justified"),
