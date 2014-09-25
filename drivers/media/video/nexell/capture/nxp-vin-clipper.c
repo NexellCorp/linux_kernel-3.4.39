@@ -396,7 +396,8 @@ static int _hw_set_addr(struct nxp_vin_clipper *me, struct nxp_video_buffer *buf
             /*printk("%s: clipper bufs 0x%x, 0x%x, 0x%x, stride %d, %d,%d\n",*/
             /*    __func__, buf->dma_addr[0], buf->dma_addr[1], buf->dma_addr[2],*/
             /*    buf->stride[0], buf->stride[1], buf->stride[2]);*/
-            NX_VIP_SetClipperAddr(module, nx_format, c->width - c->left, c->height - c->top,
+            /*NX_VIP_SetClipperAddr(module, nx_format, c->width - c->left, c->height - c->top,*/
+            NX_VIP_SetClipperAddr(module, nx_format, c->width, c->height,
                     buf->dma_addr[0], buf->dma_addr[1], buf->dma_addr[2],
                     buf->stride[0], buf->stride[1]);
         }
