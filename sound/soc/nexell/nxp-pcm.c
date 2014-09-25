@@ -173,14 +173,16 @@ static void nxp_pcm_dma_complete(void *arg)
 	int over_samples = div64_s64((new - ts), period_us);
 	int i;
 
-	if (0 == over_samples)
+	if (0 == over_samples){
 		over_samples = 1;
-
-	prtd->time_stamp_us = new;
+		prtd->time_stamp_us = new;
+	} else {
+		prtd->time_stamp_us += (over_samples*period_us);
+	}
 
 	/*
-		if (over_samples > 1)
-			printk("[pcm overs :%d]\n", over_samples);
+	if (over_samples > 1)
+		printk("[pcm overs :%d]\n", over_samples);
 	*/
 	/*
 		pr_debug("snd pcm: %s complete offset = %8d (preiodbytes=%d) over samples = %d\n",
@@ -418,7 +420,7 @@ static int nxp_pcm_hw_params(struct snd_pcm_substream *substream,
 	prtd->periods = params_periods(params);
 	prtd->period_bytes = params_period_bytes(params);
 	prtd->buffer_bytes = params_buffer_bytes(params);
-	prtd->period_time_us = 1000000/(params_rate(params)/params_period_size(params));
+	prtd->period_time_us = (1000000*1000)/((prtd->dma_param->real_clock*1000)/params_period_size(params));
 
 	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
 	nxp_pcm_file_mem_allocate(DUMP_DMA_PATH, substream, params);
@@ -427,9 +429,9 @@ static int nxp_pcm_hw_params(struct snd_pcm_substream *substream,
 	 * debug msg
 	 */
 	pr_debug("%s: %s\n", __func__, STREAM_STR(substream->stream));
-	pr_debug("buffer_size =%6d, period_size =%6d, periods=%2d, rate=%6d\n",
+	pr_debug("buffer_size =%6d, period_size =%6d, periods=%2d, rate=%6d\n, real_rate=%6d\n",
 		params_buffer_size(params),	params_period_size(params),
-		params_periods(params), params_rate(params));
+		params_periods(params), params_rate(params), prtd->dma_param->real_clock);
 	pr_debug("buffer_bytes=%6d, period_bytes=%6d, periods=%2d, period_time=%3lld us\n",
 		prtd->buffer_bytes, prtd->period_bytes, prtd->periods, prtd->period_time_us);
 	return 0;

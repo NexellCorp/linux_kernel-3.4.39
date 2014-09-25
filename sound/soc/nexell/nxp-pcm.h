@@ -21,6 +21,7 @@ struct nxp_pcm_dma_param {
 	dma_addr_t	peri_addr;
 	int	 		bus_width_byte;
 	int	 		max_burst_byte;
+	unsigned int real_clock;
 };
 
 struct nxp_pcm_dma_area {
@@ -33,6 +34,7 @@ struct nxp_pcm_runtime_data {
 	int period_bytes;
 	int periods;
 	int buffer_bytes;
+	unsigned int dma_area;	/* virtual addr */
 	unsigned int offset;
 	/* DMA param */
 	struct dma_chan  *dma_chan;
