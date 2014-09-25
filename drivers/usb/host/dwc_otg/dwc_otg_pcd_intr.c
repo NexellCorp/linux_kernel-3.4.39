@@ -5069,6 +5069,10 @@ int32_t dwc_otg_pcd_handle_intr(dwc_otg_pcd_t * pcd)
 		return retval;
 	}
 
+	if (core_if->op_state == A_HOST) {
+		return retval;
+	}
+
 #ifdef VERBOSE
 	DWC_DEBUGPL(DBG_ANY, "%s() gintsts=%08x	 gintmsk=%08x\n",
 		    __func__,

@@ -331,6 +331,7 @@ static int BatteryTypeDef=0;
 
 #if defined(CONFIG_USB_DWCOTG)
 static struct nxe2000_battery_info *info_by_dwc;
+static int vbus_irq_disabled = 0;
 extern void otg_phy_init(void);
 extern void otg_phy_off(void);
 extern void otg_phy_suspend(void);
@@ -5592,8 +5593,13 @@ static int nxe2000_battery_suspend(struct device *dev)
 	}
 #endif
 
-	if (info->gpio_otg_usbid > -1)
+	if (info->gpio_otg_usbid > -1) {
 		otg_id = gpio_get_value(info->gpio_otg_usbid);
+		if ((vbus_irq_disabled == 0) && (otg_id == 0)){
+			disable_irq(charger_irq + NXE2000_IRQ_FVUSBDETSINT);
+			vbus_irq_disabled = 1;
+		}
+	}
 	if (info->input_power_type == INPUT_POWER_TYPE_ADP)
 	{
 		val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
@@ -5844,8 +5850,10 @@ static int nxe2000_battery_suspend(struct device *dev)
 #endif
 
 	/* OTG POWER OFF */
+#if 0 // hsjung edit	
 	if (info->gpio_otg_vbus > -1)
 		gpio_set_value(info->gpio_otg_vbus, 0);
+#endif	
 
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION) || defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
 	val = 0;
@@ -5923,6 +5931,7 @@ static int nxe2000_battery_resume(struct device *dev) {
 	int cc_suspend_term;
 	int cc_delta_offset;
 	int cc_correct_value;
+	int otg_id = 1;
 
 	PM_DBGOUT("PMU: ++ %s\n", __func__);
 
@@ -6199,6 +6208,13 @@ static int nxe2000_battery_resume(struct device *dev) {
 		queue_delayed_work(info->monitor_wqueue, &info->otgid_detect_work, msecs_to_jiffies(20));
 	}
 #endif
+	if (info->gpio_otg_usbid > -1) {
+		otg_id = gpio_get_value(info->gpio_otg_usbid);
+		if ((vbus_irq_disabled == 1) && (otg_id == 1)){
+			enable_irq(charger_irq + NXE2000_IRQ_FVUSBDETSINT);
+			vbus_irq_disabled = 0;
+		}
+	}
 #if (CFG_SW_UBC_ENABLE == 1)
 #if (CFG_USB_DET_FROM_PMIC_INT == 1)
 	dwc_otg_pcd_clear_ep0_state();

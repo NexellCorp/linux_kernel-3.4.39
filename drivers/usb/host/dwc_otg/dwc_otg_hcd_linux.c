@@ -251,6 +251,10 @@ static int dwc_otg_hcd_suspend(struct usb_hcd *hcd)
     }
     udelay(3);
 */
+    /* Clear any pending interrupts */
+    dwc_otg_disable_global_interrupts(core_if);
+    DWC_WRITE_REG32(&core_if->core_global_regs->gintsts, 0xFFFFFFFF);
+
     //power off
     otg_clk_disable();
 	// phy off at dwc_otg_driver.c
@@ -328,6 +332,11 @@ static int dwc_otg_hcd_resume(struct usb_hcd *hcd)
     gintmsk.b.portintr = 1;
     DWC_WRITE_REG32(&core_if->core_global_regs->gintmsk, gintmsk.d32);
 */
+
+    /* Clear any pending interrupts and enable interrupts */
+    DWC_WRITE_REG32(&core_if->core_global_regs->gintsts, 0xeFFFFFFF);
+    dwc_otg_enable_global_interrupts(core_if);
+
 	return 0;
 }
 #endif

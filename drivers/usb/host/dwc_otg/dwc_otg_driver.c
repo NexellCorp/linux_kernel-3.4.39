@@ -59,6 +59,10 @@
 #include "dwc_otg_regs.h"
 #include "dwc_otg_cil.h"
 
+#ifdef CONFIG_BATTERY_NXE2000
+#include <linux/power/nxe2000_battery.h>
+#endif
+
 /*
 void __DWC_DEBUG(char *format, ...)
 {
@@ -297,6 +301,9 @@ extern void otg_phy_init(void);
 extern void otg_phy_off(void);
 extern void otg_clk_enable(void);
 extern void otg_clk_disable(void);
+#ifdef CONFIG_BATTERY_NXE2000
+extern void nxp_otgvbus_pwr_set(int enable);
+#endif
 #else
 //Global variable to switch the fiq fix on or off (declared in bcm2708.c)
 extern bool fiq_fix_enable;
@@ -383,24 +390,27 @@ static int dwc_otg_driver_suspend(struct platform_device *_dev , pm_message_t st
 	dwc_otg_device_t *otg_dev = platform_get_drvdata(_dev);
     dwc_otg_core_if_t *core_if = otg_dev->core_if;
 
-	DWC_PRINTF("+ %s\n", __func__);
+	DWC_DEBUGPL(DBG_ANY,"+ %s\n", __func__);
 
     if(core_if->op_state == A_HOST) {
     	DWC_PRINTF("%s,A_HOST mode\n", __func__);
     	otg_phy_off();	// diabled clock at dwc_otg_hcd_linux.c
+#ifdef CONFIG_BATTERY_NXE2000
+		nxp_otgvbus_pwr_set(0);
+#endif
     	return 0;
     }
 
 	dwc_otg_driver_suspend_regs(core_if, 1);
 
     /* Clear any pending interrupts */
-    DWC_WRITE_REG32(&core_if->core_global_regs->gintsts, 0xFFFFFFFF);
     dwc_otg_disable_global_interrupts(core_if);
+    DWC_WRITE_REG32(&core_if->core_global_regs->gintsts, 0xFFFFFFFF);
 
     otg_clk_disable();
     otg_phy_off();
 
-    DWC_PRINTF("- %s\n", __func__);
+    DWC_DEBUGPL(DBG_ANY,"- %s\n", __func__);
     return 0;
 }
 
@@ -411,18 +421,18 @@ static int dwc_otg_driver_resume(struct platform_device *_dev )
 
     dwc_otg_core_global_regs_t *global_regs = core_if->core_global_regs;
 
-	DWC_PRINTF("+ %s\n", __func__);
+	DWC_DEBUGPL(DBG_ANY,"+ %s\n", __func__);
 
 	otg_clk_enable();
     otg_phy_init();
+
+    dwc_otg_disable_global_interrupts(core_if);
+    DWC_WRITE_REG32(&core_if->core_global_regs->gintsts, 0xFFFFFFFF);
 
     if(core_if->op_state == A_HOST) {
     	DWC_PRINTF("%s,A_HOST mode\n", __func__);
     	return 0;
     }
-
-    DWC_WRITE_REG32(&core_if->core_global_regs->gintsts, 0xFFFFFFFF);
-    dwc_otg_disable_global_interrupts(core_if);
 
 	dwc_otg_driver_suspend_regs(core_if, 0);
 
@@ -444,7 +454,7 @@ static int dwc_otg_driver_resume(struct platform_device *_dev )
     DWC_WRITE_REG32( &global_regs->gintsts, 0xeFFFFFFF);
     dwc_otg_enable_global_interrupts(core_if);
 
-    DWC_PRINTF("- %s\n", __func__);
+    DWC_DEBUGPL(DBG_ANY,"- %s\n", __func__);
     return 0;
 }
 #endif	/* CONFIG_ARCH_CPU_NEXELL */
