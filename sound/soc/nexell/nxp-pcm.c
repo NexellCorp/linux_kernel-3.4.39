@@ -241,32 +241,46 @@ static int nxp_pcm_dma_slave_config(void *runtime_data, int stream)
 	struct dma_slave_config slave_config = { 0, };
 	dma_addr_t	peri_addr = dma_param->peri_addr;
 	int	bus_width = dma_param->bus_width_byte;
-	int	peri_burst = dma_param->max_burst_byte;
+	int	max_burst = dma_param->max_burst_byte;
 	int ret;
+
+	switch (max_burst) {
+	case   1: max_burst =   PL080_BSIZE_1; break; 	// PL080_BSIZE_1	: 0x0
+	case   4: max_burst =   PL080_BSIZE_4; break; 	// PL080_BSIZE_4    : 0x1
+	case   8: max_burst =   PL080_BSIZE_8; break; 	// PL080_BSIZE_8    : 0x2
+	case  16: max_burst =  PL080_BSIZE_16; break; 	// PL080_BSIZE_16   : 0x3
+	case  32: max_burst =  PL080_BSIZE_32; break; 	// PL080_BSIZE_32   : 0x4
+	case  64: max_burst =  PL080_BSIZE_64; break; 	// PL080_BSIZE_64   : 0x5
+	case 128: max_burst = PL080_BSIZE_128; break; 	// PL080_BSIZE_128  : 0x6
+	case 256: max_burst = PL080_BSIZE_256; break; 	// PL080_BSIZE_256  : 0x7
+	default:
+		printk(KERN_ERR "Fail, pcm dma invalid burst size %d byte\n", max_burst);
+		return -EINVAL;
+	}
 
 	if (SNDRV_PCM_STREAM_PLAYBACK == stream) {
 		slave_config.direction 		= DMA_MEM_TO_DEV;
 		slave_config.dst_addr 		= peri_addr;
 		slave_config.dst_addr_width = bus_width;
-		slave_config.dst_maxburst 	= peri_burst/4;	/* peri burst dword unit */
+		slave_config.dst_maxburst 	= max_burst;
 		slave_config.src_addr_width = bus_width;
-		slave_config.src_maxburst 	= peri_burst/4;	/* memory burst */
+		slave_config.src_maxburst 	= max_burst;
 		slave_config.device_fc 		= false;
 	} else {
 		slave_config.direction 		= DMA_DEV_TO_MEM;
 		slave_config.src_addr 		= peri_addr;
 		slave_config.src_addr_width = bus_width;
-		slave_config.src_maxburst 	= peri_burst/4;	/* peri burst dword unit */
+		slave_config.src_maxburst 	= max_burst;
 		slave_config.dst_addr_width = bus_width;
-		slave_config.dst_maxburst 	= peri_burst/4;	/* memory burst */
+		slave_config.dst_maxburst 	= max_burst;
 		slave_config.device_fc 		= false;
 	}
 
 	ret = dmaengine_slave_config(prtd->dma_chan, &slave_config);
 
-	pr_debug("%s: %s %s, %s, addr=0x%x, bus=%d byte, peri burst=%dbyte\n",
+	pr_debug("%s: %s %s, %s, addr=0x%x, bus=%d byte, burst=%d (%d)\n",
 		__func__, ret?"FAIL":"DONE", STREAM_STR(stream),
-		dma_param->dma_ch_name,	peri_addr, bus_width, peri_burst);
+		dma_param->dma_ch_name,	peri_addr, bus_width, dma_param->max_burst_byte, max_burst);
 	return ret;
 }
 
@@ -305,7 +319,7 @@ static int nxp_pcm_dma_prepare_and_submit(struct snd_pcm_substream *substream)
 	/*
 	 * debug msg
 	 */
-	period_time_us = (1000000 / ((runtime->rate)/runtime->period_size));
+	period_time_us = (1000000*1000)/((prtd->dma_param->real_clock*1000)/runtime->period_size);
 	pr_debug("%s: %s\n", __func__, STREAM_STR(substream->stream));
 	pr_debug("buffer_bytes=%6d, period_bytes=%6d, periods=%2d, rate=%6d, period_time=%3d ms\n",
 		snd_pcm_lib_buffer_bytes(substream), snd_pcm_lib_period_bytes(substream),
