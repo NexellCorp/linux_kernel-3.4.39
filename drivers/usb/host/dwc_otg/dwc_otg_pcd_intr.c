@@ -889,14 +889,15 @@ int32_t dwc_otg_pcd_handle_usb_reset_intr(dwc_otg_pcd_t * pcd)
 
 	power.d32 = DWC_READ_REG32(core_if->pcgcctl);
 	if (power.b.stoppclk) {
-		power.b.pwrclmp = 1;
-		DWC_WRITE_REG32(core_if->pcgcctl, power.d32);
-	
-		power.b.rstpdwnmodule = 1;
-		DWC_MODIFY_REG32(core_if->pcgcctl, 0, power.d32);
-	
+		power.d32 = 0;
 		power.b.stoppclk = 1;
-		DWC_MODIFY_REG32(core_if->pcgcctl, 0, power.d32);
+		DWC_MODIFY_REG32(core_if->pcgcctl, power.d32, 0);
+
+		power.b.pwrclmp = 1;
+		DWC_MODIFY_REG32(core_if->pcgcctl, power.d32, 0);
+
+		power.b.rstpdwnmodule = 1;
+		DWC_MODIFY_REG32(core_if->pcgcctl, power.d32, 0);
 	}
 
 	core_if->lx_state = DWC_OTG_L0;
@@ -1773,10 +1774,10 @@ static inline void do_set_address(dwc_otg_pcd_t * pcd)
 	if (ctrl.bmRequestType == UT_DEVICE) {
 		dcfg_data_t dcfg = {.d32 = 0 };
 
-		dcfg.b.devaddr = UGETW(ctrl.wValue);
 #ifdef DEBUG_EP0
-//		DWC_DEBUGPL(DBG_PCDV, "SET_ADDRESS:%d\n", dcfg.b.devaddr);
+//                      DWC_DEBUGPL(DBG_PCDV, "SET_ADDRESS:%d\n", ctrl.wValue);
 #endif
+		dcfg.b.devaddr = UGETW(ctrl.wValue);
 		DWC_MODIFY_REG32(&dev_if->dev_global_regs->dcfg, 0, dcfg.d32);
 		do_setup_in_status_phase(pcd);
 	}
