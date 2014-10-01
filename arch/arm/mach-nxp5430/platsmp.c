@@ -32,7 +32,6 @@
 #include <asm/cacheflush.h>
 #include <asm/hardware/gic.h>
 #include <asm/smp_plat.h>
-#include <asm/smp_scu.h>
 
 #include <mach/platform.h>
 #include <mach/soc.h>
@@ -41,9 +40,6 @@
 /*
 #define pr_debug 	printk
 */
-
-static void __iomem *scu_base = (void __iomem *)(__PB_IO_MAP_MPPR_VIRT);
-
 extern void __secondary_startup(void);
 
 /*
@@ -129,6 +125,7 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 			break;
 
 		udelay(10);
+	//	gic_raise_softirq(cpumask_of(cpu), 1);
 	}
 
 	/*
@@ -149,7 +146,7 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 
 void  __init smp_init_cpus(void)
 {
-	unsigned int i, ncores = scu_get_core_count(scu_base);
+	unsigned int i, ncores = NR_CPUS;
 
 	if (ncores > nr_cpu_ids) {
 		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
@@ -165,7 +162,6 @@ void  __init smp_init_cpus(void)
 
 void  __init platform_smp_prepare_cpus(unsigned int max_cpus)
 {
-	scu_enable(scu_base);
 	__raw_writel(virt_to_phys(__secondary_startup), SCR_ARM_SECOND_BOOT);
 	__raw_writel((-1UL), SCR_SIGNAGURE_RESET);
 }

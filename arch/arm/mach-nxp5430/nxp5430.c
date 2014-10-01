@@ -180,7 +180,6 @@ void nxp_set_bus_config(void)
 
 static void cpu_base_init(void)
 {
-	U32 tie_reg, val;
 	int i = 0;
 
 	NX_RSTCON_Initialize();
@@ -213,18 +212,8 @@ static void cpu_base_init(void)
 	NX_ALIVE_SetWriteEnable(CTRUE);
 	__raw_writel(0xFFFFFFFF, SCR_ARM_SECOND_BOOT);
 
-#if 0
-	/*
-	 * NOTE> Control for ACP register access.
-	 */
-	tie_reg = (U32)IO_ADDRESS(NX_TIEOFF_GetPhysicalAddress());
-
-	val = __raw_readl(tie_reg + 0x70) & ~((3 << 30) | (3 << 10));
-	writel(val, (tie_reg + 0x70));
-
-	val = __raw_readl(tie_reg + 0x80) & ~(3 << 3);
-	writel(val, (tie_reg + 0x80));
-#endif	
+	/* clear cpu id register for second cores */
+	__raw_writel((-1UL), SCR_SMP_WAKE_CPU_ID);
 }
 
 static void cpu_bus_init(void)
@@ -530,16 +519,20 @@ unsigned int nxp_cpu_version(void)
 
 void nxp_cpu_base_init(void)
 {
-	unsigned int  rev, ver = 0;
-
 	cpu_base_init();
 	cpu_bus_init();
 
 #ifdef CONFIG_SMP
-//  writel(0x0018, __PB_IO_MAP_REGS_VIRT + 0x11080);	// ACP Bus Enable
-//	writel(0x0000, __PB_IO_MAP_REGS_VIRT + 0x11080);	// ACP Bus Disable
-//	writel(0xffff, __PB_IO_MAP_MPPR_VIRT + 0x0c);		// SCU
-//	writel(0x0009, __PB_IO_MAP_MPPR_VIRT + 0x00);		// SCU L2 Spec... Enable.
+	/*
+	 * CCI400 BUS
+	 */
+	#define	CCI_REG	__PB_IO_MAP_CCI4_VIRT			// 0xe0090000
+	writel(0x8, (CCI_REG + 0x0000));				// CCI
+	writel(0x0, (CCI_REG + 0x1000));				// S0 : coresight
+ 	writel(0x0, (CCI_REG + 0x2000));				// S1 : bottom bus
+	writel(0x0, (CCI_REG + 0x3000));				// S2 : top bus
+	writel((0x3<<30) | 0x3, (CCI_REG + 0x4000));	// S3: cpu cluster 1
+	writel((0x3<<30) | 0x3, (CCI_REG + 0x5000));	// S4: cpu cluster 0
 #endif
 
 #if (CFG_BUS_RECONFIG_ENB == 1)
@@ -549,14 +542,5 @@ void nxp_cpu_base_init(void)
 	/* Check version */
 	if (-1 != cpu_vers_no)
 		return;
-/*
-	rev = __raw_readl(__PB_IO_MAP_IROM_VIRT + 0x0100);
-	switch(rev) {
-	case 0xe153000a:	ver = 1; break;
-	default:			ver = 0; break;
-	}
-	cpu_vers_no = ver;
-	printk(KERN_INFO "CPU : VERSION = %u (0x%X)\n", cpu_vers_no, rev);
-*/	
 }
 

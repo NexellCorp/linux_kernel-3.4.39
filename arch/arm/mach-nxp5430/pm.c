@@ -35,7 +35,7 @@
 #include <mach/platform.h>
 #include <mach/pm.h>
 
-#define SRAM_SAVE_SIZE		(0x4000)
+#define SRAM_SAVE_SIZE		(0x10000)	/* 64 Kbyte */
 
 static unsigned int  sramsave[SRAM_SAVE_SIZE/4];
 static unsigned int *sramptr;
@@ -179,10 +179,8 @@ static int suspend_machine(void)
 
 	/* disable alarm wakeup */
 #if !(PM_RTC_WAKE)
-	writel(readl(rtc + RTC_ALARM_INTENB) & ~(3<<0),
-		(rtc + RTC_ALARM_INTENB));
-	writel(readl(rtc + RTC_ALARM_INTPND) & ~(3<<0),
-		(rtc + RTC_ALARM_INTPND));
+	writel(readl(rtc + RTC_ALARM_INTENB) & ~(3<<0), (rtc + RTC_ALARM_INTENB));
+	writel(readl(rtc + RTC_ALARM_INTPND) & ~(3<<0), (rtc + RTC_ALARM_INTPND));
 #endif
 
 	/*

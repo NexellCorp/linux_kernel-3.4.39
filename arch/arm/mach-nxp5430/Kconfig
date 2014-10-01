@@ -4,6 +4,8 @@
 
 config ARCH_CPU_NEXELL
 	bool
+	select IRQ_DOMAIN
+	select MULTI_IRQ_HANDLER
 	default y
 
 choice

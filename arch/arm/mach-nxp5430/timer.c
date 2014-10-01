@@ -339,7 +339,7 @@ static void timer_event_set_mode(enum clock_event_mode mode, struct clock_event_
 	struct timer_info *info = tm_event_info();
 	int ch = info->channel;
 	unsigned long cnt = info->tcount;
-	pr_debug("%s (ch:%d, mode:0x%x, cnt:%ld)\n", __func__, ch, mode, cnt);
+	printk("%s (ch:%d, mode:0x%x, cnt:%ld)\n", __func__, ch, mode, cnt);
 
 	switch(mode) {
 	case CLOCK_EVT_MODE_UNUSED:		// 0x0

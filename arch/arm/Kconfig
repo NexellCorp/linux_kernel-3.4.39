@@ -1037,9 +1037,7 @@ config ARCH_NXP5430
 	select ARCH_CPU_NEXELL
 	select CPU_V7
 	select ARM_AMBA
-	select ARM_GIC
 	select HAVE_SMP
-	select MIGHT_HAVE_CACHE_L2X0
 	select ARCH_HAS_CPUFREQ
 	select GENERIC_TIME
 	select GENERIC_CLOCKEVENTS

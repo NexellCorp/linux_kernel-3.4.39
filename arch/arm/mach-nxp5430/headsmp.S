@@ -18,6 +18,8 @@
  */
 ENTRY(__secondary_startup)
 	mrc	p15, 0, r0, c0, c0, 5
+	tst r0, #0x4400
+	orrne r0, r0, #4
 	and	r0, r0, #15
 	adr	r4, 1f
 	ldmia	r4, {r5, r6}

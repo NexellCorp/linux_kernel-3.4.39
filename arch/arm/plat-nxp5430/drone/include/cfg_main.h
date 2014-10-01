@@ -28,7 +28,7 @@
 /*------------------------------------------------------------------------------
  * 	System Name
  */
-#define	CFG_SYS_CPU_NAME						"nxp5430q"
+#define	CFG_SYS_CPU_NAME						"nxp5430"
 #define	CFG_SYS_BOARD_NAME						"nxp5430-drone"
 
 /*------------------------------------------------------------------------------
@@ -41,7 +41,7 @@
  */
 #define CFG_UART_DEBUG_CH						0	/* For Low level debug */
 #define	CFG_UART_DEBUG_BAUDRATE					115200
-#define	CFG_UART_CLKGEN_CLOCK_HZ				14750000	/* 50000000 */
+#define	CFG_UART_CLKGEN_CLOCK_HZ				50000000	/* 50000000 */
 
 /*------------------------------------------------------------------------------
  * 	Timer List (SYS = Source, EVT = Event, WDT = WatchDog)

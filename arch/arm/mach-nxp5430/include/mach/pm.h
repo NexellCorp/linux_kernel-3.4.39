@@ -21,7 +21,9 @@
 
 #include <linux/suspend.h>
 
-#define	SCR_ARM_SECOND_BOOT		IO_ADDRESS(0xC0010C1C)	// RTC scratch
+#define	SCR_ARM_SECOND_BOOT			IO_ADDRESS(0xc0010230)	// PWR scratch
+#define	SCR_ARM_SECOND_BOOT_REG1	IO_ADDRESS(0xc0010234)	// PWR scratch
+#define	SCR_ARM_SECOND_BOOT_REG2	IO_ADDRESS(0xc0010238)	// PWR scratch
 
 #define	SCR_ALIVE_BASE			IO_ADDRESS(PHY_BASEADDR_ALIVE)
 #define	SCR_SIGNAGURE_RESET		(SCR_ALIVE_BASE + 0x068)
@@ -59,6 +61,8 @@
 #define SUSPEND_SIGNATURE		(0x50575200)	/* PWR (ASCII) */
 #define	SUSPEND_SAVE_SIZE		(128*1024)		/* (_etext - _stext) */
 #define RECOVERY_SIGNATURE		(0x52455343)	/* (ASCII) : R.E.S.C */
+
+#define	SCR_SMP_WAKE_CPU_ID		SCR_ARM_SECOND_BOOT_REG1
 
 struct board_suspend_ops {
 	int  (*valid)		(suspend_state_t state);	/* before driver suspend */
