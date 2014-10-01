@@ -327,6 +327,10 @@ static ssize_t regulator_uV_store(struct device *dev,
 	if (ret < 0)
 		return ret;
 
+	ret = regulator_check_voltage(rdev, &val, &val);
+	if (ret < 0)
+		return ret;
+
 	ret = regulator_check_consumers(rdev, &val, &val);
 	if (ret < 0)
 		return ret;
