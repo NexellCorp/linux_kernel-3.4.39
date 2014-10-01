@@ -598,9 +598,6 @@ static void reset_config(struct usb_composite_dev *cdev)
 	}
 	cdev->config = NULL;
 
-#if defined(CONFIG_ARCH_NXP4330)
-	wake_lock_timeout(&usb_config_wake_lock, 1*HZ);
-#endif
 }
 
 static int set_config(struct usb_composite_dev *cdev,
@@ -622,11 +619,6 @@ static int set_config(struct usb_composite_dev *cdev,
 				 */
 				if (cdev->config)
 					reset_config(cdev);
-
-#if defined(CONFIG_ARCH_NXP4330)
-				wake_lock(&usb_config_wake_lock);
-#endif
-
 				result = 0;
 				break;
 			}
@@ -1185,6 +1177,9 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		spin_lock(&cdev->lock);
 		value = set_config(cdev, ctrl, w_value);
 		spin_unlock(&cdev->lock);
+#if defined(CONFIG_ARCH_NXP4330)
+		wake_lock(&usb_config_wake_lock);
+#endif
 		break;
 	case USB_REQ_GET_CONFIGURATION:
 		if (ctrl->bRequestType != USB_DIR_IN)
@@ -1364,6 +1359,9 @@ static void composite_disconnect(struct usb_gadget *gadget)
 	/* REVISIT:  should we have config and device level
 	 * disconnect callbacks?
 	 */
+#if defined(CONFIG_ARCH_NXP4330)
+	wake_lock_timeout(&usb_config_wake_lock, 1*HZ);
+#endif
 	spin_lock_irqsave(&cdev->lock, flags);
 	if (cdev->config)
 		reset_config(cdev);
