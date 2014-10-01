@@ -149,11 +149,9 @@ unsigned long smp_ipi_counter[NR_CPUS] = { 0, };
 unsigned long smp_skp_counter[NR_CPUS] = { 0, };
 #define	inc_irq_counter(c)		do { smp_irq_counter[c]++; } while (0)
 #define	inc_ipi_counter(c)		do { smp_ipi_counter[c]++; } while (0)
-#define	inc_skp_counter(c)		do { smp_skp_counter[c]++; } while (0)
 #else
 #define	inc_irq_counter(c)
 #define	inc_ipi_counter(c)
-#define	inc_skp_counter(c)
 #endif
 
 /*
@@ -175,10 +173,9 @@ int core_IPI_rclear(int cpu)
 	inc_irq_counter(cpu);
 	GIC_CLEAR(1<<cpu);
 
-	if (!kqueue_is_empty(&ipi_queue[cpu])) {
-		inc_skp_counter(cpu);
+	/* next ipi */
+	if (!kqueue_is_empty(&ipi_queue[cpu]))
 		GIC_RAISE(1<<cpu);
-	}
 #else
 	ipi = smp_ipi_monitor[cpu].ipi;
 	smp_ipi_monitor[cpu].ipi = 0;
