@@ -17,21 +17,13 @@
 #define	R_WFE() 	IO_ADDRESS(0xC00111BC)
 #define	R_GIC() 	IO_ADDRESS(0xC0011078)
 
-#define	WAKEUP_CORE(core)	{ __raw_writel(core, SCR_SMP_WAKE_CPU_ID); }
-#define	WAKEUP_EVENT(map)	{	\
-	if((map & 0x0E)) {	dsb();	__asm__ __volatile__("sev"); } 	\
-	if((map & 0xF0)) {	\
-		dsb();	__raw_writel(__raw_readl(R_WFE()) |  (1<<8), R_WFE());	\
-		dsb();	__raw_writel(__raw_readl(R_WFE()) & ~(1<<8), R_WFE());	\
-	}	\
-}
-
-#define	GIC_RAISE(bits)		{ dsb(); __raw_writel(__raw_readl(R_GIC()) & ~(bits<<8), R_GIC()); }
-#define	GIC_CLEAR(bits)		{ __raw_writel(__raw_readl(R_GIC()) | (bits<<8), R_GIC());  dsb(); }
-#define	GIC_STATUS()		((__raw_readl(R_GIC()) >> 8) & 0xFE)
+#define	CPU_RAISE(core)	{ __raw_writel(core, SCR_SMP_WAKE_CPU_ID); }
+#define	GIC_RAISE(bits)	{ dsb(); __raw_writel(__raw_readl(R_GIC()) & ~(bits<<8), R_GIC()); }
+#define	GIC_CLEAR(bits)	{ __raw_writel(__raw_readl(R_GIC()) | (bits<<8), R_GIC());  dsb(); }
+#define	GIC_STATUS()	((__raw_readl(R_GIC()) >> 8) & 0xFE)
 
 #ifdef IPI_USE_QUEUE
-struct _kqueue_ {
+struct kqueue {
 	int qno;
 	int in;
 	int out;
@@ -40,13 +32,13 @@ struct _kqueue_ {
 	unsigned int *data;
 };
 
-static struct _kqueue_ ipi_queue[NR_CPUS];
+static struct kqueue ipi_queue[NR_CPUS];
 static unsigned int ipi_buffer[NR_CPUS][32];
 
 #define	_inc_queue_pos(p, s)	{ p++; if (p > (s-1)) p = 0; }
 #define	_dec_queue_pos(p, s)	{ p--; if (p < 0) p = (s-1); }
 
-static inline void kqueue_init(int qno, struct _kqueue_ *queue, unsigned int *data, unsigned int size)
+static inline void kqueue_init(int qno, struct kqueue *queue, unsigned int *data, unsigned int size)
 {
 	queue->qno = qno;
 	queue->in = 0;
@@ -55,12 +47,13 @@ static inline void kqueue_init(int qno, struct _kqueue_ *queue, unsigned int *da
 	queue->data = data;
 }
 
-static inline int kqueue_push(struct _kqueue_ *queue, int in, bool overwrite)
+static inline int kqueue_push(struct kqueue *queue, int in, bool overwrite)
 {
 	int ret = 1;
 	_inc_queue_pos(queue->in, queue->size);
 	if (queue->in == queue->out) {
-		pr_debug("[full qno.%d in:%d, out:%d, overwrite]\n", queue->qno, queue->in, queue->out);
+		pr_debug("[full qno.%d in:%d, out:%d, overwrite]\n", 
+			queue->qno, queue->in, queue->out);
 		_dec_queue_pos(queue->in, queue->size);
 		ret = 0;
 		if (false == overwrite)
@@ -70,7 +63,7 @@ static inline int kqueue_push(struct _kqueue_ *queue, int in, bool overwrite)
 	return ret;
 }
 
-static inline int kqueue_pop(struct _kqueue_ *queue, int *out)
+static inline int kqueue_pop(struct kqueue *queue, int *out)
 {
 	if (queue->out == queue->in)
 		return 0;
@@ -80,7 +73,7 @@ static inline int kqueue_pop(struct _kqueue_ *queue, int *out)
 	return 1;
 }
 
-static inline int kqueue_is_empty(struct _kqueue_ *queue)
+static inline int kqueue_is_empty(struct kqueue *queue)
 {
 	if (queue->in == queue->out)
 		return 1;
@@ -207,8 +200,10 @@ void core_IPI_raise(long map, int ipi)
 
 	/* set mask to rasie second cores */
 	if (1 == ipi) {
-		WAKEUP_CORE (ffs(map)-1);
-		WAKEUP_EVENT(map);
+		cpu = ffs(map)-1;
+		CPU_RAISE(cpu);
+		GIC_RAISE(1<<cpu);
+		GIC_CLEAR(1<<cpu);
 		return;
 	}
 
