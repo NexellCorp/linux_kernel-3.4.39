@@ -74,9 +74,10 @@ EXPORT_SYMBOL_GPL(isCpuMaxFrequency);
 
 #define SIZE_RD_STAT 128
 extern int NXL_Get_BoardTemperature(void);
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 extern int isOccured_dieError(void);
 extern void isReset_dieErrorFlag(void);
-
+#endif
 
 typedef struct {
     unsigned long user;
@@ -307,7 +308,12 @@ void GetCPUInfo(char *buf)
 
     pr_debug("cpuusage :%02d.%02d %% curMaxCpu(%d) temperature(%d) die(%d)ntic(%d)\n",
     	(usage100/100), (usage100%100), curMaxCpu, NXL_Get_BoardTemperature(),
-    	isOccured_dieError(), max_limit_dangerous);
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+    	isOccured_dieError(),
+#else
+		0,
+#endif
+    	max_limit_dangerous);
 
     ctrl_cpuTemp.m_prev.user = ctrl_cpuTemp.m_curr.user ;
     ctrl_cpuTemp.m_prev.system =  ctrl_cpuTemp.m_curr.system ;
@@ -340,7 +346,9 @@ long funcGetMaxFreq(struct cpufreq_limit_data *limit)
 	if(temperature < TEMPERTURE_LIMIT_LEVEL0)
 	{
 		max_limit_dangerous = 0;
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 		isReset_dieErrorFlag();
+#endif
 		isReset_LimitMin();
 		if(cpuUsage>CPU_OVER_USAGELEVEL)
 		{
@@ -364,7 +372,9 @@ long funcGetMaxFreq(struct cpufreq_limit_data *limit)
 	else if(temperature < TEMPERTURE_LIMIT_LEVEL1)
 	{
 		max_limit_dangerous = 0;
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 		isReset_dieErrorFlag();
+#endif
 		isSet_LimitMaxUner();
 		if(cpuUsage>CPU_OVER_USAGELEVEL)
 		{
@@ -391,7 +401,11 @@ long funcGetMaxFreq(struct cpufreq_limit_data *limit)
 	}
 
 
-	if(isOccured_dieError() || max_limit_dangerous) // DieError
+	if(
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+		isOccured_dieError() || 
+#endif
+		max_limit_dangerous) // DieError
 	{
 		return limit->min_max_freq;
 	}
