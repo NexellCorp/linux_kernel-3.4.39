@@ -70,8 +70,8 @@
 ////////////////////////////////////////
 //#define BAT_RESUME_WORK_QUEUE
 #define ENABLE_FUEL_GAUGE_FUNCTION
-#define ENABLE_LOW_BATTERY_VSYS_DETECTION
-//#define ENABLE_LOW_BATTERY_VBAT_DETECTION
+//#define ENABLE_LOW_BATTERY_VSYS_DETECTION
+#define ENABLE_LOW_BATTERY_VBAT_DETECTION
 //#define ENABLE_FACTORY_MODE
 #define DISABLE_CHARGER_TIMER
 /* #define ENABLE_FG_KEEP_ON_MODE */
@@ -298,16 +298,14 @@ struct nxe2000_battery_info {
 
 	int				online_state;
 	int				ubc_check_count;
-#if defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
+
 	int				low_vbat_vol_mv;
 	int				low_vbat_thl;
 	int				low_vbat_val;
-#endif
-#if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION)
 	int				low_vsys_vol_mv;
 	int				low_vsys_thl;
 	int				low_vsys_val;
-#endif
+
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION) || defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
 	bool			low_bat_power_off;
 #endif
@@ -3484,28 +3482,25 @@ static int nxe2000_init_charger(struct nxe2000_battery_info *info)
 		info->soca->OCV100_min,info->soca->OCV100_max,vfchg_val,icchg_val,rbat);
 
 	/* Set ADRQ=00 to stop ADC */
-	nxe2000_write(info->dev->parent, NXE2000_ADC_CNT3, 0x0);
+	nxe2000_write(info->dev->parent, NXE2000_ADC_CNT3, 0x00);
 
 	/* Set ADC auto conversion interval 250ms */
-	nxe2000_write(info->dev->parent, NXE2000_ADC_CNT2, 0x0);
+	nxe2000_write(info->dev->parent, NXE2000_ADC_CNT2, 0x00);
 
-#if defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
 	/*  VBAT threshold low voltage value = (voltage(V)*255)/(2*2.5) */
 	info->low_vbat_thl = ((info->low_vbat_vol_mv * 255) / 5000)+1;
 	nxe2000_write(info->dev->parent, NXE2000_ADC_VBAT_THL, info->low_vbat_thl);
 	low_det_bits |= 0x02;
-#endif
-#if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION)
+
 	/*  VSYS threshold low voltage value = (voltage(V)*255)/(3*2.5) */
 	info->low_vsys_thl = ((info->low_vsys_vol_mv * 255) / 7500)+1;
 	nxe2000_write(info->dev->parent, NXE2000_ADC_VSYS_THL, info->low_vsys_thl);
 	low_det_bits |= 0x10;
-#endif
 
 	/* Enable VBAT/VSYS pin conversion in auto-ADC */
-	nxe2000_write(info->dev->parent, NXE2000_ADC_CNT1, low_det_bits);
+	nxe2000_write(info->dev->parent, NXE2000_ADC_CNT1, 0x12);
 
-	/* Enable VBAT/VSYS threshold Low interrupt */
+	/* Disable VBAT/VSYS threshold Low interrupt */
 	//nxe2000_write(info->dev->parent, NXE2000_INT_EN_ADC1, low_det_bits);
 	nxe2000_write(info->dev->parent, NXE2000_INT_EN_ADC1, 0x00);
 
@@ -4133,11 +4128,8 @@ static void low_battery_irq_work(struct work_struct *work)
 	struct nxe2000_battery_info *info = container_of(work,
 		 struct nxe2000_battery_info, low_battery_work.work);
 
+#if 0
 	uint8_t val = 0;
-
-#ifdef ENABLE_DEBUG
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
-#endif
 
 #if defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
 	val |= 0x02;
@@ -4151,6 +4143,11 @@ static void low_battery_irq_work(struct work_struct *work)
 
 	/* Enable VBAT/VSYS threshold Low interrupt */
 	nxe2000_write(info->dev->parent, NXE2000_INT_EN_ADC1, val);
+#endif
+
+#ifdef ENABLE_DEBUG
+	printk(KERN_ERR "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+#endif
 
 	info->low_bat_power_off = true;
 	power_supply_changed(&info->battery);
@@ -5271,16 +5268,16 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 	info->entry_factory_mode = false;
 
 #if defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
-	info->low_vbat_vol_mv = pdata->low_vbat_vol_mv;
 	info->alarm_vol_mv = pdata->alarm_vol_mv - ((pdata->slp_ibat * pdata->bat_impe) / 10000);
 	info->fg_target_vsys = pdata->alarm_vol_mv - ((info->fg_target_ibat * pdata->bat_impe) / 10000);
 #endif
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION)
-	info->low_vsys_vol_mv = pdata->low_vsys_vol_mv;
 	info->alarm_vol_mv = pdata->alarm_vol_mv - ((pdata->slp_ibat * (pdata->bat_impe + 550)) / 10000);
 	info->fg_target_vsys = pdata->alarm_vol_mv - ((info->fg_target_ibat * (pdata->bat_impe + 550)) / 10000);
 #endif
 
+	info->low_vbat_vol_mv = pdata->low_vbat_vol_mv;
+	info->low_vsys_vol_mv = pdata->low_vsys_vol_mv;
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION) || defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
 	info->low_bat_power_off	= false;
 #endif
@@ -5962,14 +5959,19 @@ static int nxe2000_battery_suspend(struct device *dev)
 #endif
 
 	/* Set ADRQ=00 to stop ADC */
-	ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT3, 0x0);
+	ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT3, 0x00);
 	if (ret < 0)
-		ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT3, 0x0);
+		ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT3, 0x00);
 
 	/* Set ADC auto conversion interval 16s */
 	ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT2, 0x6);
 	if (ret < 0)
 		ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT2, 0x6);
+
+	/* Enable VBAT/VSYS pin conversion in auto-ADC */
+	ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT1, 0x12);
+	if (ret < 0)
+		ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT1, 0x12);
 
 	/* Enable VBAT/VSYS threshold Low interrupt */
 	ret = nxe2000_write(info->dev->parent, NXE2000_INT_EN_ADC1, val);
@@ -5977,9 +5979,9 @@ static int nxe2000_battery_suspend(struct device *dev)
 		ret = nxe2000_write(info->dev->parent, NXE2000_INT_EN_ADC1, val);
 
 	/* Cleaning ADC interrupt */
-	ret = nxe2000_write(info->dev->parent, NXE2000_INT_IR_ADCL, 0);
+	ret = nxe2000_write(info->dev->parent, NXE2000_INT_IR_ADCL, 0x00);
 	if (ret < 0)
-		ret = nxe2000_write(info->dev->parent, NXE2000_INT_IR_ADCL, 0);
+		ret = nxe2000_write(info->dev->parent, NXE2000_INT_IR_ADCL, 0x00);
 
 	/* Start auto-mode & average 4-time conversion mode for ADC */
 	ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT3, 0x28);
@@ -6057,6 +6059,11 @@ static int nxe2000_battery_resume(struct device *dev) {
 	ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT2, 0x0);
 	if (ret < 0)
 		ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT2, 0x0);
+
+	/* Enable VBAT/VSYS pin conversion in auto-ADC */
+	ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT1, 0x12);
+	if (ret < 0)
+		ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT1, 0x12);
 
 	/* Disable VBAT/VSYS threshold Low interrupt */
 	ret = nxe2000_write(info->dev->parent, NXE2000_INT_EN_ADC1, 0x0);
