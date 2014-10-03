@@ -46,7 +46,7 @@
 //  Debug 
 ////////////////////////////////////////
 
-#define ENABLE_DEBUG
+//#define ENABLE_DEBUG
 
 #ifdef ENABLE_DEBUG
 #define PM_LOGOUT 						printk
