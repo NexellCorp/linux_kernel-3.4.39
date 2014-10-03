@@ -46,7 +46,7 @@
 //  Debug 
 ////////////////////////////////////////
 
-// #define ENABLE_DEBUG
+#define ENABLE_DEBUG
 
 #ifdef ENABLE_DEBUG
 #define PM_LOGOUT 						printk
@@ -71,7 +71,7 @@
 //#define BAT_RESUME_WORK_QUEUE
 #define ENABLE_FUEL_GAUGE_FUNCTION
 //#define ENABLE_LOW_BATTERY_VSYS_DETECTION
-#define ENABLE_LOW_BATTERY_VBAT_DETECTION
+//#define ENABLE_LOW_BATTERY_VBAT_DETECTION
 //#define ENABLE_FACTORY_MODE
 #define DISABLE_CHARGER_TIMER
 /* #define ENABLE_FG_KEEP_ON_MODE */
