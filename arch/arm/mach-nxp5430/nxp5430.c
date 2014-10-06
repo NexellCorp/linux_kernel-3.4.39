@@ -517,7 +517,7 @@ unsigned int nxp_cpu_version(void)
 #define	DEBUG_PROTOTYPE		1
 #endif
 
-void nxp_cpu_base_init(void)
+void nxp_cpu_arch_init(void)
 {
 	cpu_base_init();
 	cpu_bus_init();

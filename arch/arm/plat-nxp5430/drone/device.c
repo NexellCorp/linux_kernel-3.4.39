@@ -89,26 +89,25 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-	//{ 1600000, 1200 },
-	//{ 1500000, 1200 },
-	//{ 1400000, 1200 },
-	//{ 1300000, 1200 },
-	{ 1200000, 1200 },
-	{ 1100000, 1200 },
-	{ 1000000, 1200 },
-	{  900000, 1200 },
-	{  800000, 1200 },
-#if 1
-	{  780000, 1200 },
-	{  562000, 1200 },
-	{  533000, 1200 },
-	{  490000, 1200 },
-	{  400000, 1200 },
-#endif
+//	{ 1400000, 1300000 },
+//	{ 1300000, 1300000 },
+	{ 1200000, 1200000, },
+	{ 1100000, 1200000, },
+	{ 1000000, 1100000, },
+	{  900000, 1100000, },
+	{  800000, 1100000, },
+	{  700000, 1000000, },
+	{  666000, 1000000, },
+	{  600000, 1000000, },
+	{  533000, 1000000, },
+	{  500000, 1000000, },
+	{  400000, 1000000, },
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
+	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
+	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
 	.max_cpufreq    = 1200*1000,
@@ -609,7 +608,7 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1200000, 1, 12);	/* 1.2V ARM */
+NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1300000, 1, 12);	/* 1.2V ARM */
 NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1, 14);	/* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1600000, 1, -1);	/* 1.6V DDR */

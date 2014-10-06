@@ -115,7 +115,7 @@ static void __init cpu_map_io(void)
 	printk(KERN_INFO "CPU : DMA Zone Size =%2dM, CORE %d\n", SZ_2M>>20, cores);
 #endif
 
-	nxp_cpu_base_init();
+	nxp_cpu_arch_init();
 	nxp_board_base_init();
 
 	nxp_cpu_clock_init();

@@ -229,7 +229,8 @@ static int resume_machine(void)
 	__wake_event_bits = status & ((1<<WAKE_EVENT_NUM) - 1);
 
 	/* reset machine */
-	nxp_cpu_base_init();
+	nxp_cpu_arch_init();
+
 	if (board_suspend && board_suspend->poweron)
 		board_suspend->poweron();
 
