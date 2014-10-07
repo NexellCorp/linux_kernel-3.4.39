@@ -488,7 +488,7 @@ static int __init cpu_sys_init(void)
 
 	/* create attribute interface */
 	kobj = kobject_create_and_add("cpu", &platform_bus.kobj);
-	if (! kobj) {
+	if (!kobj) {
 		printk(KERN_ERR "Fail, create kobject for cpu\n");
 		return -ret;
 	}

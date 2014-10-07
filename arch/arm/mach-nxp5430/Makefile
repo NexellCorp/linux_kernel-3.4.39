@@ -3,13 +3,12 @@
 #
 # Makefile for the NXP5430
 
-obj-$(CONFIG_ARCH_CPU_NEXELL) := cpu.o nxp5430.o gic.o smp_wfi.o timer.o irq.o clock.o devices.o busfreq.o
+obj-$(CONFIG_ARCH_CPU_NEXELL) := cpu.o nxp5430.o gic.o smp_wfi.o timer.o irq.o clock.o devices.o cpufreq.o busfreq.o
 
 obj-$(CONFIG_ARCH_CPU_NEXELL)		+= soc/
 obj-$(CONFIG_HOTPLUG_CPU)			+= hotplug.o
 obj-$(CONFIG_SMP)					+= platsmp.o headsmp.o
 obj-$(CONFIG_PM)					+= pm.o lldebug.o
-obj-$(CONFIG_ARM_NXP_CPUFREQ)   	+= cpufreq.o
 obj-$(CONFIG_MMC_DW)				+= dev-mmc.o
 obj-$(CONFIG_HAVE_PWM)				+= pwm.o
 obj-$(CONFIG_CMA)					+= dev-cma.o
