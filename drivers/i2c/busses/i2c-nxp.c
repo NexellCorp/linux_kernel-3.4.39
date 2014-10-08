@@ -302,6 +302,8 @@ static inline void i2c_stop_dev(struct nxp_i2c_param *par, int nostop, int read)
 		ICSR &= ~(1<<ICSR_OUT_ENB_POS);
 		*/
 		ICSR  = (par->trans_mode << ICSR_MOD_SEL_POS ) ;
+	//	ICSR  =  ( par->trans_mode << ICSR_MOD_SEL_POS) | (1<<ICSR_SIG_GEN_POS) | (1<<ICSR_OUT_ENB_POS);
+//		ICSR  =  ( par->trans_mode << ICSR_MOD_SEL_POS) | (1<<ICSR_OUT_ENB_POS);
 		writel(ICSR, (base+I2C_ICSR_OFFS));
 
 		ICCR = (1<<ICCR_IRQ_CLR_POS);
@@ -313,7 +315,8 @@ static inline void i2c_stop_dev(struct nxp_i2c_param *par, int nostop, int read)
 	}
 }
 
-static inline void i2c_wait_dev(struct nxp_i2c_param *par, int wait)
+static
+ inline void i2c_wait_dev(struct nxp_i2c_param *par, int wait)
 {
 	unsigned int base = (unsigned int)par->hw.base_addr;
 	unsigned int ICSR = 0;
@@ -634,7 +637,8 @@ static int nxp_i2c_algo_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, 
 
 	if (!preempt_count())
 		mutex_unlock(&par->lock);
-
+	
+	i2c_bus_off(par);
 	if (ret == len)
 		return num;
 
