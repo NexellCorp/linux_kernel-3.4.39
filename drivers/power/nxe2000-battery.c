@@ -2895,7 +2895,7 @@ static void nxe2000_scaling_OCV_table(struct nxe2000_battery_info *info, int cut
 	/* Check Start % */
 	if (info->soca->ocv_table_def[0] > cutoff_vol * 1000) {
 		*start_per = 0;
-		PM_LOGOUT("PMU : %s : setting value of cuttoff_vol(%d) is out of range(%d) \n",__func__, cutoff_vol, info->soca->ocv_table_def[0]);
+		PM_LOGOUT("PMU: %s : setting value of cuttoff_vol(%d) is out of range(%d) \n",__func__, cutoff_vol, info->soca->ocv_table_def[0]);
 	} else {
 		for (i = 1; i < 11; i++) {
 			if (info->soca->ocv_table_def[i] >= cutoff_vol * 1000) {
@@ -2945,7 +2945,7 @@ static void nxe2000_scaling_OCV_table(struct nxe2000_battery_info *info, int cut
 			}
 		}
 	}
-	PM_LOGOUT("PMU : %s : new table\n",__func__);
+	PM_LOGOUT("PMU: %s : new table\n",__func__);
 	for (i = 0; i <= 10; i = i+1) {
 		temp = (battery_init_para[info->num][i*2]<<8)
 			 | (battery_init_para[info->num][i*2+1]);
