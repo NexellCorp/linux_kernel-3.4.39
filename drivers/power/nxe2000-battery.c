@@ -3895,10 +3895,10 @@ static void charger_irq_work(struct work_struct *work)
 		case SUPPLY_STATE_USB:// plug in USB
 			info->ubc_check_count = 1;
 
+			nxe2000_read(info->dev->parent, CHGCTL1_REG, &set_val);
+
 			if (info->input_power_type == INPUT_POWER_TYPE_ADP_UBC)
 			{
-				nxe2000_read(info->dev->parent, CHGCTL1_REG, &set_val);
-
 				if (otg_id == 0)
 				{
 					set_val |= (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
@@ -3911,50 +3911,24 @@ static void charger_irq_work(struct work_struct *work)
 				}
 
 				set_val &= ~(0x1 << NXE2000_POS_CHGCTL1_CHGP);
-
-				ret = nxe2000_write(info->dev->parent, CHGCTL1_REG, set_val);
-				if (ret < 0)
-					ret = nxe2000_write(info->dev->parent, CHGCTL1_REG, set_val);
 			}
 			else if(info->input_power_type == INPUT_POWER_TYPE_UBC)
 			{
-				uint8_t pwr_path;
-
-				val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
-					| (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN)
-					| (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
+				//set_val |= (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM);
+				//set_val |= (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN);
+				//set_val |= (0x1 << NXE2000_POS_CHGCTL1_CHGP);
 
 				if (otg_id == 0) 
 				{
-					val |= (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
-					val |= (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
-				}
-
-				ret = nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
-				if (ret < 0)
-					ret = nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
-
-				ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &pwr_path);
-				if (ret < 0)
-					ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &pwr_path);
-
-				if (pwr_path & 0x40)
-				{
-					val = (0x1 << NXE2000_POS_CHGCTL1_CHGP);
-					ret = nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, val);
-					if (ret < 0)
-						ret = nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, val);
-
-					info->ubc_check_count = 0;
-				}
-				else if (pwr_path & 0x80)
-				{
-					val = (0x1 << NXE2000_POS_CHGCTL1_CHGP);
-					ret = nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, val);
-					if (ret < 0)
-						ret = nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, val);
+					set_val |= (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
+					set_val |= (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
+					set_val &= ~(0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN);
 				}
 			}
+
+			ret = nxe2000_write(info->dev->parent, CHGCTL1_REG, set_val);
+			if (ret < 0)
+				ret = nxe2000_write(info->dev->parent, CHGCTL1_REG, set_val);
 			break;
 
 		case 3:// plug in USB/ADP
@@ -3966,7 +3940,7 @@ static void charger_irq_work(struct work_struct *work)
 
 #ifdef ENABLE_DEBUG
 	PM_LOGOUT( "\n###########################################################\n");
-	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] val:0x%x, otg_id:0x%x \n", __func__, __LINE__, val, otg_id);
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] val:0x%x, otg_id:0x%x, power_type:0x%x \n", __func__, __LINE__, val, otg_id, info->input_power_type);
 
 	ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &val);
 	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] CHGSTATE_REG :0x%02x, val:0x%02x \n", __func__, __LINE__, CHGSTATE_REG, val);
