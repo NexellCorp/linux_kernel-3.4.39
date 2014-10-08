@@ -18,8 +18,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#define NXE2000_BATTERY_VERSION "NXE2000_BATTERY_VERSION: 2014.07.04 V3.1.3.2(2014.09.25:modify)"
+///////////////////////////////////////////////////////////////////////
+// Date		ID				Description
+//--------------------------------------------------------------------
+//
+//10-07-2014			 modify	- When Low Battery Detection disable, 
+// 							   fg_target_vsys setting default value.
+//
+//09-25-2014			 modify	- Set the higher-priority VADP charge.
+//
+///////////////////////////////////////////////////////////////////////
 
+#define NXE2000_BATTERY_VERSION "NXE2000_BATTERY_VERSION: 2014.07.04 V3.1.3.2(2014.10.08:modify)"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -308,6 +318,7 @@ struct nxe2000_battery_info {
 
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION) || defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
 	bool			low_bat_power_off;
+	u8				low_bat_cnt;
 #endif
 
 	int 			num;
@@ -366,28 +377,6 @@ static void nxe2000_battery_work(struct work_struct *work)
 					 info->monitor_time * HZ);
 }
 
-#ifdef ENABLE_FUEL_GAUGE_FUNCTION
-static int measure_vbatt_FG(struct nxe2000_battery_info *info, int *data);
-static int measure_Ibatt_FG(struct nxe2000_battery_info *info, int *data);
-static int calc_capacity(struct nxe2000_battery_info *info);
-static int calc_capacity_2(struct nxe2000_battery_info *info);
-static int calc_first_soc(struct nxe2000_battery_info *info);
-static void suspend_charge4first_soc(struct nxe2000_battery_info *info);
-static int get_OCV_init_Data(struct nxe2000_battery_info *info, int index);
-static int get_OCV_voltage(struct nxe2000_battery_info *info, int index);
-static int get_check_fuel_gauge_reg(struct nxe2000_battery_info *info,
-					 int Reg_h, int Reg_l, int enable_bit);
-static int calc_capacity_in_period(struct nxe2000_battery_info *info,
-				 int *cc_cap, bool *is_charging, int cc_rst);
-static int get_power_supply_status(struct nxe2000_battery_info *info);
-static int get_power_supply_Android_status(struct nxe2000_battery_info *info);
-static int measure_vsys_ADC(struct nxe2000_battery_info *info, int *data);
-static int Calc_Linear_Interpolation(int x0, int y0, int x1, int y1, int y);
-static int get_battery_temp(struct nxe2000_battery_info *info);
-static int get_battery_temp_2(struct nxe2000_battery_info *info);
-static int check_jeita_status(struct nxe2000_battery_info *info, bool *is_jeita_updated);
-static void nxe2000_scaling_OCV_table(struct nxe2000_battery_info *info, int cutoff_vol, int full_vol, int *start_per, int *end_per);
-
 #ifdef NXE2000_REG_DUMP
 void nxe2000_register_dump(struct device *dev)
 {
@@ -430,6 +419,29 @@ void nxe2000_register_dump(struct device *dev)
 	PM_DBGOUT("##########################################################\n");
 }
 #endif
+
+
+#ifdef ENABLE_FUEL_GAUGE_FUNCTION
+static int measure_vbatt_FG(struct nxe2000_battery_info *info, int *data);
+static int measure_Ibatt_FG(struct nxe2000_battery_info *info, int *data);
+static int calc_capacity(struct nxe2000_battery_info *info);
+static int calc_capacity_2(struct nxe2000_battery_info *info);
+static int calc_first_soc(struct nxe2000_battery_info *info);
+static void suspend_charge4first_soc(struct nxe2000_battery_info *info);
+static int get_OCV_init_Data(struct nxe2000_battery_info *info, int index);
+static int get_OCV_voltage(struct nxe2000_battery_info *info, int index);
+static int get_check_fuel_gauge_reg(struct nxe2000_battery_info *info,
+					 int Reg_h, int Reg_l, int enable_bit);
+static int calc_capacity_in_period(struct nxe2000_battery_info *info,
+				 int *cc_cap, bool *is_charging, int cc_rst);
+static int get_power_supply_status(struct nxe2000_battery_info *info);
+static int get_power_supply_Android_status(struct nxe2000_battery_info *info);
+static int measure_vsys_ADC(struct nxe2000_battery_info *info, int *data);
+static int Calc_Linear_Interpolation(int x0, int y0, int x1, int y1, int y);
+static int get_battery_temp(struct nxe2000_battery_info *info);
+static int get_battery_temp_2(struct nxe2000_battery_info *info);
+static int check_jeita_status(struct nxe2000_battery_info *info, bool *is_jeita_updated);
+static void nxe2000_scaling_OCV_table(struct nxe2000_battery_info *info, int cutoff_vol, int full_vol, int *start_per, int *end_per);
 
 static int calc_ocv(struct nxe2000_battery_info *info)
 {
@@ -810,10 +822,10 @@ static int get_target_use_cap(struct nxe2000_battery_info *info)
 
 	Ocv_ZeroPer_now = info->soca->target_vsys * 1000 - Ibat_now * Rsys_now;
 
-	PM_LOGOUT("PMU: -------  Ocv_now_table= %d: Rsys_now= %d =======\n",
+	PM_LOGOUT("PMU: ------- Ocv_now_table= %d: Rsys_now= %d =======\n",
 	       Ocv_now_table, Rsys_now);
 
-	PM_LOGOUT("PMU: -------  Rsys= %d: cutoff_ocv= %d: Ocv_ZeroPer_now= %d =======\n",
+	PM_LOGOUT("PMU: ------- Rsys= %d: cutoff_ocv= %d: Ocv_ZeroPer_now= %d =======\n",
 	       info->soca->Rsys, info->soca->cutoff_ocv, Ocv_ZeroPer_now);
 
 	/* get FA_CAP_now */
@@ -831,7 +843,7 @@ static int get_target_use_cap(struct nxe2000_battery_info *info)
 
 	FA_CAP_now = fa_cap * ((10000 - start_per) / 100 ) / 100;
 
-	PM_LOGOUT("PMU: -------  Target_Cutoff_Vol= %d: Ocv_ZeroPer_now= %d: start_per= %d =======\n",
+	PM_LOGOUT("PMU: ------- Target_Cutoff_Vol= %d: Ocv_ZeroPer_now= %d: start_per= %d =======\n",
 	       info->soca->cutoff_ocv, Ocv_ZeroPer_now, start_per);
 
 	/* get RE_CAP_now */
@@ -965,8 +977,7 @@ static void nxe2000_displayed_work(struct work_struct *work)
 	int cc_delta_offset;
 	int cc_correct_value;
 
-	struct nxe2000_battery_info *info = container_of(work,
-	struct nxe2000_battery_info, displayed_work.work);
+	struct nxe2000_battery_info *info = container_of(work, struct nxe2000_battery_info, displayed_work.work);
 
 	if (info->entry_factory_mode) {
 		info->soca->status = NXE2000_SOCA_STABLE;
@@ -975,9 +986,8 @@ static void nxe2000_displayed_work(struct work_struct *work)
 		return;
 	}
 
-#ifdef ENABLE_DEBUG
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
-#endif
+	PM_LOGOUT("\n######################################################\n");
+	PM_LOGOUT("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 
 	mutex_lock(&info->lock);
 
@@ -1746,6 +1756,9 @@ end_flow:
 		info->soca->status, info->soca->Ibat_ave, info->soca->Vsys_ave, info->soca->Vbat_ave,
 		info->soca->displayed_soc, info->soca->soc, info->soca->rsoc_ready_flag);
 
+	PM_LOGOUT( "## Rsys:%d, target_ibat:%d, target_vsys:%d, cutoff_ocv:%d, fg_poff_vbat:%d \n",
+						info->soca->Rsys, info->soca->target_ibat, info->soca->target_vsys, info->soca->cutoff_ocv, info->fg_poff_vbat);
+
 #ifdef DISABLE_CHARGER_TIMER
 	/* clear charger timer */
 	if ( info->soca->chg_status == POWER_SUPPLY_STATUS_CHARGING ) {
@@ -2096,8 +2109,8 @@ static int nxe2000_init_fgsoca(struct nxe2000_battery_info *info)
 
 	for (i = 0; i <= 10; i = i+1) {
 		info->soca->ocv_table[i] = get_OCV_voltage(info, i);
-		PM_LOGOUT(KERN_INFO "PMU: %s : * %3d%%  voltage = %d uV\n",
-				 __func__, i*10, info->soca->ocv_table[i]);
+		PM_LOGOUT(KERN_INFO "PMU: %s : * %3d%%  voltage = %d uV (0x%x)\n",
+				 __func__, i*10, info->soca->ocv_table[i], get_OCV_init_Data(info, i));
 	}
 
 	for (i = 0; i < 3; i = i+1)
@@ -2214,8 +2227,8 @@ static int nxe2000_init_fgsoca(struct nxe2000_battery_info *info)
 			dev_err(info->dev, "Error in writing the control register\n");
 	}
 
-	PM_LOGOUT(KERN_INFO "PMU: %s : * Rbat = %d mOhm   n_cap = %d mAH\n",
-			 __func__, info->soca->Rbat, info->soca->n_cap);
+	PM_LOGOUT(KERN_INFO "PMU: %s : * Rbat = %d mOhm   n_cap = %d mAH (0x%04x)\n",
+			 __func__, info->soca->Rbat, info->soca->n_cap, get_OCV_init_Data(info, 11));
 	return 1;
 }
 #endif
@@ -2240,7 +2253,7 @@ static void nxe2000_sw_ubc_work(struct work_struct *work)
 	int pmic_vbus;
 	int temp, ret;
 
-	power_supply_changed(&info->battery);
+	//power_supply_changed(&info->battery);
 
 #if (CFG_USB_DET_FROM_PMIC_INT == 1)
 	pmic_vbus = 1;
@@ -2289,10 +2302,8 @@ static void nxe2000_sw_ubc_work(struct work_struct *work)
 	if (val != temp)
 		info->flag_set_ilimit = false;
 
-#ifdef ENABLE_DEBUG
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d] is_sdp_type:0x%x, pmic_vbus:0x%x, flag_set_ilimit:0x%x, temp:0x%x, extif_gchgdet:0x%x \n", 
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] is_sdp_type:0x%x, pmic_vbus:0x%x, flag_set_ilimit:0x%x, temp:0x%x, extif_gchgdet:0x%x \n", 
 						__func__, __LINE__, info->is_sdp_type, pmic_vbus, info->flag_set_ilimit, temp, extif_gchgdet);
-#endif
 
 	if (pmic_vbus && !info->flag_set_ilimit) {
 		ret = nxe2000_write(info->dev->parent, NXE2000_REG_REGISET2, temp);
@@ -2313,7 +2324,10 @@ recheck_ubc:
 		queue_delayed_work(info->monitor_wqueue,
 					&info->sw_ubc_work, msecs_to_jiffies(1000));
 	}
-
+	else
+	{
+		power_supply_changed(&info->battery);
+	}
 	return;
 }
 #endif
@@ -2936,8 +2950,8 @@ static void nxe2000_scaling_OCV_table(struct nxe2000_battery_info *info, int cut
 		temp = (battery_init_para[info->num][i*2]<<8)
 			 | (battery_init_para[info->num][i*2+1]);
 		/* conversion unit 1 Unit is 1.22mv (5000/4095 mv) */
-		temp = ((temp * 50000 * 10 / 4095) + 5) / 10;
-		PM_LOGOUT("PMU : %s : ocv_table %3d%%  is %d v\n",__func__, i*10, temp);
+		temp = ((temp * 50000 * 10 / 4095) + 5);
+		PM_LOGOUT("PMU: %s : ocv_table %3d%% vol = %d uV (0x%x)\n",__func__, i*10, temp, get_OCV_init_Data(info, i));
 	}
 
 }
@@ -2963,8 +2977,8 @@ static int nxe2000_set_OCV_table(struct nxe2000_battery_info *info)
 	//get ocv table
 	for (i = 0; i <= 10; i = i+1) {
 		info->soca->ocv_table_def[i] = get_OCV_voltage(info, i);
-		PM_LOGOUT(KERN_INFO "PMU: %s : %3d%%  voltage = %d uV\n",
-			 __func__, i*10, info->soca->ocv_table_def[i]);
+		PM_LOGOUT(KERN_INFO "PMU: %s : %3d%% vol = %d uV (0x%x)\n",
+			 __func__, i*10, info->soca->ocv_table_def[i], get_OCV_init_Data(info, i));
 	}
 
 	temp =  (battery_init_para[info->num][24]<<8) | (battery_init_para[info->num][25]);
@@ -3022,6 +3036,10 @@ static int nxe2000_set_OCV_table(struct nxe2000_battery_info *info)
 		battery_init_para[info->num][22] =  available_cap >> 8;
 
 	}
+
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] Rsys:%d, target_ibat:%d, target_vsys:%d, cutoff_ocv:%d, fg_poff_vbat:%d \n", __func__, __LINE__, 
+						info->soca->Rsys, info->soca->target_ibat, info->soca->target_vsys, info->soca->cutoff_ocv, info->fg_poff_vbat);
+
 	ret = nxe2000_clr_bits(info->dev->parent, FG_CTRL_REG, 0x01);
 	if (ret < 0) {
 		dev_err(info->dev, "error in FG_En off\n");
@@ -3504,6 +3522,9 @@ static int nxe2000_init_charger(struct nxe2000_battery_info *info)
 	//nxe2000_write(info->dev->parent, NXE2000_INT_EN_ADC1, low_det_bits);
 	nxe2000_write(info->dev->parent, NXE2000_INT_EN_ADC1, 0x00);
 
+ 	/* Cleaning ADC interrupt */
+	nxe2000_write(info->dev->parent, NXE2000_INT_IR_ADCL, 0);
+
 	/* Start auto-mode & average 4-time conversion mode for ADC */
 	// set from suspend
 	nxe2000_write(info->dev->parent, NXE2000_ADC_CNT3, 0x28);
@@ -3944,34 +3965,34 @@ static void charger_irq_work(struct work_struct *work)
 	}
 
 #ifdef ENABLE_DEBUG
-	printk(KERN_ERR "###########################################################");
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d] val:0x%x, otg_id:0x%x \n", __func__, __LINE__, val, otg_id);
+	PM_LOGOUT( "\n###########################################################\n");
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] val:0x%x, otg_id:0x%x \n", __func__, __LINE__, val, otg_id);
 
 	ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &val);
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d] CHGSTATE_REG :0x%02x, val:0x%02x \n", __func__, __LINE__, CHGSTATE_REG, val);
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] CHGSTATE_REG :0x%02x, val:0x%02x \n", __func__, __LINE__, CHGSTATE_REG, val);
 
 	nxe2000_read(info->dev->parent, CHGCTL1_REG, &val);
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d] CHGCTL1_REG :0x%02x, val:0x%02x \n", __func__, __LINE__, CHGCTL1_REG, val);
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] CHGCTL1_REG :0x%02x, val:0x%02x \n", __func__, __LINE__, CHGCTL1_REG, val);
 
 	nxe2000_read(info->dev->parent, REGISET1_REG, &val);
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d] REGISET1_REG:0x%02x, val:0x%02x \n", __func__, __LINE__, REGISET1_REG, val);
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] REGISET1_REG:0x%02x, val:0x%02x \n", __func__, __LINE__, REGISET1_REG, val);
 
 	nxe2000_read(info->dev->parent, REGISET2_REG, &val);
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d] REGISET2_REG:0x%02x, val:0x%02x \n", __func__, __LINE__, REGISET2_REG, val);
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] REGISET2_REG:0x%02x, val:0x%02x \n", __func__, __LINE__, REGISET2_REG, val);
 
 	nxe2000_read(info->dev->parent, CHGISET_REG, &val);
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d] CHGISET_REG:0x%02x, val:0x%02x \n", __func__, __LINE__, CHGISET_REG, val);
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] CHGISET_REG:0x%02x, val:0x%02x \n", __func__, __LINE__, CHGISET_REG, val);
 
 	nxe2000_read(info->dev->parent, NXE2000_INT_IR_CHGEXTIF, &val);
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d] INT_IR_CHGEXTIF:0x%02x, val:0x%02x \n", __func__, __LINE__, NXE2000_INT_IR_CHGEXTIF, val);
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] INT_IR_CHGEXTIF:0x%02x, val:0x%02x \n", __func__, __LINE__, NXE2000_INT_IR_CHGEXTIF, val);
 
 	nxe2000_read(info->dev->parent, NXE2000_REG_EXTIF_GCHGDET, &val);
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d] EXTIF_GCHGDET:0x%02x, val:0x%02x \n", __func__, __LINE__, NXE2000_REG_EXTIF_GCHGDET, val);
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] EXTIF_GCHGDET:0x%02x, val:0x%02x \n", __func__, __LINE__, NXE2000_REG_EXTIF_GCHGDET, val);
 
 	nxe2000_read(info->dev->parent, NXE2000_REG_EXTIF_PCHGDET, &val);
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d] EXTIF_PCHGDET:0x%02x, val:0x%02x \n", __func__, __LINE__, NXE2000_REG_EXTIF_PCHGDET, val);
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] EXTIF_PCHGDET:0x%02x, val:0x%02x \n", __func__, __LINE__, NXE2000_REG_EXTIF_PCHGDET, val);
 
-	printk(KERN_ERR "###########################################################");
+	PM_LOGOUT( "###########################################################\n");
 #endif
 
 /* ======================================================= */
@@ -4084,9 +4105,7 @@ static void otgid_detect_irq_work(struct work_struct *work)
 	if (info->gpio_otg_usbid > -1)
 		otg_id = gpio_get_value(info->gpio_otg_usbid);
 
-#ifdef ENABLE_DEBUG
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d] otg_id:0x%x \n", __func__, __LINE__, otg_id);
-#endif
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] otg_id:0x%x \n", __func__, __LINE__, otg_id);
 
 	if (otg_id)
 		set_otg_power_control(info, 1);
@@ -4110,14 +4129,6 @@ int otgid_power_control_by_dwc(int enable)
 		}
 	}
 
-#ifdef ENABLE_DEBUG
-	{
-	uint8_t set_val = 0;
-	nxe2000_read(info_by_dwc->dev->parent, CHGCTL1_REG, &set_val);
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d] enable:0x%x, CHGCTL1_REG[0x%02x]: 0x%x  \n", __func__, __LINE__, enable, CHGCTL1_REG, set_val);
-	PM_DBGOUT("## [\e[31m%s\e[0m():%d] enable:0x%x, CHGCTL1_REG[0x%02x]: 0x%x  \n", __func__, __LINE__, enable, CHGCTL1_REG, set_val);
-	}
-#endif
 	return 0;
 }
 EXPORT_SYMBOL(otgid_power_control_by_dwc);
@@ -4128,26 +4139,7 @@ static void low_battery_irq_work(struct work_struct *work)
 	struct nxe2000_battery_info *info = container_of(work,
 		 struct nxe2000_battery_info, low_battery_work.work);
 
-#if 0
-	uint8_t val = 0;
-
-#if defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
-	val |= 0x02;
-#endif
-#if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION)
-	val |= 0x10;
-#endif
-
-	/* Cleaning ADC interrupt */
-	nxe2000_write(info->dev->parent, NXE2000_INT_IR_ADCL, 0);
-
-	/* Enable VBAT/VSYS threshold Low interrupt */
-	nxe2000_write(info->dev->parent, NXE2000_INT_EN_ADC1, val);
-#endif
-
-#ifdef ENABLE_DEBUG
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
-#endif
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] %d \n", __func__, __LINE__, info->low_bat_cnt);
 
 	info->low_bat_power_off = true;
 	power_supply_changed(&info->battery);
@@ -4157,8 +4149,17 @@ static irqreturn_t low_adc_detect_isr(int irq, void *battery_info)
 {
 	struct nxe2000_battery_info *info = battery_info;
 
-#if 0
-	uint8_t val = 0;
+#ifdef ENABLE_DEBUG
+	PM_DBGOUT(KERN_ERR "## [\e[31m%s\e[0m():%d] %d \n", __func__, __LINE__, info->low_bat_cnt);
+#endif
+
+	if(info->low_bat_cnt > 0)
+	{
+		queue_delayed_work(info->monitor_wqueue, &info->low_battery_work, LOW_BATTERY_DETECTION_TIME*HZ);
+	}
+	else
+	{
+		uint8_t val = 0;
 
 #if defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
 	val |= 0x02;
@@ -4166,16 +4167,14 @@ static irqreturn_t low_adc_detect_isr(int irq, void *battery_info)
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION)
 	val |= 0x10;
 #endif
+		/* Enable VBAT/VSYS threshold Low interrupt */
+		// nxe2000_write(info->dev->parent, NXE2000_INT_EN_ADC1, val);
 
-	/* Cleaning ADC interrupt */
-	nxe2000_write(info->dev->parent, NXE2000_INT_IR_ADCL, 0);
+	 	/* Cleaning ADC interrupt */
+		// nxe2000_write(info->dev->parent, NXE2000_INT_IR_ADCL, 0);
 
-	/* Enable VBAT/VSYS threshold Low interrupt */
-	nxe2000_write(info->dev->parent, NXE2000_INT_EN_ADC1, val);
-#endif
-
-	queue_delayed_work(info->monitor_wqueue, &info->low_battery_work, LOW_BATTERY_DETECTION_TIME*HZ);
-
+		info->low_bat_cnt++;
+	}
 	return IRQ_HANDLED;
 }
 #endif
@@ -4184,9 +4183,7 @@ static irqreturn_t charger_in_isr(int irq, void *battery_info)
 {
 	struct nxe2000_battery_info *info = battery_info;
 
-#ifdef ENABLE_DEBUG
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
-#endif
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 
 	if(info->first_soc && info->factory_mode_complete){
 		suspend_charge4first_soc(info);
@@ -4201,9 +4198,7 @@ static irqreturn_t charger_complete_isr(int irq, void *battery_info)
 {
 	struct nxe2000_battery_info *info = battery_info;
 
-#ifdef ENABLE_DEBUG
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
-#endif
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 
 	info->chg_stat1 |= 0x02;
 	queue_work(info->workqueue, &info->irq_work);
@@ -4215,9 +4210,7 @@ static irqreturn_t charger_usb_isr(int irq, void *battery_info)
 {
 	struct nxe2000_battery_info *info = battery_info;
 
-#ifdef ENABLE_DEBUG
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
-#endif
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 
 	info->chg_ctr |= 0x02;
 	queue_work(info->workqueue, &info->irq_work);
@@ -4245,9 +4238,7 @@ static irqreturn_t charger_adp_isr(int irq, void *battery_info)
 {
 	struct nxe2000_battery_info *info = battery_info;
 
-#ifdef ENABLE_DEBUG
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
-#endif
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 
 	info->chg_ctr |= 0x01;
 	queue_work(info->workqueue, &info->irq_work);
@@ -4269,9 +4260,7 @@ static irqreturn_t sw_ubc_isr(int irq, void *battery_info)
 {
 	struct nxe2000_battery_info *info = battery_info;
 
-#ifdef ENABLE_DEBUG
-	printk(KERN_ERR "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
-#endif
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 
 	dwc_otg_pcd_clear_ep0_state();
 	info->pmic_vbuschk_count = PMIC_VBUSCHK_COUNT;
@@ -5261,25 +5250,26 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 	info->jt_vfchg_l	= pdata->type[type_n].jt_vfchg_l;
 	info->jt_ichg_h		= pdata->type[type_n].jt_ichg_h;
 	info->jt_ichg_l		= pdata->type[type_n].jt_ichg_l;
-	info->adc_vdd_mv = ADC_VDD_MV;		/* 2800; */
-	info->min_voltage = MIN_VOLTAGE;	/* 3100; */
-	info->max_voltage = MAX_VOLTAGE;	/* 4200; */
-	info->delay = 500;
+	info->adc_vdd_mv	= ADC_VDD_MV;		/* 2800; */
+	info->min_voltage	= MIN_VOLTAGE;	/* 3100; */
+	info->max_voltage	= MAX_VOLTAGE;	/* 4200; */
+	info->delay			= 500;
 	info->entry_factory_mode = false;
+
+	// default value
+	info->alarm_vol_mv = pdata->alarm_vol_mv - ((pdata->slp_ibat * (pdata->bat_impe + 550)) / 10000);
+	info->fg_target_vsys = pdata->alarm_vol_mv - ((info->fg_target_ibat * (pdata->bat_impe + 550)) / 10000);
 
 #if defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
 	info->alarm_vol_mv = pdata->alarm_vol_mv - ((pdata->slp_ibat * pdata->bat_impe) / 10000);
 	info->fg_target_vsys = pdata->alarm_vol_mv - ((info->fg_target_ibat * pdata->bat_impe) / 10000);
 #endif
-#if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION)
-	info->alarm_vol_mv = pdata->alarm_vol_mv - ((pdata->slp_ibat * (pdata->bat_impe + 550)) / 10000);
-	info->fg_target_vsys = pdata->alarm_vol_mv - ((info->fg_target_ibat * (pdata->bat_impe + 550)) / 10000);
-#endif
 
 	info->low_vbat_vol_mv = pdata->low_vbat_vol_mv;
 	info->low_vsys_vol_mv = pdata->low_vsys_vol_mv;
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION) || defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
-	info->low_bat_power_off	= false;
+	info->low_bat_power_off = false;
+	info->low_bat_cnt = 0;
 #endif
 
 	info->online_state		= 0;
@@ -5948,7 +5938,9 @@ static int nxe2000_battery_suspend(struct device *dev)
 	if(info->low_bat_power_off == true)
 		return -EBUSY;
 
-	val = 0;
+	info->low_bat_cnt = 0;
+
+	val = 0x00
 #if defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
 	/* Enable VBAT threshold Low interrupt */
 	val |= 0x02;
@@ -6050,6 +6042,8 @@ static int nxe2000_battery_resume(struct device *dev) {
 	PM_DBGOUT("PMU: ++ %s\n", __func__);
 
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION) || defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
+	info->low_bat_cnt = 0;
+
 	/* Set ADRQ=00 to stop ADC */
 	ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT3, 0x0);
 	if (ret < 0)

@@ -665,6 +665,7 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 	.gpio_pmic_vbus		= CFG_GPIO_PMIC_VUSB_DET,
 	.gpio_pmic_lowbat	= CFG_GPIO_PMIC_LOWBAT_DET,
 
+	.low_vbat_vol_mv	= 3600,
 	.low_vsys_vol_mv	= 3600,
 	.alarm_vol_mv		= 3450,	//3450,
 	.bat_impe			= 1500,
