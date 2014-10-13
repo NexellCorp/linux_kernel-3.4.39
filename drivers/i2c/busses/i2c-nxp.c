@@ -301,9 +301,9 @@ static inline void i2c_stop_dev(struct nxp_i2c_param *par, int nostop, int read)
 		ICSR  = readl(base+I2C_ICSR_OFFS);
 		ICSR &= ~(1<<ICSR_OUT_ENB_POS);
 		*/
-		ICSR  = (par->trans_mode << ICSR_MOD_SEL_POS ) ;
+	//	ICSR  = (par->trans_mode << ICSR_MOD_SEL_POS ) ;
 	//	ICSR  =  ( par->trans_mode << ICSR_MOD_SEL_POS) | (1<<ICSR_SIG_GEN_POS) | (1<<ICSR_OUT_ENB_POS);
-//		ICSR  =  ( par->trans_mode << ICSR_MOD_SEL_POS) | (1<<ICSR_OUT_ENB_POS);
+		ICSR  =  ( par->trans_mode << ICSR_MOD_SEL_POS) | (1<<ICSR_OUT_ENB_POS);
 		writel(ICSR, (base+I2C_ICSR_OFFS));
 
 		ICCR = (1<<ICCR_IRQ_CLR_POS);
