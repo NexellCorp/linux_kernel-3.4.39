@@ -22,6 +22,8 @@
 // Date		ID				Description
 //--------------------------------------------------------------------
 //
+//10-13-2014			modify	- ENABLE_LOW_BATTERY_VSYS_DETECTION enable.
+//
 //10-07-2014			 modify	- When Low Battery Detection disable, 
 // 							   fg_target_vsys setting default value.
 //
@@ -29,7 +31,7 @@
 //
 ///////////////////////////////////////////////////////////////////////
 
-#define NXE2000_BATTERY_VERSION "NXE2000_BATTERY_VERSION: 2014.07.04 V3.1.3.2(2014.10.08:modify)"
+#define NXE2000_BATTERY_VERSION "NXE2000_BATTERY_VERSION: 2014.07.04 V3.1.3.2(2014.10.13:modify)"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -80,7 +82,7 @@
 ////////////////////////////////////////
 //#define BAT_RESUME_WORK_QUEUE
 #define ENABLE_FUEL_GAUGE_FUNCTION
-//#define ENABLE_LOW_BATTERY_VSYS_DETECTION
+#define ENABLE_LOW_BATTERY_VSYS_DETECTION
 //#define ENABLE_LOW_BATTERY_VBAT_DETECTION
 //#define ENABLE_FACTORY_MODE
 #define DISABLE_CHARGER_TIMER
@@ -318,7 +320,6 @@ struct nxe2000_battery_info {
 
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION) || defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
 	bool			low_bat_power_off;
-	u8				low_bat_cnt;
 #endif
 
 	int 			num;
@@ -3507,12 +3508,12 @@ static int nxe2000_init_charger(struct nxe2000_battery_info *info)
 
 	/*  VBAT threshold low voltage value = (voltage(V)*255)/(2*2.5) */
 	info->low_vbat_thl = ((info->low_vbat_vol_mv * 255) / 5000)+1;
-	nxe2000_write(info->dev->parent, NXE2000_ADC_VBAT_THL, info->low_vbat_thl);
+	nxe2000_write(info->dev->parent, NXE2000_ADC_VBAT_THL, 0x00);
 	low_det_bits |= 0x02;
 
 	/*  VSYS threshold low voltage value = (voltage(V)*255)/(3*2.5) */
 	info->low_vsys_thl = ((info->low_vsys_vol_mv * 255) / 7500)+1;
-	nxe2000_write(info->dev->parent, NXE2000_ADC_VSYS_THL, info->low_vsys_thl);
+	nxe2000_write(info->dev->parent, NXE2000_ADC_VSYS_THL, 0x00);
 	low_det_bits |= 0x10;
 
 	/* Enable VBAT/VSYS pin conversion in auto-ADC */
@@ -4113,7 +4114,7 @@ static void low_battery_irq_work(struct work_struct *work)
 	struct nxe2000_battery_info *info = container_of(work,
 		 struct nxe2000_battery_info, low_battery_work.work);
 
-	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] %d \n", __func__, __LINE__, info->low_bat_cnt);
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] \n", __func__, __LINE__);
 
 	info->low_bat_power_off = true;
 	power_supply_changed(&info->battery);
@@ -4124,31 +4125,10 @@ static irqreturn_t low_adc_detect_isr(int irq, void *battery_info)
 	struct nxe2000_battery_info *info = battery_info;
 
 #ifdef ENABLE_DEBUG
-	PM_DBGOUT(KERN_ERR "## [\e[31m%s\e[0m():%d] %d \n", __func__, __LINE__, info->low_bat_cnt);
+	PM_DBGOUT(KERN_ERR "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 #endif
 
-	if(info->low_bat_cnt > 0)
-	{
-		queue_delayed_work(info->monitor_wqueue, &info->low_battery_work, LOW_BATTERY_DETECTION_TIME*HZ);
-	}
-	else
-	{
-		uint8_t val = 0;
-
-#if defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
-	val |= 0x02;
-#endif
-#if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION)
-	val |= 0x10;
-#endif
-		/* Enable VBAT/VSYS threshold Low interrupt */
-		// nxe2000_write(info->dev->parent, NXE2000_INT_EN_ADC1, val);
-
-	 	/* Cleaning ADC interrupt */
-		// nxe2000_write(info->dev->parent, NXE2000_INT_IR_ADCL, 0);
-
-		info->low_bat_cnt++;
-	}
+	queue_delayed_work(info->monitor_wqueue, &info->low_battery_work, LOW_BATTERY_DETECTION_TIME*HZ);
 	return IRQ_HANDLED;
 }
 #endif
@@ -4984,7 +4964,7 @@ static int nxe2000_batt_get_prop(struct power_supply *psy,
 			static int sys_low_vol_cnt = 2;
 			if(sys_low_vol_cnt)
 			{
-				val->intval = info->capacity = (5 * sys_low_vol_cnt);
+				val->intval = info->capacity = sys_low_vol_cnt;
 				sys_low_vol_cnt--;
 			}
 			else
@@ -5243,7 +5223,6 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 	info->low_vsys_vol_mv = pdata->low_vsys_vol_mv;
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION) || defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
 	info->low_bat_power_off = false;
-	info->low_bat_cnt = 0;
 #endif
 
 	info->online_state		= 0;
@@ -5912,9 +5891,7 @@ static int nxe2000_battery_suspend(struct device *dev)
 	if(info->low_bat_power_off == true)
 		return -EBUSY;
 
-	info->low_bat_cnt = 0;
-
-	val = 0x00
+	val = 0x0;
 #if defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
 	/* Enable VBAT threshold Low interrupt */
 	val |= 0x02;
@@ -5923,6 +5900,10 @@ static int nxe2000_battery_suspend(struct device *dev)
 	/* Enable VSYS threshold Low interrupt */
 	val |= 0x10;
 #endif
+
+	/*  VBAT/VSYS threshold low voltage value */
+	nxe2000_write(info->dev->parent, NXE2000_ADC_VBAT_THL, 0x00);
+	nxe2000_write(info->dev->parent, NXE2000_ADC_VSYS_THL, 0x00);
 
 	/* Set ADRQ=00 to stop ADC */
 	ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT3, 0x00);
@@ -5954,6 +5935,14 @@ static int nxe2000_battery_suspend(struct device *dev)
 	if (ret < 0)
 		ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT3, 0x28);
 
+#if defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
+	mdelay(10);
+	nxe2000_write(info->dev->parent, NXE2000_ADC_VBAT_THL, info->low_vbat_thl);
+#endif
+#if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION)
+	mdelay(10);
+	nxe2000_write(info->dev->parent, NXE2000_ADC_VSYS_THL, info->low_vsys_thl);
+#endif
 #endif
 
 	/* OTG POWER OFF */
@@ -6016,7 +6005,10 @@ static int nxe2000_battery_resume(struct device *dev) {
 	PM_DBGOUT("PMU: ++ %s\n", __func__);
 
 #if defined(ENABLE_LOW_BATTERY_VSYS_DETECTION) || defined(ENABLE_LOW_BATTERY_VBAT_DETECTION)
-	info->low_bat_cnt = 0;
+
+	/*  VBAT/VSYS threshold low voltage value */
+	nxe2000_write(info->dev->parent, NXE2000_ADC_VBAT_THL, 0x00);
+	nxe2000_write(info->dev->parent, NXE2000_ADC_VSYS_THL, 0x00);
 
 	/* Set ADRQ=00 to stop ADC */
 	ret = nxe2000_write(info->dev->parent, NXE2000_ADC_CNT3, 0x0);
