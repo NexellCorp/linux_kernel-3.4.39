@@ -697,10 +697,10 @@ static int	nxp_i2c_set_param(struct nxp_i2c_param *par, struct platform_device *
 	t_clk = rate/16/2;
 	for (i = 0; i < 2; i ++) {
 		src	= (i== 0) ? 16: I2C_FAST_DIV;
-		for (div = 2 ; div < 16; div++) {
+		for (div = 1 ; div < 16; div++) {
 			get_real_clk = rate/src/div;
 			if (get_real_clk > req_rate )
-				calc_clk = get_real_clk - req_rate;
+				continue;
 			else
 				calc_clk = req_rate - get_real_clk ;
 			if (calc_clk < t_clk) {
