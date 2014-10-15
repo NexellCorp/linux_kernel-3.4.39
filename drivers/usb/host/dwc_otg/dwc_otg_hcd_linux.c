@@ -71,6 +71,10 @@
 #include "dwc_otg_hcd.h"
 #include "dwc_otg_mphi_fix.h"
 
+#ifdef CONFIG_BATTERY_NXE2000 
+#include <linux/power/nxe2000_battery.h>
+#endif
+
 /**
  * Gets the endpoint number from a _bEndpointAddress argument. The endpoint is
  * qualified with its direction (possible 32 endpoints per device).
@@ -201,8 +205,8 @@ static int dwc_otg_hcd_suspend(struct usb_hcd *hcd)
 {
     dwc_otg_hcd_t *dwc_otg_hcd = hcd_to_dwc_otg_hcd (hcd);
     dwc_otg_core_if_t *core_if = dwc_otg_hcd->core_if;
-    hprt0_data_t hprt0;
-    pcgcctl_data_t pcgcctl;
+//    hprt0_data_t hprt0;
+//    pcgcctl_data_t pcgcctl;
 
     if(core_if->op_state == B_PERIPHERAL) {
     	DWC_PRINTF("%s, usb device mode\n", __func__);
@@ -265,9 +269,11 @@ static int dwc_otg_hcd_resume(struct usb_hcd *hcd)
 {
     dwc_otg_hcd_t *dwc_otg_hcd = hcd_to_dwc_otg_hcd (hcd);
     dwc_otg_core_if_t *core_if = dwc_otg_hcd->core_if;
-    hprt0_data_t hprt0;
-    pcgcctl_data_t pcgcctl;
-    gintmsk_data_t gintmsk;
+//    hprt0_data_t hprt0;
+//    pcgcctl_data_t pcgcctl;
+//    gintmsk_data_t gintmsk;
+    uint32_t count = 0;
+    gotgctl_data_t gotgctl = {.d32 = 0 };
 
     if(core_if->op_state == B_PERIPHERAL) {
     	DWC_PRINTF("%s, usb device mode\n", __func__);
@@ -336,6 +342,32 @@ static int dwc_otg_hcd_resume(struct usb_hcd *hcd)
     /* Clear any pending interrupts and enable interrupts */
     DWC_WRITE_REG32(&core_if->core_global_regs->gintsts, 0xeFFFFFFF);
     dwc_otg_enable_global_interrupts(core_if);
+
+
+    gotgctl.d32 = DWC_READ_REG32(&core_if->core_global_regs->gotgctl);
+
+    /* B-Device connector (Device Mode) */
+    if (gotgctl.b.conidsts) {
+        /* Wait for switch to device mode. */
+        while (!dwc_otg_is_device_mode(core_if)) {
+            DWC_PRINTF("Waiting for Peripheral Mode, Mode=%s\n",
+                   (dwc_otg_is_host_mode(core_if) ? "Host" :
+                    "Peripheral"));
+            dwc_mdelay(100);
+            if (++count > 10000)
+            break;
+        }
+		core_if->op_state = B_PERIPHERAL;
+#ifdef CONFIG_BATTERY_NXE2000 
+        otgid_power_control_by_dwc(0);
+#endif
+        dwc_otg_set_prtpower(core_if, 0);
+		core_if->host_flag = 0;
+		dwc_otg_core_init(core_if);
+	    DWC_WRITE_REG32(&core_if->core_global_regs->gintsts, 0xeFFFFFFF);
+		dwc_otg_enable_global_interrupts(core_if);
+		cil_pcd_start(core_if);
+	}
 
 	return 0;
 }
@@ -617,9 +649,9 @@ static struct dwc_otg_hcd_function_ops hcd_fops = {
 	.get_b_hnp_enable = _get_b_hnp_enable,
 };
 
-static struct fiq_handler fh = {
-  .name = "usb_fiq",
-};
+//static struct fiq_handler fh = {
+//  .name = "usb_fiq",
+//};
 struct fiq_stack_s {
 	int magic1;
 	uint8_t stack[2048];
@@ -640,7 +672,7 @@ int hcd_init(dwc_bus_dev_t *_dev)
 	dwc_otg_device_t *otg_dev = DWC_OTG_BUSDRVDATA(_dev);
 	int retval = 0;
         u64 dmamask;
-	struct pt_regs regs;
+//	struct pt_regs regs;
 
 	DWC_DEBUGPL(DBG_HCD, "DWC OTG HCD INIT otg_dev=%p\n", otg_dev);
 
