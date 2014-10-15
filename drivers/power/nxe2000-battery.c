@@ -22,16 +22,19 @@
 // Date		ID				Description
 //--------------------------------------------------------------------
 //
+//10-14-2014			modify	- Charge control change when suspend.
+//							- Power Supply Prop Online status change.
+//
 //10-13-2014			modify	- ENABLE_LOW_BATTERY_VSYS_DETECTION enable.
 //
-//10-07-2014			 modify	- When Low Battery Detection disable, 
+//10-07-2014			modify	- When Low Battery Detection disable, 
 // 							   fg_target_vsys setting default value.
 //
-//09-25-2014			 modify	- Set the higher-priority VADP charge.
+//09-25-2014			modify	- Set the higher-priority VADP charge.
 //
 ///////////////////////////////////////////////////////////////////////
 
-#define NXE2000_BATTERY_VERSION "NXE2000_BATTERY_VERSION: 2014.07.04 V3.1.3.2(2014.10.13:modify)"
+#define NXE2000_BATTERY_VERSION "NXE2000_BATTERY_VERSION: 2014.07.04 V3.1.3.2(2014.10.14:modify)"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -58,7 +61,7 @@
 //  Debug 
 ////////////////////////////////////////
 
-//#define ENABLE_DEBUG
+// #define ENABLE_DEBUG
 
 #ifdef ENABLE_DEBUG
 #define PM_LOGOUT 						printk
@@ -381,6 +384,8 @@ static void nxe2000_battery_work(struct work_struct *work)
 #ifdef NXE2000_REG_DUMP
 void nxe2000_register_dump(struct device *dev)
 {
+	struct nxe2000_battery_info *info = dev_get_drvdata(dev);
+
 	s32 ret=0;
 	u16 i=0;
 	u8 value[NXE2000_NUM_OF_REGS]={0};
@@ -417,6 +422,13 @@ void nxe2000_register_dump(struct device *dev)
 	PM_DBGOUT("## : VBAT_THL(0x%02x)    : 0x%02x \n", NXE2000_ADC_VBAT_THL, value[NXE2000_ADC_VBAT_THL]);
 	PM_DBGOUT("## : VSYSDATAH(0x%02x)   : 0x%02x \n", NXE2000_REG_VSYSDATAH, value[NXE2000_REG_VSYSDATAH]);
 	PM_DBGOUT("## : VSYS_THL(0x%02x)    : 0x%02x \n", NXE2000_ADC_VSYS_THL, value[NXE2000_ADC_VSYS_THL]);
+
+	if(info->gpio_otg_usbid > -1)
+		PM_DBGOUT("## : gpio_otg_usbid    : 0x%02x \n", gpio_get_value(info->gpio_otg_usbid));
+
+	if (info->gpio_pmic_vbus > -1)
+		PM_DBGOUT("## : gpio_pmic_vbus    : 0x%02x \n", gpio_get_value(info->gpio_pmic_vbus));
+
 	PM_DBGOUT("##########################################################\n");
 }
 #endif
@@ -4095,6 +4107,10 @@ int otgid_power_control_by_dwc(int enable)
 	if(info_by_dwc == NULL)
 		return -ENODEV;
 
+#ifdef ENABLE_DEBUG
+	PM_DBGOUT(KERN_ERR "## [\e[31m%s\e[0m():%d] enable:%d\n", __func__, __LINE__, enable);
+#endif
+
 	if (info_by_dwc->gpio_otg_usbid > -1) {		
 		if (enable){
 			set_otg_power_control(info_by_dwc, 0);
@@ -4137,7 +4153,9 @@ static irqreturn_t charger_in_isr(int irq, void *battery_info)
 {
 	struct nxe2000_battery_info *info = battery_info;
 
-	PM_LOGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+#ifdef ENABLE_DEBUG
+	PM_DBGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+#endif
 
 	if(info->first_soc && info->factory_mode_complete){
 		suspend_charge4first_soc(info);
@@ -4152,7 +4170,9 @@ static irqreturn_t charger_complete_isr(int irq, void *battery_info)
 {
 	struct nxe2000_battery_info *info = battery_info;
 
-	PM_LOGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+#ifdef ENABLE_DEBUG
+	PM_DBGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+#endif
 
 	info->chg_stat1 |= 0x02;
 	queue_work(info->workqueue, &info->irq_work);
@@ -4164,7 +4184,9 @@ static irqreturn_t charger_usb_isr(int irq, void *battery_info)
 {
 	struct nxe2000_battery_info *info = battery_info;
 
-	PM_LOGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+#ifdef ENABLE_DEBUG
+	PM_DBGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+#endif
 
 	info->chg_ctr |= 0x02;
 	queue_work(info->workqueue, &info->irq_work);
@@ -4192,7 +4214,9 @@ static irqreturn_t charger_adp_isr(int irq, void *battery_info)
 {
 	struct nxe2000_battery_info *info = battery_info;
 
-	PM_LOGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+#ifdef ENABLE_DEBUG
+	PM_DBGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+#endif
 
 	info->chg_ctr |= 0x01;
 	queue_work(info->workqueue, &info->irq_work);
@@ -4214,7 +4238,9 @@ static irqreturn_t sw_ubc_isr(int irq, void *battery_info)
 {
 	struct nxe2000_battery_info *info = battery_info;
 
-	PM_LOGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+#ifdef ENABLE_DEBUG
+	PM_DBGOUT( "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+#endif
 
 	dwc_otg_pcd_clear_ep0_state();
 	info->pmic_vbuschk_count = PMIC_VBUSCHK_COUNT;
@@ -4835,69 +4861,78 @@ static int nxe2000_batt_get_prop(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
-	{
-		uint8_t status;
-
-		ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &status);
-		if (ret < 0) {
-			dev_err(info->dev, "Error in reading the control register\n");
-			mutex_unlock(&info->lock);
-			return ret;
-		}
-
-#ifdef KOOK_UBC_CHECK
-		if (otg_id && (status & 0xC0))
 		{
-			if ((info->input_power_type == INPUT_POWER_TYPE_ADP)
-				|| ((info->input_power_type == INPUT_POWER_TYPE_ADP_UBC) && (status & 0x40))
-				|| ((info->input_power_type == INPUT_POWER_TYPE_UBC) && (status & 0x40)))
+			uint8_t status;
+
+			ret = nxe2000_read(info->dev->parent, CHGSTATE_REG, &status);
+			if (ret < 0) {
+				dev_err(info->dev, "Error in reading the control register\n");
+				mutex_unlock(&info->lock);
+				return ret;
+			}
+
+#if 0 // KOOK_UBC_CHECK
+			if (otg_id && (status & 0xC0))
+			{
+				if ((info->input_power_type == INPUT_POWER_TYPE_ADP)
+					|| ((info->input_power_type == INPUT_POWER_TYPE_ADP_UBC) && (status & 0x40))
+					|| ((info->input_power_type == INPUT_POWER_TYPE_UBC) && (status & 0x40)))
+				{
+					if (psy->type == POWER_SUPPLY_TYPE_MAINS)
+						val->intval = (status & 0x40 ? 1 : 0);
+					else if (psy->type == POWER_SUPPLY_TYPE_USB)
+						val->intval = (status & 0x80 ? 1 : 0);
+				}
+				else
+				{
+#if (CFG_SW_UBC_ENABLE == 1)
+					if (psy->type == POWER_SUPPLY_TYPE_MAINS)
+						val->intval = (!info->is_sdp_type ? 1 : 0);
+					else if (psy->type == POWER_SUPPLY_TYPE_USB)
+						val->intval = (info->is_sdp_type ? 1 : 0);
+#else
+					if (psy->type == POWER_SUPPLY_TYPE_MAINS)
+						val->intval = (info->extif_type == EXTIF_TYPE_DCP ? 1 : 0);
+					else if (psy->type == POWER_SUPPLY_TYPE_USB)
+						val->intval = (info->extif_type == EXTIF_TYPE_SDP ? 1 : 0);
+#endif
+				}
+			}
+#else	// KOOK_UBC_CHECK
+
+			if (status & 0xC0) 
 			{
 				if (psy->type == POWER_SUPPLY_TYPE_MAINS)
 					val->intval = (status & 0x40 ? 1 : 0);
 				else if (psy->type == POWER_SUPPLY_TYPE_USB)
 					val->intval = (status & 0x80 ? 1 : 0);
 			}
-			else
-			{
-#if (CFG_SW_UBC_ENABLE == 1)
-				if (psy->type == POWER_SUPPLY_TYPE_MAINS)
-					val->intval = (!info->is_sdp_type ? 1 : 0);
-				else if (psy->type == POWER_SUPPLY_TYPE_USB)
-					val->intval = (info->is_sdp_type ? 1 : 0);
-#else
-				if (psy->type == POWER_SUPPLY_TYPE_MAINS)
-					val->intval = (info->extif_type == EXTIF_TYPE_DCP ? 1 : 0);
-				else if (psy->type == POWER_SUPPLY_TYPE_USB)
-					val->intval = (info->extif_type == EXTIF_TYPE_SDP ? 1 : 0);
-#endif
-			}
-		}
-#else	// #ifdef KOOK_UBC_CHECK
-
-		if (status & 0xC0) {
-			if (psy->type == POWER_SUPPLY_TYPE_MAINS)
-				val->intval = (status & 0x40 ? 1 : 0);
-			else if (psy->type == POWER_SUPPLY_TYPE_USB)
-				val->intval = (status & 0x80 ? 1 : 0);
-		}
 #endif
 
 #ifdef KOOK_FAKE_POWER_ON_EVENT
-		if (nxe2000_power_resume_status)
-		{
-			val->intval = 1;
-			nxe2000_power_resume_status = 0;
-		}
-		else
+			if (nxe2000_power_resume_status)
+			{
+				val->intval = 1;
+				nxe2000_power_resume_status = 0;
+			}
+			else
 #endif
-		{
-			if ((info->capacity == 0) && (info->soca->Ibat_ave < 0))
-				val->intval = 0;
-		}
+			{
+				if ((info->capacity == 0) && (info->soca->Ibat_ave < 0))
+					val->intval = 0;
+			}
 
-		info->online_state = val->intval;
-	}
+			info->online_state = val->intval;
+
+			if(psy->type == POWER_SUPPLY_TYPE_MAINS)
+				DBGOUT(info->dev, "battery online statue(AC) : %d\n", info->online_state);
+			else if(psy->type == POWER_SUPPLY_TYPE_USB)
+				DBGOUT(info->dev, "battery online statue(USB) : %d\n", info->online_state);
+			else
+				DBGOUT(info->dev, "battery online statue(unknown) : %d\n", info->online_state);			
+		}
 		break;
+
 	/* this setting is same as battery driver of 584 */
 	case POWER_SUPPLY_PROP_STATUS:
 		info->status = get_power_supply_Android_status(info);
@@ -5636,6 +5671,17 @@ static int nxe2000_battery_suspend(struct device *dev)
 		}
 	}
 
+#if 1
+	/* OTG POWER OFF */
+	if (info->gpio_otg_vbus > -1)
+		gpio_set_value(info->gpio_otg_vbus, 0);
+
+	val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM);
+	val |= (0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN);
+	val |= (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
+	val	&= ~(0x1 << NXE2000_POS_CHGCTL1_CHGP);
+	nxe2000_write(info->dev->parent, CHGCTL1_REG, val);
+#else
 	if (info->input_power_type == INPUT_POWER_TYPE_ADP)
 	{
 		val = (0x1 << NXE2000_POS_CHGCTL1_NOBATOVLIM)
@@ -5684,6 +5730,7 @@ static int nxe2000_battery_suspend(struct device *dev)
 				ret = nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, val);
 		}
 	}
+#endif
 
 #ifdef ENABLE_MASKING_INTERRUPT_IN_SLEEP
 	nxe2000_clr_bits(dev->parent, NXE2000_INTC_INTEN, CHG_INT);
@@ -5945,10 +5992,6 @@ static int nxe2000_battery_suspend(struct device *dev)
 #endif
 #endif
 
-	/* OTG POWER OFF */
-	if (info->gpio_otg_vbus > -1)
-		gpio_set_value(info->gpio_otg_vbus, 0);
-
 	PM_DBGOUT("PMU: -- %s\n", __func__);
 
 #ifdef NXE2000_REG_DUMP
@@ -6000,7 +6043,6 @@ static int nxe2000_battery_resume(struct device *dev) {
 	int cc_suspend_term;
 	int cc_delta_offset;
 	int cc_correct_value;
-	int otg_id = 1;
 
 	PM_DBGOUT("PMU: ++ %s\n", __func__);
 
@@ -6277,6 +6319,14 @@ static int nxe2000_battery_resume(struct device *dev) {
 		}
 	}
 
+	if (info->gpio_otg_usbid > -1) {
+		if (vbus_irq_disabled == 1)
+		{
+			enable_irq(charger_irq + NXE2000_IRQ_FVUSBDETSINT);
+			vbus_irq_disabled = 0;
+		}
+	}
+
 //	nxe2000_power_suspend_status    = 0;
 
 	info->ubc_check_count	= 1;
@@ -6287,13 +6337,6 @@ static int nxe2000_battery_resume(struct device *dev) {
 		queue_delayed_work(info->monitor_wqueue, &info->otgid_detect_work, msecs_to_jiffies(20));
 	}
 #endif
-	if (info->gpio_otg_usbid > -1) {
-		otg_id = gpio_get_value(info->gpio_otg_usbid);
-		if ((vbus_irq_disabled == 1) && (otg_id == 1)){
-			enable_irq(charger_irq + NXE2000_IRQ_FVUSBDETSINT);
-			vbus_irq_disabled = 0;
-		}
-	}
 #if (CFG_SW_UBC_ENABLE == 1)
 #if (CFG_USB_DET_FROM_PMIC_INT == 1)
 	dwc_otg_pcd_clear_ep0_state();
@@ -6301,7 +6344,6 @@ static int nxe2000_battery_resume(struct device *dev) {
 	info->flag_set_ilimit = false;
 	queue_delayed_work(info->monitor_wqueue, &info->sw_ubc_work, msecs_to_jiffies(1000));
 #else
-
 	if (info->gpio_pmic_vbus > -1) {
 		dwc_otg_pcd_clear_ep0_state();
 		info->pmic_vbuschk_count = PMIC_VBUSCHK_COUNT;
