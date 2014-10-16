@@ -77,6 +77,11 @@ choice
 		help
    	 		Support for the moon board.
 
+	config PLAT_NXP4330_DVR
+		bool "DVR: Linux dvr board"
+		help
+   	 		Support for the dvr board.
+
 endchoice
 
 #

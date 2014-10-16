@@ -51,6 +51,10 @@ ifeq ($(CONFIG_PLAT_NXP4330_MOON),y)
 PLATBOARD :=moon
 endif
 
+ifeq ($(CONFIG_PLAT_NXP4330_DVR),y)
+PLATBOARD :=dvr
+endif
+
 #
 # Build options
 #
