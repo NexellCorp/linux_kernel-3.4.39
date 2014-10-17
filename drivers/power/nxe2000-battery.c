@@ -115,6 +115,13 @@
 //#define NXE2000_REL1_SEL_VALUE		64
 //#define NXE2000_REL2_SEL_VALUE		0
 
+#ifndef MAX
+#define MAX(X, Y) ((X) >= (Y) ? (X) : (Y))
+#endif
+#ifndef MIN
+#define MIN(X, Y) ((X) <= (Y) ? (X) : (Y))
+#endif
+
 enum int_type {
 	SYS_INT  = 0x01,
 	DCDC_INT = 0x02,
@@ -830,7 +837,7 @@ static int get_target_use_cap(struct nxe2000_battery_info *info)
 		Rsys_now = (info->soca->Vsys_ave - Ocv_now_table) / info->soca->Ibat_ave;
 	//else
 	//	Rsys_now = info->soca->Rsys;
-	//	Rsys_now = max(info->soca->Rsys/2, Rsys_now);
+	//	Rsys_now = MAX(info->soca->Rsys/2, Rsys_now);
 
 
 	Ocv_ZeroPer_now = info->soca->target_vsys * 1000 - Ibat_now * Rsys_now;
@@ -852,7 +859,7 @@ static int get_target_use_cap(struct nxe2000_battery_info *info)
 		}
 	}
 
-	start_per = max(0, start_per);
+	start_per = MAX(0, start_per);
 
 	FA_CAP_now = fa_cap * ((10000 - start_per) / 100 ) / 100;
 
@@ -1175,7 +1182,7 @@ static void nxe2000_displayed_work(struct work_struct *work)
 								} else {
 									current_soc_full = calc_capacity_2(info);
 									info->soca->cc_delta = current_soc_full - info->soca->last_soc_full;
-									info->soca->cc_delta = min(13, info->soca->cc_delta);
+									info->soca->cc_delta = MIN(13, info->soca->cc_delta);
 									PM_LOGOUT(KERN_INFO "PMU: %s current_soc_full(%d), last_soc_full(%d), cc_delta(%d)\n",
 										 __func__, current_soc_full, info->soca->last_soc_full, info->soca->cc_delta);
 									info->soca->last_soc_full = current_soc_full;
@@ -1198,15 +1205,15 @@ static void nxe2000_displayed_work(struct work_struct *work)
 							}
 							else full_rate = 251;
 
-							full_rate = min(250, max(40,full_rate));
+							full_rate = MIN(250, MAX(40,full_rate));
 
 							info->soca->displayed_soc
 								 = info->soca->displayed_soc + info->soca->cc_delta* full_rate / 100;
 						}
 
 						info->soca->displayed_soc
-							 = min(10000, info->soca->displayed_soc);
-						info->soca->displayed_soc = max(0, info->soca->displayed_soc);
+							 = MIN(10000, info->soca->displayed_soc);
+						info->soca->displayed_soc = MAX(0, info->soca->displayed_soc);
 
 						if (info->soca->displayed_soc >= 9890) {
 							info->soca->displayed_soc = 99 * 100;
@@ -1281,11 +1288,11 @@ static void nxe2000_displayed_work(struct work_struct *work)
 
 			if(use_cap >= info->soca->target_use_cap) {
 				info->soca->displayed_soc = info->soca->displayed_soc - 100;
-				info->soca->displayed_soc = max(0, info->soca->displayed_soc);
+				info->soca->displayed_soc = MAX(0, info->soca->displayed_soc);
 				info->soca->re_cap_old = re_cap;
 			} else if (info->soca->hurry_up_flg == 1) {
 				info->soca->displayed_soc = info->soca->displayed_soc - 100;
-				info->soca->displayed_soc = max(0, info->soca->displayed_soc);
+				info->soca->displayed_soc = MAX(0, info->soca->displayed_soc);
 				info->soca->re_cap_old = re_cap;
 			}
 			get_target_use_cap(info);
@@ -1459,8 +1466,8 @@ static void nxe2000_displayed_work(struct work_struct *work)
 		if (displayed_soc_temp < 0)
 			displayed_soc_temp = 0;
 		displayed_soc_temp
-			 = min(9850, displayed_soc_temp);
-		displayed_soc_temp = max(0, displayed_soc_temp);
+			 = MIN(9850, displayed_soc_temp);
+		displayed_soc_temp = MAX(0, displayed_soc_temp);
 
 		info->soca->displayed_soc = displayed_soc_temp;
 
@@ -1571,12 +1578,12 @@ static void nxe2000_displayed_work(struct work_struct *work)
 					cc_delta_offset = 100;	//unit is 1/100times
 				} else {
 					if( (soc_now - cc_poff_term) >= 100*100 ){//remove condition divide by Zero
-						cc_delta_offset = 5 * 100; //max 5 times
+						cc_delta_offset = 5 * 100; //MAX 5 times
 					} else {
 						cc_delta_offset = (100 * 100 - info->soca->soc) * 100 / (100 * 100 -  (soc_now - cc_poff_term));
 						
-						cc_delta_offset = min(5 * 100, cc_delta_offset); //max is 5 times
-						cc_delta_offset = max(100 / 5, cc_delta_offset); //min is 1/5 times
+						cc_delta_offset = MIN(5 * 100, cc_delta_offset); //MAX is 5 times
+						cc_delta_offset = MAX(100 / 5, cc_delta_offset); //MIN is 1/5 times
 					}
 				}
 
@@ -1603,8 +1610,8 @@ static void nxe2000_displayed_work(struct work_struct *work)
 				val += (info->soca->cc_delta/100);
 				val += cc_correct_value / 100;
 
-				val = min(99, val);
-				val = max(1, val);
+				val = MIN(99, val);
+				val = MAX(1, val);
 
 				val &= 0x7f;
 
@@ -1621,7 +1628,7 @@ static void nxe2000_displayed_work(struct work_struct *work)
 				PM_LOGOUT(KERN_INFO "PMU: %s : after PSWR %d per\n", __func__, val);
 
 				displayed_soc_temp
-					 = min(10000, displayed_soc_temp);
+					 = MIN(10000, displayed_soc_temp);
 				if (displayed_soc_temp <= 100) {
 					displayed_soc_temp = 100;
 					val = 1;
@@ -1755,8 +1762,8 @@ end_flow:
 			 = (is_charging == true) ? cc_cap : -cc_cap;
 
 		val = info->soca->init_pswr + (info->soca->cc_delta/100);
-		val = min(100, val);
-		val = max(1, val);
+		val = MIN(100, val);
+		val = MAX(1, val);
 
 		info->soca->init_pswr = val;
 
@@ -2026,8 +2033,8 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 			}
 		}
 
-		capacity = max(1, capacity);
-		capacity = min(100, capacity);
+		capacity = MAX(1, capacity);
+		capacity = MIN(100, capacity);
 
 		info->soca->displayed_soc = capacity * 100;
 
@@ -4333,8 +4340,8 @@ static int calc_capacity(struct nxe2000_battery_info *info)
 
 	temp = capacity_l * 100 * 100 / (10000 - nt);
 
-	temp = min(100, temp);
-	temp = max(0, temp);
+	temp = MIN(100, temp);
+	temp = MAX(0, temp);
 
 	return temp;		/* Unit is 1% */
 }
@@ -4361,8 +4368,8 @@ static int calc_capacity_2(struct nxe2000_battery_info *info)
 
 		if (fa_cap != 0) {
 			capacity = ((long)re_cap * 100 * 100 / fa_cap);
-			capacity = (long)(min(10000, (int)capacity));
-			capacity = (long)(max(0, (int)capacity));
+			capacity = (long)(MIN(10000, (int)capacity));
+			capacity = (long)(MAX(0, (int)capacity));
 		} else {
 			ret = nxe2000_read(info->dev->parent, SOC_REG, &val);
 			if (ret < 0) {
@@ -4390,8 +4397,8 @@ static int calc_capacity_2(struct nxe2000_battery_info *info)
 
 	temp = (int)(capacity * 100 * 100 / (10000 - nt));
 
-	temp = min(10000, temp);
-	temp = max(0, temp);
+	temp = MIN(10000, temp);
+	temp = MAX(0, temp);
 
 	return temp;		/* Unit is 0.01% */
 }
@@ -5768,16 +5775,16 @@ static int nxe2000_battery_suspend(struct device *dev)
 				displayed_soc_temp
 					 = info->soca->init_pswr * 100 + (info->soca->cc_delta/100) *100;
 			}
-			displayed_soc_temp = min(10000, displayed_soc_temp);
-			displayed_soc_temp = max(0, displayed_soc_temp);
+			displayed_soc_temp = MIN(10000, displayed_soc_temp);
+			displayed_soc_temp = MAX(0, displayed_soc_temp);
 			info->soca->displayed_soc = displayed_soc_temp;
 
 			info->soca->suspend_soc = info->soca->displayed_soc;
 			info->soca->suspend_cc = info->soca->cc_delta % 100;
 
 			val = info->soca->init_pswr + (info->soca->cc_delta/100);
-			val = min(100, val);
-			val = max(1, val);
+			val = MIN(100, val);
+			val = MAX(1, val);
 
 			info->soca->init_pswr = val;
 
@@ -5796,8 +5803,8 @@ static int nxe2000_battery_suspend(struct device *dev)
 			if (info->soca->status != NXE2000_SOCA_STABLE) {
 				displayed_soc_temp
 					 = info->soca->displayed_soc + info->soca->cc_delta;
-				displayed_soc_temp = min(10000, displayed_soc_temp);
-				displayed_soc_temp = max(0, displayed_soc_temp);
+				displayed_soc_temp = MIN(10000, displayed_soc_temp);
+				displayed_soc_temp = MAX(0, displayed_soc_temp);
 				info->soca->displayed_soc = displayed_soc_temp;
 			}
 
@@ -5833,16 +5840,16 @@ static int nxe2000_battery_suspend(struct device *dev)
 
 		displayed_soc_temp
 			 = info->soca->init_pswr *100 + (info->soca->cc_delta/100) * 100;
-		displayed_soc_temp = min(10000, displayed_soc_temp);
-		displayed_soc_temp = max(0, displayed_soc_temp);
+		displayed_soc_temp = MIN(10000, displayed_soc_temp);
+		displayed_soc_temp = MAX(0, displayed_soc_temp);
 		info->soca->displayed_soc = displayed_soc_temp;
 
 		info->soca->suspend_soc = info->soca->displayed_soc;
 		info->soca->suspend_cc = info->soca->cc_delta % 100;
 
 		val = info->soca->init_pswr + (info->soca->cc_delta/100);
-		val = min(100, val);
-		val = max(1, val);
+		val = MIN(100, val);
+		val = MAX(1, val);
 		info->soca->init_pswr = val;
 
 		PM_LOGOUT(KERN_INFO "PMU: %s status(%d), rrf(%d), suspend_soc(%d), suspend_cc(%d)\n",
@@ -6135,8 +6142,8 @@ static int nxe2000_battery_resume(struct device *dev) {
 				 = info->soca->soc + info->soca->cc_delta;
 			if (displayed_soc_temp < 0)
 				displayed_soc_temp = 0;
-			displayed_soc_temp = min(10000, displayed_soc_temp);
-			displayed_soc_temp = max(0, displayed_soc_temp);
+			displayed_soc_temp = MIN(10000, displayed_soc_temp);
+			displayed_soc_temp = MAX(0, displayed_soc_temp);
 			info->soca->displayed_soc = displayed_soc_temp;
 
 			ret = reset_FG_process(info);
@@ -6189,8 +6196,8 @@ static int nxe2000_battery_resume(struct device *dev) {
 			} else {
 				cc_delta_offset = (100 * 100 - info->soca->soc) * 100 / (100 * 100 -  (soc_now - cc_suspend_term));
 				
-				cc_delta_offset = min(5 * 100, cc_delta_offset); //max is 5 times
-				cc_delta_offset = max(100 / 5, cc_delta_offset); //min is 1/5 times
+				cc_delta_offset = MIN(5 * 100, cc_delta_offset); //MAX is 5 times
+				cc_delta_offset = MAX(100 / 5, cc_delta_offset); //MIN is 1/5 times
 			}
 		}
 
@@ -6215,8 +6222,8 @@ static int nxe2000_battery_resume(struct device *dev) {
 			val += (info->soca->cc_delta/100);
 			val += cc_correct_value / 100;
 
-			val = min(99, val);
-			val = max(1, val);
+			val = MIN(99, val);
+			val = MAX(1, val);
 
 			info->soca->init_pswr = val;
 
@@ -6247,8 +6254,8 @@ static int nxe2000_battery_resume(struct device *dev) {
 				}
 			}
 		}
-		displayed_soc_temp = min(10000, displayed_soc_temp);
-		displayed_soc_temp = max(0, displayed_soc_temp);
+		displayed_soc_temp = MIN(10000, displayed_soc_temp);
+		displayed_soc_temp = MAX(0, displayed_soc_temp);
 
 		if (0 == info->soca->jt_limit) {
 			check_charge_status_2(info, displayed_soc_temp);
