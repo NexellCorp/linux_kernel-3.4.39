@@ -131,7 +131,7 @@ enum InputPowerType {
 	INPUT_POWER_TYPE_ADP = 0,			// Support only VADP. Do not supported USB ADP.
 	INPUT_POWER_TYPE_UBC,				// Support only VUSB. (USB connector - USB ADP & PC)
 	INPUT_POWER_TYPE_ADP_UBC,			// Using VADP, VUSB power path. Separated power path.
-	INPUT_POWER_TYPE_ADP_UBC_LINKED,	// Using VADP, VUSB power path. Linked power path.
+	INPUT_POWER_TYPE_ADP_NOBATTERY,		// Support only VADP and No Battery System.
 };
 
 struct nxe2000_battery_type_data {
