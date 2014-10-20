@@ -587,6 +587,121 @@ static struct platform_device spdif_device_rx = {
 };
 #endif	/* CONFIG_SND_NXP_SPDIF_RX || CONFIG_SND_NXP_SPDIF_RX_MODULE */
 
+
+#ifdef CONFIG_SPI_S3C64XX_PORT0 
+#include <mach/s3c64xx-spi.h>
+#include <linux/gpio.h>
+#include <linux/spi/spi.h>
+
+static struct s3c64xx_spi_csinfo spi0_csi[] = {
+    [0] = {
+        .line       = CFG_SPI0_CS,
+        .set_level  = gpio_set_value,
+        .fb_delay   = 0x2, 
+    },   
+};
+/*
+static struct spi_board_info spi0_board_info[] __initdata = {
+    {    
+        .modalias       = "spidev",
+        //.platform_data  = NULL,
+		.platform_data 		= &s3c64xx_spi0_pdata,
+        .max_speed_hz   = 10 * 1000 * 1000,
+        .bus_num        = 0, 
+        .chip_select    = 0, 
+        .mode           = SPI_MODE_0,
+       .controller_data    = &spi0_csi[0],
+    }    
+};
+*/
+
+static  const int reset[3][2] = {
+    {RESET_ID_SSP0_P,RESET_ID_SSP0} ,
+    {RESET_ID_SSP1_P,RESET_ID_SSP1} ,
+    {RESET_ID_SSP2_P,RESET_ID_SSP2} ,
+};
+static void spi_init(int ch)
+{
+    char name[10] = {0};
+    int req_clk = 0;
+    struct clk *clk ;
+	printk("%s %d\n",__func__,ch);
+    if(0 == ch)
+    	req_clk = CFG_SPI0_CLK;
+	else if(1 == ch)
+	    req_clk = CFG_SPI1_CLK;
+	else if(2 == ch)
+        req_clk = CFG_SPI2_CLK;
+
+	sprintf(name,"nxp-spi.%d",(unsigned char)ch);
+
+	clk = clk_get(NULL,name);
+	clk_set_rate(clk,req_clk);
+	printk("%s : %d \n", name,clk_get_rate(clk) );
+	nxp_soc_peri_reset_enter(reset[ch][0]);
+	nxp_soc_peri_reset_enter(reset[ch][1]);
+	nxp_soc_peri_reset_exit(reset[ch][0]);
+	nxp_soc_peri_reset_exit(reset[ch][1]);
+	clk_enable(clk);
+}
+
+
+//static u64 samsung_device_dma_mask = DMA_BIT_MASK(32);
+int s3c64xx_spi0_cfg_gpio(struct platform_device *dev)
+{
+	return 0;
+}
+
+struct s3c64xx_spi_info s3c64xx_spi0_pdata = { 
+    .fifo_lvl_mask  = 0x1ff,
+    .rx_lvl_offset  = 15, 
+    //.rx_lvl_offset  = 0x1ff, 
+    .high_speed = 1,
+    .clk_from_cmu   = false,//true,
+    .tx_st_done = 25, 
+	.num_cs = 1,
+	.src_clk_nr = 0,
+//		.cfg_gpio = s3c64xx_spi0_cfg_gpio,
+	.spi_init = spi_init,
+/* bok add */
+	  .enable_dma     = 1,
+      .dma_filter     = pl08x_filter_id,
+      .dma_rx_param   = (void *)DMA_PERIPHERAL_NAME_SSP0_RX,
+      .dma_tx_param   = (void *)DMA_PERIPHERAL_NAME_SSP0_TX,
+      //.autosuspend_delay  = 10, 
+/* end */
+
+};
+
+static struct resource s3c64xx_spi0_resource[] = {
+    [0] = DEFINE_RES_MEM(PHY_BASEADDR_SSP0, SZ_256),
+    [1] = DEFINE_RES_DMA(DMA_PERIPHERAL_ID_SSP0_TX),
+    [2] = DEFINE_RES_DMA(DMA_PERIPHERAL_ID_SSP0_TX),
+    [3] = DEFINE_RES_IRQ(IRQ_PHY_SSP0),
+};
+
+struct platform_device s3c64xx_device_spi0 = {
+    .name       = "s3c64xx-spi",
+    .id     = 0,
+    .num_resources  = ARRAY_SIZE(s3c64xx_spi0_resource),
+    .resource   = s3c64xx_spi0_resource,
+    .dev = {
+		.platform_data      = &s3c64xx_spi0_pdata,
+    },
+};
+
+#endif /* CONFIG_S3C64XX_DEV_SPI0 */
+
+
+
+
+
+
+
+
+
+
+
 /*------------------------------------------------------------------------------
  * SSP/SPI
  */
@@ -1206,7 +1321,10 @@ void __init nxp_cpu_devs_register(void)
     printk("mach: add device watchdog\n");
     platform_device_register(&wdt_device);
 #endif
-
+#if defined(CONFIG_SPI_PL022_PORT0)
+    printk("mach: add device spi0 \n");
+    platform_device_register(&s3c64xx_device_spi0);
+#endif
 #ifdef CONFIG_PM_RUNTIME
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37))
 		pm_runtime_set_autosuspend_delay(&(vr_gpu_device.dev), 1000);

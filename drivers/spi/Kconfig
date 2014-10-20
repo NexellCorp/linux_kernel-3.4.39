@@ -335,10 +335,22 @@ config SPI_S3C24XX_FIQ
 
 config SPI_S3C64XX
 	tristate "Samsung S3C64XX series type SPI"
-	depends on (ARCH_S3C64XX || ARCH_S5P64X0 || ARCH_EXYNOS)
-	select S3C64XX_DMA if ARCH_S3C64XX
+#	depends on (ARCH_S3C64XX || ARCH_S5P64X0 || ARCH_EXYNOS)
+#	select S3C64XX_DMA if ARCH_S3C64XX
 	help
 	  SPI driver for Samsung S3C64XX and newer SoCs.
+
+config SPI_S3C64XX_PORT0
+	bool "port 0"
+	depends on SPI_S3C64XX
+
+config SPI_S3C64XX_PORT1
+	bool "port 1"
+	depends on SPI_S3C64XX
+
+config SPI_S3C64XX_PORT2
+	bool "port 2"
+	depends on SPI_S3C64XX
 
 config SPI_SH_MSIOF
 	tristate "SuperH MSIOF SPI controller"
