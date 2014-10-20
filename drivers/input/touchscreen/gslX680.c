@@ -575,13 +575,12 @@ static void report_data(struct gsl_ts *ts, u16 x, u16 y, u8 pressure, u8 id)
 	#endif
 		return;
 	}
-
-	input_mt_slot(ts->input, id);
-	input_mt_report_slot_state(ts->input, MT_TOOL_FINGER, true);
-	input_report_abs(ts->input, ABS_MT_TOUCH_MAJOR, 1);					
-
+	input_report_abs(ts->input, ABS_MT_PRESSURE, id);
+	input_report_abs(ts->input, ABS_MT_TOUCH_MAJOR, 1);
 	input_report_abs(ts->input, ABS_MT_POSITION_X, x);
 	input_report_abs(ts->input, ABS_MT_POSITION_Y, y);
+
+	input_mt_sync(ts->input);
 }
 
 static void gslX680_ts_worker(struct work_struct *work)
@@ -705,8 +704,8 @@ static void gslX680_ts_worker(struct work_struct *work)
 		if( (0 == touches) || ((0 != id_state_old_flag[i]) && (0 == id_state_flag[i])) )
 		{
 		#ifdef REPORT_DATA_ANDROID_4_0
-			input_mt_slot(ts->input, i);
-			input_mt_report_slot_state(ts->input, MT_TOOL_FINGER, false);
+			input_report_abs(ts->input, ABS_MT_TOUCH_MAJOR, 0);
+			input_mt_sync(ts->input);
 		#endif
 			id_sign[i]=0;
 		}
@@ -891,13 +890,13 @@ static int gslX680_ts_init(struct i2c_client *client, struct gsl_ts *ts)
 
 	set_bit(EV_ABS, input_device->evbit);
 
-	__set_bit(INPUT_PROP_DIRECT, input_device->propbit);
-	input_mt_init_slots(input_device, (MAX_CONTACTS + 1));
+//	__set_bit(INPUT_PROP_DIRECT, input_device->propbit);
+//	input_mt_init_slots(input_device, (MAX_CONTACTS + 1));
 	 
 	input_set_abs_params(input_device,ABS_MT_POSITION_X, 0, SCREEN_MAX_X, 0, 0);
 	input_set_abs_params(input_device,ABS_MT_POSITION_Y, 0, SCREEN_MAX_Y, 0, 0);
 	input_set_abs_params(input_device,ABS_MT_TOUCH_MAJOR, 0, PRESS_MAX, 0, 0);
-
+	input_set_abs_params(input_device, ABS_MT_PRESSURE, 0, 255, 0, 0);
 #ifdef HAVE_TOUCH_KEY
 	input_device->evbit[0] = BIT_MASK(EV_KEY);
 	//input_device->evbit[0] = BIT_MASK(EV_SYN) | BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
@@ -952,12 +951,11 @@ static int gsl_ts_suspend(struct i2c_client *client, pm_message_t mesg)
 	msleep(10); 		
 	#ifdef REPORT_DATA_ANDROID_4_0
 	for(i = 1; i <= MAX_CONTACTS ;i ++)
-	{	
-		input_mt_slot(ts->input, i);
-		input_report_abs(ts->input, ABS_MT_TRACKING_ID, -1);
-		input_mt_report_slot_state(ts->input, MT_TOOL_FINGER, false);
+	{
+		input_report_abs(ts->input, ABS_MT_TOUCH_MAJOR, 0);
+		input_mt_sync(ts->input);
 	}
-	#else	
+	#else
 	input_mt_sync(ts->input);
 	#endif
 	input_sync(ts->input);
