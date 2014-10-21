@@ -22,6 +22,8 @@
 // Date		ID				Description
 //--------------------------------------------------------------------
 //
+//10-21-2014			modify	- Changed the POWER_SUPPLY_PROP_ONLINE status.
+//
 //10-20-2014			modify	- Changed the CHGCTL1_REG -> NXE2000_REG_CHGCTL1.
 //							- Added to INPUT_POWER_TYPE_ADP_NOBATTERY.
 //							- Removed the INPUT_POWER_TYPE_ADP_UBC_LINKED.
