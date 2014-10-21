@@ -4948,8 +4948,8 @@ static int nxe2000_batt_get_prop(struct power_supply *psy,
 				return ret;
 			}
 
-#if 0 // KOOK_UBC_CHECK
-			if (otg_id && (status & 0xC0))
+#ifdef KOOK_UBC_CHECK
+			if (status & 0xC0)
 			{
 				if ((info->input_power_type == INPUT_POWER_TYPE_ADP)
 					|| ((info->input_power_type == INPUT_POWER_TYPE_ADP_UBC) && (status & 0x40))
