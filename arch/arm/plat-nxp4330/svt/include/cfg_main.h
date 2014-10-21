@@ -18,6 +18,8 @@
 #ifndef __CFG_MAIN_H__
 #define __CFG_MAIN_H__
 
+#include <nx_type.h>
+
 //------------------------------------------------------------------------------
 // PLL input crystal
 //------------------------------------------------------------------------------
@@ -27,7 +29,7 @@
  * 	System Name
  */
 #define	CFG_SYS_CPU_NAME						"nxp4330q"
-#define	CFG_SYS_BOARD_NAME						"nxp4330-vtk"
+#define	CFG_SYS_BOARD_NAME						"nxp4330-svt"
 
 /*------------------------------------------------------------------------------
  * 	BUS config
@@ -59,7 +61,7 @@
 #define CFG_NAND_ECC_BYTES 						1024
 #define CFG_NAND_ECC_BITS               		40			/* 512 - 4,8,16,24 1024 - 24,40,60 */
 //#define CFG_NAND_ECCIRQ_MODE
-#define CFG_MTD_NAND_BMT_FIRST_LAST
+//#define CFG_MTD_NAND_BMT_FIRST_LAST
 
 /*------------------------------------------------------------------------------
  *	Nand (GPIO)
@@ -95,7 +97,7 @@
 #define CFG_DISP_PRI_VSYNC_FRONT_PORCH          23
 #define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CFALSE
 
-#define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL1
+#define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL2
 #define CFG_DISP_PRI_CLKGEN0_DIV                12
 #define CFG_DISP_PRI_CLKGEN0_DELAY              0
 #define CFG_DISP_PRI_CLKGEN0_INVERT				0
@@ -116,6 +118,12 @@
 #define CFG_DISP_LCD_MPY_TYPE						0
 
 /*------------------------------------------------------------------------------
+ * 	LVDS
+ */
+#define CFG_DISP_LVDS_LCD_FORMAT             	LVDS_LCDFORMAT_JEIDA
+
+
+/*------------------------------------------------------------------------------
  * 	PWM
  */
 #define CFG_LCD_PRI_PWM_CH						0
@@ -127,9 +135,9 @@
  */
 #define	CFG_AUDIO_I2S0_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S0_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
-#define	CFG_AUDIO_I2S0_FRAME_BIT				48		// 32, 48
+#define	CFG_AUDIO_I2S0_FRAME_BIT				32		// 32, 48
 #define	CFG_AUDIO_I2S0_SAMPLE_RATE				48000
-#define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			0
+#define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			1
 
 #define	CFG_AUDIO_I2S1_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S1_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
@@ -160,17 +168,19 @@
 /*------------------------------------------------------------------------------
  * 	SPI
  */
-#define CFG_SPI0_CLK							10000000
+#define CFG_SPI0_CLK							100000000
 #define CFG_SPI1_CLK							10000000
 #define CFG_SPI2_CLK							10000000
 
-#define CFG_SPI0_COM_MODE						2 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
+#define CFG_SPI0_COM_MODE						0 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
 #define CFG_SPI1_COM_MODE						1 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
 #define CFG_SPI2_COM_MODE						1 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
 
-#define CFG_SPI0_CS_GPIO_MODE					0		/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
+#define CFG_SPI0_CS_GPIO_MODE					1		/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
 #define CFG_SPI1_CS_GPIO_MODE					0	/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
 #define CFG_SPI2_CS_GPIO_MODE					0	/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
+
+#define CFG_SPI0_CS								PAD_GPIO_C + 30
 /*------------------------------------------------------------------------------
  * 	Keypad
  */
@@ -182,12 +192,48 @@
 /*------------------------------------------------------------------------------
  * 	SDHC
  */
-#define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_C + 6)	/* external cd */
+#define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
 
 /*------------------------------------------------------------------------------
- * 	ADC
+ *  MPEGTSIF
  */
-#define	CFG_ADC_SAMPLE_RATE						(700 * 1000)
+#define CFG_MPEGTS_MASTER_MODE					1
+#define CFG_MPEGTS_SLAVE_MODE					0
+#define CFG_MPEGTS_CLOCKPOL						1		/* 0: invert,     1: bypass */
+#define CFG_MPEGTS_DATAPOL						1		/* 0: active low, 1: active high */
+#define CFG_MPEGTS_SYNCPOL						1		/* 0: active low, 1: active high */
+#define CFG_MPEGTS_ERRORPOL						1		/* 0: active low, 1: active high */
+#define CFG_MPEGTS_DATAWIDTH					0		/* 0: 8bit, 1: 1bit */
+#define CFG_MPEGTS_WORDCNT						47		/* 1 ~ 64 */
+
+/*------------------------------------------------------------------------------
+ *  MP2TS (Tuner & Demodule)
+ */
+#define CFG_GPIO_DEMOD_0_IRQ_NUM				(-1)	//(IRQ_GPIO_C_START + 10)
+#define CFG_GPIO_DEMOD_0_RST_NUM				(PAD_GPIO_A + 23)
+#define CFG_GPIO_TUNER_0_RST_NUM				(-1)
+
+#define CFG_GPIO_DEMOD_1_IRQ_NUM				(-1)
+#define CFG_GPIO_DEMOD_1_RST_NUM				(-1)
+#define CFG_GPIO_TUNER_1_RST_NUM				(-1)
+
+/*------------------------------------------------------------------------------
+ *  NXE2000 PMIC
+ */
+#define CFG_SW_UBC_ENABLE						(1)
+
+/**
+ * 0 : GPIO interrupt (CFG_GPIO_PMIC_VUSB_DET)
+ * 1 : PMIC interrupt (FVUSBDETSINT)
+ */
+#define CFG_USB_DET_FROM_PMIC_INT				(0)
+
+#define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_B + 30)
+#define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_B + 28)
+#define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)		/* Choice for SW_UBC or Wake-up*/
+#define CFG_GPIO_PMIC_LOWBAT_DET				(PAD_GPIO_ALV + 3)		/* Critical low battery detect */
+#define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)
+#define CFG_PMIC_BAT_CHG_SUPPORT				(1)
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode
@@ -196,13 +242,13 @@
 /* Wakeup Source : ALIVE [0~7] */
 #define CFG_PWR_WAKEUP_SRC_ALIVE0				CTRUE					/* KEY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE0				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE1				CFALSE
-#define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE2				CFALSE
-#define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE3				CFALSE
-#define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE4				CFALSE
+#define CFG_PWR_WAKEUP_SRC_ALIVE1				CTRUE					/* EXT SD */
+#define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_BOTHEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE2				CTRUE					/* PMIC - VUSB*/
+#define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE3				CFALSE					/* PMIC - CRITICAL LOW BATTERY */
+#define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_ASYNC_LOWLEVEL
+#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR */
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE
@@ -241,6 +287,6 @@
 //                      ( _name_ , bw, tACS tCOS tACC tSACC tOCH tCAH, wm, rb, wb )
 CFG_SYS_STATICBUS_CONFIG( STATIC0 ,  8,    1,   1,   6,    6,   1,   1,  1,  0,  0 )		// 0x0000_0000
 CFG_SYS_STATICBUS_CONFIG( STATIC1 ,  8,    6,   6,  32,   32,   6,   6,  1,  0,  0 )		// 0x0400_0000
-CFG_SYS_STATICBUS_CONFIG(    NAND ,  8,    0,   4,   7,    1,   6,   0,  1,  0,  0 )		// 0x2C00_0000, tOCH, tCAH must be greter than 0
+CFG_SYS_STATICBUS_CONFIG(    NAND ,  8,    0,   0xf,   0x3f,    1,  0xf,   0,  1,  0,  0 )		// 0x2C00_0000, tOCH, tCAH must be greter than 0
 
 #endif /* __CFG_MAIN_H__ */

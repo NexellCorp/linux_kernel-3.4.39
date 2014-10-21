@@ -3,6 +3,7 @@
 #
 # Makefile for the NXP4330
 
-obj-y				  := board.o device.o
-obj-$(CONFIG_ION_NXP) += dev-ion.o
+obj-y					:= board.o device.o
+obj-$(CONFIG_ION_NXP)			+= dev-ion.o
+obj-$(CONFIG_USB_CONNECT_NXP_DRV)	+= usb-connector.o
 
