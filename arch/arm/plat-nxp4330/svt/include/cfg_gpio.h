@@ -238,14 +238,29 @@
 #define PAD_GPIOALV5    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//	AGPIO0_KEY5, AGPIO0_LED5
 
 /*------------------------------------------------------------------------------
- *	GPIO LCD (Backlight Enable/PWM)
+ *	TOUCH
  */
-#define	CFG_IO_LCD_PWR_ENB					((PAD_GPIO_E + 12) | PAD_FUNC_ALT0)		/* GPIO */
+#define	CFG_IO_TOUCH_PENDOWN_DETECT			((PAD_GPIO_E + 11) | PAD_FUNC_ALT0)
 
 /*------------------------------------------------------------------------------
  *	GPIO EEPROM
  */
 #define CFG_IO_SPI_EEPROM_WP				((PAD_GPIO_C + 27) | PAD_FUNC_ALT1)		/* GPIO */
+
+/*------------------------------------------------------------------------------
+ *	CAMERA Power Down
+ */
+#define CFG_IO_CAMERA_POWER_DOWN			((PAD_GPIO_E + 7) | PAD_FUNC_ALT0)		/* GPIO */
+
+/*------------------------------------------------------------------------------
+ *	MIPI CAMERA Power Enable
+ */
+#define CFG_IO_MIPI_CAMERA_POWER_ENABLE		((PAD_GPIO_B + 9) | PAD_FUNC_ALT0)		/* GPIO */
+
+/*------------------------------------------------------------------------------
+ *	MIPI CAMERA RESETN
+ */
+#define CFG_IO_MIPI_CAMERA_RESETN			((PAD_GPIO_B + 8) | PAD_FUNC_ALT0)		/* GPIO */
 
 #endif	/* __CFG_GPIO_H__ */
 
