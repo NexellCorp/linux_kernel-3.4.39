@@ -46,7 +46,7 @@ choice
 		bool "NBOX: Android NBOX board"
 		help
    	 		Support for the android nbox board.
-	
+
 	config PLAT_NXP4330_MORPHEUS
 		bool "MORPHEUS: Android morpheus board"
 		help
@@ -81,6 +81,11 @@ choice
 		bool "DVR: Linux dvr board"
 		help
    	 		Support for the dvr board.
+
+	config PLAT_NXP4330_SVT
+		bool "SVT: Linux svt board"
+		help
+   	 		Support for the svt board.
 
 endchoice
 
