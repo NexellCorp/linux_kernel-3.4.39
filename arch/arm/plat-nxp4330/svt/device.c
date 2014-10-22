@@ -1424,6 +1424,24 @@ static struct dw_mci_board _dwmci1_data = {
 };
 #endif
 
+#ifdef CONFIG_MMC_NEXELL_CH2
+static struct dw_mci_board _dwmci2_data = {
+	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
+					  DW_MCI_QUIRK_HIGHSPEED |
+					  DW_MMC_QUIRK_HW_RESET_PW |
+					  DW_MCI_QUIRK_NO_DETECT_EBIT,
+	.bus_hz			= 80 * 1000 * 1000,
+	.caps			= MMC_CAP_UHS_DDR50 |
+						MMC_CAP_NONREMOVABLE |
+						MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
+						MMC_CAP_ERASE | MMC_CAP_HW_RESET,
+	.desc_sz		= 4,
+	.detect_delay_ms= 200,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(0),
+};
+#endif
+
+
 #endif /* CONFIG_MMC_DW */
 
 /*------------------------------------------------------------------------------
@@ -1498,6 +1516,9 @@ void __init nxp_board_devices_register(void)
 	#endif
 	#ifdef CONFIG_MMC_NEXELL_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
+	#endif
+	#ifdef CONFIG_MMC_NEXELL_CH2
+	nxp_mmc_add_device(2, &_dwmci2_data);
 	#endif
 #endif
 
