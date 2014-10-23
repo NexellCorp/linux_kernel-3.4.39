@@ -579,7 +579,11 @@ static ssize_t core_pll_store(struct device *pdev,
 
 	sscanf(buf,"%lu", &freq);
 	freq *=1000; /* khz */
+
+#if defined (CONFIG_ARM_NXP4330_CPUFREQ)	
 	nxp_cpu_pll_change_frequency(pll, freq);
+#endif	
+
 	core_pll_update_link(pll);
 
 	return n;
