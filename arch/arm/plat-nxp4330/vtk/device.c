@@ -207,7 +207,7 @@ static struct platform_device bl_plat_device = {
 #include <asm-generic/sizes.h>
 
 static struct mtd_partition nxp_nand_parts[] = {
-#if 0
+#if 1
 	{
 		.name           = "root",
 		.offset         =   0 * SZ_1M,

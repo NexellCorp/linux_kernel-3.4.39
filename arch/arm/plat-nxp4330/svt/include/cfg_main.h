@@ -56,6 +56,20 @@
 #define	CFG_ETHER_EXT_IRQ_NUM					(IRQ_GPIO_C_START + 26)
 
 /*------------------------------------------------------------------------------
+ * 	GMAC PHY
+ */
+
+ /*for rtl8201*/
+#if defined (CONFIG_REALTEK_PHY_RTL8201)
+#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				-1
+#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_C + 12)
+#else
+ /*for rtl8211*/
+#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				-1 //(IRQ_GPIO_E_START + 23)
+#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_E + 22) //(PAD_GPIO_C+12)
+#endif
+
+/*------------------------------------------------------------------------------
  * 	Nand (HWECC)
  */
 #define CFG_NAND_ECC_BYTES 						1024
@@ -139,19 +153,21 @@
  * 	Audio I2S (0, 1, 2)
  */
 #define	CFG_AUDIO_I2S0_MASTER_MODE				CTRUE	// CTRUE
-#define	CFG_AUDIO_I2S0_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
-#define	CFG_AUDIO_I2S0_FRAME_BIT				32		// 32, 48
+#define	CFG_AUDIO_I2S0_TRANS_MODE				1		// 0:I2S, 1:Left 2:Right justified */
+#define	CFG_AUDIO_I2S0_FRAME_BIT				48		// 32, 48
 #define	CFG_AUDIO_I2S0_SAMPLE_RATE				48000
 #define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			1
 
 #define	CFG_AUDIO_I2S1_MASTER_MODE				CTRUE	// CTRUE
-#define	CFG_AUDIO_I2S1_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
+#define CFG_AUDIO_I2S1_MASTER_CLOCK_IN			1
+#define	CFG_AUDIO_I2S1_TRANS_MODE				1		// 0:I2S, 1:Left 2:Right justified */
 #define	CFG_AUDIO_I2S1_FRAME_BIT				48		// 32, 48
 #define	CFG_AUDIO_I2S1_SAMPLE_RATE				48000
 #define	CFG_AUDIO_I2S1_PRE_SUPPLY_MCLK			0
 
-#define	CFG_AUDIO_I2S2_MASTER_MODE				CTRUE	// CTRUE
-#define	CFG_AUDIO_I2S2_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
+#define	CFG_AUDIO_I2S2_MASTER_MODE				CFALSE	// CTRUE
+#define CFG_AUDIO_I2S2_MASTER_CLOCK_IN			1
+#define	CFG_AUDIO_I2S2_TRANS_MODE				1		// 0:I2S, 1:Left 2:Right justified */
 #define	CFG_AUDIO_I2S2_FRAME_BIT				48		// 32, 48
 #define	CFG_AUDIO_I2S2_SAMPLE_RATE				48000
 #define	CFG_AUDIO_I2S2_PRE_SUPPLY_MCLK			0
@@ -292,6 +308,6 @@
 //                      ( _name_ , bw, tACS tCOS tACC tSACC tOCH tCAH, wm, rb, wb )
 CFG_SYS_STATICBUS_CONFIG( STATIC0 ,  8,    1,   1,   6,    6,   1,   1,  1,  0,  0 )		// 0x0000_0000
 CFG_SYS_STATICBUS_CONFIG( STATIC1 ,  8,    6,   6,  32,   32,   6,   6,  1,  0,  0 )		// 0x0400_0000
-CFG_SYS_STATICBUS_CONFIG(    NAND ,  8,    0,   0xf,   0x3f,    1,  0xf,   0,  1,  0,  0 )		// 0x2C00_0000, tOCH, tCAH must be greter than 0
+CFG_SYS_STATICBUS_CONFIG(    NAND ,  8,    0,   6,  10,    1,   4,   0,  1,  0,  0 )		// 0x2C00_0000, tOCH, tCAH must be greter than 0
 
 #endif /* __CFG_MAIN_H__ */

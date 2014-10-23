@@ -173,11 +173,14 @@ static void nxp_pcm_dma_complete(void *arg)
 	int over_samples = div64_s64((new - ts), period_us);
 	int i;
 
-	if (0 == over_samples){
-		over_samples = 1;
-		prtd->time_stamp_us = new;
-	} else {
-		prtd->time_stamp_us += (over_samples*period_us);
+	if(prtd->dma_param->real_clock != 0) // i2s master mode
+	{
+		if (0 == over_samples){
+			over_samples = 1;
+			prtd->time_stamp_us = new;
+		} else {
+			prtd->time_stamp_us += (over_samples*period_us);
+		}
 	}
 
 	/*
@@ -189,7 +192,19 @@ static void nxp_pcm_dma_complete(void *arg)
 		STREAM_STR(substream->stream), prtd->offset,
 		snd_pcm_lib_period_bytes(substream), over_samples);
 	*/
-	for (i = 0; over_samples > i; i++) {
+	if(prtd->dma_param->real_clock != 0) // i2s master mode
+	{
+		for (i = 0; over_samples > i; i++) {
+			prtd->offset += snd_pcm_lib_period_bytes(substream);
+			if (prtd->offset >= snd_pcm_lib_buffer_bytes(substream))
+				prtd->offset = 0;
+	
+			nxp_pcm_file_mem_write(substream);
+			snd_pcm_period_elapsed(substream);
+		}
+	}
+	else // i2s slave mode
+	{
 		prtd->offset += snd_pcm_lib_period_bytes(substream);
 		if (prtd->offset >= snd_pcm_lib_buffer_bytes(substream))
 			prtd->offset = 0;
@@ -319,7 +334,10 @@ static int nxp_pcm_dma_prepare_and_submit(struct snd_pcm_substream *substream)
 	/*
 	 * debug msg
 	 */
-	period_time_us = (1000000*1000)/((prtd->dma_param->real_clock*1000)/runtime->period_size);
+	if(prtd->dma_param->real_clock != 0) // i2s master mode
+		period_time_us = (1000000*1000)/((prtd->dma_param->real_clock*1000)/runtime->period_size);
+	else // i2s slave mode
+		period_time_us = 1000;
 	pr_debug("%s: %s\n", __func__, STREAM_STR(substream->stream));
 	pr_debug("buffer_bytes=%6d, period_bytes=%6d, periods=%2d, rate=%6d, period_time=%3d ms\n",
 		snd_pcm_lib_buffer_bytes(substream), snd_pcm_lib_period_bytes(substream),
@@ -434,7 +452,10 @@ static int nxp_pcm_hw_params(struct snd_pcm_substream *substream,
 	prtd->periods = params_periods(params);
 	prtd->period_bytes = params_period_bytes(params);
 	prtd->buffer_bytes = params_buffer_bytes(params);
-	prtd->period_time_us = (1000000*1000)/((prtd->dma_param->real_clock*1000)/params_period_size(params));
+	if(prtd->dma_param->real_clock != 0) // i2s master mode
+		prtd->period_time_us = (1000000*1000)/((prtd->dma_param->real_clock*1000)/params_period_size(params));
+	else // i2s slave mode
+		prtd->period_time_us = 1000;
 
 	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
 	nxp_pcm_file_mem_allocate(DUMP_DMA_PATH, substream, params);
