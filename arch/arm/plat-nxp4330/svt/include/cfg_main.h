@@ -99,17 +99,17 @@
 #define	CFG_DISP_PRI_LCD_WIDTH_MM				152.4
 #define	CFG_DISP_PRI_LCD_HEIGHT_MM				91.44
 
-#define CFG_DISP_PRI_RESOL_WIDTH          		1280	// X Resolution
-#define CFG_DISP_PRI_RESOL_HEIGHT				 800	// Y Resolution
+#define CFG_DISP_PRI_RESOL_WIDTH          		1024	// X Resolution
+#define CFG_DISP_PRI_RESOL_HEIGHT				 600	// Y Resolution
 
-#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH           1
-#define CFG_DISP_PRI_HSYNC_BACK_PORCH           0
+#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH           20
+#define CFG_DISP_PRI_HSYNC_BACK_PORCH           160
 #define CFG_DISP_PRI_HSYNC_FRONT_PORCH          160
-#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CFALSE
-#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH           1
-#define CFG_DISP_PRI_VSYNC_BACK_PORCH           0
-#define CFG_DISP_PRI_VSYNC_FRONT_PORCH          23
-#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CFALSE
+#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CTRUE
+#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH           3
+#define CFG_DISP_PRI_VSYNC_BACK_PORCH           23
+#define CFG_DISP_PRI_VSYNC_FRONT_PORCH          12
+#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CTRUE
 
 #define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL2
 #define CFG_DISP_PRI_CLKGEN0_DIV                12
@@ -273,6 +273,12 @@
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE
+
+/*
+ * Wakeup Source : RTC ALARM
+ * ifndef Enable ALARM Wakeup
+ */
+#define	CFG_PWR_WAKEUP_SRC_ALARM				CTRUE
 
 //------------------------------------------------------------------------------
 // Static Bus #0 ~ #9, NAND, IDE configuration

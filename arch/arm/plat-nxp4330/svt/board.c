@@ -198,7 +198,6 @@ void nxp_board_base_init(void)
 static int __init devtmpfs_init(void)
 {
 	char *rdsrc = CONFIG_INITRAMFS_SOURCE;
-	return 0;
 
 	if (!strcmp(rdsrc, ""))
 		return 0;

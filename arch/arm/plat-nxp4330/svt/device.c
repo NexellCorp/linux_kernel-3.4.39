@@ -201,7 +201,7 @@ static struct platform_device dm9000_plat_device = {
 int  nxpmac_init(struct platform_device *pdev)
 {
     u32 addr;
-  
+
 #if defined (CONFIG_REALTEK_PHY_RTL8201)	// 20140515
 	// 100 & 10Base-T
     nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 7, 0 );        // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
@@ -301,7 +301,7 @@ static struct stmmac_mdio_bus_data nxpmac0_mdio_bus = {
 static struct plat_stmmacenet_data nxpmac_plat_data = {
 #if defined (CONFIG_REALTEK_PHY_RTL8201)
 	.phy_addr = 3,  // 7 for 8211 3 for 8201
-    .clk_csr = 0x25, 
+    .clk_csr = 0x25,
     .speed = SPEED_100,
 #else
     .phy_addr = 7,// 7 for 8211 3 for 8201
@@ -671,7 +671,7 @@ void __init nxp_reserve_mem(void)
 //#include <linux/rtc/rtc-nxe2000.h>
 //#include <linux/rtc.h>
 
-#define NXE2000_I2C_BUS		(0)
+#define NXE2000_I2C_BUS		(2)
 #define NXE2000_I2C_ADDR	(0x64 >> 1)
 #define NXE2000_IRQ			(PAD_GPIO_ALV + 4)
 
