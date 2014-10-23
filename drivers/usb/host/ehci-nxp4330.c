@@ -21,6 +21,14 @@
 #include <mach/usb-phy.h>
 #include <mach/soc.h>
 
+#define TYPEDEF_BOOL
+#ifndef FALSE
+#define FALSE   false
+#endif
+#ifndef TRUE
+#define TRUE    true
+#endif
+
 /*
  * enumeration at end of resume sequence for fast resume
  */
