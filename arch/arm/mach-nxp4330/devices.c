@@ -677,8 +677,8 @@ static struct nxp_i2s_plat_data i2s_data_ch2 = {
 	.pre_supply_mclk 	= CFG_AUDIO_I2S2_PRE_SUPPLY_MCLK,
 	/* DMA */
 	.dma_filter			= pl08x_filter_id,
-	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S1_TX,
-	.dma_capt_ch		= DMA_PERIPHERAL_NAME_I2S1_RX,
+	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S2_TX,
+	.dma_capt_ch		= DMA_PERIPHERAL_NAME_I2S2_RX,
 };
 
 static struct platform_device i2s_device_ch2 = {
