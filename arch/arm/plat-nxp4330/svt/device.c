@@ -547,6 +547,46 @@ static struct platform_device spdif_trans_dai = {
 };
 #endif
 
+#if defined(CONFIG_SND_CODEC_NULL)
+static struct platform_device snd_null = {
+	.name = "snd-null",
+	.id = -1,
+};
+
+struct nxp_snd_dai_plat_data snd_null_dai_data = {
+	.i2s_ch = 0,
+	.sample_rate = 48000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
+};
+
+static struct platform_device snd_null_dai = {
+	.name = "snd-null-card",
+	.id = -1,
+	.dev = {
+		.platform_data = &snd_null_dai_data,
+	}
+};
+//-------------------------------------
+static struct platform_device snd_null_2 = {
+	.name = "snd-null",
+	.id = 1,
+};
+
+struct nxp_snd_dai_plat_data snd_null_dai_data_2 = {
+	.i2s_ch = 2,
+	.sample_rate = 48000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
+};
+
+static struct platform_device snd_null_dai_2 = {
+	.name = "snd-null-card",
+	.id = 1,
+	.dev = {
+		.platform_data = &snd_null_dai_data_2 ,
+	}
+};
+#endif
+
 #if defined(CONFIG_SND_CODEC_RT5631) || defined(CONFIG_SND_CODEC_RT5631_MODULE)
 #include <linux/i2c.h>
 
@@ -560,7 +600,7 @@ static struct i2c_board_info __initdata rt5631_i2c_bdi = {
 
 /* DAI */
 struct nxp_snd_dai_plat_data i2s_dai_data = {
-	.i2s_ch	= 0,
+	.i2s_ch	= 1,
 	.sample_rate	= 48000,
 	.hp_jack 		= {
 		.support    	= 1,
@@ -1725,6 +1765,13 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device spdif playback\n");
 	platform_device_register(&spdif_transciever);
 	platform_device_register(&spdif_trans_dai);
+#endif
+
+#if defined(CONFIG_SND_CODEC_NULL)
+	platform_device_register(&snd_null);
+	platform_device_register(&snd_null_dai);
+	platform_device_register(&snd_null_2);
+	platform_device_register(&snd_null_dai_2);
 #endif
 
 #if defined(CONFIG_SND_CODEC_RT5631) || defined(CONFIG_SND_CODEC_RT5631_MODULE)
