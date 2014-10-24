@@ -304,7 +304,7 @@ static struct plat_stmmacenet_data nxpmac_plat_data = {
     .clk_csr = 0x25,
     .speed = SPEED_100,
 #else
-    .phy_addr = 7,// 7 for 8211 3 for 8201
+    .phy_addr = 3,// 7 for 8211 3 for 8201
     .clk_csr = 0x28,
     .speed = SPEED_1000,
 #endif

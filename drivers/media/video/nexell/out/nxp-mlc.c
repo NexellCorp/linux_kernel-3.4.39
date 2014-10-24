@@ -667,34 +667,34 @@ static int nxp_mlc_s_power(struct v4l2_subdev *sd, int on)
         if (me->user_count == 1 && remote_sink)
             return v4l2_subdev_call(remote_sink, core, s_power, 1);
     } else {
-        if (me->vid_streaming) {
-            unsigned long flags;
-            me->vid_streaming = false;
-            _hw_video_enable(me, false);
-            pr_debug("%s: unregister irq callback\n", __func__);
-            nxp_soc_disp_unregister_irq_callback(me->id, me->callback);
-            me->callback = NULL;
-            me->vid_enabled = false;
-            spin_lock_irqsave(&me->vlock, flags);
-            if (me->old_vid_buf) {
-                pr_debug("%s: video done buf late for old buf!", __func__);
-                _done_buf(me->old_vid_buf, true);
-                me->old_vid_buf = NULL;
-            }
-            if (me->cur_vid_buf) {
-                pr_debug("%s: video done buf late for cur buf!", __func__);
-                _done_buf(me->cur_vid_buf, true);
-                me->cur_vid_buf = NULL;
-            }
-            spin_unlock_irqrestore(&me->vlock, flags);
-            _clear_all_vid_buf(me);
-        }
-
         me->user_count--;
-        if (me->user_count == 0 && remote_sink)
-            return v4l2_subdev_call(remote_sink, core, s_power, 0);
+        if (me->user_count == 0) {
+             if (remote_sink)
+                 return v4l2_subdev_call(remote_sink, core, s_power, 0);
+             if (me->vid_streaming) {
+                 unsigned long flags;
+                 me->vid_streaming = false;
+                 _hw_video_enable(me, false);
+                 pr_debug("%s: unregister irq callback\n", __func__);
+                 nxp_soc_disp_unregister_irq_callback(me->id, me->callback);
+                 me->callback = NULL;
+                 me->vid_enabled = false;
+                 spin_lock_irqsave(&me->vlock, flags);
+                 if (me->old_vid_buf) {
+                     pr_debug("%s: video done buf late for old buf!", __func__);
+                     _done_buf(me->old_vid_buf, true);
+                     me->old_vid_buf = NULL;
+                 }
+                 if (me->cur_vid_buf) {
+                     pr_debug("%s: video done buf late for cur buf!", __func__);
+                     _done_buf(me->cur_vid_buf, true);
+                     me->cur_vid_buf = NULL;
+                 }
+                 spin_unlock_irqrestore(&me->vlock, flags);
+                 _clear_all_vid_buf(me);
+             }
+        }
     }
-
 
     return 0;
 }
