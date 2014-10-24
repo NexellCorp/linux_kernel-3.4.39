@@ -1005,9 +1005,15 @@ static int ehci_hub_control (
 			set_bit(wIndex, &ehci->suspended_ports);
 			break;
 		case USB_PORT_FEAT_POWER:
-			if (HCS_PPC (ehci->hcs_params))
+			if (HCS_PPC (ehci->hcs_params)){
 				ehci_writel(ehci, temp | PORT_POWER,
 						status_reg);
+				if( status_reg == 0xf0030058)
+				{
+					printk("====HSIC Port Power On!!!!====\n");
+					ehci_writel(ehci, temp | 0x02, ehci->hsic_status_reg);
+				}
+			}
 			break;
 		case USB_PORT_FEAT_RESET:
 			if (temp & PORT_RESUME)

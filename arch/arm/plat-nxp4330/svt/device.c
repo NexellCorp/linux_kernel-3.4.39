@@ -304,7 +304,7 @@ static struct plat_stmmacenet_data nxpmac_plat_data = {
     .clk_csr = 0x25,
     .speed = SPEED_100,
 #else
-    .phy_addr = 7,// 7 for 8211 3 for 8201
+    .phy_addr = 3,// 7 for 8211 3 for 8201
     .clk_csr = 0x28,
     .speed = SPEED_1000,
 #endif
@@ -602,11 +602,13 @@ static struct i2c_board_info __initdata rt5631_i2c_bdi = {
 struct nxp_snd_dai_plat_data i2s_dai_data = {
 	.i2s_ch	= 1,
 	.sample_rate	= 48000,
+#if 0
 	.hp_jack 		= {
 		.support    	= 1,
 		.detect_io		= PAD_GPIO_A + 0,
 		.detect_level	= 1,
 	},
+#endif
 };
 
 static struct platform_device rt5631_dai = {
@@ -1665,8 +1667,18 @@ static struct platform_device rfkill_device = {
 /*------------------------------------------------------------------------------
  * USB HSIC power control.
  */
+#define SOC_PA_EHCI		PHY_BASEADDR_EHCI
+#define SOC_VA_EHCI		IO_ADDRESS(SOC_PA_EHCI)
+
 int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on)
-{
+{	
+	printk("++%s %d\n", __func__, on);
+
+	if(on)
+		writel(0x1 << 1, SOC_VA_EHCI + 0xB0);
+	else
+		writel(0x0 << 1, SOC_VA_EHCI + 0xB0);
+		
 	return 0;
 }
 EXPORT_SYMBOL(nxp_hsic_phy_pwr_on);
