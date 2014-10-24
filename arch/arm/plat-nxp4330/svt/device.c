@@ -305,8 +305,9 @@ static struct plat_stmmacenet_data nxpmac_plat_data = {
     .speed = SPEED_100,
 #else
     .phy_addr = 3,// 7 for 8211 3 for 8201
-    .clk_csr = 0x28,
-    .speed = SPEED_1000,
+//    .clk_csr = 0x28,
+    .clk_csr = 0xe,
+    .speed = SPEED_100,	// SPEED_1000
 #endif
     .interface = PHY_INTERFACE_MODE_RGMII,
 	.autoneg = AUTONEG_ENABLE, //AUTONEG_ENABLE or AUTONEG_DISABLE
