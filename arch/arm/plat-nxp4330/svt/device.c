@@ -1667,8 +1667,18 @@ static struct platform_device rfkill_device = {
 /*------------------------------------------------------------------------------
  * USB HSIC power control.
  */
+#define SOC_PA_EHCI		PHY_BASEADDR_EHCI
+#define SOC_VA_EHCI		IO_ADDRESS(SOC_PA_EHCI)
+
 int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on)
-{
+{	
+	printk("++%s %d\n", __func__, on);
+
+	if(on)
+		writel(0x1 << 1, SOC_VA_EHCI + 0xB0);
+	else
+		writel(0x0 << 1, SOC_VA_EHCI + 0xB0);
+		
 	return 0;
 }
 EXPORT_SYMBOL(nxp_hsic_phy_pwr_on);

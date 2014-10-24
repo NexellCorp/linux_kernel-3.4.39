@@ -206,11 +206,7 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 #if defined( CONFIG_USB_HSIC_NXP4330 )
 	if (pdata && pdata->phy_init)
 		pdata->phy_init(pdev, NXP_USB_PHY_HSIC);
-
-	if (pdata && pdata->hsic_phy_pwr_on)
-		pdata->hsic_phy_pwr_on(pdev, TRUE);
 #else
-
 	if (pdata && pdata->phy_init)
 		pdata->phy_init(pdev, NXP_USB_PHY_EHCI);
 #endif
