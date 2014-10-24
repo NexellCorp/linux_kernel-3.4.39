@@ -402,6 +402,20 @@ static struct platform_device bl_plat_device = {
 };
 #endif
 
+#if defined(CONFIG_PPM_NEXELL)
+#include <mach/ppm.h>
+struct nxp_ppm_platform_data ppm_plat_data = { 
+    .input_polarity = NX_PPM_INPUTPOL_INVERT,//NX_PPM_INPUTPOL_INVERT  or  NX_PPM_INPUTPOL_BYPASS
+};
+
+static struct platform_device ppm_device = { 
+    .name           = DEV_NAME_PPM,
+    .dev            = { 
+    	.platform_data  = &ppm_plat_data,
+	}   
+};
+#endif
+
 /*------------------------------------------------------------------------------
  * NAND device
  */
@@ -1605,14 +1619,16 @@ static struct dw_mci_board _dwmci1_data = {
 					  DW_MCI_QUIRK_HIGHSPEED |
 					  DW_MMC_QUIRK_HW_RESET_PW |
 					  DW_MCI_QUIRK_NO_DETECT_EBIT,
-	.bus_hz			= 80 * 1000 * 1000,
+	.bus_hz			= 40 * 1000 * 1000,
 	.caps			= MMC_CAP_UHS_DDR50 |
 						MMC_CAP_NONREMOVABLE |
 						MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
 						MMC_CAP_ERASE | MMC_CAP_HW_RESET,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(0),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
+	.get_ro         = _dwmci_get_ro,
+
 };
 #endif
 
@@ -1622,14 +1638,15 @@ static struct dw_mci_board _dwmci2_data = {
 					  DW_MCI_QUIRK_HIGHSPEED |
 					  DW_MMC_QUIRK_HW_RESET_PW |
 					  DW_MCI_QUIRK_NO_DETECT_EBIT,
-	.bus_hz			= 80 * 1000 * 1000,
+	.bus_hz			= 40 * 1000 * 1000,
 	.caps			= MMC_CAP_UHS_DDR50 |
 						MMC_CAP_NONREMOVABLE |
 						MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
 						MMC_CAP_ERASE | MMC_CAP_HW_RESET,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(0),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.get_ro			= _dwmci_get_ro,
 };
 #endif
 
@@ -1816,6 +1833,12 @@ void __init nxp_board_devices_register(void)
     printk("plat: add device nxp-gmac\n");
     platform_device_register(&nxp_gmac_dev);
 #endif
+
+#if defined(CONFIG_PPM_NEXELL)
+    printk("plat: add device ppm\n");
+    platform_device_register(&ppm_device);
+#endif
+			
 
 	/* END */
 	printk("\n");

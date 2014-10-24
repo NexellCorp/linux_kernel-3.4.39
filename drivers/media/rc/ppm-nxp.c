@@ -165,7 +165,7 @@ static int __devinit nxp_ir_recv_probe(struct platform_device *pdev)
 	nxp_soc_rsc_reset(RESET_ID_PPM);
 
     	clk = clk_get(NULL, DEV_NAME_PPM);
-	clk_set_rate(clk, CFG_PPM_CLK);
+		clk_set_rate(clk, CFG_PPM_CLK);
         clk_enable(clk);
 
         NX_PPM_Initialize();
