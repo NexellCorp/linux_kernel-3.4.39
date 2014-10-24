@@ -785,7 +785,7 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
 NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1200000, 1,  6);	/* 1.2V ARM */
-NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1100000, 1,  6);	/* 1.1V CORE */
+NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1200000, 1,  6);	/* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0, 1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0, 1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
 NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  6);	/* 1.5V SYS */
@@ -1592,6 +1592,10 @@ static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 	return 0;
 }
 
+static int _dwmci_get_cd(u32 slot_id)
+{
+	return 0;
+}
 static int _dwmci0_get_cd(u32 slot_id)
 {
 	int io = CFG_SDMMC0_DETECT_IO;
@@ -1616,18 +1620,14 @@ static struct dw_mci_board _dwmci0_data = {
 #ifdef CONFIG_MMC_NEXELL_CH1
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
-					  DW_MCI_QUIRK_HIGHSPEED |
-					  DW_MMC_QUIRK_HW_RESET_PW |
-					  DW_MCI_QUIRK_NO_DETECT_EBIT,
+					  DW_MCI_QUIRK_HIGHSPEED, 
 	.bus_hz			= 50 * 1000 * 1000,
-	.caps			= MMC_CAP_UHS_DDR50 |
-						MMC_CAP_NONREMOVABLE |
-						MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
-						MMC_CAP_ERASE | MMC_CAP_HW_RESET,
+	.caps			= MMC_CAP_CMD23,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
 	.get_ro         = _dwmci_get_ro,
+	.get_cd			= _dwmci_get_cd,
 
 };
 #endif
@@ -1635,18 +1635,14 @@ static struct dw_mci_board _dwmci1_data = {
 #ifdef CONFIG_MMC_NEXELL_CH2
 static struct dw_mci_board _dwmci2_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
-					  DW_MCI_QUIRK_HIGHSPEED |
-					  DW_MMC_QUIRK_HW_RESET_PW |
-					  DW_MCI_QUIRK_NO_DETECT_EBIT,
+					  DW_MCI_QUIRK_HIGHSPEED, 
 	.bus_hz			= 50 * 1000 * 1000,
-	.caps			= MMC_CAP_UHS_DDR50 |
-						MMC_CAP_NONREMOVABLE |
-						MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
-						MMC_CAP_ERASE | MMC_CAP_HW_RESET,
+	.caps			=	MMC_CAP_CMD23,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
 	.get_ro			= _dwmci_get_ro,
+	.get_cd			= _dwmci_get_cd,
 };
 #endif
 
