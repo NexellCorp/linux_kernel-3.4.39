@@ -314,6 +314,7 @@
 //                      ( _name_ , bw, tACS tCOS tACC tSACC tOCH tCAH, wm, rb, wb )
 CFG_SYS_STATICBUS_CONFIG( STATIC0 ,  8,    1,   1,   6,    6,   1,   1,  1,  0,  0 )		// 0x0000_0000
 CFG_SYS_STATICBUS_CONFIG( STATIC1 ,  8,    6,   6,  32,   32,   6,   6,  1,  0,  0 )		// 0x0400_0000
-CFG_SYS_STATICBUS_CONFIG(    NAND ,  8,    0,   8,  12,    1,   6,   0,  1,  0,  0 )		// 0x2C00_0000, tOCH, tCAH must be greter than 0
+CFG_SYS_STATICBUS_CONFIG(    NAND ,  8,    0,   0xf,0x3f,  1, 0xf,   0,  1,  0,  0 )		// 0x2C00_0000, tOCH, tCAH must be greter than 0
+
 
 #endif /* __CFG_MAIN_H__ */
