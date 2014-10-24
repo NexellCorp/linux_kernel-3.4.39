@@ -602,11 +602,13 @@ static struct i2c_board_info __initdata rt5631_i2c_bdi = {
 struct nxp_snd_dai_plat_data i2s_dai_data = {
 	.i2s_ch	= 1,
 	.sample_rate	= 48000,
+#if 0
 	.hp_jack 		= {
 		.support    	= 1,
 		.detect_io		= PAD_GPIO_A + 0,
 		.detect_level	= 1,
 	},
+#endif
 };
 
 static struct platform_device rt5631_dai = {
