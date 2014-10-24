@@ -174,11 +174,11 @@ struct nxp_i2c_plat_data {
  *  Touch calibration platform data
  */
 struct nxp_ts_cali_plat_data {
-    int        touch_points;    /* support touch points num when multi touch */
-    int     x_resol;
-    int     y_resol;
-    int        rotate;          /* 0, 90, 180, 270 */
-    long    pointercal[10];     /* calibration value (tslib) */
+    int touch_points;    /* support touch points num when multi touch */
+    int x_resol;
+    int y_resol;
+    int rotate;          /* 0, 90, 180, 270 */
+    long pointercal[10];     /* calibration value (tslib) */
 };
 
 /*
@@ -208,19 +208,14 @@ extern void __init nxp_mmc_add_device(int ch, struct dw_mci_board *mci);
  *  Keypad platform data
  */
 struct nxp_key_plat_data {
-    int                bt_count;
-    unsigned int     * bt_io;
-    unsigned int     * bt_code;
-    unsigned int     * bt_detect_high;
-    unsigned int     * bt_long;         /* long press action */
-    unsigned int     * bt_code_type;    /* short key type 0=short key, 1 = long key */
-    unsigned int     * bt_long_type;    /* long  key type 0=short key, 1 = long key */
-    unsigned int       bt_repeat;       /* key repeat 1 = on , 0 = off */
-    int                bt_delay;        /* short key delay */
-    int                bt_long_delay;   /* long  key delay */
-    struct input_dev * bt_device;
+    int  bt_count;
+    unsigned int *bt_io;
+    unsigned int *bt_code;
+    unsigned int *bt_detect_high;
+    unsigned int bt_repeat;       /* key repeat 1 = on , 0 = off */
+    struct input_dev *bt_device;
+    int	resume_delay_ms;
 };
-
 
 /*
  * NAND platform data
@@ -229,14 +224,6 @@ struct nxp_nand_plat_data {
     struct mtd_partition * parts;
     int nr_parts;
     int chip_delay;
-};
-
-/*
- *  VMem platform data
- */
-struct nxp_vmem_plat_data {
-    int     resv_task_num;
-    char ** resv_task_name;
 };
 
 /*
@@ -298,7 +285,7 @@ struct nxp_cpufreq_limit_data {
     int limit_num;
     long aval_max_freq;     /* unit Khz */
     long op_max_freq; 		/* unit Khz */
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) 
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
 	long limit_level0_freq; 	/* unit Khz */
 	long limit_level1_freq; 	/* unit Khz */
 	long min_max_freq;			/* unit Khz */

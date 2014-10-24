@@ -513,9 +513,15 @@ int32_t dwc_otg_hcd_handle_intr(dwc_otg_hcd_t * dwc_otg_hcd)
 	if (core_if->hibernation_suspend == 1) {
 		goto exit_handler_routine;
 	}
-	DWC_SPINLOCK(dwc_otg_hcd->lock);
+
+	if (core_if->op_state == A_PERIPHERAL) {
+		return retval;
+	}
+
+//	DWC_SPINLOCK(dwc_otg_hcd->lock);
 	/* Check if HOST Mode */
 	if (dwc_otg_is_host_mode(core_if)) {
+	DWC_SPINLOCK(dwc_otg_hcd->lock);
 		local_fiq_disable();
 		gintmsk.d32 |= gintsts_saved.d32;
 		gintsts.d32 |= gintsts_saved.d32;
@@ -600,7 +606,7 @@ int32_t dwc_otg_hcd_handle_intr(dwc_otg_hcd_t * dwc_otg_hcd)
 #endif
 			DWC_DEBUGPL(DBG_HCDI, "\n");
 #endif
-
+	DWC_SPINUNLOCK(dwc_otg_hcd->lock);
 	}
 
 exit_handler_routine:
@@ -638,7 +644,7 @@ exit_handler_routine:
 		}
 	}
 
-	DWC_SPINUNLOCK(dwc_otg_hcd->lock);
+//	DWC_SPINUNLOCK(dwc_otg_hcd->lock);
 	return retval;
 }
 

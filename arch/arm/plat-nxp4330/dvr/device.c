@@ -93,14 +93,14 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-	{ 1600000, 1300000 },
-	{ 1500000, 1300000 },
-	{ 1400000, 1300000 },
-	{ 1300000, 1300000 },
-	{ 1200000, 1200000, },
-	{ 1100000, 1100000, },
-	{ 1000000, 1100000, },
-	{  900000, 1000000, },
+//	{ 1600000, 1300000 },
+//	{ 1500000, 1300000 },
+//	{ 1400000, 1300000 },
+//	{ 1300000, 1300000 },
+//	{ 1200000, 1200000, },
+//	{ 1100000, 1100000, },
+//	{ 1000000, 1100000, },
+//	{  900000, 1000000, },
 	{  800000,  960000, },
 	{  700000,  960000, },
 	{  666000,  960000, },
@@ -116,7 +116,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1600*1000,
+	.max_cpufreq    = 800*1000,
 	.max_retention  =   20*1000,
 	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
@@ -131,7 +131,7 @@ static struct platform_device dfs_plat_device = {
 
 #endif
 
-#define CPU_LIMIT_CONTROL
+//#define CPU_LIMIT_CONTROL
 /*------------------------------------------------------------------------------
  * CPUFREQ Limit
  */
@@ -153,7 +153,7 @@ static char *freq_proct_list[] = { "com.antutu", };
 static struct nxp_cpufreq_limit_data freq_limit_data = {
 	.limit_name		= freq_proct_list,
 	.limit_num 		= ARRAY_SIZE(freq_proct_list),
-	.aval_max_freq 	= 1600000,
+	.aval_max_freq 	= 1400000,
 	.op_max_freq	= 1200000,
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) 
 	.limit_level0_freq	= 1200000,
@@ -559,7 +559,7 @@ static struct platform_device *i2c_devices[] = {
 //#include <linux/rtc/rtc-nxe2000.h>
 //#include <linux/rtc.h>
 
-#define NXE2000_I2C_BUS		(3)
+#define NXE2000_I2C_BUS		(2)
 #define NXE2000_I2C_ADDR	(0x64 >> 1)
 #define NXE2000_IRQ			(PAD_GPIO_ALV + 4)
 
@@ -656,7 +656,7 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,	 950000, 2000000, 1, 1, 1350000, 1,  6);	/* 1.2V ARM */
+NXE2000_PDATA_INIT(dc1,      0,	 950000, 2000000, 1, 1, 1200000, 1,  6);	/* 1.2V ARM */
 NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1,  6);	/* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
@@ -672,9 +672,9 @@ NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  4);	/* 1.9V
 NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 1, 1, 2800000, 0,  0);	/* 2.8V VCAM */
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
 NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 2800000, 1,  0);	/* 2.8V VID */
-NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
+NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,     -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 1, 1, 2800000, 0,  0);	/* 2.8V VCAM */
-NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
+NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,     -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
 NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
 

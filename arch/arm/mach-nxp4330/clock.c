@@ -121,12 +121,12 @@ struct nxp_clk_dev {
 	struct nxp_clk_periph *peri;
 };
 
-struct clklink_dev {
+struct clk_link_dev {
 	char *name;
 	int   id;
 };
 
-struct clkgen_register {
+struct clk_gen_reg {
 	volatile U32 CLKENB;
 	volatile U32 CLKGEN[4];
 };
@@ -192,24 +192,32 @@ static struct nxp_clk_periph clk_periphs [] = {
 	CLK_PERI_1S(DEV_NAME_SPI		,  0, CLK_ID_SPI_0	    , PHY_BASEADDR_CLKGEN37, (_PLL_0_2_)),
 	CLK_PERI_1S(DEV_NAME_SPI		,  1, CLK_ID_SPI_1	    , PHY_BASEADDR_CLKGEN38, (_PLL_0_2_)),
 	CLK_PERI_1S(DEV_NAME_SPI		,  2, CLK_ID_SPI_2		, PHY_BASEADDR_CLKGEN39, (_PLL_0_2_)),
-//	CLK_PERI_1S(DEV_NAME_VIP		,  0, CLK_ID_VIP_0	    , PHY_BASEADDR_CLKGEN30, (_PLL_0_3_|_EXTCLK1_|_GATE_BCLK_)),
-//	CLK_PERI_1S(DEV_NAME_VIP		,  1, CLK_ID_VIP_1	    , PHY_BASEADDR_CLKGEN31, (_PLL_0_3_|_EXTCLK1_|_EXTCLK2_|_GATE_BCLK_)),
+	#if 0
+	CLK_PERI_1S(DEV_NAME_VIP		,  0, CLK_ID_VIP_0	    , PHY_BASEADDR_CLKGEN30, (_PLL_0_3_|_EXTCLK1_|_GATE_BCLK_)),
+	CLK_PERI_1S(DEV_NAME_VIP		,  1, CLK_ID_VIP_1	    , PHY_BASEADDR_CLKGEN31, (_PLL_0_3_|_EXTCLK1_|_EXTCLK2_|_GATE_BCLK_)),
+	#endif
 	CLK_PERI_1S(DEV_NAME_MIPI		, -1, CLK_ID_MIPI		, PHY_BASEADDR_CLKGEN9 , (_PLL_0_2_)),
 	CLK_PERI_2S(DEV_NAME_GMAC		, -1, CLK_ID_GMAC		, PHY_BASEADDR_CLKGEN10, (_PLL_0_3_|_EXTCLK1_), (_CLKOUTn_)),
 	CLK_PERI_1S(DEV_NAME_SPDIF_TX	, -1, CLK_ID_SPDIF_TX	, PHY_BASEADDR_CLKGEN11, (_PLL_0_2_)),
 	CLK_PERI_1S(DEV_NAME_MPEGTSI	, -1, CLK_ID_MPEGTSI	, PHY_BASEADDR_CLKGEN12, (_GATE_BCLK_)),
-//	CLK_PERI_1S(DEV_NAME_MALI		, -1, CLK_ID_MALI		, PHY_BASEADDR_CLKGEN21, (_GATE_BCLK_)),
+	#if 0
+	CLK_PERI_1S(DEV_NAME_MALI		, -1, CLK_ID_MALI		, PHY_BASEADDR_CLKGEN21, (_GATE_BCLK_)),
+	#endif
 	CLK_PERI_1S(DEV_NAME_DIT		, -1, CLK_ID_DIT		, PHY_BASEADDR_CLKGEN28, (_GATE_BCLK_)),
 	CLK_PERI_1S(DEV_NAME_PPM		, -1, CLK_ID_PPM		, PHY_BASEADDR_CLKGEN29, (_PLL_0_2_)),
-//	CLK_PERI_2S(DEV_NAME_USB2HOST	, -1, CLK_ID_USB2HOST	, PHY_BASEADDR_CLKGEN32, (_PLL_0_3_), (_PLL_0_3_|_EXTCLK1_)),
-//	CLK_PERI_1S(DEV_NAME_CODA		, -1, CLK_ID_CODA		, PHY_BASEADDR_CLKGEN33, (_GATE_PCLK_|_GATE_BCLK_)),
+	#if 0
+	CLK_PERI_2S(DEV_NAME_USB2HOST	, -1, CLK_ID_USB2HOST	, PHY_BASEADDR_CLKGEN32, (_PLL_0_3_), (_PLL_0_3_|_EXTCLK1_)),
+	CLK_PERI_1S(DEV_NAME_CODA		, -1, CLK_ID_CODA		, PHY_BASEADDR_CLKGEN33, (_GATE_PCLK_|_GATE_BCLK_)),
+	#endif
 	CLK_PERI_1S(DEV_NAME_CRYPTO		, -1, CLK_ID_CRYPTO	    , PHY_BASEADDR_CLKGEN34, (_GATE_PCLK_)),
 	CLK_PERI_1S(DEV_NAME_SCALER		, -1, CLK_ID_SCALER	    , PHY_BASEADDR_CLKGEN35, (_GATE_BCLK_)),
 	CLK_PERI_1S(DEV_NAME_PDM		, -1, CLK_ID_PDM		, PHY_BASEADDR_CLKGEN36, (_GATE_PCLK_)),
-//	CLK_PERI_2S(DEV_NAME_USBOTG		, -1, CLK_ID_USBOTG		, PHY_BASEADDR_CLKGEN32, (_PLL_0_3_), (_PLL_0_3_|_EXTCLK1_)),
+	#if 0
+	CLK_PERI_2S(DEV_NAME_USBOTG		, -1, CLK_ID_USBOTG		, PHY_BASEADDR_CLKGEN32, (_PLL_0_3_), (_PLL_0_3_|_EXTCLK1_)),
+	#endif
 };
 
-static struct clklink_dev clk_link[] = {
+static struct clk_link_dev clk_link[] = {
 	{ .name = "uart-pl011.0", .id = CLK_ID_UART_0, },
 	{ .name = "uart-pl011.1", .id = CLK_ID_UART_1, },
 	{ .name = "uart-pl011.2", .id = CLK_ID_UART_2, },
@@ -234,88 +242,82 @@ static struct nxp_clk_dev	(clk_devices[CLK_DEVS_NUM]);
 
 /* dynamic frequency pll num */
 static unsigned int core_hz[15];	/* core clock */
+#define	CORE_HZ_SIZE	ARRAY_SIZE(core_hz)
+
 static unsigned int support_dvfs = 1;
 
 /*
  * CLKGEN HW
  */
-static inline void peri_clk_bclk(void *base, int on)
+static inline void clk_gen_bclk(void *base, int on)
 {
-	struct clkgen_register *preg = base;
-	register U32 val;
+	struct clk_gen_reg *reg = base;
+	unsigned int val = 0;
 
-	val	 = ReadIODW(&preg->CLKENB);
-	val &= ~(0x3);
-	val |=  (on ? 3 : 0) & 0x3;	/* always BCLK */
-	WriteIODW(&preg->CLKENB, val);
+	val	 = readl(&reg->CLKENB) & ~(0x3);
+	val |= (on ? 3 : 0) & 0x3;	/* always BCLK */
+
+	writel(val, &reg->CLKENB);
 }
 
-static inline void peri_clk_pclk(void *base, int on)
+static inline void clk_gen_pclk(void *base, int on)
 {
-	struct clkgen_register *preg = base;
-	register U32 val;
+	struct clk_gen_reg *reg = base;
+	unsigned int val = 0;
 
-	if (!on) return;
+	if (!on)
+		return;
 
-	val	 = ReadIODW(&preg->CLKENB);
-	val &= ~(1 << 3);
-	val |=  (1 << 3);
-	WriteIODW(&preg->CLKENB, val);
+	val	 = readl(&reg->CLKENB) & ~(1 << 3);
+	val |= (1 << 3);
+
+	writel(val, &reg->CLKENB);
 }
 
-static inline void peri_clk_rate(void *base, int level, int src, int div)
+static inline void clk_gen_rate(void *base, int level, int src, int div)
 {
-	struct clkgen_register *preg = base;
-	register U32 val;
+	struct clk_gen_reg *reg = base;
+	unsigned int val = 0;
 
-#ifdef CONFIG_NXP4330_CPUFREQ_PLLDEV
-	if (CONFIG_NXP4330_CPUFREQ_PLLDEV == src)
+	#ifdef CONFIG_NXP5430_CPUFREQ_PLLDEV
+	if (CONFIG_NXP5430_CPUFREQ_PLLDEV == src)
 		printk("*** %s: Fail pll.%d for CPU  DFS ***\n", __func__, src);
-#endif
-#ifdef CONFIG_NXP4330_BCLKFREQ_PLLDEV
-	if (CONFIG_NXP4330_BCLKFREQ_PLLDEV == src)
+	#endif
+	#ifdef CONFIG_NXP5430_BCLKFREQ_PLLDEV
+	if (CONFIG_NXP5430_BCLKFREQ_PLLDEV == src)
 		printk("*** %s: Fail pll.%d for BCLK DFS ***\n", __func__, src);
-#endif
+	#endif
 
-	val  = ReadIODW(&preg->CLKGEN[level<<1]);
+	val  = readl(&reg->CLKGEN[level<<1]);
+
 	val &= ~(0x07   << 2);
 	val |=  (src    << 2);	/* source */
 	val	&= ~(0xFF   << 5);
 	val	|=  (div-1) << 5;	/* divider */
-	WriteIODW(&preg->CLKGEN[level<<1], val);
+
+	writel(val, &reg->CLKGEN[level<<1]);
 }
 
-static inline void peri_clk_invert(void *base, int level, int inv)
+static inline void clk_gen_inv(void *base, int level, int inv)
 {
-	struct clkgen_register *preg = base;
-	register U32 val;
+	struct clk_gen_reg *reg = base;
+	unsigned int val = 0;
 
-	val = ReadIODW(&preg->CLKGEN[level<<1]);
-	val	&= ~(1  << 1);
-	val	|=	(inv<< 1);
-	WriteIODW(&preg->CLKGEN[level<<1], val);
+	val  = readl(&reg->CLKGEN[level<<1]) & ~(1 << 1);
+	val	|= (inv<< 1);
+
+	writel(val, &reg->CLKGEN[level<<1]);
 }
 
-static inline void peri_clk_enable(void *base)
+static inline void clk_gen_enb(void *base, int on)
 {
-	struct clkgen_register *preg = base;
-	register U32 val;
+	struct clk_gen_reg *reg = base;
+	unsigned int val = 0;
 
-	val	 = ReadIODW(&preg->CLKENB);
-	val	&= ~(1 << 2);
-	val	|=  (1 << 2);
-	WriteIODW(&preg->CLKENB, val);
-}
+	val	 = readl(&reg->CLKENB) & ~(1 << 2);
+	val	|= ((on ? 1 : 0) << 2);
 
-static inline void peri_clk_disable(void *base)
-{
-	struct clkgen_register *preg = base;
-	register U32 val;
-
-	val	 = ReadIODW(&preg->CLKENB);
-	val	&= ~(1 << 2);
-	val	|=  (0 << 2);
-	WriteIODW(&preg->CLKENB, val);
+	writel(val, &reg->CLKENB);
 }
 
 /*
@@ -387,7 +389,56 @@ static unsigned int pll_get_div(unsigned int dvo)
 			  				((pll_get_div(4)>> 0)&0x3F)	/						\
 			  				((pll_get_div(4)>> 8)&0x3F))
 
-static inline void core_update_rate(int pll)
+static unsigned long core_update_rate(int type)
+{
+	unsigned long rate = 0;
+	switch (type) {
+	case  0: rate = core_hz[ 0] = PLLN_RATE ( 0);    break;   	// PLL 0
+	case  1: rate = core_hz[ 1] = PLLN_RATE ( 1);    break;   	// PLL 1
+	case  2: rate = core_hz[ 2] = PLLN_RATE ( 2);    break;   	// PLL 2
+	case  3: rate = core_hz[ 3] = PLLN_RATE ( 3);    break;   	// PLL 3
+	case  4: rate = core_hz[ 4] = FCLK_RATE ( 4);    break;   	// FCLK
+	case  5: rate = core_hz[ 5] = MCLK_RATE ( 5);    break;   	// MCLK
+	case  6: rate = core_hz[ 6] = BCLK_RATE ( 6);    break;   	// BCLK
+	case  7: rate = core_hz[ 7] = PCLK_RATE ( 7);    break;   	// PCLK
+	case  8: rate = core_hz[ 8] = HCLK_RATE ( 8);    break;   	// HCLK
+	case  9: rate = core_hz[ 9] = MDCLK_RATE( 9);    break;   	// MDCLK
+	case 10: rate = core_hz[10] = MBCLK_RATE(10);    break;   	// MBCLK
+	case 11: rate = core_hz[11] = MPCLK_RATE(11);    break;   	// MPCLK
+	case 12: rate = core_hz[12] = G3D_BCLK_RATE(12); break;	// G3D BCLK
+	case 13: rate = core_hz[13] = MPG_BCLK_RATE(13); break;	// MPG BCLK
+	case 14: rate = core_hz[14] = MPG_PCLK_RATE(14); break;	// MPG PCLK
+	};
+	return rate;
+}
+
+static long core_get_rate(int type)
+{
+	unsigned int rate = 0;
+
+	switch (type) {
+	case  0: rate = core_hz[ 0];	break;	// PLL0
+	case  1: rate = core_hz[ 1];	break;	// PLL1
+	case  2: rate = core_hz[ 2];	break;	// PLL2, 295 MHZ
+	case  3: rate = core_hz[ 3];	break;	// PLL3
+	case  4: rate = core_hz[ 4];	break;	// FCLK
+	case  5: rate = core_hz[ 5];	break;	// MCLK
+	case  6: rate = core_hz[ 6];	break;	// BCLK
+	case  7: rate = core_hz[ 7];	break;	// PCLK, 166500000, 100000000
+	case  8: rate = core_hz[ 8];	break;	// HCLK
+	case  9: rate = core_hz[ 9];	break;	// MDCLK
+	case 10: rate = core_hz[10];	break;	// MBCLK
+	case 11: rate = core_hz[11];	break;	// MPCLK
+	case 12: rate = core_hz[12]; 	break;	// G3D BCLK
+	case 13: rate = core_hz[13]; 	break;	// MPG BCLK
+	case 14: rate = core_hz[14];	break;	// MPG PCLK
+	default: printk("unknown core clock type %d ...\n", type);
+			break;
+	};
+	return rate;
+}
+
+static void core_pll_update_link(int pll)
 {
 	struct nxp_clk_dev *cdev;
 	struct clk_core *core;
@@ -402,7 +453,7 @@ static inline void core_update_rate(int pll)
 	/* PLL rate */
 	cdev = clk_dev_get(pll);
 	clk  = &cdev->clk;
-	clk->rate = core_hz[pll] = PLLN_RATE (pll);
+	clk->rate = core_hz[pll] = PLLN_RATE(pll);
 
 	/* PLL connected rate */
 	head = &clk_core[pll].list;
@@ -411,31 +462,10 @@ static inline void core_update_rate(int pll)
 		cdev = clk_dev_get(core->id);
 		clk  = &cdev->clk;
 
-		switch (core->id) {
-		case  0: clk->rate = core_hz[ 0] = PLLN_RATE ( 0);    break;   	// PLL 0
-		case  1: clk->rate = core_hz[ 1] = PLLN_RATE ( 1);    break;   	// PLL 1
-		case  2: clk->rate = core_hz[ 2] = PLLN_RATE ( 2);    break;   	// PLL 2
-		case  3: clk->rate = core_hz[ 3] = PLLN_RATE ( 3);    break;   	// PLL 3
-		case  4: clk->rate = core_hz[ 4] = FCLK_RATE ( 4);    break;   	// FCLK
-		case  5: clk->rate = core_hz[ 5] = MCLK_RATE ( 5);    break;   	// MCLK
-		case  6: clk->rate = core_hz[ 6] = BCLK_RATE ( 6);    break;   	// BCLK
-		case  7: clk->rate = core_hz[ 7] = PCLK_RATE ( 7);    break;   	// PCLK
-		case  8: clk->rate = core_hz[ 8] = HCLK_RATE ( 8);    break;   	// HCLK
-		case  9: clk->rate = core_hz[ 9] = MDCLK_RATE( 9);    break;   	// MDCLK
-		case 10: clk->rate = core_hz[10] = MBCLK_RATE(10);    break;   	// MBCLK
-		case 11: clk->rate = core_hz[11] = MPCLK_RATE(11);    break;   	// MPCLK
-		case 12: clk->rate = core_hz[12] = G3D_BCLK_RATE(12); break;	// G3D BCLK
-		case 13: clk->rate = core_hz[13] = MPG_BCLK_RATE(13); break;	// MPG BCLK
-		case 14: clk->rate = core_hz[14] = MPG_PCLK_RATE(14); break;	// MPG PCLK
-		};
-
+		if (core->id)
+			clk->rate = core_update_rate(core->id);
 		pr_debug("clk : pll.%d - %s update %u khz\n", pll, cdev->name, clk->rate/1000);
 	}
-}
-
-static inline long core_rate(int type)
-{
-	return nxp_cpu_clock_hz(type);
 }
 
 static inline long core_set_rate(struct clk *clk, long rate)
@@ -465,31 +495,18 @@ static inline long core_set_rate(struct clk *clk, long rate)
 			return clk->rate;
 		}
 		nxp_cpu_pll_change_frequency(pll, rate);
-		core_update_rate(pll);				/* PLL */
+		core_pll_update_link(pll);				/* PLL */
 	}
 #endif
 	return clk->rate;
 }
 
-static void core_clock_init(void)
+static void core_rate_init(void)
 {
-	int pll;
+	int pll, i;
 
-	core_hz[ 0] = PLLN_RATE ( 0);      	// PLL 0
-	core_hz[ 1] = PLLN_RATE ( 1);      	// PLL 1
-	core_hz[ 2] = PLLN_RATE ( 2);      	// PLL 2
-	core_hz[ 3] = PLLN_RATE ( 3);      	// PLL 3
-	core_hz[ 4] = FCLK_RATE ( 4);      	// FCLK
-	core_hz[ 5] = MCLK_RATE ( 5);      	// MCLK
-	core_hz[ 6] = BCLK_RATE ( 6);      	// BCLK
-	core_hz[ 7] = PCLK_RATE ( 7);      	// PCLK
-	core_hz[ 8] = HCLK_RATE ( 8);      	// HCLK
-	core_hz[ 9] = MDCLK_RATE( 9);      	// MDCLK
-	core_hz[10] = MBCLK_RATE(10);      	// MBCLK
-	core_hz[11] = MPCLK_RATE(11);      	// MPCLK
-	core_hz[12] = G3D_BCLK_RATE(12); 	// G3D BCLK
-	core_hz[13] = MPG_BCLK_RATE(13); 	// MPG BCLK
-	core_hz[14] = MPG_PCLK_RATE(14); 	// MPG PCLK
+	for (i = 0; CORE_HZ_SIZE > i; i++)
+		core_update_rate(i);
 
 	/* CPU : FCLK, HCLK */
 	pll = pll_get_dvo(0);
@@ -518,7 +535,105 @@ static void core_clock_init(void)
 	list_add_tail(&clk_core[14].list, &clk_core[pll].list);
 }
 
-static inline long get_rate_divide(long rate, long request,
+/*
+ *  Unit Khz
+ *  "sys/devices/platform/pll.N"
+ *
+ */
+static ssize_t core_pll_show(struct device *pdev,
+			struct device_attribute *attr, char *buf)
+{
+	struct attribute *at = &attr->attr;
+	const char *c;
+	char *s = buf;
+	int pll;
+
+	c = &at->name[strlen("pll.")];
+	pll = simple_strtoul(c, NULL, 10);
+
+	if (pll > 3 || 0 > pll) {
+		printk("Fail, not support pll.%d (0~3)\n", pll);
+		return 0;
+	}
+
+	s += sprintf(s, "%u\n", core_hz[pll]/1000);	/* khz */
+
+	return (s - buf);
+}
+
+static ssize_t core_pll_store(struct device *pdev,
+			struct device_attribute *attr, const char *buf, size_t n)
+{
+	struct attribute *at = &attr->attr;
+	const char *c;
+	unsigned long freq;
+	int pll;
+
+	c = &at->name[strlen("pll.")];
+	pll = simple_strtoul(c, NULL, 10);
+
+	if (pll > 3 || 0 > pll) {
+		printk("Fail, not support pll.%d (0~3)\n", pll);
+		return 0;
+	}
+
+	sscanf(buf,"%lu", &freq);
+	freq *=1000; /* khz */
+
+#if defined (CONFIG_ARM_NXP4330_CPUFREQ)	
+	nxp_cpu_pll_change_frequency(pll, freq);
+#endif	
+
+	core_pll_update_link(pll);
+
+	return n;
+}
+
+static struct device_attribute core_pll_attr[] = {
+	__ATTR(pll.0, 0664, core_pll_show, core_pll_store),
+	__ATTR(pll.1, 0664, core_pll_show, core_pll_store),
+	__ATTR(pll.2, 0664, core_pll_show, core_pll_store),
+	__ATTR(pll.3, 0664, core_pll_show, core_pll_store),
+};
+
+static struct attribute *attrs[] = {
+	&core_pll_attr[0].attr,
+	&core_pll_attr[1].attr,
+	&core_pll_attr[2].attr,
+	&core_pll_attr[3].attr,
+	NULL,
+};
+
+static struct attribute_group attr_group = {
+	.attrs = (struct attribute **)attrs,
+};
+
+static int __init cpu_pll_sys_init(void)
+{
+	struct kobject *kobj = NULL;
+	int ret = 0;
+
+	/* create attribute interface */
+	kobj = kobject_create_and_add("pll", &platform_bus.kobj);
+	if (!kobj) {
+		printk(KERN_ERR "Fail, create kobject for cpu\n");
+		return -ret;
+	}
+
+	ret = sysfs_create_group(kobj, &attr_group);
+	if (ret) {
+		printk(KERN_ERR "Fail, create sysfs group for pll ...\n");
+		kobject_del(kobj);
+		return -ret;
+	}
+	return ret;
+}
+module_init(cpu_pll_sys_init);
+
+/*
+ * Clock Interfaces
+ */
+static inline long clk_divide(long rate, long request,
 				int align, int *divide)
 {
 	int div = (rate/request);
@@ -545,44 +660,6 @@ static inline long get_rate_divide(long rate, long request,
 	return (rate/div);
 }
 
-/*
- * CLK Interfaces
- */
-struct clk *clk_get(struct device *dev, const char *id)
-{
-	struct nxp_clk_dev *cdev = clk_dev_get(0);
-    struct clk *clk = NULL;
-    const char *str = NULL, *c = NULL;
-	int i, devid;
-
-	if (dev)
-		str = dev_name(dev);
-
-	if (id)
-		str = id;
-
-	for (i = 0; CLK_DEVS_NUM > i; i++, cdev++) {
-		if (NULL == cdev->name)
-			continue;
-		if (!strncmp(cdev->name, str, strlen(cdev->name))) {
-			c = strrchr((const char*)str, (int)'.');
-			if (NULL == c || !cdev->peri)
-				break;
-	    	devid = simple_strtoul(++c, NULL, 10);
-    		if (cdev->peri->dev_id == devid)
-	    		break;
-		}
-	}
-
-	if (CLK_DEVS_NUM > i)
-		clk = &cdev->clk;
-	else
-		clk = &(clk_dev_get(7))->clk;	/* pclk */
-
-	return clk ? clk : ERR_PTR(-ENOENT);
-}
-EXPORT_SYMBOL(clk_get);
-
 struct clk *clk_get_sys(const char *dev_id, const char *con_id)
 {
 	/* SMP private timer */
@@ -591,38 +668,7 @@ struct clk *clk_get_sys(const char *dev_id, const char *con_id)
 
 	return clk_get(NULL, (char *)dev_id);
 }
-EXPORT_SYMBOL(clk_get_sys);
 
-void clk_put(struct clk *clk)
-{
-}
-EXPORT_SYMBOL(clk_put);
-
-unsigned long clk_get_rate(struct clk *clk)
-{
-	struct nxp_clk_dev *cdev = clk_container(clk);
-
-	if (cdev->link)
-		clk = cdev->link;
-
-	return clk->rate;
-}
-EXPORT_SYMBOL(clk_get_rate);
-
-/*
- *				 -----------	8Bit
- *		PLL0 --	|			|	 -------
- *		PLL1 --	| CLKGEN 0	| -	| DIV0	| -----------
- *		.... --	|			|	 -------	|
- *				 -----------				|
- *		------------------------------------|
- *		|
- *		|		 -----------	8Bit
- *		-------	| (7)		|	 -------
- *		PLL0 --	| CLKGEN 1	| -	| DIV1	| ----------
- *		PLL1 --	|	 		|	 -------
- *				 -----------
- */
 long clk_round_rate(struct clk *clk, unsigned long rate)
 {
 	struct nxp_clk_dev *pll = NULL, *cdev = clk_container(clk);
@@ -634,19 +680,19 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
 	int i, n, clk2 = 0;
 	short s1 = 0, s2 = 0, d1 = 0, d2 = 0;
 
-	if (!peri)
+	if (NULL == peri)
 		return core_set_rate(clk, rate);
 
 	level = peri->level;
-	mask = peri->clk_mask0;
+	mask  = peri->clk_mask0;
 	pr_debug("clk: %s.%d reqeust = %ld [input=0x%x]\n",
 			peri->dev_name, peri->dev_id, rate, mask);
 
 	if (!(INPUT_MASK & mask)) {
 		if (PLCK_MASK & mask)
-			return core_rate(CORECLK_ID_PCLK);
+			return core_get_rate(CORECLK_ID_PCLK);
 		else if (BLCK_MASK & mask)
-			return core_rate(CORECLK_ID_BCLK);
+			return core_get_rate(CORECLK_ID_BCLK);
 		else
 			return clk->rate;
 	}
@@ -670,7 +716,7 @@ next:
 
 		clock_hz = rate;
 		for (i = 0; level > i ; i++)
-			rate = get_rate_divide(rate, request, 2, &div[i]);
+			rate = clk_divide(rate, request, 2, &div[i]);
 
 		if (rate_hz && (abs(rate-request) > abs(rate_hz-request)))
 			continue;
@@ -715,7 +761,16 @@ next:
 
 	return clk->rate;
 }
-EXPORT_SYMBOL(clk_round_rate);
+
+unsigned long clk_get_rate(struct clk *clk)
+{
+	struct nxp_clk_dev *cdev = clk_container(clk);
+
+	if (cdev->link)
+		clk = cdev->link;
+
+	return clk->rate;
+}
 
 int clk_set_rate(struct clk *clk, unsigned long rate)
 {
@@ -724,7 +779,7 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
 	unsigned long flags;
 	int i;
 
-	if (!peri)
+	if (NULL == peri)
 		return core_set_rate(clk, rate);
 
 	clk_round_rate(clk, rate);
@@ -732,19 +787,61 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
 	spin_lock_irqsave(&peri->lock, flags);
 
 	for (i = 0; peri->level > i ; i++)	{
+
 		int s = (0 == i ? peri->clk_src0: peri->clk_src1);
 		int d = (0 == i ? peri->clk_div0: peri->clk_div1);
+
 		if (-1 == s)
 			continue;
-		peri_clk_rate(peri->base_addr, i, s, d);
+
+		clk_gen_rate(peri->base_addr, i, s, d);
+
 		pr_debug("clk: %s.%d (%p) set_rate [%d] src[%d] div[%d]\n",
 			peri->dev_name, peri->dev_id, peri->base_addr, i, s, d);
 	}
 
 	spin_unlock_irqrestore(&peri->lock, flags);
+
 	return clk->rate;
 }
-EXPORT_SYMBOL(clk_set_rate);
+
+void clk_put(struct clk *clk)
+{
+}
+
+struct clk *clk_get(struct device *dev, const char *id)
+{
+	struct nxp_clk_dev *cdev = clk_dev_get(0);
+    struct clk *clk = NULL;
+    const char *str = NULL, *c = NULL;
+	int i, devid;
+
+	if (dev)
+		str = dev_name(dev);
+
+	if (id)
+		str = id;
+
+	for (i = 0; CLK_DEVS_NUM > i; i++, cdev++) {
+		if (NULL == cdev->name)
+			continue;
+		if (!strncmp(cdev->name, str, strlen(cdev->name))) {
+			c = strrchr((const char*)str, (int)'.');
+			if (NULL == c || !cdev->peri)
+				break;
+	    	devid = simple_strtoul(++c, NULL, 10);
+    		if (cdev->peri->dev_id == devid)
+	    		break;
+		}
+	}
+
+	if (CLK_DEVS_NUM > i)
+		clk = &cdev->clk;
+	else
+		clk = &(clk_dev_get(7))->clk;	/* pclk */
+
+	return clk ? clk : ERR_PTR(-ENOENT);
+}
 
 int clk_enable(struct clk *clk)
 {
@@ -762,14 +859,12 @@ int clk_enable(struct clk *clk)
 		_GATE_PCLK_ & peri->clk_mask0 ? "ON":"PASS");
 
 	if (!(INPUT_MASK & peri->clk_mask0)) {
-		/*
-		 * Gated BCLK/PCLK enable
-		 */
+		/* Gated BCLK/PCLK enable */
 		if (_GATE_BCLK_ & peri->clk_mask0)
-			peri_clk_bclk(peri->base_addr, 1);
+			clk_gen_bclk(peri->base_addr, 1);
 
 		if (_GATE_PCLK_ & peri->clk_mask0)
-			peri_clk_pclk(peri->base_addr, 1);
+			clk_gen_pclk(peri->base_addr, 1);
 
 		spin_unlock_irqrestore(&peri->lock, flags);
 		return 0;
@@ -778,16 +873,14 @@ int clk_enable(struct clk *clk)
 	/* invert */
 	inv = peri->clk_inv0;
 	for (; peri->level > i; i++, inv = peri->clk_inv1)
-		peri_clk_invert(peri->base_addr, i, inv);
+		clk_gen_inv(peri->base_addr, i, inv);
 
-	/*
-	 * Gated BCLK/PCLK enable
-	 */
+	/* Gated BCLK/PCLK enable */
 	if (_GATE_BCLK_ & peri->clk_mask0)
-		peri_clk_bclk(peri->base_addr, 1);
+		clk_gen_bclk(peri->base_addr, 1);
 
 	if (_GATE_PCLK_ & peri->clk_mask0)
-		peri_clk_pclk(peri->base_addr, 1);
+		clk_gen_pclk(peri->base_addr, 1);
 
 	/* restore clock rate */
 	for (i = 0; peri->level > i ; i++)	{
@@ -795,16 +888,15 @@ int clk_enable(struct clk *clk)
 		int d = (0 == i ? peri->clk_div0: peri->clk_div1);
 		if (-1 == s)
 			continue;
-		peri_clk_rate(peri->base_addr, i, s, d);
+		clk_gen_rate(peri->base_addr, i, s, d);
 	}
 
-	peri_clk_enable(peri->base_addr);
+	clk_gen_enb(peri->base_addr, 1);
 	peri->enable = true;
 
 	spin_unlock_irqrestore(&peri->lock, flags);
 	return 0;
 }
-EXPORT_SYMBOL(clk_enable);
 
 void clk_disable(struct clk *clk)
 {
@@ -820,34 +912,38 @@ void clk_disable(struct clk *clk)
 
 	peri->enable = false;
 	if (!(INPUT_MASK & peri->clk_mask0)) {
-		/*
-	 	 * Gated BCLK/PCLK disable
-	 	*/
+		/* Gated BCLK/PCLK disable */
 		if (_GATE_BCLK_ & peri->clk_mask0)
-			peri_clk_bclk(peri->base_addr, 0);
+			clk_gen_bclk(peri->base_addr, 0);
 
 		if (_GATE_PCLK_ & peri->clk_mask0)
-			peri_clk_pclk(peri->base_addr, 0);
+			clk_gen_pclk(peri->base_addr, 0);
 
 		spin_unlock_irqrestore(&peri->lock, flags);
 		return;
 	}
 
-	peri_clk_rate(peri->base_addr, 0, 7, 256);	/* for power save */
-	peri_clk_disable(peri->base_addr);
+	clk_gen_rate(peri->base_addr, 0, 7, 256);	/* for power save */
+	clk_gen_enb (peri->base_addr, 0);
 
-	/*
-	 * Gated BCLK/PCLK disable
-	 */
+	/* Gated BCLK/PCLK disable */
 	if (_GATE_BCLK_ & peri->clk_mask0)
-		peri_clk_bclk(peri->base_addr, 0);
+		clk_gen_bclk(peri->base_addr, 0);
 
 	if (_GATE_PCLK_ & peri->clk_mask0)
-		peri_clk_pclk(peri->base_addr, 0);
+		clk_gen_pclk(peri->base_addr, 0);
 
 	spin_unlock_irqrestore(&peri->lock, flags);
 	return;
 }
+
+EXPORT_SYMBOL(clk_get_sys);
+EXPORT_SYMBOL(clk_round_rate);
+EXPORT_SYMBOL(clk_get_rate);
+EXPORT_SYMBOL(clk_set_rate);
+EXPORT_SYMBOL(clk_put);
+EXPORT_SYMBOL(clk_get);
+EXPORT_SYMBOL(clk_enable);
 EXPORT_SYMBOL(clk_disable);
 
 /*
@@ -860,28 +956,7 @@ void nxp_cpu_clock_update_rate(int pll)
 
 unsigned int nxp_cpu_clock_hz(int type)
 {
-	unsigned int rate = 0;
-
-	switch (type) {
-	case  0: rate = core_hz[ 0];	break;	// PLL0
-	case  1: rate = core_hz[ 1];	break;	// PLL1
-	case  2: rate = core_hz[ 2];	break;	// PLL2, 295 MHZ
-	case  3: rate = core_hz[ 3];	break;	// PLL3
-	case  4: rate = core_hz[ 4];	break;	// FCLK
-	case  5: rate = core_hz[ 5];	break;	// MCLK
-	case  6: rate = core_hz[ 6];	break;	// BCLK
-	case  7: rate = core_hz[ 7];	break;	// PCLK, 166500000, 100000000
-	case  8: rate = core_hz[ 8];	break;	// HCLK
-	case  9: rate = core_hz[ 9];	break;	// MDCLK
-	case 10: rate = core_hz[10];	break;	// MBCLK
-	case 11: rate = core_hz[11];	break;	// MPCLK
-	case 12: rate = core_hz[12]; 	break;	// G3D BCLK
-	case 13: rate = core_hz[13]; 	break;	// MPG BCLK
-	case 14: rate = core_hz[14];	break;	// MPG PCLK
-	default: printk("unknown core clock type %d ...\n", type);
-			break;
-	};
-	return rate;
+	return core_get_rate(type);
 }
 
 void nxp_cpu_periph_register_clock(int id, long ext1, long ext2)
@@ -912,27 +987,28 @@ void __init nxp_cpu_clock_init(void)
 	struct clk *clk = NULL;
 	int i = 0, n = 0;
 
-	core_clock_init();
+	core_rate_init();
 
 	for (i = 0; (CLK_CORE_NUM+CLK_PERI_NUM) > i; i++, cdev++) {
 		if (CLK_CORE_NUM > i) {
 			cdev->name = clk_core[i].name;
 			clk = &cdev->clk;
-			clk->rate = core_rate(i);
+			clk->rate = core_get_rate(i);
 			continue;
 		}
 
 		peri = &clk_periphs[i-CLK_CORE_NUM];
 		peri->base_addr = IO_ADDRESS(peri->base_addr);
 		spin_lock_init(&peri->lock);
+
 		cdev->peri = peri;
 		cdev->name = peri->dev_name;
 
 		if (!(INPUT_MASK & peri->clk_mask0)) {
 			if (BLCK_MASK & peri->clk_mask0)
-				cdev->clk.rate = core_rate(CORECLK_ID_BCLK);
+				cdev->clk.rate = core_get_rate(CORECLK_ID_BCLK);
 			if (PLCK_MASK & peri->clk_mask0)
-				cdev->clk.rate = core_rate(CORECLK_ID_PCLK);
+				cdev->clk.rate = core_get_rate(CORECLK_ID_PCLK);
 		}
 
 		/* prevent uart clock disable for low level debug message */
@@ -942,9 +1018,9 @@ void __init nxp_cpu_clock_init(void)
 			if (!strcmp(peri->dev_name,DEV_NAME_PWM))
 				continue;
 			#endif
-			peri_clk_disable(peri->base_addr);
-			peri_clk_bclk(peri->base_addr, 0);
-			peri_clk_pclk(peri->base_addr, 0);
+			clk_gen_enb (peri->base_addr, 0);
+			clk_gen_bclk(peri->base_addr, 0);
+			clk_gen_pclk(peri->base_addr, 0);
 		}
 		#endif
 	}
@@ -977,7 +1053,7 @@ void nxp_cpu_clock_print(void)
 {
 	int pll, cpu;
 
-	core_clock_init();
+	core_rate_init();
 
 	printk("PLL : [0] = %10u, [1] = %10u, [2] = %10u, [3] = %10u\n",
 		core_hz[0], core_hz[1], core_hz[2], core_hz[3]);
@@ -1018,7 +1094,7 @@ void nxp_cpu_clock_resume(void)
 		if (_GATE_PCLK_ & peri->clk_mask0) {
 	#ifdef CONFIG_I2C_NEXELL
 			if (!strcmp("nxp-i2c", peri->dev_name))
-				peri_clk_pclk(peri->base_addr, 1);
+				clk_gen_pclk(peri->base_addr, 1);
 	#endif
 		}
 	}

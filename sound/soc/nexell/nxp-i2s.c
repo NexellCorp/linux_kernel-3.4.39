@@ -92,7 +92,7 @@ struct i2s_register {
 #define	PSR_PSVALA_POS		 	8		// [08:13]
 
 #define	IMS_BIT_EXTCLK			(1<<0)
-#define	IMS_BIT_SLAVE			(1<<1)
+#define	IMS_BIT_SLAVE			(3<<0)
 
 #define BLC_8BIT				1
 #define BLC_16BIT				0
@@ -345,13 +345,7 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 	IMS = par->master_mode ? 0 : IMS_BIT_SLAVE;
 	SDF = par->trans_mode & 0x03;	/* 0:I2S, 1:Left 2:Right justfied */
 	LRP = par->LR_pol_inv ? 1 : 0;
-
-	if (!par->master_mode) {
-		OEN = 1;	/* Active low : MLCK out enable */
-		goto done;
-	} else {
-		OEN = par->mclk_in; 
-	}
+	OEN = !par->master_mode ? 1 : par->mclk_in; /* Active low : MLCK out enable */
 
 	switch (par->frame_bit) {
 	case 32: BFS = BFS_32BIT; break;
@@ -361,6 +355,9 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 			par->frame_bit);
 		return -EINVAL;
 	}
+
+	if (!par->master_mode) 
+		goto done;
 
 	for (i = 0; ARRAY_SIZE(clk_ratio) > i; i++) {
 		if (par->sample_rate == clk_ratio[i].sample_rate)
@@ -448,7 +445,7 @@ static int nxp_i2s_set_plat_param(struct nxp_i2s_snd_param *par, void *data)
 	struct platform_device *pdev = data;
 	struct nxp_i2s_plat_data *plat = pdev->dev.platform_data;
 	struct nxp_pcm_dma_param *dma = &par->play;
-	unsigned int phy_base = I2S_BASEADDR + (par->channel * I2S_CH_OFFSET);
+	unsigned int phy_base = I2S_BASEADDR + (pdev->id * I2S_CH_OFFSET);
 	int i = 0, ret = 0;
 
 	par->channel = pdev->id;
