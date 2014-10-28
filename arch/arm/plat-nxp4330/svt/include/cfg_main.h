@@ -257,6 +257,12 @@
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
 
 /*------------------------------------------------------------------------------
+ * 	usb ehci 
+ */
+#define CFG_USB_EHCI_LATE_LOAD					1
+#define CFG_USB_EHCI_LATE_LOADTIME				1000
+
+/*------------------------------------------------------------------------------
  * 	Suspend mode
  */
 
