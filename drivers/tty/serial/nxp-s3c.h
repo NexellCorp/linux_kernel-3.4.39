@@ -55,6 +55,8 @@ struct s3c24xx_uart_port {
 	struct clk *baudclk;
 	struct uart_port port;
 	struct s3c24xx_serial_drv_data *drv_data;
+	struct delayed_work resume_work;
+	struct wake_lock resume_lock;
 	/* reference to platform data */
 	struct s3c24xx_uart_platdata *data;
 };

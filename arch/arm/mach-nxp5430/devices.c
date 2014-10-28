@@ -442,10 +442,10 @@ static int i2s_ext_mclk_set_clock(bool enable)
 	nxp_soc_gpio_set_io_func(PAD_GPIO_D + 13, NX_GPIO_PADFUNC_0);
 
     if (enable){
-        nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, clk_rate, 50); 
+        nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, clk_rate, 50);
 		nxp_cpu_periph_clock_register(CLK_ID_I2S_0, clk_rate, 0);
 	}
-    else{ 
+    else{
         nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, 0, 0);
 
 	}
@@ -588,7 +588,7 @@ static struct platform_device spdif_device_rx = {
 #endif	/* CONFIG_SND_NXP_SPDIF_RX || CONFIG_SND_NXP_SPDIF_RX_MODULE */
 
 
-#ifdef CONFIG_SPI_S3C64XX_PORT0 
+#ifdef CONFIG_SPI_S3C64XX_PORT0
 #include <mach/s3c64xx-spi.h>
 #include <linux/gpio.h>
 #include <linux/spi/spi.h>
@@ -597,21 +597,21 @@ static struct s3c64xx_spi_csinfo spi0_csi[] = {
     [0] = {
         .line       = CFG_SPI0_CS,
         .set_level  = gpio_set_value,
-        .fb_delay   = 0x2, 
-    },   
+        .fb_delay   = 0x2,
+    },
 };
 /*
 static struct spi_board_info spi0_board_info[] __initdata = {
-    {    
+    {
         .modalias       = "spidev",
         //.platform_data  = NULL,
 		.platform_data 		= &s3c64xx_spi0_pdata,
         .max_speed_hz   = 10 * 1000 * 1000,
-        .bus_num        = 0, 
-        .chip_select    = 0, 
+        .bus_num        = 0,
+        .chip_select    = 0,
         .mode           = SPI_MODE_0,
        .controller_data    = &spi0_csi[0],
-    }    
+    }
 };
 */
 
@@ -652,13 +652,13 @@ int s3c64xx_spi0_cfg_gpio(struct platform_device *dev)
 	return 0;
 }
 
-struct s3c64xx_spi_info s3c64xx_spi0_pdata = { 
+struct s3c64xx_spi_info s3c64xx_spi0_pdata = {
     .fifo_lvl_mask  = 0x1ff,
-    .rx_lvl_offset  = 15, 
-    //.rx_lvl_offset  = 0x1ff, 
+    .rx_lvl_offset  = 15,
+    //.rx_lvl_offset  = 0x1ff,
     .high_speed = 1,
     .clk_from_cmu   = false,//true,
-    .tx_st_done = 25, 
+    .tx_st_done = 25,
 	.num_cs = 1,
 	.src_clk_nr = 0,
 //		.cfg_gpio = s3c64xx_spi0_cfg_gpio,
@@ -668,7 +668,7 @@ struct s3c64xx_spi_info s3c64xx_spi0_pdata = {
       .dma_filter     = pl08x_filter_id,
       .dma_rx_param   = (void *)DMA_PERIPHERAL_NAME_SSP0_RX,
       .dma_tx_param   = (void *)DMA_PERIPHERAL_NAME_SSP0_TX,
-      //.autosuspend_delay  = 10, 
+      //.autosuspend_delay  = 10,
 /* end */
 
 };
@@ -1173,6 +1173,7 @@ static struct amba_device *amba_devices[] __initdata = {
 void __init nxp_cpu_devs_register(void)
 {
 	int i = 0;
+
 	printk("[Register machine platform devices]\n");
 #if defined(CONFIG_ARM_AMBA)
 	for (i = 0; i < ARRAY_SIZE(amba_devices); i++) {
@@ -1185,38 +1186,32 @@ void __init nxp_cpu_devs_register(void)
 	/* default uart hw prepare */
 #if defined(CONFIG_SERIAL_NXP_S3C_UART0)
     printk("mach: add device uart0\n");
-	UART_PORT_INIT(0);
-	platform_device_register(&uart0_device);
+	uart_device_register(0);
 #endif
 
 #if defined(CONFIG_SERIAL_NXP_S3C_UART1)
 	printk("mach: add device uart1\n");
-	UART_PORT_INIT(1);
-	platform_device_register(&uart1_device);
+	uart_device_register(1);
 #endif
 
 #if defined(CONFIG_SERIAL_NXP_S3C_UART2)
 	printk("mach: add device uart2\n");
-	UART_PORT_INIT(2);
-	platform_device_register(&uart2_device);
+	uart_device_register(2);
 #endif
 
 #if defined(CONFIG_SERIAL_NXP_S3C_UART3)
 	printk("mach: add device uart3\n");
-	UART_PORT_INIT(3);
-	platform_device_register(&uart3_device);
+	uart_device_register(3);
 #endif
 
 #if defined(CONFIG_SERIAL_NXP_S3C_UART4)
 	printk("mach: add device uart4\n");
-	UART_PORT_INIT(4);
-	platform_device_register(&uart4_device);
+	uart_device_register(4);
 #endif
 
 #if defined(CONFIG_SERIAL_NXP_S3C_UART5)
 	printk("mach: add device uart5\n");
-	UART_PORT_INIT(5);
-	platform_device_register(&uart5_device);
+	uart_device_register(5);
 #endif
 
 #if defined(CONFIG_NXP_DISPLAY)

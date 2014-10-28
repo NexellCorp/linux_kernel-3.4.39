@@ -44,6 +44,7 @@
 #include <linux/clk.h>
 #include <linux/cpufreq.h>
 #include <linux/of.h>
+#include <linux/wakelock.h>
 
 #include <asm/irq.h>
 #include <mach/serial.h>
@@ -61,6 +62,31 @@
 #define S3C24XX_SERIAL_NAME		"ttySAC"
 #define S3C24XX_SERIAL_MAJOR	204
 #define S3C24XX_SERIAL_MINOR	64
+
+static struct s3c24xx_serial_drv_data exynos4210_serial_drv_data = {
+	.info = &(struct s3c24xx_uart_info) {
+		.name			= "Nexell Exynos4 UART",
+		.type			= PORT_S3C6400,
+		.has_divslot	= 1,
+		.rx_fifomask	= S5PV210_UFSTAT_RXMASK,
+		.rx_fifoshift	= S5PV210_UFSTAT_RXSHIFT,
+		.rx_fifofull	= S5PV210_UFSTAT_RXFULL,
+		.tx_fifofull	= S5PV210_UFSTAT_TXFULL,
+		.tx_fifomask	= S5PV210_UFSTAT_TXMASK,
+		.tx_fifoshift	= S5PV210_UFSTAT_TXSHIFT,
+		.def_clk_sel	= S3C2410_UCON_CLKSEL0,
+		.num_clks		= 1,
+		.clksel_mask	= 0,
+		.clksel_shift	= 0,
+	},
+	.def_data = &(struct s3c24xx_uart_platdata) {
+		.ucon		= S5PV210_UCON_DEFAULT,
+		.ufcon		= S5PV210_UFCON_DEFAULT,
+		.has_fracval	= 1,
+	},
+	.fifosize = { 256, 64, 16, 16 },
+};
+#define EXYNOS4210_SERIAL_DRV_DATA (&exynos4210_serial_drv_data)
 
 /* macros to change one thing to another */
 
@@ -448,6 +474,12 @@ static void s3c24xx_serial_shutdown(struct uart_port *port)
 		wr_regl(port, S3C64XX_UINTP, 0xf);
 		wr_regl(port, S3C64XX_UINTM, 0xf);
 	}
+
+	if (uport->data) {
+		struct s3c24xx_uart_platdata *udata = uport->data;
+		if (udata->exit)
+			udata->exit(udata->hwport);
+	}
 }
 
 static int s3c24xx_serial_startup(struct uart_port *port)
@@ -463,6 +495,12 @@ static int s3c24xx_serial_startup(struct uart_port *port)
 	if (ret) {
 		printk(KERN_ERR "cannot get irq %d\n", port->irq);
 		return ret;
+	}
+
+	if (uport->data) {
+		struct s3c24xx_uart_platdata *udata = uport->data;
+		if (udata->init)
+			udata->init(udata->hwport);
 	}
 
 	/* For compatibility with s3c24xx Soc's */
@@ -888,7 +926,6 @@ static struct s3c24xx_uart_port *s3c24xx_serial_ports[UART_NR];
  *
  * reset the fifos and other the settings.
 */
-
 static void s3c24xx_serial_resetport(struct uart_port *port,
 				   struct s3c24xx_uart_platdata *data)
 {
@@ -1012,9 +1049,12 @@ static inline struct s3c24xx_serial_drv_data *s3c24xx_get_driver_data(
 		return (struct s3c24xx_serial_drv_data *)match->data;
 	}
 #endif
-	return (struct s3c24xx_serial_drv_data *)
-			platform_get_device_id(pdev)->driver_data;
+	return EXYNOS4210_SERIAL_DRV_DATA;
 }
+
+#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NXP_RESUME_WORK)
+static void s3c24xx_resume_work(struct work_struct *work);
+#endif
 
 static int s3c24xx_serial_probe(struct platform_device *pdev)
 {
@@ -1052,6 +1092,12 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
 	uport->port.fifosize = (uport->info->fifosize) ? uport->info->fifosize :
 						uport->drv_data->fifosize[pdev->id];
 
+#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NXP_RESUME_WORK)
+	INIT_DELAYED_WORK(&uport->resume_work, s3c24xx_resume_work);
+ 	wake_lock_init(&uport->resume_lock, WAKE_LOCK_SUSPEND,
+	             kasprintf(GFP_KERNEL, "UART%u", pdev->id));
+	device_enable_async_suspend(&pdev->dev);
+#endif
 	dbg("%s: initialising port %p...\n", __func__, uport);
 
 	ret = s3c24xx_serial_init_port(uport, pdev);
@@ -1087,6 +1133,28 @@ static int __devexit s3c24xx_serial_remove(struct platform_device *dev)
 #ifdef CONFIG_PM_SLEEP
 unsigned int s3c24xx_serial_mask_save[UART_NR];
 
+#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NXP_RESUME_WORK)
+#define uart_console(port)	((port)->cons && (port)->cons->index == (port)->line)
+#define	UART_RESUME_WORK_DELAY	(400)		/* wait for end resume_console */
+
+static void s3c24xx_resume_work(struct work_struct *work)
+{
+	struct s3c24xx_uart_port *uport = container_of(work,
+					struct s3c24xx_uart_port, resume_work.work);
+	struct uart_port *port = &uport->port;
+
+	if (uart_console(port)) {
+		clk_enable(uport->clk);
+		wr_regl(port, S3C64XX_UINTM, s3c24xx_serial_mask_save[port->line]);
+		s3c24xx_serial_resetport(port, s3c24xx_port_to_data(port));
+		clk_disable(uport->clk);
+
+		uart_resume_port(&s3c24xx_uart_drv, port);
+		wake_unlock(&uport->resume_lock);
+	}
+}
+#endif
+
 static int s3c24xx_serial_suspend(struct device *dev)
 {
 	struct uart_port *port = s3c24xx_dev_to_port(dev);
@@ -1102,8 +1170,21 @@ static int s3c24xx_serial_resume(struct device *dev)
 {
 	struct uart_port *port = s3c24xx_dev_to_port(dev);
 	struct s3c24xx_uart_port *uport = to_uport(port);
+	struct s3c24xx_uart_platdata *udata = uport->data;
+
+	if (udata->init)
+		udata->init(udata->hwport);
 
 	if (port) {
+#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NXP_RESUME_WORK)
+		/*
+		 * disable console duration delay time
+	 	 * to save wakeup time
+	 	 */
+		wake_lock(&uport->resume_lock);
+		schedule_delayed_work(&uport->resume_work, msecs_to_jiffies(UART_RESUME_WORK_DELAY));
+		return 0;
+#endif
 		clk_enable(uport->clk);
 		wr_regl(port, S3C64XX_UINTM, s3c24xx_serial_mask_save[port->line]);
 		s3c24xx_serial_resetport(port, s3c24xx_port_to_data(port));
@@ -1262,6 +1343,11 @@ s3c24xx_serial_console_setup(struct console *co, char *options)
 
 	cons_uart = port;
 
+	if (uport->data) {
+		struct s3c24xx_uart_platdata *udata = uport->data;
+		if (udata->init)
+			udata->init(udata->hwport);
+	}
 	dbg("s3c24xx_serial_console_setup: port=%p (%d)\n", port, co->index);
 
 	/*
@@ -1291,40 +1377,6 @@ static struct console s3c24xx_serial_console = {
 
 #endif /* CONFIG_SERIAL_NXP_S3C_CONSOLE */
 
-static struct s3c24xx_serial_drv_data exynos4210_serial_drv_data = {
-	.info = &(struct s3c24xx_uart_info) {
-		.name			= "Nexell Exynos4 UART",
-		.type			= PORT_S3C6400,
-		.has_divslot	= 1,
-		.rx_fifomask	= S5PV210_UFSTAT_RXMASK,
-		.rx_fifoshift	= S5PV210_UFSTAT_RXSHIFT,
-		.rx_fifofull	= S5PV210_UFSTAT_RXFULL,
-		.tx_fifofull	= S5PV210_UFSTAT_TXFULL,
-		.tx_fifomask	= S5PV210_UFSTAT_TXMASK,
-		.tx_fifoshift	= S5PV210_UFSTAT_TXSHIFT,
-		.def_clk_sel	= S3C2410_UCON_CLKSEL0,
-		.num_clks		= 1,
-		.clksel_mask	= 0,
-		.clksel_shift	= 0,
-	},
-	.def_data = &(struct s3c24xx_uart_platdata) {
-		.ucon		= S5PV210_UCON_DEFAULT,
-		.ufcon		= S5PV210_UFCON_DEFAULT,
-		.has_fracval	= 1,
-	},
-	.fifosize = { 256, 64, 16, 16 },
-};
-#define EXYNOS4210_SERIAL_DRV_DATA ((kernel_ulong_t)&exynos4210_serial_drv_data)
-
-static struct platform_device_id s3c24xx_serial_driver_ids[] = {
-	{
-		.name = "nxp-uart",
-		.driver_data = EXYNOS4210_SERIAL_DRV_DATA,
-	},
-	{ },
-};
-MODULE_DEVICE_TABLE(platform, s3c24xx_serial_driver_ids);
-
 #ifdef CONFIG_OF
 static const struct of_device_id s3c24xx_uart_dt_match[] = {
 	{ .compatible = "Nexell,s3c-uart",
@@ -1339,7 +1391,6 @@ MODULE_DEVICE_TABLE(of, s3c24xx_uart_dt_match);
 static struct platform_driver samsung_serial_driver = {
 	.probe		= s3c24xx_serial_probe,
 	.remove		= __devexit_p(s3c24xx_serial_remove),
-	.id_table	= s3c24xx_serial_driver_ids,
 	.driver		= {
 		.name	= "nxp-uart",
 		.owner	= THIS_MODULE,

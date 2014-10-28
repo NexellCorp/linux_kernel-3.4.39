@@ -36,12 +36,6 @@
 #include <mach/pm.h>
 #include <mach/nxp5430_bus.h>
 
-#if (0)	/* default on */
-#define DBGOUT(msg...)		{ printk("cpu: " msg); }
-#else
-#define DBGOUT(msg...)		do {} while (0)
-#endif
-
 #if (CFG_BUS_RECONFIG_ENB == 1)
 void nxp_set_bus_config(void)
 {
@@ -265,7 +259,7 @@ static unsigned int core_power[][2] = {
 
 void nxp_cpu_core_shutdown(int core)
 {
-	printk(KERN_INFO "cpu.%d shutdown ...\n", core);
+	printk("cpu.%d shutdown ...\n", core);
 	NX_TIEOFF_Set(core_power[core][0], 1);
 	NX_TIEOFF_Set(core_power[core][1], 1);
 }
@@ -283,7 +277,7 @@ void nxp_cpu_shutdown(void)
 		nxp_cpu_core_shutdown(cpu);
 	}
 
-	printk(KERN_INFO "cpu.%d shutdown ...\n", cur);
+	printk("cpu.%d shutdown ...\n", cur);
 	NX_ALIVE_SetWriteEnable(CTRUE);			/* close alive gate */
 	NX_ALIVE_SetVDDPWRON(CFALSE, CFALSE);	/* Core power down */
 	NX_ALIVE_SetWriteEnable(CFALSE);			/* close alive gate */
@@ -293,7 +287,7 @@ void nxp_cpu_shutdown(void)
 
 void nxp_cpu_reset(char str, const char *cmd)
 {
-	printk(KERN_INFO "system reset: %s ...\n", cmd);
+	printk("system reset: %s ...\n", cmd);
 
 	if (nxp_board_reset)
 		nxp_board_reset(str, cmd);

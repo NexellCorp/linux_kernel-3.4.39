@@ -262,9 +262,9 @@ struct s3c24xx_uart_platdata {
 	unsigned long	ulcon;	 /* value of ulcon for port */
 	unsigned long	ufcon;	 /* value of ufcon for port */
 
-	void (*init) (void);
-    void (*exit) (void);
-    void (*reset) (void);
+	void (*init) (int hwport);
+    void (*exit) (int hwport);
+    void (*reset) (int hwport);
 	void (*wake_peer)(struct uart_port *);
 
 	/* DMA */

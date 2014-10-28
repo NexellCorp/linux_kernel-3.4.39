@@ -339,88 +339,9 @@ static void suspend_mark(suspend_state_t stat)
 }
 #endif
 
-#ifdef CONFIG_CACHE_L2X0
-static inline void __l2x0_flush_all(void __iomem *base)
-{
-	struct save_l2c *pl2c = &saved_regs.l2c;
-	writel(pl2c->l2x0_way_mask, base + L2X0_CLEAN_INV_WAY);
-
-	/* wait for cache operation by line or way to complete */
-	while (readl(base + L2X0_CLEAN_INV_WAY) & pl2c->l2x0_way_mask)
-		cpu_relax();
-
-	#ifdef CONFIG_PL310_ERRATA_753970
-	writel(0, base + L2X0_DUMMY_REG);
-	#else
-	writel(0, base + L2X0_CACHE_SYNC);
-	#endif
-}
-
-static inline void __l2x0_invalidate_all(void __iomem *base)
-{
-	struct save_l2c *pl2c = &saved_regs.l2c;
-
-	/* Invalidating when L2 is enabled is a nono */
-	BUG_ON(readl(base + L2X0_CTRL) & 1);
-	writel(pl2c->l2x0_way_mask, base + L2X0_INV_WAY);
-
-	/* wait for cache operation by line or way to complete */
-	while (readl(base + L2X0_CLEAN_INV_WAY) & pl2c->l2x0_way_mask)
-		cpu_relax();
-
-	#ifdef CONFIG_PL310_ERRATA_753970
-	writel(0, base + L2X0_DUMMY_REG);
-	#else
-	writel(0, base + L2X0_CACHE_SYNC);
-	#endif
-}
-#endif
-
 static void suspend_l2cache(suspend_state_t stat)
 {
-#ifdef CONFIG_CACHE_L2X0
-	struct save_l2c *pl2c = &saved_regs.l2c;
-	void __iomem *base = (void __iomem *)__PB_IO_MAP_L2C_VIRT;
-
-	if (SUSPEND_SUSPEND == stat) {
-		pl2c->tag_latency = readl_relaxed(base + L2X0_TAG_LATENCY_CTRL);
-		pl2c->data_latency = readl_relaxed(base + L2X0_DATA_LATENCY_CTRL);
-		pl2c->prefetch_ctrl = readl_relaxed(base + L2X0_PREFETCH_CTRL);
-		pl2c->filter_start = readl_relaxed(base + L2X0_ADDR_FILTER_START);
-		pl2c->filter_end = readl_relaxed(base + L2X0_ADDR_FILTER_END);
-		pl2c->pwr_ctrl = readl_relaxed(base + L2X0_POWER_CTRL);
-		pl2c->aux_ctrl = readl_relaxed(base + L2X0_AUX_CTRL);
-		pl2c->tieoff = readl_relaxed(IO_ADDRESS(PHY_BASEADDR_TIEOFF));
-		pl2c->l2x0_way_mask = pl2c->aux_ctrl & (1 << 16) ? (1 << 16) - 1 : (1 << 8) - 1 ;
-	} else {
-		int i = 0, lockregs = 8;
-
-		if ((readl_relaxed(base + L2X0_CTRL) & 1))
-			return;
-
-		/* TIEOFF */
-		writel_relaxed(pl2c->tieoff|0x3000, IO_ADDRESS(PHY_BASEADDR_TIEOFF));
-
-		/* restore */
-		writel_relaxed(pl2c->tag_latency, (base + L2X0_TAG_LATENCY_CTRL));
-		writel_relaxed(pl2c->data_latency, (base + L2X0_DATA_LATENCY_CTRL));
-		writel_relaxed(pl2c->filter_start, (base + L2X0_ADDR_FILTER_START));
-		writel_relaxed(pl2c->filter_end, (base + L2X0_ADDR_FILTER_END));
-		writel_relaxed(pl2c->prefetch_ctrl, (base + L2X0_PREFETCH_CTRL));
-		writel_relaxed(pl2c->pwr_ctrl, (base + L2X0_POWER_CTRL));
-
-		/*
-		 * l2x0_unlock, aux, enable
-		 */
-		for (i = 0; i < lockregs; i++) {
-			writel_relaxed(0x0, base + L2X0_LOCKDOWN_WAY_D_BASE + i*L2X0_LOCKDOWN_STRIDE);
-			writel_relaxed(0x0, base + L2X0_LOCKDOWN_WAY_I_BASE + i*L2X0_LOCKDOWN_STRIDE);
-		}
-		writel_relaxed(pl2c->aux_ctrl, (base + L2X0_AUX_CTRL));
-		__l2x0_invalidate_all(base);
-		writel_relaxed(1, (base + L2X0_CTRL));
-	}
-#endif
+	return;
 }
 
 static void suspend_gpio(suspend_state_t stat)
