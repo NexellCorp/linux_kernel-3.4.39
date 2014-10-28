@@ -1419,6 +1419,19 @@ MODULE_LICENSE ("GPL");
 #error "missing bus glue for ehci-hcd"
 #endif
 
+#if defined(CONFIG_USB_EHCI_LATE_LOAD)
+struct delayed_work ehci_late_work;
+
+static void ehci_hcd_late_work(struct work_struct *work)
+{
+	int retval = 0;
+
+	retval = platform_driver_register(&PLATFORM_DRIVER);
+	if (retval < 0)
+		printk("%s error!!! %d\n", __func__, retval);
+}
+#endif
+
 static int __init ehci_hcd_init(void)
 {
 	int retval = 0;
@@ -1447,9 +1460,16 @@ static int __init ehci_hcd_init(void)
 #endif
 
 #ifdef PLATFORM_DRIVER
+#if !defined (CONFIG_USB_EHCI_LATE_LOAD)
 	retval = platform_driver_register(&PLATFORM_DRIVER);
 	if (retval < 0)
 		goto clean0;
+#else
+    INIT_DELAYED_WORK(&ehci_late_work, ehci_hcd_late_work);
+	schedule_delayed_work(&ehci_late_work,
+                msecs_to_jiffies(CONFIG_USB_EHCI_LATE_LOADTIME));
+	printk("==== echi_hcd_late_work %s after %d ms\n", __func__, CONFIG_USB_EHCI_LATE_LOADTIME);
+#endif
 #endif
 
 #ifdef PCI_DRIVER

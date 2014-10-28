@@ -276,6 +276,7 @@ static void usb_gadget_remove_driver(struct usb_udc *udc)
 
 	udc->driver = NULL;
 	udc->dev.driver = NULL;
+	udc->gadget->dev.driver = NULL;
 }
 
 /**
