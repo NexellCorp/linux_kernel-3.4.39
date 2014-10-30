@@ -56,6 +56,7 @@
 #include <linux/workqueue.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
+#include <linux/mfd/nxe2000.h>
 
 /* nexell soc headers */
 #include <mach/platform.h>
@@ -128,14 +129,6 @@
 #ifndef MIN
 #define MIN(X, Y) ((X) <= (Y) ? (X) : (Y))
 #endif
-
-enum int_type {
-	SYS_INT  = 0x01,
-	DCDC_INT = 0x02,
-	ADC_INT  = 0x08,
-	GPIO_INT = 0x10,
-	CHG_INT	 = 0x40,
-};
 
 #ifdef ENABLE_FUEL_GAUGE_FUNCTION
 /* define for FG delayed time */

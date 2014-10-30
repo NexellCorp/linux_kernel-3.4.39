@@ -30,15 +30,6 @@
 #include <linux/mfd/nxe2000.h>
 
 
-enum int_type {
-	SYS_INT  = 0x1,
-	DCDC_INT = 0x2,
-	RTC_INT  = 0x4,
-	ADC_INT  = 0x8,
-	GPIO_INT = 0x10,
-	CHG_INT	= 0x40,
-};
-
 static int gpedge_add[] = {
 	NXE2000_GPIO_GPEDGE1,
 	NXE2000_GPIO_GPEDGE2
@@ -93,6 +84,9 @@ static int irq_clr_add[] = {
 };
 
 static int main_int_type[] = {
+#ifdef CONFIG_NXE2000_WDG_TEST
+	WDG_INT|
+#endif
 	SYS_INT,
 	DCDC_INT,
 	RTC_INT,
@@ -127,12 +121,12 @@ struct nxe2000_irq_data {
 
 static const struct nxe2000_irq_data nxe2000_irqs[NXE2000_NR_IRQS] = {
 	[NXE2000_IRQ_POWER_ON]		= NXE2000_IRQ(SYS_INT,  0, 0, 0, 0),
-	[NXE2000_IRQ_EXTIN]		= NXE2000_IRQ(SYS_INT,  0, 1, 1, 0),
-	[NXE2000_IRQ_PRE_VINDT]	= NXE2000_IRQ(SYS_INT,  0, 2, 2, 0),
-	[NXE2000_IRQ_PREOT]		= NXE2000_IRQ(SYS_INT,  0, 3, 3, 0),
-	[NXE2000_IRQ_POWER_OFF]	= NXE2000_IRQ(SYS_INT,  0, 4, 4, 0),
+	[NXE2000_IRQ_EXTIN]			= NXE2000_IRQ(SYS_INT,  0, 1, 1, 0),
+	[NXE2000_IRQ_PRE_VINDT]		= NXE2000_IRQ(SYS_INT,  0, 2, 2, 0),
+	[NXE2000_IRQ_PREOT]			= NXE2000_IRQ(SYS_INT,  0, 3, 3, 0),
+	[NXE2000_IRQ_POWER_OFF]		= NXE2000_IRQ(SYS_INT,  0, 4, 4, 0),
 	[NXE2000_IRQ_NOE_OFF]		= NXE2000_IRQ(SYS_INT,  0, 5, 5, 0),
-	[NXE2000_IRQ_WD]		= NXE2000_IRQ(SYS_INT,  0, 6, 6, 0),
+	[NXE2000_IRQ_WD]			= NXE2000_IRQ(SYS_INT,  0, 6, 6, 0),
 
 	[NXE2000_IRQ_DC1LIM]		= NXE2000_IRQ(DCDC_INT, 1, 0, 0, 1),
 	[NXE2000_IRQ_DC2LIM]		= NXE2000_IRQ(DCDC_INT, 1, 1, 1, 1),
@@ -140,8 +134,8 @@ static const struct nxe2000_irq_data nxe2000_irqs[NXE2000_NR_IRQS] = {
 	[NXE2000_IRQ_DC4LIM]		= NXE2000_IRQ(DCDC_INT, 1, 3, 3, 1),
 	[NXE2000_IRQ_DC5LIM]		= NXE2000_IRQ(DCDC_INT, 1, 4, 4, 1),
 
-	[NXE2000_IRQ_CTC]		= NXE2000_IRQ(RTC_INT,  2, 0, 0, 2),
-	[NXE2000_IRQ_DALE]		= NXE2000_IRQ(RTC_INT,  2, 1, 6, 2),
+	[NXE2000_IRQ_CTC]			= NXE2000_IRQ(RTC_INT,  2, 0, 0, 2),
+	[NXE2000_IRQ_DALE]			= NXE2000_IRQ(RTC_INT,  2, 1, 6, 2),
 
 	[NXE2000_IRQ_ILIMLIR]		= NXE2000_IRQ(ADC_INT,  3, 0, 0, 3),
 	[NXE2000_IRQ_VBATLIR]		= NXE2000_IRQ(ADC_INT,  3, 1, 1, 3),
@@ -161,13 +155,13 @@ static const struct nxe2000_irq_data nxe2000_irqs[NXE2000_NR_IRQS] = {
 	[NXE2000_IRQ_AIN1HIR]		= NXE2000_IRQ(ADC_INT,  3, 14, 6, 4),
 	[NXE2000_IRQ_AIN0HIR]		= NXE2000_IRQ(ADC_INT,  3, 15, 7, 4),
 
-	[NXE2000_IRQ_ADC_ENDIR]	= NXE2000_IRQ(ADC_INT,  3, 16, 0, 5),
+	[NXE2000_IRQ_ADC_ENDIR]		= NXE2000_IRQ(ADC_INT,  3, 16, 0, 5),
 
-	[NXE2000_IRQ_GPIO0]		= NXE2000_IRQ(GPIO_INT, 4, 0, 0, 6),
-	[NXE2000_IRQ_GPIO1]		= NXE2000_IRQ(GPIO_INT, 4, 1, 1, 6),
-	[NXE2000_IRQ_GPIO2]		= NXE2000_IRQ(GPIO_INT, 4, 2, 2, 6),
-	[NXE2000_IRQ_GPIO3]		= NXE2000_IRQ(GPIO_INT, 4, 3, 3, 6),
-	[NXE2000_IRQ_GPIO4]		= NXE2000_IRQ(GPIO_INT, 4, 4, 4, 6),
+	[NXE2000_IRQ_GPIO0]			= NXE2000_IRQ(GPIO_INT, 4, 0, 0, 6),
+	[NXE2000_IRQ_GPIO1]			= NXE2000_IRQ(GPIO_INT, 4, 1, 1, 6),
+	[NXE2000_IRQ_GPIO2]			= NXE2000_IRQ(GPIO_INT, 4, 2, 2, 6),
+	[NXE2000_IRQ_GPIO3]			= NXE2000_IRQ(GPIO_INT, 4, 3, 3, 6),
+	[NXE2000_IRQ_GPIO4]			= NXE2000_IRQ(GPIO_INT, 4, 4, 4, 6),
 
 	[NXE2000_IRQ_FVADPDETSINT]	= NXE2000_IRQ(CHG_INT, 6, 0, 0, 8),
 	[NXE2000_IRQ_FVUSBDETSINT]	= NXE2000_IRQ(CHG_INT, 6, 1, 1, 8),
@@ -176,7 +170,7 @@ static const struct nxe2000_irq_data nxe2000_irqs[NXE2000_NR_IRQS] = {
 	[NXE2000_IRQ_FWVADPSINT]	= NXE2000_IRQ(CHG_INT, 6, 4, 4, 8),
 	[NXE2000_IRQ_FWVUSBSINT]	= NXE2000_IRQ(CHG_INT, 6, 5, 5, 8),
 
-	[NXE2000_IRQ_FONCHGINT]	= NXE2000_IRQ(CHG_INT, 6, 6, 0, 9),
+	[NXE2000_IRQ_FONCHGINT]		= NXE2000_IRQ(CHG_INT, 6, 6, 0, 9),
 	[NXE2000_IRQ_FCHGCMPINT]	= NXE2000_IRQ(CHG_INT, 6, 7, 1, 9),
 	[NXE2000_IRQ_FBATOPENINT]	= NXE2000_IRQ(CHG_INT, 6, 8, 2, 9),
 	[NXE2000_IRQ_FSLPMODEINT]	= NXE2000_IRQ(CHG_INT, 6, 9, 3, 9),
@@ -187,7 +181,7 @@ static const struct nxe2000_irq_data nxe2000_irqs[NXE2000_NR_IRQS] = {
 
 	[NXE2000_IRQ_FCURTERMINT]	= NXE2000_IRQ(CHG_INT, 6, 14, 0, 10),
 	[NXE2000_IRQ_FVOLTERMINT]	= NXE2000_IRQ(CHG_INT, 6, 15, 1, 10),
-	[NXE2000_IRQ_FICRVSINT]	= NXE2000_IRQ(CHG_INT, 6, 16, 2, 10),
+	[NXE2000_IRQ_FICRVSINT]		= NXE2000_IRQ(CHG_INT, 6, 16, 2, 10),
 	[NXE2000_IRQ_FPOOR_CHGCURINT]	= NXE2000_IRQ(CHG_INT, 6, 17, 3, 10),
 	[NXE2000_IRQ_FOSCFDETINT1]	= NXE2000_IRQ(CHG_INT, 6, 18, 4, 10),
 	[NXE2000_IRQ_FOSCFDETINT2]	= NXE2000_IRQ(CHG_INT, 6, 19, 5, 10),
@@ -205,7 +199,7 @@ static const struct nxe2000_irq_data nxe2000_irqs[NXE2000_NR_IRQS] = {
 
 	[NXE2000_IRQ_FGCDET]		= NXE2000_IRQ(CHG_INT, 6, 30, 0, 12),
 	[NXE2000_IRQ_FPCDET]		= NXE2000_IRQ(CHG_INT, 6, 31, 1, 12),
-	[NXE2000_IRQ_FWARN_ADP]	= NXE2000_IRQ(CHG_INT, 6, 32, 3, 12),
+	[NXE2000_IRQ_FWARN_ADP]		= NXE2000_IRQ(CHG_INT, 6, 32, 3, 12),
 
 };
 
@@ -384,6 +378,12 @@ static irqreturn_t nxe2000_irq_isr(int irq, void *data)
 				"error: %d\n", irq_clr_add[i], ret);
 			}
 		}
+#ifdef CONFIG_NXE2000_WDG_TEST
+		else if (main_int_type[i] & WDG_INT) /* Mask Watchdog Interrupt */
+		{
+			printk(KERN_ERR "## \e[31m%s\e[0m() WDG_INT \n", __func__);
+		}
+#endif
 		else
 		{
 			ret = nxe2000_write(nxe2000->dev,
@@ -459,11 +459,20 @@ int nxe2000_irq_init(struct nxe2000 *nxe2000)
 
 	mutex_init(&nxe2000->irq_lock);
 
+#ifdef CONFIG_NXE2000_WDG_TEST
+	nxe2000->irq_en_cache[0] = 0x40;
+	nxe2000->irq_en_reg[0] = 0x40;
+
+	nxe2000->irq_en_cache[1] = 0;
+	nxe2000->irq_en_reg[1] = 0;
+#else
 	/* Initialize all locals to 0 */
 	for (i = 0; i < 2; i++) {
 		nxe2000->irq_en_cache[i] = 0;
 		nxe2000->irq_en_reg[i] = 0;
 	}
+#endif
+
 	/* Initialize rtc */
 	nxe2000->irq_en_cache[2] = 0x20;
 	nxe2000->irq_en_reg[2] = 0x20;

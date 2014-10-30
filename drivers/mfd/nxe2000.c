@@ -514,6 +514,32 @@ void nxe2000_restart(char str, const char *cmd)
 }
 #endif	/* #if (NXE2000_PM_RESTART == 1) */
 
+#ifdef CONFIG_NXE2000_WDG_TEST
+static irqreturn_t nxe2000_watchdog_isr(int irq, void *data)
+{
+	struct nxe2000 *info = data;
+	printk(KERN_ERR "## \e[31m%s\e[0m() \n", __func__);
+
+	nxe2000_clr_bits(info->dev, NXE2000_INT_IR_SYS, 0x40);
+
+	return IRQ_HANDLED;
+}
+
+static void __devinit nxe2000_watchdog_init(struct nxe2000 *nxe2000)
+{
+	int ret;
+
+	printk(KERN_ERR "## \e[31m%s\e[0m() \n", __func__);
+	
+	ret = request_threaded_irq((IRQ_SYSTEM_END + NXE2000_IRQ_WD),
+					NULL, nxe2000_watchdog_isr, IRQF_ONESHOT, "nxe2000_watchdog_isr", nxe2000);
+
+	nxe2000_set_bits(nxe2000->dev, NXE2000_PWR_REP_CNT, 0x01);
+	nxe2000_write(nxe2000->dev, NXE2000_PWR_WD, 0x05);
+	return;
+}
+#endif
+
 static int nxe2000_gpio_get(struct gpio_chip *gc, unsigned offset)
 {
 	struct nxe2000 *nxe2000 = container_of(gc, struct nxe2000,
@@ -837,6 +863,10 @@ static int nxe2000_i2c_probe(struct i2c_client *client,
 
 	nxe2000_debuginit(nxe2000);
 
+#ifdef CONFIG_NXE2000_WDG_TEST
+	nxe2000_watchdog_init(nxe2000);
+#endif
+
 	nxe2000_i2c_client = client;
 
 	backup_pm_power_off = pm_power_off;
@@ -860,6 +890,10 @@ err_irq_init:
 static int  __devexit nxe2000_i2c_remove(struct i2c_client *client)
 {
 	struct nxe2000 *nxe2000 = i2c_get_clientdata(client);
+
+#ifdef CONFIG_NXE2000_WDG_TEST
+	free_irq((IRQ_SYSTEM_END + NXE2000_IRQ_WD), nxe2000);
+#endif
 
 	if (client->irq)
 		nxe2000_irq_exit(nxe2000);

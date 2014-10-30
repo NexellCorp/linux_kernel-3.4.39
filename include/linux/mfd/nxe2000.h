@@ -253,6 +253,16 @@ enum nxe2000_sleep_control_id {
 	NXE2000_DS_PSO4,
 };
 
+enum int_type {
+	SYS_INT		= 0x01,
+	DCDC_INT	= 0x02,
+	RTC_INT		= 0x04,
+	ADC_INT		= 0x08,
+	GPIO_INT	= 0x10,
+	WDG_INT		= 0x20,
+	CHG_INT		= 0x40,
+	FG_INT		= 0x80,
+};
 
 struct nxe2000_subdev_info {
 	int			id;
