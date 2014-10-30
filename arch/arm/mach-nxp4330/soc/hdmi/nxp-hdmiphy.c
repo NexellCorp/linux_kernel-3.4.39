@@ -96,6 +96,7 @@ const struct hdmiphy_preset hdmiphy_preset[] = {
 	{ V4L2_DV_720P50, hdmiphy_preset74_25 },
 	{ V4L2_DV_720P59_94, hdmiphy_preset74_175 },
 	{ V4L2_DV_720P60, hdmiphy_preset74_25 },
+	{ V4L2_DV_1080P24, hdmiphy_preset74_25 },
 	{ V4L2_DV_1080P50, hdmiphy_preset148_5 },
 	{ V4L2_DV_1080P59_94, hdmiphy_preset148_352 },
 	{ V4L2_DV_1080P60, hdmiphy_preset148_5 },

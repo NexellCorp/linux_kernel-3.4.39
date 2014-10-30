@@ -175,10 +175,12 @@ inverse:
 	
 
 	/* debug */
+	#if 0
 	for (idx = 0; idx < 32; idx++) {
 		printk ("0x%02x, ", result[idx]);
 	}
 	printk ("\n");
+	#endif
 
 	return 0;
 
@@ -227,11 +229,13 @@ static int hynix_mlc_get_rrt_value(struct mtd_info *mtd, struct hynix_nand *hyni
 		chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
 
 		/* debug */
+		#if 0
 		for (j = 0; j < rrt_total_len; j++) {
 			printk ("%02x ", rrt_read_buf[j]);
 			if ((j+1) % 32 == 0)
 				printk ("\n");
 		}
+		#endif
 
 
 		chip->cmdfunc(mtd, 0x36, 0x38, -1);
@@ -274,11 +278,13 @@ static int hynix_mlc_get_rrt_value(struct mtd_info *mtd, struct hynix_nand *hyni
 		chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
 
 		/* debug */
+		#if 0
 		for (j = 0; j < rrt_total_len; j++) {
 			printk ("%02x ", rrt_read_buf[j]);
 			if ((j+1) % 32 == 0)
 				printk ("\n");
 		}
+		#endif
 
 		chip->cmdfunc(mtd, 0x38, -1, -1);
 
@@ -293,7 +299,10 @@ static int hynix_mlc_get_rrt_value(struct mtd_info *mtd, struct hynix_nand *hyni
 			for (i = 0; i < rrt_val_len; i++) {
 				if ((origin[i] ^ inverse[i]) == 0xff) {
 					ret = 0;
+					/* debug */
+					#if 0
 					printk ("  found! set: %d\n", set);
+					#endif
 					break;
 				}
 			}

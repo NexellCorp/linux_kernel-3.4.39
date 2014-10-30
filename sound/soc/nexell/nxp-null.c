@@ -96,16 +96,28 @@ static struct snd_soc_dai_link snd_null_dai_link = {
 	.symmetric_rates = 1,
 };
 
-static struct snd_soc_card snd_null_card = {
-	.name 			= "SND-NULL",		/* proc/asound/cards */
+static struct snd_soc_card snd_null_card[] = {
+	{
+	.name 			= "SND-NULL.0",	/* proc/asound/cards */
 	.dai_link 		= &snd_null_dai_link,
 	.num_links 		= 1,
+	},
+	{
+	.name 			= "SND-NULL.1",	/* proc/asound/cards */
+	.dai_link 		= &snd_null_dai_link,
+	.num_links 		= 1,
+	},
+	{
+	.name 			= "SND-NULL.2",	/* proc/asound/cards */
+	.dai_link 		= &snd_null_dai_link,
+	.num_links 		= 1,
+	},
 };
 
 static int snd_card_probe(struct platform_device *pdev)
 {
 	struct nxp_snd_dai_plat_data *plat = pdev->dev.platform_data;
-	struct snd_soc_card *card = &snd_null_card;
+	struct snd_soc_card *card = &snd_null_card[0];
 	struct snd_soc_dai_driver *cpudrv = NULL;
 	unsigned int rates = 0, format = 0;
 	int ret;
@@ -113,6 +125,9 @@ static int snd_card_probe(struct platform_device *pdev)
 	/* set I2S name */
 	if (plat)
 		sprintf(str_dai_name, "%s.%d", DEV_NAME_I2S, plat->i2s_ch);
+
+	if (pdev->id != -1)
+		card = &snd_null_card[pdev->id];
 
 	card->dev = &pdev->dev;
 	ret = snd_soc_register_card(card);
@@ -157,6 +172,8 @@ static int snd_card_probe(struct platform_device *pdev)
 		cpudrv->playback.formats = format;
 		cpudrv->capture.formats = format;
 	}
+
+	printk("[%s:%s]\n", __func__, card->name);
 
 	return ret;
 }

@@ -675,6 +675,9 @@ static int ehci_hub_control (
 	unsigned long	flags;
 	int		retval = 0;
 	unsigned	selector;
+#if defined(CONFIG_USB_HSIC_NXP4330)
+	u32		temp_hsic;
+#endif
 
 	/*
 	 * FIXME:  support SetPortFeatures USB_PORT_FEAT_INDICATOR.
@@ -759,6 +762,14 @@ static int ehci_hub_control (
 				ehci_writel(ehci,
 					  temp & ~(PORT_RWC_BITS | PORT_POWER),
 					  status_reg);
+#if defined(CONFIG_USB_HSIC_NXP4330)
+				if( status_reg == 0xf0030058)
+				{
+					printk("====HSIC Port Power Off!!!!====\n");
+					temp_hsic = ehci_readl(ehci, ehci->hsic_status_reg);
+					ehci_writel(ehci, temp_hsic & 0x00, ehci->hsic_status_reg);
+				}	
+#endif
 			break;
 		case USB_PORT_FEAT_C_CONNECTION:
 			if (ehci->has_lpm) {
@@ -818,6 +829,14 @@ static int ehci_hub_control (
 					temp & ~(PORT_RWC_BITS | PORT_POWER),
 					status_reg);
 				temp = ehci_readl(ehci, status_reg);
+#if defined(CONFIG_USB_HSIC_NXP4330)
+				if( status_reg == 0xf0030058)
+				{
+					printk("====HSIC Port Power Off!!!!====\n");
+					temp_hsic = ehci_readl(ehci, ehci->hsic_status_reg);
+					ehci_writel(ehci, temp_hsic & 0x00, ehci->hsic_status_reg);
+				}	
+#endif
 			}
 		}
 
@@ -1005,9 +1024,18 @@ static int ehci_hub_control (
 			set_bit(wIndex, &ehci->suspended_ports);
 			break;
 		case USB_PORT_FEAT_POWER:
-			if (HCS_PPC (ehci->hcs_params))
+			if (HCS_PPC (ehci->hcs_params)){
 				ehci_writel(ehci, temp | PORT_POWER,
 						status_reg);
+#if defined(CONFIG_USB_HSIC_NXP4330)
+				if( status_reg == 0xf0030058)
+				{
+					printk("====HSIC Port Power On!!!!====\n");
+					temp_hsic = ehci_readl(ehci, ehci->hsic_status_reg);
+					ehci_writel(ehci, temp_hsic | 0x02, ehci->hsic_status_reg);
+				}
+#endif
+			}
 			break;
 		case USB_PORT_FEAT_RESET:
 			if (temp & PORT_RESUME)

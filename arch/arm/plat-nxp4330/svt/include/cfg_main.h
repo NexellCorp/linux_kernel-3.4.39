@@ -56,6 +56,20 @@
 #define	CFG_ETHER_EXT_IRQ_NUM					(IRQ_GPIO_C_START + 26)
 
 /*------------------------------------------------------------------------------
+ * 	GMAC PHY
+ */
+
+ /*for rtl8201*/
+#if defined (CONFIG_REALTEK_PHY_RTL8201)
+#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				-1
+#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_C + 12)
+#else
+ /*for rtl8211*/
+#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				-1// (IRQ_GPIO_A_START + 9)
+#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_A + 10)
+#endif
+
+/*------------------------------------------------------------------------------
  * 	Nand (HWECC)
  */
 #define CFG_NAND_ECC_BYTES 						1024
@@ -85,17 +99,17 @@
 #define	CFG_DISP_PRI_LCD_WIDTH_MM				152.4
 #define	CFG_DISP_PRI_LCD_HEIGHT_MM				91.44
 
-#define CFG_DISP_PRI_RESOL_WIDTH          		1280	// X Resolution
-#define CFG_DISP_PRI_RESOL_HEIGHT				 800	// Y Resolution
+#define CFG_DISP_PRI_RESOL_WIDTH          		1024	// X Resolution
+#define CFG_DISP_PRI_RESOL_HEIGHT				 600	// Y Resolution
 
-#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH           1
-#define CFG_DISP_PRI_HSYNC_BACK_PORCH           0
+#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH           20
+#define CFG_DISP_PRI_HSYNC_BACK_PORCH           160
 #define CFG_DISP_PRI_HSYNC_FRONT_PORCH          160
-#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CFALSE
-#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH           1
-#define CFG_DISP_PRI_VSYNC_BACK_PORCH           0
-#define CFG_DISP_PRI_VSYNC_FRONT_PORCH          23
-#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CFALSE
+#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CTRUE
+#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH           3
+#define CFG_DISP_PRI_VSYNC_BACK_PORCH           23
+#define CFG_DISP_PRI_VSYNC_FRONT_PORCH          12
+#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CTRUE
 
 #define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL2
 #define CFG_DISP_PRI_CLKGEN0_DIV                12
@@ -131,22 +145,29 @@
 #define CFG_LCD_PRI_PWM_DUTYCYCLE				50		/* (%) */
 
 /*------------------------------------------------------------------------------
+ * 	PPM
+ */
+#define CFG_PPM_CLK                     4000000
+
+/*------------------------------------------------------------------------------
  * 	Audio I2S (0, 1, 2)
  */
 #define	CFG_AUDIO_I2S0_MASTER_MODE				CTRUE	// CTRUE
-#define	CFG_AUDIO_I2S0_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
-#define	CFG_AUDIO_I2S0_FRAME_BIT				32		// 32, 48
+#define	CFG_AUDIO_I2S0_TRANS_MODE				1		// 0:I2S, 1:Left 2:Right justified */
+#define	CFG_AUDIO_I2S0_FRAME_BIT				48		// 32, 48
 #define	CFG_AUDIO_I2S0_SAMPLE_RATE				48000
 #define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			1
 
 #define	CFG_AUDIO_I2S1_MASTER_MODE				CTRUE	// CTRUE
-#define	CFG_AUDIO_I2S1_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
+#define CFG_AUDIO_I2S1_MASTER_CLOCK_IN			1
+#define	CFG_AUDIO_I2S1_TRANS_MODE				1		// 0:I2S, 1:Left 2:Right justified */
 #define	CFG_AUDIO_I2S1_FRAME_BIT				48		// 32, 48
 #define	CFG_AUDIO_I2S1_SAMPLE_RATE				48000
 #define	CFG_AUDIO_I2S1_PRE_SUPPLY_MCLK			0
 
-#define	CFG_AUDIO_I2S2_MASTER_MODE				CTRUE	// CTRUE
-#define	CFG_AUDIO_I2S2_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
+#define	CFG_AUDIO_I2S2_MASTER_MODE				CFALSE	// CTRUE
+#define CFG_AUDIO_I2S2_MASTER_CLOCK_IN			1
+#define	CFG_AUDIO_I2S2_TRANS_MODE				1		// 0:I2S, 1:Left 2:Right justified */
 #define	CFG_AUDIO_I2S2_FRAME_BIT				48		// 32, 48
 #define	CFG_AUDIO_I2S2_SAMPLE_RATE				48000
 #define	CFG_AUDIO_I2S2_PRE_SUPPLY_MCLK			0
@@ -192,7 +213,7 @@
 /*------------------------------------------------------------------------------
  * 	SDHC
  */
-#define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
+#define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_C + 6)	/* external cd */
 
 /*------------------------------------------------------------------------------
  *  MPEGTSIF
@@ -236,6 +257,12 @@
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
 
 /*------------------------------------------------------------------------------
+ * 	usb ehci 
+ */
+#define CFG_USB_EHCI_LATE_LOAD					1
+#define CFG_USB_EHCI_LATE_LOADTIME				2000
+
+/*------------------------------------------------------------------------------
  * 	Suspend mode
  */
 
@@ -252,6 +279,12 @@
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE
+
+/*
+ * Wakeup Source : RTC ALARM
+ * ifndef Enable ALARM Wakeup
+ */
+#define	CFG_PWR_WAKEUP_SRC_ALARM				CTRUE
 
 //------------------------------------------------------------------------------
 // Static Bus #0 ~ #9, NAND, IDE configuration
@@ -287,6 +320,7 @@
 //                      ( _name_ , bw, tACS tCOS tACC tSACC tOCH tCAH, wm, rb, wb )
 CFG_SYS_STATICBUS_CONFIG( STATIC0 ,  8,    1,   1,   6,    6,   1,   1,  1,  0,  0 )		// 0x0000_0000
 CFG_SYS_STATICBUS_CONFIG( STATIC1 ,  8,    6,   6,  32,   32,   6,   6,  1,  0,  0 )		// 0x0400_0000
-CFG_SYS_STATICBUS_CONFIG(    NAND ,  8,    0,   0xf,   0x3f,    1,  0xf,   0,  1,  0,  0 )		// 0x2C00_0000, tOCH, tCAH must be greter than 0
+CFG_SYS_STATICBUS_CONFIG(    NAND ,  8,    0,   0xf,0x3f,  1, 0xf,   0,  1,  0,  0 )		// 0x2C00_0000, tOCH, tCAH must be greter than 0
+
 
 #endif /* __CFG_MAIN_H__ */

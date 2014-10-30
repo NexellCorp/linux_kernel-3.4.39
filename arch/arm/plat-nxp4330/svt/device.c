@@ -191,6 +191,156 @@ static struct platform_device dm9000_plat_device = {
 #endif	/* CONFIG_DM9000 || CONFIG_DM9000_MODULE */
 
 /*------------------------------------------------------------------------------
+ * DW GMAC board config
+ */
+#if defined(CONFIG_NXPMAC_ETH)
+#include <linux/phy.h>
+#include <linux/nxpmac.h>
+#include <linux/delay.h>
+#include <linux/gpio.h>
+int  nxpmac_init(struct platform_device *pdev)
+{
+    u32 addr;
+
+#if defined (CONFIG_REALTEK_PHY_RTL8201)	// 20140515
+	// 100 & 10Base-T
+    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 7, 0 );        // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
+    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 8, 0 );        // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
+    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 9, 0 );        // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
+    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+10, 0 );        // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
+    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+11, 0 );        // PAD_GPIOE11,    GMAC0_PHY_TXEN
+//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+12, 3 );        // PAD_GPIOE12,    GMAC0_PHY_TXER
+//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+13, 3 );        // PAD_GPIOE13,    GMAC0_PHY_COL
+    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+14, 2 );        // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
+    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+15, 2 );        // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
+    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+16, 2 );        // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
+    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+17, 2 );        // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
+    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+18, 3 );        // PAD_GPIOE18,    GMAC0_RX_CLK
+    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+19, 3);        // PAD_GPIOE19,    GMAC0_PHY_RX_DV
+    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+20, 3 );        // PAD_GPIOE20,    GMAC0_GMII_MDC
+    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+21, 3 );        // PAD_GPIOE21,    GMAC0_GMII_MDI
+//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+22, 3 );        // PAD_GPIOE22,    GMAC0_PHY_RXER
+//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+23, 3 );        // PAD_GPIOE23,    GMAC0_PHY_CRS
+    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+24, 0 );        // PAD_GPIOE24,    GMAC0_GTX_CLK
+
+#else	// 1000Base-T
+	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  7), 3 );     // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
+	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  8), 3 );     // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
+	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  9), 3 );     // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
+	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 10), 3 );     // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
+	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 11), 3 );     // PAD_GPIOE11,    GMAC0_PHY_TXEN
+	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 14), 3 );     // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
+	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 15), 3 );     // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
+	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 16), 3 );     // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
+	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 17), 3 );     // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
+	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 18), 3 );     // PAD_GPIOE18,    GMAC0_RX_CLK
+	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 19), 3 );     // PAD_GPIOE19,    GMAC0_PHY_RX_DV
+	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 20), 3 );     // PAD_GPIOE20,    GMAC0_GMII_MDC
+	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 21), 3 );     // PAD_GPIOE21,    GMAC0_GMII_MDI
+	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 24), 3 );     // PAD_GPIOE24,    GMAC0_GTX_CLK
+#endif
+
+
+	// Clock control
+	NX_CLKGEN_Initialize();
+	addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
+	NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (u32)IO_ADDRESS(addr) );
+
+	NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 4);     // Sync mode for 100 & 10Base-T : External RX_clk
+	NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);    // Sync mode for 100 & 10Base-T
+
+	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);    // TX Clk invert off : 100 & 10Base-T
+//	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CTRUE);     // TX clk invert on : 100 & 10Base-T
+
+	NX_CLKGEN_SetClockDivisorEnable( CLOCKINDEX_OF_DWC_GMAC_MODULE, CTRUE);
+
+	// Reset control
+	NX_RSTCON_Initialize();
+	addr = NX_RSTCON_GetPhysicalAddress();
+	NX_RSTCON_SetBaseAddress( (u32)IO_ADDRESS(addr) );
+	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
+	udelay(100);
+	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_DISABLE);
+	udelay(100);
+	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
+	udelay(100);
+
+
+    gpio_request(CFG_ETHER_GMAC_PHY_RST_NUM,"Ethernet Rst pin");
+	gpio_direction_output(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
+	udelay( 100 );
+	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 0 );
+	udelay( 100 );
+	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
+
+    gpio_free(CFG_ETHER_GMAC_PHY_RST_NUM);
+
+     printk("NXP mac init ..................\n");
+	return 0;
+}
+
+int gmac_phy_reset(void *priv)
+{
+	// Set GPIO nReset
+	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
+	udelay( 100 );
+	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 0 );
+	udelay( 100 );
+	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
+	msleep( 30 );
+
+	return 0;
+}
+
+static struct stmmac_mdio_bus_data nxpmac0_mdio_bus = {
+	.phy_reset = gmac_phy_reset,
+	.phy_mask = 0,
+	.probed_phy_irq = CFG_ETHER_GMAC_PHY_IRQ_NUM,
+};
+
+static struct plat_stmmacenet_data nxpmac_plat_data = {
+#if defined (CONFIG_REALTEK_PHY_RTL8201)
+	.phy_addr = 3,  // 7 for 8211 3 for 8201
+    .clk_csr = 0xe,
+    .speed = SPEED_100,
+#else
+    .phy_addr = 3,// 7 for 8211 3 for 8201
+    .clk_csr = 0x4, // PCLK 150~250 Mhz
+    .speed = SPEED_1000,	// SPEED_1000
+#endif
+    .interface = PHY_INTERFACE_MODE_RGMII,
+	.autoneg = AUTONEG_ENABLE, //AUTONEG_ENABLE or AUTONEG_DISABLE
+	.duplex = DUPLEX_FULL,
+	.pbl = 16,          /* burst 16 */
+	.has_gmac = 1,      /* GMAC ethernet    */
+	.enh_desc = 0,
+	.mdio_bus_data = &nxpmac0_mdio_bus,
+	.init = &nxpmac_init,
+};
+
+/* DWC GMAC Controller registration */
+
+static struct resource nxpmac_resource[] = {
+    [0] = DEFINE_RES_MEM(PHY_BASEADDR_GMAC, SZ_8K),
+    [1] = DEFINE_RES_IRQ_NAMED(IRQ_PHY_GMAC, "macirq"),
+};
+
+static u64 nxpmac_dmamask = DMA_BIT_MASK(32);
+
+struct platform_device nxp_gmac_dev = {
+    .name           = "stmmaceth",  //"nxp4330-gmac",
+    .id             = -1,
+    .num_resources  = ARRAY_SIZE(nxpmac_resource),
+    .resource       = nxpmac_resource,
+    .dev            = {
+        .dma_mask           = &nxpmac_dmamask,
+        .coherent_dma_mask  = DMA_BIT_MASK(32),
+        .platform_data      = &nxpmac_plat_data,
+    }
+};
+#endif
+
+/*------------------------------------------------------------------------------
  * DISPLAY (LVDS) / FB
  */
 #if defined (CONFIG_FB_NEXELL)
@@ -252,6 +402,20 @@ static struct platform_device bl_plat_device = {
 };
 #endif
 
+#if defined(CONFIG_PPM_NEXELL)
+#include <mach/ppm.h>
+struct nxp_ppm_platform_data ppm_plat_data = { 
+    .input_polarity = NX_PPM_INPUTPOL_INVERT,//NX_PPM_INPUTPOL_INVERT  or  NX_PPM_INPUTPOL_BYPASS
+};
+
+static struct platform_device ppm_device = { 
+    .name           = DEV_NAME_PPM,
+    .dev            = { 
+    	.platform_data  = &ppm_plat_data,
+	}   
+};
+#endif
+
 /*------------------------------------------------------------------------------
  * NAND device
  */
@@ -260,7 +424,7 @@ static struct platform_device bl_plat_device = {
 #include <asm-generic/sizes.h>
 
 static struct mtd_partition nxp_nand_parts[] = {
-#if 0
+#if 1
 	{
 		.name           = "root",
 		.offset         =   0 * SZ_1M,
@@ -397,6 +561,46 @@ static struct platform_device spdif_trans_dai = {
 };
 #endif
 
+#if defined(CONFIG_SND_CODEC_NULL)
+static struct platform_device snd_null = {
+	.name = "snd-null",
+	.id = -1,
+};
+
+struct nxp_snd_dai_plat_data snd_null_dai_data = {
+	.i2s_ch = 0,
+	.sample_rate = 48000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
+};
+
+static struct platform_device snd_null_dai = {
+	.name = "snd-null-card",
+	.id = -1,
+	.dev = {
+		.platform_data = &snd_null_dai_data,
+	}
+};
+//-------------------------------------
+static struct platform_device snd_null_2 = {
+	.name = "snd-null",
+	.id = 1,
+};
+
+struct nxp_snd_dai_plat_data snd_null_dai_data_2 = {
+	.i2s_ch = 2,
+	.sample_rate = 48000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
+};
+
+static struct platform_device snd_null_dai_2 = {
+	.name = "snd-null-card",
+	.id = 1,
+	.dev = {
+		.platform_data = &snd_null_dai_data_2 ,
+	}
+};
+#endif
+
 #if defined(CONFIG_SND_CODEC_RT5631) || defined(CONFIG_SND_CODEC_RT5631_MODULE)
 #include <linux/i2c.h>
 
@@ -410,13 +614,15 @@ static struct i2c_board_info __initdata rt5631_i2c_bdi = {
 
 /* DAI */
 struct nxp_snd_dai_plat_data i2s_dai_data = {
-	.i2s_ch	= 0,
+	.i2s_ch	= 1,
 	.sample_rate	= 48000,
+#if 0
 	.hp_jack 		= {
 		.support    	= 1,
 		.detect_io		= PAD_GPIO_A + 0,
 		.detect_level	= 1,
 	},
+#endif
 };
 
 static struct platform_device rt5631_dai = {
@@ -481,7 +687,7 @@ void __init nxp_reserve_mem(void)
 //#include <linux/rtc/rtc-nxe2000.h>
 //#include <linux/rtc.h>
 
-#define NXE2000_I2C_BUS		(0)
+#define NXE2000_I2C_BUS		(2)
 #define NXE2000_I2C_ADDR	(0x64 >> 1)
 #define NXE2000_IRQ			(PAD_GPIO_ALV + 4)
 
@@ -578,19 +784,19 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1200000, 1,  6);	/* 1.2V ARM */
-NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1100000, 1,  6);	/* 1.1V CORE */
+NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1100000, 1,  4);	/* 1.1V ARM */
+NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1000000, 1,  4);	/* 1.0V CORE */
 NXE2000_PDATA_INIT(dc3,      0, 1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0, 1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
-NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  6);	/* 1.5V SYS */
+NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V SYS */
 
 NXE2000_PDATA_INIT(ldo1,     0, 1000000, 3500000, 1, 0, 3300000, 1,  0);	/* 3.3V GPS */
 NXE2000_PDATA_INIT(ldo2,     0, 1000000, 3500000, 0, 0, 1800000, 0,  0);	/* 1.8V CAM1 */
-NXE2000_PDATA_INIT(ldo3,     0, 1000000, 3500000, 1, 0, 1800000, 1,  4);	/* 1.8V SYS1 */
-NXE2000_PDATA_INIT(ldo4,     0, 1000000, 3500000, 1, 0, 1900000, 1,  4);	/* 1.9V SYS */
+NXE2000_PDATA_INIT(ldo3,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS1 */
+NXE2000_PDATA_INIT(ldo4,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS */
 NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  0);	/* 2.8V VCAM */
 NXE2000_PDATA_INIT(ldo6,     0, 1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
-NXE2000_PDATA_INIT(ldo7,     0, 1000000, 3500000, 1, 0, 2800000, 1,  2);	/* 2.8V VID */
+NXE2000_PDATA_INIT(ldo7,     0, 1000000, 3500000, 1, 0, 2800000, 1,  1);	/* 2.8V VID */
 #if defined(CONFIG_RFKILL_NEXELL)
 NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V WIFI */
 #else
@@ -1386,6 +1592,10 @@ static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 	return 0;
 }
 
+static int _dwmci_get_cd(u32 slot_id)
+{
+	return 0;
+}
 static int _dwmci0_get_cd(u32 slot_id)
 {
 	int io = CFG_SDMMC0_DETECT_IO;
@@ -1393,11 +1603,11 @@ static int _dwmci0_get_cd(u32 slot_id)
 }
 
 static struct dw_mci_board _dwmci0_data = {
-	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 70 * 1000 * 1000,
+	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |DW_MCI_QUIRK_HIGHSPEED,
+	.bus_hz			= 50 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 	.cd_type		= DW_MCI_CD_EXTERNAL,
 	.init			= _dwmci0_init,
 	.get_ro			= _dwmci_get_ro,
@@ -1410,19 +1620,32 @@ static struct dw_mci_board _dwmci0_data = {
 #ifdef CONFIG_MMC_NEXELL_CH1
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
-					  DW_MCI_QUIRK_HIGHSPEED |
-					  DW_MMC_QUIRK_HW_RESET_PW |
-					  DW_MCI_QUIRK_NO_DETECT_EBIT,
-	.bus_hz			= 80 * 1000 * 1000,
-	.caps			= MMC_CAP_UHS_DDR50 |
-						MMC_CAP_NONREMOVABLE |
-						MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
-						MMC_CAP_ERASE | MMC_CAP_HW_RESET,
+					  DW_MCI_QUIRK_HIGHSPEED, 
+	.bus_hz			= 50 * 1000 * 1000,
+	.caps			= MMC_CAP_CMD23,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(0),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
+	.get_ro         = _dwmci_get_ro,
+	.get_cd			= _dwmci_get_cd,
+
 };
 #endif
+
+#ifdef CONFIG_MMC_NEXELL_CH2
+static struct dw_mci_board _dwmci2_data = {
+	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
+					  DW_MCI_QUIRK_HIGHSPEED, 
+	.bus_hz			= 50 * 1000 * 1000,
+	.caps			=	MMC_CAP_CMD23,
+	.desc_sz		= 4,
+	.detect_delay_ms= 200,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
+	.get_ro			= _dwmci_get_ro,
+	.get_cd			= _dwmci_get_cd,
+};
+#endif
+
 
 #endif /* CONFIG_MMC_DW */
 
@@ -1457,8 +1680,18 @@ static struct platform_device rfkill_device = {
 /*------------------------------------------------------------------------------
  * USB HSIC power control.
  */
+#define SOC_PA_EHCI		PHY_BASEADDR_EHCI
+#define SOC_VA_EHCI		IO_ADDRESS(SOC_PA_EHCI)
+
 int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on)
-{
+{	
+	printk("++%s %d\n", __func__, on);
+
+	if(on)
+		writel(0x1 << 1, SOC_VA_EHCI + 0xB0);
+	else
+		writel(0x0 << 1, SOC_VA_EHCI + 0xB0);
+		
 	return 0;
 }
 EXPORT_SYMBOL(nxp_hsic_phy_pwr_on);
@@ -1498,6 +1731,9 @@ void __init nxp_board_devices_register(void)
 	#endif
 	#ifdef CONFIG_MMC_NEXELL_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
+	#endif
+	#ifdef CONFIG_MMC_NEXELL_CH2
+	nxp_mmc_add_device(2, &_dwmci2_data);
 	#endif
 #endif
 
@@ -1556,6 +1792,13 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&spdif_trans_dai);
 #endif
 
+#if defined(CONFIG_SND_CODEC_NULL)
+	platform_device_register(&snd_null);
+	platform_device_register(&snd_null_dai);
+	platform_device_register(&snd_null_2);
+	platform_device_register(&snd_null_dai_2);
+#endif
+
 #if defined(CONFIG_SND_CODEC_RT5631) || defined(CONFIG_SND_CODEC_RT5631_MODULE)
 	printk("plat: add device asoc-rt5631\n");
 	i2c_register_board_info(RT5631_I2C_BUS, &rt5631_i2c_bdi, 1);
@@ -1581,6 +1824,17 @@ void __init nxp_board_devices_register(void)
     printk("plat: add device rfkill\n");
     platform_device_register(&rfkill_device);
 #endif
+
+#if defined(CONFIG_NXPMAC_ETH)
+    printk("plat: add device nxp-gmac\n");
+    platform_device_register(&nxp_gmac_dev);
+#endif
+
+#if defined(CONFIG_PPM_NEXELL)
+    printk("plat: add device ppm\n");
+    platform_device_register(&ppm_device);
+#endif
+			
 
 	/* END */
 	printk("\n");
