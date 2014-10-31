@@ -896,6 +896,22 @@ config TOUCHSCREEN_GSLX680
 
 	  If unsure, say N.
 
+config TOUCHSCREEN_HC8600
+	tristate "HC8600 touchscreen"
+	depends on I2C
+	default n
+	help
+	  Say Y here if you have the HC8600 touchscreen.
+
+	  If unsure, say N.
+
+config HC8600_SLEEP_KEEP_POWER
+	bool "Keep power when sleep"
+	depends on TOUCHSCREEN_HC8600
+	default y
+	help
+	  Say Y here if the HC8600 touchscreen keep power when sleep.
+
 config TOUCHSCREEN_ATMEL_MXT640T
 	tristate "Atmel mXT 604T I2C Touchscreen"
 	depends on I2C
