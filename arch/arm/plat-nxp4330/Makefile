@@ -43,6 +43,10 @@ ifeq ($(CONFIG_PLAT_NXP4330_DRONE),y)
 PLATBOARD :=drone
 endif
 
+ifeq ($(CONFIG_PLAT_NXP4330_DRONE2ND),y)
+PLATBOARD :=drone2nd
+endif
+
 ifeq ($(CONFIG_PLAT_NXP4330_KAR),y)
 PLATBOARD :=kar
 endif
