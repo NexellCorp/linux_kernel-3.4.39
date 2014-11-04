@@ -1580,8 +1580,8 @@ void __init nxp_board_devices_register(void)
 #endif
 
 #if defined(CONFIG_SENSORS_MMA865X) || defined(CONFIG_SENSORS_MMA865X_MODULE)
-	//printk("plat: add g-sensor mma865x\n");
-	//i2c_register_board_info(2, &mma865x_i2c_bdi, 1);
+	printk("plat: add g-sensor mma865x\n");
+	i2c_register_board_info(2, &mma865x_i2c_bdi, 1);
 #elif defined(CONFIG_SENSORS_MMA7660) || defined(CONFIG_SENSORS_MMA7660_MODULE)
 	printk("plat: add g-sensor mma7660\n");
 	i2c_register_board_info(MMA7660_I2C_BUS, &mma7660_i2c_bdi, 1);
