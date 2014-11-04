@@ -915,6 +915,7 @@ static void camera_common_vin_setup_io(int module, bool force)
 
         /* VIP0:0 = VCLK, VID0 ~ 7 */
         const u_int port[][2] = {
+#if 0
             /* VCLK, HSYNC, VSYNC */
             { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
@@ -924,7 +925,7 @@ static void camera_common_vin_setup_io(int module, bool force)
             { PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
-
+#endif
              /* VCLK, HSYNC, VSYNC */
             { PAD_GPIO_A + 28, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_E + 13, NX_GPIO_PADFUNC_2 },
@@ -1153,7 +1154,7 @@ static struct nxp_v4l2_i2c_board_info sensor[] = {
 static struct nxp_capture_platformdata capture_plat_data[] = {
     {
         /* back_camera 656 interface */
-        .module = 1,
+        .module = 0,
         .sensor = &sensor[0],
         .type = NXP_CAPTURE_INF_PARALLEL,
         .parallel = {
@@ -1186,7 +1187,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
     },
     {
         /* front_camera 601 interface */
-        .module = 1,
+        .module = 0,
         .sensor = &sensor[1],
         .type = NXP_CAPTURE_INF_PARALLEL,
         .parallel = {
