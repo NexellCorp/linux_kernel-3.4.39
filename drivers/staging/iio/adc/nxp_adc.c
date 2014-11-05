@@ -28,6 +28,8 @@
 #include <linux/err.h>
 #include <linux/completion.h>
 #include <linux/delay.h>
+#include <linux/suspend.h>
+#include <linux/notifier.h>
 
 #include <mach/platform.h>
 #include <mach/devices.h>
@@ -94,9 +96,12 @@ struct nxp_adc_info {
 	int isValid;
 	int bFirst;
 	int isCheckedCount;
-	
+	struct notifier_block pm_notifier;
+	unsigned long resume_state;
 #endif
 };
+
+#define	STATE_RESUME_DONE	0
 
 static const char *str_adc_ch[] = {
 	"adc.0", "adc.1", "adc.2", "adc.3",
@@ -338,34 +343,94 @@ int NXL_Get_BoardTemperature(void)
 }
 EXPORT_SYMBOL_GPL(NXL_Get_BoardTemperature);
 
-void nxl_monitor_work_func(struct work_struct *work)
+static int nxp_cpufreq_pm_notify(struct notifier_block *this,
+        unsigned long mode, void *unused)
+{
+	struct nxp_adc_info *adc = container_of(this,
+					struct nxp_adc_info, pm_notifier);
+
+    switch(mode) {
+    case PM_SUSPEND_PREPARE:
+    	clear_bit(STATE_RESUME_DONE, &adc->resume_state);
+    	break;
+    case PM_POST_SUSPEND:
+    	set_bit(STATE_RESUME_DONE, &adc->resume_state);
+    	break;
+    }
+	return 0;
+}
+
+// initialize table for register value matching with temperature
+static int drone_temperature_table[10][2] =
+{
+	{9900, 40}, // 0
+	{9100, 45},
+	{8400, 50},
+	{7700, 55},
+	{7000, 60}, // 4
+	{6300, 65}, // 5
+	{5700, 70},
+	{5200, 75},
+	{4700, 80},
+	{4200, 85}  // 9
+};
+
+static void nxl_monitor_work_func(struct work_struct *work)
 {
 	struct nxp_adc_info *adc = container_of(work, struct nxp_adc_info, monitoring_work.work);
 	struct iio_chan_spec const *chan;
 	int val = 0;
 	int val2 = 0;
-	int i;
+	// calculate temperature
+	int voltage_table_interval;
+	int interval;
+	int num_grade;
+	
+	
+	if (!test_bit(STATE_RESUME_DONE, &adc->resume_state))
+		goto exit_mon;
 
 	chan = &nxp_adc_iio_channels[2];
 	nxp_read_raw(adc->iio, chan, &val, &val2, 0); 
 
 	adc->tmp_voltage = (18*val*1000)/4096;
-	if(adc->tmp_voltage > 12900) adc->board_temperature = 25;
-	else if(adc->tmp_voltage > 12245) adc->board_temperature = 30;
-	else if(adc->tmp_voltage > 10700) adc->board_temperature = 35;
-	else if(adc->tmp_voltage > 9900) adc->board_temperature = 40;
-	else if(adc->tmp_voltage > 9100) adc->board_temperature = 45;
-	else if(adc->tmp_voltage > 8400) adc->board_temperature = 50;
-	else if(adc->tmp_voltage > 7700) adc->board_temperature = 55;
-	else if(adc->tmp_voltage > 7000) adc->board_temperature = 60;
-	else if(adc->tmp_voltage > 6300) adc->board_temperature = 65;
-	else if(adc->tmp_voltage > 5700) adc->board_temperature = 70;
-	else if(adc->tmp_voltage > 5200) adc->board_temperature = 75;
-	else if(adc->tmp_voltage > 4700) adc->board_temperature = 80;
-	else if(adc->tmp_voltage > 4200) adc->board_temperature = 85;
-	else if(adc->tmp_voltage > 3800) adc->board_temperature = 90;
-	else adc->board_temperature = 95;
 
+	//  according to Register Voltage table, calculate board temperature.
+	for(num_grade=0, interval=0; num_grade<10; num_grade++)
+	{
+		if(adc->tmp_voltage > drone_temperature_table[num_grade][0])
+		{
+			if(num_grade != 0)
+			{
+				interval = (drone_temperature_table[num_grade-1][0] - drone_temperature_table[num_grade][0])/5;
+				break;
+			}
+		}
+	}
+
+	if(num_grade == 10)
+	{
+		adc->board_temperature = 90;
+	}
+	else if(interval == 0)
+	{
+		adc->board_temperature = 40;
+	}
+	else
+	{
+		adc->board_temperature = drone_temperature_table[num_grade-1][1];
+		voltage_table_interval = drone_temperature_table[num_grade-1][0] - interval; 
+		for(; voltage_table_interval>drone_temperature_table[num_grade][0]; voltage_table_interval-=interval)
+		{
+			if(adc->tmp_voltage > voltage_table_interval)
+				break;
+			adc->board_temperature++;
+		}
+		if(adc->board_temperature > drone_temperature_table[num_grade][1])
+			adc->board_temperature = drone_temperature_table[num_grade][1];
+	}
+
+	// ignore the temperature value when booting.
 	if(adc->isValid == 0)
 	{
 		if(adc->bFirst == 0)
@@ -392,10 +457,11 @@ void nxl_monitor_work_func(struct work_struct *work)
 	}
 
 	
+	// adjust the temperature value .
 	if(adc->prev_board_temperature <= adc->board_temperature)
 	{
 		int gap = adc->board_temperature - adc->prev_board_temperature;
-		if(gap > 5) // ignore.
+		if(gap >= 5) // ignore.
 		{
 			adc->board_temperature = adc->prev_board_temperature;
 		}
@@ -407,7 +473,7 @@ void nxl_monitor_work_func(struct work_struct *work)
 	else
 	{
 		int gap = adc->prev_board_temperature  - adc->board_temperature;
-		if(gap > 5) // ignore.
+		if(gap >= 5) // ignore.
 		{
 			adc->board_temperature = adc->prev_board_temperature;
 		}
@@ -419,6 +485,7 @@ void nxl_monitor_work_func(struct work_struct *work)
 
 	eBoard_temperature = adc->board_temperature;
 	
+exit_mon:
 	queue_delayed_work(adc->monitoring_wqueue, &adc->monitoring_work, HZ);
 
 }
@@ -426,6 +493,9 @@ void nxl_monitor_work_func(struct work_struct *work)
 
 static int __devinit nxp_adc_probe(struct platform_device *pdev)
 {
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+	static struct notifier_block *pm_notifier;
+#endif
 	struct iio_dev *iio = NULL;
 	struct nxp_adc_info *adc = NULL;
 	struct iio_chan_spec *spec;
@@ -489,6 +559,14 @@ static int __devinit nxp_adc_probe(struct platform_device *pdev)
 	adc->monitoring_wqueue = create_singlethread_workqueue("monitoring_wqueue");
 	INIT_DELAYED_WORK_DEFERRABLE(&adc->monitoring_work, nxl_monitor_work_func);
 	queue_delayed_work(adc->monitoring_wqueue, &adc->monitoring_work, 15*HZ);
+
+	pm_notifier = &adc->pm_notifier;
+	pm_notifier->notifier_call = nxp_cpufreq_pm_notify;
+	if (register_pm_notifier(pm_notifier)) {
+		dev_err(&pdev->dev, "%s: Cannot pm notifier \n", __func__);
+		return -1;
+	}
+	set_bit(STATE_RESUME_DONE, &adc->resume_state);
 #endif
 
 	pr_debug("ADC init success\n");

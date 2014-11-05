@@ -93,21 +93,21 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-	{ 1600000, 1300000 },
-	{ 1500000, 1300000 },
-	{ 1400000, 1300000 },
-	{ 1300000, 1300000 },
-	{ 1200000, 1200000, },
-	{ 1100000, 1100000, },
-	{ 1000000, 1100000, },
-	{  900000, 1000000, },
-	{  800000,  960000, },
-	{  700000,  960000, },
-	{  666000,  960000, },
-	{  600000,  960000, },
-	{  533000,  960000, },
-	{  500000,  960000, },
-	{  400000,  960000, },
+//	{ 1600000, 1300000 },
+//	{ 1500000, 1300000 },
+	{ 1400000, 1200000  },
+//	{ 1300000, 1125000 },
+	{ 1200000, 1100000, },
+//	{ 1100000, 1100000, },
+	{ 1000000, 1000000, },
+//	{  900000, 1000000, },
+	{  800000, 1000000, },
+	{  700000, 975000, },
+//	{  666000, 1000000, },
+	{  600000, 950000, },
+//	{  533000, 950000, },
+	{  500000, 950000, },
+	{  400000, 950000, },
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
@@ -116,7 +116,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1600*1000,
+	.max_cpufreq	= 1400*1000,
 	.max_retention  =   20*1000,
 	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
@@ -153,12 +153,13 @@ static char *freq_proct_list[] = { "com.antutu", };
 static struct nxp_cpufreq_limit_data freq_limit_data = {
 	.limit_name		= freq_proct_list,
 	.limit_num 		= ARRAY_SIZE(freq_proct_list),
-	.aval_max_freq 	= 1600000,
+	.aval_max_freq	= 1400000,
 	.op_max_freq	= 1200000,
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) 
 	.limit_level0_freq	= 1200000,
 	.limit_level1_freq	= 1000000,
 	.min_max_freq	= 800000,
+	.prev_max_freq = 1400000,
 #endif
 	//.sched_duration	= 1000,
 	//.sched_timeout	= 3000,
@@ -656,22 +657,22 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,	 950000, 2000000, 1, 1, 1350000, 1,  4);	/* 1.2V ARM */
-NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1,  4);	/* 1.1V CORE */
+NXE2000_PDATA_INIT(dc1,      0,	950000, 2000000, 1, 1, 1200000, 1,  6);	/* 1.2V ARM */
+NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1,  6);	/* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
-NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V SYS */
+NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  6);	/* 1.5V SYS */
 #if defined(CONFIG_RFKILL_NEXELL)
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V GPS */
 #else
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 1,  0);	/* 3.3V GPS */
 #endif
 NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 0,  0);	/* 1.8V CAM1 */
-NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1900000, 1,  2);	/* 1.8V SYS1 */
-NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  2);	/* 1.9V SYS */
+NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1900000, 1,  4);	/* 1.8V SYS1 */
+NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  4);	/* 1.9V SYS */
 NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 1, 1, 2800000, 0,  0);	/* 2.8V VCAM */
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
-NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 2800000, 1,  1);	/* 2.8V VID */
+NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 2800000, 1,  0);	/* 2.8V VID */
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
 NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 1, 1, 2800000, 0,  0);	/* 2.8V VCAM */
 NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
@@ -1587,6 +1588,11 @@ void __init nxp_board_devices_register(void)
     platform_device_register(&hdmi_cec_device);
 #endif
 
+#if 0//defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+	back_camera_power_enable(0);
+	front_camera_power_enable(0);
+	camera_power_control(0);
+#endif
 	/* END */
 	printk("\n");
 }

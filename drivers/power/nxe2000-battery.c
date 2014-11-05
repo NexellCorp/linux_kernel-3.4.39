@@ -56,7 +56,6 @@
 #include <linux/workqueue.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
-#include <linux/mfd/nxe2000.h>
 
 /* nexell soc headers */
 #include <mach/platform.h>
@@ -129,6 +128,14 @@
 #ifndef MIN
 #define MIN(X, Y) ((X) <= (Y) ? (X) : (Y))
 #endif
+
+enum int_type {
+	SYS_INT  = 0x01,
+	DCDC_INT = 0x02,
+	ADC_INT  = 0x08,
+	GPIO_INT = 0x10,
+	CHG_INT	 = 0x40,
+};
 
 #ifdef ENABLE_FUEL_GAUGE_FUNCTION
 /* define for FG delayed time */
@@ -438,6 +445,46 @@ void nxe2000_register_dump(struct device *dev)
 
 	PM_DBGOUT("##########################################################\n");
 }
+#endif
+
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+//#define pr_debug	printk
+
+extern int NXL_Get_BoardTemperature(void);
+extern int isCheck_ChargeStop_byResource(void);
+
+int pmic_occur_dieError=0;
+int isOccured_dieError(void)
+{
+	return pmic_occur_dieError;
+}
+EXPORT_SYMBOL_GPL(isOccured_dieError);
+
+
+char strChargingState[15][32] = {
+	"CHG OFF",
+	"Charge Ready(VADP)",
+	"Trickle Charge",
+	"Rapid Charge",
+	"Charge Complete",
+	"SUSPEND",
+	"VCHG Over Voltage",
+	"Battery Error",
+	"No Battery",
+	"Battery Over Voltage",
+	"Battery Temp Error",
+	"Die Error",
+	"Die Shutdown",
+	"No Battery2",
+	"Charge Ready(VUSB)"
+};
+
+char strSupply[3][16]={
+	"Battery",
+	"Adapter",
+	"Usb"
+};
+
 #endif
 
 
@@ -1972,6 +2019,38 @@ static void nxe2000_charge_monitor_work(struct work_struct *work)
 	return;
 }
 
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+int nxe2000_decide_charge_byResource(struct nxe2000_battery_info *info)
+{
+	uint8_t ctrlreg;
+	int ret;
+
+	ret = nxe2000_read(info->dev->parent, CHGCTL1_REG, &ctrlreg);
+	if(isCheck_ChargeStop_byResource() == 0)
+	{
+		if(!(ctrlreg&0x03))
+		{
+			pr_debug("....  resume the changing\n");
+			nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, 0x03);
+		}
+	}
+	else // Charging Stop
+	{
+		if(ctrlreg&0x03)
+		{
+			pr_debug(".... stop the charging: ctrlreg(0x%x)\n", ctrlreg);
+			nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, 0x03);
+		}
+		
+		queue_delayed_work(info->monitor_wqueue, &info->get_charge_work,
+					 NXE2000_CHARGE_UPDATE_TIME * HZ);
+		return 0;
+	}
+
+	return 1;
+}
+#endif
+
 static void nxe2000_get_charge_work(struct work_struct *work)
 {
 	struct nxe2000_battery_info *info = container_of(work,
@@ -1984,6 +2063,11 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 	int i, j;
 	int ret;
 	int capacity = 0;
+
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+	if(nxe2000_decide_charge_byResource(info) == 0)
+		return ;
+#endif
 
 	mutex_lock(&info->lock);
 
@@ -3658,22 +3742,6 @@ static int set_otg_power_control(struct nxe2000_battery_info *info, int otg_id)
 	return ret;
 }
 
-////////////////////////////////////////////
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
-int pmic_occur_dieError=0;
-int isOccured_dieError(void)
-{
-	return pmic_occur_dieError;
-}
-EXPORT_SYMBOL_GPL(isOccured_dieError);
-
-void isReset_dieErrorFlag(void)
-{
-	pmic_occur_dieError =0;
-}
-EXPORT_SYMBOL_GPL(isReset_dieErrorFlag);
-#endif
-////////////////////////////////////////////
 
 static int get_power_supply_status(struct nxe2000_battery_info *info)
 {
@@ -3693,6 +3761,25 @@ static int get_power_supply_status(struct nxe2000_battery_info *info)
 
 	charge_state = (status & 0x1F);
 	supply_state = ((status & 0xC0) >> 6);
+
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+	pr_debug("chgState(%s) supply[%d](%s) battery(%d%%) VBAT(%d)\n", 
+		strChargingState[charge_state],supply_state, strSupply[supply_state], 
+		0, 0);
+	if(charge_state == CHG_STATE_DIE_ERR)
+	{
+		uint8_t dieTempReg;
+		extern int NXL_Get_BoardTemperature(void);
+		ret = nxe2000_read(info->dev->parent, NXE2000_REG_CHGISET, &dieTempReg);// (info->dev->parent, NXE2000_REG_CHGISET, CHARGE_CURRENT_100MA); 
+		ret = nxe2000_read(info->dev->parent, 0xB3, &dieTempReg);
+		printk("________die Error. dieTempReg:0x%x\n", dieTempReg);
+		pmic_occur_dieError=1;
+	}
+	else
+	{
+		pmic_occur_dieError=0;
+	}
+#endif
 
 	if (info->entry_factory_mode)
 			return POWER_SUPPLY_STATUS_NOT_CHARGING;
@@ -3749,14 +3836,6 @@ static int get_power_supply_status(struct nxe2000_battery_info *info)
 		case	CHG_STATE_DIE_ERR:
 				info->soca->chg_status
 					= POWER_SUPPLY_STATUS_NOT_CHARGING;
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
-				pmic_occur_dieError=1;
-				{
-					uint8_t dieTempReg = 0;
-					extern int NXL_Get_BoardTemperature(void);
-					printk("________die Error. dieTempReg:0x%x, temp(%d)\n", dieTempReg, NXL_Get_BoardTemperature());
-				}
-#endif
 				break;
 		case	CHG_STATE_DIE_SHUTDOWN:
 				info->soca->chg_status
@@ -4531,6 +4610,12 @@ static void suspend_charge4first_soc(struct nxe2000_battery_info *info)
 
 static int get_battery_temp(struct nxe2000_battery_info *info)
 {
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) 
+	if(NXL_Get_BoardTemperature() == 0)
+		return 270;
+
+	return (10*(NXL_Get_BoardTemperature()-20));
+#else
 	int ret = 0;
 	int sign_bit;
 
@@ -4557,10 +4642,17 @@ static int get_battery_temp(struct nxe2000_battery_info *info)
 	}
 
 	return ret;
+#endif
 }
 
 static int get_battery_temp_2(struct nxe2000_battery_info *info)
 {
+#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) 
+	if(NXL_Get_BoardTemperature() == 0)
+		return 270;
+
+	return (10*(NXL_Get_BoardTemperature()-20));
+#else
 	uint8_t reg_buff[2];
 	long temp, temp_off, temp_gain;
 	bool temp_sign, temp_off_sign, temp_gain_sign;
@@ -4686,6 +4778,7 @@ static int get_battery_temp_2(struct nxe2000_battery_info *info)
 out:
 	new_temp = get_battery_temp(info);
 	return new_temp;
+#endif
 }
 
 static int get_time_to_empty(struct nxe2000_battery_info *info)

@@ -45,6 +45,7 @@ struct cpufreq_limit_data {
 	long limit_level0_freq; 	/* unit Khz */
 	long limit_level1_freq; 	/* unit Khz */
 	long min_max_freq;			/* unit Khz */
+	long prev_max_freq;			/* unit Khz */
 #endif
     long timer_duration;	/* unit ms */
     long op_timeout;		/* unit ms */
@@ -132,17 +133,25 @@ static void cpufreq_set_max_frequency(struct cpufreq_limit_data *limit, int boos
 
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
 	limit->timer_chkcpu_mod = 1-limit->timer_chkcpu_mod;
-	if (limit->timer_chkcpu_mod) {
-		limit->op_max_freq = cpuUsage_Process(limit, boost);
+	if (limit->timer_chkcpu_mod) 
+	{
+		max_freq = cpuUsage_Process(limit, boost);
 	}
-#endif
+	else
+	{
+		if(limit->pre_max_freq != 0)
+			max_freq = limit->pre_max_freq;
+		else
+			max_freq = boost ? limit->aval_max_freq : limit->op_max_freq;
+	}
+	curMaxCpu = max_freq;
+#else
 	max_freq = boost ? limit->aval_max_freq : limit->op_max_freq;
+#endif
+
 	if (limit->pre_max_freq == max_freq)
 		return;
 
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
-	curMaxCpu = max_freq;
-#endif
 	for_each_possible_cpu(cpu) {
 		fd = sys_open(sys_scaling_path[cpu], O_RDWR, 0);
     	old_fs = get_fs();
@@ -298,6 +307,7 @@ static int cpufreq_limit_probe(struct platform_device *pdev)
 	limit->limit_level0_freq = plat->limit_level0_freq;
 	limit->limit_level1_freq = plat->limit_level1_freq;
 	limit->min_max_freq = plat->min_max_freq;
+	limit->prev_max_freq= plat->aval_max_freq;
 	limit->timer_chkcpu_mod = 1; // every 1 second, check .
 #endif
 	register_pm_notifier(&limit->pm_notifier);

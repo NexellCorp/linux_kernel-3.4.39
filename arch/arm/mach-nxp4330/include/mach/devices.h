@@ -289,6 +289,7 @@ struct nxp_cpufreq_limit_data {
 	long limit_level0_freq; 	/* unit Khz */
 	long limit_level1_freq; 	/* unit Khz */
 	long min_max_freq;			/* unit Khz */
+	long prev_max_freq;			/* unit Khz */
 #endif
     long sched_duration;	/* unit ms */
     long sched_timeout;		/* unit ms */
