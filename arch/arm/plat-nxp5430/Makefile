@@ -3,6 +3,10 @@
 #
 # Makefile for the Nexell platform board
 
+ifeq ($(CONFIG_PLAT_NXP5430_VTK),y)
+PLATBOARD :=vtk
+endif
+
 ifeq ($(CONFIG_PLAT_NXP5430_DRONE),y)
 PLATBOARD :=drone
 endif

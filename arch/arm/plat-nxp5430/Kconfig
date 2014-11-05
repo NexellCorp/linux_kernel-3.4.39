@@ -14,7 +14,12 @@ comment "Board features"
 
 choice
     prompt "Platform board"
-    default PLAT_NXP5430_LYNX
+    default PLAT_NXP5430_DRONE
+
+	config PLAT_NXP5430_VTK
+		bool "VTK: Validation Kit board"
+		help
+   	 		Support for the validation kit board.
 
 	config PLAT_NXP5430_DRONE
 		bool "DRONE: Android drone board"
