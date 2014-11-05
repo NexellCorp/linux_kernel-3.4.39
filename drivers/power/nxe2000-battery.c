@@ -22,6 +22,8 @@
 // Date		ID				Description
 //--------------------------------------------------------------------
 //
+//11-05-2014			modify	- modification of CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE.
+//
 //10-21-2014			modify	- Changed the POWER_SUPPLY_PROP_ONLINE status.
 //
 //10-20-2014			modify	- Changed the CHGCTL1_REG -> NXE2000_REG_CHGCTL1.
@@ -41,7 +43,7 @@
 //
 ///////////////////////////////////////////////////////////////////////
 
-#define NXE2000_BATTERY_VERSION "NXE2000_BATTERY_VERSION: 2014.07.04 V3.1.3.2(2014.10.20:modify)"
+#define NXE2000_BATTERY_VERSION "NXE2000_BATTERY_VERSION: 2014.07.04 V3.1.3.2(2014.11.05:modify)"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -56,6 +58,7 @@
 #include <linux/workqueue.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
+#include <linux/mfd/nxe2000.h>
 
 /* nexell soc headers */
 #include <mach/platform.h>
@@ -128,14 +131,6 @@
 #ifndef MIN
 #define MIN(X, Y) ((X) <= (Y) ? (X) : (Y))
 #endif
-
-enum int_type {
-	SYS_INT  = 0x01,
-	DCDC_INT = 0x02,
-	ADC_INT  = 0x08,
-	GPIO_INT = 0x10,
-	CHG_INT	 = 0x40,
-};
 
 #ifdef ENABLE_FUEL_GAUGE_FUNCTION
 /* define for FG delayed time */
@@ -2025,13 +2020,13 @@ int nxe2000_decide_charge_byResource(struct nxe2000_battery_info *info)
 	uint8_t ctrlreg;
 	int ret;
 
-	ret = nxe2000_read(info->dev->parent, CHGCTL1_REG, &ctrlreg);
+	ret = nxe2000_read(info->dev->parent, NXE2000_REG_CHGCTL1, &ctrlreg);
 	if(isCheck_ChargeStop_byResource() == 0)
 	{
 		if(!(ctrlreg&0x03))
 		{
 			pr_debug("....  resume the changing\n");
-			nxe2000_set_bits(info->dev->parent, CHGCTL1_REG, 0x03);
+			nxe2000_set_bits(info->dev->parent, NXE2000_REG_CHGCTL1, 0x03);
 		}
 	}
 	else // Charging Stop
@@ -2039,7 +2034,7 @@ int nxe2000_decide_charge_byResource(struct nxe2000_battery_info *info)
 		if(ctrlreg&0x03)
 		{
 			pr_debug(".... stop the charging: ctrlreg(0x%x)\n", ctrlreg);
-			nxe2000_clr_bits(info->dev->parent, CHGCTL1_REG, 0x03);
+			nxe2000_clr_bits(info->dev->parent, NXE2000_REG_CHGCTL1, 0x03);
 		}
 		
 		queue_delayed_work(info->monitor_wqueue, &info->get_charge_work,
