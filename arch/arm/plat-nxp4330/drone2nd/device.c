@@ -93,8 +93,8 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP4330_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-	{ 1600000, 1300000 },
-	{ 1500000, 1300000 },
+//	{ 1600000, 1300000 },
+//	{ 1500000, 1300000 },
 	{ 1400000, 1300000 },
 	{ 1300000, 1300000 },
 	{ 1200000, 1200000, },
@@ -116,7 +116,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1600*1000,
+	.max_cpufreq    = 1400*1000,
 	.max_retention  =   20*1000,
 	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
@@ -1366,13 +1366,13 @@ static struct dw_mci_board _dwmci2_data = {
 
 #ifdef CONFIG_MMC_NEXELL_CH1
 static struct dw_mci_board _dwmci1_data = {
-	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 100 * 1000 * 1000,
+	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION,
+	.bus_hz			= 50 * 1000 * 1000,
 	.caps = MMC_CAP_CMD23|MMC_CAP_NONREMOVABLE,
 	.detect_delay_ms= 200,
 	.cd_type = DW_MCI_CD_NONE,
 	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(0),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(0),
 };
 #endif
 
@@ -1435,7 +1435,6 @@ static struct dw_mci_board _dwmci0_data = {
  * RFKILL driver
  */
 #if defined(CONFIG_RFKILL_NEXELL)
-
 struct rfkill_dev_data  rfkill_dev_data =
 {
 	.supply_name 	= "vgps_3.3V",	// vwifi_3.3V, vgps_3.3V
@@ -1511,11 +1510,11 @@ void __init nxp_board_devices_register(void)
 	#ifdef CONFIG_MMC_NEXELL_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
-    #ifdef CONFIG_MMC_NEXELL_CH2
-	nxp_mmc_add_device(2, &_dwmci2_data);
-	#endif
     #ifdef CONFIG_MMC_NEXELL_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
+	#endif
+    #ifdef CONFIG_MMC_NEXELL_CH2
+	nxp_mmc_add_device(2, &_dwmci2_data);
 	#endif
 #endif
 
