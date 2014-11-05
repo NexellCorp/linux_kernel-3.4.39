@@ -67,6 +67,12 @@ choice
 		help
    	 		Support for the drone board.
 
+	config PLAT_NXP4330_DRONE2ND
+		bool "DRONE: Android drone2nd board"
+		help
+   	 		Support for the drone2nd board.
+
+
     config PLAT_NXP4330_KAR
 		bool "KAR: Android Car Navigation board"
 		help
