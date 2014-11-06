@@ -175,7 +175,7 @@ static void nxp_pcm_dma_complete(void *arg)
 
 	if(prtd->dma_param->real_clock != 0) // i2s master mode
 	{
-		if (0 == over_samples){
+		if (2 > over_samples){
 			over_samples = 1;
 			prtd->time_stamp_us = new;
 		} else {
