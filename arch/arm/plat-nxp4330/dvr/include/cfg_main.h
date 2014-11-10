@@ -84,20 +84,20 @@
 #define	CFG_DISP_PRI_LCD_WIDTH_MM				152.4
 #define	CFG_DISP_PRI_LCD_HEIGHT_MM				91.44
 
-#define CFG_DISP_PRI_RESOL_WIDTH          		1024	// X Resolution
-#define CFG_DISP_PRI_RESOL_HEIGHT				600	// Y Resolution
+#define CFG_DISP_PRI_RESOL_WIDTH          		320//1024	// X Resolution
+#define CFG_DISP_PRI_RESOL_HEIGHT				240//600	// Y Resolution
 
-#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH            20
-#define CFG_DISP_PRI_HSYNC_BACK_PORCH           160
-#define CFG_DISP_PRI_HSYNC_FRONT_PORCH          160
-#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CTRUE
-#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH            3
-#define CFG_DISP_PRI_VSYNC_BACK_PORCH            23
-#define CFG_DISP_PRI_VSYNC_FRONT_PORCH           12
-#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CTRUE
+#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH            10
+#define CFG_DISP_PRI_HSYNC_BACK_PORCH           20//160
+#define CFG_DISP_PRI_HSYNC_FRONT_PORCH          10//160
+     #define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CFALSE
+#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH            1
+#define CFG_DISP_PRI_VSYNC_BACK_PORCH            2//23
+#define CFG_DISP_PRI_VSYNC_FRONT_PORCH           4//12
+#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CFALSE
 
 #define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL0
-#define CFG_DISP_PRI_CLKGEN0_DIV                15
+#define CFG_DISP_PRI_CLKGEN0_DIV                150
 #define CFG_DISP_PRI_CLKGEN0_DELAY              0
 #define CFG_DISP_PRI_CLKGEN0_INVERT				0
 #define CFG_DISP_PRI_CLKGEN1_SOURCE             DPC_VCLK_SRC_VCLK2
@@ -204,6 +204,11 @@
  */
 #define	CFG_SDMMC2_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
 
+/*------------------------------------------------------------------------------
+ * 	WIFI 
+ */
+#define CFG_WIFI_POWER_IO					(PAD_GPIO_E + 8)		/* GPIO */
+#define CFG_WIFI_SDIO_ID 					1
 
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
