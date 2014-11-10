@@ -79,3 +79,7 @@ config SND_CODEC_CS42L51_NX
 	depends on SND_NEXELL_I2S
 	select SND_SOC_CS42L51_NX
 
+config SND_CODEC_WM8903
+	tristate "wm8903  I2S audio codec."
+	depends on SND_NEXELL_I2S
+	select SND_SOC_WM8903

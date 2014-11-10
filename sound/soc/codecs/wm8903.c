@@ -51,20 +51,20 @@ static const struct reg_default wm8903_reg_defaults[] = {
 	{ 15, 0x0000 },     /* R15  - Power Management 3 */
 	{ 16, 0x0000 },     /* R16  - Power Management 4 */
 	{ 17, 0x0000 },     /* R17  - Power Management 5 */
-	{ 18, 0x0000 },     /* R18  - Power Management 6 */
+	{ 18, 0x0003 },     /* R18  - Power Management 6 */
 	{ 20, 0x0400 },     /* R20  - Clock Rates 0 */
-	{ 21, 0x0D07 },     /* R21  - Clock Rates 1 */
-	{ 22, 0x0000 },     /* R22  - Clock Rates 2 */
+	{ 21, 0x0C08 },     /* R21  - Clock Rates 1 */			//clock rate
+	{ 22, 0x0006 },     /* R22  - Clock Rates 2 */		//clock enable
 	{ 24, 0x0050 },     /* R24  - Audio Interface 0 */
 	{ 25, 0x0242 },     /* R25  - Audio Interface 1 */
 	{ 26, 0x0008 },     /* R26  - Audio Interface 2 */
 	{ 27, 0x0022 },     /* R27  - Audio Interface 3 */
 	{ 30, 0x00C0 },     /* R30  - DAC Digital Volume Left */
 	{ 31, 0x00C0 },     /* R31  - DAC Digital Volume Right */
-	{ 32, 0x0000 },     /* R32  - DAC Digital 0 */
+	{ 32, 0xff00 },     /* R32  - DAC Digital 0 */								//ADCL_DAC_SVOL
 	{ 33, 0x0000 },     /* R33  - DAC Digital 1 */
-	{ 36, 0x00C0 },     /* R36  - ADC Digital Volume Left */
-	{ 37, 0x00C0 },     /* R37  - ADC Digital Volume Right */
+	{ 36, 0x01ff },     /* R36  - ADC Digital Volume Left */					//ADCL_VOL
+	{ 37, 0x01ff },     /* R37  - ADC Digital Volume Right */					//ADCR_VOL
 	{ 38, 0x0000 },     /* R38  - ADC Digital 0 */
 	{ 39, 0x0073 },     /* R39  - Digital Microphone 0 */
 	{ 40, 0x09BF },     /* R40  - DRC 0 */
@@ -83,8 +83,8 @@ static const struct reg_default wm8903_reg_defaults[] = {
 	{ 55, 0x0000 },     /* R55  - Analogue Spk Mix Right 1 */
 	{ 57, 0x002D },     /* R57  - Analogue OUT1 Left */
 	{ 58, 0x002D },     /* R58  - Analogue OUT1 Right */
-	{ 59, 0x0039 },     /* R59  - Analogue OUT2 Left */
-	{ 60, 0x0039 },     /* R60  - Analogue OUT2 Right */
+	{ 59, 0x003f },     /* R59  - Analogue OUT2 Left */							//max volume
+	{ 60, 0x003f },     /* R60  - Analogue OUT2 Right */						//max volume
 	{ 62, 0x0139 },     /* R62  - Analogue OUT3 Left */
 	{ 63, 0x0139 },     /* R63  - Analogue OUT3 Right */
 	{ 64, 0x0000 },     /* R65  - Analogue SPK Output Control 0 */
@@ -100,8 +100,8 @@ static const struct reg_default wm8903_reg_defaults[] = {
 	{ 111, 0x0000 },    /* R111 - Write Sequencer 3 */
 	{ 112, 0x0000 },    /* R112 - Write Sequencer 4 */
 	{ 114, 0x0000 },    /* R114 - Control Interface */
-	{ 116, 0x00A8 },    /* R116 - GPIO Control 1 */
-	{ 117, 0x00A8 },    /* R117 - GPIO Control 2 */
+	{ 116, 0x0624 },    /* R116 - GPIO Control 1 */								//DMIC_LR clock output
+	{ 117, 0x06A8 },    /* R117 - GPIO Control 2 */								//DMIC_DATA input
 	{ 118, 0x00A8 },    /* R118 - GPIO Control 3 */
 	{ 119, 0x0220 },    /* R119 - GPIO Control 4 */
 	{ 120, 0x01A0 },    /* R120 - GPIO Control 5 */
@@ -110,9 +110,11 @@ static const struct reg_default wm8903_reg_defaults[] = {
 	{ 126, 0x0000 },    /* R126 - Interrupt Control */
 	{ 129, 0x0000 },    /* R129 - Control Interface Test 1 */
 	{ 149, 0x6810 },    /* R149 - Charge Pump Test 1 */
-	{ 164, 0x0028 },    /* R164 - Clock Rate Test 4 */
+	{ 164, 0x0200 },    /* R164 - Clock Rate Test 4 */							//from DMIC
 	{ 172, 0x0000 },    /* R172 - Analogue Output Bias 0 */
 };
+
+#define REG_INIT_NUM (sizeof(wm8903_reg_defaults)/sizeof(struct reg_default))
 
 struct wm8903_priv {
 	struct wm8903_platform_data *pdata;
@@ -1898,6 +1900,10 @@ static int wm8903_probe(struct snd_soc_codec *codec)
 	if (ret != 0) {
 		dev_err(codec->dev, "Failed to set cache I/O: %d\n", ret);
 		return ret;
+	}
+
+	for (i = 0; i < REG_INIT_NUM; i++) {
+		snd_soc_write(codec, (u8)wm8903_reg_defaults[i].reg, (u16)(wm8903_reg_defaults[i].def));
 	}
 
 	/* Set up GPIOs, detect if any are MIC detect outputs */

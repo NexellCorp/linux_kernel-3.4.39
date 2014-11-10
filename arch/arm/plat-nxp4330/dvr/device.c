@@ -392,6 +392,32 @@ static struct platform_device wm8976_dai = {
 };
 #endif
 
+#if defined(CONFIG_SND_CODEC_WM8903) || defined(CONFIG_SND_CODEC_WM8903_MODULE)
+#include <linux/i2c.h>
+
+#define	WM8903_I2C_BUS		(1)
+
+/* CODEC */
+static struct i2c_board_info __initdata wm8903_i2c_bdi = {
+	.type	= "wm8903",			// compatilbe with wm8903
+	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
+};
+
+/* DAI */
+struct nxp_snd_dai_plat_data i2s_dai_data = {
+	.i2s_ch	= 0,
+	.sample_rate	= 48000,
+};
+
+static struct platform_device wm8903_dai = {
+	.name			= "wm8903-audio",
+	.id				= 0,
+	.dev			= {
+		.platform_data	= &i2s_dai_data,
+	}
+};
+#endif
+
 #if defined(CONFIG_SND_CODEC_ALC5623)
 #include <linux/i2c.h>
 
@@ -673,8 +699,8 @@ NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 1, 1, 2800000, 0,  0);	/* 2.8V
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
 NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 2800000, 1,  1);	/* 2.8V VID */
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
-NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 1, 1, 2800000, 0,  0);	/* 2.8V VCAM */
-NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
+NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 1, 1, 1800000, 1,  0);	/* 1.8V audio */
+NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 1, 1, 1200000, 1,  0);	/* 1.2V audio*/
 NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
 NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
 
@@ -1540,6 +1566,12 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device asoc-wm8976\n");
 	i2c_register_board_info(WM8976_I2C_BUS, &wm8976_i2c_bdi, 1);
 	platform_device_register(&wm8976_dai);
+#endif
+
+#if defined(CONFIG_SND_CODEC_WM8903) || defined(CONFIG_SND_CODEC_WM8903_MODULE)
+	printk("plat: add device asoc-wm8903\n");
+	i2c_register_board_info(WM8903_I2C_BUS, &wm8903_i2c_bdi, 1);
+	platform_device_register(&wm8903_dai);
 #endif
 
 #if defined(CONFIG_SND_CODEC_ALC5623) || defined(CONFIG_SND_CODEC_ALC5623_MODULE)
