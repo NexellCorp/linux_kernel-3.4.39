@@ -246,17 +246,27 @@
 /*------------------------------------------------------------------------------
  *	CAMERA Back Power Down
  */
-#define CFG_IO_CAMERA_BACK_POWER_DOWN     ((PAD_GPIO_E + 17) | PAD_FUNC_ALT0)
+//#define CFG_IO_CAMERA_BACK_POWER_DOWN     ((PAD_GPIO_E + 17) | PAD_FUNC_ALT0)
 
 /*------------------------------------------------------------------------------
  *	CAMERA Front Power Down
  */
-#define CFG_IO_CAMERA_FRONT_POWER_DOWN     ((PAD_GPIO_E + 20) | PAD_FUNC_ALT0)		/* GPIO */
+//#define CFG_IO_CAMERA_FRONT_POWER_DOWN     ((PAD_GPIO_E + 20) | PAD_FUNC_ALT0)		/* GPIO */
 
 /*------------------------------------------------------------------------------
  *	CAMERA Reset
  */
-#define CFG_IO_CAMERA_RESET                 ((PAD_GPIO_E + 7) | PAD_FUNC_ALT0)		/* GPIO */
+//#define CFG_IO_CAMERA_RESET                 ((PAD_GPIO_E + 7) | PAD_FUNC_ALT0)		/* GPIO */
+
+/*------------------------------------------------------------------------------
+ *	MIPI CAMERA Power Enable
+ */
+#define CFG_IO_MIPI_CAMERA_POWER_ENABLE		((PAD_GPIO_B + 10) | PAD_FUNC_ALT0)		/* GPIO */
+
+/*------------------------------------------------------------------------------
+ *	MIPI CAMERA RESETN
+ */
+#define CFG_IO_MIPI_CAMERA_RESETN			((PAD_GPIO_B + 9) | PAD_FUNC_ALT0)		/* GPIO */
 
 /*------------------------------------------------------------------------------
  *	AUDIO AMP for wm8976

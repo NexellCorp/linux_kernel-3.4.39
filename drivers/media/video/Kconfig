@@ -654,6 +654,12 @@ config VIDEO_SP0838_FIXED_FRAMERATE
     ---help---
       if this option on, framerate is fixed 15frame, else variable 8-10frame
 
+config VIDEO_OV5645
+	tristate "ov5645 mipi camera support"
+	depends on VIDEO_V4L2 && I2C
+	help
+	  This is a V4L2 camera driver for the OmniVision OV5645 sensor
+
 config VIDEO_S5K4E5
         tristate "S5K4E5 sensor support"
 	depends on VIDEO_V4L2 && ((VIDEO_FIMC_MIPI || VIDEO_S5P_MIPI_CSIS) && VIDEO_EXYNOS_FIMC_IS) || VIDEO_EXYNOS5_FIMC_IS || VIDEO_EXYNOS5_FIMC_IS2
