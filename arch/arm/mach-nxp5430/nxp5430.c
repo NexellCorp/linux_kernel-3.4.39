@@ -246,22 +246,10 @@ static void cpu_bus_init(void)
 void (*nxp_board_shutdown)(void) = NULL;
 void (*nxp_board_reset)(char str, const char *cmd) = NULL;
 
-static unsigned int core_power[][2] = {
-	[0] = { TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CLAMPCPU0,
-		    TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CPU0PWRDOWN },
-	[1] = { TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CLAMPCPU1,
-		    TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CPU1PWRDOWN },
-	[2] = { TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CLAMPCPU2,
-		    TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CPU2PWRDOWN },
-	[3] = { TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CLAMPCPU3,
-		    TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CPU3PWRDOWN },
-};
-
 void nxp_cpu_core_shutdown(int core)
 {
 	printk("cpu.%d shutdown ...\n", core);
-	NX_TIEOFF_Set(core_power[core][0], 1);
-	NX_TIEOFF_Set(core_power[core][1], 1);
+	NX_CLKPWR_SetCPUPowerOff(core);
 }
 
 void nxp_cpu_shutdown(void)

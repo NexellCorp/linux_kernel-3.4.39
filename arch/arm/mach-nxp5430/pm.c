@@ -72,7 +72,7 @@ struct save_gpio {
 	unsigned long alfn[2];		/* 0x20, 0x24 */
 	unsigned long mode[3];		/* 0x08, 0x0C, 0x28 */
 	unsigned long mask;			/* 0x10, 0x3C */
-	unsigned long reg_val[10]; /* 0x40 ~ 0x64 */
+	unsigned long reg_val[10];  /* 0x40 ~ 0x64 */
 };
 
 struct save_l2c {
@@ -248,38 +248,33 @@ static void print_wake_event(void)
 
 static void suspend_cores(suspend_state_t stat)
 {
-	unsigned int core = 0, clamp = 0;
-	unsigned int reset = 0;
 	int cpu = 1, num = nr_cpu_ids;
 
-	for (; num > cpu; cpu++) {
-		switch (cpu) {
-		case 1:	clamp  = TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CLAMPCPU1;
-				core  = TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CPU1PWRDOWN;
-				reset = RESETINDEX_OF_nx01301_CORTEXA9MP_TOP_QUADL2C_MODULE_nCPURESET1;
-				break;
-		case 2:	clamp  = TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CLAMPCPU2;
-				core  = TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CPU2PWRDOWN;
-				reset = RESETINDEX_OF_nx01301_CORTEXA9MP_TOP_QUADL2C_MODULE_nCPURESET2;
-				break;
-		case 3:	clamp  = TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CLAMPCPU3;
-				core  = TIEOFFINDEX_OF_CORTEXA9MP_TOP_QUADL2C_CPU3PWRDOWN;
-				reset = RESETINDEX_OF_nx01301_CORTEXA9MP_TOP_QUADL2C_MODULE_nCPURESET3;
-				break;
-		}
-
 #ifndef CONFIG_SUSPEND_IDLE
-		if (SUSPEND_SUSPEND == stat) {
-			NX_RSTCON_SetBaseAddress(IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
-			NX_RSTCON_SetRST(reset, RSTCON_ASSERT);
+	NX_CLKPWR_SetBaseAddress(IO_ADDRESS(NX_CLKPWR_GetPhysicalAddress()));
+	NX_CLKPWR_SetCPUResetMode(NX_CLKPWR_CPU_RESETMODE_SAFE);
 
-			NX_TIEOFF_Set(clamp, 1);
-			mdelay(1);
-			NX_TIEOFF_Set(core, 1);
-			PM_DBGOUT("Power off cpu.%d\n", cpu);
-		}
-#endif
+	NX_CLKPWR_SetCPUPowerOn32(0x00);
+
+    /*
+     * CCI400 BUS
+     */
+#define CCI_REG __PB_IO_MAP_CCI4_VIRT       // 0xe0090000
+    writel(0x8, (CCI_REG + 0x0000));        // CCI
+    writel(0x0, (CCI_REG + 0x1000));        // S0: coresight
+    writel(0x0, (CCI_REG + 0x2000));        // S1: bottom bus
+    writel(0x0, (CCI_REG + 0x3000));        // S2: top bus
+    writel(0x0, (CCI_REG + 0x4000));        // S3: cpu cluster 1
+    writel(0x0, (CCI_REG + 0x5000));        // S4: cpu cluster 0
+
+	num = 7;
+	for (; num > cpu; cpu++) {
+		NX_CLKPWR_SetCPUPowerOff(cpu);
+		while(NX_CLKPWR_GetCPUPowerOnStatus(cpu));
+
+		PM_DBGOUT("Power off cpu.%d\n", cpu);
 	}
+#endif
 }
 
 #define CHKSTRIDE	(8)
