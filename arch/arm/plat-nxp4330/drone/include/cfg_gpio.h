@@ -262,7 +262,7 @@
 /*------------------------------------------------------------------------------
  *	AUDIO AMP for wm8976
  */
-#define CFG_IO_AUDIO_AMP_POWER				(PAD_GPIO_D + 19)		/* GPIO */
+#define CFG_IO_AUDIO_AMP_POWER				(PAD_GPIO_D + 15)		/* GPIO */
 
 
 #endif	/* __CFG_GPIO_H__ */
