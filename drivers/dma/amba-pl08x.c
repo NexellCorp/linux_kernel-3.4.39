@@ -2095,7 +2095,11 @@ static irqreturn_t pl08x_irq(int irq, void *dev)
 			}
 
 			/* Schedule tasklet on this channel */
+#if !defined(CONFIG_AMBA_PL08X_USE_ISR)
 			tasklet_schedule(&plchan->tasklet);
+#else
+			pl08x_tasklet((unsigned long)plchan);
+#endif
 			mask |= (1 << i);
 		}
 	}

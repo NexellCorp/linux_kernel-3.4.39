@@ -57,6 +57,13 @@ config AMBA_PL08X
 	  Platform has a PL08x DMAC device
 	  which can provide DMA engine support
 
+config AMBA_PL08X_USE_ISR
+	bool "Use ISR instead of IST"
+	depends on AMBA_PL08X
+	default n
+	help
+	  Use ISR instead of IST
+
 config INTEL_IOATDMA
 	tristate "Intel I/OAT DMA support"
 	depends on PCI && X86
