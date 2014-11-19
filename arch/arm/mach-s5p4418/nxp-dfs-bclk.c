@@ -26,7 +26,7 @@
 #include <mach/soc.h>
 #include <mach/nxp-dfs-bclk.h>
 
-#ifdef CONFIG_NEXELL_DFS_BCLK
+#ifdef CONFIG_SLSI_DFS_BCLK
 
 #define BCLK_MIN    120000000
 /*#define BCLK_MIN    100000000*/
@@ -47,7 +47,7 @@ static struct dfs_bclk_manager {
 
     dfs_bclk_func func;
 } dfs_bclk_manager = {
-#ifdef CONFIG_NXP4330_DFS_BCLK_PLL_0
+#ifdef CONFIG_S5P4418_DFS_BCLK_PLL_0
     .bclk_pll_num = 0,
 #else
     .bclk_pll_num = 1,
@@ -909,7 +909,7 @@ static int __init dfs_bclk_init(void)
 module_init(dfs_bclk_init);
 
 MODULE_AUTHOR("swpark <swpark@nexell.co.kr>");
-MODULE_DESCRIPTION("DFS BCLK Manger for NXP4330");
+MODULE_DESCRIPTION("DFS BCLK Manger for S5P4418");
 MODULE_LICENSE("GPL");
 #else
 int bclk_get(uint32_t user) {

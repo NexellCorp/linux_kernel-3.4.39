@@ -23,7 +23,7 @@
 #define HDMI_CORE_BASE(x)		((x) + HDMI_ADDR_OFFSET + 0x00010000)
 #define HDMI_SPDIF_BASE(x)		((x) + HDMI_ADDR_OFFSET + 0x00030000)
 #define HDMI_I2S_BASE(x)		((x) + HDMI_ADDR_OFFSET + 0x00040000)
-/* not used in nxp4330 */
+/* not used in s5p4418 */
 #if 0
 #define HDMI_TG_BASE(x)			((x) + 0x00050000)
 #define HDMI_EFUSE_BASE(x)		((x) + 0x00060000)
@@ -45,7 +45,7 @@
 #define HDMI_HPD			    HDMI_CTRL_BASE(0x0044)
 #define HDMI_HPD_TH_(n)			HDMI_CTRL_BASE(0x0050 + 4 * (n))
 
-/* not used in nxp4330 */
+/* not used in s5p4418 */
 // #define HDMI_AUDIO_CLKSEL		HDMI_CTRL_BASE(0x0070)
 // #define HDMI_PHY_RSTOUT			HDMI_CTRL_BASE(0x0074)
 // #define HDMI_PHY_VPLL			HDMI_CTRL_BASE(0x0078)
@@ -58,7 +58,7 @@
 #define HDMI_CON_2			    HDMI_CORE_BASE(0x008)
 // #define HDMI_SIM_MODE			HDMI_CORE_BASE(0x00C)
 #define HDMI_STATUS			    HDMI_CORE_BASE(0x010)
-// #define HDMI_PHY_STATUS			HDMI_CORE_BASE(0x014) // not used in nxp4330
+// #define HDMI_PHY_STATUS			HDMI_CORE_BASE(0x014) // not used in s5p4418
 #define HDMI_STATUS_EN			HDMI_CORE_BASE(0x020)
 #define HDMI_MODE_SEL			HDMI_CORE_BASE(0x040)
 #define HDMI_ENC_EN			    HDMI_CORE_BASE(0x044)
@@ -389,7 +389,7 @@
 #define HDMI_I2S_CH3_R_2		HDMI_I2S_BASE(0x00D8)
 #define HDMI_I2S_CUV_L_R		HDMI_I2S_BASE(0x00DC)
 
-/* not used in nxp4330 */
+/* not used in s5p4418 */
 #if 0
 /* Timing Generator registers */
 #define HDMI_TG_CMD			HDMI_TG_BASE(0x000)

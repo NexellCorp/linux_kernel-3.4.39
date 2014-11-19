@@ -21,11 +21,6 @@
 /* for nexell specific prototype */
 #include <mach/soc.h>
 #include <mach/platform.h>
-#ifdef CONFIG_ARCH_NXP4330_3200
-#include <mach/nxp3200.h>
-#else
-#include <mach/nxp4330.h>
-#endif
 #include <mach/fourcc.h>
 
 #define	RGB_0_LAYER				0	/* 0: RGB0 layer number */

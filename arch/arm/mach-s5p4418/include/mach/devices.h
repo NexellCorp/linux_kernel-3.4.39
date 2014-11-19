@@ -285,7 +285,7 @@ struct nxp_cpufreq_limit_data {
     int limit_num;
     long aval_max_freq;     /* unit Khz */
     long op_max_freq; 		/* unit Khz */
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
 	long limit_level0_freq; 	/* unit Khz */
 	long limit_level1_freq; 	/* unit Khz */
 	long min_max_freq;			/* unit Khz */
@@ -293,6 +293,21 @@ struct nxp_cpufreq_limit_data {
 #endif
     long sched_duration;	/* unit ms */
     long sched_timeout;		/* unit ms */
+};
+
+/*
+ *  USB HOST (ehci/ohci)
+ */
+struct nxp_ehci_plat_data {
+	int (*phy_init)(struct platform_device *pdev, int type);
+	int (*phy_exit)(struct platform_device *pdev, int type);
+	int (*hsic_phy_pwr_on)(struct platform_device *pdev, bool on);
+	int resume_delay_time;	/* unit ms, more than 100 ms */
+};
+
+struct nxp_ohci_plat_data {
+	int (*phy_init)(struct platform_device *pdev, int type);
+	int (*phy_exit)(struct platform_device *pdev, int type);
 };
 
 #endif    /* __DEVICES_H__ */

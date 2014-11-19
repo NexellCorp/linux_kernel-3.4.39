@@ -84,7 +84,7 @@ struct nxp_adc_info {
 	int support_interrupt;
 	int irq;
 	struct iio_map *map;
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
 	struct iio_dev *iio;
 	struct workqueue_struct *monitoring_wqueue;
 	struct delayed_work monitoring_work;
@@ -161,7 +161,7 @@ extern int iio_map_array_unregister(struct iio_dev *indio_dev, struct iio_map *m
 /*
  * ADC functions
  */
-#ifdef CONFIG_NXP_ADC_INTERRUPT
+#ifdef CONFIG_SLSI_ADC_INTERRUPT
 static irqreturn_t nxp_adc_isr(int irq, void *dev_id)
 {
 	struct nxp_adc_info *adc = (struct nxp_adc_info *)dev_id;
@@ -175,7 +175,7 @@ static irqreturn_t nxp_adc_isr(int irq, void *dev_id)
 }
 #endif
 
-#define	ADC_HW_RESET()		do { nxp_soc_rsc_reset(RESET_ID_ADC); } while (0)
+#define	ADC_HW_RESET()		do { nxp_soc_peri_reset_set(RESET_ID_ADC); } while (0)
 
 static int nxp_adc_setup(struct nxp_adc_info *adc, struct platform_device *pdev)
 {
@@ -205,7 +205,7 @@ static int nxp_adc_setup(struct nxp_adc_info *adc, struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-#ifdef CONFIG_NXP_ADC_INTERRUPT
+#ifdef CONFIG_SLSI_ADC_INTERRUPT
 	irq = platform_get_irq(pdev, 0);
 	if ((irq >= 0) || (NR_IRQS > irq)) {
 		ret = request_irq(irq, nxp_adc_isr, 0, DEV_NAME_ADC, adc);
@@ -335,10 +335,10 @@ static int nxp_adc_resume(struct platform_device *pdev)
 }
 
 
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
 int eBoard_temperature = 0;
 int NXL_Get_BoardTemperature(void)
-{	
+{
 	return eBoard_temperature;
 }
 EXPORT_SYMBOL_GPL(NXL_Get_BoardTemperature);
@@ -385,13 +385,13 @@ static void nxl_monitor_work_func(struct work_struct *work)
 	int voltage_table_interval;
 	int interval;
 	int num_grade;
-	
-	
+
+
 	if (!test_bit(STATE_RESUME_DONE, &adc->resume_state))
 		goto exit_mon;
 
 	chan = &nxp_adc_iio_channels[2];
-	nxp_read_raw(adc->iio, chan, &val, &val2, 0); 
+	nxp_read_raw(adc->iio, chan, &val, &val2, 0);
 
 	adc->tmp_voltage = (18*val*1000)/4096;
 
@@ -419,7 +419,7 @@ static void nxl_monitor_work_func(struct work_struct *work)
 	else
 	{
 		adc->board_temperature = drone_temperature_table[num_grade-1][1];
-		voltage_table_interval = drone_temperature_table[num_grade-1][0] - interval; 
+		voltage_table_interval = drone_temperature_table[num_grade-1][0] - interval;
 		for(; voltage_table_interval>drone_temperature_table[num_grade][0]; voltage_table_interval-=interval)
 		{
 			if(adc->tmp_voltage > voltage_table_interval)
@@ -449,14 +449,14 @@ static void nxl_monitor_work_func(struct work_struct *work)
 			if(adc->isCheckedCount == 3)
 				adc->isValid = 1;
 		}
-		if(adc->isValid == 0) 
+		if(adc->isValid == 0)
 		{
 			queue_delayed_work(adc->monitoring_wqueue, &adc->monitoring_work, HZ);
 			return;
 		}
 	}
 
-	
+
 	// adjust the temperature value .
 	if(adc->prev_board_temperature <= adc->board_temperature)
 	{
@@ -468,7 +468,7 @@ static void nxl_monitor_work_func(struct work_struct *work)
 		else
 		{
 			adc->prev_board_temperature = adc->board_temperature;
-		}	
+		}
 	}
 	else
 	{
@@ -480,11 +480,11 @@ static void nxl_monitor_work_func(struct work_struct *work)
 		else
 		{
 			adc->prev_board_temperature = adc->board_temperature;
-		}	
+		}
 	}
 
 	eBoard_temperature = adc->board_temperature;
-	
+
 exit_mon:
 	queue_delayed_work(adc->monitoring_wqueue, &adc->monitoring_work, HZ);
 
@@ -493,7 +493,7 @@ exit_mon:
 
 static int __devinit nxp_adc_probe(struct platform_device *pdev)
 {
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
 	static struct notifier_block *pm_notifier;
 #endif
 	struct iio_dev *iio = NULL;
@@ -550,7 +550,7 @@ static int __devinit nxp_adc_probe(struct platform_device *pdev)
 
 	adc->map = nxp_adc_iio_maps;
 
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
 	adc->isCheckedCount = 0;
 	adc->isValid = 0;
 	adc->bFirst = 0;

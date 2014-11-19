@@ -39,7 +39,7 @@
 
 #endif	/* ! __ASSEMBLY__ */
 
-#include <mach/nxp4330_iomap.h>
+#include <mach/s5p4418_iomap.h>
 
 #endif	/* __ASM_ARCH_IOMAP_H */
 

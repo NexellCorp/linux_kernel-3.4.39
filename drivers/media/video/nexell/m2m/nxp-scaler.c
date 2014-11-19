@@ -193,7 +193,7 @@ static int _hw_init(struct nxp_scaler *me)
     NX_CLKGEN_SetClockBClkMode(NX_SCALER_GetClockNumber(0), NX_BCLKMODE_ALWAYS);
 #endif
     NX_RSTCON_SetnRST(NX_SCALER_GetResetNumber(0), RSTCON_nENABLE);
-    /* nxp_soc_rsc_reset(NX_SCALER_GetResetNumber(0)); */
+    /* nxp_soc_peri_reset_set(NX_SCALER_GetResetNumber(0)); */
 
     NX_SCALER_SetInterruptEnableAll(0, CFALSE);
     NX_SCALER_ClearInterruptPendingAll(0);

@@ -67,7 +67,7 @@ static int __dwmci_initialize(int ch, ulong rate)
 	int reset = RESET_ID_SDMMC0 + ch;
 	char s[20];
 
-	nxp_soc_rsc_reset(reset);
+	nxp_soc_peri_reset_set(reset);
 
 	sprintf(s, "%s.%d", DEV_NAME_SDHC, ch);
 	clk = clk_get(NULL, s);
@@ -99,13 +99,13 @@ static void __dwmci_resume(struct dw_mci *host)
 		brd->late_resume(host);
 }
 
-#define NXP_DWMCI_PLAT_RES(_ch)		\
+#define DW_MCI_PLAT_RES(_ch)		\
 static struct resource dwmci##_ch##_resource[] = {		\
 	[0] = DEFINE_RES_MEM(PHY_BASEADDR_SDMMC##_ch, SZ_4K),	\
 	[1] = DEFINE_RES_IRQ(IRQ_PHY_SDMMC##_ch),				\
 }
 
-#define NXP_DWMCI_PLAT_DAT(_ch)		\
+#define DW_MCI_PLAT_DAT(_ch)		\
 static struct dw_mci_board dwmci##_ch##_data = {		\
 	.num_slots		= 1,									\
 	.bus_hz			= 100 * 1000 * 1000,					\
@@ -122,7 +122,7 @@ static struct dw_mci_board dwmci##_ch##_data = {		\
 	.clk_dly		= 0,									\
 }
 
-#define NXP_DWMCI_PLAT_DEV(_ch)	\
+#define DW_MCI_PLAT_DEV(_ch)	\
 /*static*/ struct platform_device dwmci_dev_ch##_ch = {		\
 	.name			= "dw_mmc",								\
 	.id				= _ch,									\
@@ -136,36 +136,36 @@ static struct dw_mci_board dwmci##_ch##_data = {		\
 	},														\
 }
 
-#define	NXP_DWMCI_ITEM_CHECK(src, dst, item)	\
+#define	DW_MCI_ITEM_CHECK(src, dst, item)	\
 	if(src->item && src->item != dst->item)		\
 		dst->item = src->item;
 
-#ifdef CONFIG_MMC_NEXELL_CH0
-NXP_DWMCI_PLAT_RES(0);
-NXP_DWMCI_PLAT_DAT(0);
-NXP_DWMCI_PLAT_DEV(0);
+#ifdef CONFIG_MMC_SLSI_CH0
+DW_MCI_PLAT_RES(0);
+DW_MCI_PLAT_DAT(0);
+DW_MCI_PLAT_DEV(0);
 #endif
 
-#ifdef CONFIG_MMC_NEXELL_CH1
-NXP_DWMCI_PLAT_RES(1);
-NXP_DWMCI_PLAT_DAT(1);
-NXP_DWMCI_PLAT_DEV(1);
+#ifdef CONFIG_MMC_SLSI_CH1
+DW_MCI_PLAT_RES(1);
+DW_MCI_PLAT_DAT(1);
+DW_MCI_PLAT_DEV(1);
 #endif
 
-#ifdef CONFIG_MMC_NEXELL_CH2
-NXP_DWMCI_PLAT_RES(2);
-NXP_DWMCI_PLAT_DAT(2);
-NXP_DWMCI_PLAT_DEV(2);
+#ifdef CONFIG_MMC_SLSI_CH2
+DW_MCI_PLAT_RES(2);
+DW_MCI_PLAT_DAT(2);
+DW_MCI_PLAT_DEV(2);
 #endif
 
 static struct platform_device *dwmci_devices[] = {
-#if defined(CONFIG_MMC_NEXELL_CH0)
+#if defined(CONFIG_MMC_SLSI_CH0)
 	&dwmci_dev_ch0,
 #endif
-#if defined(CONFIG_MMC_NEXELL_CH1)
+#if defined(CONFIG_MMC_SLSI_CH1)
 	&dwmci_dev_ch1,
 #endif
-#if defined(CONFIG_MMC_NEXELL_CH2)
+#if defined(CONFIG_MMC_SLSI_CH2)
 	&dwmci_dev_ch2,
 #endif
 };
@@ -188,43 +188,43 @@ void __init nxp_mmc_add_device(int ch, struct dw_mci_board *mci)
 		return;
 	}
 
-	NXP_DWMCI_ITEM_CHECK(mci, dst, num_slots);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, quirks);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, bus_hz);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, max_bus_hz);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, caps);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, caps2);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, pm_caps);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, fifo_depth);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, detect_delay_ms);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, init);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, get_ro);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, get_cd);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, get_ocr);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, get_bus_wd);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, cfg_gpio);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, hw_reset);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, set_io_timing);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, sdr_timing);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, ddr_timing);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, clk_drv);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, clk_smpl);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, tuned);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, cd_type);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, ext_cd_init);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, ext_cd_cleanup);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, setpower);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, exit);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, select_slot);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, dma_ops);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, data);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, blk_settings);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, clk_dly);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, suspend);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, resume);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, late_resume);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, hs_over_clk);
-	NXP_DWMCI_ITEM_CHECK(mci, dst, hw_timeout);
+	DW_MCI_ITEM_CHECK(mci, dst, num_slots);
+	DW_MCI_ITEM_CHECK(mci, dst, quirks);
+	DW_MCI_ITEM_CHECK(mci, dst, bus_hz);
+	DW_MCI_ITEM_CHECK(mci, dst, max_bus_hz);
+	DW_MCI_ITEM_CHECK(mci, dst, caps);
+	DW_MCI_ITEM_CHECK(mci, dst, caps2);
+	DW_MCI_ITEM_CHECK(mci, dst, pm_caps);
+	DW_MCI_ITEM_CHECK(mci, dst, fifo_depth);
+	DW_MCI_ITEM_CHECK(mci, dst, detect_delay_ms);
+	DW_MCI_ITEM_CHECK(mci, dst, init);
+	DW_MCI_ITEM_CHECK(mci, dst, get_ro);
+	DW_MCI_ITEM_CHECK(mci, dst, get_cd);
+	DW_MCI_ITEM_CHECK(mci, dst, get_ocr);
+	DW_MCI_ITEM_CHECK(mci, dst, get_bus_wd);
+	DW_MCI_ITEM_CHECK(mci, dst, cfg_gpio);
+	DW_MCI_ITEM_CHECK(mci, dst, hw_reset);
+	DW_MCI_ITEM_CHECK(mci, dst, set_io_timing);
+	DW_MCI_ITEM_CHECK(mci, dst, sdr_timing);
+	DW_MCI_ITEM_CHECK(mci, dst, ddr_timing);
+	DW_MCI_ITEM_CHECK(mci, dst, clk_drv);
+	DW_MCI_ITEM_CHECK(mci, dst, clk_smpl);
+	DW_MCI_ITEM_CHECK(mci, dst, tuned);
+	DW_MCI_ITEM_CHECK(mci, dst, cd_type);
+	DW_MCI_ITEM_CHECK(mci, dst, ext_cd_init);
+	DW_MCI_ITEM_CHECK(mci, dst, ext_cd_cleanup);
+	DW_MCI_ITEM_CHECK(mci, dst, setpower);
+	DW_MCI_ITEM_CHECK(mci, dst, exit);
+	DW_MCI_ITEM_CHECK(mci, dst, select_slot);
+	DW_MCI_ITEM_CHECK(mci, dst, dma_ops);
+	DW_MCI_ITEM_CHECK(mci, dst, data);
+	DW_MCI_ITEM_CHECK(mci, dst, blk_settings);
+	DW_MCI_ITEM_CHECK(mci, dst, clk_dly);
+	DW_MCI_ITEM_CHECK(mci, dst, suspend);
+	DW_MCI_ITEM_CHECK(mci, dst, resume);
+	DW_MCI_ITEM_CHECK(mci, dst, late_resume);
+	DW_MCI_ITEM_CHECK(mci, dst, hs_over_clk);
+	DW_MCI_ITEM_CHECK(mci, dst, hw_timeout);
 
 	printk("plat: add device sdmmc [%d]\n", ch);
     platform_device_register(dwmci_devices[id]);

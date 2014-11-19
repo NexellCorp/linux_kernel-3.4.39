@@ -27,7 +27,6 @@
 #include <mach/iomap.h>
 #else
 #include <mach/platform.h>
-#include <mach/nxp4330.h>
 #include <mach/soc.h>
 #endif
 

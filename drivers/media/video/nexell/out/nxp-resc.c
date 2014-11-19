@@ -16,7 +16,6 @@
 
 #include <mach/soc.h>
 #include <mach/platform.h>
-#include <mach/nxp4330.h>
 
 #define FIXED_POINT     (65536)
 #define SOFT_V          (8)

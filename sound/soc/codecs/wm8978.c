@@ -1043,7 +1043,7 @@ static int wm8978_hw_params(struct snd_pcm_substream *substream,
 			/* Clock CODEC directly from MCLK */
 			snd_soc_update_bits(codec, WM8978_CLOCKING, 0x100, 0);
 	}
-#if defined(CONFIG_PLAT_NXP4330_DRONE)   //drone use differential output of momo mix of DACs
+#if defined(CONFIG_PLAT_S5P4418_DRONE)   //drone use differential output of momo mix of DACs
     snd_soc_update_bits(codec, WM8978_BEEP_CONTROL,(1<<4),(1<<4));
     snd_soc_update_bits(codec, WM8978_OUTPUT_CONTROL,(1<<2),(1<<2));
 #endif
@@ -1056,7 +1056,7 @@ static int wm8978_mute(struct snd_soc_dai *dai, int mute)
 
 	pr_debug("%s: %d\n", __func__, mute);
 
-#if defined(CONFIG_PLAT_NXP4330_DRONE)   //Drone do not mute to avoid "popo" noise.
+#if defined(CONFIG_PLAT_S5P4418_DRONE)   //Drone do not mute to avoid "popo" noise.
     /* HP */
 	snd_soc_update_bits(codec, WM8978_LOUT1_HP_CONTROL, 0x40, 0x0);
 	snd_soc_update_bits(codec, WM8978_ROUT1_HP_CONTROL, 0x40, 0x0);

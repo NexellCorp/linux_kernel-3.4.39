@@ -675,7 +675,7 @@ static int ehci_hub_control (
 	unsigned long	flags;
 	int		retval = 0;
 	unsigned	selector;
-#if defined(CONFIG_USB_HSIC_NXP4330)
+#if defined(CONFIG_USB_HSIC_SLSI_SYNOPSYS)
 	u32		temp_hsic;
 #endif
 
@@ -762,7 +762,7 @@ static int ehci_hub_control (
 				ehci_writel(ehci,
 					  temp & ~(PORT_RWC_BITS | PORT_POWER),
 					  status_reg);
-#if defined(CONFIG_USB_HSIC_NXP4330)
+#if defined(CONFIG_USB_HSIC_SLSI_SYNOPSYS)
 				if( status_reg == 0xf0030058)
 				{
 					printk("====HSIC Port Power Off!!!!====\n");
@@ -829,7 +829,7 @@ static int ehci_hub_control (
 					temp & ~(PORT_RWC_BITS | PORT_POWER),
 					status_reg);
 				temp = ehci_readl(ehci, status_reg);
-#if defined(CONFIG_USB_HSIC_NXP4330)
+#if defined(CONFIG_USB_HSIC_SLSI_SYNOPSYS)
 				if( status_reg == 0xf0030058)
 				{
 					printk("====HSIC Port Power Off!!!!====\n");
@@ -1027,7 +1027,7 @@ static int ehci_hub_control (
 			if (HCS_PPC (ehci->hcs_params)){
 				ehci_writel(ehci, temp | PORT_POWER,
 						status_reg);
-#if defined(CONFIG_USB_HSIC_NXP4330)
+#if defined(CONFIG_USB_HSIC_SLSI_SYNOPSYS)
 				if( status_reg == 0xf0030058)
 				{
 					printk("====HSIC Port Power On!!!!====\n");

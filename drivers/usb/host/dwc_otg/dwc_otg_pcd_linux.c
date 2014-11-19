@@ -361,11 +361,11 @@ static int ep_queue(struct usb_ep *usb_ep, struct usb_request *usb_req,
 	if (GET_CORE_IF(pcd)->dma_enable) {
                 dwc_otg_device_t *otg_dev = gadget_wrapper->pcd->otg_dev;
                 struct device *dev = NULL;
-                
+
                 if (otg_dev != NULL)
                         dev = DWC_OTG_OS_GETDEV(otg_dev->os_dep);
 				if (usb_req->length != 0 &&
-#if defined(CONFIG_ARCH_CPU_NEXELL)
+#if defined(CONFIG_ARCH_CPU_SLSI)
 					!((unsigned int)usb_req->buf & 0x3) &&
 #endif
                     usb_req->dma == DWC_DMA_ADDR_INVALID)
@@ -663,7 +663,7 @@ static struct usb_ep_ops dwc_otg_pcd_ep_ops = {
 	/* .set_wedge = ep_wedge, */
         .set_wedge = NULL, /* uses set_halt instead */
 #endif
-        
+
 	.queue = ep_queue,
 	.dequeue = ep_dequeue,
 
@@ -739,7 +739,7 @@ static int wakeup(struct usb_gadget *gadget)
 	return 0;
 }
 
-#if defined(CONFIG_ARCH_CPU_NEXELL)
+#if defined(CONFIG_ARCH_CPU_SLSI)
 static void dwc_otg_pcd_softconnect(dwc_otg_pcd_t * pcd, int is_set)
 {
 	dwc_otg_core_if_t *core_if = GET_CORE_IF(pcd);
@@ -840,7 +840,7 @@ err:
     return retval;
 }
 
-#if defined(CONFIG_ARCH_CPU_NEXELL)
+#if defined(CONFIG_ARCH_CPU_SLSI)
 static void dwc_udc_disable(struct gadget_wrapper *dev)
 {
 	dwc_otg_core_if_t *core_if = GET_CORE_IF(gadget_wrapper->pcd);
@@ -865,7 +865,7 @@ static void dwc_udc_disable(struct gadget_wrapper *dev)
 static int dwc_udc_stop(struct usb_gadget_driver *driver)
 {
 	DWC_DEBUGPL(DBG_PCD, "dwc_pcd [%d] %s\n", __LINE__, __func__);
-#if defined(CONFIG_ARCH_CPU_NEXELL)
+#if defined(CONFIG_ARCH_CPU_SLSI)
 	/* check error */
     if (!gadget_wrapper) {
         printk(KERN_ERR "%s: No gadget_wrapper\n", __func__);
@@ -900,7 +900,7 @@ static const struct usb_gadget_ops dwc_otg_pcd_ops = {
 	.lpm_support = test_lpm_enabled,
 #endif
 	// current versions must always be self-powered
-#if defined(CONFIG_ARCH_CPU_NEXELL)
+#if defined(CONFIG_ARCH_CPU_SLSI)
 	.pullup = dwc_udc_pullup,
 	.vbus_session = dwc_vbus_enable,
 	.vbus_draw = dwc_vbus_draw,
@@ -1036,7 +1036,7 @@ static int _xisoc_complete(dwc_otg_pcd_t * pcd, void *ep_handle,
 static int _complete(dwc_otg_pcd_t * pcd, void *ep_handle,
 		     void *req_handle, int32_t status, uint32_t actual)
 {
-#if !defined(CONFIG_ARCH_CPU_NEXELL)
+#if !defined(CONFIG_ARCH_CPU_SLSI)
 	struct usb_request *req = (struct usb_request *)req_handle;
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,27)
 	struct dwc_otg_pcd_ep *ep = NULL;
@@ -1082,7 +1082,7 @@ static int _complete(dwc_otg_pcd_t * pcd, void *ep_handle,
                 }
 	}
 #endif
-#else /* !CONFIG_ARCH_CPU_NEXELL */
+#else /* !CONFIG_ARCH_CPU_SLSI */
 	dwc_otg_pcd_request_t *dwc_otg_req = (dwc_otg_pcd_request_t *)req_handle;
 	struct usb_request *req = dwc_otg_req->priv;
 	struct dwc_otg_pcd_ep *ep = NULL;
@@ -1142,7 +1142,7 @@ static int _complete(dwc_otg_pcd_t * pcd, void *ep_handle,
 	req->complete(ep_handle, req);
 	DWC_SPINLOCK(pcd->lock);
 
-#endif /* CONFIG_ARCH_CPU_NEXELL */
+#endif /* CONFIG_ARCH_CPU_SLSI */
 	return 0;
 }
 
@@ -1484,7 +1484,7 @@ int pcd_init(dwc_bus_dev_t *_dev)
 
 	dwc_otg_pcd_start(gadget_wrapper->pcd, &fops);
 
-#if defined(CONFIG_ARCH_CPU_NEXELL)
+#if defined(CONFIG_ARCH_CPU_SLSI)
     retval = usb_add_gadget_udc(&_dev->dev, &gadget_wrapper->gadget);
     if (retval) {
         printk(KERN_ERR "%s: failed to usb_add_gadget_udc() %d\n", __func__, retval);

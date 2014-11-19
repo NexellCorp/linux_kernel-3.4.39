@@ -46,7 +46,7 @@ static struct attribute * g[] = {
 };
 
 static struct attribute_group attr_group = {
-    .attrs = g, 
+    .attrs = g,
 };
 
 
@@ -60,7 +60,7 @@ static ssize_t ppm_duty(struct kobject *kobj, struct kobj_attribute *attr, char 
 	int duty,invert;
 	char *s  = buf;
 	ssize_t status;
-	struct nxp_rc_dev *nxp_dev = nxp_ppm_dev; 
+	struct nxp_rc_dev *nxp_dev = nxp_ppm_dev;
 	for(i=0; i<RAW_BUFFER_SIZE; i++)
 	{
 		if(nxp_dev->data.ev[i].pulse == 0){
@@ -91,7 +91,7 @@ static void ppm_irq_work(struct work_struct *work)
 	int i=0;
 	struct nxp_rc_dev *nxp_dev = container_of(work, struct nxp_rc_dev, ppm_event_work);
 	DEFINE_IR_RAW_EVENT(ev);
-	
+
 	if(!nxp_dev->data.count)
 		return;
 
@@ -101,7 +101,7 @@ static void ppm_irq_work(struct work_struct *work)
 		ir_raw_event_store(nxp_dev->rcdev, &nxp_dev->data.ev[i]);
 		ir_raw_event_handle(nxp_dev->rcdev);
 	}
-	
+
 	if(NX_PPM_IsHighOverflow(0))
 		ev.pulse = true;//true;
 	else
@@ -157,22 +157,20 @@ static int __devinit nxp_ir_recv_probe(struct platform_device *pdev)
 					pdev->dev.platform_data;
 	int rc, clk;
 	char id[32] = {0};
-	struct kobject * kobj;     
+	struct kobject * kobj;
 
 	if (!pdata)
 		return -EINVAL;
 
-	nxp_soc_rsc_reset(RESET_ID_PPM);
+	nxp_soc_peri_reset_set(RESET_ID_PPM);
+   	clk = clk_get(NULL, DEV_NAME_PPM);
+	clk_set_rate(clk, CFG_PPM_CLK);
+	clk_enable(clk);
 
-    	clk = clk_get(NULL, DEV_NAME_PPM);
-		clk_set_rate(clk, CFG_PPM_CLK);
-        clk_enable(clk);
-
-        NX_PPM_Initialize();
-        NX_PPM_SetBaseAddress(0, (U32)IO_ADDRESS(NX_PPM_GetPhysicalAddress(0)));
+    NX_PPM_Initialize();
+    NX_PPM_SetBaseAddress(0, (U32)IO_ADDRESS(NX_PPM_GetPhysicalAddress(0)));
 
 //	NX_PPM_OpenModule(0);
-
 	nxp_dev = kzalloc(sizeof(struct nxp_rc_dev), GFP_KERNEL);
 	if (!nxp_dev)
 		return -ENOMEM;
@@ -189,7 +187,6 @@ static int __devinit nxp_ir_recv_probe(struct platform_device *pdev)
 	rcdev->input_id.bustype = BUS_HOST;
 	rcdev->driver_name = DEV_NAME_PPM;
 	rcdev->map_name = RC_MAP_NEC_TERRATEC_CINERGY_XS;
-
 
 	nxp_dev->rcdev = rcdev;
 	nxp_dev->data.count = 0;

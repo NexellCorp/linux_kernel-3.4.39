@@ -2,10 +2,10 @@
 # Copyright 2009 Nexell Co.
 #
 # Makefile for the Nexell Sound
-obj-$(CONFIG_SND_NEXELL_SOC)	  += nxp-snd-pcm.o
-obj-$(CONFIG_SND_NEXELL_I2S)	  += nxp-snd-i2s.o
-obj-$(CONFIG_SND_NEXELL_SPDIF_TX) += nxp-snd-spdiftx.o
-obj-$(CONFIG_SND_NEXELL_SPDIF_RX) += nxp-snd-spdifrx.o
+obj-$(CONFIG_SND_SLSI_SOC)	  += nxp-snd-pcm.o
+obj-$(CONFIG_SND_SLSI_I2S)	  += nxp-snd-i2s.o
+obj-$(CONFIG_SND_SLSI_SPDIF_TX) += nxp-snd-spdiftx.o
+obj-$(CONFIG_SND_SLSI_SPDIF_RX) += nxp-snd-spdifrx.o
 
 nxp-snd-pcm-objs		:= nxp-pcm.o
 nxp-snd-i2s-objs 		:= nxp-i2s.o

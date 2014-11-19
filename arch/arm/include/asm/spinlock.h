@@ -18,6 +18,7 @@
 	"	" up "\n"					\
 	"	.popsection\n"
 
+ifndef CONFIG_ARCH_S5P6818
 #ifdef CONFIG_THUMB2_KERNEL
 #define SEV		ALT_SMP("sev.w", "nop.w")
 /*
@@ -40,6 +41,10 @@
 #else
 #define SEV		ALT_SMP("sev", "nop")
 #define WFE(cond)	ALT_SMP("wfe" cond, "nop")
+#endif
+#else
+#define SEV
+#define WFE(cond)
 #endif
 
 static inline void dsb_sev(void)

@@ -183,7 +183,7 @@ static struct dwc_otg_driver_module_params dwc_otg_module_params = {
 	.opt = -1,
 	.otg_cap = -1,
 	.dma_enable = -1,
-#ifdef CONFIG_ARCH_CPU_NEXELL
+#ifdef CONFIG_ARCH_CPU_SLSI
 	.dma_desc_enable = -1,
 #else
 	.dma_desc_enable = -1,
@@ -195,7 +195,7 @@ static struct dwc_otg_driver_module_params dwc_otg_module_params = {
 	.enable_dynamic_fifo = -1,
 	.data_fifo_size = -1,
 	.dev_rx_fifo_size = -1,
-#ifdef CONFIG_ARCH_CPU_NEXELL
+#ifdef CONFIG_ARCH_CPU_SLSI
     .dev_nperio_tx_fifo_size = 0x200,
 #else
     .dev_nperio_tx_fifo_size = -1,
@@ -234,7 +234,7 @@ static struct dwc_otg_driver_module_params dwc_otg_module_params = {
 	.ulpi_fs_ls = -1,
 	.ts_dline = -1,
 	.en_multiple_tx_fifo = -1,
-#ifdef CONFIG_ARCH_CPU_NEXELL
+#ifdef CONFIG_ARCH_CPU_SLSI
 	.dev_tx_fifo_size = {
 			     /* dev_tx_fifo_size */
         		0x200,
@@ -292,7 +292,7 @@ static struct dwc_otg_driver_module_params dwc_otg_module_params = {
 	.adp_enable = -1,
 };
 
-#ifdef CONFIG_ARCH_CPU_NEXELL
+#ifdef CONFIG_ARCH_CPU_SLSI
 bool fiq_fix_enable = false;		// false
 bool fiq_split_enable = false;		// false
 bool nak_holdoff_enable = true;
@@ -313,7 +313,7 @@ bool fiq_split_enable = true;
 bool nak_holdoff_enable = true;
 #endif
 
-#ifdef CONFIG_ARCH_CPU_NEXELL
+#ifdef CONFIG_ARCH_CPU_SLSI
 static dwc_otg_core_global_regs_t save_global_regs = {0, };
 
 static void dwc_otg_driver_suspend_regs(dwc_otg_core_if_t *core_if, int suspend)
@@ -457,7 +457,7 @@ static int dwc_otg_driver_resume(struct platform_device *_dev )
     DWC_DEBUGPL(DBG_ANY,"- %s\n", __func__);
     return 0;
 }
-#endif	/* CONFIG_ARCH_CPU_NEXELL */
+#endif	/* CONFIG_ARCH_CPU_SLSI */
 
 /**
  * This function shows the Driver Version.
@@ -1003,7 +1003,7 @@ static int dwc_otg_driver_probe(
         if (!request_mem_region(_dev->resource[0].start,
                                 _dev->resource[0].end - _dev->resource[0].start + 1,
                                 "dwc_otg")) {
-#ifndef CONFIG_ARCH_CPU_NEXELL
+#ifndef CONFIG_ARCH_CPU_SLSI
           dev_dbg(&_dev->dev, "error reserving mapped memory 0(0x%x~0x%x)\n",
           	_dev->resource[0].start, _dev->resource[0].end);
           retval = -EFAULT;
@@ -1031,7 +1031,7 @@ static int dwc_otg_driver_probe(
 		dummy_send = (void *) kmalloc(16, GFP_ATOMIC);
 	}
 
-#ifdef CONFIG_ARCH_CPU_NEXELL
+#ifdef CONFIG_ARCH_CPU_SLSI
     otg_clk_enable();
     otg_phy_init();
 #endif
@@ -1255,7 +1255,7 @@ static struct pci_driver dwc_otg_driver = {
 		   },
 };
 #elif defined(PLATFORM_INTERFACE)
-#ifndef CONFIG_ARCH_CPU_NEXELL
+#ifndef CONFIG_ARCH_CPU_SLSI
 static struct platform_device_id platform_ids[] = {
         {
               .name = "bcm2708_usb",
@@ -1270,12 +1270,12 @@ static struct platform_driver dwc_otg_driver = {
 	.driver = {
 		.name = (char *)dwc_driver_name,
 		},
-	#ifndef CONFIG_ARCH_CPU_NEXELL
+	#ifndef CONFIG_ARCH_CPU_SLSI
         .id_table = platform_ids,
 	#endif
 	.probe = dwc_otg_driver_probe,
 	.remove = dwc_otg_driver_remove,
-#ifdef CONFIG_ARCH_CPU_NEXELL
+#ifdef CONFIG_ARCH_CPU_SLSI
 	.suspend = dwc_otg_driver_suspend,
 	.resume = dwc_otg_driver_resume,
 #endif

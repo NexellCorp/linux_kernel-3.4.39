@@ -115,11 +115,11 @@ static void _hw_run(struct nxp_csi *me)
             (u32)IO_ADDRESS(NX_CLKGEN_GetPhysicalAddress(NX_MIPI_GetClockNumber(me->module))));
     NX_CLKGEN_SetClockDivisorEnable(NX_MIPI_GetClockNumber(me->module), CTRUE);
 
-    nxp_soc_rsc_enter(RESET_ID_MIPI);
-    nxp_soc_rsc_enter(RESET_ID_MIPI_CSI);
-    nxp_soc_rsc_enter(RESET_ID_MIPI_PHY_S);
-    nxp_soc_rsc_exit(RESET_ID_MIPI);
-    nxp_soc_rsc_exit(RESET_ID_MIPI_CSI);
+    nxp_soc_peri_reset_enter(RESET_ID_MIPI);
+    nxp_soc_peri_reset_enter(RESET_ID_MIPI_CSI);
+    nxp_soc_peri_reset_enter(RESET_ID_MIPI_PHY_S);
+    nxp_soc_peri_reset_exit(RESET_ID_MIPI);
+    nxp_soc_peri_reset_exit(RESET_ID_MIPI_CSI);
 
     NX_MIPI_OpenModule(me->module);
     NX_MIPI_SetInterruptEnableAll(me->module, CFALSE);
@@ -156,7 +156,7 @@ static void _hw_run(struct nxp_csi *me)
             );
     NX_MIPI_CSI_SetEnable(me->module, CTRUE);
 
-    nxp_soc_rsc_exit(RESET_ID_MIPI_PHY_S);
+    nxp_soc_peri_reset_exit(RESET_ID_MIPI_PHY_S);
 
     /* NX_MIPI_DSI_SetPLL( me->module, */
     /*                     CTRUE,       // CBOOL Enable      , */

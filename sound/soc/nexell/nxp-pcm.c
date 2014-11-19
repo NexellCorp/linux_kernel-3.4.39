@@ -198,7 +198,7 @@ static void nxp_pcm_dma_complete(void *arg)
 			prtd->offset += snd_pcm_lib_period_bytes(substream);
 			if (prtd->offset >= snd_pcm_lib_buffer_bytes(substream))
 				prtd->offset = 0;
-	
+
 			nxp_pcm_file_mem_write(substream);
 			snd_pcm_period_elapsed(substream);
 		}
@@ -631,6 +631,6 @@ module_init(nxp_pcm_init);
 module_exit(nxp_pcm_exit);
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound PCM driver for the Nexell");
+MODULE_DESCRIPTION("Sound PCM driver for the SLSI");
 MODULE_LICENSE("GPL");
 

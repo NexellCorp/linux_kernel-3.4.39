@@ -36,7 +36,7 @@
 
 static struct map_desc cpu_iomap_desc[] =
 {
-	#include <mach/nxp4330_iomap.h>
+	#include <mach/s5p4418_iomap.h>
 };
 
 #endif	/* __ASM_ARCH_MAP_DESC_H */

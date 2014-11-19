@@ -1,6 +1,6 @@
-if VIDEO_NXP_M2M
+if VIDEO_SLSI_M2M
 
-config NXP_M2M_SCALER
+config SLSI_M2M_SCALER
     bool "Enable scaler"
     default n
     ---help---
@@ -8,19 +8,19 @@ config NXP_M2M_SCALER
 
 config ENABLE_SCALER_MISC_DEVICE
     bool "Enable scaler misc device"
-    depends on NXP_M2M_SCALER
+    depends on SLSI_M2M_SCALER
     default n
     ---help---
       Say y here to enable scaler misc device
 
 config USE_SCALER_COMMAND_BUFFER
     bool "Use scaler command buffer engine"
-    depends on NXP_M2M_SCALER
+    depends on SLSI_M2M_SCALER
     default n
     ---help---
       Say y here to use command buffer engine
 
-config NXP_M2M_DEINTERLACER
+config SLSI_M2M_DEINTERLACER
     bool "Enable deinterlacer"
     default n
     ---help---

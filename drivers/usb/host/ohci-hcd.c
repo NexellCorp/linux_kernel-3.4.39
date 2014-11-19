@@ -1064,8 +1064,8 @@ MODULE_LICENSE ("GPL");
 #define PLATFORM_DRIVER		ohci_hcd_sh_driver
 #endif
 
-#ifdef CONFIG_USB_OHCI_NXP4330
-#include "ohci-nxp4330.c"
+#ifdef CONFIG_USB_OHCI_SLSI_SYNOPSYS
+#include "ohci-slsi-synop.c"
 #define PLATFORM_DRIVER		nxp_ohci_driver
 #endif
 

@@ -1,6 +1,6 @@
 /*
  */
-#include "nxp4330_irq.h"
+#include "s5p4418_irq.h"
 
 #define GPIO_NUM_PER_BANK	32
 #define ARCH_NR_GPIOS 		(GPIO_NUM_PER_BANK * 6)	/* For GPIO A, B, C, D, E, ALVIE */

@@ -129,7 +129,7 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
 void stmmac_disable_eee_mode(struct stmmac_priv *priv);
 bool stmmac_eee_init(struct stmmac_priv *priv);
 
-#ifdef CONFIG_NXPMAC_PLATFORM
+#ifdef CONFIG_SLSI_MAC_PLATFORM
 extern struct platform_driver stmmac_pltfr_driver;
 static inline int stmmac_register_platform(void)
 {
@@ -157,9 +157,9 @@ static inline int stmmac_register_platform(void)
 static inline void stmmac_unregister_platform(void)
 {
 }
-#endif /* CONFIG_NXPMAC_PLATFORM */
+#endif /* CONFIG_SLSI_MAC_PLATFORM */
 
-#ifdef CONFIG_NXPMAC_PCI
+#ifdef CONFIG_SLSI_MAC_PCI
 extern struct pci_driver stmmac_pci_driver;
 static inline int stmmac_register_pci(void)
 {
@@ -187,6 +187,6 @@ static inline int stmmac_register_pci(void)
 static inline void stmmac_unregister_pci(void)
 {
 }
-#endif /* CONFIG_NXPMAC_PCI */
+#endif /* CONFIG_SLSI_MAC_PCI */
 
 #endif /* __STMMAC_H__ */

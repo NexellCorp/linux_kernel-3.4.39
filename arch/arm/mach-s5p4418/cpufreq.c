@@ -26,7 +26,7 @@
 #include <linux/delay.h>
 #include <mach/platform.h>
 
-#ifdef CONFIG_ARM_NXP4330_CPUFREQ_DEBUG
+#ifdef CONFIG_ARM_SLSI_CPUFREQ_DEBUG
 #define	DBGOUT(msg...)		printk(msg)
 #else
 #define	DBGOUT(msg...)
@@ -226,7 +226,7 @@ unsigned long nxp_cpu_pll_change_frequency(int pllno, unsigned long rate)
 	int p = 0, m = 0, s = 0;
 	unsigned long freq;
 
-#ifdef CONFIG_NEXELL_DFS_BCLK
+#ifdef CONFIG_SLSI_DFS_BCLK
     mdelay(1);
 #endif
 
@@ -240,7 +240,7 @@ unsigned long nxp_cpu_pll_change_frequency(int pllno, unsigned long rate)
     preempt_enable();
     local_irq_enable();
 
-#ifdef CONFIG_NEXELL_DFS_BCLK
+#ifdef CONFIG_SLSI_DFS_BCLK
     mdelay(1);
 #endif
 

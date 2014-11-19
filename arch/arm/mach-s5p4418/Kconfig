@@ -2,41 +2,41 @@
 # Copyright 2009 Nexell.
 #
 
-config ARCH_CPU_NEXELL
+config ARCH_CPU_SLSI
 	bool
 	default y
 
 choice
 	prompt "Prototype build mode"
-	default PROTOTYPE_RELEASE
+	default S5P4418_PROTO_RELEASE
 
-config  PROTOTYPE_RELEASE
+config  S5P4418_PROTO_RELEASE
 	bool "Release"
 
-config  PROTOTYPE_DEBUG
+config  S5P4418_PROTO_DEBUG
 	bool "Debug"
 endchoice
 
 choice
 	prompt "Memory max order"
-	default MEM_MAX_ORDER_11
+	default S5P4418_MEM_MAX_ORDER_11
 
-config	MEM_MAX_ORDER_11
+config	S5P4418_MEM_MAX_ORDER_11
 	bool "4Mbyte"
 
-config	MEM_MAX_ORDER_12
+config	S5P4418_MEM_MAX_ORDER_12
     bool "8Mbyte"
 
-config	MEM_MAX_ORDER_13
+config	S5P4418_MEM_MAX_ORDER_13
 	bool "16Mbyte"
 
 endchoice
 
 config FORCE_MAX_ZONEORDER
    	int
-   	default 11 if MEM_MAX_ORDER_11
-   	default 12 if MEM_MAX_ORDER_12
-   	default 13 if MEM_MAX_ORDER_13
+   	default 11 if S5P4418_MEM_MAX_ORDER_11
+   	default 12 if S5P4418_MEM_MAX_ORDER_12
+   	default 13 if S5P4418_MEM_MAX_ORDER_13
 
 comment "CPU feature"
 
@@ -52,7 +52,7 @@ config PM_DBGOUT
 config HAVE_PWM
 	prompt "PWM driver"
 	bool
-	select NEXELL_SOC_PWM
+	select SLSI_SOC_PWM
 	default y
 
 config PWM_SYSFS
@@ -80,40 +80,40 @@ config HAVE_PWM_CH3
 	depends on HAVE_PWM
 	default n
 
-config NEXELL_SOC_PWM
+config SLSI_SOC_PWM
 	bool "Support PWM SoC"
 	default y if HAVE_PWM
 
-config NEXELL_DISPLAY
+config SLSI_DISPLAY
 	bool "Support Display SoC"
 	default n
 
-config NEXELL_DISPLAY_1ST
+config SLSI_DISPLAY_1ST
 	bool "Primary   display output (MLC0/DPC0)"
-	depends on NEXELL_DISPLAY
+	depends on SLSI_DISPLAY
 
-config NEXELL_DISPLAY_2ST
+config SLSI_DISPLAY_2ST
 	bool "Secondary display output (MLC1/DPC1)"
-	depends on NEXELL_DISPLAY
+	depends on SLSI_DISPLAY
 
-config NEXELL_DISPLAY_RESCONV
+config SLSI_DISPLAY_RESCONV
 	bool "Resolution Converter"
-	depends on NEXELL_DISPLAY
+	depends on SLSI_DISPLAY
 	default n
 
-config NEXELL_DFS_BCLK
+config SLSI_DFS_BCLK
     bool "DFS For BCLK"
     default n
 
 choice
     prompt "Select BCLK PLL device"
-    depends on NEXELL_DFS_BCLK
-    default NXP4330_DFS_BCLK_PLL_0
+    depends on SLSI_DFS_BCLK
+    default S5P4418_DFS_BCLK_PLL_0
 
-config NXP4330_DFS_BCLK_PLL_0
+config S5P4418_DFS_BCLK_PLL_0
     bool "PLL 0"
 
-config NXP4330_DFS_BCLK_PLL_1
+config S5P4418_DFS_BCLK_PLL_1
     bool "PLL 1"
 
 endchoice
@@ -128,7 +128,6 @@ config ANDROID_PERSISTENT_RAM_CONS_SIZE
     depends on ANDROID_RAM_CONSOLE
     default 16
 
-source "kernel/Kconfig.hz"
-source "arch/arm/plat-nxp4330/Kconfig"
+source "arch/arm/plat-s5p4418/Kconfig"
 
 

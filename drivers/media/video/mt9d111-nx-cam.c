@@ -23,7 +23,7 @@
 #include <media/v4l2-ctrls.h>
 // psw0523 for debugging sleep
 #include <mach/platform.h>
-#include <mach/nxp4330.h>
+#include <mach/s5p4418.h>
 #include "mt9d111-nx-preset.h"
 
 
@@ -36,7 +36,7 @@
 
 #define MT9D111_CAM_DRIVER_NAME	"MT9D111"
 
-#if 0//defined(CONFIG_I2C_NEXELL_PORT1_GPIO_MODE)||defined(CONFIG_I2C_NEXELL_PORT2_GPIO_MODE)
+#if 0//defined(CONFIG_I2C_SLSI_PORT1_GPIO_MODE)||defined(CONFIG_I2C_SLSI_PORT2_GPIO_MODE)
 static int mt9d111_i2c_read_word(const struct i2c_client *client, u8 reg, uint16_t *val);
 #endif
 
@@ -64,14 +64,14 @@ static struct v4l2_rect *_get_pad_crop(struct mt9d111_state *me, struct v4l2_sub
 	}
 }
 
-#if 0//defined(CONFIG_I2C_NEXELL_PORT1_GPIO_MODE)||defined(CONFIG_I2C_NEXELL_PORT2_GPIO_MODE)
+#if 0//defined(CONFIG_I2C_SLSI_PORT1_GPIO_MODE)||defined(CONFIG_I2C_SLSI_PORT2_GPIO_MODE)
 
 static int mt9d111_i2c_write_word(const struct i2c_client *client, u8 reg, uint16_t val)
 {
 	int i = 0;
 	int ret = 0;
 	uint16_t temp = 0x0;
-	
+
 	for(i=0; i<I2C_RETRY_CNT; i++)
 	{
 		//v4l_info(client, "mt9d111_i2c_write_word reg:0x%02x val:0x%04x \n", reg, val);
@@ -143,7 +143,7 @@ static int mt9d111_i2c_read_word(struct i2c_client *client, u8 subaddr, u16 *dat
 
 	err = i2c_transfer(client->adapter, msg, 2);
 
-	if (unlikely(err != 2)) 
+	if (unlikely(err != 2))
 	{
 		dev_err(&client->dev, "\e[31mread_word failed reg:0x%02x \e[0m\n", subaddr);
 		return -EIO;
@@ -206,7 +206,7 @@ static int mt9d111_write_regs(struct i2c_client *client, struct reg_val regvals[
 				u8 val[2];
 				if (tmp[0] != 0xF0) {
 					err = mt9d111_i2c_read_block(client, regval->reg, 2, val);
-					if (err < 0) 
+					if (err < 0)
 						v4l_info(client,"\e[31m%s: register set failed\e[0m(i2c_recv{0x%02X, \e[31m0x%02X%02X\e[0m})\n", __func__, regval->reg, val[0], val[1]);
 					//printk(KERN_ERR"0x%02X: 0x%04X = 0x%02X%02X", regval->reg, regval->val, val[0], val[1]);
 
@@ -259,7 +259,7 @@ static int mt9d111_set_zoom_crop(struct mt9d111_state *state, int zoom_type, int
 	//array[7].val = left;
 	//array[8].val = top;
 
-#if 0// PJSIN 20140212 add-- [ 1 
+#if 0// PJSIN 20140212 add-- [ 1
 	mt9d111_write_regs(client, array, ARRAY_SIZE(mt9d111_reg_zoom_template));
 
 	/* check NewZoomSync to 0 */
@@ -274,7 +274,7 @@ static int mt9d111_set_zoom_crop(struct mt9d111_state *state, int zoom_type, int
 		printk("%s: failed error val %d\n", __func__, read_val);
 		return -EIO;
 	}
-#endif// ]-- end 
+#endif// ]-- end
 
 	return 0;
 }
@@ -823,17 +823,17 @@ static int mt9d111_connected_check(struct i2c_client *client)
 	mt9d111_i2c_write_word(client, 0x65, 0xA000);
 
 	mt9d111_i2c_read_word(client, 0x65, &val1);
-	v4l_info(client,"#  Reg 0x65 : before:0x%04x, after:0x%04x\n", val, val1);	
+	v4l_info(client,"#  Reg 0x65 : before:0x%04x, after:0x%04x\n", val, val1);
 
 	mt9d111_i2c_write_word(client, 0xf0, 0x0000);
 	mt9d111_i2c_write_word(client, 0x65, 0xE000);
-#endif// ]-- end 
+#endif// ]-- end
 	mt9d111_i2c_write_word(client, 0xf0, 0x0000);
 	mt9d111_i2c_read_word(client, 0x00, &val);
 	mt9d111_i2c_read_word(client, 0xFF, &val1);
 	v4l_info(client,"################################## \n");
 	v4l_info(client,"#  Check for mt9d111 \n");
-	v4l_info(client,"#  Read ID : 0x00:0x%04x, 0x%04x \n", val, val1);	
+	v4l_info(client,"#  Read ID : 0x00:0x%04x, 0x%04x \n", val, val1);
 	v4l_info(client,"################################## \n");
 
 	if(val != 0x1519 || val1 != 0x1519 )
@@ -874,7 +874,7 @@ static int mt9d111_init(struct v4l2_subdev *sd, u32 val)
 		v4l_info(client,"mt9d111_init\n");
 
 		start_time = get_jiffies_64(); /* read the current time */
-#if 0 
+#if 0
 		client->addr = (0xBA>>1);
 #endif
 
@@ -909,7 +909,7 @@ static int mt9d111_init(struct v4l2_subdev *sd, u32 val)
 
 static int mt9d111_s_power(struct v4l2_subdev *sd, int on)
 {
-#if 0 
+#if 0
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct mt9d111_state *state = to_state(sd);
 	int i2c_id = i2c_adapter_id(client->adapter);
@@ -947,7 +947,7 @@ static int mt9d111_s_power(struct v4l2_subdev *sd, int on)
 			is_first = false;
 		}
 	}
-	else 
+	else
 	{
 		nxp_soc_pwm_set_frequency(pwm_ch, 0, 0);
 		mdelay(1);
@@ -955,13 +955,13 @@ static int mt9d111_s_power(struct v4l2_subdev *sd, int on)
 		state->inited = false;
 		is_first = true;
 	}
-#endif 
+#endif
 	return 0;
 }
 
 static void mt9d111_set_power(struct v4l2_subdev *sd, int on)
 {
-#if 1 
+#if 1
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct mt9d111_state *state = to_state(sd);
 	int i2c_id = i2c_adapter_id(client->adapter);
@@ -994,14 +994,14 @@ static void mt9d111_set_power(struct v4l2_subdev *sd, int on)
 		mdelay(1);
 		nxp_soc_pwm_set_frequency(pwm_ch, 24000000, 50);
 	}
-	else 
+	else
 	{
 		nxp_soc_pwm_set_frequency(pwm_ch, 0, 0);
 		mdelay(1);
 		nxp_soc_gpio_set_out_value(reset_en, 0);
 		state->inited = false;
 	}
-#endif 
+#endif
 
 }
 

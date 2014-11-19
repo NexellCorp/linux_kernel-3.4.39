@@ -1011,9 +1011,9 @@ config ARCH_ZYNQ
 	help
 	  Support for Xilinx Zynq ARM Cortex A9 Platform
 
-config ARCH_NXP4330
-	bool "Nexell NXP4330D/Q"
-	select ARCH_CPU_NEXELL
+config ARCH_S5P4418
+	bool "SLsiAP S5P4418D/Q"
+	select ARCH_CPU_SLSI
 	select CPU_V7
 	select ARM_AMBA
 	select ARM_GIC
@@ -1030,7 +1030,7 @@ config ARCH_NXP4330
 	select ARCH_REQUIRE_GPIOLIB
 	select ARM_PATCH_PHYS_VIRT
 	help
-	  Support for nexell NXP4330 dual/quard core (ARM Cortex A9) platform
+	  Support for nexell S5P4418 dual/quard core (ARM Cortex A9) platform
 
 endchoice
 
@@ -1150,8 +1150,12 @@ source "arch/arm/mach-vt8500/Kconfig"
 
 source "arch/arm/mach-w90x900/Kconfig"
 
-if ARCH_NXP4330
-source "arch/arm/mach-nxp4330/Kconfig"
+if ARCH_CPU_SLSI
+source "kernel/Kconfig.hz"
+endif
+
+if ARCH_S5P4418
+source "arch/arm/mach-s5p4418/Kconfig"
 endif
 
 # Definitions to make life easier

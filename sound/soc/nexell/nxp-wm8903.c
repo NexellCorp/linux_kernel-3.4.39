@@ -258,5 +258,5 @@ static struct platform_driver wm8903_driver = {
 module_platform_driver(wm8903_driver);
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound codec-wm8903 driver for the Nexell");
+MODULE_DESCRIPTION("Sound codec-wm8903 driver for the SLSI");
 MODULE_LICENSE("GPL");

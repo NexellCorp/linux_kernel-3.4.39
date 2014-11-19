@@ -554,7 +554,7 @@ static void __exit nxp_hdmi_cec_exit(void)
 }
 
 MODULE_AUTHOR("swpark@nexell.co.kr");
-MODULE_DESCRIPTION("NEXELL NXP4330 HDMI CEC driver");
+MODULE_DESCRIPTION("SLsiAP HDMI CEC driver");
 MODULE_LICENSE("GPL");
 
 module_init(nxp_hdmi_cec_init);

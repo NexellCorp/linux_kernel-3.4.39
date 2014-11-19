@@ -26,7 +26,7 @@
 
 #include <mach/devices.h>
 #include <mach/soc.h>
-#include "display_4330.h"
+#include "display_4418.h"
 
 #if (0)
 #define DBGOUT(msg...)		{ printk(KERN_INFO msg); }
@@ -254,15 +254,15 @@ static void mipi_resume(struct disp_process_dev *pdev)
 
 	NX_TIEOFF_Set(TIEOFFINDEX_OF_MIPI0_NX_DPSRAM_1R1W_EMAA, 3);
 	NX_TIEOFF_Set(TIEOFFINDEX_OF_MIPI0_NX_DPSRAM_1R1W_EMAB, 3);
-	if (! nxp_soc_rsc_status(NX_MIPI_GetResetNumber(index, NX_MIPI_RST))) {
-	    nxp_soc_rsc_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST));
-    	nxp_soc_rsc_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_DSI_I));
-    	nxp_soc_rsc_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_S));
-    	nxp_soc_rsc_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_M));
-    	nxp_soc_rsc_exit(NX_MIPI_GetResetNumber(index, NX_MIPI_RST));
-    	nxp_soc_rsc_exit(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_DSI_I));
-		nxp_soc_rsc_exit(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_S));
-    	nxp_soc_rsc_exit(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_M));
+	if (! nxp_soc_peri_reset_status(NX_MIPI_GetResetNumber(index, NX_MIPI_RST))) {
+	    nxp_soc_peri_reset_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST));
+    	nxp_soc_peri_reset_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_DSI_I));
+    	nxp_soc_peri_reset_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_S));
+    	nxp_soc_peri_reset_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_M));
+    	nxp_soc_peri_reset_exit (NX_MIPI_GetResetNumber(index, NX_MIPI_RST));
+    	nxp_soc_peri_reset_exit (NX_MIPI_GetResetNumber(index, NX_MIPI_RST_DSI_I));
+		nxp_soc_peri_reset_exit (NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_S));
+    	nxp_soc_peri_reset_exit (NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_M));
     }
 	mipi_enable(pdev, 1);
 }
@@ -284,15 +284,15 @@ static void mipi_initialize(void)
 	NX_TIEOFF_Set(TIEOFFINDEX_OF_MIPI0_NX_DPSRAM_1R1W_EMAA, 3);
 	NX_TIEOFF_Set(TIEOFFINDEX_OF_MIPI0_NX_DPSRAM_1R1W_EMAB, 3);
 
-	if (! nxp_soc_rsc_status(NX_MIPI_GetResetNumber(index, NX_MIPI_RST))) {
-	    nxp_soc_rsc_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST));
-    	nxp_soc_rsc_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_DSI_I));
-    	nxp_soc_rsc_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_S));
-    	nxp_soc_rsc_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_M));
-    	nxp_soc_rsc_exit(NX_MIPI_GetResetNumber(index, NX_MIPI_RST));
-    	nxp_soc_rsc_exit(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_DSI_I));
-		nxp_soc_rsc_exit(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_S));
-    	nxp_soc_rsc_exit(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_M));
+	if (! nxp_soc_peri_reset_status(NX_MIPI_GetResetNumber(index, NX_MIPI_RST))) {
+	    nxp_soc_peri_reset_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST));
+    	nxp_soc_peri_reset_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_DSI_I));
+    	nxp_soc_peri_reset_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_S));
+    	nxp_soc_peri_reset_enter(NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_M));
+    	nxp_soc_peri_reset_exit (NX_MIPI_GetResetNumber(index, NX_MIPI_RST));
+    	nxp_soc_peri_reset_exit (NX_MIPI_GetResetNumber(index, NX_MIPI_RST_DSI_I));
+		nxp_soc_peri_reset_exit (NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_S));
+    	nxp_soc_peri_reset_exit (NX_MIPI_GetResetNumber(index, NX_MIPI_RST_PHY_M));
     }
 
 	/* BASE : CLKGEN, MIPI */

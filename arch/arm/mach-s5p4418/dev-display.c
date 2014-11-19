@@ -31,7 +31,7 @@
 #include <mach/platform.h>
 #include <mach/devices.h>
 
-#if defined(CONFIG_NEXELL_DISPLAY)
+#if defined(CONFIG_SLSI_DISPLAY)
 
 #define DISPLAY_INPUT(n)	\
 	(n == 0 ? DISP_DEVICE_SYNCGEN0 :	\
@@ -66,42 +66,42 @@
 /*------------------------------------------------------------------------------
  * Syncgen 0/1
  */
-#if defined(CONFIG_NEXELL_DISPLAY_LCD)
-	#if (0 == CONFIG_NEXELL_DISPLAY_LCD) && !defined(CONFIG_NEXELL_DISPLAY_1ST)
-	#define CONFIG_NEXELL_DISPLAY_1ST
-	#elif !defined(CONFIG_NEXELL_DISPLAY_2ST)
-	#define CONFIG_NEXELL_DISPLAY_2ST
+#if defined(CONFIG_SLSI_DISPLAY_LCD)
+	#if (0 == CONFIG_SLSI_DISPLAY_LCD) && !defined(CONFIG_SLSI_DISPLAY_1ST)
+	#define CONFIG_SLSI_DISPLAY_1ST
+	#elif !defined(CONFIG_SLSI_DISPLAY_2ST)
+	#define CONFIG_SLSI_DISPLAY_2ST
 	#endif
 #endif
-#if defined(CONFIG_NEXELL_DISPLAY_LVDS)
-	#if (0 == CONFIG_NEXELL_DISPLAY_LVDS) && !defined(CONFIG_NEXELL_DISPLAY_1ST)
-	#define CONFIG_NEXELL_DISPLAY_1ST
-	#elif !defined(CONFIG_NEXELL_DISPLAY_2ST)
-	#define CONFIG_NEXELL_DISPLAY_2ST
+#if defined(CONFIG_SLSI_DISPLAY_LVDS)
+	#if (0 == CONFIG_SLSI_DISPLAY_LVDS) && !defined(CONFIG_SLSI_DISPLAY_1ST)
+	#define CONFIG_SLSI_DISPLAY_1ST
+	#elif !defined(CONFIG_SLSI_DISPLAY_2ST)
+	#define CONFIG_SLSI_DISPLAY_2ST
 	#endif
 #endif
-#if defined(CONFIG_NEXELL_DISPLAY_MIPI)
-	#if (0 == CONFIG_NEXELL_DISPLAY_MIPI) && !defined(CONFIG_NEXELL_DISPLAY_1ST)
-	#define CONFIG_NEXELL_DISPLAY_1ST
-	#elif !defined(CONFIG_NEXELL_DISPLAY_2ST)
-	#define CONFIG_NEXELL_DISPLAY_2ST
+#if defined(CONFIG_SLSI_DISPLAY_MIPI)
+	#if (0 == CONFIG_SLSI_DISPLAY_MIPI) && !defined(CONFIG_SLSI_DISPLAY_1ST)
+	#define CONFIG_SLSI_DISPLAY_1ST
+	#elif !defined(CONFIG_SLSI_DISPLAY_2ST)
+	#define CONFIG_SLSI_DISPLAY_2ST
 	#endif
 #endif
-#if defined(CONFIG_NEXELL_DISPLAY_HDMI)
-	#if (0 == CONFIG_NEXELL_DISPLAY_HDMI) && !defined(CONFIG_NEXELL_DISPLAY_1ST)
-	#define CONFIG_NEXELL_DISPLAY_1ST
-	#elif !defined(CONFIG_NEXELL_DISPLAY_2ST)
-	#define CONFIG_NEXELL_DISPLAY_2ST
+#if defined(CONFIG_SLSI_DISPLAY_HDMI)
+	#if (0 == CONFIG_SLSI_DISPLAY_HDMI) && !defined(CONFIG_SLSI_DISPLAY_1ST)
+	#define CONFIG_SLSI_DISPLAY_1ST
+	#elif !defined(CONFIG_SLSI_DISPLAY_2ST)
+	#define CONFIG_SLSI_DISPLAY_2ST
 	#endif
 #endif
 
-#if defined(CONFIG_NEXELL_DISPLAY_1ST)
+#if defined(CONFIG_SLSI_DISPLAY_1ST)
 static struct platform_device syncgen_1st_dev = {
 	.name	= DEV_NAME_DISP,
 	.id		= 0,	/* module id */
 };
 #endif
-#if defined(CONFIG_NEXELL_DISPLAY_2ST)
+#if defined(CONFIG_SLSI_DISPLAY_2ST)
 static struct platform_device syncgen_2st_dev = {
 	.name	= DEV_NAME_DISP,
 	.id		= 1,	/* module id */
@@ -109,10 +109,10 @@ static struct platform_device syncgen_2st_dev = {
 #endif
 
 static struct platform_device *syncgen_devices[] __initdata = {
-	#if defined(CONFIG_NEXELL_DISPLAY_1ST)
+	#if defined(CONFIG_SLSI_DISPLAY_1ST)
 	&syncgen_1st_dev,
 	#endif
-	#if defined(CONFIG_NEXELL_DISPLAY_2ST)
+	#if defined(CONFIG_SLSI_DISPLAY_2ST)
 	&syncgen_2st_dev,
 	#endif
 };
@@ -121,7 +121,7 @@ static struct platform_device *syncgen_devices[] __initdata = {
 /*------------------------------------------------------------------------------
  * LCD platform device
  */
-#if defined (CONFIG_NEXELL_DISPLAY_LCD)
+#if defined (CONFIG_SLSI_DISPLAY_LCD)
 
 static struct disp_vsync_info __lcd_vsync = {
 	/* default parameters refer to cfg_main.h */
@@ -146,7 +146,7 @@ static struct disp_vsync_info __lcd_vsync = {
 static struct disp_lcd_param   __lcd_devpar;
 
 static struct nxp_lcd_plat_data lcd_data = {
-	.display_in		= DISPLAY_INPUT(CONFIG_NEXELL_DISPLAY_LCD_IN),
+	.display_in		= DISPLAY_INPUT(CONFIG_SLSI_DISPLAY_LCD_IN),
 	.display_dev	= DISP_DEVICE_LCD,
 	.vsync			= &__lcd_vsync,
 	.dev_param	 	= (union disp_dev_param*)&__lcd_devpar,
@@ -189,7 +189,7 @@ static void __disp_lcd_dev_data(struct disp_vsync_info *vsync,
 /*------------------------------------------------------------------------------
  * LVDS platform device
  */
-#if defined (CONFIG_NEXELL_DISPLAY_LVDS)
+#if defined (CONFIG_SLSI_DISPLAY_LVDS)
 
 static struct disp_vsync_info  __lvds_vsync = {
 	/* default parameters refer to cfg_main.h */
@@ -218,7 +218,7 @@ static struct disp_lvds_param  __lvds_devpar = {
 };
 
 static struct nxp_lcd_plat_data lvds_data = {
-	.display_in		= DISPLAY_INPUT(CONFIG_NEXELL_DISPLAY_LVDS_IN),
+	.display_in		= DISPLAY_INPUT(CONFIG_SLSI_DISPLAY_LVDS_IN),
 	.display_dev	= DISP_DEVICE_LVDS,
 	.vsync			= &__lvds_vsync,
 	.dev_param	 	= (union disp_dev_param*)&__lvds_devpar,
@@ -275,7 +275,7 @@ static void __disp_lvds_dev_data(struct disp_vsync_info *vsync,
 /*------------------------------------------------------------------------------
  * MiPi platform device
  */
-#if defined (CONFIG_NEXELL_DISPLAY_MIPI)
+#if defined (CONFIG_SLSI_DISPLAY_MIPI)
 
 static struct disp_vsync_info  __mipi_vsync = {
 	/* default parameters refer to cfg_main.h */
@@ -300,7 +300,7 @@ static struct disp_vsync_info  __mipi_vsync = {
 static struct disp_mipi_param  __mipi_devpar;
 
 static struct nxp_lcd_plat_data mipi_data = {
-	.display_in		= DISPLAY_INPUT(CONFIG_NEXELL_DISPLAY_MIPI_IN),
+	.display_in		= DISPLAY_INPUT(CONFIG_SLSI_DISPLAY_MIPI_IN),
 	.display_dev	= DISP_DEVICE_MIPI,
 	.vsync			= &__mipi_vsync,
 	.dev_param	 	= (union disp_dev_param*)&__mipi_devpar,
@@ -344,13 +344,13 @@ static void __disp_mipi_dev_data(struct disp_vsync_info *vsync,
 /*------------------------------------------------------------------------------
  * HDMI platform device
  */
-#if defined (CONFIG_NEXELL_DISPLAY_HDMI)
+#if defined (CONFIG_SLSI_DISPLAY_HDMI)
 
 static struct disp_vsync_info  __hdmi_vsync = {
-	#if	  defined (CONFIG_NEXELL_DISPLAY_HDMI_1280_720P)
+	#if	  defined (CONFIG_SLSI_DISPLAY_HDMI_1280_720P)
 	.h_active_len	= 1280,
 	.v_active_len	=  720,
-	#elif defined (CONFIG_NEXELL_DISPLAY_HDMI_1920_1080P)
+	#elif defined (CONFIG_SLSI_DISPLAY_HDMI_1920_1080P)
 	.h_active_len	= 1920,
 	.v_active_len	= 1080,
 	#else
@@ -359,15 +359,15 @@ static struct disp_vsync_info  __hdmi_vsync = {
 };
 
 static struct disp_hdmi_param  __hdmi_devpar = {
-	#if	  defined (CONFIG_NEXELL_DISPLAY_HDMI_1280_720P)
+	#if	  defined (CONFIG_SLSI_DISPLAY_HDMI_1280_720P)
 	.preset = 0,
-	#elif defined (CONFIG_NEXELL_DISPLAY_HDMI_1920_1080P)
+	#elif defined (CONFIG_SLSI_DISPLAY_HDMI_1920_1080P)
 	.preset = 1,
 	#endif
 };
 
 static struct nxp_lcd_plat_data hdmi_data = {
-	.display_in		= DISPLAY_INPUT(CONFIG_NEXELL_DISPLAY_HDMI_IN),
+	.display_in		= DISPLAY_INPUT(CONFIG_SLSI_DISPLAY_HDMI_IN),
 	.display_dev	= DISP_DEVICE_HDMI,
 	.vsync			= &__hdmi_vsync,
 	.dev_param	 	= (union disp_dev_param*)&__hdmi_devpar,
@@ -413,13 +413,13 @@ static void __disp_hdmi_dev_data(struct disp_vsync_info *vsync,
 /*------------------------------------------------------------------------------
  * Resolution Convertor platform device
  */
-#if defined (CONFIG_NEXELL_DISPLAY_RESC)
+#if defined (CONFIG_SLSI_DISPLAY_RESC)
 
 static struct disp_vsync_info  __resc_vsync;
 static struct disp_resc_param  __resc_devpar;
 
 static struct nxp_lcd_plat_data resc_data = {
-	.display_in		= DISPLAY_INPUT(CONFIG_NEXELL_DISPLAY_RESC_IN),
+	.display_in		= DISPLAY_INPUT(CONFIG_SLSI_DISPLAY_RESC_IN),
 	.display_dev	= DISP_DEVICE_RESCONV,
 	.vsync			= &__resc_vsync,
 	.dev_param	 	= (union disp_dev_param*)&__resc_devpar,
@@ -485,4 +485,4 @@ void nxp_platform_disp_device_data(enum disp_dev_type device, struct disp_vsync_
 	}
 	return;
 }
-#endif /* CONFIG_NEXELL_DISPLAY */
+#endif /* CONFIG_SLSI_DISPLAY */

@@ -39,7 +39,7 @@
 static struct snd_soc_codec *alc5623 = NULL;
 static int codec_bias_level = 0;
 
-#if defined(CONFIG_PLAT_NXP4330_NBOX)
+#if defined(CONFIG_PLAT_S5P4418_NBOX)
 /***************************************/
 // jimmy@zhongwei, 20140609 Testing
 /***************************************/
@@ -53,7 +53,7 @@ static int jack_report_enable = 0;
 static int NXL_JackInOut = 0;
 //struct wake_lock detect_jack_wake_lock;
 
-#endif 
+#endif
 
 static int alc5623_jack_status_check(void);
 static struct snd_soc_jack_gpio jack_gpio = {
@@ -81,9 +81,9 @@ static int alc5623_jack_status_check(void)
 		level = !level;
 
 	printk("%s: hp jack %s\n", __func__, level?"IN":"OUT");
-	
+
 	if (!level) {
-#if defined(CONFIG_PLAT_NXP4330_NBOX)
+#if defined(CONFIG_PLAT_S5P4418_NBOX)
 		/***************************************/
 		// jimmy@zhongwei, 20140609 Testing
 		/***************************************/
@@ -92,7 +92,7 @@ static int alc5623_jack_status_check(void)
         snd_soc_update_bits(codec, 0x04, 0x8080, 0x8080);
 		gpio_direction_output(AUDIO_AMP_POWER, 1);
 	} else {
-#if defined(CONFIG_PLAT_NXP4330_NBOX)
+#if defined(CONFIG_PLAT_S5P4418_NBOX)
 		/***************************************/
 		// jimmy@zhongwei, 20140609 Testing
 		/***************************************/
@@ -102,7 +102,7 @@ static int alc5623_jack_status_check(void)
 		gpio_direction_output(AUDIO_AMP_POWER, 0);
 	}
 
-#if defined(CONFIG_PLAT_NXP4330_NBOX)
+#if defined(CONFIG_PLAT_S5P4418_NBOX)
 	/***************************************/
 	// jimmy@zhongwei, 20140609 Testing
 	/***************************************/
@@ -113,7 +113,7 @@ static int alc5623_jack_status_check(void)
 		switch_set_state(&switch_nxl_jack_detection, NXL_JackInOut); //  2->Jack In
 	}
 #endif
-	
+
 	return !level;
 }
 
@@ -135,7 +135,7 @@ static int alc5623_hw_params(struct snd_pcm_substream *substream,
 //	ret = snd_soc_dai_set_fmt(codec_dai, fmt);
 //	if (0 > ret)
 //		return ret;
- //  
+ //
 //    printk("%s ....line:%d....ret :%d...\n",__func__,__LINE__,ret);
 	return ret;
 }
@@ -158,20 +158,20 @@ static int alc5623_startup(struct snd_pcm_substream *substream)
 	if (!level) {
 		pr_debug("AMP ON\n");
 
-#if defined(CONFIG_PLAT_NXP4330_NBOX)
+#if defined(CONFIG_PLAT_S5P4418_NBOX)
 		/***************************************/
 		// jimmy@zhongwei, 20140609 Testing
 		/***************************************/
 		if(level == 0)
-		switch_set_state(&switch_nxl_jack_detection, 0); // 
+		switch_set_state(&switch_nxl_jack_detection, 0); //
 		else
-		switch_set_state(&switch_nxl_jack_detection, 0x2); // 
+		switch_set_state(&switch_nxl_jack_detection, 0x2); //
 #endif
 
 		gpio_direction_output(AUDIO_AMP_POWER, 1);
 	}
 	//jack_report_enable=1;
-	
+
 	return 0;
 }
 
@@ -240,7 +240,7 @@ static int alc5623_dai_init(struct snd_soc_pcm_runtime *rtd)
 	if (NULL == jack->name)
 		return 0;
 
-#if defined(CONFIG_PLAT_NXP4330_NBOX)
+#if defined(CONFIG_PLAT_S5P4418_NBOX)
 	/***************************************/
 	// jimmy@zhongwei, 20140609 Testing
 	/***************************************/
@@ -356,7 +356,7 @@ static int alc5623_remove(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = platform_get_drvdata(pdev);
 	pr_debug("%s\n", __func__);
-#if defined(CONFIG_PLAT_NXP4330_NBOX)
+#if defined(CONFIG_PLAT_S5P4418_NBOX)
 	/***************************************/
 	// jimmy@zhongwei, 20140609 Testing
 	/***************************************/
@@ -380,6 +380,6 @@ static struct platform_driver alc5623_driver = {
 module_platform_driver(alc5623_driver);
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound codec-alc5623 driver for the Nexell");
+MODULE_DESCRIPTION("Sound codec-alc5623 driver for the SLSI");
 MODULE_LICENSE("GPL");
 

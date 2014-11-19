@@ -33,7 +33,7 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-#if defined(CONFIG_NXP_HDMI_CEC)
+#if defined(CONFIG_SLSI_HDMI_CEC)
 #include <mach/nxp-hdmi-cec.h>
 #endif
 
@@ -41,7 +41,7 @@
  * BUS Configure
  */
 #if (CFG_BUS_RECONFIG_ENB == 1)
-#include <mach/nxp4330_bus.h>
+#include <mach/s5p4418_bus.h>
 
 const u16 g_DrexQoS[2] = {
 	0x100,		// S0
@@ -90,7 +90,7 @@ const u8 g_DispBusSI[3] = {
 /*------------------------------------------------------------------------------
  * CPU Frequence
  */
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ)
+#if defined(CONFIG_ARM_SLSI_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
 //	{ 1600000, 1300000 },
@@ -111,7 +111,7 @@ static unsigned long dfs_freq_table[][2] = {
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
-	.pll_dev	   	= CONFIG_NXP4330_CPUFREQ_PLLDEV,
+	.pll_dev	   	= CONFIG_SLSI_CPUFREQ_PLLDEV,
 	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
@@ -155,7 +155,7 @@ static struct nxp_cpufreq_limit_data freq_limit_data = {
 	.limit_num 		= ARRAY_SIZE(freq_proct_list),
 	.aval_max_freq	= 1400000,
 	.op_max_freq	= 1200000,
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) 
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
 	.limit_level0_freq	= 1200000,
 	.limit_level1_freq	= 1000000,
 	.min_max_freq	= 800000,
@@ -216,10 +216,10 @@ static struct platform_device dm9000_plat_device = {
 /*------------------------------------------------------------------------------
  * DISPLAY (LVDS) / FB
  */
-#if defined (CONFIG_FB_NEXELL)
-#if defined (CONFIG_FB0_NEXELL)
+#if defined (CONFIG_FB_SLSI)
+#if defined (CONFIG_FB0_SLSI)
 static struct nxp_fb_plat_data fb0_plat_data = {
-	.module			= CONFIG_FB0_NEXELL_DISPOUT,
+	.module			= CONFIG_FB0_SLSI_DISPOUT,
 	.layer			= CFG_DISP_PRI_SCREEN_LAYER,
 	.format			= CFG_DISP_PRI_SCREEN_RGB_FORMAT,
 	.bgcolor		= CFG_DISP_PRI_BACK_GROUND_COLOR,
@@ -247,11 +247,11 @@ static struct platform_device fb0_device = {
 #endif
 
 static struct platform_device *fb_devices[] = {
-	#if defined (CONFIG_FB0_NEXELL)
+	#if defined (CONFIG_FB0_SLSI)
 	&fb0_device,
 	#endif
 };
-#endif /* CONFIG_FB_NEXELL */
+#endif /* CONFIG_FB_SLSI */
 
 /*------------------------------------------------------------------------------
  * backlight : generic pwm device
@@ -279,7 +279,7 @@ static struct platform_device bl_plat_device = {
 /*------------------------------------------------------------------------------
  * NAND device
  */
-#if defined(CONFIG_MTD_NAND_NEXELL)
+#if defined(CONFIG_MTD_NAND_SLSI)
 #include <linux/mtd/partitions.h>
 #include <asm-generic/sizes.h>
 
@@ -319,7 +319,7 @@ static struct platform_device nand_plat_device = {
 		.platform_data	= &nand_plat_data,
 	},
 };
-#endif	/* CONFIG_MTD_NAND_NEXELL */
+#endif	/* CONFIG_MTD_NAND_SLSI */
 
 #if defined(CONFIG_TOUCHSCREEN_GSLX680)
 #include <linux/i2c.h>
@@ -336,7 +336,7 @@ static struct i2c_board_info __initdata gslX680_i2c_bdi = {
 /*------------------------------------------------------------------------------
  * Keypad platform device
  */
-#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_SLSI_KEY) || defined(CONFIG_KEYBOARD_SLSI_KEY_MODULE)
 
 #include <linux/input.h>
 
@@ -357,7 +357,7 @@ static struct platform_device key_plat_device = {
 		.platform_data	= &key_plat_data
 	},
 };
-#endif	/* CONFIG_KEYBOARD_NEXELL_KEY || CONFIG_KEYBOARD_NEXELL_KEY_MODULE */
+#endif	/* CONFIG_KEYBOARD_SLSI_KEY || CONFIG_KEYBOARD_SLSI_KEY_MODULE */
 
 /*------------------------------------------------------------------------------
  * ASoC Codec platform device
@@ -491,8 +491,8 @@ void __init nxp_reserve_mem(void)
     static struct cma_region regions[] = {
         {
             .name = "ion",
-#ifdef CONFIG_ION_NXP_CONTIGHEAP_SIZE
-            .size = CONFIG_ION_NXP_CONTIGHEAP_SIZE * SZ_1K,
+#ifdef CONFIG_ION_SLSI_CONTIGHEAP_SIZE
+            .size = CONFIG_ION_SLSI_CONTIGHEAP_SIZE * SZ_1K,
 #else
 			.size = 0,
 #endif
@@ -509,14 +509,14 @@ void __init nxp_reserve_mem(void)
         "ion-nxp=ion;"
         "nx_vpu=ion;";
 
-#ifdef CONFIG_ION_NXP_CONTIGHEAP_SIZE
-    printk("%s: reserve CMA: size %d\n", __func__, CONFIG_ION_NXP_CONTIGHEAP_SIZE * SZ_1K);
+#ifdef CONFIG_ION_SLSI_CONTIGHEAP_SIZE
+    printk("%s: reserve CMA: size %d\n", __func__, CONFIG_ION_SLSI_CONTIGHEAP_SIZE * SZ_1K);
 #endif
     nxp_cma_region_reserve(regions, map);
 }
 #endif
 
-#if defined(CONFIG_I2C_NEXELL)
+#if defined(CONFIG_I2C_SLSI)
 #define I2CUDELAY(x)	1000000/x
 /* gpio i2c 3 */
 #define	I2C3_SCL	PAD_GPIO_E + 14
@@ -542,7 +542,7 @@ static struct platform_device i2c_device_ch3 = {
 static struct platform_device *i2c_devices[] = {
 	&i2c_device_ch3,
 };
-#endif /* CONFIG_I2C_NEXELL */
+#endif /* CONFIG_I2C_SLSI */
 
 /*------------------------------------------------------------------------------
  * PMIC platform device
@@ -662,7 +662,7 @@ NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1,  6);	/* 1.1V
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
 NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  6);	/* 1.5V SYS */
-#if defined(CONFIG_RFKILL_NEXELL)
+#if defined(CONFIG_RFKILL_SLSI)
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V GPS */
 #else
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 1,  0);	/* 3.3V GPS */
@@ -885,7 +885,7 @@ static struct i2c_board_info __initdata nxe2000_regulators[] = {
 /*------------------------------------------------------------------------------
  * v4l2 platform device
  */
-#if defined(CONFIG_V4L2_NEXELL) || defined(CONFIG_V4L2_NEXELL_MODULE)
+#if defined(CONFIG_V4L2_SLSI) || defined(CONFIG_V4L2_SLSI_MODULE)
 #include <linux/i2c.h>
 #include <linux/delay.h>
 #include <linux/regulator/consumer.h>
@@ -1274,7 +1274,7 @@ static struct platform_device nxp_v4l2_dev = {
         .platform_data = &v4l2_plat_data,
     },
 };
-#endif /* CONFIG_V4L2_NEXELL || CONFIG_V4L2_NEXELL_MODULE */
+#endif /* CONFIG_V4L2_SLSI || CONFIG_V4L2_SLSI_MODULE */
 
 /*------------------------------------------------------------------------------
  * SSP/SPI
@@ -1334,7 +1334,7 @@ static struct spi_board_info spi_plat_board[] __initdata = {
  */
 #if defined(CONFIG_MMC_DW)
 
-#ifdef CONFIG_MMC_NEXELL_CH0
+#ifdef CONFIG_MMC_SLSI_CH0
 static struct dw_mci_board _dwmci0_data = {
     .quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 				  	  DW_MCI_QUIRK_HIGHSPEED |
@@ -1354,7 +1354,7 @@ static struct dw_mci_board _dwmci0_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_NEXELL_CH1
+#ifdef CONFIG_MMC_SLSI_CH1
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 100 * 1000 * 1000,
@@ -1366,7 +1366,7 @@ static struct dw_mci_board _dwmci1_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_NEXELL_CH2
+#ifdef CONFIG_MMC_SLSI_CH2
 static int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
 {
 	return 0;
@@ -1424,7 +1424,7 @@ static struct dw_mci_board _dwmci2_data = {
 /*------------------------------------------------------------------------------
  * RFKILL driver
  */
-#if defined(CONFIG_RFKILL_NEXELL)
+#if defined(CONFIG_RFKILL_SLSI)
 
 struct rfkill_dev_data  rfkill_dev_data =
 {
@@ -1447,7 +1447,7 @@ static struct platform_device rfkill_device = {
 		.platform_data	= &rfkill_plat_data,
 	}
 };
-#endif	/* CONFIG_RFKILL_NEXELL */
+#endif	/* CONFIG_RFKILL_SLSI */
 
 /*------------------------------------------------------------------------------
  * USB HSIC power control.
@@ -1471,11 +1471,11 @@ EXPORT_SYMBOL(nxp_otgvbus_pwr_set);
 /*------------------------------------------------------------------------------
  * HDMI CEC driver
  */
-#if defined(CONFIG_NXP_HDMI_CEC)
+#if defined(CONFIG_SLSI_HDMI_CEC)
 static struct platform_device hdmi_cec_device = {
 	.name			= NXP_HDMI_CEC_DRV_NAME,
 };
-#endif /* CONFIG_NXP_HDMI_CEC */
+#endif /* CONFIG_SLSI_HDMI_CEC */
 
 /*------------------------------------------------------------------------------
  * register board platform devices
@@ -1484,7 +1484,7 @@ void __init nxp_board_devices_register(void)
 {
 	printk("[Register board platform devices]\n");
 
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ)
+#if defined(CONFIG_ARM_SLSI_CPUFREQ)
 	printk("plat: add dynamic frequency (pll.%d)\n", dfs_plat_data.pll_dev);
 	platform_device_register(&dfs_plat_device);
 	#if defined(CPU_LIMIT_CONTROL)
@@ -1492,19 +1492,19 @@ void __init nxp_board_devices_register(void)
 	#endif
 #endif
 
-#if defined (CONFIG_FB_NEXELL)
+#if defined (CONFIG_FB_SLSI)
 	printk("plat: add framebuffer\n");
 	platform_add_devices(fb_devices, ARRAY_SIZE(fb_devices));
 #endif
 
 #if defined(CONFIG_MMC_DW)
-	#ifdef CONFIG_MMC_NEXELL_CH0
+	#ifdef CONFIG_MMC_SLSI_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
-    #ifdef CONFIG_MMC_NEXELL_CH2
+    #ifdef CONFIG_MMC_SLSI_CH2
 	nxp_mmc_add_device(2, &_dwmci2_data);
 	#endif
-    #ifdef CONFIG_MMC_NEXELL_CH1
+    #ifdef CONFIG_MMC_SLSI_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
 	#endif
 #endif
@@ -1519,16 +1519,16 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&bl_plat_device);
 #endif
 
-#if defined(CONFIG_MTD_NAND_NEXELL)
+#if defined(CONFIG_MTD_NAND_SLSI)
 	platform_device_register(&nand_plat_device);
 #endif
 
-#if defined(CONFIG_KEYBOARD_NEXELL_KEY) || defined(CONFIG_KEYBOARD_NEXELL_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_SLSI_KEY) || defined(CONFIG_KEYBOARD_SLSI_KEY_MODULE)
 	printk("plat: add device keypad\n");
 	platform_device_register(&key_plat_device);
 #endif
 
-#if defined(CONFIG_I2C_NEXELL)
+#if defined(CONFIG_I2C_SLSI)
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif
 
@@ -1555,7 +1555,7 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&spdif_trans_dai);
 #endif
 
-#if defined(CONFIG_V4L2_NEXELL) || defined(CONFIG_V4L2_NEXELL_MODULE)
+#if defined(CONFIG_V4L2_SLSI) || defined(CONFIG_V4L2_SLSI_MODULE)
     printk("plat: add device nxp-v4l2\n");
     platform_device_register(&nxp_v4l2_dev);
 #endif
@@ -1578,17 +1578,17 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(MMA7660_I2C_BUS, &mma7660_i2c_bdi, 1);
 #endif
 
-#if defined(CONFIG_RFKILL_NEXELL)
+#if defined(CONFIG_RFKILL_SLSI)
     printk("plat: add device rfkill\n");
     platform_device_register(&rfkill_device);
 #endif
 
-#if defined(CONFIG_NXP_HDMI_CEC)
+#if defined(CONFIG_SLSI_HDMI_CEC)
     printk("plat: add device hdmi-cec\n");
     platform_device_register(&hdmi_cec_device);
 #endif
 
-#if 0//defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+#if 0//defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
 	back_camera_power_enable(0);
 	front_camera_power_enable(0);
 	camera_power_control(0);

@@ -26,7 +26,7 @@
 #include <mach/nxp3200.h>
 #include <linux/workqueue.h>
 #else
-#include <mach/nxp4330.h>
+#include <mach/platform.h>
 #endif
 
 enum nxp_decimator_state {

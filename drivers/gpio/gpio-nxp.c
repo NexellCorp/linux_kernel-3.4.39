@@ -49,7 +49,7 @@ struct nxp_gpio {
 	struct 	gpio_chip chip;
 };
 
-static const char *io_name[] = { "GPIOA", "GPIOB", "GPIOC", "GPIOD", "GPIOE", };
+static const char *io_name[] = { "GPIOA", "GPIOB", "GPIOC", "GPIOD", "GPIOE", "GPIOALV" };
 #define	GET_GPIO(c)	container_of(chip, struct nxp_gpio, chip)
 
 static int nxp_gpio_request(struct gpio_chip *chip, unsigned offset)

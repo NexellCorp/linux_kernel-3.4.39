@@ -183,8 +183,8 @@ static int calc_hdmi_master_clock(unsigned long mclk, int *pllsel, int *plldiv)
 	clk = clk_get(NULL, "pll3"), clk_hz[3] = clk_get_rate(clk), clk_put(clk);
 
 	for (n = 0; SPDIF_IN_CLKS > n; n++) {
-	#ifdef  CONFIG_ARM_NXP4330_CPUFREQ
-		if (n == CONFIG_NXP4330_CPUFREQ_PLLDEV)
+	#ifdef  CONFIG_ARM_SLSI_CPUFREQ
+		if (n == CONFIG_SLSI_CPUFREQ_PLLDEV)
 			continue;
 	#endif
 		pll_hz = clk_hz[n];
@@ -231,7 +231,7 @@ static void inline spdif_reset(struct nxp_spdif_snd_param *par)
 {
 	unsigned int base = par->base_addr;
 
-	nxp_soc_rsc_reset(RESET_ID_SPDIFTX);
+	nxp_soc_peri_reset_set(RESET_ID_SPDIFTX);
 	writel((1 << CON_SW_RESET_POS), (base+SPDIF_CON_OFFSET));
 }
 
@@ -629,7 +629,7 @@ module_init(nxp_spdif_init);
 module_exit(nxp_spdif_exit);
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound S/PDIF tx driver for the Nexell");
+MODULE_DESCRIPTION("Sound S/PDIF tx driver for the SLSI");
 MODULE_LICENSE("GPL");
 
 

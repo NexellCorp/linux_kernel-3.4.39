@@ -3,63 +3,15 @@
 #
 # Makefile for the Nexell platform board
 
-ifeq ($(CONFIG_PLAT_NXP4330_LYNX),y)
-PLATBOARD :=lynx
-endif
-
-ifeq ($(CONFIG_PLAT_NXP4330_VTK),y)
-PLATBOARD :=vtk
-endif
-
-ifeq ($(CONFIG_PLAT_NXP4330_SMARTBOX),y)
-PLATBOARD :=smartbox
-endif
-
-ifeq ($(CONFIG_PLAT_NXP4330_PYXIS),y)
-PLATBOARD :=pyxis
-endif
-
-ifeq ($(CONFIG_PLAT_NXP4330_W7),y)
-PLATBOARD :=w7
-endif
-
-ifeq ($(CONFIG_PLAT_NXP4330_NBOX),y)
-PLATBOARD :=NBOX
-endif
-
-ifeq ($(CONFIG_PLAT_NXP4330_MORPHEUS),y)
-PLATBOARD :=morpheus
-endif
-
-ifeq ($(CONFIG_PLAT_NXP4330_SECRET),y)
-PLATBOARD :=secret
-endif
-
-ifeq ($(CONFIG_PLAT_NXP4330_BLACKBOX),y)
-PLATBOARD :=blackbox
-endif
-
-ifeq ($(CONFIG_PLAT_NXP4330_DRONE),y)
+ifeq ($(CONFIG_PLAT_S5P4418_DRONE),y)
 PLATBOARD :=drone
 endif
 
-ifeq ($(CONFIG_PLAT_NXP4330_DRONE2ND),y)
-PLATBOARD :=drone2nd
+ifeq ($(CONFIG_PLAT_S5P4418_DRONE2),y)
+PLATBOARD :=drone2
 endif
 
-ifeq ($(CONFIG_PLAT_NXP4330_KAR),y)
-PLATBOARD :=kar
-endif
-
-ifeq ($(CONFIG_PLAT_NXP4330_MOON),y)
-PLATBOARD :=moon
-endif
-
-ifeq ($(CONFIG_PLAT_NXP4330_DVR),y)
-PLATBOARD :=dvr
-endif
-
-ifeq ($(CONFIG_PLAT_NXP4330_SVT),y)
+ifeq ($(CONFIG_PLAT_S5P4418_SVT),y)
 PLATBOARD :=svt
 endif
 

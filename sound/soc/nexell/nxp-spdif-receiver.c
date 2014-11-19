@@ -161,6 +161,6 @@ static struct platform_driver spdifrx_driver = {
 module_platform_driver(spdifrx_driver);
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound SPDIF receiver driver for the Nexell");
+MODULE_DESCRIPTION("Sound SPDIF receiver driver for the SLSI");
 MODULE_LICENSE("GPL");
 

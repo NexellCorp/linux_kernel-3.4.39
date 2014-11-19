@@ -102,7 +102,7 @@ struct nxp_spdif_snd_param {
 
 static void inline spdif_reset(struct nxp_spdif_snd_param *par)
 {
-	nxp_soc_rsc_reset(RESET_ID_SPDIFRX);
+	nxp_soc_peri_reset_set(RESET_ID_SPDIFRX);
 }
 
 static int  spdif_start(struct nxp_spdif_snd_param *par, int stream)
@@ -410,7 +410,7 @@ module_init(nxp_spdif_init);
 module_exit(nxp_spdif_exit);
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound S/PDIF rx driver for the Nexell");
+MODULE_DESCRIPTION("Sound S/PDIF rx driver for the SLSI");
 MODULE_LICENSE("GPL");
 
 

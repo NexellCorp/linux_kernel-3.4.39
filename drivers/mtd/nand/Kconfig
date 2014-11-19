@@ -71,7 +71,7 @@ config MTD_NAND_DENALI
         help
           Enable the driver for NAND flash on Intel Moorestown, using the
           Denali NAND controller core.
- 
+
 config MTD_NAND_DENALI_SCRATCH_REG_ADDR
         hex "Denali NAND size scratch register address"
         default "0xFF108018"
@@ -607,15 +607,15 @@ config MTD_NAND_FSMC
 	  Enables support for NAND Flash chips on the ST Microelectronics
 	  Flexible Static Memory Controller (FSMC)
 
-config MTD_NAND_NEXELL
+config MTD_NAND_SLSI
 	tristate "Nexell nand support"
-	depends on ARCH_CPU_NEXELL
+	depends on ARCH_CPU_SLSI
 	help
 	  This enables the NAND flash controller on the NX series
 
 config MTD_NAND_ECC_HW
 	bool "Support hardware ECC"
-	depends on MTD_NAND_NEXELL
+	depends on MTD_NAND_SLSI
 	help
 	  Enable the use of the NX series's internal ECC generator when
 	  using NAND.

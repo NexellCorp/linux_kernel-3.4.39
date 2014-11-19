@@ -203,7 +203,7 @@ config SERIAL_SAMSUNG_UARTS
 	help
 	  Select the number of available UART ports for the Samsung S3C
 	  serial driver
-	
+
 config SERIAL_SAMSUNG_DEBUG
 	bool "Samsung SoC serial debug"
 	depends on SERIAL_SAMSUNG && DEBUG_LL
@@ -622,8 +622,8 @@ config PDC_CONSOLE
 	depends on PARISC && !SERIAL_MUX && VT
 	default n
 	help
-	  Saying Y here will enable the software based PDC console to be 
-	  used as the system console.  This is useful for machines in 
+	  Saying Y here will enable the software based PDC console to be
+	  used as the system console.  This is useful for machines in
 	  which the hardware based console has not been written yet.  The
 	  following steps must be competed to use the PDC console:
 
@@ -795,7 +795,7 @@ config SERIAL_CPM
 	depends on CPM2 || 8xx
 	select SERIAL_CORE
 	help
-	  This driver supports the SCC and SMC serial ports on Motorola 
+	  This driver supports the SCC and SMC serial ports on Motorola
 	  embedded PowerPC that contain a CPM1 (8xx) or CPM2 (8xxx)
 
 config SERIAL_CPM_CONSOLE
@@ -1360,54 +1360,54 @@ config SERIAL_EFM32_UART_CONSOLE
 	depends on SERIAL_EFM32_UART=y
 	select SERIAL_CORE_CONSOLE
 
-config SERIAL_NEXELL_UART0
+config SERIAL_SLSI_UART0
 	bool "PL011 serial port 0"
 	depends on SERIAL_AMBA_PL011
 		default y
 
-config SERIAL_NEXELL_UART0_DMA
+config SERIAL_SLSI_UART0_DMA
 	bool "Use DMA"
-	depends on SERIAL_NEXELL_UART0=y && SERIAL_AMBA_PL011
+	depends on SERIAL_SLSI_UART0=y && SERIAL_AMBA_PL011
 
-config SERIAL_NEXELL_UART1
+config SERIAL_SLSI_UART1
 	bool "PL011 serial port 1"
 	depends on SERIAL_AMBA_PL011
 		default n
 
-config SERIAL_NEXELL_UART1_DMA
+config SERIAL_SLSI_UART1_DMA
 	bool "Use DMA"
-	depends on SERIAL_NEXELL_UART1=y && SERIAL_AMBA_PL011
+	depends on SERIAL_SLSI_UART1=y && SERIAL_AMBA_PL011
 
-config SERIAL_NEXELL_UART2
+config SERIAL_SLSI_UART2
 	bool "PL011 serial port 2"
 	depends on SERIAL_AMBA_PL011
 		default n
 
-config SERIAL_NEXELL_UART2_DMA
+config SERIAL_SLSI_UART2_DMA
 	bool "Use DMA"
-	depends on SERIAL_NEXELL_UART2=y && SERIAL_AMBA_PL011
+	depends on SERIAL_SLSI_UART2=y && SERIAL_AMBA_PL011
 
-config SERIAL_NEXELL_UART3
+config SERIAL_SLSI_UART3
 	bool "PL011 serial port 3"
 	depends on SERIAL_AMBA_PL011
 		default n
 
-config SERIAL_NEXELL_UART4
+config SERIAL_SLSI_UART4
 	bool "PL011 serial port 4"
-	depends on SERIAL_NEXELL || SERIAL_AMBA_PL011
+	depends on SERIAL_SLSI || SERIAL_AMBA_PL011
 		default n
 
-config SERIAL_NEXELL_UART5
+config SERIAL_SLSI_UART5
 	bool "PL011 serial port 5"
 	depends on SERIAL_AMBA_PL011
 		default n
 
-config SERIAL_NEXELL_RESUME_WORK
+config SERIAL_SLSI_RESUME_WORK
 	bool "Set this to reduce resume time (PL011)"
 	depends on SERIAL_AMBA_PL011
 		default n
 	help
-	  Disable console output to save wakeup time when resume.\, but 
+	  Disable console output to save wakeup time when resume.\, but
 	  could be lost resume log message
-	
-endmenu 
+
+endmenu

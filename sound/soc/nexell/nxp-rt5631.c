@@ -118,7 +118,7 @@ static const struct snd_soc_dapm_route rt5631_audio_map[] = {
 	{"Ext Spk", NULL, "SPOL"},
 };
 
-#if defined(CONFIG_PLAT_NXP4330_SECRET) || !defined(CONFIG_ANDROID)
+#if defined(CONFIG_PLAT_S5P4418_SECRET) || !defined(CONFIG_ANDROID)
 /* Headphones jack detection DAPM pin */
 static struct snd_soc_jack_pin jack_pins[] = {
 	{
@@ -165,7 +165,7 @@ static int rt5631_dai_init(struct snd_soc_pcm_runtime *rtd)
 				SND_JACK_HEADPHONE, &hp_jack);
 	if (ret)
 		return ret;
-#if defined(CONFIG_PLAT_NXP4330_SECRET) || !defined(CONFIG_ANDROID)
+#if defined(CONFIG_PLAT_S5P4418_SECRET) || !defined(CONFIG_ANDROID)
 	printk("==enable jack switch for linux==\n");
 	ret = snd_soc_jack_add_pins(&hp_jack, ARRAY_SIZE(jack_pins), jack_pins);
 	if (ret)
@@ -299,5 +299,5 @@ static struct platform_driver rt5631_driver = {
 module_platform_driver(rt5631_driver);
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound codec-rt5631 driver for the Nexell");
+MODULE_DESCRIPTION("Sound codec-rt5631 driver for the SLSI");
 MODULE_LICENSE("GPL");

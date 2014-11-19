@@ -34,19 +34,19 @@
 */
 
 // Limited Temperature Throthold for Drone.
-#define TEMPERTURE_LIMIT_NONE			45	
-#define TEMPERTURE_LIMIT_LEVEL0			45	
-#define TEMPERTURE_LIMIT_LEVEL1			52 //55 //52	
-#define TEMPERTURE_LIMIT_LEVEL2			62	
-#define TEMPERTURE_LIMIT_LEVEL2_DOWN	TEMPERTURE_LIMIT_LEVEL2-5	
+#define TEMPERTURE_LIMIT_NONE			45
+#define TEMPERTURE_LIMIT_LEVEL0			45
+#define TEMPERTURE_LIMIT_LEVEL1			52 //55 //52
+#define TEMPERTURE_LIMIT_LEVEL2			62
+#define TEMPERTURE_LIMIT_LEVEL2_DOWN	TEMPERTURE_LIMIT_LEVEL2-5
 
-#define TEMPERTURE_CHARGING_STOP		57	
-#define TEMPERTURE_CHARGING_CONTINUE	56	
+#define TEMPERTURE_CHARGING_STOP		57
+#define TEMPERTURE_CHARGING_CONTINUE	56
 
-#define TEMPERTURE_CPU_DOWN1			57	
-#define TEMPERTURE_CPU_DOWN2			67	
+#define TEMPERTURE_CPU_DOWN1			57
+#define TEMPERTURE_CPU_DOWN2			67
 
-#define TEMPERTURE_BOOST_MAX			64	
+#define TEMPERTURE_BOOST_MAX			64
 #define TEMPERTURE_BOOST_LIMIT			68
 
 // CPU Usage Throthold for Drone.
@@ -87,7 +87,7 @@ EXPORT_SYMBOL_GPL(isCpuMaxFrequency);
 
 #define SIZE_RD_STAT 128
 extern int NXL_Get_BoardTemperature(void);
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 extern int isOccured_dieError(void);
 #endif
 
@@ -103,10 +103,10 @@ typedef struct {
 } procstat_t;
 
 typedef struct nxp_cpuLimit_control {
-	int cpuUsageNx4330;
+	int cpuUsageNx4418;
 	procstat_t m_prev;
 	procstat_t m_curr;
-	bool occuredError; // occur unexpected, when occured, no use Maxclock --> Max:1.0G 
+	bool occuredError; // occur unexpected, when occured, no use Maxclock --> Max:1.0G
 	long temperature_limit_level2; // TEMPERTURE_LIMIT_LEVEL2;
 	bool waring_level;
 	int downFreqCount;
@@ -278,7 +278,7 @@ static int cpu_down_force_byResource(void)
 		return stopped;
 
     }
-	
+
     return 0;
 }
 
@@ -318,12 +318,12 @@ void GetCPUInfo(char *buf)
 
 	cpuUsage = usage100/100;
 	if(cpuUsage<0 || cpuUsage>100) return;
-	
- 	ctrl_cpuTemp.cpuUsageNx4330 = usage100;
+
+ 	ctrl_cpuTemp.cpuUsageNx4418 = usage100;
 
     pr_debug("cpu:%02d.%02d %% MaxCpu(%d) temperature(%d) die(%d)stop(0x%x)\n",
     	(usage100/100), (usage100%100), curMaxCpu, ctrl_cpuTemp.board_temperature,
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
     	isOccured_dieError(),
 #else
 		0,
@@ -339,7 +339,7 @@ void GetCPUInfo(char *buf)
     ctrl_cpuTemp.m_prev.si = ctrl_cpuTemp.m_curr.si;
     ctrl_cpuTemp.m_prev.zero = ctrl_cpuTemp.m_curr.zero;
 
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 	if(isOccured_dieError() && (ctrl_cpuTemp.board_temperature<TEMPERTURE_LIMIT_LEVEL2))
 		ctrl_cpuTemp.occuredError = 1;
 #endif
@@ -357,20 +357,20 @@ void _GetCupInfomation(void)
 
 int isCheck_ChargeStop_byResource(void)
 {
-	int cpuUsage = ctrl_cpuTemp.cpuUsageNx4330/100;
+	int cpuUsage = ctrl_cpuTemp.cpuUsageNx4418/100;
 
 	if((cpuUsage < CPU_OVER_USAGELEVEL) && (ctrl_cpuTemp.board_temperature<TEMPERTURE_CPU_DOWN2))
 	{
 		ctrl_cpuTemp.charging_stop = 0;
 		return 0;
 	}
-	
+
 	if(ctrl_cpuTemp.board_temperature > TEMPERTURE_CHARGING_STOP)
 	{
 		ctrl_cpuTemp.charging_stop = 1;
 		return 1;
 	}
-	else 
+	else
 	{
 		if(ctrl_cpuTemp.charging_stop == 0)
 			return 0;
@@ -379,7 +379,7 @@ int isCheck_ChargeStop_byResource(void)
 			ctrl_cpuTemp.charging_stop = 0;
 			return 0;
 		}
-		else 
+		else
 			return 1;
 	}
 }
@@ -387,18 +387,18 @@ EXPORT_SYMBOL_GPL(isCheck_ChargeStop_byResource);
 
 void isCheck_CPUDown_byResource(void)
 {
-	int cpuUsage = ctrl_cpuTemp.cpuUsageNx4330/100;
+	int cpuUsage = ctrl_cpuTemp.cpuUsageNx4418/100;
 
 	if(cpuUsage<CPU_OVER_USAGELEVEL)
 		ctrl_cpuTemp.downUsageCount++;
 	else
 		ctrl_cpuTemp.downUsageCount=0;
-	
+
 	if(ctrl_cpuTemp.stopped_cpu && (ctrl_cpuTemp.downUsageCount>5) && (ctrl_cpuTemp.board_temperature < TEMPERTURE_CPU_DOWN2))
 	{
 		cpu_up_force_byResource(ctrl_cpuTemp.stopped_cpu);
 		ctrl_cpuTemp.stopped_cpu=0;
-		
+
 		return;
 	}
 
@@ -417,19 +417,19 @@ void isCheck_CPUDown_byResource(void)
 		ctrl_cpuTemp.stopped_cpu |= cpu_down_force_byResource();
 		return;
 	}
-	
+
 	if(ctrl_cpuTemp.board_temperature >= TEMPERTURE_CPU_DOWN1)
 	{
 		if((ctrl_cpuTemp.stopped_cpu == 0) && (cpuUsage>CPU_OVER_USAGELEVEL))
 			ctrl_cpuTemp.stopped_cpu |= cpu_down_force_byResource();
 	}
-	
+
 }
 
 long funcGetMaxFreq(struct cpufreq_limit_data *limit)
 {
 	long max_freq = 0;
-	int cpuUsage = ctrl_cpuTemp.cpuUsageNx4330/100;
+	int cpuUsage = ctrl_cpuTemp.cpuUsageNx4418/100;
 
 	if(ctrl_cpuTemp.temperature_limit_level2 == 0)
 		ctrl_cpuTemp.temperature_limit_level2 = TEMPERTURE_LIMIT_LEVEL2;
@@ -489,7 +489,7 @@ long funcGetMaxFreq(struct cpufreq_limit_data *limit)
 		ctrl_cpuTemp.waring_level = 1;
 	}
 
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 	if(isOccured_dieError() || ctrl_cpuTemp.occuredError) // DieError
 	{
 		limit->prev_max_freq = limit->min_max_freq;
@@ -515,7 +515,7 @@ long funcGetMaxFreq(struct cpufreq_limit_data *limit)
 	{
 		if(limit->prev_max_freq < max_freq)
 		{
-			if(ctrl_cpuTemp.downFreqCount++ < 60) 
+			if(ctrl_cpuTemp.downFreqCount++ < 60)
 				return limit->prev_max_freq;
 			else
 			{
@@ -535,7 +535,7 @@ long funcGetMaxFreq(struct cpufreq_limit_data *limit)
 long funcGetMaxFreq_OnBoost(struct cpufreq_limit_data *limit)//, int *t)
 {
 	long max_freq = 0;
-	
+
 	if(ctrl_cpuTemp.stopped_cpu)
 	{
 		cpu_up_force_byResource(ctrl_cpuTemp.stopped_cpu);
@@ -565,8 +565,8 @@ long funcGetMaxFreq_OnBoost(struct cpufreq_limit_data *limit)//, int *t)
 long cpuUsage_Process(struct cpufreq_limit_data *limit, int boost)
 {
 	ctrl_cpuTemp.board_temperature = NXL_Get_BoardTemperature();
-	
-	if(boost) // if over temperature, can't use max_clock. 
+
+	if(boost) // if over temperature, can't use max_clock.
 		return funcGetMaxFreq_OnBoost(limit);
 
 	_GetCupInfomation();

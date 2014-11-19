@@ -214,28 +214,28 @@
 
  <tr>
  <td> rem_wakeup_pwrdn </td>
- <td> On read, shows the status core - hibernated or not. On write, initiates 
+ <td> On read, shows the status core - hibernated or not. On write, initiates
  a remote wakeup of the device from Hibernation. </td>
  <td> Read/Write</td>
  </tr>
 
  <tr>
  <td> mode_ch_tim_en </td>
- <td> This bit is used to enable or disable the host core to wait for 200 PHY 
+ <td> This bit is used to enable or disable the host core to wait for 200 PHY
  clock cycles at the end of Resume to change the opmode signal to the PHY to 00
  after Suspend or LPM. </td>
  <td> Read/Write</td>
  </tr>
- 
+
  <tr>
  <td> fr_interval </td>
- <td> On read, shows the value of HFIR Frame Interval. On write, dynamically 
+ <td> On read, shows the value of HFIR Frame Interval. On write, dynamically
  reload HFIR register during runtime. The application can write a value to this
- register only after the Port Enable bit of the Host Port Control and Status 
+ register only after the Port Enable bit of the Host Port Control and Status
  register (HPRT.PrtEnaPort) has been set </td>
  <td> Read/Write</td>
  </tr>
- 
+
  <tr>
  <td> disconnect_us </td>
  <td> On read, shows the status of disconnect_device_us. On write, sets disconnect_us
@@ -317,7 +317,7 @@
 #include "dwc_otg_hcd_if.h"
 
 // psw0523 add
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_ARCH_CPU_SLSI)
 #include <mach/platform.h>
 #endif
 /*
@@ -839,7 +839,7 @@ DEVICE_ATTR(remote_wakeup, S_IRUGO | S_IWUSR, remote_wakeup_show,
 	    remote_wakeup_store);
 
 /**
- * Show the whether core is hibernated or not. 					
+ * Show the whether core is hibernated or not.
  */
 static ssize_t rem_wakeup_pwrdn_show(struct device *_dev,
 				     struct device_attribute *attr, char *buf)
@@ -1103,13 +1103,13 @@ DEVICE_ATTR(sleep_status, S_IRUGO | S_IWUSR, sleepstatus_show,
 #endif /* CONFIG_USB_DWC_OTG_LPM_ENABLE */
 
 // psw0523 add for host <-> device change
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_ARCH_CPU_SLSI)
 #define CFG_OTG_MODE_HOST   1
 #define CFG_OTG_MODE_DEVICE 0
 extern unsigned int get_otg_mode(void); /* 1: host, 0: device */
 extern void set_otg_mode(unsigned int mode, int is_force); /* 1: host, 0: device */
 
-static ssize_t otg_mode_show(struct device *_dev, 
+static ssize_t otg_mode_show(struct device *_dev,
         struct device_attribute *attr, char *buf)
 {
     unsigned int mode = get_otg_mode();
@@ -1136,7 +1136,7 @@ static ssize_t otg_mode_store(struct device *_dev,
 }
 
 DEVICE_ATTR(otg_mode, S_IRUGO | S_IWUSR, otg_mode_show, otg_mode_store);
-#endif /* CONFIG_ARCH_NXP3200 && CFG_SWITCH_USB_HOST_DEVICE */
+#endif /* CONFIG_ARCH_CPU_SLSI && CFG_SWITCH_USB_HOST_DEVICE */
 
 /**@}*/
 
@@ -1195,7 +1195,7 @@ void dwc_otg_attr_create(
 	error = device_create_file(&dev->dev, &dev_attr_sleep_status);
 #endif
     // psw0523 add
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_ARCH_CPU_SLSI)
     error = device_create_file(&dev->dev, &dev_attr_otg_mode);
 #endif
 }
@@ -1253,7 +1253,7 @@ void dwc_otg_attr_remove(
 	device_remove_file(&dev->dev, &dev_attr_sleep_status);
 #endif
     // psw0523 add
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_ARCH_CPU_SLSI)
     device_remove_file(&dev->dev, &dev_attr_otg_mode);
 #endif
 }

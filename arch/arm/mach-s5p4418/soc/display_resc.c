@@ -26,7 +26,7 @@
 
 #include <mach/devices.h>
 #include <mach/soc.h>
-#include "display_4330.h"
+#include "display_4418.h"
 
 #if (0)
 #define DBGOUT(msg...)		{ printk(KERN_INFO msg); }

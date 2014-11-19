@@ -342,7 +342,7 @@ static char *ffs_prepare_buffer(const char * __user buf, size_t len)
 
 /* DMA alloc functions ******************************************************/
 
-#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_CPU_SLSI)
 void *__ffs_dma_alloc(uint32_t size, dma_addr_t *dma_addr)
 {
 	void *buf = dma_alloc_coherent(NULL, (size_t)size, dma_addr, GFP_KERNEL);
@@ -771,7 +771,7 @@ static ssize_t ffs_epfile_io(struct file *file,
 {
 	struct ffs_epfile *epfile = file->private_data;
 	struct ffs_ep *ep;
-#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_CPU_SLSI)
 	dma_addr_t dma_addr;
 #endif
 	char *data = NULL;
@@ -814,7 +814,7 @@ first_try:
 
 		/* Allocate & copy */
 		if (!halt && !data) {
-#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_CPU_SLSI)
 			data = __ffs_dma_alloc(len, &dma_addr);
 #else
 			data = kzalloc(len, GFP_KERNEL);
@@ -862,7 +862,7 @@ first_try:
 		req->complete = ffs_epfile_io_complete;
 		req->buf      = data;
 		req->length   = len;
-#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_CPU_SLSI)
 		req->dma      = dma_addr;
 #endif
 
@@ -886,7 +886,7 @@ first_try:
 	mutex_unlock(&epfile->mutex);
 error:
 	if (data)
-#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_ARCH_CPU_SLSI)
 		__ffs_dma_free(len, data, dma_addr);
 #else
 		kfree(data);

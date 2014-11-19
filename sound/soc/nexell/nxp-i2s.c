@@ -32,7 +32,7 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-#ifdef CONFIG_NEXELL_DFS_BCLK
+#ifdef CONFIG_SLSI_DFS_BCLK
 #include <mach/nxp-dfs-bclk.h>
 #endif
 
@@ -132,7 +132,7 @@ static struct clock_ratio clk_ratio [] = {
 struct nxp_i2s_snd_param {
 	int channel;
     int master_mode;   	/* 0 = master_mode, 1 = slave */
-    int mclk_in;   	
+    int mclk_in;
     int trans_mode; 	/* 0 = I2S, 2 = Left-Justified, 3 = Right-Justified  */
     int sample_rate;
     int	frame_bit;		/* 16, 24, 32, 48 */
@@ -243,7 +243,7 @@ static void cutoff_master_clock(struct nxp_i2s_snd_param *par)
 
 static void inline i2s_reset(struct nxp_i2s_snd_param *par)
 {
-	nxp_soc_rsc_reset(RESET_ID_I2S0 + par->channel);
+	nxp_soc_peri_reset_set(RESET_ID_I2S0 + par->channel);
 }
 
 static int i2s_start(struct nxp_i2s_snd_param *par, int stream)
@@ -356,7 +356,7 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 		return -EINVAL;
 	}
 
-	if (!par->master_mode) 
+	if (!par->master_mode)
 		goto done;
 
 	for (i = 0; ARRAY_SIZE(clk_ratio) > i; i++) {
@@ -561,7 +561,7 @@ static int nxp_i2s_trigger(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 	case SNDRV_PCM_TRIGGER_START:
-#ifdef CONFIG_NEXELL_DFS_BCLK
+#ifdef CONFIG_SLSI_DFS_BCLK
         bclk_get(BCLK_USER_DMA);
 #endif
 		i2s_start(par, stream);
@@ -570,7 +570,7 @@ static int nxp_i2s_trigger(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
     case SNDRV_PCM_TRIGGER_STOP:
 		i2s_stop(par, stream);
-#ifdef CONFIG_NEXELL_DFS_BCLK
+#ifdef CONFIG_SLSI_DFS_BCLK
         bclk_put(BCLK_USER_DMA);
 #endif
 		break;
@@ -771,7 +771,7 @@ module_init(nxp_i2s_init);
 module_exit(nxp_i2s_exit);
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound I2S driver for the Nexell");
+MODULE_DESCRIPTION("Sound I2S driver for the SLSI");
 MODULE_LICENSE("GPL");
 
 

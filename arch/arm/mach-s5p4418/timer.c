@@ -88,8 +88,8 @@ int __timer_sys_clk_clr = 0;
 
 static inline void timer_reset(int ch)
 {
-	if (!nxp_soc_rsc_status(RESET_ID_TIMER))
-		nxp_soc_rsc_reset(RESET_ID_TIMER);
+	if (!nxp_soc_peri_reset_status(RESET_ID_TIMER))
+		nxp_soc_peri_reset_set(RESET_ID_TIMER);
 }
 
 static inline void timer_clock(int ch, int mux, int scl)
@@ -185,7 +185,7 @@ static void timer_clock_select(struct timer_info *info, long frequency)
 	int tscl = 0, tmux = 5;
 	int vers = nxp_cpu_version();
 
-#if !defined(CONFIG_NEXELL_DFS_BCLK)
+#if !defined(CONFIG_SLSI_DFS_BCLK)
 	int smux = 0, pscl = 0;
 	ulong mout;
 	ulong thz, delt = (-1UL);

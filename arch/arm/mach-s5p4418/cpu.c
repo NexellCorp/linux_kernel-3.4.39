@@ -200,17 +200,19 @@ static int __init cpu_l2cach_init(void)
 early_initcall(cpu_l2cach_init);
 #endif
 
+#if defined CONFIG_CMA && defined CONFIG_ION
+extern void nxp_reserve_mem(void);
 static void __init cpu_mem_reserve(void)
 {
-#ifdef CONFIG_CMA
-extern void nxp_reserve_mem(void);
+	#ifdef CONFIG_CMA
 	nxp_reserve_mem();
-#endif
+	#endif
 
-#ifdef CONFIG_ANDROID_RAM_CONSOLE
+	#ifdef CONFIG_ANDROID_RAM_CONSOLE
 	persistent_ram_console_reserve();
-#endif
+	#endif
 }
+#endif
 
 /*------------------------------------------------------------------------------
  * Maintainer: Nexell Co., Ltd.
@@ -218,7 +220,7 @@ extern void nxp_reserve_mem(void);
 #include <mach/iomap.h>
 extern struct sys_timer nxp_cpu_sys_timer;
 
-MACHINE_START(NXP4330, CFG_SYS_CPU_NAME)
+MACHINE_START(S5P4418, CFG_SYS_CPU_NAME)
 	.atag_offset	=  0x00000100,
 	.fixup			=  cpu_fixup,
 	.map_io			=  cpu_map_io,

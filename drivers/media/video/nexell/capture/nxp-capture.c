@@ -30,7 +30,7 @@
 #ifdef CONFIG_ARCH_NXP4330_3200
 #include <mach/nxp3200.h>
 #else
-#include <mach/nxp4330.h>
+#include <mach/platform.h>
 #endif
 
 /*
@@ -492,7 +492,7 @@ struct nxp_capture *create_nxp_capture(int index,
 {
     struct nxp_capture *me;
     int ret;
-#ifdef CONFIG_NXP_CAPTURE_MIPI_CSI
+#ifdef CONFIG_SLSI_CAPTURE_MIPI_CSI
     bool csi_enabled = pdata->type == NXP_CAPTURE_INF_CSI;
 #endif
 
@@ -531,7 +531,7 @@ struct nxp_capture *create_nxp_capture(int index,
     me->deci_enable = false;
     me->context_changed = false;
 
-#ifdef CONFIG_NXP_CAPTURE_MIPI_CSI
+#ifdef CONFIG_SLSI_CAPTURE_MIPI_CSI
     /* init children */
     if (csi_enabled) {
         if (!pdata->csi) {
@@ -552,7 +552,7 @@ struct nxp_capture *create_nxp_capture(int index,
         goto error_vin;
     }
 
-#ifdef CONFIG_NXP_CAPTURE_DECIMATOR
+#ifdef CONFIG_SLSI_CAPTURE_DECIMATOR
     ret = nxp_decimator_init(&me->decimator, &pdata->deci);
     if (ret < 0) {
         pr_err("%s: failed to nxp_decimator_init()\n", __func__);
@@ -561,7 +561,7 @@ struct nxp_capture *create_nxp_capture(int index,
 #endif
 
     /* create link */
-#ifdef CONFIG_NXP_CAPTURE_MIPI_CSI
+#ifdef CONFIG_SLSI_CAPTURE_MIPI_CSI
     if (csi_enabled) {
         ret = media_entity_create_link(
                 &me->csi.subdev.entity, NXP_CSI_PAD_SOURCE,
@@ -577,7 +577,7 @@ struct nxp_capture *create_nxp_capture(int index,
     _set_sensor_mipi_info(me->module, 0);
 #endif
 
-#ifdef CONFIG_NXP_CAPTURE_DECIMATOR
+#ifdef CONFIG_SLSI_CAPTURE_DECIMATOR
     ret = media_entity_create_link(
             &me->vin_clipper.subdev.entity, NXP_VIN_PAD_SOURCE_DECIMATOR,
             &me->decimator.subdev.entity, NXP_DECIMATOR_PAD_SINK, 0);
@@ -597,12 +597,12 @@ struct nxp_capture *create_nxp_capture(int index,
     return me;
 
 error_link:
-#ifdef CONFIG_NXP_CAPTURE_MIPI_CSI
+#ifdef CONFIG_SLSI_CAPTURE_MIPI_CSI
     if (csi_enabled)
         nxp_csi_cleanup(&me->csi);
 error_csi:
 #endif
-#ifdef CONFIG_NXP_CAPTURE_DECIMATOR
+#ifdef CONFIG_SLSI_CAPTURE_DECIMATOR
     nxp_decimator_cleanup(&me->decimator);
 error_decimator:
 #endif
@@ -614,12 +614,12 @@ error_vin:
 
 void release_nxp_capture(struct nxp_capture *me)
 {
-#ifdef CONFIG_NXP_CAPTURE_MIPI_CSI
+#ifdef CONFIG_SLSI_CAPTURE_MIPI_CSI
     if (me->interface_type == NXP_CAPTURE_INF_CSI)
         nxp_csi_cleanup(&me->csi);
 #endif
 
-#ifdef CONFIG_NXP_CAPTURE_DECIMATOR
+#ifdef CONFIG_SLSI_CAPTURE_DECIMATOR
     nxp_decimator_cleanup(&me->decimator);
 #endif
     nxp_vin_clipper_cleanup(&me->vin_clipper);
@@ -632,13 +632,13 @@ int register_nxp_capture(struct nxp_capture *me)
     int ret;
     struct nxp_v4l2_i2c_board_info *sensor_info;
     struct v4l2_subdev *sensor;
-#ifdef CONFIG_NXP_CAPTURE_MIPI_CSI
+#ifdef CONFIG_SLSI_CAPTURE_MIPI_CSI
     bool csi_enabled = me->interface_type == NXP_CAPTURE_INF_CSI;
 #endif
 
     pr_debug("%s entered\n", __func__);
 
-#ifdef CONFIG_NXP_CAPTURE_MIPI_CSI
+#ifdef CONFIG_SLSI_CAPTURE_MIPI_CSI
     if (csi_enabled) {
         ret = nxp_csi_register(&me->csi);
         if (ret < 0) {
@@ -654,7 +654,7 @@ int register_nxp_capture(struct nxp_capture *me)
         goto error_vin;
     }
 
-#ifdef CONFIG_NXP_CAPTURE_DECIMATOR
+#ifdef CONFIG_SLSI_CAPTURE_DECIMATOR
     ret = nxp_decimator_register(&me->decimator);
     if (ret < 0) {
         pr_err("%s: failed to nxp_decimator_register()\n", __func__);
@@ -689,13 +689,13 @@ int register_nxp_capture(struct nxp_capture *me)
 error_irq:
     _unregister_sensor(me);
 error_sensor:
-#ifdef CONFIG_NXP_CAPTURE_DECIMATOR
+#ifdef CONFIG_SLSI_CAPTURE_DECIMATOR
     nxp_decimator_unregister(&me->decimator);
 error_decimator:
 #endif
     nxp_vin_clipper_unregister(&me->vin_clipper);
 error_vin:
-#ifdef CONFIG_NXP_CAPTURE_MIPI_CSI
+#ifdef CONFIG_SLSI_CAPTURE_MIPI_CSI
     if (csi_enabled)
         nxp_csi_unregister(&me->csi);
 #endif
@@ -707,11 +707,11 @@ void unregister_nxp_capture(struct nxp_capture *me)
 {
     free_irq(me->irq, me);
     _unregister_sensor(me);
-#ifdef CONFIG_NXP_CAPTURE_DECIMATOR
+#ifdef CONFIG_SLSI_CAPTURE_DECIMATOR
     nxp_decimator_unregister(&me->decimator);
 #endif
     nxp_vin_clipper_unregister(&me->vin_clipper);
-#ifdef CONFIG_NXP_CAPTURE_MIPI_CSI
+#ifdef CONFIG_SLSI_CAPTURE_MIPI_CSI
     if (me->interface_type == NXP_CAPTURE_INF_CSI)
         nxp_csi_unregister(&me->csi);
 #endif
@@ -722,7 +722,7 @@ int suspend_nxp_capture(struct nxp_capture *me)
 {
     int ret;
     PM_DBGOUT("+%s\n", __func__);
-#ifdef CONFIG_NXP_CAPTURE_DECIMATOR
+#ifdef CONFIG_SLSI_CAPTURE_DECIMATOR
     ret = nxp_decimator_suspend(&me->decimator);
     if (ret) {
         PM_DBGOUT("%s: failed to nxp_decimator_suspend() ret %d\n", __func__, ret);
@@ -734,7 +734,7 @@ int suspend_nxp_capture(struct nxp_capture *me)
         PM_DBGOUT("%s: failed to nxp_vin_clipper_suspend() ret %d\n", __func__, ret);
         return ret;
     }
-#ifdef CONFIG_NXP_CAPTURE_MIPI_CSI
+#ifdef CONFIG_SLSI_CAPTURE_MIPI_CSI
     if (me->interface_type == NXP_CAPTURE_INF_CSI) {
         ret = nxp_csi_suspend(&me->csi);
         if (ret) {
@@ -754,11 +754,11 @@ int resume_nxp_capture(struct nxp_capture *me)
 
     nxp_vin_clipper_resume(&me->vin_clipper);
 
-#ifdef CONFIG_NXP_CAPTURE_DECIMATOR
+#ifdef CONFIG_SLSI_CAPTURE_DECIMATOR
     nxp_decimator_resume(&me->decimator);
 #endif
 
-#ifdef CONFIG_NXP_CAPTURE_MIPI_CSI
+#ifdef CONFIG_SLSI_CAPTURE_MIPI_CSI
     if (me->interface_type == NXP_CAPTURE_INF_CSI)
         nxp_csi_resume(&me->csi);
 #endif

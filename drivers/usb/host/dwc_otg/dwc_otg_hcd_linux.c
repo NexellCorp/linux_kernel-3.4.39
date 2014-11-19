@@ -122,7 +122,7 @@ struct wrapper_priv_data {
 };
 
 /** @} */
-#if defined(CONFIG_PM) && defined(CONFIG_ARCH_CPU_NEXELL)
+#if defined(CONFIG_PM) && defined(CONFIG_ARCH_CPU_SLSI)
 static dwc_otg_core_global_regs_t save_global_regs = {0, };
 
 static inline dwc_otg_hcd_t *hcd_to_dwc_otg_hcd(struct usb_hcd *hcd);
@@ -372,7 +372,7 @@ static int dwc_otg_hcd_resume(struct usb_hcd *hcd)
 	return 0;
 }
 #endif
-#endif	/* CONFIG_PM && CONFIG_ARCH_CPU_NEXELL */
+#endif	/* CONFIG_PM && CONFIG_ARCH_CPU_SLSI */
 
 static struct hc_driver dwc_otg_hc_driver = {
 
@@ -400,7 +400,7 @@ static struct hc_driver dwc_otg_hc_driver = {
 
 	.hub_status_data = hub_status_data,
 	.hub_control = hub_control,
-#if defined(CONFIG_PM) && defined(CONFIG_ARCH_CPU_NEXELL)
+#if defined(CONFIG_PM) && defined(CONFIG_ARCH_CPU_SLSI)
 	.bus_suspend = dwc_otg_hcd_suspend,
 	.bus_resume = dwc_otg_hcd_resume,
 #endif

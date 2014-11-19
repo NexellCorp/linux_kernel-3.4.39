@@ -3,7 +3,7 @@
 
 struct platform_device;
 
-#ifdef CONFIG_ION_NXP
+#ifdef CONFIG_ION_SLSI
 extern struct platform_device nxp_device_ion;
 void nxp_ion_set_platdata(void);
 #else

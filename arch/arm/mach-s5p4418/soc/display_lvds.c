@@ -26,7 +26,7 @@
 
 #include <mach/devices.h>
 #include <mach/soc.h>
-#include "display_4330.h"
+#include "display_4418.h"
 
 #if (0)
 #define DBGOUT(msg...)		{ printk(KERN_INFO msg); }
@@ -246,7 +246,7 @@ static int  lvds_enable(struct disp_process_dev *pdev, int enable)
   		NX_DISPTOP_CLKGEN_SetClockDivisorEnable(clkid, CFALSE);
   		pdev->status &= ~PROC_STATUS_ENABLE;
 	} else {
-        nxp_soc_rsc_enter(rstn);	/* power down */
+        nxp_soc_peri_reset_enter(rstn);	/* power down */
 
 		/* prepare */
 		lvds_prepare(pdev);
@@ -254,7 +254,7 @@ static int  lvds_enable(struct disp_process_dev *pdev, int enable)
 		/* START: CLKGEN, LVDS is started in setup function*/
   		NX_DISPTOP_CLKGEN_SetClockDivisorEnable(clkid, CTRUE);
 		/* LVDS PHY Reset, make sure last. */
-		nxp_soc_rsc_exit(rstn);
+		nxp_soc_peri_reset_exit(rstn);
 		pdev->status |=  PROC_STATUS_ENABLE;
   	}
   	return 0;

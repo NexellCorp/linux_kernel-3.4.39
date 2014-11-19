@@ -127,8 +127,8 @@ static unsigned long    clk_in_max = 0;
  */
 #define	PWM_BASE	IO_ADDRESS(PHY_BASEADDR_PWM)
 #define	PWM_RESET()	do {	\
-		if (!nxp_soc_rsc_status(RESET_ID_PWM))	\
-			nxp_soc_rsc_reset(RESET_ID_PWM);	\
+		if (!nxp_soc_peri_reset_status(RESET_ID_PWM))	\
+			nxp_soc_peri_reset_set(RESET_ID_PWM);	\
 		} while (0)
 
 static inline void pwm_clock(int ch, int mux, int scl)
@@ -412,7 +412,7 @@ static int __init nxp_soc_pwm_init(void)
 	}
 
 	clk_in_max  = clk_get_rate(clk);
-#if defined(CONFIG_NEXELL_DFS_BCLK)
+#if defined(CONFIG_SLSI_DFS_BCLK)
 	clk_in_max  = 20*1000*1000;
 #else
 	clk_in_max /= 2;

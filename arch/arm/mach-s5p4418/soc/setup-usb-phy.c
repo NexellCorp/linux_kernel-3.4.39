@@ -19,8 +19,8 @@
 
 #include <mach/platform.h>
 #include <mach/iomap.h>
-#include <mach/nxp4330.h>
-#include <mach/nxp4330_irq.h>
+#include <mach/s5p4418.h>
+#include <mach/s5p4418_irq.h>
 #include <nx_tieoff.h>
 #include <nx_gpio.h>
 
@@ -156,7 +156,7 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 		    // HSIC Enable in PORT1 of LINK
 			writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<14), SOC_VA_TIEOFF + 0x14);
 			writel(readl(SOC_VA_TIEOFF + 0x14) | (2<<14), SOC_VA_TIEOFF + 0x14);
-		}												
+		}
 
 		// 2. Program AHB Burst type
 		temp1 = readl(SOC_VA_TIEOFF + 0x1C) & ~HOST_SS_DMA_BURST_MASK;

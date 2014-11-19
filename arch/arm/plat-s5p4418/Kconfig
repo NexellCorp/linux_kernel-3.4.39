@@ -1,13 +1,5 @@
 #
 # Copyright 2009 Nexell.
-#
-# Configuration options for the NXP4330
-
-config PLAT_NXP4330
-	bool
-	default y
-
-#
 # Select Board
 #
 
@@ -15,80 +7,19 @@ comment "Board features"
 
 choice
     prompt "Platform board"
-    default PLAT_NXP4330_LYNX
+    default PLAT_S5P4418_DRONE
 
-	config PLAT_NXP4330_LYNX
-		bool "LYNX: Android MID board"
-		help
-   	 		Support for the android MID (Lynx) board.
-
-	config PLAT_NXP4330_VTK
-		bool "VTK: Validation Kit board"
-		help
-   	 		Support for the validation kit board.
-
-	config PLAT_NXP4330_SMARTBOX
-		bool "SMARTBOX: Android Smart Box"
-		help
-   	 		Support for the android smart box board.
-
-	config PLAT_NXP4330_PYXIS
-		bool "PYXIS: Android Pyxis board"
-		help
-   	 		Support for the android pysix tablet board.
-
-	config PLAT_NXP4330_W7
-		bool "W7: Android w7 board"
-		help
-   	 		Support for the android w7 tablet board.
-
-	config PLAT_NXP4330_NBOX
-		bool "NBOX: Android NBOX board"
-		help
-   	 		Support for the android nbox board.
-
-	config PLAT_NXP4330_MORPHEUS
-		bool "MORPHEUS: Android morpheus board"
-		help
-   	 		Support for the android morpheus board.
-
-	config PLAT_NXP4330_SECRET
-		bool "SECRET: Android secret board"
-		help
-   	 		Support for the android secret board.
-
-	config PLAT_NXP4330_BLACKBOX
-		bool "BLACKBOX: blackbox board"
-		help
-   	 		Support for the blackbox board.
-
-	config PLAT_NXP4330_DRONE
+	config PLAT_S5P4418_DRONE
 		bool "DRONE: Android drone board"
 		help
    	 		Support for the drone board.
 
-	config PLAT_NXP4330_DRONE2ND
-		bool "DRONE: Android drone2nd board"
+	config PLAT_S5P4418_DRONE2
+		bool "DRONE: Android drone2 board"
 		help
-   	 		Support for the drone2nd board.
+   	 		Support for the drone2 board.
 
-
-    config PLAT_NXP4330_KAR
-		bool "KAR: Android Car Navigation board"
-		help
-   	 		Support for the kar board.
-
-    config PLAT_NXP4330_MOON
-		bool "MOON: Linux CCTV board"
-		help
-   	 		Support for the moon board.
-
-	config PLAT_NXP4330_DVR
-		bool "DVR: Linux dvr board"
-		help
-   	 		Support for the dvr board.
-
-	config PLAT_NXP4330_SVT
+	config PLAT_S5P4418_SVT
 		bool "SVT: Linux svt board"
 		help
    	 		Support for the svt board.
@@ -99,10 +30,4 @@ endchoice
 # Board dependent configure
 #
 
-if PLAT_NX4330_LYNX
-source "arch/arm/plat-nxp4330/lynx/Kconfig"
-endif
 
-if PLAT_NXP4330_SECRET
-source "arch/arm/plat-nxp4330/secret/Kconfig"
-endif

@@ -197,6 +197,6 @@ static struct platform_driver snd_card_driver = {
 module_platform_driver(snd_card_driver);
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound codec-null driver for the Nexell");
+MODULE_DESCRIPTION("Sound codec-null driver for the SLSI");
 MODULE_LICENSE("GPL");
 

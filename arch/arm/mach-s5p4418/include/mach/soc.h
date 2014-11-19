@@ -172,10 +172,10 @@ void 		 nxp_soc_disp_register_lcd_ops(int module, struct lcd_operation *pops);
  * 	Reset interface functions for nexell cpu
  *
  */
-void		nxp_soc_rsc_enter (int id);
-void		nxp_soc_rsc_exit  (int id);
-void		nxp_soc_rsc_reset (int id);
-int			nxp_soc_rsc_status(int id);	/* 1: power on, 0: power down */
+void		nxp_soc_peri_reset_enter(int id);
+void		nxp_soc_peri_reset_exit(int id);
+void		nxp_soc_peri_reset_set(int id);
+int			nxp_soc_peri_reset_status(int id);	/* 1: power on, 0: power down */
 
 #endif	/* __SOC_H__ */
 

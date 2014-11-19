@@ -275,11 +275,11 @@ config IR_GPIO_CIR
 	   To compile this driver as a module, choose M here: the module will
 	   be called gpio-ir-recv.
 
-config PPM_NEXELL
-	tristate "NEXELL IR remote control"
+config PPM_SLSI
+	tristate "SLsiAP IR remote control"
 	depends on RC_CORE
 	---help---
-	   Say Y if you want to use NEXELL IR Receiver.
+	   Say Y if you want to use SLsiAP IR Receiver.
 
 	   To compile this driver as a module, choose M here.
 

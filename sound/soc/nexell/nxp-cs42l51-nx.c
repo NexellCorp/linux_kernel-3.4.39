@@ -277,5 +277,5 @@ static struct platform_driver cs42l51_driver = {
 module_platform_driver(cs42l51_driver);
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound codec-cs42l51 driver for the Nexell");
+MODULE_DESCRIPTION("Sound codec-cs42l51 driver for the SLSI");
 MODULE_LICENSE("GPL");

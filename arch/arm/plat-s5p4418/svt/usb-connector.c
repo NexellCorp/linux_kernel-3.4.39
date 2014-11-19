@@ -14,7 +14,7 @@
 
 #define USB_HOST_HUB    (1)
 
-#define pr_fmt(fmt) "nxp4330_otg %s: " fmt, __func__
+#define pr_fmt(fmt) "s5p4418_otg %s: " fmt, __func__
 
 #include <linux/gpio.h>
 #include <linux/irq.h>
@@ -33,7 +33,7 @@
 #include <mach/soc.h>
 
 
-struct nxp4330_otg {
+struct s5p4418_otg {
     struct usb_otg      otg;
     struct usb_phy      phy;
     struct delayed_work work;
@@ -41,18 +41,18 @@ struct nxp4330_otg {
     bool                usb_connected;
     struct usb_bus      *ohci;
 
-    /* HACK: nxp4330 phy interface requires passing a pdev pointer */
+    /* HACK: s5p4418 phy interface requires passing a pdev pointer */
     struct platform_device  pdev;
 };
 
-static struct nxp4330_otg   s_nxp4330_otg;
+static struct s5p4418_otg   s_s5p4418_otg;
 //static bool                 s_host_init;
 
 
-static int nxp4330_phy_init(struct usb_phy *phy)
+static int s5p4418_phy_init(struct usb_phy *phy)
 {
 #if !defined(USB_HOST_HUB)
-	struct nxp4330_otg *nxpotg = container_of(phy, struct nxp4330_otg, phy);
+	struct s5p4418_otg *nxpotg = container_of(phy, struct s5p4418_otg, phy);
 
 	if (phy->last_event == USB_EVENT_VBUS)
 		return nxp_usb_phy_init(&nxpotg->pdev, NXP_USB_PHY_DEVICE);
@@ -64,10 +64,10 @@ static int nxp4330_phy_init(struct usb_phy *phy)
 #endif
 }
 
-static void nxp4330_phy_shutdown(struct usb_phy *phy)
+static void s5p4418_phy_shutdown(struct usb_phy *phy)
 {
 #if !defined(USB_HOST_HUB)
-	struct nxp4330_otg *nxpotg = container_of(phy, struct nxp4330_otg, phy);
+	struct s5p4418_otg *nxpotg = container_of(phy, struct s5p4418_otg, phy);
 
 	if (nxpotg->phy.state == OTG_STATE_B_PERIPHERAL)
 		nxp_usb_phy_exit(&nxpotg->pdev, NXP_USB_PHY_DEVICE);
@@ -76,7 +76,7 @@ static void nxp4330_phy_shutdown(struct usb_phy *phy)
 #endif
 }
 
-static int nxp4330_phy_set_power(struct usb_phy *phy, unsigned mA)
+static int s5p4418_phy_set_power(struct usb_phy *phy, unsigned mA)
 {
 	if (mA > 3)
 		atomic_notifier_call_chain(&phy->notifier, USB_EVENT_ENUMERATED,
@@ -85,7 +85,7 @@ static int nxp4330_phy_set_power(struct usb_phy *phy, unsigned mA)
 	return 0;
 }
 
-static int nxp4330_otg_host_init(struct nxp4330_otg *nxpotg)
+static int s5p4418_otg_host_init(struct s5p4418_otg *nxpotg)
 {
 #ifdef CONFIG_USB
 	struct usb_hcd *hcd = NULL;
@@ -128,7 +128,7 @@ err_ehci:
 }
 
 
-static int nxp4330_otg_host_enable(struct nxp4330_otg *nxpotg)
+static int s5p4418_otg_host_enable(struct s5p4418_otg *nxpotg)
 {
 #ifdef CONFIG_USB
 	struct usb_hcd *hcd = NULL;
@@ -138,9 +138,9 @@ static int nxp4330_otg_host_enable(struct nxp4330_otg *nxpotg)
 	usb_phy_init(&nxpotg->phy);
 
 #if !defined(USB_HOST_HUB)
-    err = nxp4330_otg_host_init(nxpotg);
+    err = s5p4418_otg_host_init(nxpotg);
     if (err) {
-        pr_err("failed to nxp4330_otg_host_enable: %d\n", err);
+        pr_err("failed to s5p4418_otg_host_enable: %d\n", err);
         goto err_vbus;
     }
 #endif
@@ -162,7 +162,7 @@ err_vbus:
 #endif  // #ifdef CONFIG_USB
 }
 
-static void nxp4330_otg_host_disable(struct nxp4330_otg *nxpotg)
+static void s5p4418_otg_host_disable(struct s5p4418_otg *nxpotg)
 {
 #ifdef CONFIG_USB
 #if !defined(USB_HOST_HUB)
@@ -194,10 +194,10 @@ static void nxp4330_otg_host_disable(struct nxp4330_otg *nxpotg)
 #endif
 }
 
-static int nxp4330_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
+static int s5p4418_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
 {
 #ifdef CONFIG_USB
-	struct nxp4330_otg *nxpotg = container_of(otg, struct nxp4330_otg, otg);
+	struct s5p4418_otg *nxpotg = container_of(otg, struct s5p4418_otg, otg);
 #if !defined(USB_HOST_HUB)
 	struct usb_hcd *hcd = bus_to_hcd(host);
 #endif
@@ -234,10 +234,10 @@ out:
 	return 0;
 }
 
-static int nxp4330_otg_set_peripheral(struct usb_otg *otg,
+static int s5p4418_otg_set_peripheral(struct usb_otg *otg,
 				    struct usb_gadget *gadget)
 {
-	struct nxp4330_otg *nxpotg = container_of(otg, struct nxp4330_otg, otg);
+	struct s5p4418_otg *nxpotg = container_of(otg, struct s5p4418_otg, otg);
 
 	mutex_lock(&nxpotg->lock);
 
@@ -255,7 +255,7 @@ static int nxp4330_otg_set_peripheral(struct usb_otg *otg,
 	return 0;
 }
 
-static int nxp4330_otg_set_vbus(struct usb_otg *otg, bool enabled)
+static int s5p4418_otg_set_vbus(struct usb_otg *otg, bool enabled)
 {
 	pr_debug("vbus %s\n", enabled ? "on" : "off");
 
@@ -269,9 +269,9 @@ static int nxp4330_otg_set_vbus(struct usb_otg *otg, bool enabled)
 	return 0;
 }
 
-static void nxp4330_otg_work(struct work_struct *work)
+static void s5p4418_otg_work(struct work_struct *work)
 {
-	struct nxp4330_otg *nxpotg = container_of(work, struct nxp4330_otg, work.work);
+	struct s5p4418_otg *nxpotg = container_of(work, struct s5p4418_otg, work.work);
 	enum usb_otg_state prev_state;
 	int id, vbus, err;
 
@@ -297,7 +297,7 @@ static void nxp4330_otg_work(struct work_struct *work)
 		atomic_notifier_call_chain(&nxpotg->phy.notifier,
 					USB_EVENT_ID, NULL);
 
-		err = nxp4330_otg_host_enable(nxpotg);
+		err = s5p4418_otg_host_enable(nxpotg);
 		if (err) {
 			nxpotg->phy.last_event = USB_EVENT_NONE;
 			nxpotg->phy.state = OTG_STATE_B_IDLE;
@@ -325,7 +325,7 @@ static void nxp4330_otg_work(struct work_struct *work)
 			usb_gadget_vbus_disconnect(nxpotg->otg.gadget);
 
 		if (prev_state == OTG_STATE_A_HOST && nxpotg->otg.host)
-			nxp4330_otg_host_disable(nxpotg);
+			s5p4418_otg_host_disable(nxpotg);
 
 		nxpotg->phy.state = OTG_STATE_B_IDLE;
 		nxpotg->phy.last_event = USB_EVENT_NONE;
@@ -340,16 +340,16 @@ out:
 	mutex_unlock(&nxpotg->lock);
 }
 
-static irqreturn_t nxp4330_otg_irq(int irq, void *data)
+static irqreturn_t s5p4418_otg_irq(int irq, void *data)
 {
-	struct nxp4330_otg *nxpotg = data;
+	struct s5p4418_otg *nxpotg = data;
 	queue_delayed_work(system_nrt_wq, &nxpotg->work, msecs_to_jiffies(20));
 	return IRQ_HANDLED;
 }
 
-void nxp4330_otg_set_usb_state(bool connected)
+void s5p4418_otg_set_usb_state(bool connected)
 {
-	struct nxp4330_otg *nxpotg = &s_nxp4330_otg;
+	struct s5p4418_otg *nxpotg = &s_s5p4418_otg;
 
 	nxpotg->usb_connected = connected;
 	queue_delayed_work(system_nrt_wq, &nxpotg->work,
@@ -360,15 +360,15 @@ void nxp4330_otg_set_usb_state(bool connected)
 
 void nxp_usb_connector_init(void)
 {
-	struct nxp4330_otg *nxpotg = &s_nxp4330_otg;
+	struct s5p4418_otg *nxpotg = &s_s5p4418_otg;
 	struct device *dev = &nxpotg->pdev.dev;
 
-	INIT_DELAYED_WORK(&nxpotg->work, nxp4330_otg_work);
+	INIT_DELAYED_WORK(&nxpotg->work, s5p4418_otg_work);
 	ATOMIC_INIT_NOTIFIER_HEAD(&nxpotg->phy.notifier);
 	mutex_init(&nxpotg->lock);
 
 	device_initialize(dev);
-	dev_set_name(dev, "%s", "nxp4330_otg");
+	dev_set_name(dev, "%s", "s5p4418_otg");
 	if (device_add(dev)) {
 		dev_err(dev, "%s: cannot reg device\n", __func__);
 		return;
@@ -376,23 +376,23 @@ void nxp_usb_connector_init(void)
 	dev_set_drvdata(dev, nxpotg);
 
 	nxpotg->phy.dev         = dev;
-	nxpotg->phy.label       = "nxp4330_otg";
+	nxpotg->phy.label       = "s5p4418_otg";
 	nxpotg->phy.otg         = &nxpotg->otg;
-	nxpotg->phy.init        = nxp4330_phy_init;
-	nxpotg->phy.shutdown    = nxp4330_phy_shutdown;
-	nxpotg->phy.set_power   = nxp4330_phy_set_power;
+	nxpotg->phy.init        = s5p4418_phy_init;
+	nxpotg->phy.shutdown    = s5p4418_phy_shutdown;
+	nxpotg->phy.set_power   = s5p4418_phy_set_power;
 
 	nxpotg->otg.phy             = &nxpotg->phy;
-	nxpotg->otg.set_host        = nxp4330_otg_set_host;
-	nxpotg->otg.set_peripheral  = nxp4330_otg_set_peripheral;
-	nxpotg->otg.set_vbus        = nxp4330_otg_set_vbus;
+	nxpotg->otg.set_host        = s5p4418_otg_set_host;
+	nxpotg->otg.set_peripheral  = s5p4418_otg_set_peripheral;
+	nxpotg->otg.set_vbus        = s5p4418_otg_set_vbus;
 
 	usb_set_transceiver(&nxpotg->phy);
 }
 
-static int __init nxp4330_connector_init(void)
+static int __init s5p4418_connector_init(void)
 {
-	struct nxp4330_otg *nxpotg = &s_nxp4330_otg;
+	struct s5p4418_otg *nxpotg = &s_s5p4418_otg;
 	int ret;
 
     nxp_usb_connector_init();
@@ -400,11 +400,11 @@ static int __init nxp4330_connector_init(void)
     nxp_soc_gpio_set_int_enable(CFG_GPIO_OTG_USBID_DET, 0);
 
 #if 0
-	ret = request_irq(gpio_to_irq(CFG_GPIO_OTG_USBID_DET), nxp4330_otg_irq,
+	ret = request_irq(gpio_to_irq(CFG_GPIO_OTG_USBID_DET), s5p4418_otg_irq,
 			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING |
 			IRQF_ONESHOT, "usb_id", nxpotg);
 #else
-	ret = request_irq(gpio_to_irq(CFG_GPIO_OTG_USBID_DET), nxp4330_otg_irq,
+	ret = request_irq(gpio_to_irq(CFG_GPIO_OTG_USBID_DET), s5p4418_otg_irq,
 			IRQ_TYPE_EDGE_BOTH, "usb_id", nxpotg);
 #endif
 	if (ret)
@@ -427,4 +427,4 @@ static int __init nxp4330_connector_init(void)
 
 	return ret;
 }
-device_initcall(nxp4330_connector_init);
+device_initcall(s5p4418_connector_init);

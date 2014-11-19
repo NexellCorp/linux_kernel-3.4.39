@@ -116,7 +116,7 @@ static inline void print_ep0_state(dwc_otg_pcd_t * pcd)
 #endif
 }
 
-#if defined(CONFIG_ARCH_CPU_NEXELL)
+#if defined(CONFIG_ARCH_CPU_SLSI)
 static int s_ep0state;
 
 static inline void save_ep0_state(dwc_otg_pcd_t * pcd)
@@ -3340,7 +3340,7 @@ static void handle_ep0(dwc_otg_pcd_t * pcd)
 #ifdef DEBUG_EP0
 	print_ep0_state(pcd);
 #endif
-#if defined(CONFIG_ARCH_CPU_NEXELL)
+#if defined(CONFIG_ARCH_CPU_SLSI)
 	save_ep0_state(pcd);
 #endif
 }

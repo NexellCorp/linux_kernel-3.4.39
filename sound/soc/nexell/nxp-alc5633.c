@@ -224,8 +224,8 @@ static int alc5633_probe(struct platform_device *pdev)
 			jack->invert = hpin->detect_level ?  false : true;
 			jack->debounce_time = hpin->debounce_time ?
 					hpin->debounce_time : 200;
-		} 
-		else 
+		}
+		else
 		{
 			jack->name = NULL;
 		}
@@ -286,5 +286,5 @@ static struct platform_driver alc5633_driver = {
 module_platform_driver(alc5633_driver);
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound codec-alc5633 driver for the Nexell");
+MODULE_DESCRIPTION("Sound codec-alc5633 driver for the SLSI");
 MODULE_LICENSE("GPL");

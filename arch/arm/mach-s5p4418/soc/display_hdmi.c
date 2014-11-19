@@ -32,7 +32,7 @@
 #include <mach/soc.h>
 #include <mach/nxp-v4l2-platformdata.h>
 
-#include "display_4330.h"
+#include "display_4418.h"
 
 #include <nx_hdmi.h>
 #include <nx_rstcon.h>
@@ -201,9 +201,9 @@ static int hdmi_probe(struct platform_device *pdev)
         return ret;
     }
 
-#if defined(CONFIG_NEXELL_DISPLAY_HDMI_1280_720P)
+#if defined(CONFIG_SLSI_DISPLAY_HDMI_1280_720P)
     preferred_preset = V4L2_DV_720P60;
-#elif defined(CONFIG_NEXELL_DISPLAY_HDMI_1920_1080P)
+#elif defined(CONFIG_SLSI_DISPLAY_HDMI_1920_1080P)
     preferred_preset = V4L2_DV_1080P60;
 #else
 #error "***** NOT SPECIFIED HDMI RESOLUTION !!! *****"

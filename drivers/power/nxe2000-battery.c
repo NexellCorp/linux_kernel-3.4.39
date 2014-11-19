@@ -22,6 +22,8 @@
 // Date		ID				Description
 //--------------------------------------------------------------------
 //
+//11-18-2014			modify	- modification of CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE. -> CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE
+//
 //11-05-2014			modify	- modification of CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE.
 //
 //10-21-2014			modify	- Changed the POWER_SUPPLY_PROP_ONLINE status.
@@ -36,7 +38,7 @@
 //
 //10-13-2014			modify	- ENABLE_LOW_BATTERY_VSYS_DETECTION enable.
 //
-//10-07-2014			modify	- When Low Battery Detection disable, 
+//10-07-2014			modify	- When Low Battery Detection disable,
 // 							   fg_target_vsys setting default value.
 //
 //09-25-2014			modify	- Set the higher-priority VADP charge.
@@ -68,7 +70,7 @@
 #include <nxe2000-private.h>
 
 ////////////////////////////////////////
-//  Debug 
+//  Debug
 ////////////////////////////////////////
 
 // #define ENABLE_DEBUG
@@ -91,7 +93,7 @@
 
 
 ////////////////////////////////////////
-//  LOCAL define   
+//  LOCAL define
 ////////////////////////////////////////
 //#define BAT_RESUME_WORK_QUEUE
 #define ENABLE_FUEL_GAUGE_FUNCTION
@@ -442,7 +444,7 @@ void nxe2000_register_dump(struct device *dev)
 }
 #endif
 
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
 //#define pr_debug	printk
 
 extern int NXL_Get_BoardTemperature(void);
@@ -936,7 +938,7 @@ static int get_target_use_cap(struct nxe2000_battery_info *info)
 
 	PM_LOGOUT("PMU: ------- FA_CAP_now= %d: RE_CAP_now= %d: CC_OnePer_step= %d: target_use_cap= %d: hurry_up_flg= %d -------\n",
 	       FA_CAP_now, RE_CAP_now, CC_OnePer_step, info->soca->target_use_cap, info->soca->hurry_up_flg);
-	
+
 	return 0;
 }
 #ifdef ENABLE_OCV_TABLE_CALIB
@@ -1616,14 +1618,14 @@ static void nxe2000_displayed_work(struct work_struct *work)
 
 				soc_now = calc_soc_on_ocv(info, calculated_ocv);
 
-				if(cc_poff_term < 0){ //When discharging 
+				if(cc_poff_term < 0){ //When discharging
 					cc_delta_offset = 100;	//unit is 1/100times
 				} else {
 					if( (soc_now - cc_poff_term) >= 100*100 ){//remove condition divide by Zero
 						cc_delta_offset = 5 * 100; //MAX 5 times
 					} else {
 						cc_delta_offset = (100 * 100 - info->soca->soc) * 100 / (100 * 100 -  (soc_now - cc_poff_term));
-						
+
 						cc_delta_offset = MIN(5 * 100, cc_delta_offset); //MAX is 5 times
 						cc_delta_offset = MAX(100 / 5, cc_delta_offset); //MIN is 1/5 times
 					}
@@ -2014,7 +2016,7 @@ static void nxe2000_charge_monitor_work(struct work_struct *work)
 	return;
 }
 
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
 int nxe2000_decide_charge_byResource(struct nxe2000_battery_info *info)
 {
 	uint8_t ctrlreg;
@@ -2036,7 +2038,7 @@ int nxe2000_decide_charge_byResource(struct nxe2000_battery_info *info)
 			pr_debug(".... stop the charging: ctrlreg(0x%x)\n", ctrlreg);
 			nxe2000_clr_bits(info->dev->parent, NXE2000_REG_CHGCTL1, 0x03);
 		}
-		
+
 		queue_delayed_work(info->monitor_wqueue, &info->get_charge_work,
 					 NXE2000_CHARGE_UPDATE_TIME * HZ);
 		return 0;
@@ -2059,7 +2061,7 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 	int ret;
 	int capacity = 0;
 
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
 	if(nxe2000_decide_charge_byResource(info) == 0)
 		return ;
 #endif
@@ -2401,7 +2403,7 @@ static void nxe2000_sw_ubc_work(struct work_struct *work)
 	if (val != temp)
 		info->flag_set_ilimit = false;
 
-	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] is_sdp_type:0x%x, pmic_vbus:0x%x, flag_set_ilimit:0x%x, temp:0x%x, extif_gchgdet:0x%x \n", 
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] is_sdp_type:0x%x, pmic_vbus:0x%x, flag_set_ilimit:0x%x, temp:0x%x, extif_gchgdet:0x%x \n",
 						__func__, __LINE__, info->is_sdp_type, pmic_vbus, info->flag_set_ilimit, temp, extif_gchgdet);
 
 	if (pmic_vbus && !info->flag_set_ilimit) {
@@ -3136,7 +3138,7 @@ static int nxe2000_set_OCV_table(struct nxe2000_battery_info *info)
 
 	}
 
-	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] Rsys:%d, target_ibat:%d, target_vsys:%d, cutoff_ocv:%d, fg_poff_vbat:%d \n", __func__, __LINE__, 
+	PM_LOGOUT( "## [\e[31m%s\e[0m():%d] Rsys:%d, target_ibat:%d, target_vsys:%d, cutoff_ocv:%d, fg_poff_vbat:%d \n", __func__, __LINE__,
 						info->soca->Rsys, info->soca->target_ibat, info->soca->target_vsys, info->soca->cutoff_ocv, info->fg_poff_vbat);
 
 	ret = nxe2000_clr_bits(info->dev->parent, FG_CTRL_REG, 0x01);
@@ -3757,15 +3759,15 @@ static int get_power_supply_status(struct nxe2000_battery_info *info)
 	charge_state = (status & 0x1F);
 	supply_state = ((status & 0xC0) >> 6);
 
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE)
-	pr_debug("chgState(%s) supply[%d](%s) battery(%d%%) VBAT(%d)\n", 
-		strChargingState[charge_state],supply_state, strSupply[supply_state], 
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+	pr_debug("chgState(%s) supply[%d](%s) battery(%d%%) VBAT(%d)\n",
+		strChargingState[charge_state],supply_state, strSupply[supply_state],
 		0, 0);
 	if(charge_state == CHG_STATE_DIE_ERR)
 	{
 		uint8_t dieTempReg;
 		extern int NXL_Get_BoardTemperature(void);
-		ret = nxe2000_read(info->dev->parent, NXE2000_REG_CHGISET, &dieTempReg);// (info->dev->parent, NXE2000_REG_CHGISET, CHARGE_CURRENT_100MA); 
+		ret = nxe2000_read(info->dev->parent, NXE2000_REG_CHGISET, &dieTempReg);// (info->dev->parent, NXE2000_REG_CHGISET, CHARGE_CURRENT_100MA);
 		ret = nxe2000_read(info->dev->parent, 0xB3, &dieTempReg);
 		printk("________die Error. dieTempReg:0x%x\n", dieTempReg);
 		pmic_occur_dieError=1;
@@ -3934,7 +3936,7 @@ static void charger_irq_work(struct work_struct *work)
 
 	val = (val & 0xC0) >> 6;
 
-	switch (val) 
+	switch (val)
 	{
 		case SUPPLY_STATE_BAT: // plug out USB/ADP
 			if (info->input_power_type == INPUT_POWER_TYPE_ADP_UBC)
@@ -4009,7 +4011,7 @@ static void charger_irq_work(struct work_struct *work)
 				set_val |= (0x1 << NXE2000_POS_CHGCTL1_VADPCHGEN);
 				set_val &= ~(0x1 << NXE2000_POS_CHGCTL1_CHGP);
 
-				if (otg_id == 0) 
+				if (otg_id == 0)
 				{
 					set_val |= (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
 					set_val &= ~(0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN);
@@ -4041,7 +4043,7 @@ static void charger_irq_work(struct work_struct *work)
 
 			if(info->input_power_type == INPUT_POWER_TYPE_UBC)
 			{
-				if (otg_id == 0) 
+				if (otg_id == 0)
 				{
 					set_val |= (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
 					set_val &= ~(0x1 << NXE2000_POS_CHGCTL1_VUSBCHGEN);
@@ -4138,7 +4140,7 @@ static void charger_irq_work(struct work_struct *work)
 #endif
 
 	if ( pmic_vbus && otg_id )
-	{	
+	{
 		/* OTG DEVICE MODE */
 		if (info->gpio_otg_vbus > -1)
 			gpio_set_value(info->gpio_otg_vbus, 0);
@@ -4207,7 +4209,7 @@ static void charger_irq_work(struct work_struct *work)
 
 		//val = (0x1 << NXE2000_POS_CHGCTL1_SUSPEND);
 		//nxe2000_set_bits(info->dev->parent, NXE2000_REG_CHGCTL1, val);
-		
+
 		/* OTG HOST MODE */
 		if (info->gpio_otg_vbus > -1)
 			gpio_set_value(info->gpio_otg_vbus, 1);
@@ -4255,7 +4257,7 @@ int otgid_power_control_by_dwc(int enable)
 	PM_DBGOUT(KERN_ERR "## [\e[31m%s\e[0m():%d] enable:%d\n", __func__, __LINE__, enable);
 #endif
 
-	if (info_by_dwc->gpio_otg_usbid > -1) {		
+	if (info_by_dwc->gpio_otg_usbid > -1) {
 		if (enable){
 			set_otg_power_control(info_by_dwc, 0);
 		}
@@ -4592,8 +4594,8 @@ static void suspend_charge4first_soc(struct nxe2000_battery_info *info)
 	if ((charge_status == POWER_SUPPLY_STATUS_FULL) || (info->input_power_type == INPUT_POWER_TYPE_ADP_NOBATTERY))
 	{
 		return;
-	} 
-	else 
+	}
+	else
 	{
 		err = nxe2000_set_bits(info->dev->parent, NXE2000_REG_CHGCTL1, 0x08);
 		if (err < 0)
@@ -4605,7 +4607,7 @@ static void suspend_charge4first_soc(struct nxe2000_battery_info *info)
 
 static int get_battery_temp(struct nxe2000_battery_info *info)
 {
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) 
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
 	if(NXL_Get_BoardTemperature() == 0)
 		return 270;
 
@@ -4642,7 +4644,7 @@ static int get_battery_temp(struct nxe2000_battery_info *info)
 
 static int get_battery_temp_2(struct nxe2000_battery_info *info)
 {
-#if defined(CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE) 
+#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
 	if(NXL_Get_BoardTemperature() == 0)
 		return 270;
 
@@ -5060,7 +5062,7 @@ static int nxe2000_batt_get_prop(struct power_supply *psy,
 			}
 #else	// KOOK_UBC_CHECK
 
-			if (status & 0xC0) 
+			if (status & 0xC0)
 			{
 				if (psy->type == POWER_SUPPLY_TYPE_MAINS)
 					val->intval = (status & 0x40 ? 1 : 0);
@@ -5089,7 +5091,7 @@ static int nxe2000_batt_get_prop(struct power_supply *psy,
 			else if(psy->type == POWER_SUPPLY_TYPE_USB)
 				DBGOUT(info->dev, "battery online statue(USB) : %d\n", info->online_state);
 			else
-				DBGOUT(info->dev, "battery online statue(unknown) : %d\n", info->online_state);			
+				DBGOUT(info->dev, "battery online statue(unknown) : %d\n", info->online_state);
 		}
 		break;
 
@@ -6353,15 +6355,15 @@ static int nxe2000_battery_resume(struct device *dev) {
 
 		//calc cc_offset
 		cc_suspend_term	= cc_now - info->soca->suspend_cc;
-		
-		if(cc_suspend_term < 0){ //When discharging 
+
+		if(cc_suspend_term < 0){ //When discharging
 			cc_delta_offset = 100;	//unit is 1/100times
 		} else {
 			if( (soc_now - cc_suspend_term) >= 100*100 ){//remove condition divide by Zero
 				cc_delta_offset = 5 * 100; //max 5 times
 			} else {
 				cc_delta_offset = (100 * 100 - info->soca->soc) * 100 / (100 * 100 -  (soc_now - cc_suspend_term));
-				
+
 				cc_delta_offset = MIN(5 * 100, cc_delta_offset); //MAX is 5 times
 				cc_delta_offset = MAX(100 / 5, cc_delta_offset); //MIN is 1/5 times
 			}

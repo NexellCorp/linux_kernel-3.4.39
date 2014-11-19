@@ -32,7 +32,7 @@
 #include <mach/soc.h>
 #include <mach/fourcc.h>
 
-#include "display_4330.h"
+#include "display_4418.h"
 
 #if (0)
 #define DBGOUT(msg...)		do { printk(KERN_INFO msg); } while (0)
@@ -245,12 +245,12 @@ static inline struct kobject *get_display_kobj(enum disp_dev_type device) { retu
 static inline void disp_topctl_reset(void)
 {
 	/* RESET: DISPLAYTOP = Low active ___|--- */
-	nxp_soc_rsc_reset(RESET_ID_DISP_TOP);
+	nxp_soc_peri_reset_set(RESET_ID_DISP_TOP);
 }
 
 static inline void disp_syncgen_reset(void)
 {
-	nxp_soc_rsc_reset(RESET_ID_DISPLAY);
+	nxp_soc_peri_reset_set(RESET_ID_DISPLAY);
 }
 
 static inline void video_alpha_blend(int module, int depth, bool on)
@@ -509,7 +509,7 @@ static irqreturn_t	disp_syncgen_irqhandler(int irq, void *desc)
 
 static void disp_syncgen_initialize(void)
 {
-	int power = nxp_soc_rsc_status(RESET_ID_DISPLAY);
+	int power = nxp_soc_peri_reset_status(RESET_ID_DISPLAY);
 	int i = 0;
 
 	printk("Disply Reset Status : %s\n", power?"On":"Off");
@@ -1909,7 +1909,7 @@ int nxp_soc_disp_device_suspend(enum disp_dev_type device)
 }
 
 #define	DISPLAY_TOP_RESET()	{	\
-		if (!nxp_soc_rsc_status(RESET_ID_DISPLAY))	{	\
+		if (!nxp_soc_peri_reset_status(RESET_ID_DISPLAY))	{	\
 			disp_topctl_reset(), disp_syncgen_reset();	\
 		}		\
 	}

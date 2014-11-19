@@ -28,8 +28,8 @@
 /*------------------------------------------------------------------------------
  * 	System Name
  */
-#define	CFG_SYS_CPU_NAME						"nxp4330q"
-#define	CFG_SYS_BOARD_NAME						"nxp4330-svt"
+#define	CFG_SYS_CPU_NAME						"s5p4418"
+#define	CFG_SYS_BOARD_NAME						"s5p4418-svt"
 
 /*------------------------------------------------------------------------------
  * 	BUS config
@@ -257,7 +257,7 @@
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
 
 /*------------------------------------------------------------------------------
- * 	usb ehci 
+ * 	usb ehci
  */
 #define CFG_USB_EHCI_LATE_LOAD					1
 #define CFG_USB_EHCI_LATE_LOADTIME				2000
