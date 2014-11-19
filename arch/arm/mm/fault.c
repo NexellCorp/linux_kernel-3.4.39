@@ -506,6 +506,18 @@ do_sect_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 static int
 do_bad(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 {
+#if defined (CONFIG_ARCH_S5P6818)
+	int cpu = raw_smp_processor_id();
+	static int bad[NR_CPUS] = { 0, };
+	printk("[ cpu.%d skip bad (%d) ]\n", cpu, bad[cpu]);
+	if (0 == cpu) {	/* twoice exception */
+		if (0 == bad[cpu]) {
+			bad[cpu] += 1;
+			return 0;
+		}
+		return 1;
+	}
+#endif
 	return 1;
 }
 

@@ -18,7 +18,7 @@
 	"	" up "\n"					\
 	"	.popsection\n"
 
-ifndef CONFIG_ARCH_S5P6818
+#ifndef CONFIG_ARCH_S5P6818
 #ifdef CONFIG_THUMB2_KERNEL
 #define SEV		ALT_SMP("sev.w", "nop.w")
 /*
