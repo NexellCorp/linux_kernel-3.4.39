@@ -349,12 +349,12 @@ config IMX2_WDT
 	  To compile this driver as a module, choose M here: the
 	  module will be called imx2_wdt.
 
-config SLSI_WATCHDOG
-        tristate "SLsiAP Watchdog"
+config NXP_WDT
+        tristate "NXP Watchdog"
         depends on ARCH_CPU_SLSI
         select WATCHDOG_CORE
         help
-          Watchdog timer block in the Nexell SoCs. This will reboot
+          Watchdog timer block in the SLsiAP SoCs. This will reboot
           the system when the timer expires with the watchdog enabled.
 
           The driver is limited by the speed of the system's PCLK

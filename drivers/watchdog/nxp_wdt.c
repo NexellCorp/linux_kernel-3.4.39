@@ -515,7 +515,7 @@ static int nxp_wdt_resume(struct platform_device *dev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id nxp_wdt_match[] = {
-	{ .compatible = "nexell,nxp-wdt" },
+	{ .compatible = "SLsiAP,nxp-wdt" },
 	{},
 };
 MODULE_DEVICE_TABLE(of, nxp_wdt_match);
@@ -539,7 +539,7 @@ static struct platform_driver nxp_wdt_driver = {
 
 static int __init watchdog_init(void)
 {
-	pr_info("NXP Watchdog Timer, (c) 2014 Nexell\n");
+	pr_info("NXP Watchdog Timer, (c) 2014 SLsiAP\n");
 
 	return platform_driver_register(&nxp_wdt_driver);
 }

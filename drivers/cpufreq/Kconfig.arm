@@ -102,20 +102,20 @@ config ARM_NXP_CPUFREQ_BY_RESOURCE
 choice
 	prompt "Select CPU PLL device"
 	depends on ARM_NXP_CPUFREQ
-	default SLSI_CPUFREQ_PLL_1
+	default NXP_CPUFREQ_PLL_1
 
-config SLSI_CPUFREQ_PLL_0
+config NXP_CPUFREQ_PLL_0
 	bool "PLL 0"
 
-config SLSI_CPUFREQ_PLL_1
+config NXP_CPUFREQ_PLL_1
 	bool "PLL 1"
 
 endchoice
 
-config SLSI_CPUFREQ_PLLDEV
+config NXP_CPUFREQ_PLLDEV
 	int
-	default 0 if SLSI_CPUFREQ_PLL_0
-	default 1 if SLSI_CPUFREQ_PLL_1
-	default 2 if SLSI_CPUFREQ_PLL_2
-	default 3 if SLSI_CPUFREQ_PLL_3
+	default 0 if NXP_CPUFREQ_PLL_0
+	default 1 if NXP_CPUFREQ_PLL_1
+	default 2 if NXP_CPUFREQ_PLL_2
+	default 3 if NXP_CPUFREQ_PLL_3
 

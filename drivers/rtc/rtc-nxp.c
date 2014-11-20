@@ -33,7 +33,7 @@
 #include <asm/io.h>
 #include <asm/irq.h>
 
-/* nexell soc headers */
+/* SLsiAP soc headers */
 #include <mach/platform.h>
 #include <mach/devices.h>
 
