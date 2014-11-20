@@ -661,7 +661,7 @@ NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1,  4);	/* 1.1V
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
 NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V SYS */
-#if defined(CONFIG_RFKILL_SLSI)
+#if defined(CONFIG_RFKILL_NXP)
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V GPS */
 #else
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 1,  0);	/* 3.3V GPS */
@@ -1434,7 +1434,7 @@ static struct dw_mci_board _dwmci0_data = {
 /*------------------------------------------------------------------------------
  * RFKILL driver
  */
-#if defined(CONFIG_RFKILL_SLSI)
+#if defined(CONFIG_RFKILL_NXP)
 struct rfkill_dev_data  rfkill_dev_data =
 {
 	.supply_name 	= "vgps_3.3V",	// vwifi_3.3V, vgps_3.3V
@@ -1456,7 +1456,7 @@ static struct platform_device rfkill_device = {
 		.platform_data	= &rfkill_plat_data,
 	}
 };
-#endif	/* CONFIG_RFKILL_SLSI */
+#endif	/* CONFIG_RFKILL_NXP */
 
 /*------------------------------------------------------------------------------
  * USB HSIC power control.
@@ -1587,7 +1587,7 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(MMA7660_I2C_BUS, &mma7660_i2c_bdi, 1);
 #endif
 
-#if defined(CONFIG_RFKILL_SLSI)
+#if defined(CONFIG_RFKILL_NXP)
     printk("plat: add device rfkill\n");
     platform_device_register(&rfkill_device);
 #endif

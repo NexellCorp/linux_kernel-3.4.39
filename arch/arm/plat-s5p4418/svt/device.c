@@ -797,7 +797,7 @@ NXE2000_PDATA_INIT(ldo4,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V
 NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  0);	/* 2.8V VCAM */
 NXE2000_PDATA_INIT(ldo6,     0, 1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
 NXE2000_PDATA_INIT(ldo7,     0, 1000000, 3500000, 1, 0, 2800000, 1,  1);	/* 2.8V VID */
-#if defined(CONFIG_RFKILL_SLSI)
+#if defined(CONFIG_RFKILL_NXP)
 NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V WIFI */
 #else
 NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 1,  0);	/* 3.3V WIFI */
@@ -1652,7 +1652,7 @@ static struct dw_mci_board _dwmci2_data = {
 /*------------------------------------------------------------------------------
  * RFKILL driver
  */
-#if defined(CONFIG_RFKILL_SLSI)
+#if defined(CONFIG_RFKILL_NXP)
 
 struct rfkill_dev_data  rfkill_dev_data =
 {
@@ -1675,7 +1675,7 @@ static struct platform_device rfkill_device = {
 		.platform_data	= &rfkill_plat_data,
 	}
 };
-#endif	/* CONFIG_RFKILL_SLSI */
+#endif	/* CONFIG_RFKILL_NXP */
 
 /*------------------------------------------------------------------------------
  * USB HSIC power control.
@@ -1820,7 +1820,7 @@ void __init nxp_board_devices_register(void)
     printk("plat: register spidev\n");
 #endif
 
-#if defined(CONFIG_RFKILL_SLSI)
+#if defined(CONFIG_RFKILL_NXP)
     printk("plat: add device rfkill\n");
     platform_device_register(&rfkill_device);
 #endif
