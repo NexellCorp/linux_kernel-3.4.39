@@ -115,7 +115,7 @@ static unsigned long dfs_freq_table[][2] = {
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
-	.pll_dev	   	= CONFIG_SLSI_CPUFREQ_PLLDEV,
+	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
 	.max_cpufreq    = 1200*1000,
@@ -193,7 +193,7 @@ static struct platform_device dm9000_plat_device = {
 /*------------------------------------------------------------------------------
  * DW GMAC board config
  */
-#if defined(CONFIG_SLSI_MAC_ETH)
+#if defined(CONFIG_NXPMAC_ETH)
 #include <linux/phy.h>
 #include <linux/nxpmac.h>
 #include <linux/delay.h>
@@ -343,10 +343,10 @@ struct platform_device nxp_gmac_dev = {
 /*------------------------------------------------------------------------------
  * DISPLAY (LVDS) / FB
  */
-#if defined (CONFIG_FB_SLSI)
-#if defined (CONFIG_FB0_SLSI)
+#if defined (CONFIG_FB_NXP)
+#if defined (CONFIG_FB0_NXP)
 static struct nxp_fb_plat_data fb0_plat_data = {
-	.module			= CONFIG_FB0_SLSI_DISPOUT,
+	.module			= CONFIG_FB0_NXP_DISPOUT,
 	.layer			= CFG_DISP_PRI_SCREEN_LAYER,
 	.format			= CFG_DISP_PRI_SCREEN_RGB_FORMAT,
 	.bgcolor		= CFG_DISP_PRI_BACK_GROUND_COLOR,
@@ -374,11 +374,11 @@ static struct platform_device fb0_device = {
 #endif
 
 static struct platform_device *fb_devices[] = {
-	#if defined (CONFIG_FB0_SLSI)
+	#if defined (CONFIG_FB0_NXP)
 	&fb0_device,
 	#endif
 };
-#endif /* CONFIG_FB_SLSI */
+#endif /* CONFIG_FB_NXP */
 
 /*------------------------------------------------------------------------------
  * backlight : generic pwm device
@@ -419,7 +419,7 @@ static struct platform_device ppm_device = {
 /*------------------------------------------------------------------------------
  * NAND device
  */
-#if defined(CONFIG_MTD_NAND_SLSI)
+#if defined(CONFIG_MTD_NAND_NXP)
 #include <linux/mtd/partitions.h>
 #include <asm-generic/sizes.h>
 
@@ -459,7 +459,7 @@ static struct platform_device nand_plat_device = {
 		.platform_data	= &nand_plat_data,
 	},
 };
-#endif	/* CONFIG_MTD_NAND_SLSI */
+#endif	/* CONFIG_MTD_NAND_NXP */
 
 /*------------------------------------------------------------------------------
  * Touch platform device
@@ -1720,7 +1720,7 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&freq_limit_device);
 #endif
 
-#if defined (CONFIG_FB_SLSI)
+#if defined (CONFIG_FB_NXP)
 	printk("plat: add framebuffer\n");
 	platform_add_devices(fb_devices, ARRAY_SIZE(fb_devices));
 #endif
@@ -1752,7 +1752,7 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(FT5X0X_I2C_BUS, &ft5x0x_i2c_bdi, 1);
 #endif
 
-#if defined(CONFIG_MTD_NAND_SLSI)
+#if defined(CONFIG_MTD_NAND_NXP)
 	platform_device_register(&nand_plat_device);
 #endif
 
@@ -1825,7 +1825,7 @@ void __init nxp_board_devices_register(void)
     platform_device_register(&rfkill_device);
 #endif
 
-#if defined(CONFIG_SLSI_MAC_ETH)
+#if defined(CONFIG_NXPMAC_ETH)
     printk("plat: add device nxp-gmac\n");
     platform_device_register(&nxp_gmac_dev);
 #endif
