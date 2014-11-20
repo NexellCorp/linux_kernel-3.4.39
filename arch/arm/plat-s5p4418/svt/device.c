@@ -115,7 +115,7 @@ static unsigned long dfs_freq_table[][2] = {
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
-	.pll_dev	   	= CONFIG_SLSI_CPUFREQ_PLLDEV,
+	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
 	.max_cpufreq    = 1200*1000,
@@ -343,10 +343,10 @@ struct platform_device nxp_gmac_dev = {
 /*------------------------------------------------------------------------------
  * DISPLAY (LVDS) / FB
  */
-#if defined (CONFIG_FB_SLSI)
-#if defined (CONFIG_FB0_SLSI)
+#if defined (CONFIG_FB_NXP)
+#if defined (CONFIG_FB0_NXP)
 static struct nxp_fb_plat_data fb0_plat_data = {
-	.module			= CONFIG_FB0_SLSI_DISPOUT,
+	.module			= CONFIG_FB0_NXP_DISPOUT,
 	.layer			= CFG_DISP_PRI_SCREEN_LAYER,
 	.format			= CFG_DISP_PRI_SCREEN_RGB_FORMAT,
 	.bgcolor		= CFG_DISP_PRI_BACK_GROUND_COLOR,
@@ -374,11 +374,11 @@ static struct platform_device fb0_device = {
 #endif
 
 static struct platform_device *fb_devices[] = {
-	#if defined (CONFIG_FB0_SLSI)
+	#if defined (CONFIG_FB0_NXP)
 	&fb0_device,
 	#endif
 };
-#endif /* CONFIG_FB_SLSI */
+#endif /* CONFIG_FB_NXP */
 
 /*------------------------------------------------------------------------------
  * backlight : generic pwm device
@@ -1720,7 +1720,7 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&freq_limit_device);
 #endif
 
-#if defined (CONFIG_FB_SLSI)
+#if defined (CONFIG_FB_NXP)
 	printk("plat: add framebuffer\n");
 	platform_add_devices(fb_devices, ARRAY_SIZE(fb_devices));
 #endif

@@ -49,7 +49,6 @@ obj-$(CONFIG_NXP_DISPLAY_MIPI)		+=  $(PROTOTYPE)/$(MODULES)/nx_mipi.o
 obj-$(CONFIG_RTC_DRV_NXP)			+= 	$(PROTOTYPE)/$(MODULES)/nx_rtc.o
 
 obj-$(CONFIG_HAVE_PWM)					+= 	$(PROTOTYPE)/$(MODULES)/nx_pwm.o
-obj-$(CONFIG_ADC_SLSI)				+= 	$(PROTOTYPE)/$(MODULES)/nx_adc.o
 obj-$(CONFIG_VIDEO_SLSI_CAPTURE)			+=  $(PROTOTYPE)/$(MODULES)/nx_vip.o
 obj-$(CONFIG_S5P4418_BACKWARD_CAMERA)	+=  $(PROTOTYPE)/$(MODULES)/nx_vip.o
 obj-$(CONFIG_SLSI_OUT_HDMI)				+= 	$(PROTOTYPE)/$(MODULES)/nx_hdmi.o

@@ -2447,13 +2447,12 @@ config FB_PUV3_UNIGFX
 	  Choose this option if you want to use the Unigfx device as a
 	  framebuffer device. Without the support of PCI & AGP.
 
-config FB_SLSI
+config FB_NXP
 	tristate "SLsiAP framebuffer support"
 	depends on FB && ARCH_CPU_SLSI
 	select FB_CFB_FILLRECT
 	select FB_CFB_COPYAREA
 	select FB_CFB_IMAGEBLIT
-	select SLSI_SOC_DISP
 	---help---
 	  Frame buffer driver for the built-in display controller.
 	  SLsiAP processor.

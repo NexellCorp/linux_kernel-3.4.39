@@ -118,7 +118,7 @@ unsigned int nxp_cpufreq_voltage(unsigned long freqhz)
 {
 	struct cpufreq_dvfs_data *dvfs = get_cpufreq_data();
  	unsigned long (*freq_volts)[2] = (unsigned long(*)[2])dvfs->freq_volts;
- 	int pll = CONFIG_SLSI_CPUFREQ_PLLDEV;
+ 	int pll = CONFIG_NXP_CPUFREQ_PLLDEV;
 	int len = dvfs->table_size;
 	long rate = 0;
 	long mS = 0, uS = 0, uV = 0, wT = 0;

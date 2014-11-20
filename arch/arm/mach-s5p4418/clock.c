@@ -66,7 +66,7 @@
 #endif
 
 #ifdef  CONFIG_ARM_NXP_CPUFREQ
-#define	DVFS_CPU_PLL	~(1<<CONFIG_SLSI_CPUFREQ_PLLDEV)
+#define	DVFS_CPU_PLL	~(1<<CONFIG_NXP_CPUFREQ_PLLDEV)
 #else
 #define	DVFS_CPU_PLL	(-1UL)
 #endif
@@ -279,8 +279,8 @@ static inline void clk_gen_rate(void *base, int level, int src, int div)
 	struct clk_gen_reg *reg = base;
 	unsigned int val = 0;
 
-	#ifdef CONFIG_SLSI_CPUFREQ_PLLDEV
-	if (CONFIG_SLSI_CPUFREQ_PLLDEV == src)
+	#ifdef CONFIG_NXP_CPUFREQ_PLLDEV
+	if (CONFIG_NXP_CPUFREQ_PLLDEV == src)
 		printk("*** %s: Fail pll.%d for CPU  DFS ***\n", __func__, src);
 	#endif
 	#ifdef CONFIG_S5P4418_BCLKFREQ_PLLDEV
@@ -481,7 +481,7 @@ static inline long core_set_rate(struct clk *clk, long rate)
 		pll = simple_strtol(c, NULL, 10);
 
 	pr_debug("%s change pll.%d (dvfs pll.%d) %ld \n",
-		__func__, pll, CONFIG_SLSI_CPUFREQ_PLLDEV, rate);
+		__func__, pll, CONFIG_NXP_CPUFREQ_PLLDEV, rate);
 
 #ifdef CONFIG_NXP_DFS_BCLK
 	WARN(0 != raw_smp_processor_id(), "Dynamic Frequency CPU.%d  conflict with BCLK DFS...\n",
@@ -489,7 +489,7 @@ static inline long core_set_rate(struct clk *clk, long rate)
 #endif
 
 	if (pll != -1 &&
-		pll == CONFIG_SLSI_CPUFREQ_PLLDEV) {
+		pll == CONFIG_NXP_CPUFREQ_PLLDEV) {
 		if (!support_dvfs) {
 			printk("Can't DVFS rate %10ld with PLL %d....\n", rate, pll);
 			return clk->rate;
@@ -1043,7 +1043,7 @@ void __init nxp_cpu_clock_init(void)
 
 	printk("CPU : Clock Generator= %d EA, ", CLK_DEVS_NUM);
 #ifdef CONFIG_ARM_NXP_CPUFREQ
-	printk("DVFS = %s, PLL.%d\n", support_dvfs?"support":"can't support", CONFIG_SLSI_CPUFREQ_PLLDEV);
+	printk("DVFS = %s, PLL.%d\n", support_dvfs?"support":"can't support", CONFIG_NXP_CPUFREQ_PLLDEV);
 #else
 	printk("DVFS = Off\n");
 #endif

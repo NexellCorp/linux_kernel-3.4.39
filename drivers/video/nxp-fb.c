@@ -46,7 +46,7 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-#ifdef CONFIG_FB_SLSI_ION_MEM
+#ifdef CONFIG_FB_NXP_ION_MEM
 #include <linux/dma-buf.h>
 #include <linux/nxp_ion.h>
 #include <linux/ion.h>
@@ -74,7 +74,7 @@ extern struct ion_device *get_global_ion_device(void);
  * framebuffer struct
  */
 
-#ifdef CONFIG_FB_SLSI_ION_MEM
+#ifdef CONFIG_FB_NXP_ION_MEM
 #define MAX_DMABUF_CONTEXT      3
 
 struct dma_buf_context {
@@ -122,7 +122,7 @@ struct nxp_fb_device {
 	unsigned int  fb_pan_phys;
 	int			  fb_remapped;
 	int			  skip_vsync;
-#ifdef CONFIG_FB_SLSI_ION_MEM
+#ifdef CONFIG_FB_NXP_ION_MEM
     struct device *dev;
     struct nxp_fb_dma_buf_data dma_buf_data;
 #endif
@@ -651,7 +651,7 @@ static void nxp_fb_setup_info(struct fb_info *info)
 		dev->x_resol, dev->y_resol, x_v, y_v, info->fix.smem_len);
 }
 
-#ifdef CONFIG_FB_SLSI_ION_MEM
+#ifdef CONFIG_FB_NXP_ION_MEM
 static int nxp_fb_setup_ion(struct nxp_fb_dma_buf_data *d)
 {
     struct ion_device *ion_dev = get_global_ion_device();
@@ -779,7 +779,7 @@ err_share_dma_buf:
 
     return ret;
 }
-#endif // CONFIG_FB_SLSI_ION_MEM
+#endif // CONFIG_FB_NXP_ION_MEM
 
 static int nxp_fb_alloc_mem(struct fb_info *info)
 {
@@ -797,7 +797,7 @@ static int nxp_fb_alloc_mem(struct fb_info *info)
 		dev->x_resol_max, dev->y_resol_max, dev->pixelbit,
 		length, PAGE_ALIGN(length), dev->fb_phy_base);
 
-#ifdef CONFIG_FB_SLSI_ION_MEM
+#ifdef CONFIG_FB_NXP_ION_MEM
     if (nxp_fb_ion_alloc_mem(dev)) {
         printk(KERN_ERR "Fail to nxp_fb_ion_alloc_mem()\n");
         return -ENOMEM;
@@ -851,7 +851,7 @@ static void nxp_fb_free_mem(struct fb_info *info)
 	pr_debug("%s\n", __func__);
 
 	if(dev->fb_vir_base) {
-#ifdef CONFIG_FB_SLSI_ION_MEM
+#ifdef CONFIG_FB_NXP_ION_MEM
         nxp_fb_free_dma_buf(dev, &dev->dma_buf_data);
 #else
 		if (dev->fb_remapped) {
@@ -1140,7 +1140,7 @@ static int nxp_fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *inf
 	if (offset % align)
 		offset = (offset + align - 1)/align * align;
 
-#ifdef CONFIG_FB_SLSI_ION_MEM
+#ifdef CONFIG_FB_NXP_ION_MEM
     if (var->bits_per_pixel == 32) {
         unsigned int index = offset / align;
         dev->fb_pan_phys = dev->dma_buf_data.context[index].dma_addr;
@@ -1161,7 +1161,7 @@ static int nxp_fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *inf
 	return 0;
 }
 
-#ifdef CONFIG_FB_SLSI_ION_MEM
+#ifdef CONFIG_FB_NXP_ION_MEM
 #define NXPFB_GET_FB_FD _IOWR('N', 101, __u32)
 #define NXPFB_SET_FB_FD _IOW('N', 102, __u32)
 #define NXPFB_GET_ACTIVE _IOR('N', 103, __u32)
@@ -1170,7 +1170,7 @@ static int nxp_fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *inf
 static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
 {
     int ret = 0;
-#ifdef CONFIG_FB_SLSI_ION_MEM
+#ifdef CONFIG_FB_NXP_ION_MEM
 	struct nxp_fb_param *par = info->par;
 	struct nxp_fb_device *dev = &par->fb_dev;
 	pr_debug("%s (cmd:0x%x, type:%c, nr:%d) \n\n", __func__, cmd, _IOC_TYPE(cmd), _IOC_NR(cmd));
@@ -1276,7 +1276,7 @@ static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
 	return ret;
 }
 
-#ifdef CONFIG_FB_SLSI_ION_MEM
+#ifdef CONFIG_FB_NXP_ION_MEM
 int nxp_fb_open(struct fb_info *info, int user)
 {
     pr_debug("%s entered\n", __func__);
@@ -1304,7 +1304,7 @@ int nxp_fb_release(struct fb_info *info, int user)
 
 static struct fb_ops nxp_fb_ops = {
 	.owner			= THIS_MODULE,
-#ifdef CONFIG_FB_SLSI_ION_MEM
+#ifdef CONFIG_FB_NXP_ION_MEM
     .fb_open        = nxp_fb_open,
     .fb_release     = nxp_fb_release,
 #endif
@@ -1340,7 +1340,7 @@ static int nxp_fb_probe(struct platform_device *pdev)
 {
 	struct nxp_fb_plat_data *plat = pdev->dev.platform_data;
 	struct fb_info *info = NULL;
-#ifdef CONFIG_FB_SLSI_ION_MEM
+#ifdef CONFIG_FB_NXP_ION_MEM
     struct nxp_fb_device *fbdev;
 	struct nxp_fb_param *fbpar;
 #endif
@@ -1361,7 +1361,7 @@ static int nxp_fb_probe(struct platform_device *pdev)
 
 	nxp_fb_setup_info(info);
 
-#ifdef CONFIG_FB_SLSI_ION_MEM
+#ifdef CONFIG_FB_NXP_ION_MEM
 	fbpar = info->par;
 	fbdev = &fbpar->fb_dev;
 	fbdev->dev = &pdev->dev;
