@@ -222,7 +222,7 @@ static void nxp_fb_dev_set_addr(struct nxp_fb_param *par, unsigned phys, int wai
 
 static int nxp_fb_dev_enable(struct nxp_fb_param *par, bool on, int force)
 {
-#if defined CONFIG_NXP_DISPLAY && !defined(CONFIG_LOGO_SLSI_COPY)
+#if defined CONFIG_NXP_DISPLAY && !defined(CONFIG_LOGO_NXP_COPY)
 	int module = par->fb_dev.device_id;
 	int stat = 0;
 
@@ -278,7 +278,7 @@ static int nxp_fb_dev_output(struct nxp_fb_param *par, int enable)
 #endif
 }
 
-#if defined(CONFIG_LOGO_SLSI_COPY)
+#if defined(CONFIG_LOGO_NXP_COPY)
 static inline void *fb_copy_map(struct page *page, unsigned int phys, int size)
 {
 	unsigned long num_pages, i;
@@ -376,14 +376,14 @@ nxp_fb_init_display(struct fb_info *info)
 
 	nxp_fb_dev_set_layer(par);
 
-	#if defined(CONFIG_LOGO_SLSI_COPY)
+	#if defined(CONFIG_LOGO_NXP_COPY)
 	nxp_fb_copy_boot_logo(par, (xres * yres * pixel));
 	#else
 	memset((void*)par->fb_dev.fb_vir_base,
 			FB_CLEAR_COLOR, par->fb_dev.fb_phy_len);
 	#endif
 
-	#if !defined(CONFIG_BACKLIGHT_PWM) || !defined(CONFIG_LOGO_SLSI_COPY)
+	#if !defined(CONFIG_BACKLIGHT_PWM) || !defined(CONFIG_LOGO_NXP_COPY)
 	nxp_fb_dev_enable(par, false, 1);	/* display out : off */
     #endif
 

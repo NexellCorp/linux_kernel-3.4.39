@@ -82,7 +82,7 @@ config LOGO_M32R_CLUT224
 	depends on M32R
 	default y
 
-config LOGO_SLSI_COPY
+config LOGO_NXP_COPY
 	bool "Copy logo from previous FB"
 	depends on ARCH_CPU_SLSI
 	default n
