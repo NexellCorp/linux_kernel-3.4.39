@@ -214,7 +214,7 @@ static int __devexit nxp_ohci_remove(struct platform_device *pdev)
 	if (nxp_ohci->phy)
 		usb_put_transceiver(nxp_ohci->phy);
 	else if (pdata && pdata->phy_exit)
-		pdata->phy_exit(pdev, NXP_USB_PHY_HOST);
+		pdata->phy_exit(pdev, NXP_USB_PHY_OHCI);
 
 	iounmap(hcd->regs);
 
@@ -272,7 +272,7 @@ static int nxp_ohci_suspend(struct device *dev)
 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
 
 	if (pdata && pdata->phy_exit)
-		pdata->phy_exit(pdev, NXP_USB_PHY_HOST);
+		pdata->phy_exit(pdev, NXP_USB_PHY_OHCI);
 fail:
 	spin_unlock_irqrestore(&ohci->lock, flags);
 
@@ -290,7 +290,7 @@ static int nxp_ohci_resume(struct device *dev)
 		return 0;
 
 	if (pdata && pdata->phy_init)
-		pdata->phy_init(pdev, NXP_USB_PHY_HOST);
+		pdata->phy_init(pdev, NXP_USB_PHY_OHCI);
 
 	/* Mark hardware accessible again as we are out of D3 state by now */
 	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
