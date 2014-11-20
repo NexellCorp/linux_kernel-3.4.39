@@ -141,3 +141,15 @@ int nxp_soc_peri_reset_status(int id)
 	return power;
 }
 EXPORT_SYMBOL_GPL(nxp_soc_peri_reset_status);
+
+void nxp_soc_rsc_enter(int id)
+{
+	nxp_soc_peri_reset_enter(id);
+}
+EXPORT_SYMBOL_GPL(nxp_soc_rsc_enter);
+
+void nxp_soc_rsc_exit(int id)
+{
+	nxp_soc_peri_reset_exit(id);
+}
+EXPORT_SYMBOL_GPL(nxp_soc_rsc_exit);
