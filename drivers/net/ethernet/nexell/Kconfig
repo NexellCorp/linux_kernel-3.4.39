@@ -2,7 +2,7 @@
 # STMicroelectronics device configuration
 #
 
-config NET_VENDOR_SLSI
+config NET_VENDOR_NXP
 	bool "Nexell devices"
 	default y
 	depends on HAS_IOMEM
@@ -16,8 +16,8 @@ config NET_VENDOR_SLSI
 	  the questions about STMicroelectronics cards. If you say Y, you will
 	  be asked for your specific card in the following questions.
 
-if NET_VENDOR_SLSI
+if NET_VENDOR_NXP
 
 source "drivers/net/ethernet/nexell/nxpmac/Kconfig"
 
-endif # NET_VENDOR_SLSI
+endif # NET_VENDOR_NXP

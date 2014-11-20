@@ -278,7 +278,7 @@ static struct platform_device bl_plat_device = {
 /*------------------------------------------------------------------------------
  * NAND device
  */
-#if defined(CONFIG_MTD_NAND_SLSI)
+#if defined(CONFIG_MTD_NAND_NXP)
 #include <linux/mtd/partitions.h>
 #include <asm-generic/sizes.h>
 
@@ -318,7 +318,7 @@ static struct platform_device nand_plat_device = {
 		.platform_data	= &nand_plat_data,
 	},
 };
-#endif	/* CONFIG_MTD_NAND_SLSI */
+#endif	/* CONFIG_MTD_NAND_NXP */
 
 #if defined(CONFIG_TOUCHSCREEN_GSLX680)
 #include <linux/i2c.h>
@@ -1528,7 +1528,7 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&bl_plat_device);
 #endif
 
-#if defined(CONFIG_MTD_NAND_SLSI)
+#if defined(CONFIG_MTD_NAND_NXP)
 	platform_device_register(&nand_plat_device);
 #endif
 

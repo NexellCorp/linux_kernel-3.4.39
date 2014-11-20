@@ -70,7 +70,7 @@ static int dwmac1000_dma_init(void __iomem *ioaddr, int pbl, int fb, int mb,
 	if (mb)
 		value |= DMA_BUS_MODE_MB;
 
-#ifdef CONFIG_SLSI_MAC_DA
+#ifdef CONFIG_NXPMAC_DA
 	value |= DMA_BUS_MODE_DA;	/* Rx has priority over tx */
 #endif
 

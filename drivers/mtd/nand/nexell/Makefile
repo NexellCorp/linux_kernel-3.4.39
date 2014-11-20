@@ -1,5 +1,5 @@
 
-obj-$(CONFIG_MTD_NAND_SLSI)	+= nand.o
+obj-$(CONFIG_MTD_NAND_NXP)	+= nand.o
 
 ifeq ($(CONFIG_MTD_NAND_MANUAL_ELP_PATH),y)
 obj-$(CONFIG_MTD_NAND_ECC_HW)	+= nand_ecc_elp.o

@@ -2,4 +2,4 @@
 # Makefile for the Nexell device drivers.
 #
 
-obj-$(CONFIG_SLSI_MAC_ETH) += nxpmac/
+obj-$(CONFIG_NXPMAC_ETH) += nxpmac/

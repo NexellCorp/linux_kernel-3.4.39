@@ -130,7 +130,7 @@ static int stmmac_mdio_write(struct mii_bus *bus, int phyaddr, int phyreg,
  */
 static int stmmac_mdio_reset(struct mii_bus *bus)
 {
-#if defined(CONFIG_SLSI_MAC_PLATFORM)
+#if defined(CONFIG_NXPMAC_PLATFORM)
 	struct net_device *ndev = bus->priv;
 	struct stmmac_priv *priv = netdev_priv(ndev);
 	unsigned int mii_address = priv->hw->mii.addr;
