@@ -52,7 +52,7 @@ config PM_DBGOUT
 config HAVE_PWM
 	prompt "PWM driver"
 	bool
-	select SLSI_SOC_PWM
+	select NXP_PWM
 	default y
 
 config PWM_SYSFS
@@ -80,7 +80,7 @@ config HAVE_PWM_CH3
 	depends on HAVE_PWM
 	default n
 
-config SLSI_SOC_PWM
+config NXP_PWM
 	bool "Support PWM SoC"
 	default y if HAVE_PWM
 

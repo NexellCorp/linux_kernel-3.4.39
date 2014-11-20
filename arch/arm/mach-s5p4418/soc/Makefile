@@ -5,7 +5,7 @@
 
 obj-y += peri_reset.o gpio.o
 
-obj-$(CONFIG_SLSI_SOC_PWM)		+= pwm.o
+obj-$(CONFIG_NXP_PWM)		+= pwm.o
 obj-$(CONFIG_SLSI_DISPLAY)		+= display.o
 obj-$(CONFIG_SLSI_DISPLAY_LCD)	+= display_lcd.o
 obj-$(CONFIG_SLSI_DISPLAY_LVDS)	+= display_lvds.o
