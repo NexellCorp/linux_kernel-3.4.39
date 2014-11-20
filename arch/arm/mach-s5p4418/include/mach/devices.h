@@ -285,7 +285,7 @@ struct nxp_cpufreq_limit_data {
     int limit_num;
     long aval_max_freq;     /* unit Khz */
     long op_max_freq; 		/* unit Khz */
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	long limit_level0_freq; 	/* unit Khz */
 	long limit_level1_freq; 	/* unit Khz */
 	long min_max_freq;			/* unit Khz */

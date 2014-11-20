@@ -41,7 +41,7 @@ struct cpufreq_limit_data {
     int limit_num;
     long aval_max_freq;     /* unit Khz */
     long op_max_freq; 		/* unit Khz */
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	long limit_level0_freq; 	/* unit Khz */
 	long limit_level1_freq; 	/* unit Khz */
 	long min_max_freq;			/* unit Khz */
@@ -49,7 +49,7 @@ struct cpufreq_limit_data {
 #endif
     long timer_duration;	/* unit ms */
     long op_timeout;		/* unit ms */
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	int timer_chkcpu_mod;
 #endif
     long time_stamp;
@@ -119,7 +119,7 @@ out:
 
 
 
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 long cpuUsage_Process(struct cpufreq_limit_data *limit, int boost);
 int curMaxCpu = 0;
 #endif
@@ -131,7 +131,7 @@ static void cpufreq_set_max_frequency(struct cpufreq_limit_data *limit, int boos
 	long sc_max_freq = 0, max_freq = 0;
 	int cpu;
 
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	limit->timer_chkcpu_mod = 1-limit->timer_chkcpu_mod;
 	if (limit->timer_chkcpu_mod)
 	{
@@ -303,7 +303,7 @@ static int cpufreq_limit_probe(struct platform_device *pdev)
 	limit->op_timeout = plat->sched_timeout ? : LM_TASK_CHECK_SLEEP_TIME;
 	limit->pm_notifier.notifier_call = cpufreq_limit_pm_notify;
 
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	limit->limit_level0_freq = plat->limit_level0_freq;
 	limit->limit_level1_freq = plat->limit_level1_freq;
 	limit->min_max_freq = plat->min_max_freq;

@@ -185,7 +185,7 @@ static void timer_clock_select(struct timer_info *info, long frequency)
 	int tscl = 0, tmux = 5;
 	int vers = nxp_cpu_version();
 
-#if !defined(CONFIG_SLSI_DFS_BCLK)
+#if !defined(CONFIG_NXP_DFS_BCLK)
 	int smux = 0, pscl = 0;
 	ulong mout;
 	ulong thz, delt = (-1UL);

@@ -183,7 +183,7 @@ static int calc_hdmi_master_clock(unsigned long mclk, int *pllsel, int *plldiv)
 	clk = clk_get(NULL, "pll3"), clk_hz[3] = clk_get_rate(clk), clk_put(clk);
 
 	for (n = 0; SPDIF_IN_CLKS > n; n++) {
-	#ifdef  CONFIG_ARM_SLSI_CPUFREQ
+	#ifdef  CONFIG_ARM_NXP_CPUFREQ
 		if (n == CONFIG_SLSI_CPUFREQ_PLLDEV)
 			continue;
 	#endif

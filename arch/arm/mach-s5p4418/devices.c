@@ -610,12 +610,12 @@ static struct platform_device vr_gpu_device =
 /*------------------------------------------------------------------------------
  * Alsa sound platform device (I2S-PCM)
  */
-#if defined(CONFIG_SND_SLSI_I2S) || defined(CONFIG_SND_SLSI_I2S_MODULE)
+#if defined(CONFIG_NXP_SLSI_I2S) || defined(CONFIG_NXP_SLSI_I2S_MODULE)
 #ifndef CFG_AUDIO_I2S0_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S0_MASTER_CLOCK_IN		0
 #endif
 
-#if defined (CONFIG_SND_SLSI_I2S_CH0)
+#if defined (CONFIG_NXP_SLSI_I2S_CH0)
 static struct nxp_i2s_plat_data i2s_data_ch0 = {
 	.master_mode		= CFG_AUDIO_I2S0_MASTER_MODE,
 	.master_clock_in	= CFG_AUDIO_I2S0_MASTER_CLOCK_IN,
@@ -637,7 +637,7 @@ static struct platform_device i2s_device_ch0 = {
 	},
 };
 #endif
-#if defined (CONFIG_SND_SLSI_I2S_CH1)
+#if defined (CONFIG_NXP_SLSI_I2S_CH1)
 #ifndef CFG_AUDIO_I2S1_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S1_MASTER_CLOCK_IN		0
 #endif
@@ -663,7 +663,7 @@ static struct platform_device i2s_device_ch1 = {
 	},
 };
 #endif
-#if defined (CONFIG_SND_SLSI_I2S_CH2)
+#if defined (CONFIG_NXP_SLSI_I2S_CH2)
 #ifndef CFG_AUDIO_I2S2_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S2_MASTER_CLOCK_IN		0
 #endif
@@ -691,22 +691,22 @@ static struct platform_device i2s_device_ch2 = {
 #endif
 
 static struct platform_device *i2s_devices[] __initdata = {
-	#if defined (CONFIG_SND_SLSI_I2S_CH0)
+	#if defined (CONFIG_NXP_SLSI_I2S_CH0)
 	&i2s_device_ch0,
 	#endif
-	#if defined (CONFIG_SND_SLSI_I2S_CH1)
+	#if defined (CONFIG_NXP_SLSI_I2S_CH1)
 	&i2s_device_ch1,
 	#endif
-	#if defined (CONFIG_SND_SLSI_I2S_CH2)
+	#if defined (CONFIG_NXP_SLSI_I2S_CH2)
 	&i2s_device_ch2,
 	#endif
 };
-#endif /* CONFIG_SND_SLSI_I2S || CONFIG_SND_SLSI_I2S_MODULE */
+#endif /* CONFIG_NXP_SLSI_I2S || CONFIG_NXP_SLSI_I2S_MODULE */
 
 /*------------------------------------------------------------------------------
  * Alsa sound platform device (SPDIF)
  */
-#if defined(CONFIG_SND_SLSI_SPDIF_TX) || defined(CONFIG_SND_SLSI_SPDIF_TX_MODULE)
+#if defined(CONFIG_NXP_SLSI_SPDIF_TX) || defined(CONFIG_NXP_SLSI_SPDIF_TX_MODULE)
 static struct nxp_spdif_plat_data spdif_data_tx = {
 	.sample_rate	= CFG_AUDIO_SPDIF_TX_SAMPLE_RATE,
 	.hdmi_out		= CFG_AUDIO_SPDIF_TX_HDMI_OUT,
@@ -721,9 +721,9 @@ static struct platform_device spdif_device_tx = {
 		.platform_data	= &spdif_data_tx
 	},
 };
-#endif	/* CONFIG_SND_SLSI_SPDIF_TX || CONFIG_SND_SLSI_SPDIF_TX_MODULE */
+#endif	/* CONFIG_NXP_SLSI_SPDIF_TX || CONFIG_NXP_SLSI_SPDIF_TX_MODULE */
 
-#if defined(CONFIG_SND_SLSI_SPDIF_RX) || defined(CONFIG_SND_SLSI_SPDIF_RX_MODULE)
+#if defined(CONFIG_NXP_SLSI_SPDIF_RX) || defined(CONFIG_NXP_SLSI_SPDIF_RX_MODULE)
 static struct nxp_spdif_plat_data spdif_data_rx = {
 	.sample_rate	= CFG_AUDIO_SPDIF_RX_SAMPLE_RATE,
 	.dma_filter		= pl08x_filter_id,
@@ -737,7 +737,7 @@ static struct platform_device spdif_device_rx = {
 		.platform_data	= &spdif_data_rx
 	},
 };
-#endif	/* CONFIG_SND_SLSI_SPDIF_RX || CONFIG_SND_SLSI_SPDIF_RX_MODULE */
+#endif	/* CONFIG_NXP_SLSI_SPDIF_RX || CONFIG_NXP_SLSI_SPDIF_RX_MODULE */
 
 /*------------------------------------------------------------------------------
  * SSP/SPI
@@ -1381,17 +1381,17 @@ void __init nxp_cpu_devices_register(void)
     platform_add_devices(gpio_devices, ARRAY_SIZE(gpio_devices));
 #endif
 
-#if defined(CONFIG_SND_SLSI_I2S) || defined(CONFIG_SND_SLSI_I2S_MODULE)
+#if defined(CONFIG_NXP_SLSI_I2S) || defined(CONFIG_NXP_SLSI_I2S_MODULE)
     printk("mach: add device i2s (array:%d) \n", ARRAY_SIZE(i2s_devices));
     platform_add_devices(i2s_devices, ARRAY_SIZE(i2s_devices));
 #endif
 
-#if defined(CONFIG_SND_SLSI_SPDIF_TX) || defined(CONFIG_SND_SLSI_SPDIF_TX_MODULE)
+#if defined(CONFIG_NXP_SLSI_SPDIF_TX) || defined(CONFIG_NXP_SLSI_SPDIF_TX_MODULE)
     printk("mach: add device spdif tx\n");
     platform_device_register(&spdif_device_tx);
 #endif
 
-#if defined(CONFIG_SND_SLSI_SPDIF_RX) || defined(CONFIG_SND_SLSI_SPDIF_RX_MODULE)
+#if defined(CONFIG_NXP_SLSI_SPDIF_RX) || defined(CONFIG_NXP_SLSI_SPDIF_RX_MODULE)
     printk("mach: add device spdif rx\n");
     platform_device_register(&spdif_device_rx);
 #endif

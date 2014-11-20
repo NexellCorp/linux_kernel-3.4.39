@@ -84,7 +84,7 @@ struct nxp_adc_info {
 	int support_interrupt;
 	int irq;
 	struct iio_map *map;
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	struct iio_dev *iio;
 	struct workqueue_struct *monitoring_wqueue;
 	struct delayed_work monitoring_work;
@@ -335,7 +335,7 @@ static int nxp_adc_resume(struct platform_device *pdev)
 }
 
 
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 int eBoard_temperature = 0;
 int NXL_Get_BoardTemperature(void)
 {
@@ -493,7 +493,7 @@ exit_mon:
 
 static int __devinit nxp_adc_probe(struct platform_device *pdev)
 {
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	static struct notifier_block *pm_notifier;
 #endif
 	struct iio_dev *iio = NULL;
@@ -550,7 +550,7 @@ static int __devinit nxp_adc_probe(struct platform_device *pdev)
 
 	adc->map = nxp_adc_iio_maps;
 
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	adc->isCheckedCount = 0;
 	adc->isValid = 0;
 	adc->bFirst = 0;

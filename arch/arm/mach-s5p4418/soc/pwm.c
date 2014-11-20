@@ -412,7 +412,7 @@ static int __init nxp_soc_pwm_init(void)
 	}
 
 	clk_in_max  = clk_get_rate(clk);
-#if defined(CONFIG_SLSI_DFS_BCLK)
+#if defined(CONFIG_NXP_DFS_BCLK)
 	clk_in_max  = 20*1000*1000;
 #else
 	clk_in_max /= 2;

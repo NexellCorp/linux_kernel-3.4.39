@@ -26,7 +26,7 @@
 #include <mach/soc.h>
 #include <mach/nxp-dfs-bclk.h>
 
-#ifdef CONFIG_SLSI_DFS_BCLK
+#ifdef CONFIG_NXP_DFS_BCLK
 
 #define BCLK_MIN    120000000
 /*#define BCLK_MIN    100000000*/

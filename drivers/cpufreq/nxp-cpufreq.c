@@ -151,7 +151,7 @@ unsigned int nxp_cpufreq_voltage(unsigned long freqhz)
 		if (uS) udelay(uS);
 	}
 
-#ifdef CONFIG_ARM_SLSI_CPUFREQ_VOLTAGE_DEBUG
+#ifdef CONFIG_ARM_NXP_CPUFREQ_VOLTAGE_DEBUG
 	pr_debug(" volt (%lukhz %ld.%06ld V, %ld.%03ld us)\n",
 			freq_volts[i][0], uV/1000000, uV%1000000, mS, uS);
 #endif

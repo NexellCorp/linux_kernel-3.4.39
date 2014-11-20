@@ -87,7 +87,7 @@ EXPORT_SYMBOL_GPL(isCpuMaxFrequency);
 
 #define SIZE_RD_STAT 128
 extern int NXL_Get_BoardTemperature(void);
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 extern int isOccured_dieError(void);
 #endif
 
@@ -323,7 +323,7 @@ void GetCPUInfo(char *buf)
 
     pr_debug("cpu:%02d.%02d %% MaxCpu(%d) temperature(%d) die(%d)stop(0x%x)\n",
     	(usage100/100), (usage100%100), curMaxCpu, ctrl_cpuTemp.board_temperature,
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
     	isOccured_dieError(),
 #else
 		0,
@@ -339,7 +339,7 @@ void GetCPUInfo(char *buf)
     ctrl_cpuTemp.m_prev.si = ctrl_cpuTemp.m_curr.si;
     ctrl_cpuTemp.m_prev.zero = ctrl_cpuTemp.m_curr.zero;
 
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 	if(isOccured_dieError() && (ctrl_cpuTemp.board_temperature<TEMPERTURE_LIMIT_LEVEL2))
 		ctrl_cpuTemp.occuredError = 1;
 #endif
@@ -489,7 +489,7 @@ long funcGetMaxFreq(struct cpufreq_limit_data *limit)
 		ctrl_cpuTemp.waring_level = 1;
 	}
 
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 	if(isOccured_dieError() || ctrl_cpuTemp.occuredError) // DieError
 	{
 		limit->prev_max_freq = limit->min_max_freq;

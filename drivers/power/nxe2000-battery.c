@@ -22,7 +22,7 @@
 // Date		ID				Description
 //--------------------------------------------------------------------
 //
-//11-18-2014			modify	- modification of CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE. -> CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE
+//11-18-2014			modify	- modification of CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE. -> CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE
 //
 //11-05-2014			modify	- modification of CONFIG_ARM_NXP4330_CPUFREQ_BY_RESOURCE.
 //
@@ -444,7 +444,7 @@ void nxe2000_register_dump(struct device *dev)
 }
 #endif
 
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 //#define pr_debug	printk
 
 extern int NXL_Get_BoardTemperature(void);
@@ -2016,7 +2016,7 @@ static void nxe2000_charge_monitor_work(struct work_struct *work)
 	return;
 }
 
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 int nxe2000_decide_charge_byResource(struct nxe2000_battery_info *info)
 {
 	uint8_t ctrlreg;
@@ -2061,7 +2061,7 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 	int ret;
 	int capacity = 0;
 
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	if(nxe2000_decide_charge_byResource(info) == 0)
 		return ;
 #endif
@@ -3759,7 +3759,7 @@ static int get_power_supply_status(struct nxe2000_battery_info *info)
 	charge_state = (status & 0x1F);
 	supply_state = ((status & 0xC0) >> 6);
 
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	pr_debug("chgState(%s) supply[%d](%s) battery(%d%%) VBAT(%d)\n",
 		strChargingState[charge_state],supply_state, strSupply[supply_state],
 		0, 0);
@@ -4607,7 +4607,7 @@ static void suspend_charge4first_soc(struct nxe2000_battery_info *info)
 
 static int get_battery_temp(struct nxe2000_battery_info *info)
 {
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	if(NXL_Get_BoardTemperature() == 0)
 		return 270;
 
@@ -4644,7 +4644,7 @@ static int get_battery_temp(struct nxe2000_battery_info *info)
 
 static int get_battery_temp_2(struct nxe2000_battery_info *info)
 {
-#if defined(CONFIG_ARM_SLSI_CPUFREQ_BY_RESOURCE)
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	if(NXL_Get_BoardTemperature() == 0)
 		return 270;
 

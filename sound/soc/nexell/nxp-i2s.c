@@ -32,7 +32,7 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-#ifdef CONFIG_SLSI_DFS_BCLK
+#ifdef CONFIG_NXP_DFS_BCLK
 #include <mach/nxp-dfs-bclk.h>
 #endif
 
@@ -561,7 +561,7 @@ static int nxp_i2s_trigger(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 	case SNDRV_PCM_TRIGGER_START:
-#ifdef CONFIG_SLSI_DFS_BCLK
+#ifdef CONFIG_NXP_DFS_BCLK
         bclk_get(BCLK_USER_DMA);
 #endif
 		i2s_start(par, stream);
@@ -570,7 +570,7 @@ static int nxp_i2s_trigger(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
     case SNDRV_PCM_TRIGGER_STOP:
 		i2s_stop(par, stream);
-#ifdef CONFIG_SLSI_DFS_BCLK
+#ifdef CONFIG_NXP_DFS_BCLK
         bclk_put(BCLK_USER_DMA);
 #endif
 		break;

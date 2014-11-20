@@ -94,7 +94,7 @@ const u8 g_DispBusSI[3] = {
 /*------------------------------------------------------------------------------
  * CPU Frequence
  */
-#if defined(CONFIG_ARM_SLSI_CPUFREQ)
+#if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
 	{ 1600000, 1300000, },
@@ -1714,7 +1714,7 @@ void __init nxp_board_devices_register(void)
 {
 	printk("[Register board platform devices]\n");
 
-#if defined(CONFIG_ARM_SLSI_CPUFREQ)
+#if defined(CONFIG_ARM_NXP_CPUFREQ)
 	printk("plat: add dynamic frequency (pll.%d)\n", dfs_plat_data.pll_dev);
 	platform_device_register(&dfs_plat_device);
 	platform_device_register(&freq_limit_device);

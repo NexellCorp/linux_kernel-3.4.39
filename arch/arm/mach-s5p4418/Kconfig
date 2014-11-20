@@ -101,13 +101,13 @@ config SLSI_DISPLAY_RESCONV
 	depends on SLSI_DISPLAY
 	default n
 
-config SLSI_DFS_BCLK
+config NXP_DFS_BCLK
     bool "DFS For BCLK"
     default n
 
 choice
     prompt "Select BCLK PLL device"
-    depends on SLSI_DFS_BCLK
+    depends on NXP_DFS_BCLK
     default S5P4418_DFS_BCLK_PLL_0
 
 config S5P4418_DFS_BCLK_PLL_0

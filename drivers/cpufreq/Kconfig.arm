@@ -77,31 +77,31 @@ config ARM_EXYNOS5250_CPUFREQ
 	  This adds the CPUFreq driver for Samsung EXYNOS5250
 	  SoC.
 
-config ARM_SLSI_CPUFREQ
+config ARM_NXP_CPUFREQ
 	bool "SLsiAP CPU Frequency scaling support"
 	depends on ARCH_CPU_SLSI
 	default y
 	help
 	  This adds the CPUFreq driver for SLsiAP
 	  SoC.
-config ARM_SLSI_CPUFREQ_DEBUG
+config ARM_NXP_CPUFREQ_DEBUG
 	bool "Dynamic Frequency scaling debug message"
-	depends on ARM_SLSI_CPUFREQ
+	depends on ARM_NXP_CPUFREQ
 	default n
 
-config ARM_SLSI_CPUFREQ_VOLTAGE_DEBUG
+config ARM_NXP_CPUFREQ_VOLTAGE_DEBUG
 	bool "Dynamic Voltage scaling debug message"
-	depends on ARM_SLSI_CPUFREQ
+	depends on ARM_NXP_CPUFREQ
 	default n
 
-config ARM_SLSI_CPUFREQ_BY_RESOURCE
+config ARM_NXP_CPUFREQ_BY_RESOURCE
 	bool "Dynamic Voltage scaling by cpu resource & board temperature"
-	depends on ARM_SLSI_CPUFREQ
+	depends on ARM_NXP_CPUFREQ
 	default n
 
 choice
 	prompt "Select CPU PLL device"
-	depends on ARM_SLSI_CPUFREQ
+	depends on ARM_NXP_CPUFREQ
 	default SLSI_CPUFREQ_PLL_1
 
 config SLSI_CPUFREQ_PLL_0

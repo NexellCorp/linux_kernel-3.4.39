@@ -167,7 +167,7 @@ static long calc_uart_clock(long request, int *pllsel, int *plldiv)
 	clk = clk_get(NULL, "pll2"), clkhz[2] = clk_get_rate(clk), clk_put(clk);
 
 	for (n = 0; ARRAY_SIZE(clkhz) > n; n++) {
-	#ifdef  CONFIG_ARM_SLSI_CPUFREQ
+	#ifdef  CONFIG_ARM_NXP_CPUFREQ
 		if (n == CONFIG_SLSI_CPUFREQ_PLLDEV)
 			continue;
 	#endif
