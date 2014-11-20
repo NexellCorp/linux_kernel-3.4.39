@@ -6,12 +6,12 @@
 obj-y += peri_reset.o gpio.o
 
 obj-$(CONFIG_NXP_PWM)		+= pwm.o
-obj-$(CONFIG_SLSI_DISPLAY)		+= display.o
-obj-$(CONFIG_SLSI_DISPLAY_LCD)	+= display_lcd.o
-obj-$(CONFIG_SLSI_DISPLAY_LVDS)	+= display_lvds.o
-obj-$(CONFIG_SLSI_DISPLAY_HDMI)	+= display_hdmi.o hdmi/
-obj-$(CONFIG_SLSI_DISPLAY_MIPI)	+= display_mipi.o
-obj-$(CONFIG_SLSI_DISPLAY_RESC)	+= display_resc.o
+obj-$(CONFIG_NXP_DISPLAY)		+= display.o
+obj-$(CONFIG_NXP_DISPLAY_LCD)	+= display_lcd.o
+obj-$(CONFIG_NXP_DISPLAY_LVDS)	+= display_lvds.o
+obj-$(CONFIG_NXP_DISPLAY_HDMI)	+= display_hdmi.o hdmi/
+obj-$(CONFIG_NXP_DISPLAY_MIPI)	+= display_mipi.o
+obj-$(CONFIG_NXP_DISPLAY_RESC)	+= display_resc.o
 obj-$(CONFIG_USB_EHCI_SYNOPSYS)		+= setup-usb-phy.o
 obj-$(CONFIG_S3C_DEV_USB_HSOTG)		+= setup-usb-phy.o
 obj-$(CONFIG_SLSI_OUT_HDMI)		+= hdmi/

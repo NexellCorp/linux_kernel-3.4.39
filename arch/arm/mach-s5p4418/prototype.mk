@@ -34,17 +34,17 @@ obj-y += \
 		$(PROTOTYPE)/$(MODULES)/nx_clkgen.o		\
 		$(PROTOTYPE)/$(MODULES)/nx_ecid.o
 
-obj-$(CONFIG_SLSI_DISPLAY)			+= 	$(PROTOTYPE)/$(MODULES)/nx_displaytop.o		\
+obj-$(CONFIG_NXP_DISPLAY)			+= 	$(PROTOTYPE)/$(MODULES)/nx_displaytop.o		\
 								   			$(PROTOTYPE)/$(MODULES)/nx_disptop_clkgen.o	\
 											$(PROTOTYPE)/$(MODULES)/nx_dualdisplay.o	\
 								   			$(PROTOTYPE)/$(MODULES)/nx_mlc.o			\
 								   			$(PROTOTYPE)/$(MODULES)/nx_dpc.o
 
-obj-$(CONFIG_SLSI_DISPLAY_LVDS)		+= 	$(PROTOTYPE)/$(MODULES)/nx_lvds.o
-obj-$(CONFIG_SLSI_DISPLAY_RESCONV)	+= 	$(PROTOTYPE)/$(MODULES)/nx_resconv.o
-obj-$(CONFIG_SLSI_DISPLAY_HDMI)		+= 	$(PROTOTYPE)/$(MODULES)/nx_hdmi.o
-obj-$(CONFIG_SLSI_DISPLAY_HDMI)		+= 	$(PROTOTYPE)/$(MODULES)/nx_ecid.o
-obj-$(CONFIG_SLSI_DISPLAY_MIPI)		+=  $(PROTOTYPE)/$(MODULES)/nx_mipi.o
+obj-$(CONFIG_NXP_DISPLAY_LVDS)		+= 	$(PROTOTYPE)/$(MODULES)/nx_lvds.o
+obj-$(CONFIG_NXP_DISPLAY_RESCONV)	+= 	$(PROTOTYPE)/$(MODULES)/nx_resconv.o
+obj-$(CONFIG_NXP_DISPLAY_HDMI)		+= 	$(PROTOTYPE)/$(MODULES)/nx_hdmi.o
+obj-$(CONFIG_NXP_DISPLAY_HDMI)		+= 	$(PROTOTYPE)/$(MODULES)/nx_ecid.o
+obj-$(CONFIG_NXP_DISPLAY_MIPI)		+=  $(PROTOTYPE)/$(MODULES)/nx_mipi.o
 
 obj-$(CONFIG_RTC_DRV_NXP)			+= 	$(PROTOTYPE)/$(MODULES)/nx_rtc.o
 

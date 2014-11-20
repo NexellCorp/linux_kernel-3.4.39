@@ -84,21 +84,21 @@ config NXP_PWM
 	bool "Support PWM SoC"
 	default y if HAVE_PWM
 
-config SLSI_DISPLAY
+config NXP_DISPLAY
 	bool "Support Display SoC"
 	default n
 
-config SLSI_DISPLAY_1ST
+config NXP_DISPLAY_1ST
 	bool "Primary   display output (MLC0/DPC0)"
-	depends on SLSI_DISPLAY
+	depends on NXP_DISPLAY
 
-config SLSI_DISPLAY_2ST
+config NXP_DISPLAY_2ST
 	bool "Secondary display output (MLC1/DPC1)"
-	depends on SLSI_DISPLAY
+	depends on NXP_DISPLAY
 
-config SLSI_DISPLAY_RESCONV
+config NXP_DISPLAY_RESCONV
 	bool "Resolution Converter"
-	depends on SLSI_DISPLAY
+	depends on NXP_DISPLAY
 	default n
 
 config NXP_DFS_BCLK

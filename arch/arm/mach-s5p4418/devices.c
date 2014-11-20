@@ -1325,32 +1325,32 @@ void __init nxp_cpu_devices_register(void)
 	NX_UART_CH_INIT(5);
 	#endif
 
-#if defined(CONFIG_SLSI_DISPLAY)
+#if defined(CONFIG_NXP_DISPLAY)
     printk("mach: add device syncgen [%d]\n", ARRAY_SIZE(syncgen_devices));
     platform_add_devices(syncgen_devices, ARRAY_SIZE(syncgen_devices));
 #endif
 
-#if defined(CONFIG_SLSI_DISPLAY_LCD)
+#if defined(CONFIG_NXP_DISPLAY_LCD)
 	printk("mach: add device lcd \n");
 	platform_device_register(&lcd_device);
 #endif
 
-#if defined(CONFIG_SLSI_DISPLAY_LVDS)
+#if defined(CONFIG_NXP_DISPLAY_LVDS)
 	printk("mach: add device lvds \n");
 	platform_device_register(&lvds_device);
 #endif
 
-#if defined(CONFIG_SLSI_DISPLAY_MIPI)
+#if defined(CONFIG_NXP_DISPLAY_MIPI)
 	printk("mach: add device mipi \n");
 	platform_device_register(&mipi_device);
 #endif
 
-#if defined(CONFIG_SLSI_DISPLAY_HDMI)
+#if defined(CONFIG_NXP_DISPLAY_HDMI)
 	printk("mach: add device hdmi \n");
 	platform_device_register(&hdmi_device);
 #endif
 
-#if defined(CONFIG_SLSI_DISPLAY_RESC)
+#if defined(CONFIG_NXP_DISPLAY_RESC)
 	printk("mach: add device resolution convertor \n");
 	platform_device_register(&resc_device);
 #endif

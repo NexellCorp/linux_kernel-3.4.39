@@ -150,7 +150,7 @@ struct nxp_fb_param {
  */
 static int nxp_fb_dev_get_vsync(int module, int fb, struct disp_vsync_info *vsi)
 {
-#ifdef CONFIG_SLSI_DISPLAY
+#ifdef CONFIG_NXP_DISPLAY
 	enum disp_dev_type device = DISP_DEVICE_SYNCGEN0;
 
 	if (-1 == module)
@@ -171,7 +171,7 @@ static int nxp_fb_dev_get_vsync(int module, int fb, struct disp_vsync_info *vsi)
 
 static int nxp_fb_dev_setup(struct nxp_fb_param *par)
 {
-#ifdef CONFIG_SLSI_DISPLAY
+#ifdef CONFIG_NXP_DISPLAY
 	int module = par->fb_dev.device_id;
 	int layer = par->fb_dev.layer;
 	int xres = par->fb_dev.x_resol;
@@ -192,7 +192,7 @@ static int nxp_fb_dev_setup(struct nxp_fb_param *par)
 
 static unsigned nxp_fb_dev_set_layer(struct nxp_fb_param *par)
 {
-#ifdef CONFIG_SLSI_DISPLAY
+#ifdef CONFIG_NXP_DISPLAY
 	int module = par->fb_dev.device_id;
 	int layer = par->fb_dev.layer;
 
@@ -207,7 +207,7 @@ static unsigned nxp_fb_dev_set_layer(struct nxp_fb_param *par)
 
 static void nxp_fb_dev_set_addr(struct nxp_fb_param *par, unsigned phys, int waitvsync)
 {
-#ifdef CONFIG_SLSI_DISPLAY
+#ifdef CONFIG_NXP_DISPLAY
 	int module = par->fb_dev.device_id;
 	int layer  = par->fb_dev.layer;
 	int xres = par->fb_dev.x_resol;
@@ -222,7 +222,7 @@ static void nxp_fb_dev_set_addr(struct nxp_fb_param *par, unsigned phys, int wai
 
 static int nxp_fb_dev_enable(struct nxp_fb_param *par, bool on, int force)
 {
-#if defined CONFIG_SLSI_DISPLAY && !defined(CONFIG_LOGO_SLSI_COPY)
+#if defined CONFIG_NXP_DISPLAY && !defined(CONFIG_LOGO_SLSI_COPY)
 	int module = par->fb_dev.device_id;
 	int stat = 0;
 
@@ -241,7 +241,7 @@ static int nxp_fb_dev_enable(struct nxp_fb_param *par, bool on, int force)
 static int nxp_fb_dev_suspend(struct nxp_fb_param *par)
 {
 	int ret = 0;
-#ifdef CONFIG_SLSI_DISPLAY
+#ifdef CONFIG_NXP_DISPLAY
 	int module = par->fb_dev.device_id;
 	if (-1 == module)
 		return 0;
@@ -254,7 +254,7 @@ static int nxp_fb_dev_suspend(struct nxp_fb_param *par)
 
 static int nxp_fb_dev_resume(struct nxp_fb_param *par)
 {
-#ifdef CONFIG_SLSI_DISPLAY
+#ifdef CONFIG_NXP_DISPLAY
 	int module = par->fb_dev.device_id;
 	if (-1 == module)
 		return 0;
@@ -268,7 +268,7 @@ static int nxp_fb_dev_resume(struct nxp_fb_param *par)
 
 static int nxp_fb_dev_output(struct nxp_fb_param *par, int enable)
 {
-#ifdef CONFIG_SLSI_DISPLAY
+#ifdef CONFIG_NXP_DISPLAY
 	int module = par->fb_dev.device_id;
 	if (-1 == module)
 		return 0;
@@ -312,7 +312,7 @@ static inline  void fb_copy_unmap(struct page *page, void *virt)
 static unsigned nxp_fb_dev_get_addr(struct nxp_fb_param *par)
 {
 	unsigned int phyaddr = 0;
-#ifdef CONFIG_SLSI_DISPLAY
+#ifdef CONFIG_NXP_DISPLAY
 	int module = par->fb_dev.device_id;
 	int layer = par->fb_dev.layer;
 

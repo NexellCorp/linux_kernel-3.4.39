@@ -15,8 +15,8 @@ config FB_SLSI_ION_MEM
 config FB0_SLSI
 	bool "Support primary   frame buffer (/dev/fb0)"
 	depends on FB_SLSI
-	select SLSI_DISPLAY
-	select SLSI_DISPLAY_1ST
+	select NXP_DISPLAY
+	select NXP_DISPLAY_1ST
 	default y
 
 	config FB0_SLSI_DISPOUT
@@ -27,8 +27,8 @@ config FB0_SLSI
 config FB1_SLSI
 	bool "Support secondary frame buffer (/dev/fb1)"
 	depends on FB_SLSI
-	select SLSI_DISPLAY
-	select SLSI_DISPLAY_2ST
+	select NXP_DISPLAY
+	select NXP_DISPLAY_2ST
 	default n
 
 	config FB1_SLSI_DISPOUT
@@ -36,60 +36,60 @@ config FB1_SLSI
 		depends on FB1_SLSI
 		default 1
 
-config SLSI_DISPLAY_LCD
+config NXP_DISPLAY_LCD
 	bool "LCD"
 	default n
 
-	config SLSI_DISPLAY_LCD_IN
+	config NXP_DISPLAY_LCD_IN
 		int "Display In  [0=Display 0, 1=Display 1, 2=Resolution Convertor]"
-		depends on SLSI_DISPLAY_LCD
+		depends on NXP_DISPLAY_LCD
 		default 0
 
-config SLSI_DISPLAY_LVDS
+config NXP_DISPLAY_LVDS
 	bool "LVDS"
 	default n
 
-	config SLSI_DISPLAY_LVDS_IN
+	config NXP_DISPLAY_LVDS_IN
 		int "Display In  [0=Display 0, 1=Display 1, 2=Resolution Convertor]"
-		depends on SLSI_DISPLAY_LVDS
+		depends on NXP_DISPLAY_LVDS
 		default 0
 
-config SLSI_DISPLAY_MIPI
+config NXP_DISPLAY_MIPI
 	bool "MIPI"
 
-	config SLSI_DISPLAY_MIPI_IN
+	config NXP_DISPLAY_MIPI_IN
 		int "Display In  [0=Display 0, 1=Display 1, 2=Resolution Convertor]"
-		depends on SLSI_DISPLAY_MIPI
+		depends on NXP_DISPLAY_MIPI
 		default 0
 
-config SLSI_DISPLAY_HDMI
+config NXP_DISPLAY_HDMI
 	bool "HDMI"
 
-	config SLSI_DISPLAY_HDMI_IN
+	config NXP_DISPLAY_HDMI_IN
 		int "Display In  [0=Display 0, 1=Display 1, 2=Resolution Convertor]"
-		depends on SLSI_DISPLAY_HDMI
+		depends on NXP_DISPLAY_HDMI
 		default 0
 
 	choice
 		prompt "Resolution"
-		depends on SLSI_DISPLAY_HDMI
-		default SLSI_DISPLAY_HDMI_1280_720P
+		depends on NXP_DISPLAY_HDMI
+		default NXP_DISPLAY_HDMI_1280_720P
 
-	config	SLSI_DISPLAY_HDMI_1280_720P
+	config	NXP_DISPLAY_HDMI_1280_720P
 		bool "1280 *  720p"
 
-	config	SLSI_DISPLAY_HDMI_1920_1080P
+	config	NXP_DISPLAY_HDMI_1920_1080P
 		bool "1920 * 1080p"
 
 	endchoice
 
-config SLSI_DISPLAY_RESC
+config NXP_DISPLAY_RESC
 	bool "RESOLUTION CONVERTOR"
 	default n
 
-	config SLSI_DISPLAY_RESC_IN
+	config NXP_DISPLAY_RESC_IN
 		int "Display In  [0=Display 0, 1=Display 1]"
-		depends on SLSI_DISPLAY_RESC
+		depends on NXP_DISPLAY_RESC
 		default 0
 
 endmenu
