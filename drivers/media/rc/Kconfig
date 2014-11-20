@@ -277,7 +277,7 @@ config IR_GPIO_CIR
 
 config PPM_NXP
 	tristate "SLsiAP IR remote control"
-	depends on RC_CORE
+	depends on RC_CORE && ARCH_CPU_SLSI
 	---help---
 	   Say Y if you want to use SLsiAP IR Receiver.
 
