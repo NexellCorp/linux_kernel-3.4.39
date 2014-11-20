@@ -15,6 +15,10 @@ ifeq ($(CONFIG_PLAT_S5P4418_SVT),y)
 PLATBOARD :=svt
 endif
 
+ifeq ($(CONFIG_PLAT_S5P4418_ASB),y)
+PLATBOARD :=asb
+endif
+
 #
 # Build options
 #

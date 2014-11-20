@@ -24,6 +24,11 @@ choice
 		help
    	 		Support for the svt board.
 
+	config PLAT_S5P4418_ASB
+		bool "ASB: Linux asb board"
+		help
+   	 		Support for the asb board.
+
 endchoice
 
 #
