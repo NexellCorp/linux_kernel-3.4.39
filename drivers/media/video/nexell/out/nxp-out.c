@@ -12,10 +12,10 @@
 #include <mach/platform.h>
 
 #include "nxp-mlc.h"
-#if defined(CONFIG_SLSI_OUT_HDMI)
+#if defined(CONFIG_NXP_OUT_HDMI)
 #include "nxp-hdmi.h"
 #endif
-#if defined(CONFIG_SLSI_OUT_RESOLUTION_CONVERTER)
+#if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
 #include "nxp-resc.h"
 #endif
 
@@ -46,7 +46,7 @@ struct nxp_out *create_nxp_out(struct nxp_out_platformdata *pdata)
         goto error_out;
     }
 
-#if defined(CONFIG_SLSI_OUT_RESOLUTION_CONVERTER)
+#if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
     me->resc = create_nxp_resc(0);
     if (!me->resc) {
         pr_err("%s: failed to create_nxp_resc()\n", __func__);
@@ -54,7 +54,7 @@ struct nxp_out *create_nxp_out(struct nxp_out_platformdata *pdata)
     }
 #endif
 
-#if defined(CONFIG_SLSI_OUT_HDMI)
+#if defined(CONFIG_NXP_OUT_HDMI)
     me->hdmi = create_nxp_hdmi(&pdata->hdmi);
     if (!me->hdmi) {
         pr_err("%s: failed to create_nxp_hdmi()\n", __func__);
@@ -69,11 +69,11 @@ error_out:
         kfree(me->mlcs[0]);
     if (me->mlcs[1])
         kfree(me->mlcs[1]);
-#if defined(CONFIG_SLSI_OUT_RESOLUTION_CONVERTER)
+#if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
     if (me->resc)
         kfree(me->resc);
 #endif
-#if defined(CONFIG_SLSI_OUT_HDMI)
+#if defined(CONFIG_NXP_OUT_HDMI)
     if (me->hdmi)
         kfree(me->hdmi);
 #endif
@@ -86,12 +86,12 @@ void release_nxp_out(struct nxp_out *me)
 {
     pr_debug("%s\n", __func__);
 
-#if defined(CONFIG_SLSI_OUT_RESOLUTION_CONVERTER)
+#if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
     if (me->resc)
         release_nxp_resc(me->resc);
 #endif
 
-#if defined(CONFIG_SLSI_OUT_HDMI)
+#if defined(CONFIG_NXP_OUT_HDMI)
     if (me->hdmi)
         release_nxp_hdmi(me->hdmi);
 #endif
@@ -121,7 +121,7 @@ int register_nxp_out(struct nxp_out *me)
         goto error_out;
     }
 
-#if defined(CONFIG_SLSI_OUT_RESOLUTION_CONVERTER)
+#if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
     ret = register_nxp_resc(me->resc);
     if (ret < 0) {
         pr_err("%s: failed to register_nxp_resc()\n", __func__);
@@ -149,7 +149,7 @@ int register_nxp_out(struct nxp_out *me)
     }
 #endif
 
-#if defined(CONFIG_SLSI_OUT_HDMI)
+#if defined(CONFIG_NXP_OUT_HDMI)
     ret = register_nxp_hdmi(me->hdmi);
     if (ret < 0) {
         pr_err("%s: failed to register_nxp_hdmi()\n", __func__);
@@ -176,7 +176,7 @@ int register_nxp_out(struct nxp_out *me)
         goto error_out;
     }
 
-#if defined(CONFIG_SLSI_OUT_RESOLUTION_CONVERTER)
+#if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
     /* link resc pad source to hdmi pad sink */
     ret = media_entity_create_link(
             &me->resc->subdev.entity, NXP_RESC_PAD_SOURCE,
@@ -193,10 +193,10 @@ int register_nxp_out(struct nxp_out *me)
     return 0;
 
 error_out:
-#if defined(CONFIG_SLSI_OUT_RESOLUTION_CONVERTER)
+#if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
     unregister_nxp_resc(me->resc);
 #endif
-#if defined(CONFIG_SLSI_OUT_HDMI)
+#if defined(CONFIG_NXP_OUT_HDMI)
     unregister_nxp_hdmi(me->hdmi);
 #endif
     unregister_nxp_mlc(me->mlcs[1]);
@@ -207,7 +207,7 @@ error_out:
 void unregister_nxp_out(struct nxp_out *me)
 {
     pr_debug("%s\n", __func__);
-#if defined(CONFIG_SLSI_OUT_HDMI)
+#if defined(CONFIG_NXP_OUT_HDMI)
     unregister_nxp_hdmi(me->hdmi);
 #endif
     unregister_nxp_mlc(me->mlcs[1]);
@@ -220,7 +220,7 @@ int suspend_nxp_out(struct nxp_out *me)
     int ret;
     PM_DBGOUT("+%s\n", __func__);
 
-#if defined(CONFIG_SLSI_OUT_HDMI)
+#if defined(CONFIG_NXP_OUT_HDMI)
     ret = suspend_nxp_hdmi(me->hdmi);
     if (ret) {
         PM_DBGOUT("%s: failed to suspend_nxp_hdmi, ret %d\n", __func__, ret);
@@ -228,7 +228,7 @@ int suspend_nxp_out(struct nxp_out *me)
     }
 #endif
 
-#if defined(CONFIG_SLSI_OUT_RESOLUTION_CONVERTER)
+#if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
     ret = suspend_nxp_resc(me->resc);
     if (ret) {
         PM_DBGOUT("%s: failed to suspend_nxp_resc, ret %d\n", __func__, ret);
@@ -258,10 +258,10 @@ int resume_nxp_out(struct nxp_out *me)
 
     resume_nxp_mlc(me->mlcs[0]);
     resume_nxp_mlc(me->mlcs[1]);
-#if defined(CONFIG_SLSI_OUT_RESOLUTION_CONVERTER)
+#if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
     resume_nxp_resc(me->resc);
 #endif
-#if defined(CONFIG_SLSI_OUT_HDMI)
+#if defined(CONFIG_NXP_OUT_HDMI)
     resume_nxp_hdmi(me->hdmi);
 #endif
 

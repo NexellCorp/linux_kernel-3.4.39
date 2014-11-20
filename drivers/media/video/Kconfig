@@ -87,9 +87,9 @@ config  VIDEOBUF2_ION
 	  Internal memory management for Video Buffer 2 by ION
 endchoice
 
-config VIDEOBUF2_ION_SLSI
+config VIDEOBUF2_ION_NXP
     bool "Video Buffer2 ION helper for SLsiAP"
-    depends on ION_SLSI
+    depends on ION_NXP
     select VIDEOBUF2_CORE
     select VIDEOBUF2_MEMOPS
     help

@@ -515,7 +515,7 @@ static struct platform_device android_timed_gpios = {
 /*------------------------------------------------------------------------------
  * Keypad platform device
  */
-#if defined(CONFIG_KEYBOARD_SLSI_KEY) || defined(CONFIG_KEYBOARD_SLSI_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 
 #include <linux/input.h>
 
@@ -536,7 +536,7 @@ static struct platform_device key_plat_device = {
 		.platform_data	= &key_plat_data
 	},
 };
-#endif	/* CONFIG_KEYBOARD_SLSI_KEY || CONFIG_KEYBOARD_SLSI_KEY_MODULE */
+#endif	/* CONFIG_KEYBOARD_NXP_KEY || CONFIG_KEYBOARD_NXP_KEY_MODULE */
 
 /*------------------------------------------------------------------------------
  * ASoC Codec platform device
@@ -646,8 +646,8 @@ void __init nxp_reserve_mem(void)
     static struct cma_region regions[] = {
         {
             .name = "ion",
-#ifdef CONFIG_ION_SLSI_CONTIGHEAP_SIZE
-            .size = CONFIG_ION_SLSI_CONTIGHEAP_SIZE * SZ_1K,
+#ifdef CONFIG_ION_NXP_CONTIGHEAP_SIZE
+            .size = CONFIG_ION_NXP_CONTIGHEAP_SIZE * SZ_1K,
 #else
 			.size = 0,
 #endif
@@ -664,8 +664,8 @@ void __init nxp_reserve_mem(void)
         "ion-nxp=ion;"
         "nx_vpu=ion;";
 
-#ifdef CONFIG_ION_SLSI_CONTIGHEAP_SIZE
-    printk("%s: reserve CMA: size %d\n", __func__, CONFIG_ION_SLSI_CONTIGHEAP_SIZE * SZ_1K);
+#ifdef CONFIG_ION_NXP_CONTIGHEAP_SIZE
+    printk("%s: reserve CMA: size %d\n", __func__, CONFIG_ION_NXP_CONTIGHEAP_SIZE * SZ_1K);
 #endif
     nxp_cma_region_reserve(regions, map);
 }
@@ -1058,7 +1058,7 @@ static struct platform_device mpegts_plat_device = {
 /*------------------------------------------------------------------------------
  * v4l2 platform device
  */
-#if defined(CONFIG_V4L2_SLSI) || defined(CONFIG_V4L2_SLSI_MODULE)
+#if defined(CONFIG_VL42_NXP) || defined(CONFIG_VL42_NXP_MODULE)
 #include <linux/i2c.h>
 #include <linux/delay.h>
 #include <mach/nxp-v4l2-platformdata.h>
@@ -1179,7 +1179,7 @@ static struct i2c_board_info s5k5cagx_i2c_boardinfo[] = {
 };
 #endif
 
-#if defined(CONFIG_SLSI_CAPTURE_MIPI_CSI)
+#if defined(CONFIG_NXP_CAPTURE_MIPI_CSI)
 /* for mipi camera */
 static int mipi_camera_power_enable(bool on)
 {
@@ -1327,7 +1327,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
         },
     },
 #endif
-#if defined(CONFIG_SLSI_CAPTURE_MIPI_CSI)
+#if defined(CONFIG_NXP_CAPTURE_MIPI_CSI)
 #if defined(CONFIG_VIDEO_S5K4ECGX)
     {
         .module = 1,
@@ -1464,7 +1464,7 @@ static struct platform_device nxp_v4l2_dev = {
         .platform_data = &v4l2_plat_data,
     },
 };
-#endif /* CONFIG_V4L2_SLSI || CONFIG_V4L2_SLSI_MODULE */
+#endif /* CONFIG_VL42_NXP || CONFIG_VL42_NXP_MODULE */
 
 
 #if defined (CONFIG_INV_MPU_IIO) || defined (CONFIG_INV_MPU_IIO_MODULE)
@@ -1756,7 +1756,7 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&nand_plat_device);
 #endif
 
-#if defined(CONFIG_KEYBOARD_SLSI_KEY) || defined(CONFIG_KEYBOARD_SLSI_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 	printk("plat: add device keypad\n");
 	platform_device_register(&key_plat_device);
 #endif
@@ -1805,7 +1805,7 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&rt5631_dai);
 #endif
 
-#if defined(CONFIG_V4L2_SLSI) || defined(CONFIG_V4L2_SLSI_MODULE)
+#if defined(CONFIG_VL42_NXP) || defined(CONFIG_VL42_NXP_MODULE)
     printk("plat: add device nxp-v4l2\n");
     platform_device_register(&nxp_v4l2_dev);
 #endif

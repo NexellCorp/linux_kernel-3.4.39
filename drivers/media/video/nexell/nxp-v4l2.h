@@ -31,13 +31,13 @@ struct nxp_v4l2 {
     struct nxp_v4l2_platformdata *pdata;
 
     /* child */
-#ifdef CONFIG_VIDEO_SLSI_CAPTURE
+#ifdef CONFIG_VIDEO_NXP_CAPTURE
     struct nxp_capture *capture[NXP_MAX_CAPTURE_NUM];
 #endif
-#ifdef CONFIG_SLSI_M2M_SCALER
+#ifdef CONFIG_NXP_M2M_SCALER
     struct nxp_scaler *scaler;
 #endif
-#ifdef CONFIG_VIDEO_SLSI_OUT
+#ifdef CONFIG_VIDEO_NXP_OUT
     struct nxp_out *out;
 #endif
 

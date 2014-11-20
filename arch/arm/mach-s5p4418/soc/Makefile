@@ -14,5 +14,5 @@ obj-$(CONFIG_NXP_DISPLAY_MIPI)	+= display_mipi.o
 obj-$(CONFIG_NXP_DISPLAY_RESC)	+= display_resc.o
 obj-$(CONFIG_USB_EHCI_SYNOPSYS)		+= setup-usb-phy.o
 obj-$(CONFIG_S3C_DEV_USB_HSOTG)		+= setup-usb-phy.o
-obj-$(CONFIG_SLSI_OUT_HDMI)		+= hdmi/
+obj-$(CONFIG_NXP_OUT_HDMI)		+= hdmi/
 

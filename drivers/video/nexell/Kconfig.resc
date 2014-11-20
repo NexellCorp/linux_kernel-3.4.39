@@ -9,7 +9,7 @@ config FB_NXP_ION_MEM
 	bool "Allocate framebuffer with ION "
 	depends on FB_NXP
 	select ION
-	select ION_SLSI
+	select ION_NXP
 	default n
 
 config FB0_NXP

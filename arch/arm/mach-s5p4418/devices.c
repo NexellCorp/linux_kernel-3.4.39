@@ -454,8 +454,8 @@ static struct platform_device *pwm_devices[] = {
 /*------------------------------------------------------------------------------
  * GPIO device
  */
-#if defined(CONFIG_GPIO_SLSI)
-#if	defined(CONFIG_GPIO_SLSI_GROUP_A)
+#if defined(CONFIG_GPIO_NXP)
+#if	defined(CONFIG_GPIO_NXP_GROUP_A)
 static struct resource gpio_resource_A = {
 		.start  	=  0,
 		.end   	 	= 32,
@@ -468,7 +468,7 @@ static struct platform_device gpio_device_A = {
 	.num_resources  = 1,
 };
 #endif
-#if	defined(CONFIG_GPIO_SLSI_GROUP_B)
+#if	defined(CONFIG_GPIO_NXP_GROUP_B)
 static struct resource gpio_resource_B = {
 		.start  	=  0,
 		.end   	 	= 32,
@@ -481,7 +481,7 @@ static struct platform_device gpio_device_B = {
 	.num_resources  = 1,
 };
 #endif
-#if	defined(CONFIG_GPIO_SLSI_GROUP_C)
+#if	defined(CONFIG_GPIO_NXP_GROUP_C)
 static struct resource gpio_resource_C = {
 		.start  	=  0,
 		.end   	 	= 32,
@@ -494,7 +494,7 @@ static struct platform_device gpio_device_C  = {
 	.num_resources  = 1,
 };
 #endif
-#if	defined(CONFIG_GPIO_SLSI_GROUP_D)
+#if	defined(CONFIG_GPIO_NXP_GROUP_D)
 static struct resource gpio_resource_D = {
 		.start  	=  0,
 		.end   	 	= 32,
@@ -507,7 +507,7 @@ static struct platform_device gpio_device_D  = {
 	.num_resources  = 1,
 };
 #endif
-#if	defined(CONFIG_GPIO_SLSI_GROUP_E)
+#if	defined(CONFIG_GPIO_NXP_GROUP_E)
 static struct resource gpio_resource_E = {
 		.start  	=  0,
 		.end   	 	= 32,
@@ -520,7 +520,7 @@ static struct platform_device gpio_device_E  = {
 	.num_resources  = 1,
 };
 #endif
-#if	defined(CONFIG_GPIO_SLSI_GROUP_ALV)
+#if	defined(CONFIG_GPIO_NXP_GROUP_ALV)
 static struct resource gpio_resource_ALV = {
 		.start  	=  0,
 		.end   	 	=  8,
@@ -535,26 +535,26 @@ static struct platform_device gpio_device_ALV  = {
 #endif
 
 static struct platform_device *gpio_devices[] = {
-	#if	defined(CONFIG_GPIO_SLSI_GROUP_A)
+	#if	defined(CONFIG_GPIO_NXP_GROUP_A)
 	&gpio_device_A,
 	#endif
-	#if	defined(CONFIG_GPIO_SLSI_GROUP_B)
+	#if	defined(CONFIG_GPIO_NXP_GROUP_B)
 	&gpio_device_B,
 	#endif
-	#if	defined(CONFIG_GPIO_SLSI_GROUP_C)
+	#if	defined(CONFIG_GPIO_NXP_GROUP_C)
 	&gpio_device_C,
 	#endif
-	#if	defined(CONFIG_GPIO_SLSI_GROUP_D)
+	#if	defined(CONFIG_GPIO_NXP_GROUP_D)
 	&gpio_device_D,
 	#endif
-	#if	defined(CONFIG_GPIO_SLSI_GROUP_E)
+	#if	defined(CONFIG_GPIO_NXP_GROUP_E)
 	&gpio_device_E,
 	#endif
-	#if	defined(CONFIG_GPIO_SLSI_GROUP_ALV)
+	#if	defined(CONFIG_GPIO_NXP_GROUP_ALV)
 	&gpio_device_ALV,
 	#endif
 };
-#endif	/* CONFIG_GPIO_SLSI */
+#endif	/* CONFIG_GPIO_NXP */
 
 /*------------------------------------------------------------------------------
  * Graphic OpenGL|ES platform device(vr400)
@@ -563,8 +563,8 @@ static struct platform_device *gpio_devices[] = {
 #if defined( CFG_MEM_PHY_DMAZONE_SIZE )
 #define VR_MEM_SIZE 	(VR_MEM_SIZE_DEFAULT + CFG_MEM_PHY_DMAZONE_SIZE)
 #endif
-#if defined( CONFIG_ION_SLSI_CONTIGHEAP_SIZE )
-#define VR_MEM_SIZE 	(VR_MEM_SIZE_DEFAULT - (CONFIG_ION_SLSI_CONTIGHEAP_SIZE * 1024))
+#if defined( CONFIG_ION_NXP_CONTIGHEAP_SIZE )
+#define VR_MEM_SIZE 	(VR_MEM_SIZE_DEFAULT - (CONFIG_ION_NXP_CONTIGHEAP_SIZE * 1024))
 #endif
 
 #define S5P4418_DTK_3D_IRQ     			(40)
@@ -1228,7 +1228,7 @@ static struct amba_device *amba_devices[] __initdata = {
 /*------------------------------------------------------------------------------
  *  * ION device
  *   */
-#if defined(CONFIG_ION_SLSI)
+#if defined(CONFIG_ION_NXP)
 
 #include <mach/ion.h>
 
@@ -1237,7 +1237,7 @@ struct platform_device nxp_device_ion = {
     .id     = -1,
 };
 
-#endif /* CONFIG_ION_SLSI */
+#endif /* CONFIG_ION_NXP */
 
 /*------------------------------------------------------------------------------
  * ADC
@@ -1374,7 +1374,7 @@ void __init nxp_cpu_devices_register(void)
     platform_add_devices(pwm_devices, ARRAY_SIZE(pwm_devices));
 #endif
 
-#if defined(CONFIG_GPIO_SLSI)
+#if defined(CONFIG_GPIO_NXP)
     printk("mach: add device generic gpio (array:%d)\n", ARRAY_SIZE(gpio_devices));
     platform_add_devices(gpio_devices, ARRAY_SIZE(gpio_devices));
 #endif
@@ -1409,7 +1409,7 @@ void __init nxp_cpu_devices_register(void)
     platform_device_register(&otg_plat_device);
 #endif
 
-#if defined(CONFIG_ION_SLSI)
+#if defined(CONFIG_ION_NXP)
     printk("mach: add device ion-nxp\n");
     nxp_ion_set_platdata();
     platform_device_register(&nxp_device_ion);

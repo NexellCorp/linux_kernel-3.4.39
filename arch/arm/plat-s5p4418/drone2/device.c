@@ -33,7 +33,7 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-#if defined(CONFIG_SLSI_HDMI_CEC)
+#if defined(CONFIG_NXP_HDMI_CEC)
 #include <mach/nxp-hdmi-cec.h>
 #endif
 
@@ -335,7 +335,7 @@ static struct i2c_board_info __initdata gslX680_i2c_bdi = {
 /*------------------------------------------------------------------------------
  * Keypad platform device
  */
-#if defined(CONFIG_KEYBOARD_SLSI_KEY) || defined(CONFIG_KEYBOARD_SLSI_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 
 #include <linux/input.h>
 
@@ -356,7 +356,7 @@ static struct platform_device key_plat_device = {
 		.platform_data	= &key_plat_data
 	},
 };
-#endif	/* CONFIG_KEYBOARD_SLSI_KEY || CONFIG_KEYBOARD_SLSI_KEY_MODULE */
+#endif	/* CONFIG_KEYBOARD_NXP_KEY || CONFIG_KEYBOARD_NXP_KEY_MODULE */
 
 /*------------------------------------------------------------------------------
  * ASoC Codec platform device
@@ -490,8 +490,8 @@ void __init nxp_reserve_mem(void)
     static struct cma_region regions[] = {
         {
             .name = "ion",
-#ifdef CONFIG_ION_SLSI_CONTIGHEAP_SIZE
-            .size = CONFIG_ION_SLSI_CONTIGHEAP_SIZE * SZ_1K,
+#ifdef CONFIG_ION_NXP_CONTIGHEAP_SIZE
+            .size = CONFIG_ION_NXP_CONTIGHEAP_SIZE * SZ_1K,
 #else
 			.size = 0,
 #endif
@@ -508,8 +508,8 @@ void __init nxp_reserve_mem(void)
         "ion-nxp=ion;"
         "nx_vpu=ion;";
 
-#ifdef CONFIG_ION_SLSI_CONTIGHEAP_SIZE
-    printk("%s: reserve CMA: size %d\n", __func__, CONFIG_ION_SLSI_CONTIGHEAP_SIZE * SZ_1K);
+#ifdef CONFIG_ION_NXP_CONTIGHEAP_SIZE
+    printk("%s: reserve CMA: size %d\n", __func__, CONFIG_ION_NXP_CONTIGHEAP_SIZE * SZ_1K);
 #endif
     nxp_cma_region_reserve(regions, map);
 }
@@ -884,7 +884,7 @@ static struct i2c_board_info __initdata nxe2000_regulators[] = {
 /*------------------------------------------------------------------------------
  * v4l2 platform device
  */
-#if defined(CONFIG_V4L2_SLSI) || defined(CONFIG_V4L2_SLSI_MODULE)
+#if defined(CONFIG_VL42_NXP) || defined(CONFIG_VL42_NXP_MODULE)
 #include <linux/i2c.h>
 #include <linux/delay.h>
 #include <linux/regulator/consumer.h>
@@ -1284,7 +1284,7 @@ static struct platform_device nxp_v4l2_dev = {
         .platform_data = &v4l2_plat_data,
     },
 };
-#endif /* CONFIG_V4L2_SLSI || CONFIG_V4L2_SLSI_MODULE */
+#endif /* CONFIG_VL42_NXP || CONFIG_VL42_NXP_MODULE */
 
 /*------------------------------------------------------------------------------
  * SSP/SPI
@@ -1480,11 +1480,11 @@ EXPORT_SYMBOL(nxp_otgvbus_pwr_set);
 /*------------------------------------------------------------------------------
  * HDMI CEC driver
  */
-#if defined(CONFIG_SLSI_HDMI_CEC)
+#if defined(CONFIG_NXP_HDMI_CEC)
 static struct platform_device hdmi_cec_device = {
 	.name			= NXP_HDMI_CEC_DRV_NAME,
 };
-#endif /* CONFIG_SLSI_HDMI_CEC */
+#endif /* CONFIG_NXP_HDMI_CEC */
 
 /*------------------------------------------------------------------------------
  * register board platform devices
@@ -1532,7 +1532,7 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&nand_plat_device);
 #endif
 
-#if defined(CONFIG_KEYBOARD_SLSI_KEY) || defined(CONFIG_KEYBOARD_SLSI_KEY_MODULE)
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 	printk("plat: add device keypad\n");
 	platform_device_register(&key_plat_device);
 #endif
@@ -1564,7 +1564,7 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&spdif_trans_dai);
 #endif
 
-#if defined(CONFIG_V4L2_SLSI) || defined(CONFIG_V4L2_SLSI_MODULE)
+#if defined(CONFIG_VL42_NXP) || defined(CONFIG_VL42_NXP_MODULE)
     printk("plat: add device nxp-v4l2\n");
     platform_device_register(&nxp_v4l2_dev);
 #endif
@@ -1592,7 +1592,7 @@ void __init nxp_board_devices_register(void)
     platform_device_register(&rfkill_device);
 #endif
 
-#if defined(CONFIG_SLSI_HDMI_CEC)
+#if defined(CONFIG_NXP_HDMI_CEC)
     printk("plat: add device hdmi-cec\n");
     platform_device_register(&hdmi_cec_device);
 #endif

@@ -51,12 +51,12 @@ static int __devinit nxp_v4l2_probe(struct platform_device *pdev)
     struct v4l2_device *v4l2_dev;
     struct nxp_v4l2 *nxp_v4l2;
     struct nxp_v4l2_platformdata *pdata;
-#ifdef CONFIG_VIDEO_SLSI_CAPTURE
+#ifdef CONFIG_VIDEO_NXP_CAPTURE
     struct nxp_capture_platformdata *capture_pdata;
     struct nxp_capture *capture;
     int i;
 #endif
-#ifdef CONFIG_SLSI_M2M_SCALER
+#ifdef CONFIG_NXP_M2M_SCALER
     struct nxp_scaler *scaler;
 #endif
     int ret;
@@ -111,7 +111,7 @@ static int __devinit nxp_v4l2_probe(struct platform_device *pdev)
 
     __me = nxp_v4l2;
 
-#ifdef CONFIG_VIDEO_SLSI_CAPTURE
+#ifdef CONFIG_VIDEO_NXP_CAPTURE
     /* capture */
     for (capture_pdata = pdata->captures, i = 0;
             capture_pdata->sensor;
@@ -133,13 +133,13 @@ static int __devinit nxp_v4l2_probe(struct platform_device *pdev)
     }
 #endif
 
-#ifdef CONFIG_SLSI_M2M_SCALER
+#ifdef CONFIG_NXP_M2M_SCALER
     /* m2m */
     scaler = create_nxp_scaler();
     if (!scaler) {
         pr_err("%s: failed to create_nxp_scaler()\n", __func__);
         ret = -ENOMEM;
-#ifdef CONFIG_VIDEO_SLSI_CAPTURE
+#ifdef CONFIG_VIDEO_NXP_CAPTURE
         goto err_capture_create;
 #else
         goto err_media_reg;
@@ -154,7 +154,7 @@ static int __devinit nxp_v4l2_probe(struct platform_device *pdev)
     nxp_v4l2->scaler = scaler;
 #endif
 
-#ifdef CONFIG_VIDEO_SLSI_OUT
+#ifdef CONFIG_VIDEO_NXP_OUT
     /* out */
     nxp_v4l2->out = create_nxp_out(pdata->out);
     if (!nxp_v4l2->out) {
@@ -181,18 +181,18 @@ static int __devinit nxp_v4l2_probe(struct platform_device *pdev)
     return 0;
 
 err_register_out_subdev:
-#ifdef CONFIG_VIDEO_SLSI_OUT
+#ifdef CONFIG_VIDEO_NXP_OUT
     unregister_nxp_out(nxp_v4l2->out);
 err_register_out:
     release_nxp_out(nxp_v4l2->out);
 err_create_out:
 #endif
-#ifdef CONFIG_SLSI_M2M_SCALER
+#ifdef CONFIG_NXP_M2M_SCALER
     unregister_nxp_scaler(scaler);
 err_register_scaler:
     release_nxp_scaler(scaler);
 #endif
-#ifdef CONFIG_VIDEO_SLSI_CAPTURE
+#ifdef CONFIG_VIDEO_NXP_CAPTURE
 err_capture_create:
     for (i = 0; i < NXP_MAX_CAPTURE_NUM; ++i) {
         capture = nxp_v4l2->capture[i];
@@ -216,26 +216,26 @@ err_alloc_ctx:
 static int __devexit nxp_v4l2_remove(struct platform_device *pdev)
 {
     struct nxp_v4l2 *nxp_v4l2 = platform_get_drvdata(pdev);
-#ifdef CONFIG_VIDEO_SLSI_CAPTURE
+#ifdef CONFIG_VIDEO_NXP_CAPTURE
     int i;
 #endif
 
     if (!nxp_v4l2)
         return 0;
 
-#ifdef CONFIG_VIDEO_SLSI_OUT
+#ifdef CONFIG_VIDEO_NXP_OUT
     unregister_nxp_out(nxp_v4l2->out);
     release_nxp_out(nxp_v4l2->out);
 #endif
 
-#ifdef CONFIG_SLSI_M2M_SCALER
+#ifdef CONFIG_NXP_M2M_SCALER
     if (nxp_v4l2->scaler) {
         unregister_nxp_scaler(nxp_v4l2->scaler);
         release_nxp_scaler(nxp_v4l2->scaler);
     }
 #endif
 
-#ifdef CONFIG_VIDEO_SLSI_CAPTURE
+#ifdef CONFIG_VIDEO_NXP_CAPTURE
     for (i = 0; i < NXP_MAX_CAPTURE_NUM; ++i) {
         struct nxp_capture *capture = nxp_v4l2->capture[i];
         if (capture) {
@@ -267,7 +267,7 @@ static int nxp_v4l2_suspend(struct device *dev)
         return 0;
     }
 
-#ifdef CONFIG_VIDEO_SLSI_CAPTURE
+#ifdef CONFIG_VIDEO_NXP_CAPTURE
     for (i = 0; i < NXP_MAX_CAPTURE_NUM; i++) {
         if (__me->capture[i]) {
             ret = suspend_nxp_capture(__me->capture[i]);
@@ -279,7 +279,7 @@ static int nxp_v4l2_suspend(struct device *dev)
     }
 #endif
 
-#ifdef CONFIG_SLSI_M2M_SCALER
+#ifdef CONFIG_NXP_M2M_SCALER
     if (__me->scaler) {
         ret = suspend_nxp_scaler(__me->scaler);
         if (ret) {
@@ -289,7 +289,7 @@ static int nxp_v4l2_suspend(struct device *dev)
     }
 #endif
 
-#ifdef CONFIG_VIDEO_SLSI_OUT
+#ifdef CONFIG_VIDEO_NXP_OUT
     if (__me->out) {
         ret = suspend_nxp_out(__me->out);
         if (ret) {
@@ -309,7 +309,7 @@ static int nxp_v4l2_resume(struct device *dev)
     int ret;
 
     PM_DBGOUT("+%s\n", __func__);
-#ifdef CONFIG_VIDEO_SLSI_CAPTURE
+#ifdef CONFIG_VIDEO_NXP_CAPTURE
     for (i = 0; i < NXP_MAX_CAPTURE_NUM; i++) {
         if (__me->capture[i]) {
             ret = resume_nxp_capture(__me->capture[i]);
@@ -321,7 +321,7 @@ static int nxp_v4l2_resume(struct device *dev)
     }
 #endif
 
-#ifdef CONFIG_SLSI_M2M_SCALER
+#ifdef CONFIG_NXP_M2M_SCALER
     if (__me->scaler) {
         ret = resume_nxp_scaler(__me->scaler);
         if (ret) {
@@ -331,7 +331,7 @@ static int nxp_v4l2_resume(struct device *dev)
     }
 #endif
 
-#ifdef CONFIG_VIDEO_SLSI_OUT
+#ifdef CONFIG_VIDEO_NXP_OUT
     if (__me->out) {
         ret = resume_nxp_out(__me->out);
         if (ret) {
@@ -387,7 +387,7 @@ static struct platform_driver nxp_v4l2_driver = {
     },
 };
 
-#ifdef CONFIG_SLSI_OUT_HDMI
+#ifdef CONFIG_NXP_OUT_HDMI
 struct nxp_hdmi *get_nxp_hdmi(void) {
      return __me->out->hdmi;
 }

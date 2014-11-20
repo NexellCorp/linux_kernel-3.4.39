@@ -3,10 +3,10 @@
 
 #define NXP_OUT_MLC_NUM     2
 
-#if defined(CONFIG_SLSI_OUT_HDMI)
+#if defined(CONFIG_NXP_OUT_HDMI)
 struct nxp_hdmi;
 #endif
-#if defined(CONFIG_SLSI_OUT_RESOLUTION_CONVERTER)
+#if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
 struct nxp_resc;
 #endif
 struct nxp_mlc;
@@ -16,11 +16,11 @@ struct nxp_out {
     /* children */
     struct nxp_mlc *mlcs[NXP_OUT_MLC_NUM];
 
-#if defined(CONFIG_SLSI_OUT_HDMI)
+#if defined(CONFIG_NXP_OUT_HDMI)
     struct nxp_hdmi *hdmi;
 #endif
 
-#if defined(CONFIG_SLSI_OUT_RESOLUTION_CONVERTER)
+#if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
     struct nxp_resc *resc;
 #endif
 };

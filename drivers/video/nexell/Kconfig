@@ -9,7 +9,7 @@ config FB_NXP_ION_MEM
 	bool "Allocate framebuffer with ION "
 	depends on FB_NXP
 	select ION
-	select ION_SLSI
+	select ION_NXP
 	default n
 
 config FB0_NXP
@@ -81,7 +81,7 @@ config NXP_DISPLAY_HDMI
 
     choice
         prompt "HDMI Audio Interface"
-        depends on SLSI_OUT_HDMI || NXP_DISPLAY_HDMI
+        depends on NXP_OUT_HDMI || NXP_DISPLAY_HDMI
         default NXP_DISPLAY_HDMI_AUDIO_SPDIF
         help
           Choose which interface to use for hdmi audio output
