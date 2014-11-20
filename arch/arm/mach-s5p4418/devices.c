@@ -887,8 +887,7 @@ static struct amba_device spi2_device = {
  * USB device
  */
 
-#if defined( CONFIG_USB_EHCI_S5P4418 )
-#include <mach/ehci.h>
+#if defined(CONFIG_USB_EHCI_SYNOPSYS)
 #include <mach/usb-phy.h>
 
 extern int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on);
@@ -896,62 +895,61 @@ extern int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on);
 
 /* USB EHCI Host Controller registration */
 
-static struct resource s5p4418_ehci_resource[] = {
+static struct resource nxp_ehci_resource[] = {
     [0] = DEFINE_RES_MEM(PHY_BASEADDR_EHCI, SZ_256),
     [1] = DEFINE_RES_IRQ(IRQ_PHY_USB20HOST),
 };
 
-struct s5p4418_ehci_platdata s5p4418_ehci_plat_data = {
+struct nxp_ehci_platdata nxp_ehci_plat_data = {
     .phy_init = nxp_usb_phy_init,
     .phy_exit = nxp_usb_phy_exit,
     .hsic_phy_pwr_on = nxp_hsic_phy_pwr_on,
 };
 
-static u64 s5p4418_ehci_dmamask = DMA_BIT_MASK(32);
+static u64 nxp_ehci_dmamask = DMA_BIT_MASK(32);
 
-struct platform_device s5p4418_device_ehci = {
-    .name           = "s5p4418-ehci",
+struct platform_device nxp_device_ehci = {
+    .name           = "nxp-ehci",
     .id             = -1,
-    .num_resources  = ARRAY_SIZE(s5p4418_ehci_resource),
-    .resource       = s5p4418_ehci_resource,
+    .num_resources  = ARRAY_SIZE(nxp_ehci_resource),
+    .resource       = nxp_ehci_resource,
     .dev            = {
-        .dma_mask           = &s5p4418_ehci_dmamask,
+        .dma_mask           = &nxp_ehci_dmamask,
         .coherent_dma_mask  = DMA_BIT_MASK(32),
-        .platform_data      = &s5p4418_ehci_plat_data,
+        .platform_data      = &nxp_ehci_plat_data,
     }
 };
-#endif  /* CONFIG_USB_EHCI_S5P4418 */
+#endif  /* CONFIG_USB_EHCI_SYNOPSYS */
 
-#if defined( CONFIG_USB_OHCI_S5P4418 )
-#include <mach/ohci.h>
+#if defined(CONFIG_USB_OHCI_SYNOPSYS)
 #include <mach/usb-phy.h>
 
 /* USB OHCI Host Controller registration */
 
-static struct resource s5p4418_ohci_resource[] = {
+static struct resource nxp_ohci_resource[] = {
     [0] = DEFINE_RES_MEM(PHY_BASEADDR_OHCI, SZ_256),
     [1] = DEFINE_RES_IRQ(IRQ_PHY_USB20HOST),
 };
 
-struct s5p4418_ohci_platdata s5p4418_ohci_plat_data = {
+struct nxp_ohci_platdata nxp_ohci_plat_data = {
     .phy_init = nxp_usb_phy_init,
     .phy_exit = nxp_usb_phy_exit,
 };
 
-static u64 s5p4418_ohci_dmamask = DMA_BIT_MASK(32);
+static u64 nxp_ohci_dmamask = DMA_BIT_MASK(32);
 
-struct platform_device s5p4418_device_ohci = {
-    .name           = "s5p4418-ohci",
+struct platform_device nxp_device_ohci = {
+    .name           = "nxp-ohci",
     .id             = -1,
-    .num_resources  = ARRAY_SIZE(s5p4418_ohci_resource),
-    .resource       = s5p4418_ohci_resource,
+    .num_resources  = ARRAY_SIZE(nxp_ohci_resource),
+    .resource       = nxp_ohci_resource,
     .dev            = {
-        .dma_mask           = &s5p4418_ohci_dmamask,
+        .dma_mask           = &nxp_ohci_dmamask,
         .coherent_dma_mask  = DMA_BIT_MASK(32),
-        .platform_data      = &s5p4418_ohci_plat_data,
+        .platform_data      = &nxp_ohci_plat_data,
     }
 };
-#endif  /* CONFIG_USB_OHCI_S5P4418 */
+#endif  /* CONFIG_USB_OHCI_SYNOPSYS */
 
 /*------------------------------------------------------------------------------
  * USB OTG Host or Gadget
@@ -1396,14 +1394,14 @@ void __init nxp_cpu_devices_register(void)
     platform_device_register(&spdif_device_rx);
 #endif
 
-#if defined(CONFIG_USB_EHCI_S5P4418)
+#if defined(CONFIG_USB_EHCI_SYNOPSYS)
     printk("mach: add device usb_ehci\n");
-    platform_device_register(&s5p4418_device_ehci);
+    platform_device_register(&nxp_device_ehci);
 #endif
 
-#if defined(CONFIG_USB_OHCI_S5P4418)
+#if defined(CONFIG_USB_OHCI_SYNOPSYS)
     printk("mach: add device usb_ohci\n");
-    platform_device_register(&s5p4418_device_ohci);
+    platform_device_register(&nxp_device_ohci);
 #endif
 
 #if defined(CONFIG_USB_DWCOTG)

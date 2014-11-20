@@ -198,21 +198,21 @@ config USB_EHCI_S5P
 	---help---
 	  Enable support for the S5P SOC's on-chip EHCI controller.
 
-config USB_EHCI_SLSI_SYNOPSYS
-	boolean "SLsiAP Sysnopsys EHCI support"
+config USB_EHCI_SYNOPSYS
+	boolean "Sysnopsys EHCI support"
 	depends on USB_EHCI_HCD && ARCH_CPU_SLSI
 	---help---
-	  Enable support for the NEXELL NXP4330's on-chip EHCI controller.
+	  Enable support for the Synopsys's on-chip EHCI controller.
 
-config USB_HSIC_SLSI_SYNOPSYS
-	boolean "SLsiAP Synopsys HSIC support"
-	depends on USB_EHCI_SLSI_SYNOPSYS && ARCH_CPU_SLSI
+config USB_HSIC_SYNOPSYS
+	boolean "Synopsys HSIC support"
+	depends on USB_EHCI_SYNOPSYS && ARCH_CPU_SLSI
 	---help---
-	  Enable support for the NEXELL NXP4330's on-chip HSIC controller.
+	  Enable support for the Synopsys's on-chip HSIC controller.
 
-config USB_EHCI_SLSI_SYNOPSYS_RESUME_WORK
+config USB_EHCI_SYNOPSYS_RESUME_WORK
 	bool "Delay resume for fast resume"
-	depends on USB_EHCI_SLSI_SYNOPSYS && ARCH_CPU_SLSI
+	depends on USB_EHCI_SYNOPSYS && ARCH_CPU_SLSI
 		default n
 	help
 	  Use delay work function to save resume time when resume. but
@@ -418,11 +418,11 @@ config USB_OHCI_EXYNOS
 	help
 	 Enable support for the Samsung Exynos SOC's on-chip OHCI controller.
 
-config USB_OHCI_SLSI_SYNOPSYS
-	boolean "OHCI support for SLsiAP Synopsys"
+config USB_OHCI_SYNOPSYS
+	boolean "OHCI support for Synopsys"
 	depends on USB_OHCI_HCD && ARCH_CPU_SLSI
 	help
-	 Enable support for the SLsiAP Synopsys's on-chip OHCI controller.
+	 Enable support for the Synopsys's on-chip OHCI controller.
 
 config USB_CNS3XXX_OHCI
 	bool "Cavium CNS3XXX OHCI Module"
@@ -643,7 +643,7 @@ config USB_DWCOTG
 	  modules built will be called dwc_otg and dwc_common_port.
 
 config USB_CONNECT_SLSI_DRV
-	bool "Nexell USB connect driver for UBC & OTG"
+	bool "SLsiAP USB connect driver for UBC & OTG"
 	depends on USB_DWCOTG
 	default n
 

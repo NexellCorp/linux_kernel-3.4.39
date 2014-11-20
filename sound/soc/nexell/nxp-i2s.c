@@ -356,8 +356,15 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 		return -EINVAL;
 	}
 
-	if (!par->master_mode)
-		goto done;
+	if (!par->master_mode){ 
+	 	/* 384 RATIO */
+		RFS = RATIO_384, request = clk_ratio[i].ratio_384;
+		
+		/* 256 RATIO */
+		if (BFS_32BIT == BFS)
+			RFS = RATIO_256, request = clk_ratio[i].ratio_256;
+	goto done;
+	}
 
 	for (i = 0; ARRAY_SIZE(clk_ratio) > i; i++) {
 		if (par->sample_rate == clk_ratio[i].sample_rate)

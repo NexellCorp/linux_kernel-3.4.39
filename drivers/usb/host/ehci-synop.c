@@ -47,7 +47,7 @@ struct nxp_ehci_hcd {
 	struct usb_hcd *hcd;
 	struct clk *clk;
 	struct usb_phy *phy;
-#ifdef CONFIG_USB_EHCI_SLSI_SYNOPSYS_RESUME_WORK
+#ifdef CONFIG_USB_EHCI_SYNOPSYS_RESUME_WORK
 	struct workqueue_struct *resume_wq;
 	struct delayed_work	resume_work;
 	struct wake_lock resume_lock;
@@ -87,7 +87,7 @@ static const struct hc_driver nxp_ehci_hc_driver = {
 	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
 };
 
-#ifdef CONFIG_USB_EHCI_SLSI_SYNOPSYS_RESUME_WORK
+#ifdef CONFIG_USB_EHCI_SYNOPSYS_RESUME_WORK
 #include "../core/usb.h"
 
 static void nxp_ehci_resume_work(struct work_struct *work);
@@ -135,12 +135,12 @@ static void nxp_ehci_resume_last(struct usb_device *hdev, unsigned char *state, 
 
 static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 {
-	struct nxp_ehci_plat_data *pdata;
+	struct nxp_ehci_platdata *pdata;
 	struct nxp_ehci_hcd *nxp_ehci;
 	struct usb_hcd *hcd;
 	struct ehci_hcd *ehci;
 	struct resource *res;
-#if defined( CONFIG_USB_HSIC_SLSI_SYNOPSYS )
+#if defined( CONFIG_USB_HSIC_SYNOPSYS )
 	__u32 __iomem	*hsic_status_reg;
 #endif
 	int irq;
@@ -186,7 +186,7 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 		goto fail_io;
 	}
 
-#if defined( CONFIG_USB_HSIC_SLSI_SYNOPSYS )
+#if defined( CONFIG_USB_HSIC_SYNOPSYS )
 	hsic_status_reg = ioremap(0xC00300B0, SZ_4);
 	if (!hsic_status_reg) {
 		dev_err(&pdev->dev, "Failed to remap I/O memory\n");
@@ -202,7 +202,7 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 		goto fail;
 	}
 
-#if defined( CONFIG_USB_HSIC_SLSI_SYNOPSYS)
+#if defined( CONFIG_USB_HSIC_SYNOPSYS)
 	if (pdata && pdata->phy_init)
 		pdata->phy_init(pdev, NXP_USB_PHY_HSIC);
 #else
@@ -215,7 +215,7 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 	ehci->regs = hcd->regs +
 		HC_LENGTH(ehci, readl(&ehci->caps->hc_capbase));
 
-#if defined( CONFIG_USB_HSIC_SLSI_SYNOPSYS )
+#if defined( CONFIG_USB_HSIC_SYNOPSYS )
 	ehci->hsic_status_reg = hsic_status_reg;
 #endif
 
@@ -247,7 +247,7 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 	/*
 	 * add by jhkim to save resume time
 	 */
-#ifdef CONFIG_USB_EHCI_SLSI_SYNOPSYS_RESUME_WORK
+#ifdef CONFIG_USB_EHCI_SYNOPSYS_RESUME_WORK
 	nxp_ehci->delay_time = pdata->resume_delay_time;
 	if (100 > nxp_ehci->delay_time)
 		nxp_ehci->delay_time = EHCI_WORK_QUEUE_DELAY;
@@ -274,13 +274,13 @@ fail_hcd:
 
 static int __devexit nxp_ehci_remove(struct platform_device *pdev)
 {
-	struct nxp_ehci_plat_data *pdata = pdev->dev.platform_data;
+	struct nxp_ehci_platdata *pdata = pdev->dev.platform_data;
 	struct nxp_ehci_hcd *nxp_ehci = platform_get_drvdata(pdev);
 	struct usb_hcd *hcd = nxp_ehci->hcd;
 
 	usb_remove_hcd(hcd);
 
-#if defined( CONFIG_USB_HSIC_SLSI_SYNOPSYS )
+#if defined( CONFIG_USB_HSIC_SYNOPSYS )
 	if (pdata && pdata->phy_exit)
 		pdata->phy_exit(pdev, NXP_USB_PHY_HSIC);
 
@@ -291,7 +291,7 @@ static int __devexit nxp_ehci_remove(struct platform_device *pdev)
 		pdata->phy_exit(pdev, NXP_USB_PHY_EHCI);
 #endif
 
-#ifdef CONFIG_USB_EHCI_SLSI_SYNOPSYS_RESUME_WORK
+#ifdef CONFIG_USB_EHCI_SYNOPSYS_RESUME_WORK
 	destroy_workqueue(nxp_ehci->resume_wq);
 #endif
 	iounmap(hcd->regs);
@@ -321,7 +321,7 @@ static int nxp_ehci_suspend(struct device *dev)
 	struct usb_hcd *hcd = nxp_ehci->hcd;
 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
 	struct platform_device *pdev = to_platform_device(dev);
-	struct nxp_ehci_plat_data *pdata = pdev->dev.platform_data;
+	struct nxp_ehci_platdata *pdata = pdev->dev.platform_data;
 	unsigned long flags;
 	int rc = 0;
 
@@ -350,7 +350,7 @@ static int nxp_ehci_suspend(struct device *dev)
 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
 	spin_unlock_irqrestore(&ehci->lock, flags);
 
-#if defined( CONFIG_USB_HSIC_SLSI_SYNOPSYS )
+#if defined( CONFIG_USB_HSIC_SYNOPSYS )
 	if (pdata && pdata->phy_exit)
 		pdata->phy_exit(pdev, NXP_USB_PHY_HSIC);
 
@@ -364,14 +364,14 @@ static int nxp_ehci_suspend(struct device *dev)
 	return rc;
 }
 
-#ifdef CONFIG_USB_EHCI_SLSI_SYNOPSYS_RESUME_WORK
+#ifdef CONFIG_USB_EHCI_SYNOPSYS_RESUME_WORK
 static void nxp_ehci_resume_work(struct work_struct *work)
 {
 	struct nxp_ehci_hcd *nxp_ehci = container_of(work, struct nxp_ehci_hcd, resume_work.work);
 	struct usb_hcd *hcd = nxp_ehci->hcd;
 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
 	struct platform_device *pdev = to_platform_device(nxp_ehci->dev);
-	struct nxp_ehci_plat_data *pdata = pdev->dev.platform_data;
+	struct nxp_ehci_platdata *pdata = pdev->dev.platform_data;
 	struct usb_device *udev = hcd->self.root_hub;
 
 	if (nxp_ehci->phy) {
@@ -379,7 +379,7 @@ static void nxp_ehci_resume_work(struct work_struct *work)
 		return;
 	}
 
-#if defined( CONFIG_USB_HSIC_SLSI_SYNOPSYS )
+#if defined( CONFIG_USB_HSIC_SYNOPSYS )
 	if (pdata && pdata->phy_init)
 		pdata->phy_init(pdev, NXP_USB_PHY_HSIC);
 
@@ -448,17 +448,17 @@ static void nxp_ehci_resume_work(struct work_struct *work)
 
 static int nxp_ehci_resume(struct device *dev)
 {
-#ifndef CONFIG_USB_EHCI_SLSI_SYNOPSYS_RESUME_WORK
+#ifndef CONFIG_USB_EHCI_SYNOPSYS_RESUME_WORK
 	struct nxp_ehci_hcd *nxp_ehci = dev_get_drvdata(dev);
 	struct usb_hcd *hcd = nxp_ehci->hcd;
 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
 	struct platform_device *pdev = to_platform_device(dev);
-	struct nxp_ehci_plat_data *pdata = pdev->dev.platform_data;
+	struct nxp_ehci_platdata *pdata = pdev->dev.platform_data;
 
 	if (nxp_ehci->phy)
 		return 0;
 
-#if defined( CONFIG_USB_HSIC_SLSI_SYNOPSYS)
+#if defined( CONFIG_USB_HSIC_SYNOPSYS)
 	if (pdata && pdata->phy_init)
 		pdata->phy_init(pdev, NXP_USB_PHY_HSIC);
 

@@ -173,8 +173,6 @@ static int snd_card_probe(struct platform_device *pdev)
 		cpudrv->capture.formats = format;
 	}
 
-	printk("[%s:%s]\n", __func__, card->name);
-
 	return ret;
 }
 

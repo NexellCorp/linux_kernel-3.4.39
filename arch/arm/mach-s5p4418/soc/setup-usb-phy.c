@@ -215,6 +215,7 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 
 	return 0;
 }
+EXPORT_SYMBOL(nxp_usb_phy_init);
 
 int nxp_usb_phy_exit(struct platform_device *pdev, int type)
 {
@@ -311,3 +312,4 @@ int nxp_usb_phy_exit(struct platform_device *pdev, int type)
 
 	return 0;
 }
+EXPORT_SYMBOL(nxp_usb_phy_exit);

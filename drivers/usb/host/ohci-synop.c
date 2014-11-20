@@ -86,7 +86,7 @@ static const struct hc_driver nxp_ohci_hc_driver = {
 
 static int __devinit nxp_ohci_probe(struct platform_device *pdev)
 {
-	struct nxp_ohci_plat_data *pdata;
+	struct nxp_ohci_platdata *pdata;
 	struct nxp_ohci_hcd *nxp_ohci;
 	struct usb_hcd *hcd;
 	struct ohci_hcd *ohci;
@@ -204,7 +204,7 @@ fail_hcd:
 
 static int __devexit nxp_ohci_remove(struct platform_device *pdev)
 {
-	struct nxp_ohci_plat_data *pdata = pdev->dev.platform_data;
+	struct nxp_ohci_platdata *pdata = pdev->dev.platform_data;
 	struct nxp_ohci_hcd *nxp_ohci = platform_get_drvdata(pdev);
 	struct usb_hcd *hcd = nxp_ohci->hcd;
 
@@ -213,7 +213,7 @@ static int __devexit nxp_ohci_remove(struct platform_device *pdev)
 	if (nxp_ohci->phy)
 		usb_put_transceiver(nxp_ohci->phy);
 	else if (pdata && pdata->phy_exit)
-		pdata->phy_exit(pdev, NXP_USB_PHY_HOST);
+		pdata->phy_exit(pdev, NXP_USB_PHY_OHCI);
 
 	iounmap(hcd->regs);
 
@@ -248,7 +248,7 @@ static int nxp_ohci_suspend(struct device *dev)
 	struct usb_hcd *hcd = nxp_ohci->hcd;
 	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
 	struct platform_device *pdev = to_platform_device(dev);
-	struct nxp_ohci_plat_data *pdata = pdev->dev.platform_data;
+	struct nxp_ohci_platdata *pdata = pdev->dev.platform_data;
 	unsigned long flags;
 	int rc = 0;
 
@@ -271,7 +271,7 @@ static int nxp_ohci_suspend(struct device *dev)
 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
 
 	if (pdata && pdata->phy_exit)
-		pdata->phy_exit(pdev, NXP_USB_PHY_HOST);
+		pdata->phy_exit(pdev, NXP_USB_PHY_OHCI);
 fail:
 	spin_unlock_irqrestore(&ohci->lock, flags);
 
@@ -283,13 +283,13 @@ static int nxp_ohci_resume(struct device *dev)
 	struct nxp_ohci_hcd *nxp_ohci = dev_get_drvdata(dev);
 	struct usb_hcd *hcd = nxp_ohci->hcd;
 	struct platform_device *pdev = to_platform_device(dev);
-	struct nxp_ohci_plat_data *pdata = pdev->dev.platform_data;
+	struct nxp_ohci_platdata *pdata = pdev->dev.platform_data;
 
 	if (nxp_ohci->phy)
 		return 0;
 
 	if (pdata && pdata->phy_init)
-		pdata->phy_init(pdev, NXP_USB_PHY_HOST);
+		pdata->phy_init(pdev, NXP_USB_PHY_OHCI);
 
 	/* Mark hardware accessible again as we are out of D3 state by now */
 	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);

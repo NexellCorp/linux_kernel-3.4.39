@@ -51,7 +51,7 @@
 #include <asm/firmware.h>
 #endif
 
-#if defined (CONFIG_USB_EHCI_SLSI_SYNOPSYS)
+#if defined (CONFIG_USB_EHCI_SYNOPSYS)
 #include <mach/platform.h>
 #endif
 /*-------------------------------------------------------------------------*/
@@ -469,7 +469,7 @@ static void ehci_turn_off_all_ports(struct ehci_hcd *ehci)
 {
 	int	port = HCS_N_PORTS(ehci->hcs_params);
 
-#if defined(CONFIG_USB_HSIC_SLSI_SYNOPSYS)
+#if defined(CONFIG_USB_HSIC_SYNOPSYS)
 	while (port--) {
 		if (port == 1) {
 			ehci_writel(ehci, PORT_RWC_BITS,
@@ -946,7 +946,7 @@ static irqreturn_t ehci_irq (struct usb_hcd *hcd)
 			if (ehci->has_ppcd && !(ppcd & (1 << i)))
 				continue;
 
-#if defined( CONFIG_USB_HSIC_SLSI_SYNOPSYS )
+#if defined( CONFIG_USB_HSIC_SYNOPSYS )
 			if (i == 1) {
 				pstatus = ehci_readl(ehci,
 						ehci->hsic_status_reg);
@@ -1386,8 +1386,8 @@ MODULE_LICENSE ("GPL");
 #define PLATFORM_DRIVER		s5p_ehci_driver
 #endif
 
-#ifdef CONFIG_USB_EHCI_SLSI_SYNOPSYS
-#include "ehci-slsi-synop.c"
+#ifdef CONFIG_USB_EHCI_SYNOPSYS
+#include "ehci-synop.c"
 #define PLATFORM_DRIVER		nxp_ehci_driver
 #endif
 
