@@ -1710,7 +1710,7 @@ CONFIG_WATCHDOG=y
 # CONFIG_ARM_SP805_WATCHDOG is not set
 # CONFIG_MPCORE_WATCHDOG is not set
 # CONFIG_MAX63XX_WATCHDOG is not set
-# CONFIG_SLSI_WATCHDOG is not set
+# CONFIG_NXP_WDT is not set
 
 #
 # USB-based Watchdog Cards
