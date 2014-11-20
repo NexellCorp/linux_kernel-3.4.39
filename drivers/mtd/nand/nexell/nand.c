@@ -319,7 +319,7 @@ static int nand_onfi_timing_set(struct mtd_info *mtd, uint32_t mode)
 }
 
 /* timing set */
-static int nexell_nand_timing_set(struct mtd_info *mtd)
+static int nxp_nand_timing_set(struct mtd_info *mtd)
 {
 	struct nand_chip *chip = mtd->priv;
 	uint32_t ret, mode;
@@ -525,7 +525,7 @@ static int nand_resume(struct platform_device *pdev)
 	nand_hw_ecc_init_device(mtd);
 #endif
 
-	nexell_nand_timing_set(mtd);
+	nxp_nand_timing_set(mtd);
 	/*
 	 * Reset the chip, required by some chips (e.g. Micron MT29FxGxxxxx)
 	 * after power-up
@@ -711,7 +711,7 @@ static int nand_probe(struct platform_device *pdev)
 	}
 #endif
 
-	nexell_nand_timing_set(mtd);
+	nxp_nand_timing_set(mtd);
 
 	printk(KERN_NOTICE "%s: Nand partition \n", ret?"FAIL":"DONE");
 	return ret;

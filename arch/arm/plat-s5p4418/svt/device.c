@@ -193,7 +193,7 @@ static struct platform_device dm9000_plat_device = {
 /*------------------------------------------------------------------------------
  * DW GMAC board config
  */
-#if defined(CONFIG_SLSI_MAC_ETH)
+#if defined(CONFIG_NXPMAC_ETH)
 #include <linux/phy.h>
 #include <linux/nxpmac.h>
 #include <linux/delay.h>
@@ -419,7 +419,7 @@ static struct platform_device ppm_device = {
 /*------------------------------------------------------------------------------
  * NAND device
  */
-#if defined(CONFIG_MTD_NAND_SLSI)
+#if defined(CONFIG_MTD_NAND_NXP)
 #include <linux/mtd/partitions.h>
 #include <asm-generic/sizes.h>
 
@@ -459,7 +459,7 @@ static struct platform_device nand_plat_device = {
 		.platform_data	= &nand_plat_data,
 	},
 };
-#endif	/* CONFIG_MTD_NAND_SLSI */
+#endif	/* CONFIG_MTD_NAND_NXP */
 
 /*------------------------------------------------------------------------------
  * Touch platform device
@@ -1752,7 +1752,7 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(FT5X0X_I2C_BUS, &ft5x0x_i2c_bdi, 1);
 #endif
 
-#if defined(CONFIG_MTD_NAND_SLSI)
+#if defined(CONFIG_MTD_NAND_NXP)
 	platform_device_register(&nand_plat_device);
 #endif
 
@@ -1825,7 +1825,7 @@ void __init nxp_board_devices_register(void)
     platform_device_register(&rfkill_device);
 #endif
 
-#if defined(CONFIG_SLSI_MAC_ETH)
+#if defined(CONFIG_NXPMAC_ETH)
     printk("plat: add device nxp-gmac\n");
     platform_device_register(&nxp_gmac_dev);
 #endif

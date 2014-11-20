@@ -607,7 +607,7 @@ config MTD_NAND_FSMC
 	  Enables support for NAND Flash chips on the ST Microelectronics
 	  Flexible Static Memory Controller (FSMC)
 
-config MTD_NAND_SLSI
+config MTD_NAND_NXP
 	tristate "Nexell nand support"
 	depends on ARCH_CPU_SLSI
 	help
@@ -615,7 +615,7 @@ config MTD_NAND_SLSI
 
 config MTD_NAND_ECC_HW
 	bool "Support hardware ECC"
-	depends on MTD_NAND_SLSI
+	depends on MTD_NAND_NXP
 	help
 	  Enable the use of the NX series's internal ECC generator when
 	  using NAND.
