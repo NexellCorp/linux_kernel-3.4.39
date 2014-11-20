@@ -687,7 +687,7 @@ void __init nxp_reserve_mem(void)
 //#include <linux/rtc/rtc-nxe2000.h>
 //#include <linux/rtc.h>
 
-#define NXE2000_I2C_BUS		(2)
+#define NXE2000_I2C_BUS		(0)
 #define NXE2000_I2C_ADDR	(0x64 >> 1)
 #define NXE2000_IRQ			(PAD_GPIO_ALV + 4)
 
