@@ -28,7 +28,7 @@
 
 static char str_dai_name[16] = DEV_NAME_I2S;
 
-#define STUB_RATES		SNDRV_PCM_RATE_8000_96000
+#define STUB_RATES		SNDRV_PCM_RATE_8000_192000
 #define STUB_FORMATS	(SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE)
 
 static struct snd_soc_codec_driver soc_codec_snd_null;
@@ -172,8 +172,6 @@ static int snd_card_probe(struct platform_device *pdev)
 		cpudrv->playback.formats = format;
 		cpudrv->capture.formats = format;
 	}
-
-	printk("[%s:%s]\n", __func__, card->name);
 
 	return ret;
 }
