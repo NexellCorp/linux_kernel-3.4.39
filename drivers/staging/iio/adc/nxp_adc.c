@@ -161,7 +161,7 @@ extern int iio_map_array_unregister(struct iio_dev *indio_dev, struct iio_map *m
 /*
  * ADC functions
  */
-#ifdef CONFIG_SLSI_ADC_INTERRUPT
+#ifdef CONFIG_NXP_ADC_INTERRUPT
 static irqreturn_t nxp_adc_isr(int irq, void *dev_id)
 {
 	struct nxp_adc_info *adc = (struct nxp_adc_info *)dev_id;
@@ -205,7 +205,7 @@ static int nxp_adc_setup(struct nxp_adc_info *adc, struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-#ifdef CONFIG_SLSI_ADC_INTERRUPT
+#ifdef CONFIG_NXP_ADC_INTERRUPT
 	irq = platform_get_irq(pdev, 0);
 	if ((irq >= 0) || (NR_IRQS > irq)) {
 		ret = request_irq(irq, nxp_adc_isr, 0, DEV_NAME_ADC, adc);

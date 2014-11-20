@@ -402,7 +402,7 @@ static struct platform_device bl_plat_device = {
 };
 #endif
 
-#if defined(CONFIG_PPM_SLSI)
+#if defined(CONFIG_PPM_NXP)
 #include <mach/ppm.h>
 struct nxp_ppm_platform_data ppm_plat_data = {
     .input_polarity = NX_PPM_INPUTPOL_INVERT,//NX_PPM_INPUTPOL_INVERT  or  NX_PPM_INPUTPOL_BYPASS
@@ -1830,7 +1830,7 @@ void __init nxp_board_devices_register(void)
     platform_device_register(&nxp_gmac_dev);
 #endif
 
-#if defined(CONFIG_PPM_SLSI)
+#if defined(CONFIG_PPM_NXP)
     printk("plat: add device ppm\n");
     platform_device_register(&ppm_device);
 #endif

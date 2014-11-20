@@ -398,12 +398,12 @@ static struct platform_device *i2c_devices[] = {
 /*------------------------------------------------------------------------------
    * RTC (Real Time Clock) platform device
     */
-#if defined(CONFIG_RTC_DRV_SLSI)
+#if defined(CONFIG_RTC_DRV_NXP)
 static struct platform_device rtc_plat_device = {
 	.name   = DEV_NAME_RTC,
 	.id     = 0,
 };
-#endif  /* CONFIG_RTC_DRV_SLSI */
+#endif  /* CONFIG_RTC_DRV_NXP */
 
 /*------------------------------------------------------------------------------
  * PWM platform device
@@ -610,12 +610,12 @@ static struct platform_device vr_gpu_device =
 /*------------------------------------------------------------------------------
  * Alsa sound platform device (I2S-PCM)
  */
-#if defined(CONFIG_NXP_SLSI_I2S) || defined(CONFIG_NXP_SLSI_I2S_MODULE)
+#if defined(CONFIG_SND_NXP_I2S) || defined(CONFIG_SND_NXP_I2S_MODULE)
 #ifndef CFG_AUDIO_I2S0_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S0_MASTER_CLOCK_IN		0
 #endif
 
-#if defined (CONFIG_NXP_SLSI_I2S_CH0)
+#if defined (CONFIG_SND_NXP_I2S_CH0)
 static struct nxp_i2s_plat_data i2s_data_ch0 = {
 	.master_mode		= CFG_AUDIO_I2S0_MASTER_MODE,
 	.master_clock_in	= CFG_AUDIO_I2S0_MASTER_CLOCK_IN,
@@ -637,7 +637,7 @@ static struct platform_device i2s_device_ch0 = {
 	},
 };
 #endif
-#if defined (CONFIG_NXP_SLSI_I2S_CH1)
+#if defined (CONFIG_SND_NXP_I2S_CH1)
 #ifndef CFG_AUDIO_I2S1_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S1_MASTER_CLOCK_IN		0
 #endif
@@ -663,7 +663,7 @@ static struct platform_device i2s_device_ch1 = {
 	},
 };
 #endif
-#if defined (CONFIG_NXP_SLSI_I2S_CH2)
+#if defined (CONFIG_SND_NXP_I2S_CH2)
 #ifndef CFG_AUDIO_I2S2_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S2_MASTER_CLOCK_IN		0
 #endif
@@ -691,22 +691,22 @@ static struct platform_device i2s_device_ch2 = {
 #endif
 
 static struct platform_device *i2s_devices[] __initdata = {
-	#if defined (CONFIG_NXP_SLSI_I2S_CH0)
+	#if defined (CONFIG_SND_NXP_I2S_CH0)
 	&i2s_device_ch0,
 	#endif
-	#if defined (CONFIG_NXP_SLSI_I2S_CH1)
+	#if defined (CONFIG_SND_NXP_I2S_CH1)
 	&i2s_device_ch1,
 	#endif
-	#if defined (CONFIG_NXP_SLSI_I2S_CH2)
+	#if defined (CONFIG_SND_NXP_I2S_CH2)
 	&i2s_device_ch2,
 	#endif
 };
-#endif /* CONFIG_NXP_SLSI_I2S || CONFIG_NXP_SLSI_I2S_MODULE */
+#endif /* CONFIG_SND_NXP_I2S || CONFIG_SND_NXP_I2S_MODULE */
 
 /*------------------------------------------------------------------------------
  * Alsa sound platform device (SPDIF)
  */
-#if defined(CONFIG_NXP_SLSI_SPDIF_TX) || defined(CONFIG_NXP_SLSI_SPDIF_TX_MODULE)
+#if defined(CONFIG_SND_NXP_SPDIF_TX) || defined(CONFIG_SND_NXP_SPDIF_TX_MODULE)
 static struct nxp_spdif_plat_data spdif_data_tx = {
 	.sample_rate	= CFG_AUDIO_SPDIF_TX_SAMPLE_RATE,
 	.hdmi_out		= CFG_AUDIO_SPDIF_TX_HDMI_OUT,
@@ -721,9 +721,9 @@ static struct platform_device spdif_device_tx = {
 		.platform_data	= &spdif_data_tx
 	},
 };
-#endif	/* CONFIG_NXP_SLSI_SPDIF_TX || CONFIG_NXP_SLSI_SPDIF_TX_MODULE */
+#endif	/* CONFIG_SND_NXP_SPDIF_TX || CONFIG_SND_NXP_SPDIF_TX_MODULE */
 
-#if defined(CONFIG_NXP_SLSI_SPDIF_RX) || defined(CONFIG_NXP_SLSI_SPDIF_RX_MODULE)
+#if defined(CONFIG_SND_NXP_SPDIF_RX) || defined(CONFIG_SND_NXP_SPDIF_RX_MODULE)
 static struct nxp_spdif_plat_data spdif_data_rx = {
 	.sample_rate	= CFG_AUDIO_SPDIF_RX_SAMPLE_RATE,
 	.dma_filter		= pl08x_filter_id,
@@ -737,7 +737,7 @@ static struct platform_device spdif_device_rx = {
 		.platform_data	= &spdif_data_rx
 	},
 };
-#endif	/* CONFIG_NXP_SLSI_SPDIF_RX || CONFIG_NXP_SLSI_SPDIF_RX_MODULE */
+#endif	/* CONFIG_SND_NXP_SPDIF_RX || CONFIG_SND_NXP_SPDIF_RX_MODULE */
 
 /*------------------------------------------------------------------------------
  * SSP/SPI
@@ -1244,7 +1244,7 @@ struct platform_device nxp_device_ion = {
 /*------------------------------------------------------------------------------
  * ADC
  */
-#if defined(CONFIG_SLSI_ADC)
+#if defined(CONFIG_NXP_ADC)
 
 #ifndef CFG_ADC_SAMPLE_RATE
 #define CFG_ADC_SAMPLE_RATE		200000	/* 200K */
@@ -1267,7 +1267,7 @@ static struct platform_device adc_device = {
 		.platform_data	= &adc_sample_rate,
 	},
 };
-#endif /* CONFIG_SLSI_ADC */
+#endif /* CONFIG_NXP_ADC */
 
 /*------------------------------------------------------------------------------
  * Display
@@ -1366,7 +1366,7 @@ void __init nxp_cpu_devices_register(void)
     printk("mach: add device i2c bus (array:%d) \n", ARRAY_SIZE(i2c_devices));
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif
-#if defined(CONFIG_RTC_DRV_SLSI)
+#if defined(CONFIG_RTC_DRV_NXP)
     printk("mach: add device Real Time Clock  \n");
     platform_device_register(&rtc_plat_device);
 #endif
@@ -1381,17 +1381,17 @@ void __init nxp_cpu_devices_register(void)
     platform_add_devices(gpio_devices, ARRAY_SIZE(gpio_devices));
 #endif
 
-#if defined(CONFIG_NXP_SLSI_I2S) || defined(CONFIG_NXP_SLSI_I2S_MODULE)
+#if defined(CONFIG_SND_NXP_I2S) || defined(CONFIG_SND_NXP_I2S_MODULE)
     printk("mach: add device i2s (array:%d) \n", ARRAY_SIZE(i2s_devices));
     platform_add_devices(i2s_devices, ARRAY_SIZE(i2s_devices));
 #endif
 
-#if defined(CONFIG_NXP_SLSI_SPDIF_TX) || defined(CONFIG_NXP_SLSI_SPDIF_TX_MODULE)
+#if defined(CONFIG_SND_NXP_SPDIF_TX) || defined(CONFIG_SND_NXP_SPDIF_TX_MODULE)
     printk("mach: add device spdif tx\n");
     platform_device_register(&spdif_device_tx);
 #endif
 
-#if defined(CONFIG_NXP_SLSI_SPDIF_RX) || defined(CONFIG_NXP_SLSI_SPDIF_RX_MODULE)
+#if defined(CONFIG_SND_NXP_SPDIF_RX) || defined(CONFIG_SND_NXP_SPDIF_RX_MODULE)
     printk("mach: add device spdif rx\n");
     platform_device_register(&spdif_device_rx);
 #endif
@@ -1417,7 +1417,7 @@ void __init nxp_cpu_devices_register(void)
     platform_device_register(&nxp_device_ion);
 #endif
 
-#if defined(CONFIG_SLSI_ADC)
+#if defined(CONFIG_NXP_ADC)
     printk("mach: add device adc\n");
     platform_device_register(&adc_device);
 #endif
