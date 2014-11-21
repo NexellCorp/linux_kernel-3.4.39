@@ -580,10 +580,31 @@ static struct platform_device snd_null_dai = {
 		.platform_data = &snd_null_dai_data,
 	}
 };
+
+//-------------------------------------
+static struct platform_device snd_null_1 = {
+	.name = "snd-null",
+	.id = 1,
+};
+
+struct nxp_snd_dai_plat_data snd_null_dai_data_1 = {
+	.i2s_ch = 1,
+	.sample_rate = 48000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
+};
+
+static struct platform_device snd_null_dai_1 = {
+	.name = "snd-null-card",
+	.id = 1,
+	.dev = {
+		.platform_data = &snd_null_dai_data_1 ,
+	}
+};
+
 //-------------------------------------
 static struct platform_device snd_null_2 = {
 	.name = "snd-null",
-	.id = 1,
+	.id = 2,
 };
 
 struct nxp_snd_dai_plat_data snd_null_dai_data_2 = {
@@ -594,7 +615,7 @@ struct nxp_snd_dai_plat_data snd_null_dai_data_2 = {
 
 static struct platform_device snd_null_dai_2 = {
 	.name = "snd-null-card",
-	.id = 1,
+	.id = 2,
 	.dev = {
 		.platform_data = &snd_null_dai_data_2 ,
 	}
@@ -1795,6 +1816,8 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_SND_CODEC_NULL)
 	platform_device_register(&snd_null);
 	platform_device_register(&snd_null_dai);
+	platform_device_register(&snd_null_1);
+	platform_device_register(&snd_null_dai_1);
 	platform_device_register(&snd_null_2);
 	platform_device_register(&snd_null_dai_2);
 #endif

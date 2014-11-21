@@ -55,7 +55,8 @@ static int snd_null_probe(struct platform_device *pdev)
 {
 	int ret = snd_soc_register_codec(&pdev->dev, &soc_codec_snd_null,
 			&null_stub_dai, 1);
-	printk("Snd Null codec driver (ret=%d)\n", ret);
+	if(ret < 0)
+		printk("snd null codec driver register fail.(ret=%d)\n", ret);
 	return ret;
 }
 
