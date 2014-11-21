@@ -198,6 +198,7 @@ machine-$(CONFIG_MACH_SPEAR320)		:= spear3xx
 machine-$(CONFIG_MACH_SPEAR600)		:= spear6xx
 machine-$(CONFIG_ARCH_ZYNQ)		:= zynq
 machine-$(CONFIG_ARCH_S5P4418)     	:= s5p4418
+machine-$(CONFIG_ARCH_S5P6818)     	:= s5p6818
 
 # Platform directory name.  This list is sorted alphanumerically
 # by CONFIG_* macro name.
@@ -214,6 +215,7 @@ plat-$(CONFIG_PLAT_S5P)		:= s5p samsung
 plat-$(CONFIG_PLAT_SPEAR)	:= spear
 plat-$(CONFIG_PLAT_VERSATILE)	:= versatile
 plat-$(CONFIG_ARCH_S5P4418)	:= s5p4418
+plat-$(CONFIG_ARCH_S5P6818)	:= s5p6818
 
 ifeq ($(CONFIG_ARCH_EBSA110),y)
 # This is what happens if you forget the IOCS16 line.

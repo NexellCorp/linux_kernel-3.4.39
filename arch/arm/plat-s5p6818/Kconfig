@@ -1,0 +1,27 @@
+#
+# Copyright 2009 Nexell.
+#
+
+
+# Select Board types
+comment "Board features"
+
+choice
+    prompt "Platform board"
+    default PLAT_S5P6818_DRONE
+
+	config PLAT_S5P6818_VTK
+		bool "VTK: Validation Kit board"
+		help
+   	 		Support for the validation kit board.
+
+	config PLAT_S5P6818_DRONE
+		bool "DRONE: Android drone board"
+		help
+   	 		Support for the drone board.
+
+endchoice
+
+#
+# Board dependent configure
+#
