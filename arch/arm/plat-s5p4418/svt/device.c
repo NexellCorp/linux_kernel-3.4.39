@@ -616,6 +616,7 @@ static struct i2c_board_info __initdata rt5631_i2c_bdi = {
 struct nxp_snd_dai_plat_data i2s_dai_data = {
 	.i2s_ch	= 1,
 	.sample_rate	= 48000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
 #if 0
 	.hp_jack 		= {
 		.support    	= 1,
