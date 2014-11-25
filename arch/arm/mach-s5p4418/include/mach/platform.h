@@ -43,7 +43,7 @@
 /*------------------------------------------------------------------------------
  * For low level uart debug (debug-macro.S)
  */
-#if defined(CONFIG_DEBUG_LL) && defined(CONFIG_DEBUG_SLSI_UART)
+#if defined(CONFIG_DEBUG_LL) && defined(CONFIG_DEBUG_NXP_UART)
 	#if	  (0 == CFG_UART_DEBUG_CH)
 		#define	PB_UART_PHYS_BASE		PHY_BASEADDR_UART0
 	#elif (1 == CFG_UART_DEBUG_CH)

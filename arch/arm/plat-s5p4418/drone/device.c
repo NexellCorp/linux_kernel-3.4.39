@@ -516,7 +516,7 @@ void __init nxp_reserve_mem(void)
 }
 #endif
 
-#if defined(CONFIG_I2C_SLSI)
+#if defined(CONFIG_I2C_NXP)
 #define I2CUDELAY(x)	1000000/x
 /* gpio i2c 3 */
 #define	I2C3_SCL	PAD_GPIO_E + 14
@@ -542,7 +542,7 @@ static struct platform_device i2c_device_ch3 = {
 static struct platform_device *i2c_devices[] = {
 	&i2c_device_ch3,
 };
-#endif /* CONFIG_I2C_SLSI */
+#endif /* CONFIG_I2C_NXP */
 
 /*------------------------------------------------------------------------------
  * PMIC platform device
@@ -1334,7 +1334,7 @@ static struct spi_board_info spi_plat_board[] __initdata = {
  */
 #if defined(CONFIG_MMC_DW)
 
-#ifdef CONFIG_MMC_SLSI_CH0
+#ifdef CONFIG_MMC_NXP_CH0
 static struct dw_mci_board _dwmci0_data = {
     .quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 				  	  DW_MCI_QUIRK_HIGHSPEED |
@@ -1354,7 +1354,7 @@ static struct dw_mci_board _dwmci0_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_SLSI_CH1
+#ifdef CONFIG_MMC_NXP_CH1
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 100 * 1000 * 1000,
@@ -1366,7 +1366,7 @@ static struct dw_mci_board _dwmci1_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_SLSI_CH2
+#ifdef CONFIG_MMC_NXP_CH2
 static int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
 {
 	return 0;
@@ -1498,13 +1498,13 @@ void __init nxp_board_devices_register(void)
 #endif
 
 #if defined(CONFIG_MMC_DW)
-	#ifdef CONFIG_MMC_SLSI_CH0
+	#ifdef CONFIG_MMC_NXP_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
-    #ifdef CONFIG_MMC_SLSI_CH2
+    #ifdef CONFIG_MMC_NXP_CH2
 	nxp_mmc_add_device(2, &_dwmci2_data);
 	#endif
-    #ifdef CONFIG_MMC_SLSI_CH1
+    #ifdef CONFIG_MMC_NXP_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
 	#endif
 #endif
@@ -1528,7 +1528,7 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&key_plat_device);
 #endif
 
-#if defined(CONFIG_I2C_SLSI)
+#if defined(CONFIG_I2C_NXP)
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif
 

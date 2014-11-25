@@ -1012,7 +1012,7 @@ void __init nxp_cpu_clock_init(void)
 		}
 
 		/* prevent uart clock disable for low level debug message */
-		#ifndef CONFIG_DEBUG_SLSI_UART
+		#ifndef CONFIG_DEBUG_NXP_UART
 		if (peri->dev_name) {
 			#ifdef CONFIG_BACKLIGHT_PWM
 			if (!strcmp(peri->dev_name,DEV_NAME_PWM))
@@ -1092,7 +1092,7 @@ void nxp_cpu_clock_resume(void)
 		peri = &clk_periphs[i];
 		/* exception */
 		if (_GATE_PCLK_ & peri->clk_mask0) {
-	#ifdef CONFIG_I2C_SLSI
+	#ifdef CONFIG_I2C_NXP
 			if (!strcmp("nxp-i2c", peri->dev_name))
 				clk_gen_pclk(peri->base_addr, 1);
 	#endif

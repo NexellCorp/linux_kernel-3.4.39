@@ -1360,49 +1360,49 @@ config SERIAL_EFM32_UART_CONSOLE
 	depends on SERIAL_EFM32_UART=y
 	select SERIAL_CORE_CONSOLE
 
-config SERIAL_SLSI_UART0
+config SERIAL_NXP_UART0
 	bool "PL011 serial port 0"
 	depends on SERIAL_AMBA_PL011
 		default y
 
-config SERIAL_SLSI_UART0_DMA
+config SERIAL_NXP_UART0_DMA
 	bool "Use DMA"
-	depends on SERIAL_SLSI_UART0=y && SERIAL_AMBA_PL011
+	depends on SERIAL_NXP_UART0=y && SERIAL_AMBA_PL011
 
-config SERIAL_SLSI_UART1
+config SERIAL_NXP_UART1
 	bool "PL011 serial port 1"
 	depends on SERIAL_AMBA_PL011
 		default n
 
-config SERIAL_SLSI_UART1_DMA
+config SERIAL_NXP_UART1_DMA
 	bool "Use DMA"
-	depends on SERIAL_SLSI_UART1=y && SERIAL_AMBA_PL011
+	depends on SERIAL_NXP_UART1=y && SERIAL_AMBA_PL011
 
-config SERIAL_SLSI_UART2
+config SERIAL_NXP_UART2
 	bool "PL011 serial port 2"
 	depends on SERIAL_AMBA_PL011
 		default n
 
-config SERIAL_SLSI_UART2_DMA
+config SERIAL_NXP_UART2_DMA
 	bool "Use DMA"
-	depends on SERIAL_SLSI_UART2=y && SERIAL_AMBA_PL011
+	depends on SERIAL_NXP_UART2=y && SERIAL_AMBA_PL011
 
-config SERIAL_SLSI_UART3
+config SERIAL_NXP_UART3
 	bool "PL011 serial port 3"
 	depends on SERIAL_AMBA_PL011
 		default n
 
-config SERIAL_SLSI_UART4
+config SERIAL_NXP_UART4
 	bool "PL011 serial port 4"
-	depends on SERIAL_SLSI || SERIAL_AMBA_PL011
+	depends on SERIAL_NXP || SERIAL_AMBA_PL011
 		default n
 
-config SERIAL_SLSI_UART5
+config SERIAL_NXP_UART5
 	bool "PL011 serial port 5"
 	depends on SERIAL_AMBA_PL011
 		default n
 
-config SERIAL_SLSI_RESUME_WORK
+config SERIAL_NXP_RESUME_WORK
 	bool "Set this to reduce resume time (PL011)"
 	depends on SERIAL_AMBA_PL011
 		default n

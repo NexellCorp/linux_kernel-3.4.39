@@ -620,23 +620,23 @@ config MMC_USHC
 	  Note: These controllers only support SDIO cards and do not
 	  support MMC or SD memory cards.
 
-config MMC_SLSI
+config MMC_NXP
 	bool
 
-config MMC_SLSI_CH0
+config MMC_NXP_CH0
 	bool "Support SD/MMC CH 0"
 	depends on MMC_DW
-	select MMC_SLSI
+	select MMC_NXP
 		default y
 
-config MMC_SLSI_CH1
+config MMC_NXP_CH1
 	bool "Support SD/MMC CH 1"
 	depends on MMC_DW
-	select MMC_SLSI
+	select MMC_NXP
 		default n
 
-config MMC_SLSI_CH2
+config MMC_NXP_CH2
 	bool "Support SD/MMC CH 2"
 	depends on MMC_DW
-	select MMC_SLSI
+	select MMC_NXP
 		default n

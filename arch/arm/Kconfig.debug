@@ -329,7 +329,7 @@ choice
 		  For more details about semihosting, please see
 		  chapter 8 of DUI0203I_rvct_developer_guide.pdf from ARM Ltd.
 
-	config DEBUG_SLSI_UART
+	config DEBUG_NXP_UART
 		depends on ARCH_CPU_SLSI
 		bool "Kernel low-level debugging SLsiAP UART"
 		help
