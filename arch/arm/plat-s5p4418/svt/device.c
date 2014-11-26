@@ -617,6 +617,7 @@ static struct i2c_board_info __initdata rt5631_i2c_bdi = {
 struct nxp_snd_dai_plat_data i2s_dai_data = {
 	.i2s_ch	= 1,
 	.sample_rate	= 48000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
 #if 0
 	.hp_jack 		= {
 		.support    	= 1,
@@ -1576,7 +1577,7 @@ static int _dwmci_get_ro(u32 slot_id)
 	return 0;
 }
 
-#ifdef CONFIG_MMC_SLSI_CH0
+#ifdef CONFIG_MMC_NXP_CH0
 static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 {
 	struct dw_mci *host = (struct dw_mci *)data;
@@ -1618,7 +1619,7 @@ static struct dw_mci_board _dwmci0_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_SLSI_CH1
+#ifdef CONFIG_MMC_NXP_CH1
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 					  DW_MCI_QUIRK_HIGHSPEED,
@@ -1633,7 +1634,7 @@ static struct dw_mci_board _dwmci1_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_SLSI_CH2
+#ifdef CONFIG_MMC_NXP_CH2
 static struct dw_mci_board _dwmci2_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 					  DW_MCI_QUIRK_HIGHSPEED,
@@ -1727,13 +1728,13 @@ void __init nxp_board_devices_register(void)
 #endif
 
 #if defined(CONFIG_MMC_DW)
-	#ifdef CONFIG_MMC_SLSI_CH0
+	#ifdef CONFIG_MMC_NXP_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
-	#ifdef CONFIG_MMC_SLSI_CH1
+	#ifdef CONFIG_MMC_NXP_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
 	#endif
-	#ifdef CONFIG_MMC_SLSI_CH2
+	#ifdef CONFIG_MMC_NXP_CH2
 	nxp_mmc_add_device(2, &_dwmci2_data);
 	#endif
 #endif

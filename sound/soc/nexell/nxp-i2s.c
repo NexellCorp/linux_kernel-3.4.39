@@ -252,7 +252,7 @@ static int i2s_start(struct nxp_i2s_snd_param *par, int stream)
 	unsigned int base = par->base_addr;
 	unsigned int FIC = 0;
 
-	pr_debug("%s\n", __func__);
+	pr_debug("%s %d\n", __func__, par->channel);
 	spin_lock(&par->lock);
 
 	if (!par->pre_supply_mclk)
@@ -293,7 +293,7 @@ static void i2s_stop(struct nxp_i2s_snd_param *par, int stream)
 	struct i2s_register *i2s = &par->i2s;
 	unsigned int base = par->base_addr;
 
-	pr_debug("%s\n", __func__);
+	pr_debug("%s %d\n", __func__, par->channel);
 	spin_lock(&par->lock);
 
 	if (SNDRV_PCM_STREAM_PLAYBACK == stream) {

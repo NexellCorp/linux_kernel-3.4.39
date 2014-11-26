@@ -50,7 +50,7 @@
  * I2C Bus platform device
  */
 
-#if defined(CONFIG_I2C_SLSI)
+#if defined(CONFIG_I2C_NXP)
 #define I2CUDELAY(x)	1000000/x/2
 /* gpio i2c 0 */
 #ifdef CFG_IO_I2C0_SCL
@@ -86,7 +86,7 @@
 #define	I2C2_SDA	NXP_I2C2_MOD_SDA
 #endif
 
-#if	defined(CONFIG_I2C_SLSI_PORT0)
+#if	defined(CONFIG_I2C_NXP_PORT0)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port0 = {
 	.sda_pin	= I2C0_SDA,
 	.scl_pin	= I2C0_SCL,
@@ -94,7 +94,7 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port0 = {
 	.timeout	= 10,
 };
 
-#if  defined(CONFIG_I2C_SLSI_PORT0_GPIO_MODE)
+#if  defined(CONFIG_I2C_NXP_PORT0_GPIO_MODE)
 static struct platform_device i2c_device_ch0 = {
 	.name	= "i2c-gpio",
 	.id		= 0,
@@ -118,12 +118,12 @@ static struct platform_device i2c_device_ch0 = {
 		.platform_data	= &i2c_data_ch0
 	},
 };
-#endif /* CONFIG_I2C_SLSI_PORT0 */
+#endif /* CONFIG_I2C_NXP_PORT0 */
 
 
 #endif
 
-#if	defined(CONFIG_I2C_SLSI_PORT1)
+#if	defined(CONFIG_I2C_NXP_PORT1)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port1 = {
 	.sda_pin	= I2C1_SDA,
 	.scl_pin	= I2C1_SCL,
@@ -132,7 +132,7 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port1 = {
 };
 
 
-#if  defined(CONFIG_I2C_SLSI_PORT1_GPIO_MODE)
+#if  defined(CONFIG_I2C_NXP_PORT1_GPIO_MODE)
 static struct platform_device i2c_device_ch1 = {
 	.name	= "i2c-gpio",
 	.id		= 1,
@@ -159,7 +159,7 @@ static struct platform_device i2c_device_ch1 = {
 #endif
 #endif
 
-#if	defined(CONFIG_I2C_SLSI_PORT2)
+#if	defined(CONFIG_I2C_NXP_PORT2)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port2 = {
 	.sda_pin	= I2C2_SDA,
 	.scl_pin	= I2C2_SCL,
@@ -168,7 +168,7 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port2 = {
 	.timeout	= 10,
 };
 
-#if  defined(CONFIG_I2C_SLSI_PORT2_GPIO_MODE)
+#if  defined(CONFIG_I2C_NXP_PORT2_GPIO_MODE)
 static struct platform_device i2c_device_ch2 = {
 	.name	= "i2c-gpio",
 	.id		= 2,
@@ -196,17 +196,17 @@ static struct platform_device i2c_device_ch2 = {
 #endif
 
 static struct platform_device *i2c_devices[] = {
-	#if	defined(CONFIG_I2C_SLSI_PORT0)
+	#if	defined(CONFIG_I2C_NXP_PORT0)
 	&i2c_device_ch0,
 	#endif
-	#if	defined(CONFIG_I2C_SLSI_PORT1)
+	#if	defined(CONFIG_I2C_NXP_PORT1)
 	&i2c_device_ch1,
 	#endif
-	#if	defined(CONFIG_I2C_SLSI_PORT2)
+	#if	defined(CONFIG_I2C_NXP_PORT2)
 	&i2c_device_ch2,
 	#endif
 };
-#endif /* CONFIG_I2C_SLSI */
+#endif /* CONFIG_I2C_NXP */
 
 /*------------------------------------------------------------------------------
    * RTC (Real Time Clock) platform device
@@ -1249,7 +1249,7 @@ void __init nxp_cpu_devs_register(void)
     platform_add_devices(uart_devices, ARRAY_SIZE(uart_devices));
 #endif
 
-#if defined(CONFIG_I2C_SLSI)
+#if defined(CONFIG_I2C_NXP)
     printk("mach: add device i2c bus (array:%d) \n", ARRAY_SIZE(i2c_devices));
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif

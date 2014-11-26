@@ -195,11 +195,11 @@
 
 #define CFG_SPI0_COM_MODE						0 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
 #define CFG_SPI1_COM_MODE						1 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
-#define CFG_SPI2_COM_MODE						1 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
+#define CFG_SPI2_COM_MODE						0 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
 
 #define CFG_SPI0_CS_GPIO_MODE					1		/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
 #define CFG_SPI1_CS_GPIO_MODE					0	/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
-#define CFG_SPI2_CS_GPIO_MODE					1	/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
+#define CFG_SPI2_CS_GPIO_MODE					0	/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
 
 #define CFG_SPI0_CS								PAD_GPIO_C + 30
 #define CFG_SPI2_CS								PAD_GPIO_C + 10
@@ -214,7 +214,7 @@
 /*------------------------------------------------------------------------------
  * 	SDHC
  */
-#define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_C + 6)	/* external cd */
+#define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
 #define	CFG_SDMMC1_DETECT_IO					(PAD_GPIO_C + 0)	/* external cd */
 #define	CFG_SDMMC2_DETECT_IO					(PAD_GPIO_C + 2)	/* external cd */
 

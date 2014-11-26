@@ -1963,7 +1963,7 @@ static struct uart_driver amba_reg = {
 	.cons			= AMBA_CONSOLE,
 };
 
-#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_SLSI_RESUME_WORK)
+#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NXP_RESUME_WORK)
 #define uart_console(port)	((port)->cons && (port)->cons->index == (port)->line)
 
 static void pl011_resume_work(struct work_struct *work)
@@ -2031,7 +2031,7 @@ static int pl011_probe(struct amba_device *dev, const struct amba_id *id)
 	pl011_dma_probe(uap);
 
 	/* add by jhkim for fast resume */
-#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_SLSI_RESUME_WORK)
+#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NXP_RESUME_WORK)
 	INIT_DELAYED_WORK(&uap->resume_work, pl011_resume_work);
  	wake_lock_init(&uap->resume_lock, WAKE_LOCK_SUSPEND,
 	             kasprintf(GFP_KERNEL, "PL011%u", amba_rev(dev)));
@@ -2108,7 +2108,7 @@ static int pl011_resume(struct amba_device *dev)
 	if (plat->init)
 		plat->init();
 
-#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_SLSI_RESUME_WORK)
+#if defined (CONFIG_PM) && defined (CONFIG_SERIAL_NXP_RESUME_WORK)
 	/*
 	 * disable console duration delay time
 	 * to save wakeup time

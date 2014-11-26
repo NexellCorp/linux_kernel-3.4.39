@@ -637,6 +637,7 @@ static struct i2c_board_info __initdata rt5631_i2c_bdi = {
 struct nxp_snd_dai_plat_data i2s_dai_data = {
 	.i2s_ch	= 1,
 	.sample_rate	= 48000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
 #if 0
 	.hp_jack 		= {
 		.support    	= 1,
@@ -1577,9 +1578,9 @@ struct pl022_config_chip spi2_info = {
     .com_mode = CFG_SPI2_COM_MODE,
     .iface = SSP_INTERFACE_MOTOROLA_SPI,
     /* We can only act as master but SSP_SLAVE is possible in theory */
-    .hierarchy = SSP_MASTER,
+    .hierarchy = SSP_SLAVE,
     /* 0 = drive TX even as slave, 1 = do not drive TX as slave */
-    .slave_tx_disable = 1,
+    .slave_tx_disable = 0,
     .rx_lev_trig = SSP_RX_4_OR_MORE_ELEM,
     .tx_lev_trig = SSP_TX_4_OR_MORE_EMPTY_LOC,
     .ctrl_len = SSP_BITS_8,
@@ -1590,7 +1591,7 @@ struct pl022_config_chip spi2_info = {
      * (usually GPIO) for a certain chip.
      */
 #if (CFG_SPI2_CS_GPIO_MODE)
-    .cs_control = spi2_cs,
+//    .cs_control = spi2_cs,
 #endif
 	.clkdelay = SSP_FEEDBACK_CLK_DELAY_1T,
 
@@ -1606,7 +1607,7 @@ static struct spi_board_info spi_plat_board[] __initdata = {
     },
 	[1] = {
         .modalias        = "spidev",    /* fixup */
-        .max_speed_hz    = 3125000,     /* max spi clock (SCK) speed in HZ */
+        .max_speed_hz    = 100000,     /* max spi clock (SCK) speed in HZ */
         .bus_num         = 2,           /* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
         .chip_select     = 0,           /* Note> set chip select num, must be smaller than spi cs_num */
         .controller_data = &spi2_info,
@@ -1637,7 +1638,7 @@ static int _dwmci_get_ro(u32 slot_id)
 	return 0;
 }
 
-#ifdef CONFIG_MMC_SLSI_CH0
+#ifdef CONFIG_MMC_NXP_CH0
 static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 {
 	struct dw_mci *host = (struct dw_mci *)data;
@@ -1679,7 +1680,7 @@ static struct dw_mci_board _dwmci0_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_SLSI_CH1
+#ifdef CONFIG_MMC_NXP_CH1
 static int _dwmci1_init(u32 slot_id, irq_handler_t handler, void *data)
 {
 	struct dw_mci *host = (struct dw_mci *)data;
@@ -1719,7 +1720,7 @@ static struct dw_mci_board _dwmci1_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_SLSI_CH2
+#ifdef CONFIG_MMC_NXP_CH2
 static int _dwmci2_init(u32 slot_id, irq_handler_t handler, void *data)
 {
 	struct dw_mci *host = (struct dw_mci *)data;
@@ -1838,13 +1839,13 @@ void __init nxp_board_devices_register(void)
 #endif
 
 #if defined(CONFIG_MMC_DW)
-	#ifdef CONFIG_MMC_SLSI_CH0
+	#ifdef CONFIG_MMC_NXP_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
-	#ifdef CONFIG_MMC_SLSI_CH1
+	#ifdef CONFIG_MMC_NXP_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
 	#endif
-	#ifdef CONFIG_MMC_SLSI_CH2
+	#ifdef CONFIG_MMC_NXP_CH2
 	nxp_mmc_add_device(2, &_dwmci2_data);
 	#endif
 #endif
