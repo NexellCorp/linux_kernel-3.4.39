@@ -472,7 +472,8 @@ struct nxp_ts_cali_plat_data ts_plat_data = {
 	.touch_points	= 10,
 	.x_resol	   	= CFG_DISP_PRI_RESOL_WIDTH,
 	.y_resol	   	= CFG_DISP_PRI_RESOL_HEIGHT,
-	.rotate			= 90,
+	.rotate			= 0,
+	.pointercal		= {38242, -340, -453008, -184, 39059, -149296, 65536}
 };
 
 static struct i2c_board_info __initdata ft5x0x_i2c_bdi = {
