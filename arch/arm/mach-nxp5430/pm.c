@@ -23,9 +23,7 @@
 #include <linux/delay.h>
 #include <linux/io.h>
 #include <linux/interrupt.h>
-
 #include <asm/cacheflush.h>
-#include <asm/cp15.h>
 #include <asm/suspend.h>
 #include <asm/memory.h>
 #include <asm/system.h>
@@ -250,7 +248,6 @@ static void print_wake_event(void)
 
 static void suspend_cores(suspend_state_t stat)
 {
-    unsigned int clamp = 0;
 	int cpu = 1, num = nr_cpu_ids;
 
 #ifndef CONFIG_SUSPEND_IDLE
@@ -259,13 +256,19 @@ static void suspend_cores(suspend_state_t stat)
 
 	NX_CLKPWR_SetCPUPowerOn32(0x00);
 
-	clamp = TIEOFFINDEX_OF_Inst_ARMTOP_P1_CLAMPL2;
+    /*
+     * CCI400 BUS
+     */
+#define CCI_REG __PB_IO_MAP_CCI4_VIRT       // 0xe0090000
+    writel(0x8, (CCI_REG + 0x0000));        // CCI
+    writel(0x0, (CCI_REG + 0x1000));        // S0: coresight
+    writel(0x0, (CCI_REG + 0x2000));        // S1: bottom bus
+    writel(0x0, (CCI_REG + 0x3000));        // S2: top bus
+    writel(0x0, (CCI_REG + 0x4000));        // S3: cpu cluster 1
+    writel(0x0, (CCI_REG + 0x5000));        // S4: cpu cluster 0
 
+	num = 7;
 	for (; num > cpu; cpu++) {
-		if (cpu == 7) {
-			NX_TIEOFF_Set(clamp, 1);
-		}
-
 		NX_CLKPWR_SetCPUPowerOff(cpu);
 		while(NX_CLKPWR_GetCPUPowerOnStatus(cpu));
 
@@ -322,11 +325,11 @@ static void suspend_mark(suspend_state_t stat)
 	if (SUSPEND_SUSPEND == stat) {
 		PM_DBGOUT("%s Suspend CRC [phy=0x%08x, calc=0x%08x, len=%d]\n",
 			__func__, mark.save_phy_addr, mark.save_crc_ret, mark.save_phy_len);
-		writel(mark.signature,     SCR_SIGNAGURE_SET);
-		writel(mark.resume_fn ,    SCR_WAKE_FN_SET);
+		writel(mark.signature, SCR_SIGNAGURE_SET);
+		writel(mark.resume_fn , SCR_WAKE_FN_SET);
 		writel(mark.save_phy_addr, SCR_CRC_PHY_SET);
-		writel(mark.save_crc_ret,  SCR_CRC_RET_SET);
-		writel(mark.save_phy_len,  SCR_CRC_LEN_SET);
+		writel(mark.save_crc_ret, SCR_CRC_RET_SET);
+		writel(mark.save_phy_len, SCR_CRC_LEN_SET);
 	}
 }
 #endif
@@ -531,13 +534,12 @@ static int suspend_enter(suspend_state_t state)
 	suspend_gpio(SUSPEND_SUSPEND);
 	suspend_alive(SUSPEND_SUSPEND);
 	suspend_l2cache(SUSPEND_SUSPEND);
-
-	/* SMP power down */
-	suspend_cores(SUSPEND_SUSPEND);
-
 #ifndef CONFIG_SUSPEND_IDLE
 	suspend_mark(SUSPEND_SUSPEND);
 #endif
+
+	/* SMP power down */
+	suspend_cores(SUSPEND_SUSPEND);
 
 	/*
 	 * goto sleep
