@@ -175,7 +175,7 @@
 /*------------------------------------------------------------------------------
  * 	Audio SPDIF (TX/RX)
  */
-#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT					CTRUE
+#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT					CFALSE
 #define	CFG_AUDIO_SPDIF_TX_SAMPLE_RATE				48000
 #define	CFG_AUDIO_SPDIF_RX_SAMPLE_RATE				48000
 
