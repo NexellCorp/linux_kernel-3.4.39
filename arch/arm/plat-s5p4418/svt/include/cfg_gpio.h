@@ -248,19 +248,27 @@
 #define CFG_IO_SPI_EEPROM_WP				((PAD_GPIO_C + 27) | PAD_FUNC_ALT1)		/* GPIO */
 
 /*------------------------------------------------------------------------------
- *	CAMERA Power Down
+ *  CAMERA Back Power Down
  */
-#define CFG_IO_CAMERA_POWER_DOWN			((PAD_GPIO_E + 7) | PAD_FUNC_ALT0)		/* GPIO */
+#define CFG_IO_CAMERA_BACK_POWER_DOWN     ((PAD_GPIO_B + 9) | PAD_FUNC_ALT0) 		/* GPIO */
 
 /*------------------------------------------------------------------------------
- *	MIPI CAMERA Power Enable
+ *  CAMERA Front Power Down
  */
-#define CFG_IO_MIPI_CAMERA_POWER_ENABLE		((PAD_GPIO_B + 9) | PAD_FUNC_ALT0)		/* GPIO */
+#define CFG_IO_CAMERA_FRONT_POWER_DOWN     ((PAD_GPIO_D + 7) | PAD_FUNC_ALT0)    /* GPIO */
 
 /*------------------------------------------------------------------------------
- *	MIPI CAMERA RESETN
+ *  CAMERA Front Reset
  */
-#define CFG_IO_MIPI_CAMERA_RESETN			((PAD_GPIO_B + 8) | PAD_FUNC_ALT0)		/* GPIO */
+#define CFG_IO_CAMERA_FRONT_RESET                 ((PAD_GPIO_C + 29) | PAD_FUNC_ALT0)   /* GPIO */
+
+/*------------------------------------------------------------------------------
+ *  CAMERA Back Reset
+ */
+#define CFG_IO_CAMERA_BACK_RESET                 ((PAD_GPIO_E + 16) | PAD_FUNC_ALT0)   /* GPIO */
+
+
+
 
 #endif	/* __CFG_GPIO_H__ */
 
