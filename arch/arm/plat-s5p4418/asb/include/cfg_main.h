@@ -59,14 +59,16 @@
  * 	GMAC PHY
  */
 
+#define CFG_ETHER_LOOPBACK_MODE					1	/* 0: disable, 1: 10M, 2: 100M(x), 3: 1000M(x) */
+
  /*for rtl8201*/
 #if defined (CONFIG_REALTEK_PHY_RTL8201)
 #define	CFG_ETHER_GMAC_PHY_IRQ_NUM				-1
 #define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_C + 12)
 #else
  /*for rtl8211*/
-#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				-1// (IRQ_GPIO_A_START + 9)
-#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_A + 10)
+#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				(IRQ_GPIO_E_START + 23)
+#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_C + 28)
 #endif
 
 /*------------------------------------------------------------------------------
