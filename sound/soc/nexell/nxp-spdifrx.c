@@ -60,6 +60,8 @@ struct spdif_register {
 #define	SPDIF_INTC_OFFSET		(0x04)
 #define	SPDIF_DAT_OFFSET		(0x68)	// DMA: 0x68
 
+#define	CTRL_CPUHEADER_POS			16	//	[16]
+#define	CTRL_DECRATE_POS			12	//	[12:15]
 #define	CTRL_DATA_ORDER_POS			11	//	[11]
 #define	CTRL_LOCK_POS				10	//	[10]
 #define	CTRL_CLRFIFO_POS            9	//	[9]
@@ -139,10 +141,13 @@ static void spdif_stop(struct nxp_spdif_snd_param *par, int stream)
 static int nxp_spdif_check_param(struct nxp_spdif_snd_param *par)
 {
 	struct spdif_register *spdif = &par->spdif;
+    struct nxp_pcm_dma_param *dmap = &par->dma;	
 	int ORDER = CTRL_ORDER_LSB_MSB;
 	int VALID_SAMPLE = CTRL_VALID_SAMPLE_8;
 	int DATA_ONLY = 1;
 	int DAM_SWAP = 1;	// CHA_CHB = 0, CHB_CHA = 1
+
+	dmap->real_clock = par->sample_rate;
 
 	spdif->ctrl =   (ORDER << CTRL_DATA_ORDER_POS) |			// [11]
 					(0 << CTRL_LOCK_POS) |						// [10]
@@ -203,6 +208,14 @@ static int nxp_spdif_setup(struct snd_soc_dai *dai)
 	spdif_reset(par);
 
 	printk(KERN_INFO "spdif-rx: PCLK=%ldhz \n", pclk_hz);
+	spdif->ctrl &= ~(0xf << CTRL_DECRATE_POS);
+	if(pclk_hz > 180000000)
+		spdif->ctrl |= 8 << CTRL_DECRATE_POS;
+	else if(pclk_hz > 100000000)
+		spdif->ctrl |= 6 << CTRL_DECRATE_POS;
+	else
+		spdif->ctrl |= 3 << CTRL_DECRATE_POS;
+
 	writel(spdif->ctrl, ctrl);
 	par->status |= SNDDEV_STATUS_SETUP;
 
@@ -270,8 +283,8 @@ static int nxp_spdif_hw_params(struct snd_pcm_substream *substream,
 				 struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
 {
 	struct nxp_spdif_snd_param *par = snd_soc_dai_get_drvdata(dai);
-	unsigned int format = params_format(params);
 	struct spdif_register *spdif = &par->spdif;
+	unsigned int format = params_format(params);
 
 	switch (format) {
 	case SNDRV_PCM_FORMAT_S16_LE:
@@ -330,7 +343,7 @@ static int nxp_spdif_dai_remove(struct snd_soc_dai *dai)
 	return 0;
 }
 
-struct snd_soc_dai_driver spdif_dai_driver = {
+static struct snd_soc_dai_driver spdif_dai_driver = {
 	.capture	= {
 		.channels_min 	= 2,
 		.channels_max 	= 2,
