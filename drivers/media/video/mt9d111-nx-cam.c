@@ -36,7 +36,7 @@
 
 #define MT9D111_CAM_DRIVER_NAME	"MT9D111"
 
-#if 0//defined(CONFIG_I2C_SLSI_PORT1_GPIO_MODE)||defined(CONFIG_I2C_SLSI_PORT2_GPIO_MODE)
+#if 0//defined(CONFIG_I2C_NXP_PORT1_GPIO_MODE)||defined(CONFIG_I2C_NXP_PORT2_GPIO_MODE)
 static int mt9d111_i2c_read_word(const struct i2c_client *client, u8 reg, uint16_t *val);
 #endif
 
@@ -64,7 +64,7 @@ static struct v4l2_rect *_get_pad_crop(struct mt9d111_state *me, struct v4l2_sub
 	}
 }
 
-#if 0//defined(CONFIG_I2C_SLSI_PORT1_GPIO_MODE)||defined(CONFIG_I2C_SLSI_PORT2_GPIO_MODE)
+#if 0//defined(CONFIG_I2C_NXP_PORT1_GPIO_MODE)||defined(CONFIG_I2C_NXP_PORT2_GPIO_MODE)
 
 static int mt9d111_i2c_write_word(const struct i2c_client *client, u8 reg, uint16_t val)
 {

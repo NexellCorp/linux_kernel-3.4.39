@@ -472,7 +472,8 @@ struct nxp_ts_cali_plat_data ts_plat_data = {
 	.touch_points	= 10,
 	.x_resol	   	= CFG_DISP_PRI_RESOL_WIDTH,
 	.y_resol	   	= CFG_DISP_PRI_RESOL_HEIGHT,
-	.rotate			= 90,
+	.rotate			= 0,
+	.pointercal		= {38242, -340, -453008, -184, 39059, -149296, 65536}
 };
 
 static struct i2c_board_info __initdata ft5x0x_i2c_bdi = {
@@ -561,6 +562,26 @@ static struct platform_device spdif_trans_dai = {
 };
 #endif
 
+#if defined(CONFIG_SND_SPDIF_RECEIVER) || defined(CONFIG_SND_SPDIF_RECEIVER_MODULE)
+static struct platform_device spdif_receiver = {
+	.name	= "spdif-dit-receiver",
+	.id		= -1,
+};
+
+struct nxp_snd_dai_plat_data spdif_recev_dai_data = {
+	.sample_rate = 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
+};
+
+static struct platform_device spdif_recev_dai = {
+	.name	= "spdif-receiver",
+	.id		= -1,
+	.dev	= {
+		.platform_data	= &spdif_recev_dai_data,
+	}
+};
+#endif
+
 #if defined(CONFIG_SND_CODEC_NULL)
 static struct platform_device snd_null = {
 	.name = "snd-null",
@@ -616,6 +637,7 @@ static struct i2c_board_info __initdata rt5631_i2c_bdi = {
 struct nxp_snd_dai_plat_data i2s_dai_data = {
 	.i2s_ch	= 1,
 	.sample_rate	= 48000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
 #if 0
 	.hp_jack 		= {
 		.support    	= 1,
@@ -1575,7 +1597,7 @@ static int _dwmci_get_ro(u32 slot_id)
 	return 0;
 }
 
-#ifdef CONFIG_MMC_SLSI_CH0
+#ifdef CONFIG_MMC_NXP_CH0
 static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 {
 	struct dw_mci *host = (struct dw_mci *)data;
@@ -1617,7 +1639,7 @@ static struct dw_mci_board _dwmci0_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_SLSI_CH1
+#ifdef CONFIG_MMC_NXP_CH1
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 					  DW_MCI_QUIRK_HIGHSPEED,
@@ -1632,7 +1654,7 @@ static struct dw_mci_board _dwmci1_data = {
 };
 #endif
 
-#ifdef CONFIG_MMC_SLSI_CH2
+#ifdef CONFIG_MMC_NXP_CH2
 static struct dw_mci_board _dwmci2_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 					  DW_MCI_QUIRK_HIGHSPEED,
@@ -1726,13 +1748,13 @@ void __init nxp_board_devices_register(void)
 #endif
 
 #if defined(CONFIG_MMC_DW)
-	#ifdef CONFIG_MMC_SLSI_CH0
+	#ifdef CONFIG_MMC_NXP_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
-	#ifdef CONFIG_MMC_SLSI_CH1
+	#ifdef CONFIG_MMC_NXP_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
 	#endif
-	#ifdef CONFIG_MMC_SLSI_CH2
+	#ifdef CONFIG_MMC_NXP_CH2
 	nxp_mmc_add_device(2, &_dwmci2_data);
 	#endif
 #endif
@@ -1790,6 +1812,12 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device spdif playback\n");
 	platform_device_register(&spdif_transciever);
 	platform_device_register(&spdif_trans_dai);
+#endif
+
+#if defined(CONFIG_SND_SPDIF_RECEIVER) || defined(CONFIG_SND_SPDIF_RECEIVER_MODULE)
+	printk("plat: add device spdif capture\n");
+	platform_device_register(&spdif_receiver);
+	platform_device_register(&spdif_recev_dai);
 #endif
 
 #if defined(CONFIG_SND_CODEC_NULL)

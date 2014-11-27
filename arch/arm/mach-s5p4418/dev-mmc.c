@@ -140,32 +140,32 @@ static struct dw_mci_board dwmci##_ch##_data = {		\
 	if(src->item && src->item != dst->item)		\
 		dst->item = src->item;
 
-#ifdef CONFIG_MMC_SLSI_CH0
+#ifdef CONFIG_MMC_NXP_CH0
 DW_MCI_PLAT_RES(0);
 DW_MCI_PLAT_DAT(0);
 DW_MCI_PLAT_DEV(0);
 #endif
 
-#ifdef CONFIG_MMC_SLSI_CH1
+#ifdef CONFIG_MMC_NXP_CH1
 DW_MCI_PLAT_RES(1);
 DW_MCI_PLAT_DAT(1);
 DW_MCI_PLAT_DEV(1);
 #endif
 
-#ifdef CONFIG_MMC_SLSI_CH2
+#ifdef CONFIG_MMC_NXP_CH2
 DW_MCI_PLAT_RES(2);
 DW_MCI_PLAT_DAT(2);
 DW_MCI_PLAT_DEV(2);
 #endif
 
 static struct platform_device *dwmci_devices[] = {
-#if defined(CONFIG_MMC_SLSI_CH0)
+#if defined(CONFIG_MMC_NXP_CH0)
 	&dwmci_dev_ch0,
 #endif
-#if defined(CONFIG_MMC_SLSI_CH1)
+#if defined(CONFIG_MMC_NXP_CH1)
 	&dwmci_dev_ch1,
 #endif
-#if defined(CONFIG_MMC_SLSI_CH2)
+#if defined(CONFIG_MMC_NXP_CH2)
 	&dwmci_dev_ch2,
 #endif
 };
