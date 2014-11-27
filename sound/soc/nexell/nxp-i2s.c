@@ -333,7 +333,6 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 	struct i2s_register *i2s = &par->i2s;
 	struct nxp_pcm_dma_param *dmap_play = &par->play;
 	struct nxp_pcm_dma_param *dmap_capt = &par->capt;
-	unsigned int sample_rate = par->sample_rate;
 	unsigned int base = par->base_addr;
 	unsigned long request = 0, rate_hz = 0;
 	int divide = 0, prescale = 0;
@@ -386,8 +385,8 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 		unsigned int rate = rate_hz, div = divide, pclk = en_pclk;
 		RFS = RATIO_256, request = clk_ratio[i].ratio_256;
 		en_pclk = set_sample_rate_clock(par->clk, request, &rate_hz, &divide);
-		if (abs(sample_rate - rate_hz) >
-			abs(sample_rate - rate)) {
+		if (abs(request - rate_hz) >
+			abs(request - rate)) {
 			rate_hz = rate, divide = div, RFS = RATIO_384;
 			en_pclk = pclk;
 		}
