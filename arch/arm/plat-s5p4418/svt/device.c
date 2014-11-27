@@ -1035,7 +1035,7 @@ static struct i2c_board_info __initdata nxe2000_regulators[] = {
 /*------------------------------------------------------------------------------
  * v4l2 platform device
  */
-#if defined(CONFIG_V4L2_SLSI) || defined(CONFIG_V4L2_SLSI_MODULE)
+#if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)
 #include <linux/i2c.h>
 #include <linux/delay.h>
 #include <linux/regulator/consumer.h>
