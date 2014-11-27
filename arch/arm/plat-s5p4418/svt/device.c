@@ -601,6 +601,7 @@ static struct platform_device snd_null_dai = {
 		.platform_data = &snd_null_dai_data,
 	}
 };
+
 //-------------------------------------
 static struct platform_device snd_null_2 = {
 	.name = "snd-null",
@@ -615,7 +616,7 @@ struct nxp_snd_dai_plat_data snd_null_dai_data_2 = {
 
 static struct platform_device snd_null_dai_2 = {
 	.name = "snd-null-card",
-	.id = 1,
+	.id = 2,
 	.dev = {
 		.platform_data = &snd_null_dai_data_2 ,
 	}
