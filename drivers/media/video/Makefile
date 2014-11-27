@@ -209,7 +209,7 @@ obj-$(CONFIG_VIDEO_SAMSUNG_S5P_G2D)	+= s5p-g2d/
 
 obj-$(CONFIG_VIDEO_EXYNOS)		+= exynos/
 
-obj-$(CONFIG_VL42_NXP)			+= nexell/
+obj-$(CONFIG_V4L2_NXP)			+= nexell/
 
 obj-$(CONFIG_BLACKFIN)                  += blackfin/
 

@@ -1080,7 +1080,7 @@ static struct platform_device mpegts_plat_device = {
 /*------------------------------------------------------------------------------
  * v4l2 platform device
  */
-#if defined(CONFIG_VL42_NXP) || defined(CONFIG_VL42_NXP_MODULE)
+#if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)
 #include <linux/i2c.h>
 #include <linux/delay.h>
 #include <mach/nxp-v4l2-platformdata.h>
@@ -1486,7 +1486,7 @@ static struct platform_device nxp_v4l2_dev = {
         .platform_data = &v4l2_plat_data,
     },
 };
-#endif /* CONFIG_VL42_NXP || CONFIG_VL42_NXP_MODULE */
+#endif /* CONFIG_V4L2_NXP || CONFIG_V4L2_NXP_MODULE */
 
 
 #if defined (CONFIG_INV_MPU_IIO) || defined (CONFIG_INV_MPU_IIO_MODULE)
@@ -1920,7 +1920,7 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&rt5631_dai);
 #endif
 
-#if defined(CONFIG_VL42_NXP) || defined(CONFIG_VL42_NXP_MODULE)
+#if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)
     printk("plat: add device nxp-v4l2\n");
     platform_device_register(&nxp_v4l2_dev);
 #endif
