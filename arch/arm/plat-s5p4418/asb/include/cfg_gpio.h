@@ -133,8 +133,8 @@
 #define PAD_GPIOC24     (PAD_MODE_ALT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_LATADDR  ,1: GPIO                ,2: SPDIFIN             ,3: VIP0_VD2[7]         =	AP_SPDIFRX
 #define PAD_GPIOC25     (PAD_MODE_ALT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_nSWAIT   ,1: GPIO                ,2: SPDIF_DATA          ,3:_                    =	AP_SPDIFTX
 #define PAD_GPIOC26     (PAD_MODE_OUT | PAD_FUNC_ALT1 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_RDnWR    ,1: GPIO                ,2: PDM_DATA0           ,3:_                    =	AP_GPC0 -> AP_GPC26 : GPIO LOOPBACK
-#define PAD_GPIOC27     (PAD_MODE_OUT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_nSDQM1   ,1: GPIO                ,2: PDM_DATA1           ,3:_                    =	AP_NAND_WP
-#define PAD_GPIOC28     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: MCUS_nSCS[1]        ,2: UART1_TRI           ,3:_                    =	AP_GPC28_GMAC_RST
+#define PAD_GPIOC27     (PAD_MODE_IN  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_nSDQM1   ,1: GPIO                ,2: PDM_DATA1           ,3:_                    =	AP_NAND_WP
+#define PAD_GPIOC28     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: MCUS_nSCS[1]        ,2: UART1_TRI           ,3:_                    =	AP_GPC28_GMAC_RST
 #define PAD_GPIOC29     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SSP0_CLKIO          ,2:_                    ,3:_                    =	AP_SPICLK0
 #define PAD_GPIOC30     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SSP0_FSS            ,2:_                    ,3:_                    =	AP_SPIFRM0
 #define PAD_GPIOC31     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SSP0_TXD            ,2:_                    ,3:_                    =	AP_SPITXD0
@@ -210,7 +210,7 @@
 #define PAD_GPIOE20     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: GPIO          1: GMAC0_GMII_MDC       ,2:_                    ,3:_                    =	AP_GMAC_MDC
 #define PAD_GPIOE21     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: GPIO          1: GMAC0_GMII_MDI       ,2:_                    ,3:_                    =	AP_GMAC_MDIO
 #define PAD_GPIOE22     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_RXER       ,2:_                    ,3:_                    =	AP_GPE12 -> AP_GPE22 : GPIO LOOPBACK
-#define PAD_GPIOE23     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_CRS        ,2:_                    ,3:_                    =	AP_GMAC_CRS
+#define PAD_GPIOE23     (PAD_MODE_IN  | PAD_FUNC_ALT1 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_CRS        ,2:_                    ,3:_                    =	AP_GMAC_CRS
 #define PAD_GPIOE24     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_2)     // 0: GPIO          1: GMAC0_GTX_CLK        ,2:_                    ,3:_                    =	AP_GMAC_TXCLK
 #define PAD_GPIOE25     (PAD_MODE_ALT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: nTRST         1: GPIO                 ,2:_                    ,3:_                    =	AP_JTAG_NTRST
 #define PAD_GPIOE26     (PAD_MODE_ALT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: TMS           1: GPIO                 ,2:_                    ,3:_                    =	AP_JTAG_TMS
