@@ -77,8 +77,6 @@ static ssize_t ppm_duty(struct kobject *kobj, struct kobj_attribute *attr, char 
 		}
 	}
 
-	printk("%d %d\n", dur0, dur1);
-
 	if((dur0 == NULL) && (dur1 == NULL)){
 		duty = 0;	
 		goto err;
