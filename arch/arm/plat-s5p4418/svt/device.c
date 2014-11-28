@@ -1025,6 +1025,10 @@ static struct i2c_board_info __initdata nxe2000_regulators[] = {
 static int front_camera_set_clock(ulong clk_rate)
 {
     PM_DBGOUT("%s: %d\n", __func__, (int)clk_rate);
+
+  	printk(KERN_INFO "%s: %d\n", __func__, (int)clk_rate);
+
+
     if (clk_rate > 0)
         nxp_soc_pwm_set_frequency(1, clk_rate, 50);
     else
@@ -1036,6 +1040,8 @@ static int front_camera_set_clock(ulong clk_rate)
 static int back_camera_set_clock(ulong clk_rate)
 {
 		PM_DBGOUT("%s: %d\n", __func__, (int)clk_rate);
+
+  	printk(KERN_INFO "%s: %d\n", __func__, (int)clk_rate);
     if (clk_rate > 0)
         nxp_soc_pwm_set_frequency(3, clk_rate, 50);
     else
@@ -1052,6 +1058,8 @@ static void back_vin_setup_io(int module, bool force)
 static bool is_camera_port_configured = false;
 static void front_camera_vin_setup_io(int module, bool force)
 {
+  	printk(KERN_INFO "%s: module -> %d, force -> %d\n", __func__, module, ((force == true) ? 1 : 0));
+
     if (!force && is_camera_port_configured)
         return;
     else {
@@ -1122,6 +1130,8 @@ static void camera_power_control(int enable)
     struct regulator *cam_io_28V = NULL;
     struct regulator *cam_core_18V = NULL;
 
+  	printk(KERN_INFO "%s: enable -> %d\n", __func__, enable);
+
     if (enable && camera_power_enabled)
         return;
     if (!enable && !camera_power_enabled)
@@ -1168,6 +1178,9 @@ static int back_camera_power_enable(bool on)
 #endif		
     unsigned int reset_io = CFG_IO_CAMERA_BACK_RESET;
     PM_DBGOUT("%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
+
+  	printk(KERN_INFO "%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
+
     if (on) {
         front_camera_power_enable(0);
         if (!is_back_camera_enabled) {
@@ -1215,6 +1228,8 @@ static int back_camera_power_enable(bool on)
 
 static bool back_camera_power_state_changed(void)
 {
+  	printk(KERN_INFO "%s\n", __func__);
+
     return is_back_camera_power_state_changed;
 }
 
@@ -1250,6 +1265,9 @@ static int front_camera_power_enable(bool on)
 #endif
     unsigned int reset_io = CFG_IO_CAMERA_FRONT_RESET;
     PM_DBGOUT("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
+
+   printk(KERN_INFO "%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
+
     if (on) {
         back_camera_power_enable(0);
         if (!is_front_camera_enabled) {
@@ -1263,7 +1281,7 @@ static int front_camera_power_enable(bool on)
             nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(io));
 #endif						
             mdelay(1);
-            nxp_soc_gpio_set_out_value(reset_io,10);
+            nxp_soc_gpio_set_out_value(reset_io, 1);
 
             is_front_camera_enabled = true;
             is_front_camera_power_state_changed = true;
@@ -1287,6 +1305,8 @@ static int front_camera_power_enable(bool on)
 
 static bool front_camera_power_state_changed(void)
 {
+  	printk(KERN_INFO "%s\n", __func__);
+
     return is_front_camera_power_state_changed;
 }
 
@@ -1311,7 +1331,7 @@ static struct nxp_v4l2_i2c_board_info sensor[] = {
 static struct nxp_capture_platformdata capture_plat_data[] = {
     {
         /* back_camera 656 interface */
-        .module = 0,
+        .module = 1,
         .sensor = &sensor[0],
 				.type = NXP_CAPTURE_INF_CSI,
 				.parallel = {
@@ -1343,7 +1363,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
     },
     {
         /* front_camera 601 interface */
-        .module = 1,
+        .module = 0,
         .sensor = &sensor[1],
         .type = NXP_CAPTURE_INF_PARALLEL,
 				.parallel = {
