@@ -572,9 +572,9 @@ struct nxp_capture *create_nxp_capture(int index,
         }
 
     }
-    _set_sensor_mipi_info(me->module, csi_enabled);
+    _set_sensor_mipi_info(index, csi_enabled);
 #else
-    _set_sensor_mipi_info(me->module, 0);
+    _set_sensor_mipi_info(index, 0);
 #endif
 
 #ifdef CONFIG_NXP_CAPTURE_DECIMATOR
