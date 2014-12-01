@@ -269,7 +269,7 @@ static void suspend_cores(suspend_state_t stat)
 
 	num = 7;
 	for (; num > cpu; cpu++) {
-		NX_CLKPWR_SetCPUPowerOff(cpu);
+		NX_CLKPWR_SetCPUPowerDown(cpu);
 		while(NX_CLKPWR_GetCPUPowerOnStatus(cpu));
 
 		PM_DBGOUT("Power off cpu.%d\n", cpu);

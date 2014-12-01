@@ -249,7 +249,7 @@ void (*nxp_board_reset)(char str, const char *cmd) = NULL;
 void nxp_cpu_core_shutdown(int core)
 {
 	printk("cpu.%d shutdown ...\n", core);
-	NX_CLKPWR_SetCPUPowerOff(core);
+	NX_CLKPWR_SetCPUPowerDown(core);
 }
 
 void nxp_cpu_shutdown(void)
