@@ -250,7 +250,7 @@ static int rt5631_probe(struct platform_device *pdev)
 		if (cpu_dai)
 			i2s_dai = cpu_dai->driver;
 	}
-	pr_debug("rt5631-dai: register card %s -> %s\n",
+	printk("rt5631-dai: register card %s -> %s\n",
 		card->dai_link->codec_dai_name, card->dai_link->cpu_dai_name);
 
 	if (NULL == i2s_dai)

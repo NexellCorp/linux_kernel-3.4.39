@@ -48,7 +48,8 @@
 */
 
 //#define DUMP_DMA_ENABLE
-#define	DUMP_DMA_PATH			"/data/pcm/pcm_dma.law"
+#define	DUMP_DMA_PATH_P			"/tmp/pcm_dma_p.raw"
+#define	DUMP_DMA_PATH_C			"/tmp/pcm_dma_c.raw"
 #define	DUMP_DMA_TIME			20	/* sec */
 #define	DUMP_SAMPLE_COMPLETED
 //#define	DUMP_DMA_CONTINUOUS
@@ -458,7 +459,12 @@ static int nxp_pcm_hw_params(struct snd_pcm_substream *substream,
 		prtd->period_time_us = 1000;
 
 	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
-	nxp_pcm_file_mem_allocate(DUMP_DMA_PATH, substream, params);
+
+	if(substream->stream == 0)
+		nxp_pcm_file_mem_allocate(DUMP_DMA_PATH_P, substream, params);
+	else
+		nxp_pcm_file_mem_allocate(DUMP_DMA_PATH_C, substream, params);
+
 
 	/*
 	 * debug msg
@@ -474,7 +480,11 @@ static int nxp_pcm_hw_params(struct snd_pcm_substream *substream,
 
 static int nxp_pcm_hw_free(struct snd_pcm_substream *substream)
 {
-	nxp_pcm_file_mem_free(DUMP_DMA_PATH, substream);
+	if(substream->stream == 0)
+		nxp_pcm_file_mem_free(DUMP_DMA_PATH_P, substream);
+	else
+		nxp_pcm_file_mem_free(DUMP_DMA_PATH_C, substream);
+
 	snd_pcm_set_runtime_buffer(substream, NULL);
 	return 0;
 }
