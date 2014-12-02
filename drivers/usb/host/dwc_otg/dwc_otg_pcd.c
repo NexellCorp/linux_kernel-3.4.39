@@ -1635,7 +1635,7 @@ int dwc_otg_pcd_ep_disable(dwc_otg_pcd_t * pcd, void *ep_handle)
 		return -DWC_E_INVALID;
 	}
 
-	DWC_SPINLOCK_IRQSAVE(pcd->lock, &flags);
+//	DWC_SPINLOCK_IRQSAVE(pcd->lock, &flags);
 
 	dwc_otg_request_nuke(ep);
 
@@ -1702,7 +1702,7 @@ int dwc_otg_pcd_ep_disable(dwc_otg_pcd_t * pcd, void *ep_handle)
 			goto out_unlocked;
 		}
 	}
-	DWC_SPINUNLOCK_IRQRESTORE(pcd->lock, flags);
+//	DWC_SPINUNLOCK_IRQRESTORE(pcd->lock, flags);
 
 out_unlocked:
 	DWC_DEBUGPL(DBG_PCD, "%d %s disabled\n", ep->dwc_ep.num,
