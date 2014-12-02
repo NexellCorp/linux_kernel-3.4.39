@@ -51,8 +51,6 @@ struct nxp_mlc_vid_attr {
     struct v4l2_mbus_framefmt format;
     /* position */
     struct v4l2_rect crop;
-    /* source crop */
-    struct v4l2_rect source_crop;
     /* priority : 0 ~ 3*/
     u32 priority;
     /* colorkey : R8G8B8, disable < 0 */
