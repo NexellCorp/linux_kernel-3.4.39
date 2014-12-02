@@ -253,6 +253,15 @@ static void _hw_configure_video(struct nxp_mlc *me)
                 attr->crop.top + attr->crop.height, /* bottom */
                 false); /* waitsync */
 
+    if (attr->source_crop.width > 0 && attr->source_crop.height > 0)
+        nxp_soc_disp_video_set_crop(me->id, true,
+                attr->source_crop.left,
+                attr->source_crop.top,
+                attr->source_crop.width,
+                attr->source_crop.height, true);
+    else
+        nxp_soc_disp_video_set_crop(me->id, false, 0, 0, 0, 0, true);
+
     nxp_soc_disp_video_set_priority(id, attr->priority);
 
     /* layer enable */
@@ -389,8 +398,9 @@ static void _update_vid_buffer(struct nxp_mlc *me)
     spin_unlock_irqrestore(&me->vlock, flags);
 
     if (!me->vid_enabled) {
-        _hw_configure_video(me);
+        pr_debug("%s: register irq callback\n", __func__);
         me->callback = nxp_soc_disp_register_irq_callback(me->id, _irq_callback, me);
+        _hw_configure_video(me);
         me->vid_enabled = true;
     }
 
@@ -586,7 +596,7 @@ static struct v4l2_rect *
 _get_pad_crop(struct nxp_mlc *me, struct v4l2_subdev_fh *fh,
         unsigned int pad, enum v4l2_subdev_format_whence which)
 {
-    if (pad >= NXP_MLC_PAD_SOURCE)
+    if (pad > NXP_MLC_PAD_SOURCE)
         return NULL;
 
     switch (which) {
@@ -595,8 +605,10 @@ _get_pad_crop(struct nxp_mlc *me, struct v4l2_subdev_fh *fh,
     case V4L2_SUBDEV_FORMAT_ACTIVE:
         if (pad == NXP_MLC_PAD_SINK_RGB)
             return &me->rgb_attr.crop;
-        else
+        else if (pad == NXP_MLC_PAD_SINK_VIDEO)
             return &me->vid_attr.crop;
+        else
+            return &me->vid_attr.source_crop;
     default:
         return NULL;
     }
@@ -656,11 +668,33 @@ static int nxp_mlc_s_power(struct v4l2_subdev *sd, int on)
             return v4l2_subdev_call(remote_sink, core, s_power, 1);
     } else {
         me->user_count--;
-        if (me->user_count == 0 && remote_sink)
-            return v4l2_subdev_call(remote_sink, core, s_power, 0);
+        if (me->user_count == 0) {
+             if (remote_sink)
+                 return v4l2_subdev_call(remote_sink, core, s_power, 0);
+             if (me->vid_streaming) {
+                 unsigned long flags;
+                 me->vid_streaming = false;
+                 _hw_video_enable(me, false);
+                 pr_debug("%s: unregister irq callback\n", __func__);
+                 nxp_soc_disp_unregister_irq_callback(me->id, me->callback);
+                 me->callback = NULL;
+                 me->vid_enabled = false;
+                 spin_lock_irqsave(&me->vlock, flags);
+                 if (me->old_vid_buf) {
+                     pr_debug("%s: video done buf late for old buf!", __func__);
+                     _done_buf(me->old_vid_buf, true);
+                     me->old_vid_buf = NULL;
+                 }
+                 if (me->cur_vid_buf) {
+                     pr_debug("%s: video done buf late for cur buf!", __func__);
+                     _done_buf(me->cur_vid_buf, true);
+                     me->cur_vid_buf = NULL;
+                 }
+                 spin_unlock_irqrestore(&me->vlock, flags);
+                 _clear_all_vid_buf(me);
+             }
+        }
     }
-
-    me->vid_enabled = false;
 
     return 0;
 }
@@ -926,6 +960,7 @@ static int nxp_mlc_s_stream(struct v4l2_subdev *sd, int enable)
             unsigned long flags;
             me->vid_streaming = false;
             _hw_video_enable(me, false);
+            pr_debug("%s: unregister irq callback\n", __func__);
             nxp_soc_disp_unregister_irq_callback(me->id, me->callback);
             me->callback = NULL;
             me->vid_enabled = false;
@@ -1065,6 +1100,14 @@ static int nxp_mlc_set_crop(struct v4l2_subdev *sd,
                     _crop->left + _crop->width, /* right */
                     _crop->top + _crop->height, /* bottom */
                     true); /* waitsync */
+    } else if (crop->pad == NXP_MLC_PAD_SOURCE && me->vid_enabled) {
+        if (_crop->width > 0 && _crop->height > 0) {
+            printk("%s: source crop(%d:%d-%d:%d)\n", __func__, _crop->left, _crop->top, _crop->width, _crop->height);
+            nxp_soc_disp_video_set_crop(me->id, true, _crop->left, _crop->top, _crop->width, _crop->height, true);
+        } else {
+            printk("%s: source crop off\n", __func__);
+            nxp_soc_disp_video_set_crop(me->id, false, 0, 0, 0, 0, true);
+        }
     }
     return 0;
 }
