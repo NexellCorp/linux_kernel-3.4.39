@@ -149,6 +149,7 @@ struct pl08x_txd {
 
 	/* for cyclic, by jhkim */
 	bool cyclic;
+	int  period_len; /* for interrupt period */
 };
 
 /**

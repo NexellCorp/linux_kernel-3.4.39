@@ -826,6 +826,7 @@ static int pl08x_fill_llis_for_desc_cyclic(struct pl08x_driver_data *pl08x,
 	size_t max_bytes_per_lli, total_bytes;
 	struct pl08x_lli *llis_va;
 	struct pl08x_sg *dsg;
+	int    period_len = txd->period_len;
 
 	txd->llis_va = dma_pool_alloc(pl08x->pool, GFP_NOWAIT, &txd->llis_bus);
 	if (!txd->llis_va) {
@@ -856,7 +857,8 @@ static int pl08x_fill_llis_for_desc_cyclic(struct pl08x_driver_data *pl08x,
 		 * The LLI elements shall also fire an interrupt.
 		 * cycle irq callback (by jhkim)
 		 */
-		cctl = txd->cctl | PL080_CONTROL_TC_IRQ_EN;
+		cctl = txd->cctl & ~PL080_CONTROL_TC_IRQ_EN;
+		period_len = txd->period_len;
 
 		bd.srcbus.addr = dsg->src_addr;
 		bd.dstbus.addr = dsg->dst_addr;
@@ -997,6 +999,12 @@ static int pl08x_fill_llis_for_desc_cyclic(struct pl08x_driver_data *pl08x,
 
 				cctl = pl08x_cctl_bits(cctl, bd.srcbus.buswidth,
 					bd.dstbus.buswidth, tsize);
+
+				/* set interrupt when period_len */
+				period_len -= lli_len;
+				if (period_len == 0)
+					cctl |= PL080_CONTROL_TC_IRQ_EN;
+
 				pl08x_fill_lli_for_desc(&bd, num_llis++,
 						lli_len, cctl);
 				total_bytes += lli_len;
@@ -1786,6 +1794,7 @@ static struct dma_async_tx_descriptor *pl08x_prep_dma_cyclic(
 	 * (by jhkim)
 	 */
 	txd->cyclic = true;
+	txd->period_len = period_len;
 
 	for (i = 0; periods > i; i++) {
 		dsg = kzalloc(sizeof(struct pl08x_sg), GFP_NOWAIT);
@@ -2095,7 +2104,11 @@ static irqreturn_t pl08x_irq(int irq, void *dev)
 			}
 
 			/* Schedule tasklet on this channel */
+#if !defined(CONFIG_AMBA_PL08X_USE_ISR)
 			tasklet_schedule(&plchan->tasklet);
+#else
+			pl08x_tasklet((unsigned long)plchan);
+#endif
 			mask |= (1 << i);
 		}
 	}
