@@ -292,8 +292,8 @@ static inline void clk_gen_rate(void *base, int level, int src, int div)
 	if (CONFIG_NXP_CPUFREQ_PLLDEV == src)
 		printk("*** %s: Fail pll.%d for CPU  DFS ***\n", __func__, src);
 	#endif
-	#ifdef CONFIG_S5P6818_BCLKFREQ_PLLDEV
-	if (CONFIG_S5P6818_BCLKFREQ_PLLDEV == src)
+	#ifdef CONFIG_NXP_BCLKFREQ_PLLDEV
+	if (CONFIG_NXP_BCLKFREQ_PLLDEV == src)
 		printk("*** %s: Fail pll.%d for BCLK DFS ***\n", __func__, src);
 	#endif
 
@@ -1077,7 +1077,7 @@ void __init nxp_cpu_clock_init(void)
 		}
 
 		/* prevent uart clock disable for low level debug message */
-		#ifndef CONFIG_DEBUG_NX_UART
+		#ifndef CONFIG_DEBUG_NXP_UART
 		if (peri->dev_name) {
 			#ifdef CONFIG_BACKLIGHT_PWM
 			if (!strcmp(peri->dev_name,DEV_NAME_PWM))
