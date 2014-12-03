@@ -50,9 +50,6 @@ static struct attribute_group attr_group = {
     .attrs = g,
 };
 
-
-
-
 static ssize_t ppm_duty(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	int i = 0;
@@ -77,7 +74,7 @@ static ssize_t ppm_duty(struct kobject *kobj, struct kobj_attribute *attr, char 
 		}
 	}
 
-	if((dur0 == NULL) && (dur1 == NULL)){
+	if((dur0 == 0) && (dur1 == 0)){
 		duty = 0;	
 		goto err;
 	}
@@ -158,7 +155,6 @@ static irqreturn_t nxp_ir_recv_irq(int irq, void *dev_id)
 	if (nxp_dev->data.count > RAW_BUFFER_SIZE)
 		nxp_dev->data.count=0;
 
-err_get_value:
 	return IRQ_HANDLED;
 }
 
@@ -168,8 +164,8 @@ static int __devinit nxp_ir_recv_probe(struct platform_device *pdev)
 	struct rc_dev *rcdev;
 	const struct nxp_ppm_platform_data *pdata =
 					pdev->dev.platform_data;
-	int rc, clk;
-	char id[32] = {0};
+	struct clk *clk;
+	int rc;
 #ifdef CONFIG_PPM_SYSFS
 	struct kobject * kobj;
 #endif
@@ -236,8 +232,7 @@ static int __devinit nxp_ir_recv_probe(struct platform_device *pdev)
 	kobj = kobject_create_and_add("ppm",&platform_bus.kobj);
     if (! kobj)
 		return -ENOMEM;
-
-	sysfs_create_group(kobj, &attr_group);
+	rc = sysfs_create_group(kobj, &attr_group);
 #endif
 
 	return 0;
@@ -249,7 +244,6 @@ exit_create_singlethread:
 	platform_set_drvdata(pdev, NULL);
 	rc_unregister_device(rcdev);
 err_register_rc_device:
-err_nxp_request:
 	rc_free_device(rcdev);
 	rcdev = NULL;
 err_allocate_device:
@@ -274,9 +268,6 @@ static int __devexit nxp_ir_recv_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int nxp_ir_recv_suspend(struct device *dev)
 {
-	struct platform_device *pdev = to_platform_device(dev);
-	//struct nxp_rc_dev *nxp_dev = platform_get_drvdata(pdev);
-
 	disable_irq(NX_PPM_GetInterruptNumber(0));
 
 	return 0;
@@ -284,11 +275,7 @@ static int nxp_ir_recv_suspend(struct device *dev)
 
 static int nxp_ir_recv_resume(struct device *dev)
 {
-	struct platform_device *pdev = to_platform_device(dev);
-	struct nxp_rc_dev *nxp_dev = platform_get_drvdata(pdev);
-
 	enable_irq(NX_PPM_GetInterruptNumber(0));
-
 	return 0;
 }
 
