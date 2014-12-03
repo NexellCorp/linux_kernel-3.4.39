@@ -97,8 +97,11 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
+#if 0
 	{ 1600000, 1300000, },
 	{ 1500000, 1300000, },
+#endif
+
 	{ 1400000, 1200000, },
 	{ 1300000, 1200000, },
 	{ 1200000, 1100000, },
@@ -558,26 +561,6 @@ static struct platform_device spdif_trans_dai = {
 	.id		= -1,
 	.dev	= {
 		.platform_data	= &spdif_trans_dai_data,
-	}
-};
-#endif
-
-#if defined(CONFIG_SND_SPDIF_RECEIVER) || defined(CONFIG_SND_SPDIF_RECEIVER_MODULE)
-static struct platform_device spdif_receiver = {
-	.name	= "spdif-dit-receiver",
-	.id		= -1,
-};
-
-struct nxp_snd_dai_plat_data spdif_recev_dai_data = {
-	.sample_rate = 48000,
-	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
-};
-
-static struct platform_device spdif_recev_dai = {
-	.name	= "spdif-receiver",
-	.id		= -1,
-	.dev	= {
-		.platform_data	= &spdif_recev_dai_data,
 	}
 };
 #endif
@@ -1217,8 +1200,8 @@ static int back_camera_power_enable(bool on)
             /* RST signal */
             nxp_soc_gpio_set_out_value(reset_io, 0);
             nxp_soc_gpio_set_io_dir(reset_io, 1);
-#if 0						
-            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(io));
+#if 1						
+            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
 #endif						
             mdelay(1);
 
@@ -1226,6 +1209,7 @@ static int back_camera_power_enable(bool on)
             mdelay(1);
 
             is_back_camera_enabled = true;
+          	//is_back_camera_enabled = false;
             is_back_camera_power_state_changed = true;
         } else {
             is_back_camera_power_state_changed = false;
@@ -1280,10 +1264,9 @@ struct nxp_mipi_csi_platformdata s5k4ecgx_plat_data = {
 
 static int front_camera_power_enable(bool on)
 {
-#if 0
   	unsigned int io = CFG_IO_CAMERA_FRONT_POWER_DOWN;
-#endif
     unsigned int reset_io = CFG_IO_CAMERA_FRONT_RESET;
+
     PM_DBGOUT("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
 
    printk(KERN_INFO "%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
@@ -1295,15 +1278,22 @@ static int front_camera_power_enable(bool on)
 						mdelay(100);
 
             /* First RST signal to low */
+#if 1
             nxp_soc_gpio_set_out_value(reset_io, 0);
             nxp_soc_gpio_set_io_dir(reset_io, 1);
-#if 0						
-            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(io));
-#endif						
+            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
             mdelay(1);
             nxp_soc_gpio_set_out_value(reset_io, 1);
+#else
+            nxp_soc_gpio_set_out_value(io, 0);
+            nxp_soc_gpio_set_io_dir(io, 1);
+            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
+            mdelay(1);
+            nxp_soc_gpio_set_out_value(io, 1);
+#endif
 
             is_front_camera_enabled = true;
+          	//is_front_camera_enabled = false;
             is_front_camera_power_state_changed = true;
         } else {
             is_front_camera_power_state_changed = false;
@@ -1347,7 +1337,7 @@ static struct nxp_v4l2_i2c_board_info sensor[] = {
     },
 };
 
-
+#if 0
 static struct nxp_capture_platformdata capture_plat_data[] = {
     {
         /* back_camera 656 interface */
@@ -1415,6 +1405,78 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
     },
     { 0, NULL, 0, },
 };
+#else
+static struct nxp_capture_platformdata capture_plat_data[] = {
+	{
+        /* front_camera 601 interface */
+        .module = 0,
+        .sensor = &sensor[1],
+        .type = NXP_CAPTURE_INF_PARALLEL,
+				.parallel = {
+            .is_mipi        = false,
+            .external_sync  = false,
+            .h_active       = 640,
+            .h_frontporch   = 7,
+            .h_syncwidth    = 1,
+            /* .h_backporch    = 0, */
+            .h_backporch    = 10,
+            .v_active       = 480,
+            .v_frontporch   = 0,
+            .v_syncwidth    = 1,
+            .v_backporch    = 0,
+            .clock_invert   = true,
+            .port           = 1,
+            .data_order     = NXP_VIN_CBY0CRY1,
+            .interlace      = false,
+            .clk_rate       = 24000000,
+            .late_power_down = false,
+            .power_enable   = front_camera_power_enable,
+            .set_clock      = front_camera_set_clock,
+            .setup_io       = front_camera_vin_setup_io,
+        },
+				.deci = {
+            .start_delay_ms = 0,
+            .stop_delay_ms  = 0,
+        },
+	},
+  {
+        /* back_camera 656 interface */
+        .module = 1,
+        .sensor = &sensor[0],
+				.type = NXP_CAPTURE_INF_CSI,
+				.parallel = {
+            .is_mipi        = true,
+            .external_sync  = true,
+            .h_active       = 640, 
+            .h_frontporch   = 100, 
+            .h_syncwidth    = 10,
+            .h_backporch    = 100, 
+            .v_active       = 480, 
+            .v_frontporch   = 1, 
+            .v_syncwidth    = 1, 
+            .v_backporch    = 1, 
+            .clock_invert   = false,
+            .port           = NX_VIP_INPUTPORT_B,
+            .data_order     = NXP_VIN_CBY0CRY1,
+            .interlace      = false,
+            .clk_rate       = 27000000,
+            .late_power_down = false,
+            .power_enable   = back_camera_power_enable,
+            .set_clock      = back_camera_set_clock,
+            .setup_io       = back_vin_setup_io,
+        },
+        .deci = {
+            .start_delay_ms = 0, 
+            .stop_delay_ms  = 0, 
+        },
+        .csi = &s5k4ecgx_plat_data,
+	},
+
+	{ 0, NULL, 0, },
+};
+
+#endif
+
 /* out platformdata */
 static struct i2c_board_info hdmi_edid_i2c_boardinfo = {
     I2C_BOARD_INFO("nxp_edid", 0xA0>>1),
@@ -1487,6 +1549,7 @@ static struct platform_device nxp_v4l2_dev = {
 #include <linux/mpu.h>
 #include <linux/gpio.h>
 #include <linux/akm8975.h>
+
 
 #define MPUIRQ_GPIO         (PAD_GPIO_A + 20)
 #define MPU_I2C_BUS 		(2)
@@ -1805,12 +1868,6 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device spdif playback\n");
 	platform_device_register(&spdif_transciever);
 	platform_device_register(&spdif_trans_dai);
-#endif
-
-#if defined(CONFIG_SND_SPDIF_RECEIVER) || defined(CONFIG_SND_SPDIF_RECEIVER_MODULE)
-	printk("plat: add device spdif capture\n");
-	platform_device_register(&spdif_receiver);
-	platform_device_register(&spdif_recev_dai);
 #endif
 
 #if defined(CONFIG_SND_CODEC_NULL)

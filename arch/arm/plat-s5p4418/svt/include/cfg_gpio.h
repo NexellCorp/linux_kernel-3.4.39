@@ -121,7 +121,7 @@
 #define PAD_GPIOC10     (PAD_MODE_ALT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_ADDR[10] ,1: GPIO                ,2: SSP2_FSS            ,3: MCUS_nNCS[2]        =	SA10	, SPI2_FRM
 #define PAD_GPIOC11     (PAD_MODE_ALT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_ADDR[11] ,1: GPIO                ,2: SSP2_RXD            ,3: USB2.0OTG0_DRVBUS   =	SA11	, SPI2_RX			, OTG_DVBUS
 #define PAD_GPIOC12     (PAD_MODE_ALT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_ADDR[12] ,1: GPIO                ,2: SSP2_TXD            ,3: SDMMC2_nRST         =	SA12	, SPI2_TX
-#define PAD_GPIOC13     (PAD_MODE_OUT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_ADDR[13] ,1: GPIO                ,2: PWM1_OUT            ,3: SDMMC2_CARD_nint    =	SA13	, GPIOC13_PWM1
+#define PAD_GPIOC13     (PAD_MODE_OUT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: MCUS_ADDR[13] ,1: GPIO                ,2: PWM1_OUT            ,3: SDMMC2_CARD_nint    =	SA13	, GPIOC13_PWM1
 #define PAD_GPIOC14     (PAD_MODE_IN  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: MCUS_ADDR[14] ,1: GPIO                ,2: PWM2_OUT            ,3: VIP0_ExtCLK2        =	SA14	, GPIOC14_MTV7		, GPIOC14_PWM2	, VID2_PCLK
 #define PAD_GPIOC15     (PAD_MODE_IN  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: MCUS_ADDR[15] ,1: GPIO                ,2: MPEGTSI0_TSCLK      ,3: VIP0_HSYNC2         =	SA15	, SD2_DS			, TSI0_CLK		, VID2_HSYNC
 #define PAD_GPIOC16     (PAD_MODE_IN  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: MCUS_ADDR[16] ,1: GPIO                ,2: MPEGTSI0_TSYNC0     ,3: VIP0_VSYNC2         =	SA16	, AC97IRQ			, TSI0_SYNC		, VID2_VSYNC
@@ -255,7 +255,7 @@
 /*------------------------------------------------------------------------------
  *  CAMERA Front Power Down
  */
-#define CFG_IO_CAMERA_FRONT_POWER_DOWN     ((PAD_GPIO_D + 7) | PAD_FUNC_ALT0)    /* GPIO */
+#define CFG_IO_CAMERA_FRONT_POWER_DOWN     ((PAD_GPIO_B + 24) | PAD_FUNC_ALT1)    /* GPIO */
 
 /*------------------------------------------------------------------------------
  *  CAMERA Front Reset
