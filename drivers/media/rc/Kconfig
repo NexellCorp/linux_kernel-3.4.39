@@ -283,4 +283,9 @@ config PPM_NXP
 
 	   To compile this driver as a module, choose M here.
 
+config PPM_SYSFS
+	bool "/sys/devices/platform/ppm/duty (sysfs interface)"
+	depends on PPM_NXP
+	default n
+
 endif #RC_CORE

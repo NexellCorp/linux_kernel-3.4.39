@@ -304,7 +304,7 @@ static struct plat_stmmacenet_data nxpmac_plat_data = {
     .clk_csr = 0xe,
     .speed = SPEED_100,
 #else
-    .phy_addr = 3,// 7 for 8211 3 for 8201
+    .phy_addr = 7,
     .clk_csr = 0x4, // PCLK 150~250 Mhz
     .speed = SPEED_1000,	// SPEED_1000
 #endif
@@ -561,6 +561,26 @@ static struct platform_device spdif_trans_dai = {
 };
 #endif
 
+#if defined(CONFIG_SND_SPDIF_RECEIVER) || defined(CONFIG_SND_SPDIF_RECEIVER_MODULE)
+static struct platform_device spdif_receiver = {
+	.name	= "spdif-dit-receiver",
+	.id		= -1,
+};
+
+struct nxp_snd_dai_plat_data spdif_recev_dai_data = {
+	.sample_rate = 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
+};
+
+static struct platform_device spdif_recev_dai = {
+	.name	= "spdif-receiver",
+	.id		= -1,
+	.dev	= {
+		.platform_data	= &spdif_recev_dai_data,
+	}
+};
+#endif
+
 #if defined(CONFIG_SND_CODEC_NULL)
 static struct platform_device snd_null = {
 	.name = "snd-null",
@@ -813,7 +833,7 @@ NXE2000_PDATA_INIT(dc4,      0, 1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V
 NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V SYS */
 
 NXE2000_PDATA_INIT(ldo1,     0, 1000000, 3500000, 1, 0, 3300000, 1,  0);	/* 3.3V GPS */
-NXE2000_PDATA_INIT(ldo2,     0, 1000000, 3500000, 0, 0, 1800000, 0,  0);	/* 1.8V CAM1 */
+NXE2000_PDATA_INIT(ldo2,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V CAM1 */
 NXE2000_PDATA_INIT(ldo3,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS1 */
 NXE2000_PDATA_INIT(ldo4,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS */
 NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  0);	/* 2.8V VCAM */
@@ -1903,6 +1923,12 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device spdif playback\n");
 	platform_device_register(&spdif_transciever);
 	platform_device_register(&spdif_trans_dai);
+#endif
+
+#if defined(CONFIG_SND_SPDIF_RECEIVER) || defined(CONFIG_SND_SPDIF_RECEIVER_MODULE)
+	printk("plat: add device spdif capture\n");
+	platform_device_register(&spdif_receiver);
+	platform_device_register(&spdif_recev_dai);
 #endif
 
 #if defined(CONFIG_SND_CODEC_NULL)

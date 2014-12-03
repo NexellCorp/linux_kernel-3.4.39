@@ -54,6 +54,10 @@
 #include "nxpmac_ptp.h"
 #include "nxpmac.h"
 
+#include <mach/platform.h>
+#include <mach/devices.h>
+#include <mach/soc.h>
+
 #define NXPMAC_ALIGN(x)	L1_CACHE_ALIGN(x)
 #define JUMBO_LEN	9000
 
@@ -778,6 +782,56 @@ static void stmmac_check_pcs_mode(struct stmmac_priv *priv)
 }
 
 /**
+ * @mode: 0: disable, 1: 10M, 2: 100M, 3: 1000M
+ */
+static int
+nxpmac_set_phy_loopback(struct net_device *dev, int speed)
+{
+	struct stmmac_priv *priv = netdev_priv(dev);
+	unsigned long flags;
+
+	struct phy_device *phydev = priv->phydev;
+	unsigned val;
+
+	if (phydev == NULL)
+		return;
+
+	if (speed <= 0 || speed > 3)
+		return;
+
+	//spin_lock_irqsave(&priv->lock, flags);
+
+	/* disable PCS loopback */
+	phy_write(phydev, 31, 0);
+	phy_write(phydev, 0, 0x1140);
+
+	/* enable PCS loopback */
+	phy_write(phydev, 31, 0);
+	phy_write(phydev, 0, 0x8000);
+	mdelay(100);
+	switch (speed) {
+	case 1:	/* 10M */
+		phy_write(phydev, 0, 0x4100);
+		break;
+	case 2: /* 100M */
+		phy_write(phydev, 0, 0x6100);
+		break;
+	case 3: /* 1000M */
+		phy_write(phydev, 0, 0x4140);
+		break;
+	default:
+		break;
+	}
+	mdelay(100);
+
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	return 0;
+}
+
+
+
+/**
  * stmmac_init_phy - PHY initialization
  * @dev: net device structure
  * Description: it initializes the driver's PHY state, and attaches the PHY
@@ -792,7 +846,7 @@ static int stmmac_init_phy(struct net_device *dev)
 	char phy_id_fmt[MII_BUS_ID_SIZE + 3];
 	char bus_id[MII_BUS_ID_SIZE];
 	int interface = priv->plat->interface;
-//	unsigned bmcr;
+	unsigned bmcr;
 
 	priv->oldlink = 0;
 	priv->speed = 0;
@@ -821,7 +875,7 @@ static int stmmac_init_phy(struct net_device *dev)
 		(interface == PHY_INTERFACE_MODE_RMII))
 		phydev->advertising &= ~(SUPPORTED_1000baseT_Half | SUPPORTED_1000baseT_Full);
 
-#if 0 // add by kook
+#if 1 // add by kook
 	if (priv->plat->autoneg == AUTONEG_ENABLE)
 	{
 		unsigned giga_ctrl = 0;
@@ -873,6 +927,10 @@ static int stmmac_init_phy(struct net_device *dev)
 		 " Link = %d\n", dev->name, phydev->phy_id, phydev->link);
 
 	priv->phydev = phydev;
+
+#ifdef CFG_ETHER_LOOPBACK_MODE
+	nxpmac_set_phy_loopback (dev, CFG_ETHER_LOOPBACK_MODE);
+#endif
 
 	return 0;
 }
