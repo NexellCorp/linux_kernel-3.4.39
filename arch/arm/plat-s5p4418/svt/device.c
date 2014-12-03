@@ -565,6 +565,26 @@ static struct platform_device spdif_trans_dai = {
 };
 #endif
 
+#if defined(CONFIG_SND_SPDIF_RECEIVER) || defined(CONFIG_SND_SPDIF_RECEIVER_MODULE)
+static struct platform_device spdif_receiver = {
+	.name	= "spdif-dit-receiver",
+	.id		= -1,
+};
+
+struct nxp_snd_dai_plat_data spdif_recev_dai_data = {
+	.sample_rate = 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
+};
+
+static struct platform_device spdif_recev_dai = {
+	.name	= "spdif-receiver",
+	.id		= -1,
+	.dev	= {
+		.platform_data	= &spdif_recev_dai_data,
+	}
+};
+#endif
+
 #if defined(CONFIG_SND_CODEC_NULL)
 static struct platform_device snd_null = {
 	.name = "snd-null",
@@ -1869,6 +1889,12 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device spdif playback\n");
 	platform_device_register(&spdif_transciever);
 	platform_device_register(&spdif_trans_dai);
+#endif
+
+#if defined(CONFIG_SND_SPDIF_RECEIVER) || defined(CONFIG_SND_SPDIF_RECEIVER_MODULE)
+	printk("plat: add device spdif capture\n");
+	platform_device_register(&spdif_receiver);
+	platform_device_register(&spdif_recev_dai);
 #endif
 
 #if defined(CONFIG_SND_CODEC_NULL)
