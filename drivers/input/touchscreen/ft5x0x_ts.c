@@ -266,7 +266,7 @@ static inline void ts_adjust_calibration(u16 *x, u16 *y)
 		rx = ry;
 		ry = yres - tx;
 		*x = (u16)rx, *y = (u16)ry;
-		TS_DEBUG1("-> [x:%4d,y:%4d]", *x, *y);
+		TS_DEBUG1("-> ro90 [x:%4d,y:%4d]", *x, *y);
 	} else {
 		if (point->enable) {
 			int rx = (int)*x, ry = (int)*y;
@@ -532,12 +532,15 @@ static void ft5x0x_ts_report(void)
 	input_sync(ts->input_dev);
 #endif	/* CONFIG_FT5X0X_MULTITOUCH*/
 
+#if 1
 	TS_DEBUG1(" 1:(%4d, %4d)  2:(%4d, %4d)  3:(%4d, %4d)  4:(%4d, %4d)  5:(%4d, %4d)\n",
 		event->x[0], event->y[0], event->x[1], event->y[1], event->x[2], event->y[2],
 		event->x[3], event->y[3], event->x[4], event->y[4]);
 	TS_DEBUG1(" 6:(%4d, %4d)  7:(%4d, %4d)  8:(%4d, %4d)  9:(%4d, %4d) 10:(%4d, %4d)\n",
 		event->x[5], event->y[5], event->x[6], event->y[6], event->x[7], event->y[7],
 		event->x[8], event->y[8], event->x[9], event->y[9]);
+#endif
+
 }	/*end ft5x0x_ts_report*/
 
 static void ft5x0x_ts_event(struct work_struct *work)
