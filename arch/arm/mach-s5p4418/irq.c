@@ -181,7 +181,7 @@ static u16 g_vic_priority [64] = {
 	NXP_IRQ_PRIORITY_COPROCESSOR,	// IRQ_PHY_CODA960_JPG
 	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_GMAC
 	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_USB20OTG
-	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_USB20HOST
+	NXP_IRQ_PRIORITY_LOWEST,		// IRQ_PHY_USB20HOST
 	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_CAN0
 	NXP_IRQ_PRIORITY_NOMAL_0,		// IRQ_PHY_CAN1
 	NXP_IRQ_PRIORITY_EINT,			// IRQ_PHY_GPIOA
@@ -228,70 +228,65 @@ int nxp_cpu_vic_table(void)
 EXPORT_SYMBOL(nxp_cpu_vic_table);
 
 #ifdef CONFIG_ARM_GIC
-static u32 g_toggling;
-static const void __iomem *g_irq_base[2] = {
-	(void __iomem *)VIC0_INT_BASE,
-	(void __iomem *)VIC1_INT_BASE
-};
 
 static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 {
-	volatile u32 stat, gic = irq;
-	volatile u32 irq_grp;
-	volatile int i = 0;
+	void __iomem *base;
+	u32 stat[2], pend = 0;
+	int i = 0, gic = irq;
+	int cpu, n;
+	static u32 vic_nr[4] = { 0, 1, 0, 1};
 
-	if (readl_relaxed(VIC1_INT_BASE + VIC_IRQ_STATUS) & (1<<(IRQ_PHY_USB20OTG - 32)))
-	{
-		stat = (1<<(IRQ_PHY_USB20OTG - 32));
+	stat[0] = readl_relaxed(VIC0_INT_BASE+VIC_IRQ_STATUS);
+	stat[1] = readl_relaxed(VIC1_INT_BASE+VIC_IRQ_STATUS);
+	cpu = raw_smp_processor_id();
+
+	/* 1st usb-otg */
+	if (stat[1] & (1<<(IRQ_PHY_USB20OTG - 32))) {
+		pend = (1<<(IRQ_PHY_USB20OTG - 32));
 		irq = IRQ_PHY_USB20OTG;
-
 		writel_relaxed(0, (VIC1_INT_BASE + VIC_PL192_VECT_ADDR) );
+		goto irq_hnd;
 	}
-	else if (readl_relaxed(VIC0_INT_BASE + VIC_IRQ_STATUS) & (1<<IRQ_PHY_TIMER_INT1))
-	{
-		stat = (1<<IRQ_PHY_TIMER_INT1);
+
+	/* 2nd event timer */
+	if (stat[0] & (1<<IRQ_PHY_TIMER_INT1)) {
+		pend = (1<<IRQ_PHY_TIMER_INT1);
 		irq = IRQ_PHY_TIMER_INT1;
-
 		writel_relaxed(0, (VIC0_INT_BASE + VIC_PL192_VECT_ADDR) );
+		goto irq_hnd;
 	}
-	else
-	{
-		/* Round Robin */
-		for (i = 0; i < 2; i++)
-		{
-			irq_grp = g_toggling++ & 1;
-			stat = readl_relaxed(g_irq_base[irq_grp] + VIC_IRQ_STATUS);
-			if (stat) {
-				irq = readl_relaxed(g_irq_base[irq_grp] + VIC_PL192_VECT_ADDR);
-				writel_relaxed(0, g_irq_base[irq_grp] + VIC_PL192_VECT_ADDR);
 
-				if ((irq == IRQ_PHY_USB20OTG) || (irq == IRQ_PHY_TIMER_INT1)) {
-					continue;
-				}
-				break;
-			}
+	/*
+	 * Other round-robin vic groupt
+	 */
+	n = vic_nr[cpu];
+	for (i = 0; 2 > i; i++, n ^= 1) {
+		pend = stat[n];
+		if (pend) {
+			vic_nr[cpu] = !n;
+			base = n ? VIC1_INT_BASE : VIC0_INT_BASE;
+			irq = readl_relaxed(base + VIC_PL192_VECT_ADDR);
+			writel_relaxed(0, base + VIC_PL192_VECT_ADDR);
+			break;
 		}
 	}
 
-	pr_debug("%s: vic[%s] gic irq=%d, vic=%d, stat=0x%02x \n",
-		__func__, i?"1":"0", gic, irq, stat);
+	pr_debug("%s: cpu.%d vic[%s] gic irq=%d, vic=%d, stat=0x%02x \n",
+		__func__, cpu, i?"1":"0", gic, irq, pend);
 
-	if (! stat) {
-//		printk(KERN_ERR "Unknown vic gic irq=%d, stat=0x%08x\r\n", gic, stat);
-		goto exit_cleaup;
-	}
+	if (0 == pend)
+		goto irq_eoi;
 
-	/* vic descriptor */
-	desc = irq_desc + irq;
-
+irq_hnd:
+	desc = irq_desc + irq;	/* vic descriptor */
 	if (desc)
 		generic_handle_irq_desc(irq, desc);
 	else
 		printk(KERN_ERR "Error, not registered vic irq=%d !!!\n", irq);
 
-exit_cleaup:
+irq_eoi:
 	writel_relaxed(31, GIC_CPUI_BASE + GIC_CPU_EOI);
-
 	return;
 }
 
@@ -449,13 +444,12 @@ static int alive_set_type_irq(struct irq_data *d, unsigned int type)
 
 static int alive_set_wake(struct irq_data *d, unsigned int on)
 {
-#if (0)
+	#if (0)
 	void __iomem *base = irq_data_get_irq_chip_data(d);
 	int bit = (d->irq & 0x1F);
-
 	pr_info("%s: alive irq = %d, io = %d wake %s\n",
 		__func__, d->irq, bit, on?"on":"off");
-#endif
+	#endif
 	return 0;
 }
 
@@ -473,18 +467,19 @@ static void alive_handler(unsigned int irq, struct irq_desc *desc)
 	void __iomem *base = irq_desc_get_handler_data(desc);
 	u32 stat, mask;
 	int phy, bit;
+	int cpu = raw_smp_processor_id();
 
 	mask = readl(base + ALIVE_INT_SET_READ);
 	stat = readl(base + ALIVE_INT_STATUS) & mask;
 	bit  = ffs(stat) - 1;
 	phy  = irq;
 
-	pr_debug("%s: alive irq=%d [io=%d], stat=0x%02x, mask=0x%02x\n",
-		__func__, phy, bit, stat, mask);
+	pr_debug("%s: cpu.%d alive irq=%d [io=%d], stat=0x%02x, mask=0x%02x\n",
+		__func__, cpu, phy, bit, stat, mask);
 
 	if (-1 == bit) {
-		printk(KERN_ERR "Unknown alive irq=%d, stat=0x%08x, mask=0x%02x\r\n",
-			phy, stat, mask);
+		printk(KERN_ERR "Unknown cpu.%d alive irq=%d, stat=0x%08x, mask=0x%02x\r\n",
+			cpu, phy, stat, mask);
 		writel(-1, (base + ALIVE_INT_STATUS));	/* clear alive status all */
 		writel(1<<phy, (VIC0_INT_BASE + VIC_INT_SOFT_CLEAR));
 		return;
@@ -639,6 +634,7 @@ static int gpio_set_type_irq(struct irq_data *d, unsigned int type)
 	alt  = gpio_alt_no[(d->irq-64)/32][bit];
 	val |= alt << ((bit&0xf) * 2);
 	pr_debug("reg=0x%08x, val=0x%08x\n", reg, val);
+
 	writel(val, reg);
 
 	return 0;
@@ -646,12 +642,12 @@ static int gpio_set_type_irq(struct irq_data *d, unsigned int type)
 
 static int gpio_set_wake(struct irq_data *d, unsigned int on)
 {
-#if (0)
+	#if (0)
 	void __iomem *base = irq_data_get_irq_chip_data(d);
 	int bit = (d->irq & 0x1F);
 	pr_debug("%s: gpio irq = %d, %s.%d wake %s\n",
 		__func__, d->irq, VIO_NAME(d->irq), bit, on?"on":"off");
-#endif
+	#endif
 	return 0;
 }
 
@@ -669,18 +665,19 @@ static void gpio_handler(unsigned int irq, struct irq_desc *desc)
 	void __iomem *base = irq_desc_get_handler_data(desc);
 	u32 stat, mask;
 	int phy, bit;
+	int cpu = raw_smp_processor_id();
 
 	mask = readl(base + GPIO_INT_ENB);
 	stat = readl(base + GPIO_INT_STATUS) & mask;
 	bit  = ffs(stat) - 1;
 	phy  = irq;
 
-	pr_debug("%s: gpio irq=%d [%s.%d], stat=0x%08x, mask=0x%08x\n",
-		__func__, phy, PIO_NAME(phy), bit, stat, mask);
+	pr_debug("%s: cpu.%d gpio irq=%d [%s.%d], stat=0x%08x, mask=0x%08x\n",
+		__func__, cpu, phy, PIO_NAME(phy), bit, stat, mask);
 
 	if (-1 == bit) {
-		printk(KERN_ERR "Unknown gpio phy irq=%d, status=0x%08x, mask=0x%08x\r\n",
-			phy, stat, mask);
+		printk(KERN_ERR "Unknown cpu.%d gpio phy irq=%d, stat=0x%08x, mask=0x%08x\r\n",
+			cpu, phy, stat, mask);
 		writel(-1, (base + GPIO_INT_STATUS));	/* clear gpio status all */
     	writel(1<<phy, (VIC1_INT_BASE + VIC_INT_SOFT_CLEAR));
 		return;
