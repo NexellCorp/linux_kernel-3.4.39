@@ -195,7 +195,7 @@ static int hynix_mlc_get_rrt_value(struct mtd_info *mtd, struct hynix_nand *hyni
 	int rrt_total_len;
 	int rrt_val_len;
 	int retry_type = hynix->read_retry.retry_type;
-	int i, j;
+	int i;
 	int set = 0;
 	int ret;
 
@@ -230,11 +230,14 @@ static int hynix_mlc_get_rrt_value(struct mtd_info *mtd, struct hynix_nand *hyni
 
 		/* debug */
 		#if 0
-		for (j = 0; j < rrt_total_len; j++) {
-			printk ("%02x ", rrt_read_buf[j]);
-			if ((j+1) % 32 == 0)
-				printk ("\n");
-		}
+		do {
+			int j;
+			for (j = 0; j < rrt_total_len; j++) {
+				printk ("%02x ", rrt_read_buf[j]);
+				if ((j+1) % 32 == 0)
+					printk ("\n");
+			}
+		} while (0);
 		#endif
 
 
@@ -279,11 +282,13 @@ static int hynix_mlc_get_rrt_value(struct mtd_info *mtd, struct hynix_nand *hyni
 
 		/* debug */
 		#if 0
+		do {
+		int j;
 		for (j = 0; j < rrt_total_len; j++) {
 			printk ("%02x ", rrt_read_buf[j]);
 			if ((j+1) % 32 == 0)
 				printk ("\n");
-		}
+		} while (0);
 		#endif
 
 		chip->cmdfunc(mtd, 0x38, -1, -1);

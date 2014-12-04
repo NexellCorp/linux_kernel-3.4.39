@@ -253,6 +253,23 @@ config SPI_ORION
 	depends on PLAT_ORION && EXPERIMENTAL
 	help
 	  This enables using the SPI master controller on the Orion chips.
+config SPI_SLSI
+	tristate "SLSI SPI"
+	#depends on (ARCH_S5P6818 )
+	help
+	 SPI driver for SLSI SPI.
+config SPI_SLSI_PORT0
+	bool "port 0"
+	depends on SPI_SLSI
+
+config SPI_SLSI_PORT1
+	bool "port 1"
+	depends on SPI_SLSI
+
+config SPI_SLSI_PORT2
+	bool "port 2"
+	depends on SPI_SLSI
+
 
 config SPI_PL022
 	tristate "ARM AMBA PL022 SSP controller"
