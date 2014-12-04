@@ -183,10 +183,13 @@ static irqreturn_t nxp_adc_isr(int irq, void *dev_id)
 
 static int nxp_adc_setup(struct nxp_adc_info *adc, struct platform_device *pdev)
 {
-	struct adc_register *reg = ADC_BASE;
 	struct clk *clk = NULL;
 	ulong sample_rate, clk_rate, min_rate;
+#ifdef _USING_PROTOTYPE_
+#else
+	struct adc_register *reg = ADC_BASE;
 	unsigned int adcon = 0;
+#endif
 	int irq = 0, interrupt = 0, prescale = 0;
 	int ret = 0;
 
@@ -294,7 +297,7 @@ static int nxp_read_raw(struct iio_dev *indio_dev,
 		mutex_unlock(&indio_dev->mlock);
 	} else {
 #ifdef _USING_PROTOTYPE_
-		int value;
+		int value = 0;
 
 		spin_lock_irqsave(&adc->lock, flags);
 
