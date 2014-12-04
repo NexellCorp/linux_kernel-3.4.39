@@ -374,9 +374,11 @@ static struct platform_device *gpio_devices[] = {
  */
 #define VR_MEM_SIZE_DEFAULT CFG_MEM_PHY_SYSTEM_SIZE
 #if defined( CFG_MEM_PHY_DMAZONE_SIZE )
+#undef  VR_MEM_SIZE
 #define VR_MEM_SIZE 	(VR_MEM_SIZE_DEFAULT + CFG_MEM_PHY_DMAZONE_SIZE)
 #endif
 #if defined( CONFIG_ION_NXP_CONTIGHEAP_SIZE )
+#undef  VR_MEM_SIZE
 #define VR_MEM_SIZE 	(VR_MEM_SIZE_DEFAULT - (CONFIG_ION_NXP_CONTIGHEAP_SIZE * 1024))
 #endif
 
@@ -1197,7 +1199,7 @@ void __init nxp_cpu_devs_register(void)
     platform_device_register(&wdt_device);
 #endif
 
-#if defined(CONFIG_SPI_SLSI_PORT0) 
+#if defined(CONFIG_SPI_SLSI_PORT0)
     printk("mach: add device spi0 \n");
     platform_device_register(&s3c64xx_device_spi0);
 #endif
