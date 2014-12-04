@@ -1064,32 +1064,32 @@ void __init nxp_cpu_devs_register(void)
 #endif
 
 	/* default uart hw prepare */
-#if defined(CONFIG_SERIAL_NXP_S3C_UART0)
+#if defined(CONFIG_SERIAL_NXP_UART0)
     printk("mach: add device uart0\n");
 	uart_device_register(0);
 #endif
 
-#if defined(CONFIG_SERIAL_NXP_S3C_UART1)
+#if defined(CONFIG_SERIAL_NXP_UART1)
 	printk("mach: add device uart1\n");
 	uart_device_register(1);
 #endif
 
-#if defined(CONFIG_SERIAL_NXP_S3C_UART2)
+#if defined(CONFIG_SERIAL_NXP_UART2)
 	printk("mach: add device uart2\n");
 	uart_device_register(2);
 #endif
 
-#if defined(CONFIG_SERIAL_NXP_S3C_UART3)
+#if defined(CONFIG_SERIAL_NXP_UART3)
 	printk("mach: add device uart3\n");
 	uart_device_register(3);
 #endif
 
-#if defined(CONFIG_SERIAL_NXP_S3C_UART4)
+#if defined(CONFIG_SERIAL_NXP_UART4)
 	printk("mach: add device uart4\n");
 	uart_device_register(4);
 #endif
 
-#if defined(CONFIG_SERIAL_NXP_S3C_UART5)
+#if defined(CONFIG_SERIAL_NXP_UART5)
 	printk("mach: add device uart5\n");
 	uart_device_register(5);
 #endif
