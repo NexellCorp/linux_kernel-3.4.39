@@ -103,7 +103,6 @@ extern void nxp_cpu_id_string(u32 string[12]);
 static struct asv_tb_info *current_asvtb = NULL;
 static int nxp_cpufreq_asv_table(unsigned long (*freq_tables)[2])
 {
-
 	unsigned int ecid[4] = { 0, };
 	unsigned int string[12] = { 0, };
 	int i, ids, ro;
