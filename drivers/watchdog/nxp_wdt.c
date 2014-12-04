@@ -103,6 +103,42 @@ static struct clk	*wdt_clock;
 static unsigned int	 wdt_count;
 static DEFINE_SPINLOCK(wdt_lock);
 
+#ifdef CONFIG_WDT_SYSFS
+static ssize_t wdt_show(struct device *dev,
+		            struct device_attribute *attr, char *buf)
+{
+    char *s = buf;
+
+    s += sprintf(s, "%d\n", soft_noboot);
+    if (s != buf)
+        *(s-1) = '\n';
+
+	return (s - buf);
+}
+
+static ssize_t wdt_store(struct device *dev,
+		            struct device_attribute *attr, const char *buf, size_t n)
+{
+    long soft_en = 0;
+
+    sscanf(buf,"%ld", &soft_en);
+	soft_noboot = soft_en;
+
+    return n;
+}
+
+static struct device_attribute wdt_attr = __ATTR(soft, S_IRUGO | S_IWUSR, wdt_show, wdt_store);
+
+/* sys attribte group */
+static struct attribute *attrs[] = { 
+	    &wdt_attr.attr, NULL,
+};
+
+static struct attribute_group attr_group = { 
+	        .attrs = (struct attribute **)attrs,
+};
+#endif
+
 /* watchdog control routines */
 #define DBG(fmt, ...)					\
 do {							\
@@ -136,6 +172,7 @@ static int nxp_wdt_stop(struct watchdog_device *wdd)
 {
 	spin_lock(&wdt_lock);
 	__nxp_wdt_stop();
+	wdd->irq_data = 0;
 	spin_unlock(&wdt_lock);
 
 	return 0;
@@ -166,6 +203,7 @@ static int nxp_wdt_start(struct watchdog_device *wdd)
 	writel(wdt_count, NXP_WTDAT);
 	writel(wdt_count, NXP_WTCNT);
 	writel(wtcon, NXP_WTCON);
+	wdd->irq_data = 0;
 	spin_unlock(&wdt_lock);
 
 	return 0;
@@ -256,6 +294,10 @@ static irqreturn_t nxp_wdt_irq(int irqno, void *param)
 {
 	if(soft_noboot)
 		nxp_wdt_keepalive(&nxp_wdd);
+	
+	nxp_wdd.irq_data = 1;
+	wake_up_interruptible(&nxp_wdd.irq_queue);
+
 	return IRQ_HANDLED;
 }
 
@@ -335,6 +377,9 @@ static int __devinit nxp_wdt_probe(struct platform_device *pdev)
 	int started = 0;
 	int ret;
 	int size;
+#ifdef CONFIG_WDT_SYSFS
+    struct kobject *kobj = NULL;
+#endif
 
 	DBG("%s: probe=%p\n", __func__, pdev);
 
@@ -413,6 +458,19 @@ static int __devinit nxp_wdt_probe(struct platform_device *pdev)
 		goto err_irq;
 	}
 
+#ifdef CONFIG_WDT_SYSFS
+    kobj = kobject_create_and_add("wdt", &platform_bus.kobj);
+    if (! kobj) {
+        printk(KERN_ERR "Fail, create kobject for display\n");
+        return -ret;
+    }
+    ret = sysfs_create_group(kobj, &attr_group);
+    if (ret) {
+        printk(KERN_ERR "Fail, create sysfs group for display\n");
+        kobject_del(kobj);
+        return -ret;
+    }
+#endif
 
 	/* print out a statement of readiness */
 

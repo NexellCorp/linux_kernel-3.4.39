@@ -2101,12 +2101,15 @@ void dwc_otg_core_host_init(dwc_otg_core_if_t * core_if)
 	fifosize_data_t ptxfifosize;
 	uint16_t rxfsiz, nptxfsiz, hptxfsiz;
 	gdfifocfg_data_t gdfifocfg = {.d32 = 0 };
-	int i, ret;
+	int i;
 	hcchar_data_t hcchar;
 	hcfg_data_t hcfg;
 	hfir_data_t hfir;
 	dwc_otg_hc_regs_t *hc_regs;
 	int num_channels;
+#ifdef CONFIG_BATTERY_NXE2000
+	int ret;
+#endif
 	gotgctl_data_t gotgctl = {.d32 = 0 };
 
 	DWC_DEBUGPL(DBG_CILV, "%s(%p)\n", __func__, core_if);

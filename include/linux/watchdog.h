@@ -54,6 +54,7 @@ struct watchdog_info {
 #ifdef __KERNEL__
 
 #include <linux/bitops.h>
+#include <linux/device.h>
 
 struct watchdog_ops;
 struct watchdog_device;
@@ -85,6 +86,8 @@ struct watchdog_ops {
 	int (*set_timeout)(struct watchdog_device *, unsigned int);
 	unsigned int (*get_timeleft)(struct watchdog_device *);
 	long (*ioctl)(struct watchdog_device *, unsigned int, unsigned long);
+
+    int (*read_callback)(struct device *, int data);
 };
 
 /** struct watchdog_device - The structure that defines a watchdog device
@@ -105,6 +108,7 @@ struct watchdog_ops {
  * via the watchdog_set_drvdata and watchdog_get_drvdata helpers.
  */
 struct watchdog_device {
+	struct device dev;
 	const struct watchdog_info *info;
 	const struct watchdog_ops *ops;
 	unsigned int bootstatus;
@@ -113,6 +117,11 @@ struct watchdog_device {
 	unsigned int max_timeout;
 	void *driver_data;
 	unsigned long status;
+
+	unsigned long irq_data;
+	spinlock_t irq_lock;
+	wait_queue_head_t irq_queue;
+
 /* Bit numbers for status flags */
 #define WDOG_ACTIVE		0	/* Is the watchdog running/active */
 #define WDOG_DEV_OPEN		1	/* Opened via /dev/watchdog ? */
