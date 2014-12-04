@@ -97,11 +97,6 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-#if 0
-	{ 1600000, 1300000, },
-	{ 1500000, 1300000, },
-#endif
-
 	{ 1400000, 1200000, },
 	{ 1300000, 1200000, },
 	{ 1200000, 1100000, },
@@ -110,9 +105,7 @@ static unsigned long dfs_freq_table[][2] = {
 	{  900000, 1000000, },
 	{  800000, 1000000, },
 	{  700000,  960000, },
-	{  666000,  960000, },
 	{  600000,  960000, },
-	{  533000,  960000, },
 	{  500000,  960000, },
 	{  400000,  960000, },
 };
@@ -134,24 +127,6 @@ static struct platform_device dfs_plat_device = {
 		.platform_data	= &dfs_plat_data,
 	}
 };
-
-/* cpu over scaling */
-static char *freq_proct_list[] = { "com.antutu", };
-
-static struct nxp_cpufreq_limit_data freq_limit_data = {
-	.limit_name		= freq_proct_list,
-	.limit_num 		= ARRAY_SIZE(freq_proct_list),
-	.aval_max_freq 	= 1600000,
-	.op_max_freq	= 1200000,
-};
-
-static struct platform_device freq_limit_device = {
-	.name			= "cpufreq-limit",
-	.dev			= {
-		.platform_data	= &freq_limit_data,
-	}
-};
-
 #endif
 
 /*------------------------------------------------------------------------------
@@ -1048,8 +1023,6 @@ static struct i2c_board_info __initdata nxe2000_regulators[] = {
 
 static int front_camera_set_clock(ulong clk_rate)
 {
-    PM_DBGOUT("%s: %d\n", __func__, (int)clk_rate);
-
   	printk(KERN_INFO "%s: %d\n", __func__, (int)clk_rate);
 
 
@@ -1063,8 +1036,6 @@ static int front_camera_set_clock(ulong clk_rate)
 
 static int back_camera_set_clock(ulong clk_rate)
 {
-		PM_DBGOUT("%s: %d\n", __func__, (int)clk_rate);
-
   	printk(KERN_INFO "%s: %d\n", __func__, (int)clk_rate);
     if (clk_rate > 0)
         nxp_soc_pwm_set_frequency(3, clk_rate, 50);
@@ -1201,8 +1172,6 @@ static int back_camera_power_enable(bool on)
     unsigned int io = CFG_IO_CAMERA_BACK_POWER_DOWN;
 #endif		
     unsigned int reset_io = CFG_IO_CAMERA_BACK_RESET;
-    PM_DBGOUT("%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
-
   	printk(KERN_INFO "%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
 
     if (on) {
@@ -1288,8 +1257,6 @@ static int front_camera_power_enable(bool on)
   	unsigned int io = CFG_IO_CAMERA_FRONT_POWER_DOWN;
     unsigned int reset_io = CFG_IO_CAMERA_FRONT_RESET;
 
-    PM_DBGOUT("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
-
    printk(KERN_INFO "%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
 
     if (on) {
@@ -1337,7 +1304,6 @@ static int front_camera_power_enable(bool on)
 static bool front_camera_power_state_changed(void)
 {
   	printk(KERN_INFO "%s\n", __func__);
-
     return is_front_camera_power_state_changed;
 }
 
@@ -1570,7 +1536,6 @@ static struct platform_device nxp_v4l2_dev = {
 #include <linux/mpu.h>
 #include <linux/gpio.h>
 #include <linux/akm8975.h>
-
 
 #define MPUIRQ_GPIO         (PAD_GPIO_A + 20)
 #define MPU_I2C_BUS 		(2)
@@ -1816,7 +1781,6 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 	printk("plat: add dynamic frequency (pll.%d)\n", dfs_plat_data.pll_dev);
 	platform_device_register(&dfs_plat_device);
-	platform_device_register(&freq_limit_device);
 #endif
 
 #if defined (CONFIG_FB_NXP)

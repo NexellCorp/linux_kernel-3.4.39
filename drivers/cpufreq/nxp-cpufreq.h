@@ -4,6 +4,8 @@
 #define	CPU_ID_S5P4418		(0xE4418000)
 #define	VOLTAGE_STEP_UV		(12500)	/* 12.5 mV */
 
+#define ASV_TABLE_COND(id)	(id == CPU_ID_S5P4418)
+
 /*
  *	=================================================================
  * 	|	ASV Group	|	ASV0	|	ASV1	|	ASV2	|	ASV3	|
@@ -96,25 +98,28 @@ static inline unsigned int MtoL(unsigned int data, int bits)
 }
 
 extern void nxp_cpu_id_ecid(u32 ecid[4]);
-extern int nxp_cpu_id_string(u32 string[12]);
+extern void nxp_cpu_id_string(u32 string[12]);
 
 static struct asv_tb_info *current_asvtb = NULL;
 static int nxp_cpufreq_asv_table(unsigned long (*freq_tables)[2])
 {
-
 	unsigned int ecid[4] = { 0, };
 	unsigned int string[12] = { 0, };
 	int i, ids, ro;
 	int idslv, rolv, asvlv;
 
 	nxp_cpu_id_string(string);
-	if (CPU_ID_S5P4418 != string[0])
-		return -1;
-
 	nxp_cpu_id_ecid(ecid);
 
 	ids = MtoL((ecid[1]>>16) & 0xFF, 8);
 	ro  = MtoL((ecid[1]>>24) & 0xFF, 8);
+
+	if (ASV_TABLE_COND(string[0])) {
+		if (!ids || !ro) {
+			printk("DVFS: ASV not support (0x%08x, IDS:%d, RO:%d)\n", string[0], ids, ro);
+			return -1;
+		}
+	}
 
 	/* find IDS Level */
 	for (i=0; (ASV_ARRAY_SIZE-1) > i; i++) {
