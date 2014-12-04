@@ -50,14 +50,17 @@ void nxp_set_bus_config(void)
 	u32 i_slot;
 
 	/* ------------- DREX QoS -------------- */
+	#if (CFG_BUS_RECONFIG_DREXQOS == 1)
 	for (i_slot = 0; i_slot < 2; i_slot++)
 	{
 		val = readl(NX_VA_BASE_REG_DREX + NX_DREX_QOS_OFFSET + (i_slot<<3));
 		if (val != g_DrexQoS[i_slot])
 			writel( g_DrexQoS[i_slot], (NX_VA_BASE_REG_DREX + NX_DREX_QOS_OFFSET + (i_slot<<3)) );
 	}
+	#endif /* (CFG_BUS_RECONFIG_DREXQOS == 1) */
 
 	/* ------------- Bottom BUS ------------ */
+	#if (CFG_BUS_RECONFIG_BOTTOMBUSSI == 1)
 	num_si = readl(NX_VA_BASE_REG_PL301_BOTT + 0xFC0);
 	num_mi = readl(NX_VA_BASE_REG_PL301_BOTT + 0xFC4);
 
@@ -107,8 +110,10 @@ void nxp_set_bus_config(void)
 		if (val != g_BottomBusSI[i_slot])
 			writel( (i_slot << SLOT_NUM_POS) | (g_BottomBusSI[i_slot] << SI_IF_NUM_POS),  (NX_BASE_REG_PL301_BOTT_AW + 0x20) );
 	}
+	#endif /* (CFG_BUS_RECONFIG_BOTTOMBUSSI == 1) */
 
 	/* ------------- Top BUS ------------ */
+	#if (CFG_BUS_RECONFIG_TOPBUSSI == 1)
 	num_si = readl(NX_VA_BASE_REG_PL301_TOP + 0xFC0);
 	num_mi = readl(NX_VA_BASE_REG_PL301_TOP + 0xFC4);
 
@@ -149,8 +154,10 @@ void nxp_set_bus_config(void)
 		if (val != g_TopBusSI[i_slot])
 			writel( (i_slot << SLOT_NUM_POS) | (g_TopBusSI[i_slot] << SI_IF_NUM_POS),  (NX_BASE_REG_PL301_TOP_AW + 0x20) );
 	}
+	#endif /* (CFG_BUS_RECONFIG_TOPBUSSI == 1) */
 
 	/* ------------- Display BUS ----------- */
+	#if (CFG_BUS_RECONFIG_DISPBUSSI == 1)
 	num_si = readl(NX_VA_BASE_REG_PL301_DISP + 0xFC0);
 	num_mi = readl(NX_VA_BASE_REG_PL301_DISP + 0xFC4);
 
@@ -173,6 +180,7 @@ void nxp_set_bus_config(void)
 		if (val != g_DispBusSI[i_slot])
 			writel( (i_slot << SLOT_NUM_POS) | (g_DispBusSI[i_slot] << SI_IF_NUM_POS),  NX_BASE_REG_PL301_DISP_AW );
 	}
+	#endif /* (CFG_BUS_RECONFIG_DISPBUSSI == 1) */
 
 	return;
 }

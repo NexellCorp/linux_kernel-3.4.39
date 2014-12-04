@@ -111,7 +111,6 @@ static int stmmac_pltfr_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct resource *res;
-	struct device *dev = &pdev->dev;
 	void __iomem *addr = NULL;
 	struct stmmac_priv *priv = NULL;
 	struct plat_stmmacenet_data *plat_dat = NULL;
@@ -143,13 +142,14 @@ static int stmmac_pltfr_probe(struct platform_device *pdev)
 					GFP_KERNEL);
 		if (!plat_dat) {
 			pr_err("%s: ERROR: no memory", __func__);
-			return  -ENOMEM;
+			ret = -ENOMEM;
+			goto out_unmap;
 		}
 
 		ret = stmmac_probe_config_dt(pdev, plat_dat, &mac);
 		if (ret) {
 			pr_err("%s: main dt probe failed", __func__);
-			return ret;
+			goto out_unmap;
 		}
 	}
 
@@ -157,13 +157,13 @@ static int stmmac_pltfr_probe(struct platform_device *pdev)
 	if (plat_dat->init) {
 		ret = plat_dat->init(pdev);
 		if (unlikely(ret))
-			return ret;
+			goto out_unmap;
 	}
 
 	priv = stmmac_dvr_probe(&(pdev->dev), plat_dat, addr);
 	if (!priv) {
 		pr_err("%s: main driver probe failed", __func__);
-		return -ENODEV;
+		goto out_unmap;
 	}
 
 	/* Get MAC address if available (DT) */
@@ -175,7 +175,8 @@ static int stmmac_pltfr_probe(struct platform_device *pdev)
 	if (priv->dev->irq == -ENXIO) {
 		pr_err("%s: ERROR: MAC IRQ configuration "
 		       "information not found\n", __func__);
-		return -ENXIO;
+		ret = -ENXIO;
+		goto out_unmap;
 	}
 
 	/*
