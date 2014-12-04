@@ -357,6 +357,7 @@ static int nand_dev_ready(struct mtd_info *mtd)
 	return ret;
 }
 
+#if 0
 static void nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
 {
 	struct nand_chip *chip = mtd->priv;
@@ -372,10 +373,12 @@ static void nand_write_buf(struct mtd_info *mtd, const uint8_t *buf, int len)
 	if (len & 3)
 		writesb(chip->IO_ADDR_W, buf + (len & ~0x3), (len & 3));
 }
+#endif
 
 /*
  * Enable NAND write protect
  */
+#if 0
 static void nxp_wp_enable(void)
 {
 	nxp_soc_gpio_set_out_value(CFG_IO_NAND_nWP, 0);
@@ -388,6 +391,7 @@ static void nxp_wp_disable(void)
 {
 	nxp_soc_gpio_set_out_value(CFG_IO_NAND_nWP, 1);
 }
+#endif
 
 static void nand_dev_init(struct mtd_info *mtd)
 {
