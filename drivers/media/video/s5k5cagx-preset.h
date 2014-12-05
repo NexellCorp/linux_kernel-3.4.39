@@ -3065,7 +3065,7 @@ static struct reg_val s5k5cagx_reg_init[] = {
 	{0x0F12, 0x0100},	//REG_0TC_PCFG_OutClkPerPix88               	2   70000276    //
 	{0x0F12, 0x0800},	//REG_0TC_PCFG_uMaxBpp88                    	2   70000278    //
     /* psw0523 fix for pclk invert off */
-#if 0
+#if defined(CONFIG_PLAT_S5P4418_SVT)
 	{0x0F12, 0x0092},	//REG_0TC_PCFG_PVIMask                      	2   7000027A    //92  (1) PCLK inversion  (4)1b_C first (5) UV First
 #else
 	{0x0F12, 0x0090},	//REG_0TC_PCFG_PVIMask                      	2   7000027A    //92  (1) PCLK inversion  (4)1b_C first (5) UV First
@@ -3096,7 +3096,7 @@ static struct reg_val s5k5cagx_reg_init[] = {
 	{0x0F12, 0x0100},	//REG_1TC_PCFG_OutClkPerPix88               	2   700002A6    //
 	{0x0F12, 0x0800},	//REG_1TC_PCFG_uMaxBpp88                    	2   700002A8    //
     // psw0523 fix clock invert
-#if 0
+#if defined(CONFIG_PLAT_S5P4418_SVT)
 	{0x0F12, 0x0092},	//REG_1TC_PCFG_PVIMask                      	2   700002AA    //
 #else
 	{0x0F12, 0x0090},	//REG_1TC_PCFG_PVIMask                      	2   700002AA    //

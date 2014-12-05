@@ -50,14 +50,17 @@ void nxp_set_bus_config(void)
 	u32 i_slot;
 
 	/* ------------- DREX QoS -------------- */
+	#if (CFG_BUS_RECONFIG_DREXQOS == 1)
 	for (i_slot = 0; i_slot < 2; i_slot++)
 	{
 		val = readl(NX_VA_BASE_REG_DREX + NX_DREX_QOS_OFFSET + (i_slot<<3));
 		if (val != g_DrexQoS[i_slot])
 			writel( g_DrexQoS[i_slot], (NX_VA_BASE_REG_DREX + NX_DREX_QOS_OFFSET + (i_slot<<3)) );
 	}
+	#endif /* (CFG_BUS_RECONFIG_DREXQOS == 1) */
 
 	/* ------------- Bottom BUS ------------ */
+	#if (CFG_BUS_RECONFIG_BOTTOMBUSSI == 1)
 	num_si = readl(NX_VA_BASE_REG_PL301_BOTT + 0xFC0);
 	num_mi = readl(NX_VA_BASE_REG_PL301_BOTT + 0xFC4);
 
@@ -107,8 +110,10 @@ void nxp_set_bus_config(void)
 		if (val != g_BottomBusSI[i_slot])
 			writel( (i_slot << SLOT_NUM_POS) | (g_BottomBusSI[i_slot] << SI_IF_NUM_POS),  (NX_BASE_REG_PL301_BOTT_AW + 0x20) );
 	}
+	#endif /* (CFG_BUS_RECONFIG_BOTTOMBUSSI == 1) */
 
 	/* ------------- Top BUS ------------ */
+	#if (CFG_BUS_RECONFIG_TOPBUSSI == 1)
 	num_si = readl(NX_VA_BASE_REG_PL301_TOP + 0xFC0);
 	num_mi = readl(NX_VA_BASE_REG_PL301_TOP + 0xFC4);
 
@@ -149,8 +154,10 @@ void nxp_set_bus_config(void)
 		if (val != g_TopBusSI[i_slot])
 			writel( (i_slot << SLOT_NUM_POS) | (g_TopBusSI[i_slot] << SI_IF_NUM_POS),  (NX_BASE_REG_PL301_TOP_AW + 0x20) );
 	}
+	#endif /* (CFG_BUS_RECONFIG_TOPBUSSI == 1) */
 
 	/* ------------- Display BUS ----------- */
+	#if (CFG_BUS_RECONFIG_DISPBUSSI == 1)
 	num_si = readl(NX_VA_BASE_REG_PL301_DISP + 0xFC0);
 	num_mi = readl(NX_VA_BASE_REG_PL301_DISP + 0xFC4);
 
@@ -173,6 +180,7 @@ void nxp_set_bus_config(void)
 		if (val != g_DispBusSI[i_slot])
 			writel( (i_slot << SLOT_NUM_POS) | (g_DispBusSI[i_slot] << SI_IF_NUM_POS),  NX_BASE_REG_PL301_DISP_AW );
 	}
+	#endif /* (CFG_BUS_RECONFIG_DISPBUSSI == 1) */
 
 	return;
 }
@@ -319,13 +327,63 @@ void nxp_cpu_reset(char str, const char *cmd)
 	NX_CLKPWR_DoSoftwareReset();
 }
 
+void nxp_cpu_id_guid(u32 guid[4])
+{
+	unsigned long start = jiffies;
+	int timeout = 1;
+
+	while (!NX_ECID_GetKeyReady()) {
+		if (time_after(jiffies, start + timeout)) {
+			if (NX_ECID_GetKeyReady())
+				break;
+			printk("Error: %s not key ready for CHIP GUID ...\n", __func__);
+			return;
+		}
+		cpu_relax();
+	}
+	NX_ECID_GetGUID((NX_GUID*)guid);
+}
+
+void nxp_cpu_id_ecid(u32 ecid[4])
+{
+	unsigned long start = jiffies;
+	int timeout = 1;
+
+	while (!NX_ECID_GetKeyReady()) {
+		if (time_after(jiffies, start + timeout)) {
+			if (NX_ECID_GetKeyReady())
+				break;
+			printk("Error: %s not key ready for CHIP ECID ...\n", __func__);
+			return;
+		}
+		cpu_relax();
+	}
+	NX_ECID_GetECID(ecid);
+}
+
+void nxp_cpu_id_string(u32 *string)
+{
+	unsigned long start = jiffies;
+	int timeout = 1;
+
+	while (!NX_ECID_GetKeyReady()) {
+		if (time_after(jiffies, start + timeout)) {
+			if (NX_ECID_GetKeyReady())
+				break;
+			printk("Error: %s not key ready for CHIP STRING ...\n", __func__);
+			return;
+		}
+		cpu_relax();
+	}
+	NX_ECID_GetChipName((char*)string);
+}
+
 /*
  * Notify cpu version
  *
  * /sys/devices/platform/cpu/version
  */
-unsigned int cpu_vers_no = -1;
-
+static unsigned int cpu_version = -1;
 static ssize_t version_show(struct device *pdev,
 			struct device_attribute *attr, char *buf)
 {
@@ -339,28 +397,15 @@ static ssize_t version_show(struct device *pdev,
 
 /*
  * Notify cpu GUID
- * HEX value
  * /sys/devices/platform/cpu/guid
  */
 static ssize_t guid_show(struct device *pdev,
 			struct device_attribute *attr, char *buf)
 {
 	char *s = buf;
-	unsigned long start = jiffies;
-	int timeout = 1;
 	u32 guid[4];
 
-	while (!NX_ECID_GetKeyReady()) {
-		if (time_after(jiffies, start + timeout)) {
-			if (NX_ECID_GetKeyReady())
-				break;
-			printk("Error: %s not key ready for CHIP GUID ...\n", __func__);
-			return -ETIMEDOUT;
-		}
-		cpu_relax();
-	}
-
-	NX_ECID_GetGUID((NX_GUID*)guid);
+	nxp_cpu_id_guid(guid);
 	s += sprintf(s, "%08x:%08x:%08x:%08x\n", guid[0], guid[1], guid[2], guid[3]);
 	if (s != buf)
 		*(s-1) = '\n';
@@ -370,28 +415,16 @@ static ssize_t guid_show(struct device *pdev,
 
 /*
  * Notify cpu UUID
- * HEX value
  * /sys/devices/platform/cpu/guid
  */
 static ssize_t uuid_show(struct device *pdev,
 			struct device_attribute *attr, char *buf)
 {
 	char *s = buf;
-	unsigned long start = jiffies;
-	int timeout = 1;
 	u32 euid[4];
 
-	while (!NX_ECID_GetKeyReady()) {
-		if (time_after(jiffies, start + timeout)) {
-			if (NX_ECID_GetKeyReady())
-				break;
-			printk("Error: %s not key ready for CHIP UUID ...\n", __func__);
-			return -ETIMEDOUT;
-		}
-		cpu_relax();
-	}
+	nxp_cpu_id_ecid(euid);
 
-	NX_ECID_GetECID(euid);
 	s += sprintf(s, "%08x:%08x:%08x:%08x\n", euid[0], euid[1], euid[2], euid[3]);
 	if (s != buf)
 		*(s-1) = '\n';
@@ -401,28 +434,16 @@ static ssize_t uuid_show(struct device *pdev,
 
 /*
  * Notify cpu chip name
- * HEX value
  * /sys/devices/platform/cpu/name
  */
 static ssize_t name_show(struct device *pdev,
 			struct device_attribute *attr, char *buf)
 {
 	char *s = buf;
-	unsigned long start = jiffies;
-	int timeout = 1;
-	u8 name[64];
+	u8 name[12*4];
 
-	while (!NX_ECID_GetKeyReady()) {
-		if (time_after(jiffies, start + timeout)) {
-			if (NX_ECID_GetKeyReady())
-				break;
-			printk("Error: %s not key ready for CHIP NAME ...\n", __func__);
-			return -ETIMEDOUT;
-		}
-		cpu_relax();
-	}
+	nxp_cpu_id_string((u32*)name);
 
-	NX_ECID_GetChipName(name);
 	s += sprintf(s, "%s\n", name);
 	if (s != buf)
 		*(s-1) = '\n';
@@ -514,7 +535,7 @@ module_init(cpu_sys_init);
 
 unsigned int nxp_cpu_version(void)
 {
-	return cpu_vers_no;
+	return cpu_version;
 }
 
 /*
@@ -529,6 +550,7 @@ unsigned int nxp_cpu_version(void)
 void nxp_cpu_base_init(void)
 {
 	unsigned int  rev, ver = 0;
+	unsigned int string[12] = { 0, };
 
 	cpu_base_init();
 	cpu_bus_init();
@@ -545,15 +567,21 @@ void nxp_cpu_base_init(void)
 #endif
 
 	/* Check version */
-	if (-1 != cpu_vers_no)
+	if (-1 != cpu_version)
 		return;
 
+	nxp_cpu_id_string(string);
 	rev = __raw_readl(__PB_IO_MAP_IROM_VIRT + 0x0100);
+
 	switch(rev) {
 	case 0xe153000a:	ver = 1; break;
 	default:			ver = 0; break;
 	}
-	cpu_vers_no = ver;
-	printk(KERN_INFO "CPU : VERSION = %u (0x%X)\n", cpu_vers_no, rev);
+	cpu_version = ver;
+
+	if (0xE4418000 == string[0])
+		cpu_version = 2;
+
+	printk(KERN_INFO "CPU : VERSION = %u (0x%X)\n", cpu_version, rev);
 }
 

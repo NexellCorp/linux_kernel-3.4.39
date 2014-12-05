@@ -17,6 +17,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+//#define DEBUG
+
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
@@ -38,6 +40,8 @@
 #include "../iio.h"
 #include "../sysfs.h"
 #include "../machine.h"
+
+#define _USING_PROTOTYPE_
 
 /*
  * ADC definitions
@@ -179,10 +183,13 @@ static irqreturn_t nxp_adc_isr(int irq, void *dev_id)
 
 static int nxp_adc_setup(struct nxp_adc_info *adc, struct platform_device *pdev)
 {
-	struct adc_register *reg = ADC_BASE;
 	struct clk *clk = NULL;
 	ulong sample_rate, clk_rate, min_rate;
+#ifdef _USING_PROTOTYPE_
+#else
+	struct adc_register *reg = ADC_BASE;
 	unsigned int adcon = 0;
+#endif
 	int irq = 0, interrupt = 0, prescale = 0;
 	int ret = 0;
 
@@ -224,6 +231,18 @@ static int nxp_adc_setup(struct nxp_adc_info *adc, struct platform_device *pdev)
 	adc->prescale = prescale;
 	spin_lock_init(&adc->lock);
 
+#ifdef _USING_PROTOTYPE_
+	NX_ADC_SetBaseAddress(0, (U32)IO_ADDRESS(NX_ADC_GetPhysicalAddress(0)));
+ 	NX_ADC_OpenModule(0);
+
+	ADC_HW_RESET();
+	NX_ADC_SetInterruptEnableAll(0, CTRUE);
+	//	NX_ADC_SetInputChannel(0, ch);
+	NX_ADC_SetPrescalerValue(0, adc->prescale) ;
+	NX_ADC_SetPrescalerEnable(0, CTRUE);
+	NX_ADC_SetStandbyMode(0, CFALSE);
+
+#else
 	ADC_HW_RESET();
 	adcon = ((prescale & 0xFF) << APSV_BITP) |
 			(1 << APEN_BITP) |
@@ -235,6 +254,7 @@ static int nxp_adc_setup(struct nxp_adc_info *adc, struct platform_device *pdev)
 		__raw_writel(1, &reg->ADCINTENB);
 		init_completion(&adc->completion);
 	}
+#endif
 
 	pr_info("ADC: CHs %d, %ld(%ld ~ %ld) sample rate, %s mode, scale=%d(bit %d)\n",
 		ARRAY_SIZE(nxp_adc_iio_channels), adc->sample_rate,
@@ -276,6 +296,33 @@ static int nxp_read_raw(struct iio_dev *indio_dev,
 
 		mutex_unlock(&indio_dev->mlock);
 	} else {
+#ifdef _USING_PROTOTYPE_
+		int value = 0;
+
+		spin_lock_irqsave(&adc->lock, flags);
+
+		wait = ADC_WAIT_DELAY;
+
+		NX_ADC_SetInputChannel(0, ch);
+		NX_ADC_ClearInterruptPendingAll(0);
+		NX_ADC_Start(0);
+
+		do {
+			if (NX_ADC_GetInterruptPendingAll(0)) {
+				value = NX_ADC_GetConvertedData(0);
+				NX_ADC_ClearInterruptPendingAll(0);
+
+				break;
+			}
+		} while (wait-- > 0);
+		if (0 > wait) {
+			spin_unlock_irqrestore(&adc->lock, flags);
+			return -EINVAL;
+		}
+
+		*val = value;
+		spin_unlock_irqrestore(&adc->lock, flags);
+#else
 		spin_lock_irqsave(&adc->lock, flags);
 
 		adcon  = __raw_readl(&reg->ADCCON) & ~(0x07 << ASEL_BITP);
@@ -293,8 +340,8 @@ static int nxp_read_raw(struct iio_dev *indio_dev,
 			spin_unlock_irqrestore(&adc->lock, flags);
 			return -EINVAL;
 		}
-
 		spin_unlock_irqrestore(&adc->lock, flags);
+#endif
 	}
 
 	usleep_range (1, 10);

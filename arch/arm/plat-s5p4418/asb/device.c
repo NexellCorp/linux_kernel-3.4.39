@@ -87,7 +87,7 @@ const u8 g_BottomQoSSI[2] = {
 const u8 g_DispBusSI[3] = {
 	DISBUS_SI_SLOT_1ST_DISPLAY,
 	DISBUS_SI_SLOT_2ND_DISPLAY,
-	DISBUS_SI_SLOT_2ND_DISPLAY  //DISBUS_SI_SLOT_GMAC
+	DISBUS_SI_SLOT_GMAC
 };
 #endif	/* #if (CFG_BUS_RECONFIG_ENB == 1) */
 
@@ -97,8 +97,6 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-	{ 1600000, 1300000, },
-	{ 1500000, 1300000, },
 	{ 1400000, 1200000, },
 	{ 1300000, 1200000, },
 	{ 1200000, 1100000, },
@@ -118,10 +116,6 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1200*1000,
-	.max_retention  =   20*1000,
-	.rest_cpufreq   =  400*1000,
-	.rest_retention =    1*1000,
 	.supply_name 	= "vdd_arm_1.3V",
 };
 
@@ -131,24 +125,6 @@ static struct platform_device dfs_plat_device = {
 		.platform_data	= &dfs_plat_data,
 	}
 };
-
-/* cpu over scaling */
-static char *freq_proct_list[] = { "com.antutu", };
-
-static struct nxp_cpufreq_limit_data freq_limit_data = {
-	.limit_name		= freq_proct_list,
-	.limit_num 		= ARRAY_SIZE(freq_proct_list),
-	.aval_max_freq 	= 1600000,
-	.op_max_freq	= 1200000,
-};
-
-static struct platform_device freq_limit_device = {
-	.name			= "cpufreq-limit",
-	.dev			= {
-		.platform_data	= &freq_limit_data,
-	}
-};
-
 #endif
 
 /*------------------------------------------------------------------------------
@@ -833,7 +809,7 @@ NXE2000_PDATA_INIT(dc4,      0, 1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V
 NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V SYS */
 
 NXE2000_PDATA_INIT(ldo1,     0, 1000000, 3500000, 1, 0, 3300000, 1,  0);	/* 3.3V GPS */
-NXE2000_PDATA_INIT(ldo2,     0, 1000000, 3500000, 0, 0, 1800000, 1,  0);	/* 1.8V CAM1 */
+NXE2000_PDATA_INIT(ldo2,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V CAM1 */
 NXE2000_PDATA_INIT(ldo3,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS1 */
 NXE2000_PDATA_INIT(ldo4,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS */
 NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  0);	/* 2.8V VCAM */
@@ -1850,7 +1826,6 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 	printk("plat: add dynamic frequency (pll.%d)\n", dfs_plat_data.pll_dev);
 	platform_device_register(&dfs_plat_device);
-	platform_device_register(&freq_limit_device);
 #endif
 
 #if defined (CONFIG_FB_NXP)
@@ -1975,7 +1950,6 @@ void __init nxp_board_devices_register(void)
     printk("plat: add device ppm\n");
     platform_device_register(&ppm_device);
 #endif
-
 
 	/* END */
 	printk("\n");

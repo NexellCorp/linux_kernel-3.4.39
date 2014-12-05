@@ -2,7 +2,7 @@
 # Copyright 2009 Nexell.
 #
 
-config ARCH_CPU_NEXELL
+config ARCH_CPU_SLSI
 	bool
 	select IRQ_DOMAIN
 	select MULTI_IRQ_HANDLER

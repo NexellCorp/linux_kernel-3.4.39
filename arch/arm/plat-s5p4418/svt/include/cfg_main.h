@@ -34,7 +34,13 @@
 /*------------------------------------------------------------------------------
  * 	BUS config
  */
-#define CFG_BUS_RECONFIG_ENB					0
+#define CFG_BUS_RECONFIG_ENB					1		/* if want bus reconfig, select this first */
+
+#define CFG_BUS_RECONFIG_DREXQOS				0
+#define CFG_BUS_RECONFIG_TOPBUSSI				0
+#define CFG_BUS_RECONFIG_BOTTOMBUSSI			0
+#define CFG_BUS_RECONFIG_BOTTOMBUSQOS			0
+#define CFG_BUS_RECONFIG_DISPBUSSI				1
 
 /*------------------------------------------------------------------------------
  * 	Uart
@@ -65,7 +71,7 @@
 #define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_C + 12)
 #else
  /*for rtl8211*/
-#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				-1// (IRQ_GPIO_A_START + 9)
+#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				(IRQ_GPIO_A_START + 9)
 #define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_A + 10)
 #endif
 

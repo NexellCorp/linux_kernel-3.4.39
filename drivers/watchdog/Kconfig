@@ -365,6 +365,10 @@ config NXP_WDT
           The driver can be built as a module by choosing M, and will
           be called nxp_wdt
 
+config WDT_SYSFS
+	bool "/sys/devices/platform/wdt/soft (sysfs interface)"
+	depends on NXP_WDT
+	default n
 
 # AVR32 Architecture
 

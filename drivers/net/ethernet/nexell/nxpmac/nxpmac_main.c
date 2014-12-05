@@ -168,6 +168,7 @@ static void stmmac_verify_args(void)
  *	documentation). Viceversa the driver will try to set the MDC
  *	clock dynamically according to the actual clock input.
  */
+#if 0
 static void stmmac_clk_csr_set(struct stmmac_priv *priv)
 {
 	u32 clk_rate;
@@ -196,6 +197,7 @@ static void stmmac_clk_csr_set(struct stmmac_priv *priv)
 			priv->clk_csr = STMMAC_CSR_250_300M;
 	}
 }
+#endif
 
 static void print_pkt(unsigned char *buf, int len)
 {
@@ -264,6 +266,7 @@ void stmmac_disable_eee_mode(struct stmmac_priv *priv)
  *  if there is no data transfer and if we are not in LPI state,
  *  then MAC Transmitter can be moved to LPI state.
  */
+#if 0
 static void stmmac_eee_ctrl_timer(unsigned long arg)
 {
 	struct stmmac_priv *priv = (struct stmmac_priv *)arg;
@@ -271,6 +274,7 @@ static void stmmac_eee_ctrl_timer(unsigned long arg)
 	stmmac_enable_eee_mode(priv);
 	mod_timer(&priv->eee_ctrl_timer, STMMAC_LPI_T(eee_timer));
 }
+#endif
 
 /**
  * stmmac_eee_init: init EEE
@@ -781,23 +785,23 @@ static void stmmac_check_pcs_mode(struct stmmac_priv *priv)
 	}
 }
 
+#ifdef CFG_ETHER_LOOPBACK_MODE
 /**
- * @mode: 0: disable, 1: 10M, 2: 100M, 3: 1000M
+ * @speed: 0: disable, 1: 10M, 2: 100M, 3: 1000M
  */
 static int
 nxpmac_set_phy_loopback(struct net_device *dev, int speed)
 {
 	struct stmmac_priv *priv = netdev_priv(dev);
-	unsigned long flags;
+	//unsigned long flags;
 
 	struct phy_device *phydev = priv->phydev;
-	unsigned val;
 
 	if (phydev == NULL)
-		return;
+		return -1;
 
 	if (speed <= 0 || speed > 3)
-		return;
+		return -1;
 
 	//spin_lock_irqsave(&priv->lock, flags);
 
@@ -828,6 +832,7 @@ nxpmac_set_phy_loopback(struct net_device *dev, int speed)
 
 	return 0;
 }
+#endif /* CFG_ETHER_LOOPBACK_MODE */
 
 
 
@@ -846,7 +851,7 @@ static int stmmac_init_phy(struct net_device *dev)
 	char phy_id_fmt[MII_BUS_ID_SIZE + 3];
 	char bus_id[MII_BUS_ID_SIZE];
 	int interface = priv->plat->interface;
-	unsigned bmcr;
+	unsigned bmcr = 0;
 
 	priv->oldlink = 0;
 	priv->speed = 0;
@@ -2883,8 +2888,8 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
 error_mdio_register:
 #if 0	//remark by kook
 	clk_put(priv->stmmac_clk);
-#endif
 error_clk_get:
+#endif
 	unregister_netdev(ndev);
 error_netdev_register:
 	netif_napi_del(&priv->napi);

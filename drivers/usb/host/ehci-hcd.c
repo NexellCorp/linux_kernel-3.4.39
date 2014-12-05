@@ -1517,8 +1517,10 @@ clean2:
 clean1:
 #endif
 #ifdef PLATFORM_DRIVER
+#if !defined (CFG_USB_EHCI_LATE_LOAD)
 	platform_driver_unregister(&PLATFORM_DRIVER);
 clean0:
+#endif
 #endif
 #ifdef DEBUG
 	debugfs_remove(ehci_debug_root);

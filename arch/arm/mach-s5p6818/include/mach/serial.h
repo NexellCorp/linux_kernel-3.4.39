@@ -107,6 +107,8 @@
 #define S3C2410_UCON_RXILEVEL	  (1<<8)
 #define S3C2410_UCON_TXIRQMODE	  (1<<2)
 #define S3C2410_UCON_RXIRQMODE	  (1<<0)
+#define S3C2410_UCON_TXDMAMODE	  (2<<2)
+#define S3C2410_UCON_RXDMAMODE	  (2<<0)
 #define S3C2410_UCON_RXFIFO_TOI	  (1<<7)
 #define S3C2443_UCON_RXERR_IRQEN  (1<<6)
 #define S3C2443_UCON_LOOPBACK	  (1<<5)
@@ -268,6 +270,7 @@ struct s3c24xx_uart_platdata {
 	void (*wake_peer)(struct uart_port *);
 
 	/* DMA */
+	int enable_dma;
     bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
     void *dma_rx_param;
     void *dma_tx_param;

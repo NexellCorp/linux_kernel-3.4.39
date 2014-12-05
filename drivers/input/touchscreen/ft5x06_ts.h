@@ -1,8 +1,15 @@
 #ifndef __LINUX_FT5X0X_TS_H__
 #define __LINUX_FT5X0X_TS_H__
 
-#define SCREEN_MAX_X    1280	// 800
-#define SCREEN_MAX_Y    800		// 480
+
+#if defined(CONFIG_PLAT_S5P4418_SVT)
+	#define SCREEN_MAX_X    1024	
+	#define SCREEN_MAX_Y  	600		
+#else
+	#define SCREEN_MAX_X    1280	// 800
+	#define SCREEN_MAX_Y    800		// 480
+#endif
+
 #define PRESS_MAX       255
 
 #define FT5X0X_NAME	"ft5x06_ts"

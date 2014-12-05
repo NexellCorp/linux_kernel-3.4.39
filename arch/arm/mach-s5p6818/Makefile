@@ -3,9 +3,9 @@
 #
 # Makefile for the S5P6818
 
-obj-$(CONFIG_ARCH_CPU_NEXELL) := cpu.o s5p6818.o gic.o smp_wfi.o timer.o irq.o clock.o devices.o cpufreq.o busfreq.o
+obj-$(CONFIG_ARCH_CPU_SLSI) := cpu.o s5p6818.o gic.o smp_wfi.o timer.o irq.o clock.o devices.o cpufreq.o busfreq.o
 
-obj-$(CONFIG_ARCH_CPU_NEXELL)		+= soc/
+obj-$(CONFIG_ARCH_CPU_SLSI)			+= soc/
 obj-$(CONFIG_HOTPLUG_CPU)			+= hotplug.o
 obj-$(CONFIG_SMP)					+= platsmp.o headsmp.o
 obj-$(CONFIG_PM)					+= pm.o lldebug.o

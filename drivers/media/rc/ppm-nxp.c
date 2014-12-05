@@ -33,6 +33,7 @@ struct nxp_rc_dev {
 	}data;
 };
 
+#ifdef CONFIG_PPM_SYSFS
 struct nxp_rc_dev *nxp_ppm_dev= NULL;
 static ssize_t ppm_duty(struct kobject *kobj, struct kobj_attribute *attr,char *buf);
 
@@ -49,43 +50,51 @@ static struct attribute_group attr_group = {
     .attrs = g,
 };
 
-
-
-
 static ssize_t ppm_duty(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	int i = 0;
-	int pulse = 0;
 	int dur0=0, dur1=0;
-	int duty,invert;
+	int duty;
 	char *s  = buf;
 	ssize_t status;
 	struct nxp_rc_dev *nxp_dev = nxp_ppm_dev;
 	for(i=0; i<RAW_BUFFER_SIZE; i++)
 	{
-		if(nxp_dev->data.ev[i].pulse == 0){
+		if((nxp_dev->data.ev[i].pulse == 0) && (dur0 == 0)){
 			dur0 = nxp_dev->data.ev[i].duration;
-		if(dur0 != 0)
-			break;
 		}
-	}
-	for(i=0; i<RAW_BUFFER_SIZE; i++)
-	{
-		if(nxp_dev->data.ev[i].pulse == 1){
+		else if((nxp_dev->data.ev[i].pulse == 1) && (dur1 == 0)){
 			dur1 = nxp_dev->data.ev[i].duration;
-		if(dur1 != 0)
+		}
+		if((dur0 != 0) && (dur1 != 0)){
+			for(i=0; i<RAW_BUFFER_SIZE; i++){
+				nxp_dev->data.ev[i].duration = 0;
+			}
 			break;
 		}
 	}
+
+	if((dur0 == 0) && (dur1 == 0)){
+		duty = 0;	
+		goto err;
+	}
+	else if(abs(dur0 - dur1) == 100){
+		duty = 100;
+		goto err;
+	}
+
 	if(NX_PPM_GetInputSignalPolarity(0) == NX_PPM_INPUTPOL_INVERT)
 		duty =	( dur0 * 100) / (dur0 + dur1);
 	else
 		duty =	( dur1 * 100) / (dur0 + dur1);
 
+err:
     status = sprintf(s, "%d\n",duty );
     return status;
 
 }
+#endif
+
 static void ppm_irq_work(struct work_struct *work)
 {
 	int i=0;
@@ -145,7 +154,7 @@ static irqreturn_t nxp_ir_recv_irq(int irq, void *dev_id)
 
 	if (nxp_dev->data.count > RAW_BUFFER_SIZE)
 		nxp_dev->data.count=0;
-err_get_value:
+
 	return IRQ_HANDLED;
 }
 
@@ -155,9 +164,11 @@ static int __devinit nxp_ir_recv_probe(struct platform_device *pdev)
 	struct rc_dev *rcdev;
 	const struct nxp_ppm_platform_data *pdata =
 					pdev->dev.platform_data;
-	int rc, clk;
-	char id[32] = {0};
+	struct clk *clk;
+	int rc;
+#ifdef CONFIG_PPM_SYSFS
 	struct kobject * kobj;
+#endif
 
 	if (!pdata)
 		return -EINVAL;
@@ -216,12 +227,13 @@ static int __devinit nxp_ir_recv_probe(struct platform_device *pdev)
 
 	NX_PPM_SetPPMEnable(0, true);
 
+#ifdef CONFIG_PPM_SYSFS
 	nxp_ppm_dev = nxp_dev;
 	kobj = kobject_create_and_add("ppm",&platform_bus.kobj);
     if (! kobj)
 		return -ENOMEM;
-
-	sysfs_create_group(kobj, &attr_group);
+	rc = sysfs_create_group(kobj, &attr_group);
+#endif
 
 	return 0;
 
@@ -232,7 +244,6 @@ exit_create_singlethread:
 	platform_set_drvdata(pdev, NULL);
 	rc_unregister_device(rcdev);
 err_register_rc_device:
-err_nxp_request:
 	rc_free_device(rcdev);
 	rcdev = NULL;
 err_allocate_device:
@@ -257,9 +268,6 @@ static int __devexit nxp_ir_recv_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int nxp_ir_recv_suspend(struct device *dev)
 {
-	struct platform_device *pdev = to_platform_device(dev);
-	//struct nxp_rc_dev *nxp_dev = platform_get_drvdata(pdev);
-
 	disable_irq(NX_PPM_GetInterruptNumber(0));
 
 	return 0;
@@ -267,11 +275,7 @@ static int nxp_ir_recv_suspend(struct device *dev)
 
 static int nxp_ir_recv_resume(struct device *dev)
 {
-	struct platform_device *pdev = to_platform_device(dev);
-	struct nxp_rc_dev *nxp_dev = platform_get_drvdata(pdev);
-
 	enable_irq(NX_PPM_GetInterruptNumber(0));
-
 	return 0;
 }
 

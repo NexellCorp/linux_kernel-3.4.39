@@ -93,8 +93,6 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-//	{ 1600000, 1300000 },
-//	{ 1500000, 1300000 },
 	{ 1400000, 1300000 },
 	{ 1300000, 1300000 },
 	{ 1200000, 1200000, },
@@ -103,9 +101,7 @@ static unsigned long dfs_freq_table[][2] = {
 	{  900000, 1000000, },
 	{  800000,  960000, },
 	{  700000,  960000, },
-	{  666000,  960000, },
 	{  600000,  960000, },
-	{  533000,  960000, },
 	{  500000,  960000, },
 	{  400000,  960000, },
 };
@@ -143,7 +139,7 @@ static struct nxp_cpufreq_limit_data freq_limit_data = {
 	.limit_name	 	= freq_proct_list,
 	.limit_num 		= ARRAY_SIZE(freq_proct_list),
 	.aval_max_freq 	= 1200000,
-	.op_max_freq	= 1600000,
+	.op_max_freq	= 1400000,
 	.sched_duration	= 1000,
 	.sched_timeout	= 3000,
 };
@@ -153,15 +149,13 @@ static char *freq_proct_list[] = { "com.antutu", };
 static struct nxp_cpufreq_limit_data freq_limit_data = {
 	.limit_name		= freq_proct_list,
 	.limit_num 		= ARRAY_SIZE(freq_proct_list),
-	.aval_max_freq 	= 1600000,
+	.aval_max_freq 	= 1400000,
 	.op_max_freq	= 1200000,
 #if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	.limit_level0_freq	= 1200000,
 	.limit_level1_freq	= 1000000,
 	.min_max_freq	= 800000,
 #endif
-	//.sched_duration	= 1000,
-	//.sched_timeout	= 3000,
 };
 #endif
 

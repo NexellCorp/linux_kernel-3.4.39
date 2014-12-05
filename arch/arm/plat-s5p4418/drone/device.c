@@ -93,8 +93,6 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-//	{ 1600000, 1300000 },
-//	{ 1500000, 1300000 },
 	{ 1400000, 1200000  },
 //	{ 1300000, 1125000 },
 	{ 1200000, 1100000, },
@@ -103,9 +101,7 @@ static unsigned long dfs_freq_table[][2] = {
 //	{  900000, 1000000, },
 	{  800000, 1000000, },
 	{  700000, 975000, },
-//	{  666000, 1000000, },
 	{  600000, 950000, },
-//	{  533000, 950000, },
 	{  500000, 950000, },
 	{  400000, 950000, },
 };
@@ -161,8 +157,6 @@ static struct nxp_cpufreq_limit_data freq_limit_data = {
 	.min_max_freq	= 800000,
 	.prev_max_freq = 1400000,
 #endif
-	//.sched_duration	= 1000,
-	//.sched_timeout	= 3000,
 };
 #endif
 

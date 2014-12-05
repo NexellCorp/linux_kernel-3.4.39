@@ -561,9 +561,11 @@ static struct platform_device *gpio_devices[] = {
  */
 #define VR_MEM_SIZE_DEFAULT CFG_MEM_PHY_SYSTEM_SIZE
 #if defined( CFG_MEM_PHY_DMAZONE_SIZE )
+#undef  VR_MEM_SIZE
 #define VR_MEM_SIZE 	(VR_MEM_SIZE_DEFAULT + CFG_MEM_PHY_DMAZONE_SIZE)
 #endif
 #if defined( CONFIG_ION_NXP_CONTIGHEAP_SIZE )
+#undef  VR_MEM_SIZE
 #define VR_MEM_SIZE 	(VR_MEM_SIZE_DEFAULT - (CONFIG_ION_NXP_CONTIGHEAP_SIZE * 1024))
 #endif
 
@@ -1276,7 +1278,7 @@ static struct platform_device adc_device = {
  * Watchdog Timer
  */
 
-#if defined(CONFIG_S5P4418_WATCHDOG)
+#if defined(CONFIG_NXP_WDT)
 
 static struct resource nxp_wdt_resource[] = {
         [0] = DEFINE_RES_MEM(PHY_BASEADDR_WDT, SZ_1K),
@@ -1423,7 +1425,7 @@ void __init nxp_cpu_devices_register(void)
     printk("mach: add graphic device opengl|es\n");
     platform_device_register(&vr_gpu_device);
 
-#if defined(CONFIG_S5P4418_WATCHDOG)
+#if defined(CONFIG_NXP_WDT)
     printk("mach: add device watchdog\n");
     platform_device_register(&nxp_device_wdt);
 #endif

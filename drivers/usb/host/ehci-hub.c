@@ -763,7 +763,7 @@ static int ehci_hub_control (
 					  temp & ~(PORT_RWC_BITS | PORT_POWER),
 					  status_reg);
 #if defined(CONFIG_USB_HSIC_SYNOPSYS)
-				if( status_reg == 0xf0030058)
+				if((unsigned int)status_reg == 0xf0030058)
 				{
 					temp_hsic = ehci_readl(ehci, ehci->hsic_status_reg);
 					ehci_writel(ehci, temp_hsic & 0x00, ehci->hsic_status_reg);
@@ -829,7 +829,7 @@ static int ehci_hub_control (
 					status_reg);
 				temp = ehci_readl(ehci, status_reg);
 #if defined(CONFIG_USB_HSIC_SYNOPSYS)
-				if( status_reg == 0xf0030058)
+				if((unsigned int)status_reg == 0xf0030058)
 				{
 					temp_hsic = ehci_readl(ehci, ehci->hsic_status_reg);
 					ehci_writel(ehci, temp_hsic & 0x00, ehci->hsic_status_reg);
@@ -1026,7 +1026,7 @@ static int ehci_hub_control (
 				ehci_writel(ehci, temp | PORT_POWER,
 						status_reg);
 #if defined(CONFIG_USB_HSIC_SYNOPSYS)
-				if( status_reg == 0xf0030058)
+				if((unsigned int)status_reg == 0xf0030058)
 				{
 					temp_hsic = ehci_readl(ehci, ehci->hsic_status_reg);
 					ehci_writel(ehci, temp_hsic | 0x02, ehci->hsic_status_reg);

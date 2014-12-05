@@ -25,7 +25,7 @@ config ION_NXP_CONTIGHEAP_SIZE
 
 config ION_NXP_RESERVE
 	tristate "Ion reserve region for bootloader share memory"
-	depends on ARCH_CPU_NEXELL && ION_NXP
+	depends on ARCH_CPU_SLSI && ION_NXP
 	help
 	  Choose this option if you wish to use ion reserve on an Nexell Nxp.
 
