@@ -80,7 +80,7 @@ struct nxp_mlc_vid_attr {
 struct nxp_mlc {
     int id;
 
-    bool user_count; /* s_power */
+    int  user_count; /* s_power */
     bool enabled;
 
     struct v4l2_subdev subdev;
