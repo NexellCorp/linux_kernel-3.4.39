@@ -21,6 +21,7 @@
 #ifndef _PTP_CLOCK_KERNEL_H_
 #define _PTP_CLOCK_KERNEL_H_
 
+#include <linux/pps_kernel.h>
 #include <linux/ptp_clock.h>
 
 
