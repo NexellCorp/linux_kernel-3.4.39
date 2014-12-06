@@ -65,6 +65,8 @@
  * 	GMAC PHY
  */
 
+#define CFG_ETHER_LOOPBACK_MODE					1       /* 0: disable, 1: 10M, 2: 100M(x), 3: 1000M(x) */
+
  /*for rtl8201*/
 #if defined (CONFIG_REALTEK_PHY_RTL8201)
 #define	CFG_ETHER_GMAC_PHY_IRQ_NUM				-1
