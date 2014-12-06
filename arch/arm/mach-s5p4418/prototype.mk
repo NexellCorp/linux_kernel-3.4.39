@@ -57,7 +57,7 @@ obj-$(CONFIG_NXP_OUT_HDMI)				+= 	$(PROTOTYPE)/$(MODULES)/nx_ecid.o
 
 obj-$(CONFIG_NXP_M2M_SCALER)			+=  $(PROTOTYPE)/$(MODULES)/nx_scaler.o
 obj-$(CONFIG_NXP_CAPTURE_MIPI_CSI)		+=  $(PROTOTYPE)/$(MODULES)/nx_mipi.o
-obj-$(CONFIG_S5P4418_MP2TS_IF)			+=  $(PROTOTYPE)/$(MODULES)/nx_mpegtsi.o
+obj-$(CONFIG_NXP_MP2TS_IF)			+=  $(PROTOTYPE)/$(MODULES)/nx_mpegtsi.o
 
 obj-$(CONFIG_RTC_DRV_NXP)				+=  $(PROTOTYPE)/$(MODULES)/nx_rtc.o
 

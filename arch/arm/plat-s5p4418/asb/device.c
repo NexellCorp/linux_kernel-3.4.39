@@ -1031,8 +1031,8 @@ static struct i2c_board_info __initdata nxe2000_regulators[] = {
 /*------------------------------------------------------------------------------
  * MPEGTS platform device
  */
-#if defined(CONFIG_S5P4418_MP2TS_IF)
-#include <mach/s5p4418_mp2ts.h>
+#if defined(CONFIG_NXP_MP2TS_IF)
+#include <mach/nxp_mp2ts.h>
 
 #define NXP_TS_PAGE_NUM_0       (36)	// Variable
 #define NXP_TS_BUF_SIZE_0       (TS_PAGE_SIZE * NXP_TS_PAGE_NUM_0)
@@ -1071,7 +1071,7 @@ static struct platform_device mpegts_plat_device = {
         .platform_data = &mpegts_plat_data,
     },
 };
-#endif  /* CONFIG_S5P4418_MP2TS_IF */
+#endif  /* CONFIG_NXP_MP2TS_IF */
 
 /*------------------------------------------------------------------------------
  * v4l2 platform device
@@ -1889,7 +1889,7 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(NXE1100_I2C_BUS, nxe1100_i2c_pmic_devs, ARRAY_SIZE(nxe1100_i2c_pmic_devs));
 #endif
 
-#if defined(CONFIG_S5P4418_MP2TS_IF)
+#if defined(CONFIG_NXP_MP2TS_IF)
 	printk("plat: add device misc mpegts\n");
 	platform_device_register(&mpegts_plat_device);
 #endif
