@@ -95,7 +95,7 @@ static struct cpufreq_dvfs_info		*cpufreq_dvfs = NULL;
 #define	ms_to_ktime(m)				ns_to_ktime((u64)m * 1000 * 1000)
 
 
-static int nxp_cpufreq_frequency_index(unsigned long frequency)
+static int nxp_cpufreq_get_index(unsigned long frequency)
 {
 	struct cpufreq_dvfs_info *dvfs = get_cpufreq_dvfs_info();
 	unsigned long (*freq_tables)[2] = (unsigned long(*)[2])dvfs->freq_volts;
@@ -234,7 +234,11 @@ static int nxp_cpufreq_pm_notify(struct notifier_block *this,
 		mutex_lock(&dvfs->lock);
 
 		freqs.new = dvfs->reset_freq;
-		freqs.old = clk_get_rate(clk) / 1000;
+		freqs.old = clk_get_rate(clk)/1000;
+		if (!dvfs->target_freq)
+			dvfs->target_freq = freqs.new;
+
+		dvfs->freq_cur_index = nxp_cpufreq_get_index(freqs.new);
 
 		nxp_cpufreq_update(dvfs, &freqs);
 
@@ -247,7 +251,8 @@ static int nxp_cpufreq_pm_notify(struct notifier_block *this,
     	set_bit(FREQ_STATE_RESUME, &dvfs->resume_state);
 
 		freqs.new = dvfs->target_freq;
-		freqs.old = clk_get_rate(clk) / 1000;
+		freqs.old = clk_get_rate(clk)/1000;
+		dvfs->freq_cur_index = nxp_cpufreq_get_index(freqs.new);
 
 		nxp_cpufreq_update(dvfs, &freqs);
 
@@ -274,7 +279,7 @@ static int nxp_cpufreq_proc_update(void *unused)
 			freqs.new = dvfs->new_cpufreq;
 			freqs.old = clk_get_rate(clk)/1000;;
 			freqs.cpu = dvfs->cpu;
-			dvfs->freq_cur_index = nxp_cpufreq_frequency_index(freqs.new);
+			dvfs->freq_cur_index = nxp_cpufreq_get_index(freqs.new);
 
 			nxp_cpufreq_update(dvfs, &freqs);
 
