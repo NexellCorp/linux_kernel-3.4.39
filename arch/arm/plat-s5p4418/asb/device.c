@@ -1603,7 +1603,7 @@ static struct spi_board_info spi_plat_board[] __initdata = {
     },
 	[1] = {
         .modalias        = "spidev",    /* fixup */
-        .max_speed_hz    = 100000,     /* max spi clock (SCK) speed in HZ */
+        .max_speed_hz    = 10000000,     /* max spi clock (SCK) speed in HZ */
         .bus_num         = 2,           /* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
         .chip_select     = 0,           /* Note> set chip select num, must be smaller than spi cs_num */
         .controller_data = &spi2_info,
