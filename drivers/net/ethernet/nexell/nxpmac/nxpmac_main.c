@@ -785,6 +785,7 @@ static void stmmac_check_pcs_mode(struct stmmac_priv *priv)
 	}
 }
 
+#ifdef CFG_ETHER_LOOPBACK_MODE
 /**
  * @speed: 0: disable, 1: 10M, 2: 100M, 3: 1000M
  */
@@ -831,6 +832,7 @@ nxpmac_set_phy_loopback(struct net_device *dev, int speed)
 
 	return 0;
 }
+#endif /* CFG_ETHER_LOOPBACK_MODE */
 
 
 

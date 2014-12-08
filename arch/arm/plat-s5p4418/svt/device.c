@@ -1012,6 +1012,51 @@ static struct i2c_board_info __initdata nxe2000_regulators[] = {
 #endif  /* CONFIG_REGULATOR_NXE2000 */
 
 /*------------------------------------------------------------------------------
+ * MPEGTS platform device
+ */
+#if defined(CONFIG_NXP_MP2TS_IF)
+#include <mach/nxp_mp2ts.h>
+
+#define NXP_TS_PAGE_NUM_0       (36)	// Variable
+#define NXP_TS_BUF_SIZE_0       (TS_PAGE_SIZE * NXP_TS_PAGE_NUM_0)
+
+#define NXP_TS_PAGE_NUM_1       (36)	// Variable
+#define NXP_TS_BUF_SIZE_1       (TS_PAGE_SIZE * NXP_TS_PAGE_NUM_1)
+
+#define NXP_TS_PAGE_NUM_CORE    (36)	// Variable
+#define NXP_TS_BUF_SIZE_CORE    (TS_PAGE_SIZE * NXP_TS_PAGE_NUM_CORE)
+
+
+static struct nxp_mp2ts_dev_info mp2ts_dev_info[2] = {
+    {
+        .demod_irq_num = CFG_GPIO_DEMOD_0_IRQ_NUM,
+        .demod_rst_num = CFG_GPIO_DEMOD_0_RST_NUM,
+        .tuner_rst_num = CFG_GPIO_TUNER_0_RST_NUM,
+    },
+    {
+        .demod_irq_num = CFG_GPIO_DEMOD_1_IRQ_NUM,
+        .demod_rst_num = CFG_GPIO_DEMOD_1_RST_NUM,
+        .tuner_rst_num = CFG_GPIO_TUNER_1_RST_NUM,
+    },
+};
+
+static struct nxp_mp2ts_plat_data mpegts_plat_data = {
+    .dev_info       = mp2ts_dev_info,
+    .ts_dma_size[0] = -1,                   // TS ch 0 - Static alloc size.
+    .ts_dma_size[1] = NXP_TS_BUF_SIZE_1,    // TS ch 1 - Static alloc size.
+    .ts_dma_size[2] = -1,                   // TS core - Static alloc size.
+};
+
+static struct platform_device mpegts_plat_device = {
+    .name	= DEV_NAME_MPEGTSI,
+    .id		= 0,
+    .dev	= {
+        .platform_data = &mpegts_plat_data,
+    },
+};
+#endif  /* CONFIG_NXP_MP2TS_IF */
+
+/*------------------------------------------------------------------------------
  * v4l2 platform device
  */
 #if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)
@@ -1844,7 +1889,7 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(NXE1100_I2C_BUS, nxe1100_i2c_pmic_devs, ARRAY_SIZE(nxe1100_i2c_pmic_devs));
 #endif
 
-#if defined(CONFIG_S5P4418_MP2TS_IF)
+#if defined(CONFIG_NXP_MP2TS_IF)
 	printk("plat: add device misc mpegts\n");
 	platform_device_register(&mpegts_plat_device);
 #endif
@@ -1903,7 +1948,6 @@ void __init nxp_board_devices_register(void)
     printk("plat: add device ppm\n");
     platform_device_register(&ppm_device);
 #endif
-
 
 	/* END */
 	printk("\n");

@@ -1,4 +1,4 @@
-/* This driver is for nexell nxp4330 mpeg ts interface */
+/* This driver is for nexell nxp mpeg ts interface */
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/clk.h>
@@ -23,7 +23,7 @@
 #include <linux/syscalls.h>
 
 #include <mach/platform.h>
-#include <mach/nxp4330_mp2ts.h>
+#include <mach/nxp_mp2ts.h>
 
 
 #define MP2TS_DBG_HEADER "[NXP-TS]"

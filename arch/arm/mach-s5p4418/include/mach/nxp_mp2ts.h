@@ -1,5 +1,5 @@
-#ifndef __S5P4418_TS_HEADER__
-#define __S5P4418_TS_HEADER__
+#ifndef _NXP__TS_HEADER__
+#define __NXP_TS_HEADER__
 
 
 #include <mach/platform.h>
@@ -226,5 +226,5 @@ struct ts_packet_data {
 #define ETS_TIMEOUT     7
 
 
-#endif  //__S5P4418_TS_HEADER__
+#endif  //__NXP_TS_HEADER__
 
