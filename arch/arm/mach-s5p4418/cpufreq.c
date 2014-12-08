@@ -147,7 +147,7 @@ static inline void core_pll_change_lock(bool lock)
 	}
 }
 
-unsigned long nxp_cpu_pll_round_frequency(int pllno, unsigned long rate, int *p, int *m, int *s)
+static unsigned long cpu_pll_round(int pllno, unsigned long rate, int *p, int *m, int *s)
 {
 	struct pll_pms *pms;
 	int len, i = 0, n = 0, l = 0;
@@ -208,7 +208,7 @@ unsigned long nxp_cpu_pll_change_frequency(int pllno, unsigned long rate)
     mdelay(1);
 #endif
 
-	freq = nxp_cpu_pll_round_frequency(pllno, rate, &p, &m, &s);
+	freq = cpu_pll_round(pllno, rate, &p, &m, &s);
 
     preempt_disable();
     local_irq_disable();
