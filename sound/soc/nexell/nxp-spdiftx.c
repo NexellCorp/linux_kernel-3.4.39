@@ -43,7 +43,13 @@
 #define	DEF_SAMPLE_BIT			16	// 8, 16, 24 (PCM)
 
 #define	SPDIF_BASEADDR			PHY_BASEADDR_SPDIF_TX
+
+#if (DEF_SAMPLE_BIT == 16)
+#define	SPDIF_BUS_WIDTH			2	// Byte
+#else
 #define	SPDIF_BUS_WIDTH			4	// Byte
+#endif
+
 #define	SPDIF_MAX_BURST			4	// Byte
 #define	SPDIF_MAX_CLOCK			166000000
 
