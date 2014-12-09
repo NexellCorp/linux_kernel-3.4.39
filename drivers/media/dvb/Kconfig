@@ -37,7 +37,7 @@ menuconfig DVB_CAPTURE_DRIVERS
 
 if DVB_CAPTURE_DRIVERS && DVB_CORE
 
-comment "Supported NXP4330 based MP2TS Interface"
+comment "Supported NXP based MP2TS Interface"
 	depends on DVB_CORE && I2C
 source "drivers/media/dvb/dvb-soc/Kconfig"
 

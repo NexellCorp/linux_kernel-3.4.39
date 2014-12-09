@@ -364,9 +364,23 @@ static int nxp_adc_resume(struct platform_device *pdev)
 {
 	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
 	struct nxp_adc_info *adc = iio_priv(indio_dev);
+#ifdef _USING_PROTOTYPE_
+#else
 	struct adc_register *reg = ADC_BASE;
 	unsigned int adcon = 0;
+#endif
 
+#ifdef _USING_PROTOTYPE_
+	NX_ADC_SetBaseAddress(0, (U32)IO_ADDRESS(NX_ADC_GetPhysicalAddress(0)));
+ 	NX_ADC_OpenModule(0);
+
+	ADC_HW_RESET();
+	NX_ADC_SetInterruptEnableAll(0, CTRUE);
+	//	NX_ADC_SetInputChannel(0, ch);
+	NX_ADC_SetPrescalerValue(0, adc->prescale) ;
+	NX_ADC_SetPrescalerEnable(0, CTRUE);
+	NX_ADC_SetStandbyMode(0, CFALSE);
+#else
 	ADC_HW_RESET();
 	adcon = ((adc->prescale & 0xFF) << APSV_BITP) |
 			(1 << APEN_BITP) |
@@ -378,6 +392,7 @@ static int nxp_adc_resume(struct platform_device *pdev)
 		__raw_writel(1, &reg->ADCINTENB);
 		init_completion(&adc->completion);
 	}
+#endif
 	return 0;
 }
 

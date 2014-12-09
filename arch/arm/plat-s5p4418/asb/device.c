@@ -802,26 +802,26 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1100000, 1,  4);	/* 1.1V ARM */
-NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1000000, 1,  4);	/* 1.0V CORE */
-NXE2000_PDATA_INIT(dc3,      0, 1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
+NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1100000, 1,  2);	/* 1.1V ARM */
+NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1100000, 1,  2);	/* 1.0V CORE */
+NXE2000_PDATA_INIT(dc3,      0, 1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0, 1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
-NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V SYS */
+NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  2);	/* 1.5V SYS */
 
-NXE2000_PDATA_INIT(ldo1,     0, 1000000, 3500000, 1, 0, 3300000, 1,  0);	/* 3.3V GPS */
+NXE2000_PDATA_INIT(ldo1,     0, 1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V GPS */
 NXE2000_PDATA_INIT(ldo2,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V CAM1 */
 NXE2000_PDATA_INIT(ldo3,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS1 */
 NXE2000_PDATA_INIT(ldo4,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS */
-NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  0);	/* 2.8V VCAM */
+NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  2);	/* 2.8V VCAM */
 NXE2000_PDATA_INIT(ldo6,     0, 1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
-NXE2000_PDATA_INIT(ldo7,     0, 1000000, 3500000, 1, 0, 2800000, 1,  1);	/* 2.8V VID */
+NXE2000_PDATA_INIT(ldo7,     0, 1000000, 3500000, 1, 0, 2800000, 1,  2);	/* 2.8V VID */
 #if defined(CONFIG_RFKILL_NXP)
-NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V WIFI */
+NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 0,  2);	/* 3.3V WIFI */
 #else
-NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 1,  0);	/* 3.3V WIFI */
+NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 1,  2);	/* 3.3V WIFI */
 #endif
-NXE2000_PDATA_INIT(ldo9,     0, 1000000, 3500000, 1, 0, 3300000, 1,  0);	/* 3.3V HUB */
-NXE2000_PDATA_INIT(ldo10,    0, 1000000, 3500000, 1, 0, 1200000, 0,  0);	/* 1.2V HSIC */
+NXE2000_PDATA_INIT(ldo9,     0, 1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V HUB */
+NXE2000_PDATA_INIT(ldo10,    0, 1000000, 3500000, 1, 0, 1200000, 0,  2);	/* 1.2V HSIC */
 NXE2000_PDATA_INIT(ldortc1,  0, 1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
 NXE2000_PDATA_INIT(ldortc2,  0, 1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
 
@@ -1031,8 +1031,8 @@ static struct i2c_board_info __initdata nxe2000_regulators[] = {
 /*------------------------------------------------------------------------------
  * MPEGTS platform device
  */
-#if defined(CONFIG_S5P4418_MP2TS_IF)
-#include <mach/s5p4418_mp2ts.h>
+#if defined(CONFIG_NXP_MP2TS_IF)
+#include <mach/nxp_mp2ts.h>
 
 #define NXP_TS_PAGE_NUM_0       (36)	// Variable
 #define NXP_TS_BUF_SIZE_0       (TS_PAGE_SIZE * NXP_TS_PAGE_NUM_0)
@@ -1071,7 +1071,7 @@ static struct platform_device mpegts_plat_device = {
         .platform_data = &mpegts_plat_data,
     },
 };
-#endif  /* CONFIG_S5P4418_MP2TS_IF */
+#endif  /* CONFIG_NXP_MP2TS_IF */
 
 /*------------------------------------------------------------------------------
  * v4l2 platform device
@@ -1603,7 +1603,7 @@ static struct spi_board_info spi_plat_board[] __initdata = {
     },
 	[1] = {
         .modalias        = "spidev",    /* fixup */
-        .max_speed_hz    = 100000,     /* max spi clock (SCK) speed in HZ */
+        .max_speed_hz    = 10000000,     /* max spi clock (SCK) speed in HZ */
         .bus_num         = 2,           /* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
         .chip_select     = 0,           /* Note> set chip select num, must be smaller than spi cs_num */
         .controller_data = &spi2_info,
@@ -1889,7 +1889,7 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(NXE1100_I2C_BUS, nxe1100_i2c_pmic_devs, ARRAY_SIZE(nxe1100_i2c_pmic_devs));
 #endif
 
-#if defined(CONFIG_S5P4418_MP2TS_IF)
+#if defined(CONFIG_NXP_MP2TS_IF)
 	printk("plat: add device misc mpegts\n");
 	platform_device_register(&mpegts_plat_device);
 #endif
