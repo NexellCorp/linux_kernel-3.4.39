@@ -297,7 +297,7 @@ static irqreturn_t nxp_csi_irq_handler(int irq, void *dev_id)
     val = _csi_read(me, NXP_CSI_INTSRC);
     _csi_write(me, NXP_CSI_INTSRC, val);
 
-    /* pr_err("%s: irq error(0x%x)\n", __func__, val); */
+    pr_err("%s: irq error(0x%x)\n", __func__, val);
     return IRQ_HANDLED;
 }
 
@@ -593,11 +593,13 @@ int nxp_csi_register(struct nxp_csi *me)
     int ret;
     struct nxp_capture *parent = nxp_csi_to_parent(me);
 
+#if 0
     ret = request_irq(me->irq, nxp_csi_irq_handler, 0, "nxp-csi", me);
     if (ret) {
         pr_err("%s: failed to request_irq()\n", __func__);
         return ret;
     }
+#endif
 
     ret = v4l2_device_register_subdev(parent->get_v4l2_device(parent),
             &me->subdev);
