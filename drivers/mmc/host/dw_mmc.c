@@ -2050,7 +2050,9 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 				if (host->sg != NULL)
 					dw_mci_read_data_pio(host);
 			}
+#if !defined (CONFIG_MMC_DW_IDMAC)
 			set_bit(EVENT_DATA_COMPLETE, &host->pending_events);
+#endif			
 			tasklet_schedule(&host->tasklet);
 		}
 
