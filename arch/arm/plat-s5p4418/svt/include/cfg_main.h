@@ -303,7 +303,7 @@
  * Wakeup Source : RTC ALARM
  * ifndef Enable ALARM Wakeup
  */
-#define	CFG_PWR_WAKEUP_SRC_ALARM				CTRUE
+#define	CFG_PWR_WAKEUP_SRC_ALARM				CFALSE
 
 //------------------------------------------------------------------------------
 // Static Bus #0 ~ #9, NAND, IDE configuration
