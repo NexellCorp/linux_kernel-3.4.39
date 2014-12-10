@@ -665,7 +665,7 @@ static int nxp_mlc_s_power(struct v4l2_subdev *sd, int on)
         me->user_count--;
         if (me->user_count == 0) {
              if (remote_sink)
-                 return v4l2_subdev_call(remote_sink, core, s_power, 0);
+                 v4l2_subdev_call(remote_sink, core, s_power, 0);
              if (me->vid_streaming) {
                  unsigned long flags;
                  me->vid_streaming = false;
