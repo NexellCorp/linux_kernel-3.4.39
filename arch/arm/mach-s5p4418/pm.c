@@ -35,10 +35,12 @@
 #include <mach/platform.h>
 #include <mach/pm.h>
 
-#define SRAM_SAVE_SIZE		(0x4000)
+#define SRAM_SAVE_SIZE		(0x4000*2)	/* 4330=16K, 4418=32K */
 
 static unsigned int  sramsave[SRAM_SAVE_SIZE/4];
 static unsigned int *sramptr;
+static unsigned int sram_length = SRAM_SAVE_SIZE;
+extern void nxp_cpu_id_string(u32 *string);
 
 void (*nxp_board_suspend_mark)(struct suspend_mark_up *mark, int suspend) = NULL;
 void (*do_suspend)(ulong, ulong) = NULL;
@@ -50,7 +52,7 @@ void nxp_pm_data_save(void *mem)
 	unsigned int *dst = mem ? mem : sramsave;
 	int i = 0;
 
-	for(; ARRAY_SIZE(sramsave) > i; i++)
+	for(; sram_length/4 > i; i++)
 		dst[i] = src[i];
 }
 EXPORT_SYMBOL_GPL(nxp_pm_data_save);
@@ -61,7 +63,7 @@ void nxp_pm_data_restore(void *mem)
 	unsigned int *dst = sramptr;
 	int i = 0;
 
-	for( ; ARRAY_SIZE(sramsave) > i; i++)
+	for( ; sram_length/4 > i; i++)
 		dst[i] = src[i];
 }
 EXPORT_SYMBOL_GPL(nxp_pm_data_restore);
@@ -695,9 +697,15 @@ static struct platform_suspend_ops suspend_ops = {
 
 static int __init suspend_ops_init(void)
 {
-	sramptr = (unsigned int*)ioremap(0xFFFF0000, SRAM_SAVE_SIZE);
+	u32 id[12];
+	nxp_cpu_id_string(id);
 
-	pr_debug("%s sram save\r\n", __func__);
+	if (0xE4418000 != id[0])
+		sram_length = 0x4000;
+
+	sramptr = (unsigned int*)ioremap(0xFFFF0000, sram_length);
+	pr_debug("%s sram save [%d]\r\n", __func__, sram_length);
+
 	nxp_pm_data_save(NULL);
 	suspend_set_ops(&suspend_ops);
 

@@ -332,6 +332,11 @@ void nxp_cpu_id_guid(u32 guid[4])
 	unsigned long start = jiffies;
 	int timeout = 1;
 
+	if (NULL == guid) {
+		printk("Error: %s no input params ....\n", __func__);
+		return;
+	}
+
 	while (!NX_ECID_GetKeyReady()) {
 		if (time_after(jiffies, start + timeout)) {
 			if (NX_ECID_GetKeyReady())
@@ -349,6 +354,11 @@ void nxp_cpu_id_ecid(u32 ecid[4])
 	unsigned long start = jiffies;
 	int timeout = 1;
 
+	if (NULL == ecid) {
+		printk("Error: %s no input params ...\n", __func__);
+		return;
+	}
+
 	while (!NX_ECID_GetKeyReady()) {
 		if (time_after(jiffies, start + timeout)) {
 			if (NX_ECID_GetKeyReady())
@@ -365,6 +375,11 @@ void nxp_cpu_id_string(u32 *string)
 {
 	unsigned long start = jiffies;
 	int timeout = 1;
+
+	if (NULL == string) {
+		printk("Error: %s no input params ...\n", __func__);
+		return;
+	}
 
 	while (!NX_ECID_GetKeyReady()) {
 		if (time_after(jiffies, start + timeout)) {
@@ -440,15 +455,25 @@ static ssize_t name_show(struct device *pdev,
 			struct device_attribute *attr, char *buf)
 {
 	char *s = buf;
-	u8 name[12*4];
+	u32 name[12];
+	int i = 0;
+	size_t count = 0;
 
-	nxp_cpu_id_string((u32*)name);
+	nxp_cpu_id_string(name);
 
-	s += sprintf(s, "%s\n", name);
-	if (s != buf)
-		*(s-1) = '\n';
+	if (0xE4418000 == name[0]) {
+		for (i=0; ARRAY_SIZE(name) > i; i++)
+			count += sprintf(&buf[count], "%x:", name[i]);
+		count--;
+		count += sprintf(&buf[count], "\n");
+	} else {
+		s += sprintf(s, "%s\n", (char*)name);
+		if (s != buf)
+			*(s-1) = '\n';
+		count = (s - buf);
+	}
 
-	return (s - buf);
+	return count;
 }
 
 /*
