@@ -53,6 +53,7 @@
 #define DW_MCI_RECV_STATUS	2
 #define DW_MCI_DMA_THRESHOLD	8
 #define DW_MCI_HW_TIMEOUT		500	// ms
+#define DW_MCI_DATA_OVER_WAIT		1000	// us
 
 #ifdef CONFIG_MMC_DW_IDMAC
 struct idmac_desc {
@@ -351,6 +352,22 @@ static void dw_mci_start_command(struct dw_mci *host,
 
 static void send_stop_cmd(struct dw_mci *host, struct mmc_data *data)
 {
+#ifdef CONFIG_MMC_DW_IDMAC
+	/* wait for end of data over */
+	if (host->data_status & SDMMC_INT_DATA_OVER) {
+		int cnt = DW_MCI_DATA_OVER_WAIT;
+		u32 status = mci_readl(host, RINTSTS);
+		while (cnt-- > 0) {
+			status = (mci_readl(host, RINTSTS) & SDMMC_INT_DATA_OVER);
+			if (!status)
+				break;
+			udelay(1);
+		}
+
+		if (status)
+			dev_warn(&host->dev, "data data over (status=0x%08x)\n", status);
+	}
+#endif
 	dw_mci_start_command(host, data->stop, host->stop_cmdr);
 }
 
@@ -2052,7 +2069,7 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 			}
 #if !defined (CONFIG_MMC_DW_IDMAC)
 			set_bit(EVENT_DATA_COMPLETE, &host->pending_events);
-#endif			
+#endif
 			tasklet_schedule(&host->tasklet);
 		}
 
@@ -2486,7 +2503,7 @@ int dw_mci_probe(struct dw_mci *host)
 			"Platform data must supply bus speed\n");
 		return -ENODEV;
 	}
-		
+
 	host->bus_hz = host->pdata->bus_hz/2;	/* jhkim: nexell clock */
 	host->quirks = host->pdata->quirks;
 
@@ -2750,7 +2767,6 @@ int dw_mci_resume(struct dw_mci *host)
 	int i;
 #endif
 
-	
 	if (host->pdata->resume)
 		host->pdata->resume(host);
 
@@ -2783,12 +2799,12 @@ int dw_mci_resume(struct dw_mci *host)
 	/*
  	 * call delayed work to save resume time
  	 */
- 	 
+
 #ifndef MMC_RESUME_WORK_QUEUE
 	for (i = 0; i < host->num_slots; i++) {
 		struct dw_mci_slot *slot = host->slot[i];
 		struct mmc_host *mmc = slot->mmc;
-		int present =0;
+
 		if (!slot)
 			continue;
 		if (host->pdata->cd_type == DW_MCI_CD_EXTERNAL){
