@@ -536,6 +536,7 @@ static void suspend_intc(suspend_state_t stat)
 	}
 }
 
+#if defined (CONFIG_SUSPEND_STOP)
 static void cpu_do_stop(void)
 {
     struct NX_CLKPWR_RegisterSet *clkpwr =
@@ -544,6 +545,7 @@ static void cpu_do_stop(void)
     clkpwr->PWRCONT &= ~(0xFF<<8);
     clkpwr->PWRMODE |= 1<<1;    // goto stop mode
 }
+#endif
 
 static int __powerdown(unsigned long arg)
 {
