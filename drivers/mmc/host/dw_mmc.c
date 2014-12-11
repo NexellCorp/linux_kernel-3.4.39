@@ -352,7 +352,7 @@ static void dw_mci_start_command(struct dw_mci *host,
 
 static void send_stop_cmd(struct dw_mci *host, struct mmc_data *data)
 {
-#ifdef CONFIG_MMC_DW_IDMAC
+#if 0
 	/* wait for end of data over */
 	if (host->data_status & SDMMC_INT_DATA_OVER) {
 		int cnt = DW_MCI_DATA_OVER_WAIT;
