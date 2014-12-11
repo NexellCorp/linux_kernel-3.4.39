@@ -657,8 +657,8 @@ static int default_dfs_bclk_func(uint32_t pll_num, uint32_t counter, uint32_t us
     return bclk;
 }
 
-extern void nxp_pm_data_save(void *mem);
-extern void nxp_pm_data_restore(void *mem);
+extern void pm_suspend_data_save(void *mem);
+extern void pm_suspend_data_restore(void *mem);
 
 int bclk_get(uint32_t user)
 {
@@ -669,7 +669,7 @@ int bclk_get(uint32_t user)
         atomic_inc(&dfs_bclk_manager.counter);
         ATOMIC_SET_MASK(&dfs_bclk_manager.user_bitmap, 1<<user);
         if (user == BCLK_USER_MPEG)
-            nxp_pm_data_save(NULL);
+            pm_suspend_data_save(NULL);
         /*dfs_bclk_manager.current_bclk =*/
             /*dfs_bclk_manager.func(*/
                     /*dfs_bclk_manager.bclk_pll_num,*/
@@ -691,7 +691,7 @@ int bclk_put(uint32_t user)
         atomic_dec(&dfs_bclk_manager.counter);
         ATOMIC_CLEAR_MASK(&dfs_bclk_manager.user_bitmap, 1<<user);
         if (user == BCLK_USER_MPEG)
-            nxp_pm_data_restore(NULL);
+            pm_suspend_data_restore(NULL);
 #if 1
         if (user != BCLK_USER_DMA) {
             /*dfs_bclk_manager.current_bclk =*/

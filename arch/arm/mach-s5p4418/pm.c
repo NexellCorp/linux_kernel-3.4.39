@@ -46,27 +46,27 @@ void (*nxp_board_suspend_mark)(struct suspend_mark_up *mark, int suspend) = NULL
 void (*do_suspend)(ulong, ulong) = NULL;
 EXPORT_SYMBOL_GPL(do_suspend);
 
-void nxp_pm_data_save(void *mem)
+void pm_suspend_data_save(void *mem)
 {
 	unsigned int *src = sramptr;
 	unsigned int *dst = mem ? mem : sramsave;
 	int i = 0;
 
-	for(; sram_length/4 > i; i++)
+	for(i = 0; sram_length/4 > i; i++)
 		dst[i] = src[i];
 }
-EXPORT_SYMBOL_GPL(nxp_pm_data_save);
+EXPORT_SYMBOL_GPL(pm_suspend_data_save);
 
-void nxp_pm_data_restore(void *mem)
+void pm_suspend_data_restore(void *mem)
 {
 	unsigned int *src = mem ? mem : sramsave;
 	unsigned int *dst = sramptr;
 	int i = 0;
 
-	for( ; sram_length/4 > i; i++)
+	for(i = 0; sram_length/4 > i; i++)
 		dst[i] = src[i];
 }
-EXPORT_SYMBOL_GPL(nxp_pm_data_restore);
+EXPORT_SYMBOL_GPL(pm_suspend_data_restore);
 
 struct save_gpio {
 	unsigned long data;			/* 0x00 */
@@ -278,7 +278,7 @@ static void suspend_cores(suspend_state_t stat)
 				break;
 		}
 
-#ifndef CONFIG_SUSPEND_IDLE
+#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
 		if (SUSPEND_SUSPEND == stat) {
 			NX_RSTCON_SetBaseAddress(IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
 			NX_RSTCON_SetnRST(reset, RSTCON_nDISABLE);
@@ -310,7 +310,7 @@ static inline unsigned int __calc_crc(void *addr, int len)
 	return crc;
 }
 
-#ifndef CONFIG_SUSPEND_IDLE
+#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
 static void suspend_mark(suspend_state_t stat)
 {
 	struct suspend_mark_up mark = {
@@ -457,11 +457,10 @@ static void suspend_gpio(suspend_state_t stat)
 		}
 	} else {
 		for (i = 0; size > i; i++, gpio++, base += 0x1000) {
-#ifndef CONFIG_SUSPEND_IDLE
+#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
 			for (j = 0; j < 10; j++)
 				writel(gpio->reg_val[j], (base+0x40+(j<<2)));
 #endif
-
 			writel(gpio->output, (base+0x04));
 			writel(gpio->data,   (base+0x00));
 			writel(gpio->alfn[0],(base+0x20));
@@ -537,28 +536,43 @@ static void suspend_intc(suspend_state_t stat)
 	}
 }
 
+static void cpu_do_stop(void)
+{
+    struct NX_CLKPWR_RegisterSet *clkpwr =
+    	(struct NX_CLKPWR_RegisterSet *)IO_ADDRESS(PHY_BASEADDR_CLKPWR_MODULE);
+
+    clkpwr->PWRCONT &= ~(0xFF<<8);
+    clkpwr->PWRMODE |= 1<<1;    // goto stop mode
+}
+
 static int __powerdown(unsigned long arg)
 {
 	int ret = suspend_machine();
-#ifndef CONFIG_SUSPEND_IDLE
+#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
 	void (*power_down)(ulong, ulong) = NULL;
 #endif
 
 	if (0 == ret)
-		nxp_pm_data_restore(NULL);
+		pm_suspend_data_restore(NULL);
 
-#ifdef CONFIG_SUSPEND_IDLE
+#if defined (CONFIG_SUSPEND_IDLE)
 	lldebugout("Go to IDLE...\n");
+#endif
+#if defined (CONFIG_SUSPEND_STOP)
+	lldebugout("Go to STOP...\n");
 #endif
 
 	flush_cache_all();
 	outer_flush_all();
 
-	if (ret < 0)
+	if (0 > ret)
 		return ret;	/* wake up */
 
-#ifdef CONFIG_SUSPEND_IDLE
+#if defined (CONFIG_SUSPEND_IDLE)
 	cpu_do_idle();
+#elif defined (CONFIG_SUSPEND_STOP)
+	cpu_do_stop();
+	mdelay(10);
 #else
 	if(do_suspend == NULL) {
 		lldebugout("Fail, inavalid suspend callee\n");
@@ -635,7 +649,7 @@ static int suspend_enter(suspend_state_t state)
 	suspend_gpio(SUSPEND_SUSPEND);
 	suspend_alive(SUSPEND_SUSPEND);
 	suspend_l2cache(SUSPEND_SUSPEND);
-#ifndef CONFIG_SUSPEND_IDLE
+#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
 	suspend_mark(SUSPEND_SUSPEND);
 #endif
 
@@ -652,7 +666,7 @@ static int suspend_enter(suspend_state_t state)
 	/*
 	 * Wakeup status
 	 */
-#ifndef CONFIG_SUSPEND_IDLE
+#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
 	suspend_mark(SUSPEND_RESUME);
 #endif
 	suspend_l2cache(SUSPEND_RESUME);
@@ -706,10 +720,10 @@ static int __init suspend_ops_init(void)
 	sramptr = (unsigned int*)ioremap(0xFFFF0000, sram_length);
 	pr_debug("%s sram save [%d]\r\n", __func__, sram_length);
 
-	nxp_pm_data_save(NULL);
+	pm_suspend_data_save(NULL);
 	suspend_set_ops(&suspend_ops);
 
-#ifndef CONFIG_SUSPEND_IDLE
+#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
 	do_suspend = __arm_ioremap_exec(0xffff0000, 0x10000, 0);
 	if (!do_suspend)
 		printk("Fail, ioremap for suspend callee\n");
@@ -758,7 +772,7 @@ void nxp_cpu_goto_stop(void)
 	suspend_gpio(SUSPEND_SUSPEND);
 	suspend_alive(SUSPEND_SUSPEND);
 	suspend_l2cache(SUSPEND_SUSPEND);
-#ifndef CONFIG_SUSPEND_IDLE
+#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
 	suspend_mark(SUSPEND_SUSPEND);
 #endif
 

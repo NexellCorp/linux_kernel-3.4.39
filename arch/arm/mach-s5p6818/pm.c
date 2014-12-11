@@ -44,28 +44,6 @@ void (*nxp_board_suspend_mark)(struct suspend_mark_up *mark, int suspend) = NULL
 void (*do_suspend)(ulong, ulong) = NULL;
 EXPORT_SYMBOL_GPL(do_suspend);
 
-void nxp_pm_data_save(void *mem)
-{
-	unsigned int *src = sramptr;
-	unsigned int *dst = mem ? mem : sramsave;
-	int i = 0;
-
-	for(; ARRAY_SIZE(sramsave) > i; i++)
-		dst[i] = src[i];
-}
-EXPORT_SYMBOL_GPL(nxp_pm_data_save);
-
-void nxp_pm_data_restore(void *mem)
-{
-	unsigned int *src = mem ? mem : sramsave;
-	unsigned int *dst = sramptr;
-	int i = 0;
-
-	for( ; ARRAY_SIZE(sramsave) > i; i++)
-		dst[i] = src[i];
-}
-EXPORT_SYMBOL_GPL(nxp_pm_data_restore);
-
 struct save_gpio {
 	unsigned long data;			/* 0x00 */
 	unsigned long output;		/* 0x04 */
@@ -436,6 +414,26 @@ static void suspend_intc(suspend_state_t stat)
 {
 }
 
+static void pm_suspend_data_save(void *mem)
+{
+	unsigned int *src = sramptr;
+	unsigned int *dst = mem ? mem : sramsave;
+	int i = 0;
+
+	for(; ARRAY_SIZE(sramsave) > i; i++)
+		dst[i] = src[i];
+}
+
+static void pm_suspend_data_restore(void *mem)
+{
+	unsigned int *src = mem ? mem : sramsave;
+	unsigned int *dst = sramptr;
+	int i = 0;
+
+	for( ; ARRAY_SIZE(sramsave) > i; i++)
+		dst[i] = src[i];
+}
+
 static int __powerdown(unsigned long arg)
 {
 	int ret = suspend_machine();
@@ -444,7 +442,7 @@ static int __powerdown(unsigned long arg)
 #endif
 
 	if (0 == ret)
-		nxp_pm_data_restore(NULL);
+		pm_suspend_data_restore(NULL);
 
 #ifdef CONFIG_SUSPEND_IDLE
 	lldebugout("Go to IDLE...\n");
@@ -453,7 +451,7 @@ static int __powerdown(unsigned long arg)
 	flush_cache_all();
 	outer_flush_all();
 
-	if (ret < 0)
+	if (0 > ret)
 		return ret;	/* wake up */
 
 #ifdef CONFIG_SUSPEND_IDLE
@@ -599,7 +597,7 @@ static int __init suspend_ops_init(void)
 	sramptr = (unsigned int*)ioremap(0xFFFF0000, SRAM_SAVE_SIZE);
 
 	pr_debug("%s sram save\r\n", __func__);
-	nxp_pm_data_save(NULL);
+	pm_suspend_data_save(NULL);
 	suspend_set_ops(&suspend_ops);
 
 #ifndef CONFIG_SUSPEND_IDLE
