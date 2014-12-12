@@ -342,7 +342,9 @@ static ssize_t regulator_uV_store(struct device *dev,
 	return size;
 }
 
-static DEVICE_ATTR(microvolts, 0666, regulator_uV_show, regulator_uV_store);
+// psw0523 fix for cts: android.permission.cts.FileSystemPermissionTest#testAllFilesInSysAreNotWritable
+/*static DEVICE_ATTR(microvolts, 0666, regulator_uV_show, regulator_uV_store);*/
+static DEVICE_ATTR(microvolts, 0644, regulator_uV_show, regulator_uV_store);
 
 static ssize_t regulator_uA_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
