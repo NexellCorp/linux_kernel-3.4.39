@@ -1,3 +1,24 @@
+/*
+ * (C) Copyright 2009
+ * jung hyun kim, Nexell Co, <jhkim@nexell.co.kr>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+extern void nxp_cpu_id_ecid(u32 ecid[4]);
+extern void nxp_cpu_id_string(u32 string[12]);
 
 #if defined (CONFIG_ARCH_S5P4418)
 
@@ -61,7 +82,7 @@ struct asv_tb_info {
 	[10] =  400,	\
 	}
 
-struct asv_tb_info asv_tables[] = {
+static struct asv_tb_info asv_tables[] = {
 	[0] = {	.ids = 10, .ro = 110,
 			.Mhz = ASB_FREQ_MHZ,
 			.uV  = { UV(1350), UV(1300), UV(1250), UV(1200), UV(1175), UV(1150),
@@ -102,11 +123,10 @@ static inline unsigned int MtoL(unsigned int data, int bits)
 	return result;
 }
 
-extern void nxp_cpu_id_ecid(u32 ecid[4]);
-extern void nxp_cpu_id_string(u32 string[12]);
+static struct asv_tb_info *__pAsvTB = NULL;
+static int Asv_Level = -1;
 
-static struct asv_tb_info *current_asvtb = NULL;
-static int nxp_cpufreq_asv_table(unsigned long (*freq_tables)[2])
+static int s5p4418_asv_setup_table(unsigned long (*freq_tables)[2])
 {
 	unsigned int ecid[4] = { 0, };
 	unsigned int string[12] = { 0, };
@@ -128,47 +148,48 @@ static int nxp_cpufreq_asv_table(unsigned long (*freq_tables)[2])
 
 	/* find IDS Level */
 	for (i=0; (ASV_ARRAY_SIZE-1) > i; i++) {
-		current_asvtb = &asv_tables[i];
-		if (current_asvtb->ids >= ids)
+		__pAsvTB = &asv_tables[i];
+		if (__pAsvTB->ids >= ids)
 			break;
 	}
 	idslv = ASV_ARRAY_SIZE != i ? i: (ASV_ARRAY_SIZE-1);
 
 	/* find RO Level */
 	for (i=0; (ASV_ARRAY_SIZE-1) > i; i++) {
-		current_asvtb = &asv_tables[i];
-		if (current_asvtb->ro >= ro)
+		__pAsvTB = &asv_tables[i];
+		if (__pAsvTB->ro >= ro)
 			break;
 	}
 	rolv = ASV_ARRAY_SIZE != i ? i: (ASV_ARRAY_SIZE-1);
 
 	/* find Lowest ASV Level */
 	asvlv = idslv > rolv ? rolv: idslv;
-	current_asvtb = &asv_tables[asvlv];
+	__pAsvTB = &asv_tables[asvlv];
+	Asv_Level = asvlv;
 
 	for (i=0; FREQ_ARRAY_SIZE > i; i++) {
-		freq_tables[i][0] = current_asvtb->Mhz[i] * 1000;	/* frequency */
-		freq_tables[i][1] = current_asvtb->uV [i];			/* voltage */
+		freq_tables[i][0] = __pAsvTB->Mhz[i] * 1000;	/* frequency */
+		freq_tables[i][1] = __pAsvTB->uV [i];			/* voltage */
 	}
 
 	printk("DVFS: ASV[%d] IDS[%dmA] RO[%d]\n", asvlv, ids, ro);
 	return FREQ_ARRAY_SIZE;
 }
 
-static void nxp_cpufreq_asv_change_vol(unsigned long (*freq_tables)[2],
+static void s5p4418_asv_modify_vol(unsigned long (*freq_tables)[2],
 				long value, bool down, bool percent)
 {
 	long step_align = VOLTAGE_STEP_UV;
 	long uV, dv, new;
 	int i = 0;
 
-	if (NULL == current_asvtb || (0 > value))
+	if (NULL == __pAsvTB || (0 > value))
 		return;
 
 	/* restore voltage */
 	if (0 == value) {
 		for (i=0; FREQ_ARRAY_SIZE > i; i++)
-			freq_tables[i][1] = current_asvtb->uV[i];
+			freq_tables[i][1] = __pAsvTB->uV[i];
 		return;
 	}
 
@@ -191,8 +212,24 @@ static void nxp_cpufreq_asv_change_vol(unsigned long (*freq_tables)[2],
 	}
 }
 
+static int s5p4418_asv_current_label(char *buf)
+{
+	char *s = buf;
+
+	if (s && __pAsvTB)
+		s += sprintf(s, "%d,%dmA,%d\n", Asv_Level, __pAsvTB->ids, __pAsvTB->ro);
+
+	return (s - buf);
+}
+
+static struct cpufreq_asv_ops asv_freq_ops = {
+	.setup_table = s5p4418_asv_setup_table,
+	.modify_vol = s5p4418_asv_modify_vol,
+	.current_label = s5p4418_asv_current_label,
+};
 #else
-#define	nxp_cpufreq_asv_table(t)				(-1)
-#define	nxp_cpufreq_asv_change_vol(t, v, d, p)	do { } while(0)
+static struct cpufreq_asv_ops asv_freq_ops = {
+};
 #endif
+
 

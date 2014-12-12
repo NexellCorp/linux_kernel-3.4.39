@@ -42,7 +42,7 @@ config FORCE_MAX_ZONEORDER
 
 comment "CPU feature"
 
-config SUSPEND_IDLE
+config S5P6818_PM_IDLE
 	bool "Goto idle when Suspend"
 	depends on SUSPEND
 	default n

@@ -228,7 +228,7 @@ static void suspend_cores(suspend_state_t stat)
 {
 	int cpu = 1, num = nr_cpu_ids;
 
-#ifndef CONFIG_SUSPEND_IDLE
+#ifndef CONFIG_S5P6818_PM_IDLE
 	NX_CLKPWR_SetBaseAddress(IO_ADDRESS(NX_CLKPWR_GetPhysicalAddress()));
 	NX_CLKPWR_SetCPUResetMode(NX_CLKPWR_CPU_RESETMODE_SAFE);
 
@@ -273,7 +273,7 @@ static inline unsigned int __calc_crc(void *addr, int len)
 	return crc;
 }
 
-#ifndef CONFIG_SUSPEND_IDLE
+#ifndef CONFIG_S5P6818_PM_IDLE
 static void suspend_mark(suspend_state_t stat)
 {
 	struct suspend_mark_up mark = {
@@ -341,7 +341,7 @@ static void suspend_gpio(suspend_state_t stat)
 		}
 	} else {
 		for (i = 0; size > i; i++, gpio++, base += 0x1000) {
-#ifndef CONFIG_SUSPEND_IDLE
+#ifndef CONFIG_S5P6818_PM_IDLE
 			for (j = 0; j < 10; j++)
 				writel(gpio->reg_val[j], (base+0x40+(j<<2)));
 #endif
@@ -437,14 +437,14 @@ static void pm_suspend_data_restore(void *mem)
 static int __powerdown(unsigned long arg)
 {
 	int ret = suspend_machine();
-#ifndef CONFIG_SUSPEND_IDLE
+#ifndef CONFIG_S5P6818_PM_IDLE
 	void (*power_down)(ulong, ulong) = NULL;
 #endif
 
 	if (0 == ret)
 		pm_suspend_data_restore(NULL);
 
-#ifdef CONFIG_SUSPEND_IDLE
+#ifdef CONFIG_S5P6818_PM_IDLE
 	lldebugout("Go to IDLE...\n");
 #endif
 
@@ -454,7 +454,7 @@ static int __powerdown(unsigned long arg)
 	if (0 > ret)
 		return ret;	/* wake up */
 
-#ifdef CONFIG_SUSPEND_IDLE
+#ifdef CONFIG_S5P6818_PM_IDLE
 	cpu_do_idle();
 #else
 	if(do_suspend == NULL) {
@@ -532,7 +532,7 @@ static int suspend_enter(suspend_state_t state)
 	suspend_gpio(SUSPEND_SUSPEND);
 	suspend_alive(SUSPEND_SUSPEND);
 	suspend_l2cache(SUSPEND_SUSPEND);
-#ifndef CONFIG_SUSPEND_IDLE
+#ifndef CONFIG_S5P6818_PM_IDLE
 	suspend_mark(SUSPEND_SUSPEND);
 #endif
 
@@ -549,7 +549,7 @@ static int suspend_enter(suspend_state_t state)
 	/*
 	 * Wakeup status
 	 */
-#ifndef CONFIG_SUSPEND_IDLE
+#ifndef CONFIG_S5P6818_PM_IDLE
 	suspend_mark(SUSPEND_RESUME);
 #endif
 	suspend_l2cache(SUSPEND_RESUME);
@@ -600,7 +600,7 @@ static int __init suspend_ops_init(void)
 	pm_suspend_data_save(NULL);
 	suspend_set_ops(&suspend_ops);
 
-#ifndef CONFIG_SUSPEND_IDLE
+#ifndef CONFIG_S5P6818_PM_IDLE
 	do_suspend = __arm_ioremap_exec(0xffff0000, 0x10000, 0);
 	if (!do_suspend)
 		printk("Fail, ioremap for suspend callee\n");
@@ -649,7 +649,7 @@ void nxp_cpu_goto_stop(void)
 	suspend_gpio(SUSPEND_SUSPEND);
 	suspend_alive(SUSPEND_SUSPEND);
 	suspend_l2cache(SUSPEND_SUSPEND);
-#ifndef CONFIG_SUSPEND_IDLE
+#ifndef CONFIG_S5P6818_PM_IDLE
 	suspend_mark(SUSPEND_SUSPEND);
 #endif
 

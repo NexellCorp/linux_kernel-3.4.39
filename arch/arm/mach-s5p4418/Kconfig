@@ -47,22 +47,21 @@ choice
 	config SUSPEND_POWEROFF
 		bool "Goto Power Off when Suspend"
 		depends on SUSPEND
-		default n
 
 	config SUSPEND_IDLE
 		bool "Goto idle when Suspend"
 		depends on SUSPEND
-		default n
-
-	config SUSPEND_STOP
-		bool "Goto stop when Suspend"
-		depends on SUSPEND
-		default n
 endchoice
 
-config PM_DBGOUT
-	bool "Support PM_DBGOUT"
+config CPU_S5P4418_EX_PERI_BUS
+	bool "Assign Exclusive Bus for IO"
 	default n
+
+config HAVE_PWM
+	prompt "PWM driver"
+	bool
+	select NXP_PWM
+	default y
 
 config HAVE_PWM
 	prompt "PWM driver"
@@ -142,6 +141,10 @@ config ANDROID_PERSISTENT_RAM_CONS_SIZE
     int "RAM console size (KB)"
     depends on ANDROID_RAM_CONSOLE
     default 16
+
+config PM_DBGOUT
+	bool "Support PM_DBGOUT"
+	default n
 
 source "arch/arm/plat-s5p4418/Kconfig"
 

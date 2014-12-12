@@ -576,15 +576,24 @@ void nxp_cpu_base_init(void)
 {
 	unsigned int  rev, ver = 0;
 	unsigned int string[12] = { 0, };
+#ifdef CONFIG_SMP
+	unsigned int scu_ctrl = 0x0009;
+#endif
 
 	cpu_base_init();
 	cpu_bus_init();
 
 #ifdef CONFIG_SMP
-	//writel(0x0018, __PB_IO_MAP_REGS_VIRT + 0x11080);	// ACP Bus Enable
 	writel(0x0000, __PB_IO_MAP_REGS_VIRT + 0x11080);	// ACP Bus Disable
+
+	#if defined (CONFIG_CPU_S5P4418_EX_PERI_BUS)
+	writel(0xC0000000, __PB_IO_MAP_MPPR_VIRT + 0x40);   // SCU Address Filtering
+    writel(0xCFF00000, __PB_IO_MAP_MPPR_VIRT + 0x44);
+    scu_ctrl |= (1<<1);									// SCU Address Filtering Enable
+	#endif
+
 	writel(0xffff, __PB_IO_MAP_MPPR_VIRT + 0x0c);		// SCU
-	writel(0x0009, __PB_IO_MAP_MPPR_VIRT + 0x00);		// SCU L2 Spec... Enable.
+	writel(scu_ctrl, __PB_IO_MAP_MPPR_VIRT + 0x00);		// SCU L2 Spec... Enable.
 #endif
 
 #if (CFG_BUS_RECONFIG_ENB == 1)
@@ -597,16 +606,19 @@ void nxp_cpu_base_init(void)
 
 	nxp_cpu_id_string(string);
 	rev = __raw_readl(__PB_IO_MAP_IROM_VIRT + 0x0100);
-
 	switch(rev) {
-	case 0xe153000a:	ver = 1; break;
-	default:			ver = 0; break;
+		case 0xe153000a:
+				 cpu_version = 1; break;
+		default: cpu_version = 0; break;
 	}
-	cpu_version = ver;
 
 	if (0xE4418000 == string[0])
 		cpu_version = 2;
 
-	printk(KERN_INFO "CPU : VERSION = %u (0x%X)\n", cpu_version, rev);
+	printk(KERN_INFO "CPU : VERSION = %u (0x%X)", cpu_version, rev);
+#if defined (CONFIG_CPU_S5P4418_EX_PERI_BUS)
+	printk(", Assign Peripheral Exclusive Bus");
+#endif
+	printk("\n");
 }
 
