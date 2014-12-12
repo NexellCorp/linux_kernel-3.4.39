@@ -123,19 +123,32 @@ static inline unsigned int MtoL(unsigned int data, int bits)
 	return result;
 }
 
-static struct asv_tb_info *__pAsvTB = NULL;
-static int Asv_Level = -1;
+static struct asv_tb_info *pAsv_Table = NULL;
+static int Asv_Leveln = -1;
 
 static int s5p4418_asv_setup_table(unsigned long (*freq_tables)[2])
 {
 	unsigned int ecid[4] = { 0, };
 	unsigned int string[12] = { 0, };
-	int i, ids, ro;
+	int i, ids = 0, ro = 0;
 	int idslv, rolv, asvlv;
 
 	nxp_cpu_id_string(string);
 	nxp_cpu_id_ecid(ecid);
 
+	/* Use Fusing Flags */
+	if ((ecid[2] & 1<<31)) {
+		int ag = MtoL((ecid[2]>>24) & 0x0F, 4);
+		int gs = MtoL((ecid[2]>>28) & 0x07, 3);
+
+		Asv_Leveln = (ag - gs);
+		pAsv_Table = &asv_tables[Asv_Leveln];
+		printk("DVFS: ASV[%d] IDS(%dmA) Ro(%d), Fusing Shift(%d), Group(%d)\n",
+			Asv_Leveln, pAsv_Table->ids, pAsv_Table->ro, ag, gs);
+		goto _find;
+	}
+
+	/* Use IDS/Ro Flags */
 	ids = MtoL((ecid[1]>>16) & 0xFF, 8);
 	ro  = MtoL((ecid[1]>>24) & 0xFF, 8);
 
@@ -148,31 +161,34 @@ static int s5p4418_asv_setup_table(unsigned long (*freq_tables)[2])
 
 	/* find IDS Level */
 	for (i=0; (ASV_ARRAY_SIZE-1) > i; i++) {
-		__pAsvTB = &asv_tables[i];
-		if (__pAsvTB->ids >= ids)
+		pAsv_Table = &asv_tables[i];
+		if (pAsv_Table->ids >= ids)
 			break;
 	}
 	idslv = ASV_ARRAY_SIZE != i ? i: (ASV_ARRAY_SIZE-1);
 
 	/* find RO Level */
 	for (i=0; (ASV_ARRAY_SIZE-1) > i; i++) {
-		__pAsvTB = &asv_tables[i];
-		if (__pAsvTB->ro >= ro)
+		pAsv_Table = &asv_tables[i];
+		if (pAsv_Table->ro >= ro)
 			break;
 	}
 	rolv = ASV_ARRAY_SIZE != i ? i: (ASV_ARRAY_SIZE-1);
 
 	/* find Lowest ASV Level */
 	asvlv = idslv > rolv ? rolv: idslv;
-	__pAsvTB = &asv_tables[asvlv];
-	Asv_Level = asvlv;
+
+	pAsv_Table = &asv_tables[asvlv];
+	Asv_Leveln = asvlv;
+	printk("DVFS: ASV[%d] IDS(%dmA,%3d) Ro(%d,%3d)\n",
+			Asv_Leveln, pAsv_Table->ids, ids, pAsv_Table->ro, ro);
+_find:
 
 	for (i=0; FREQ_ARRAY_SIZE > i; i++) {
-		freq_tables[i][0] = __pAsvTB->Mhz[i] * 1000;	/* frequency */
-		freq_tables[i][1] = __pAsvTB->uV [i];			/* voltage */
+		freq_tables[i][0] = pAsv_Table->Mhz[i] * 1000;	/* frequency */
+		freq_tables[i][1] = pAsv_Table->uV [i];			/* voltage */
 	}
 
-	printk("DVFS: ASV[%d] IDS[%dmA] RO[%d]\n", asvlv, ids, ro);
 	return FREQ_ARRAY_SIZE;
 }
 
@@ -183,13 +199,13 @@ static void s5p4418_asv_modify_vol(unsigned long (*freq_tables)[2],
 	long uV, dv, new;
 	int i = 0;
 
-	if (NULL == __pAsvTB || (0 > value))
+	if (NULL == pAsv_Table || (0 > value))
 		return;
 
 	/* restore voltage */
 	if (0 == value) {
 		for (i=0; FREQ_ARRAY_SIZE > i; i++)
-			freq_tables[i][1] = __pAsvTB->uV[i];
+			freq_tables[i][1] = pAsv_Table->uV[i];
 		return;
 	}
 
@@ -216,8 +232,8 @@ static int s5p4418_asv_current_label(char *buf)
 {
 	char *s = buf;
 
-	if (s && __pAsvTB)
-		s += sprintf(s, "%d,%dmA,%d\n", Asv_Level, __pAsvTB->ids, __pAsvTB->ro);
+	if (s && pAsv_Table)
+		s += sprintf(s, "%d,%dmA,%d\n", Asv_Leveln, pAsv_Table->ids, pAsv_Table->ro);
 
 	return (s - buf);
 }
