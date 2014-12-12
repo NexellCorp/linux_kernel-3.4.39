@@ -73,6 +73,7 @@ static int _hw_configure(struct nxp_decimator *me)
             me->src_width, me->src_height,
             me->target_width, me->target_height);
 
+#if 0
     NX_VIP_SetClipRegion(module, 0, 0, me->src_width, me->src_height);
 
     NX_VIP_SetDecimation(module,
@@ -81,6 +82,32 @@ static int _hw_configure(struct nxp_decimator *me)
 
     NX_VIP_SetDecimatorFormat(module,
             _convert_to_vip_format(me->code) , false, false, false);
+#else
+    // check clipper on & clipper region
+    {
+        int left, top, right, bottom;
+        NX_VIP_GetClipRegion(module, &left, &top, &right, &bottom);
+        if ((me->src_width != (right - left)) || (me->src_height != (bottom - top))) {
+            pr_err("%s: current clipper setting is differ from me\n", __func__);
+            pr_err("clipper(%d,%d--%d,%d)\n", left, top, right, bottom);
+            pr_err("me(%d,%d--%d,%d)\n", 0, 0, me->src_width, me->src_height);
+            pr_err("setting force me to clipper\n");
+
+            NX_VIP_SetClipRegion(module, 0, 0, right, bottom);
+            NX_VIP_SetDecimation(module,
+                    right, bottom,
+                    right, bottom);
+
+        } else {
+            NX_VIP_SetClipRegion(module, 0, 0, me->src_width, me->src_height);
+            NX_VIP_SetDecimation(module,
+                    me->src_width, me->src_height,
+                    me->target_width, me->target_height);
+        }
+        NX_VIP_SetDecimatorFormat(module,
+                _convert_to_vip_format(me->code) , false, false, false);
+    }
+#endif
 
     return 0;
 }
@@ -111,9 +138,9 @@ static int _hw_set_addr(struct nxp_decimator *me, struct nxp_video_buffer *buf)
                 buf->stride[0], 0);
 #endif
     } else {
-        /* printk("%s decimator: addr LU(0x%x) CB(0x%x) CR(0x%x), stride LU(%d) CB(%d) CR(%d)\n", */
-        /*         __func__, buf->dma_addr[0], buf->dma_addr[1], buf->dma_addr[2], */
-        /*         buf->stride[0], buf->stride[1], buf->stride[2]); */
+         /*printk("%s decimator: addr LU(0x%x) CB(0x%x) CR(0x%x), stride LU(%d) CB(%d) CR(%d)\n",*/
+                 /*__func__, buf->dma_addr[0], buf->dma_addr[1], buf->dma_addr[2],*/
+                 /*buf->stride[0], buf->stride[1], buf->stride[2]);*/
         _lu_addr = buf->dma_addr[0];
         _cb_addr = buf->dma_addr[1];
         _cr_addr = buf->dma_addr[2];
@@ -519,6 +546,7 @@ static int nxp_decimator_s_stream(struct v4l2_subdev *sd, int enable)
     }
 #else
     if (enable) {
+        printk("%s: my state 0x%x\n", __func__, NXP_ATOMIC_READ(&me->state));
         if (NXP_ATOMIC_READ(&me->state) != NXP_DECIMATOR_STATE_RUNNING) {
             struct v4l2_subdev *remote = _get_remote_source_subdev(me);
             if (!remote) {

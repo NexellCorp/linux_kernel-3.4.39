@@ -33,6 +33,8 @@
 #include <mach/platform.h>
 #endif
 
+#define TURNAROUND_VIP_STOP_BUG
+
 /*
  * child bitmap
  */
@@ -62,7 +64,7 @@ static struct sensor_sysfs_info {
  * hw function
  */
 /* debugging */
-#define DUMP_REGISTER 0
+#define DUMP_REGISTER 1
 void dump_register(int module)
 {
 #if (DUMP_REGISTER)
@@ -151,10 +153,189 @@ static int _hw_get_irq_num(struct nxp_capture *me)
     return NX_VIP_GetInterruptNumber(me->module);
 }
 
+#if defined(TURNAROUND_VIP_STOP_BUG)
+static NX_VIP_RegisterSet s_reg_backup[3];
+static void _backup_register(int module)
+{
+    NX_VIP_RegisterSet *pREG = (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
+    NX_VIP_RegisterSet *pBackupReg = &s_reg_backup[module];
+    pBackupReg->VIP_CONFIG = pREG->VIP_CONFIG;
+    pBackupReg->VIP_SYNCCTRL = pREG->VIP_SYNCCTRL;
+    pBackupReg->VIP_VBEGIN = pREG->VIP_VBEGIN;
+    pBackupReg->VIP_VEND = pREG->VIP_VEND;
+    pBackupReg->VIP_HBEGIN = pREG->VIP_HBEGIN;
+    pBackupReg->VIP_HEND = pREG->VIP_HEND;
+    pBackupReg->VIP_FIFOCTRL = pREG->VIP_FIFOCTRL;
+    /*pBackupReg->VIP_PADCLK_SEL = pREG->VIP_PADCLK_SEL;*/
+    /*pBackupReg->VIP_INFIFOCLR = pREG->VIP_INFIFOCLR;*/
+    pBackupReg->VIP_CDENB = pREG->VIP_CDENB;
+    pBackupReg->VIP_IMGWIDTH = pREG->VIP_IMGWIDTH;
+    pBackupReg->VIP_IMGHEIGHT = pREG->VIP_IMGHEIGHT;
+    pBackupReg->CLIP_LEFT = pREG->CLIP_LEFT;
+    pBackupReg->CLIP_RIGHT = pREG->CLIP_RIGHT;
+    pBackupReg->CLIP_TOP = pREG->CLIP_TOP;
+    pBackupReg->CLIP_BOTTOM = pREG->CLIP_BOTTOM;
+    pBackupReg->DECI_TARGETW = pREG->DECI_TARGETW;
+    pBackupReg->DECI_TARGETH = pREG->DECI_TARGETH;
+    pBackupReg->DECI_DELTAW = pREG->DECI_DELTAW;
+    pBackupReg->DECI_DELTAH = pREG->DECI_DELTAH;
+    pBackupReg->DECI_CLEARW = pREG->DECI_CLEARW;
+    pBackupReg->DECI_CLEARH = pREG->DECI_CLEARH;
+#if 0
+    pBackupReg->DECI_FORMAT = pREG->DECI_FORMAT;
+    pBackupReg->DECI_LUADDR = pREG->DECI_LUADDR;
+    pBackupReg->DECI_LUSTRIDE = pREG->DECI_LUSTRIDE;
+    pBackupReg->DECI_CRADDR = pREG->DECI_CRADDR;
+    pBackupReg->DECI_CRSTRIDE = pREG->DECI_CRSTRIDE;
+    pBackupReg->DECI_CBADDR = pREG->DECI_CBADDR;
+    pBackupReg->DECI_CBSTRIDE = pREG->DECI_CBSTRIDE;
+    pBackupReg->CLIP_FORMAT = pREG->CLIP_FORMAT;
+    pBackupReg->CLIP_LUADDR = pREG->CLIP_LUADDR;
+    pBackupReg->CLIP_LUSTRIDE = pREG->CLIP_LUSTRIDE;
+    pBackupReg->CLIP_CRADDR = pREG->CLIP_CRADDR;
+    pBackupReg->CLIP_CRSTRIDE = pREG->CLIP_CRSTRIDE;
+    pBackupReg->CLIP_CBADDR = pREG->CLIP_CBADDR;
+    pBackupReg->CLIP_CBSTRIDE = pREG->CLIP_CBSTRIDE;
+    pBackupReg->VIP_SCANMODE = pREG->VIP_SCANMODE;
+#else
+    pBackupReg->DECI_LUSEG = pREG->DECI_LUSEG;
+    pBackupReg->DECI_CRSEG = pREG->DECI_CRSEG;
+    pBackupReg->DECI_CBSEG = pREG->DECI_CBSEG;
+    pBackupReg->DECI_FORMAT = pREG->DECI_FORMAT;
+    pBackupReg->DECI_ROTFLIP = pREG->DECI_ROTFLIP;
+    pBackupReg->DECI_LULEFT = pREG->DECI_LULEFT;
+    pBackupReg->DECI_CRLEFT = pREG->DECI_CRLEFT;
+    pBackupReg->DECI_CBLEFT = pREG->DECI_CBLEFT;
+    pBackupReg->DECI_LURIGHT = pREG->DECI_LURIGHT;
+    pBackupReg->DECI_CRRIGHT = pREG->DECI_CRRIGHT;
+    pBackupReg->DECI_CBRIGHT = pREG->DECI_CBRIGHT;
+    pBackupReg->DECI_LUTOP = pREG->DECI_LUTOP;
+    pBackupReg->DECI_CRTOP = pREG->DECI_CRTOP;
+    pBackupReg->DECI_CBTOP = pREG->DECI_CBTOP;
+    pBackupReg->DECI_LUBOTTOM = pREG->DECI_LUBOTTOM;
+    pBackupReg->DECI_CRBOTTOM = pREG->DECI_CRBOTTOM;
+    pBackupReg->DECI_CBBOTTOM = pREG->DECI_CBBOTTOM;
+    pBackupReg->CLIP_LUSEG = pREG->DECI_LUSEG;
+    pBackupReg->CLIP_CRSEG = pREG->CLIP_CRSEG;
+    pBackupReg->CLIP_CBSEG = pREG->CLIP_CBSEG;
+    pBackupReg->CLIP_FORMAT = pREG->CLIP_FORMAT;
+    pBackupReg->CLIP_ROTFLIP = pREG->CLIP_ROTFLIP;
+    pBackupReg->CLIP_LULEFT = pREG->CLIP_LULEFT;
+    pBackupReg->CLIP_CRLEFT = pREG->CLIP_CRLEFT;
+    pBackupReg->CLIP_CBLEFT = pREG->CLIP_CBLEFT;
+    pBackupReg->CLIP_LURIGHT = pREG->CLIP_LURIGHT;
+    pBackupReg->CLIP_CRRIGHT = pREG->CLIP_CRRIGHT;
+    pBackupReg->CLIP_CBRIGHT = pREG->CLIP_CBRIGHT;
+    pBackupReg->CLIP_LUTOP = pREG->CLIP_LUTOP;
+    pBackupReg->CLIP_CRTOP = pREG->CLIP_CRTOP;
+    pBackupReg->CLIP_CBTOP = pREG->CLIP_CBTOP;
+    pBackupReg->CLIP_LUBOTTOM = pREG->CLIP_LUBOTTOM;
+    pBackupReg->CLIP_CRBOTTOM = pREG->CLIP_CRBOTTOM;
+    pBackupReg->CLIP_CBBOTTOM = pREG->CLIP_CBBOTTOM;
+    pBackupReg->VIP_SCANMODE = pREG->VIP_SCANMODE;
+    pBackupReg->CLIP_YUYVENB = pREG->CLIP_YUYVENB;
+    pBackupReg->CLIP_BASEADDRH = pREG->CLIP_BASEADDRH;
+    pBackupReg->CLIP_BASEADDRL = pREG->CLIP_BASEADDRL;
+    pBackupReg->CLIP_STRIDEH = pREG->CLIP_STRIDEH;
+    pBackupReg->CLIP_STRIDEL = pREG->CLIP_STRIDEL;
+#endif
+    pBackupReg->VIP_VIP1 = pREG->VIP_VIP1;
+}
+
+static void _restore_register(int module)
+{
+    NX_VIP_RegisterSet *pREG = (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
+    NX_VIP_RegisterSet *pBackupReg = &s_reg_backup[module];
+    pREG->VIP_SYNCCTRL = pBackupReg->VIP_SYNCCTRL;
+    pREG->VIP_VBEGIN = pBackupReg->VIP_VBEGIN;
+    pREG->VIP_VEND = pBackupReg->VIP_VEND;
+    pREG->VIP_HBEGIN = pBackupReg->VIP_HBEGIN;
+    pREG->VIP_HEND = pBackupReg->VIP_HEND;
+    pREG->VIP_FIFOCTRL = pBackupReg->VIP_FIFOCTRL;
+    /*pREG->VIP_PADCLK_SEL = pBackupReg->VIP_PADCLK_SEL;*/
+    /*pREG->VIP_INFIFOCLR = pBackupReg->VIP_INFIFOCLR;*/
+    pREG->VIP_IMGWIDTH = pBackupReg->VIP_IMGWIDTH;
+    pREG->VIP_IMGHEIGHT = pBackupReg->VIP_IMGHEIGHT;
+    pREG->CLIP_LEFT = pBackupReg->CLIP_LEFT;
+    pREG->CLIP_RIGHT = pBackupReg->CLIP_RIGHT;
+    pREG->CLIP_TOP = pBackupReg->CLIP_TOP;
+    pREG->CLIP_BOTTOM = pBackupReg->CLIP_BOTTOM;
+    pREG->DECI_TARGETW = pBackupReg->DECI_TARGETW;
+    pREG->DECI_TARGETH = pBackupReg->DECI_TARGETH;
+    pREG->DECI_DELTAW = pBackupReg->DECI_DELTAW;
+    pREG->DECI_DELTAH = pBackupReg->DECI_DELTAH;
+    pREG->DECI_CLEARW = pBackupReg->DECI_CLEARW;
+    pREG->DECI_CLEARH = pBackupReg->DECI_CLEARH;
+#if 0
+    pREG->DECI_FORMAT = pBackupReg->DECI_FORMAT;
+    pREG->DECI_LUADDR = pBackupReg->DECI_LUADDR;
+    pREG->DECI_LUSTRIDE = pBackupReg->DECI_LUSTRIDE;
+    pREG->DECI_CRADDR = pBackupReg->DECI_CRADDR;
+    pREG->DECI_CRSTRIDE = pBackupReg->DECI_CRSTRIDE;
+    pREG->DECI_CBADDR = pBackupReg->DECI_CBADDR;
+    pREG->DECI_CBSTRIDE = pBackupReg->DECI_CBSTRIDE;
+    pREG->CLIP_FORMAT = pBackupReg->CLIP_FORMAT;
+    pREG->CLIP_LUADDR = pBackupReg->CLIP_LUADDR;
+    pREG->CLIP_LUSTRIDE = pBackupReg->CLIP_LUSTRIDE;
+    pREG->CLIP_CRADDR = pBackupReg->CLIP_CRADDR;
+    pREG->CLIP_CRSTRIDE = pBackupReg->CLIP_CRSTRIDE;
+    pREG->CLIP_CBADDR = pBackupReg->CLIP_CBADDR;
+    pREG->CLIP_CBSTRIDE = pBackupReg->CLIP_CBSTRIDE;
+    pREG->VIP_SCANMODE = pBackupReg->VIP_SCANMODE;
+    pREG->VIP_VIP1 = pBackupReg->VIP_VIP1;
+#else
+    pREG->DECI_LUSEG = pBackupReg->DECI_LUSEG;
+    pREG->DECI_CRSEG = pBackupReg->DECI_CRSEG;
+    pREG->DECI_CBSEG = pBackupReg->DECI_CBSEG;
+    pREG->DECI_FORMAT = pBackupReg->DECI_FORMAT;
+    pREG->DECI_ROTFLIP = pBackupReg->DECI_ROTFLIP;
+    pREG->DECI_LULEFT = pBackupReg->DECI_LULEFT;
+    pREG->DECI_CRLEFT = pBackupReg->DECI_CRLEFT;
+    pREG->DECI_CBLEFT = pBackupReg->DECI_CBLEFT;
+    pREG->DECI_LURIGHT = pBackupReg->DECI_LURIGHT;
+    pREG->DECI_CRRIGHT = pBackupReg->DECI_CRRIGHT;
+    pREG->DECI_CBRIGHT = pBackupReg->DECI_CBRIGHT;
+    pREG->DECI_LUTOP = pBackupReg->DECI_LUTOP;
+    pREG->DECI_CRTOP = pBackupReg->DECI_CRTOP;
+    pREG->DECI_CBTOP = pBackupReg->DECI_CBTOP;
+    pREG->DECI_LUBOTTOM = pBackupReg->DECI_LUBOTTOM;
+    pREG->DECI_CRBOTTOM = pBackupReg->DECI_CRBOTTOM;
+    pREG->DECI_CBBOTTOM = pBackupReg->DECI_CBBOTTOM;
+    pREG->CLIP_LUSEG = pBackupReg->DECI_LUSEG;
+    pREG->CLIP_CRSEG = pBackupReg->CLIP_CRSEG;
+    pREG->CLIP_CBSEG = pBackupReg->CLIP_CBSEG;
+    pREG->CLIP_FORMAT = pBackupReg->CLIP_FORMAT;
+    pREG->CLIP_ROTFLIP = pBackupReg->CLIP_ROTFLIP;
+    pREG->CLIP_LULEFT = pBackupReg->CLIP_LULEFT;
+    pREG->CLIP_CRLEFT = pBackupReg->CLIP_CRLEFT;
+    pREG->CLIP_CBLEFT = pBackupReg->CLIP_CBLEFT;
+    pREG->CLIP_LURIGHT = pBackupReg->CLIP_LURIGHT;
+    pREG->CLIP_CRRIGHT = pBackupReg->CLIP_CRRIGHT;
+    pREG->CLIP_CBRIGHT = pBackupReg->CLIP_CBRIGHT;
+    pREG->CLIP_LUTOP = pBackupReg->CLIP_LUTOP;
+    pREG->CLIP_CRTOP = pBackupReg->CLIP_CRTOP;
+    pREG->CLIP_CBTOP = pBackupReg->CLIP_CBTOP;
+    pREG->CLIP_LUBOTTOM = pBackupReg->CLIP_LUBOTTOM;
+    pREG->CLIP_CRBOTTOM = pBackupReg->CLIP_CRBOTTOM;
+    pREG->CLIP_CBBOTTOM = pBackupReg->CLIP_CBBOTTOM;
+    pREG->VIP_SCANMODE = pBackupReg->VIP_SCANMODE;
+    pREG->CLIP_YUYVENB = pBackupReg->CLIP_YUYVENB;
+    pREG->CLIP_BASEADDRH = pBackupReg->CLIP_BASEADDRH;
+    pREG->CLIP_BASEADDRL = pBackupReg->CLIP_BASEADDRL;
+    pREG->CLIP_STRIDEH = pBackupReg->CLIP_STRIDEH;
+    pREG->CLIP_STRIDEL = pBackupReg->CLIP_STRIDEL;
+#endif
+
+    pREG->VIP_CDENB = pBackupReg->VIP_CDENB;
+    pREG->VIP_CONFIG = pBackupReg->VIP_CONFIG;
+}
+#endif
+
 static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
 {
     CBOOL clip_enable = CFALSE;
     CBOOL deci_enable = CFALSE;
+
 
     if (child & CAPTURE_CHILD_CLIPPER) {
         clip_enable = CTRUE;
@@ -165,19 +346,46 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
     }
 
     if (me->clip_enable != clip_enable || me->deci_enable != deci_enable) {
-        printk("%s: module %d --> changed clip %d/%d, deci %d/%d\n",
-                __func__, me->module, clip_enable, me->clip_enable, deci_enable, me->deci_enable);
+        printk("%s: module %d changed clip %d-->%d, deci %d-->%d\n",
+                __func__, me->module, me->clip_enable, clip_enable, me->deci_enable, deci_enable);
         if (clip_enable || deci_enable) {
+#if 0
+    unsigned long flags;
+    spin_lock_irqsave(&me->lock, flags);
+#endif
             NX_VIP_SetInterruptEnableAll(me->module, CFALSE);
             NX_VIP_ClearInterruptPendingAll(me->module);
+#ifdef TURNAROUND_VIP_STOP_BUG
+            if (me->deci_enable == false && me->clip_enable == false ) {
+                printk("%s: RESET & restore\n", __func__);
+                _backup_register(me->module);
+                NX_VIP_SetVIPEnable(me->module, CFALSE, CFALSE, CFALSE, CFALSE);
+                NX_VIP_ResetFIFO(me->module);
+#if 0
+                mdelay(100);
+#endif
+                NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(me->module), RSTCON_nDISABLE);
+                NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(me->module), RSTCON_nENABLE);
+                /*NX_RSTCON_SetRST(NX_VIP_GetResetNumber(me->module), RSTCON_ASSERT);*/
+                /*NX_RSTCON_SetRST(NX_VIP_GetResetNumber(me->module), RSTCON_NEGATE);*/
+                _restore_register(me->module);
+            }
+#endif
             NX_VIP_SetVIPEnable(me->module, CTRUE, CTRUE, clip_enable, deci_enable);
             NX_VIP_SetInterruptEnable(me->module, CAPTURE_CLIPPER_INT, CTRUE);
+#if 0
+    spin_unlock_irqrestore(&me->lock, flags);
+#endif
         } else {
             NX_VIP_SetVIPEnable(me->module, CFALSE, CFALSE, CFALSE, CFALSE);
         }
+        /*dump_register(me->module);*/
         me->clip_enable = clip_enable;
         me->deci_enable = deci_enable;
+
+        printk("%s: exit\n", __func__);
     }
+
 }
 
 static void _hw_run(struct nxp_capture *me, bool on)
@@ -239,6 +447,10 @@ OUT:
         wake_up_interruptible(&me->wait_change_context);
     }
 #endif
+
+#ifdef TURNAROUND_VIP_STOP_BUG
+#endif
+
     spin_unlock_irqrestore(&me->lock, flags);
 
     return IRQ_HANDLED;

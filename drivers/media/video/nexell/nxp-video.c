@@ -19,6 +19,17 @@
 
 #include "nxp-video.h"
 
+#ifndef ALIGN
+#define ALIGN(x, a) (((x) + (a) - 1) & ~((a) - 1))
+#endif
+
+#define YUV_STRIDE_ALIGN_FACTOR     64
+#define YUV_VSTRIDE_ALIGN_FACTOR    16
+
+#define YUV_STRIDE(w)    ALIGN(w, YUV_STRIDE_ALIGN_FACTOR)
+#define YUV_YSTRIDE(w)   (ALIGN(w/2, YUV_STRIDE_ALIGN_FACTOR) * 2)
+#define YUV_VSTRIDE(h)   ALIGN(h, YUV_VSTRIDE_ALIGN_FACTOR)
+
 /*
  * static variables
  */
@@ -124,6 +135,7 @@ _find_format(u32 pixelformat, int index)
     return def_fmt;
 }
 
+#if 1
 static int
 _set_plane_size(struct nxp_video_frame *frame, unsigned int sizes[])
 {
@@ -137,12 +149,22 @@ _set_plane_size(struct nxp_video_frame *frame, unsigned int sizes[])
         break;
 
     case V4L2_PIX_FMT_YUV420M:
+#if 0
         frame->size[0] = sizes[0] = frame->width * frame->height;
         frame->size[1] = sizes[1] =
         frame->size[2] = sizes[2] = frame->size[0] >> 2;
 
         frame->stride[0] = frame->width;
         frame->stride[1] = frame->stride[2] = frame->width >> 1;
+#else
+        frame->size[0] = sizes[0] = YUV_YSTRIDE(frame->width) * YUV_VSTRIDE(frame->height);
+        frame->size[1] = sizes[1] =
+        frame->size[2] = sizes[2] = YUV_STRIDE(frame->width/2) * YUV_VSTRIDE(frame->height/2);
+
+        frame->stride[0] = YUV_YSTRIDE(frame->width);
+        frame->stride[1] = YUV_STRIDE(frame->width/2);
+        frame->stride[2] = YUV_STRIDE(frame->width/2);
+#endif
         break;
 
     case V4L2_PIX_FMT_YUV420:
@@ -201,6 +223,84 @@ _set_plane_size(struct nxp_video_frame *frame, unsigned int sizes[])
 
     return 0;
 }
+#else
+static int
+_set_plane_size(struct nxp_video_frame *frame, unsigned int sizes[])
+{
+    switch (frame->format.pixelformat) {
+    case V4L2_PIX_FMT_YUYV:
+        frame->size[0] = sizes[0] = YUV_STRIDE(frame->width*2) * YUV_VSTRIDE(frame->height);
+        frame->stride[0] = YUV_STRIDE(frame->width*2);
+        break;
+
+    case V4L2_PIX_FMT_YUV420M:
+        frame->size[0] = sizes[0] = YUV_YSTRIDE(frame->width) * YUV_VSTRIDE(frame->height);
+        frame->size[1] = sizes[1] =
+        frame->size[2] = sizes[2] = YUV_STRIDE(frame->width/2) * YUV_VSTRIDE(frame->height/2);
+
+        frame->stride[0] = YUV_YSTRIDE(frame->width);
+        frame->stride[1] = YUV_STRIDE(frame->width/2);
+        frame->stride[2] = YUV_STRIDE(frame->width/2);
+        break;
+
+    case V4L2_PIX_FMT_YUV420:
+        frame->size[0] = sizes[0] = YUV_YSTRIDE(frame->width) * YUV_VSTRIDE(frame->height);
+        frame->size[1] = sizes[1] =
+        frame->size[2] = sizes[2] = YUV_STRIDE(frame->width/2) * YUV_VSTRIDE(frame->height/2);
+
+        frame->stride[0] = YUV_YSTRIDE(frame->width);
+        frame->stride[1] = YUV_STRIDE(frame->width/2);
+        frame->stride[2] = YUV_STRIDE(frame->width/2);
+        break;
+
+    case V4L2_PIX_FMT_NV16:
+        frame->size[0] = sizes[0] =
+        frame->size[1] = sizes[1] = YUV_STRIDE(frame->width) * YUV_VSTRIDE(frame->height);
+
+        frame->stride[0] = frame->stride[1] = YUV_STRIDE(frame->width);
+        break;
+
+    case V4L2_PIX_FMT_NV21:
+        frame->size[0] = sizes[0] = YUV_STRIDE(frame->width) * YUV_VSTRIDE(frame->height);
+        frame->size[1] = YUV_STRIDE(frame->width) * YUV_VSTRIDE(frame->height/2);
+
+        frame->stride[0] = YUV_STRIDE(frame->width);
+        frame->stride[1] = YUV_STRIDE(frame->width);
+        break;
+
+    case V4L2_PIX_FMT_YUV422P:
+        frame->size[0] = sizes[0] = YUV_STRIDE(frame->width) * YUV_VSTRIDE(frame->height);
+        frame->size[1] = frame->size[2] = sizes[1] = sizes[2] = YUV_STRIDE(frame->width) * YUV_VSTRIDE(frame->height/2);
+
+        frame->stride[0] = YUV_STRIDE(frame->width);
+        frame->stride[1] = frame->stride[2] = YUV_STRIDE(frame->width);
+        break;
+
+    case V4L2_PIX_FMT_YUV444:
+        frame->size[0] = frame->size[1] = frame->size[2] = sizes[0] =
+            sizes[1] = sizes[2] = YUV_STRIDE(frame->width) * YUV_VSTRIDE(frame->height);
+        frame->stride[0] = frame->stride[1] = frame->stride[2] =
+            YUV_STRIDE(frame->width);
+        break;
+
+    case V4L2_PIX_FMT_RGB565:
+        frame->size[0] = sizes[0] = (frame->width * frame->height) << 1;
+        frame->stride[0] = frame->width << 1;
+        break;
+
+    case V4L2_PIX_FMT_RGB32:
+        frame->size[0] = sizes[0] = (frame->width * frame->height) << 2;
+        frame->stride[0] = (frame->width) << 2;
+        break;
+
+    default:
+        pr_err("%s: unknown format(%d)\n", __func__, frame->format.pixelformat);
+        return -EINVAL;
+    }
+
+    return 0;
+}
+#endif
 
 static unsigned long
 plane_addr(struct vb2_buffer *vb, u32 plane_no)

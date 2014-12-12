@@ -387,14 +387,14 @@ static int _hw_set_addr(struct nxp_vin_clipper *me, struct nxp_video_buffer *buf
     } else {
         if (me->format[1].code == V4L2_MBUS_FMT_YUYV8_2X8) {
             /*printk("%s: clipper bufs 0x%x, stride %d\n",*/
-            /*    __func__, buf->dma_addr[0], buf->stride[0]);*/
+                /*__func__, buf->dma_addr[0], buf->stride[0]);*/
             NX_VIP_SetClipperAddrYUYV(module, buf->dma_addr[0], buf->stride[0]>>1);
         } else {
             u32 nx_format = _convert_to_nxp_vip_format(me->format[1].code);
             struct v4l2_rect *c = &me->crop;
             /*printk("%s: clipper bufs 0x%x, 0x%x, 0x%x, stride %d, %d,%d\n",*/
-            /*    __func__, buf->dma_addr[0], buf->dma_addr[1], buf->dma_addr[2],*/
-            /*    buf->stride[0], buf->stride[1], buf->stride[2]);*/
+                /*__func__, buf->dma_addr[0], buf->dma_addr[1], buf->dma_addr[2],*/
+                /*buf->stride[0], buf->stride[1], buf->stride[2]);*/
             /*NX_VIP_SetClipperAddr(module, nx_format, c->width - c->left, c->height - c->top,*/
             NX_VIP_SetClipperAddr(module, nx_format, c->width, c->height,
                     buf->dma_addr[0], buf->dma_addr[1], buf->dma_addr[2],
@@ -458,6 +458,8 @@ static int _configure(struct nxp_vin_clipper *me, int enable)
         printk("FIFO Reset\n");
         NX_VIP_SetFIFOResetMode(parent->get_module_num(parent), NX_VIP_FIFORESET_ALL);
         NX_VIP_ResetFIFO(parent->get_module_num(parent));
+
+        printk("FIFO Statue: 0x%x\n", NX_VIP_GetFIFOStatus(parent->get_module_num(parent)));
 
         if (me->platdata->late_power_down)
             queue_delayed_work(system_nrt_wq, &me->work_power_down, msecs_to_jiffies(LATE_POWERDOWN_TIMEOUT_MS));
@@ -947,7 +949,8 @@ static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
     if (!strncmp(hostname, "VIDEO", 5))
         is_host_video = true;
 
-    pr_debug("%s: state:0x%x, hostname: %s, en:%d\n", __func__, NXP_ATOMIC_READ(&me->state), hostname, enable);
+    /*pr_debug("%s: state:0x%x, hostname: %s, en:%d\n", __func__, NXP_ATOMIC_READ(&me->state), hostname, enable);*/
+    printk("%s: state:0x%x, hostname: %s, en:%d\n", __func__, NXP_ATOMIC_READ(&me->state), hostname, enable);
 
     if (enable) {
         /* printk("lu_addr: %p, cb_addr: %p, cr_addr: %p\n", &_lu_addr, &_cb_addr, &_cr_addr); */
@@ -977,9 +980,31 @@ static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
                 NX_VIP_GetDeciSource(module, &src_width, &src_height);
                 if (c->width != src_width || c->height != src_height) {
                     NX_VIP_GetDecimation(module, &dst_width, &dst_height, NULL, NULL, NULL, NULL);
-                    printk("SetDecimation: src(%dx%d), dst(%dx%d)\n", c->width, c->height, dst_width, dst_height);
-                    NX_VIP_SetDecimation(module, c->width, c->height, dst_width, dst_height);
+                    if (dst_width > c->width || dst_height > c->height) {
+                        pr_err("%s: Decimator wxh(%dx%d) is bigger than clipper(%dx%d)\n", __func__, dst_width, dst_height, c->width, c->height);
+                        NX_VIP_SetDecimation(module, c->width, c->height, c->width, c->height);
+                    } else {
+                        printk("%s: SetDecimation: src(%dx%d), dst(%dx%d)\n", __func__, c->width, c->height, dst_width, dst_height);
+                        if (dst_width > 0 && dst_height > 0)
+                            NX_VIP_SetDecimation(module, c->width, c->height, dst_width, dst_height);
+                    }
                 }
+            } else {
+#if 0
+                struct v4l2_rect *c = &me->crop;
+                U32 src_width, src_height, dst_width, dst_height;
+                NX_VIP_GetDeciSource(module, &src_width, &src_height);
+                if (c->width != src_width || c->height != src_height) {
+                    NX_VIP_GetDecimation(module, &dst_width, &dst_height, NULL, NULL, NULL, NULL);
+                    if (dst_width > c->width || dst_height > c->height) {
+                        pr_err("%s--> 2: Decimator wxh(%dx%d) is bigger than clipper(%dx%d)\n", __func__, dst_width, dst_height, c->width, c->height);
+                        NX_VIP_SetDecimation(module, c->width, c->height, c->width, c->height);
+                    } else {
+                        printk("%s--> 2: SetDecimation: src(%dx%d), dst(%dx%d)\n", __func__, c->width, c->height, dst_width, dst_height);
+                        NX_VIP_SetDecimation(module, c->width, c->height, dst_width, dst_height);
+                    }
+                }
+#endif
             }
             parent->run(parent, me);
             NXP_ATOMIC_SET_MASK(NXP_VIN_STATE_RUNNING_CLIPPER, &me->state);
