@@ -47,7 +47,7 @@
  */
 #define CFG_UART_DEBUG_CH						0	/* For Low level debug */
 #define	CFG_UART_DEBUG_BAUDRATE					115200
-#define	CFG_UART_CLKGEN_CLOCK_HZ				14750000	/* 50000000 */
+#define	CFG_UART_CLKGEN_CLOCK_HZ				50000000 /* 50000000 */
 
 /*------------------------------------------------------------------------------
  * 	Timer List (SYS = Source, EVT = Event, WDT = WatchDog)
@@ -224,9 +224,9 @@
 /*------------------------------------------------------------------------------
  * 	Keypad
  */
+#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0 }
+#define CFG_KEYPAD_KEY_CODE						{ KEY_POWER }
 
-#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_A + 17, PAD_GPIO_A + 16, PAD_GPIO_ALV + 0 }
-#define CFG_KEYPAD_KEY_CODE						{ KEY_VOLUMEDOWN, KEY_VOLUMEUP, KEY_POWER }
 #define CFG_KEYPAD_REPEAT						CFALSE /* 0: Repeat Off 1 : Repeat On */
 
 /*------------------------------------------------------------------------------
