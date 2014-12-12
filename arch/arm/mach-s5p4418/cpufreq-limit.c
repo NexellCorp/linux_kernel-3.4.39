@@ -120,7 +120,7 @@ out:
 
 
 #if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-long cpuUsage_Process(struct cpufreq_limit_data *limit, int boost);
+extern long cpuUsage_Process(struct cpufreq_limit_data *limit, int boost);
 int curMaxCpu = 0;
 #endif
 static void cpufreq_set_max_frequency(struct cpufreq_limit_data *limit, int boost)
@@ -133,12 +133,9 @@ static void cpufreq_set_max_frequency(struct cpufreq_limit_data *limit, int boos
 
 #if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	limit->timer_chkcpu_mod = 1-limit->timer_chkcpu_mod;
-	if (limit->timer_chkcpu_mod)
-	{
+	if (limit->timer_chkcpu_mod) {
 		max_freq = cpuUsage_Process(limit, boost);
-	}
-	else
-	{
+	} else {
 		if(limit->pre_max_freq != 0)
 			max_freq = limit->pre_max_freq;
 		else

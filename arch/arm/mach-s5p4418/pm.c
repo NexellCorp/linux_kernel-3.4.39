@@ -278,7 +278,7 @@ static void suspend_cores(suspend_state_t stat)
 				break;
 		}
 
-#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
 		if (SUSPEND_SUSPEND == stat) {
 			NX_RSTCON_SetBaseAddress(IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
 			NX_RSTCON_SetnRST(reset, RSTCON_nDISABLE);
@@ -310,7 +310,7 @@ static inline unsigned int __calc_crc(void *addr, int len)
 	return crc;
 }
 
-#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
 static void suspend_mark(suspend_state_t stat)
 {
 	struct suspend_mark_up mark = {
@@ -457,7 +457,7 @@ static void suspend_gpio(suspend_state_t stat)
 		}
 	} else {
 		for (i = 0; size > i; i++, gpio++, base += 0x1000) {
-#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
 			for (j = 0; j < 10; j++)
 				writel(gpio->reg_val[j], (base+0x40+(j<<2)));
 #endif
@@ -536,7 +536,7 @@ static void suspend_intc(suspend_state_t stat)
 	}
 }
 
-#if defined (CONFIG_SUSPEND_STOP)
+#if defined (CONFIG_S5P4418_PM_STOP)
 static void cpu_do_stop(void)
 {
     struct NX_CLKPWR_RegisterSet *clkpwr =
@@ -550,17 +550,17 @@ static void cpu_do_stop(void)
 static int __powerdown(unsigned long arg)
 {
 	int ret = suspend_machine();
-#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
 	void (*power_down)(ulong, ulong) = NULL;
 #endif
 
 	if (0 == ret)
 		pm_suspend_data_restore(NULL);
 
-#if defined (CONFIG_SUSPEND_IDLE)
+#if defined (CONFIG_S5P4418_PM_IDLE)
 	lldebugout("Go to IDLE...\n");
 #endif
-#if defined (CONFIG_SUSPEND_STOP)
+#if defined (CONFIG_S5P4418_PM_STOP)
 	lldebugout("Go to STOP...\n");
 #endif
 
@@ -570,9 +570,9 @@ static int __powerdown(unsigned long arg)
 	if (0 > ret)
 		return ret;	/* wake up */
 
-#if defined (CONFIG_SUSPEND_IDLE)
+#if defined (CONFIG_S5P4418_PM_IDLE)
 	cpu_do_idle();
-#elif defined (CONFIG_SUSPEND_STOP)
+#elif defined (CONFIG_S5P4418_PM_STOP)
 	cpu_do_stop();
 	mdelay(10);
 #else
@@ -651,7 +651,7 @@ static int suspend_enter(suspend_state_t state)
 	suspend_gpio(SUSPEND_SUSPEND);
 	suspend_alive(SUSPEND_SUSPEND);
 	suspend_l2cache(SUSPEND_SUSPEND);
-#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
 	suspend_mark(SUSPEND_SUSPEND);
 #endif
 
@@ -668,7 +668,7 @@ static int suspend_enter(suspend_state_t state)
 	/*
 	 * Wakeup status
 	 */
-#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
 	suspend_mark(SUSPEND_RESUME);
 #endif
 	suspend_l2cache(SUSPEND_RESUME);
@@ -725,7 +725,7 @@ static int __init suspend_ops_init(void)
 	pm_suspend_data_save(NULL);
 	suspend_set_ops(&suspend_ops);
 
-#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
 	do_suspend = __arm_ioremap_exec(0xffff0000, 0x10000, 0);
 	if (!do_suspend)
 		printk("Fail, ioremap for suspend callee\n");
@@ -774,7 +774,7 @@ void nxp_cpu_goto_stop(void)
 	suspend_gpio(SUSPEND_SUSPEND);
 	suspend_alive(SUSPEND_SUSPEND);
 	suspend_l2cache(SUSPEND_SUSPEND);
-#if !defined (CONFIG_SUSPEND_IDLE) && !defined (CONFIG_SUSPEND_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
 	suspend_mark(SUSPEND_SUSPEND);
 #endif
 

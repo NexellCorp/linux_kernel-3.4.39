@@ -86,7 +86,7 @@ EXPORT_SYMBOL_GPL(isCpuMaxFrequency);
 
 
 #define SIZE_RD_STAT 128
-extern int NXL_Get_BoardTemperature(void);
+extern int NXP_Get_BoardTemperature(void);
 #if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 extern int isOccured_dieError(void);
 #endif
@@ -252,7 +252,6 @@ static int _read_statfile(char *path, char *buf, int size)
 	sys_close(fd);
 
 	return 0;
-
 }
 
 /*
@@ -564,7 +563,7 @@ long funcGetMaxFreq_OnBoost(struct cpufreq_limit_data *limit)//, int *t)
 
 long cpuUsage_Process(struct cpufreq_limit_data *limit, int boost)
 {
-	ctrl_cpuTemp.board_temperature = NXL_Get_BoardTemperature();
+	ctrl_cpuTemp.board_temperature = NXP_Get_BoardTemperature();
 
 	if(boost) // if over temperature, can't use max_clock.
 		return funcGetMaxFreq_OnBoost(limit);

@@ -191,6 +191,11 @@ static int __init cpu_l2cach_init(void)
 	__raw_writel(prefetch_ctrl, (__PB_IO_MAP_L2C_VIRT + L2X0_PREFETCH_CTRL));
 	__raw_writel(pwr_ctrl, (__PB_IO_MAP_L2C_VIRT + L2X0_POWER_CTRL));
 
+#if defined (CONFIG_CPU_S5P4418_EX_PERI_BUS)
+	__raw_writel(0xCFF00000, __PB_IO_MAP_L2C_VIRT + L2X0_ADDR_FILTER_END);        // FILTERING END
+	__raw_writel(0xC0000001, __PB_IO_MAP_L2C_VIRT + L2X0_ADDR_FILTER_START);      // FILTERING START + ENABLE
+#endif
+
 	/* l2cache init */
 	l2x0_init((void __iomem *)__PB_IO_MAP_L2C_VIRT, L2_AUX_NEW_VAL, L2_AUX_DEF_MASK);
 
