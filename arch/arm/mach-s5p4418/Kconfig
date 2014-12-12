@@ -47,17 +47,10 @@ choice
 	config SUSPEND_POWEROFF
 		bool "Goto Power Off when Suspend"
 		depends on SUSPEND
-		default n
 
 	config SUSPEND_IDLE
 		bool "Goto idle when Suspend"
 		depends on SUSPEND
-		default n
-
-	config SUSPEND_STOP
-		bool "Goto stop when Suspend"
-		depends on SUSPEND
-		default n
 endchoice
 
 config CPU_S5P4418_EX_PERI_BUS
