@@ -210,15 +210,15 @@ static void s5p4418_asv_modify_vol(unsigned long (*freq_tables)[2],
 	long uV, dv, new;
 	int i = 0;
 
-	if (NULL == pAsv_Table || (0 > value))
+	if (NULL == freq_tables ||
+		NULL == pAsv_Table || (0 > value))
 		return;
 
-	/* restore voltage */
-	if (0 == value) {
-		for (i=0; FREQ_ARRAY_SIZE > i; i++)
-			freq_tables[i][1] = pAsv_Table->uV[i];
-		return;
-	}
+	/* initialzie */
+	for (i=0; FREQ_ARRAY_SIZE > i; i++)
+		freq_tables[i][1] = pAsv_Table->uV[i];
+
+	printk("DVFS:%s%ld%s\n", down?"-":"+", value, percent?"%":"mV");
 
 	/* new voltage */
 	for (i=0; FREQ_ARRAY_SIZE > i; i++) {
@@ -231,7 +231,7 @@ static void s5p4418_asv_modify_vol(unsigned long (*freq_tables)[2],
 			if (down) new += step_align;	/* Upper */
 		}
 
-		pr_debug("%7ldkhz, %7ld (%s%ld) align %ld (%s) -> %7ld\n",
+		printk("%7ldkhz, %7ld (%s%ld) align %ld (%s) -> %7ld\n",
 			freq_tables[i][0], freq_tables[i][1],
 			down?"-":"+", dv, step_align, (new % step_align)?"X":"O", new);
 

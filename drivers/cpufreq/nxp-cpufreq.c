@@ -650,6 +650,10 @@ static struct cpufreq_driver nxp_cpufreq_driver = {
 	.attr    = nxp_cpufreq_attr,
 };
 
+#define	DEFAULT_VOL_MARGIN_VAL		(0)
+#define	DEFAULT_VOL_MARGIN_DN		(true)
+#define	DEFAULT_VOL_MARGIN_PERCENT	(true)
+
 static int nxp_cpufreq_probe(struct platform_device *pdev)
 {
 	struct nxp_cpufreq_plat_data *plat = pdev->dev.platform_data;
@@ -664,9 +668,17 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 	/*
 	 * check asv support
 	 */
-	if (asv_ops->setup_table)
+	if (asv_ops->setup_table) {
 		tb_size = asv_ops->setup_table(st_freq_tables);
-
+		/* for TEST */
+		#if (DEFAULT_VOL_MARGIN_VAL)
+		if (asv_ops->modify_vol)
+			asv_ops->modify_vol(st_freq_tables,
+				DEFAULT_VOL_MARGIN_VAL,
+				DEFAULT_VOL_MARGIN_DN,
+				DEFAULT_VOL_MARGIN_PERCENT);
+		#endif
+	}
 	if (0 >= tb_size &&
 		(!plat || !plat->freq_table || !plat->table_size)) {
 		dev_err(&pdev->dev, "%s: failed no freq table !!!\n", __func__);
