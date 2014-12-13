@@ -399,11 +399,11 @@ static int nxp_adc_resume(struct platform_device *pdev)
 
 #if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 int eBoard_temperature = 0;
-int NXL_Get_BoardTemperature(void)
+int NXP_Get_BoardTemperature(void)
 {
 	return eBoard_temperature;
 }
-EXPORT_SYMBOL_GPL(NXL_Get_BoardTemperature);
+EXPORT_SYMBOL_GPL(NXP_Get_BoardTemperature);
 
 static int nxp_cpufreq_pm_notify(struct notifier_block *this,
         unsigned long mode, void *unused)

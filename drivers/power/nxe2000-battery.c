@@ -447,7 +447,7 @@ void nxe2000_register_dump(struct device *dev)
 #if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 //#define pr_debug	printk
 
-extern int NXL_Get_BoardTemperature(void);
+extern int NXP_Get_BoardTemperature(void);
 extern int isCheck_ChargeStop_byResource(void);
 
 int pmic_occur_dieError=0;
@@ -3766,7 +3766,7 @@ static int get_power_supply_status(struct nxe2000_battery_info *info)
 	if(charge_state == CHG_STATE_DIE_ERR)
 	{
 		uint8_t dieTempReg;
-		extern int NXL_Get_BoardTemperature(void);
+		extern int NXP_Get_BoardTemperature(void);
 		ret = nxe2000_read(info->dev->parent, NXE2000_REG_CHGISET, &dieTempReg);// (info->dev->parent, NXE2000_REG_CHGISET, CHARGE_CURRENT_100MA);
 		ret = nxe2000_read(info->dev->parent, 0xB3, &dieTempReg);
 		printk("________die Error. dieTempReg:0x%x\n", dieTempReg);
@@ -4608,10 +4608,10 @@ static void suspend_charge4first_soc(struct nxe2000_battery_info *info)
 static int get_battery_temp(struct nxe2000_battery_info *info)
 {
 #if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-	if(NXL_Get_BoardTemperature() == 0)
+	if(NXP_Get_BoardTemperature() == 0)
 		return 270;
 
-	return (10*(NXL_Get_BoardTemperature()-20));
+	return (10*(NXP_Get_BoardTemperature()-20));
 #else
 	int ret = 0;
 	int sign_bit;
@@ -4645,10 +4645,10 @@ static int get_battery_temp(struct nxe2000_battery_info *info)
 static int get_battery_temp_2(struct nxe2000_battery_info *info)
 {
 #if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-	if(NXL_Get_BoardTemperature() == 0)
+	if(NXP_Get_BoardTemperature() == 0)
 		return 270;
 
-	return (10*(NXL_Get_BoardTemperature()-20));
+	return (10*(NXP_Get_BoardTemperature()-20));
 #else
 	uint8_t reg_buff[2];
 	long temp, temp_off, temp_gain;
