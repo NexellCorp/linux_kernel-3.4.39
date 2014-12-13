@@ -199,6 +199,7 @@ static unsigned long cpu_pll_round(int pllno, unsigned long rate, int *p, int *m
 		return 0;
 	}
 
+	/* array index so -1 */
 	idx = len/2;
 
 	while (1) {
