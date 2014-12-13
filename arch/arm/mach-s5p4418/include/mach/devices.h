@@ -311,4 +311,14 @@ struct nxp_ohci_platdata {
 	int (*phy_exit)(struct platform_device *pdev, int type);
 };
 
+/*
+ * ADC TMU
+ */
+struct nxp_adc_tmp_platdata {
+	int channel;
+	int tmp_offset;
+	int duration;				/* default 100ms */
+	void (*callback)(int ch, int value, int temp, bool run);
+};
+
 #endif    /* __DEVICES_H__ */

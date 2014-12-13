@@ -132,6 +132,7 @@ obj-$(CONFIG_SENSORS_STK831X)	+= stk831x.o
 obj-$(CONFIG_PMBUS)		+= pmbus/
 obj-$(CONFIG_BOSCH)		+= bosch/
 obj-$(CONFIG_SENSORS_BMA222E_NX)	+= bma222-nx.o
+obj-$(CONFIG_SENSORS_NXP_ADC_TEMP)	+= nxp_adc_temp.o
 
 ccflags-$(CONFIG_HWMON_DEBUG_CHIP) := -DDEBUG
 

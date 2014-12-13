@@ -574,7 +574,7 @@ unsigned int nxp_cpu_version(void)
 
 void nxp_cpu_base_init(void)
 {
-	unsigned int  rev, ver = 0;
+	unsigned int  rev = 0;
 	unsigned int string[12] = { 0, };
 #ifdef CONFIG_SMP
 	unsigned int scu_ctrl = 0x0009;

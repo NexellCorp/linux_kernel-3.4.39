@@ -27,6 +27,8 @@
 #include <linux/power_supply.h>
 #include <linux/irq.h>
 #include <linux/amba/pl022.h>
+#include <linux/syscalls.h>
+#include <linux/fs.h>
 
 /* nexell soc headers */
 #include <mach/platform.h>
@@ -125,6 +127,83 @@ static struct platform_device dfs_plat_device = {
 	.name			= DEV_NAME_CPUFREQ,
 	.dev			= {
 		.platform_data	= &dfs_plat_data,
+	}
+};
+#endif
+
+/*------------------------------------------------------------------------------
+ * ADC TMU
+ */
+#if defined(CONFIG_SENSORS_NXP_ADC_TEMP)
+#if defined (CONFIG_ARM_NXP_CPUFREQ)
+#define	SYS_DVFS_SCALING_PATH 	"/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq"
+
+static int set_max_scale(const char *file, long new)
+{
+	mm_segment_t old_fs;
+	char buf[32];
+	long max = 0;
+
+	int fd = sys_open(file, O_RDWR, 0);
+   	old_fs = get_fs();
+	if (0 > fd)
+		return -EINVAL;
+
+	set_fs(KERNEL_DS);
+	sys_read(fd, (void*)buf, sizeof(buf));
+
+	max = simple_strtoul(buf, NULL, 10);
+	if (max != new) {
+		sprintf(buf, "%ld", new);
+		sys_write(fd, (void*)buf, sizeof(buf));
+	}
+
+	set_fs(old_fs);
+	sys_close(fd);
+	return 0;
+}
+
+#define	FREQ_TEMP_OVER			45	// 85
+#define	FREQ_TEMP_RELAX			42	//	70
+static long relax_time = 0;
+static long scale_down = 0, scale_up   = 1;
+
+static void adc_tmp_cb(int ch, int value, int temp, bool run)
+{
+	if (temp >= FREQ_TEMP_OVER && scale_up) {
+		printk("<FRQ DN: temp %d>\n", temp);
+		relax_time = ktime_to_ms(ktime_get());
+		scale_down = 1; scale_up = 0;
+		set_max_scale(SYS_DVFS_SCALING_PATH, 400000);
+	}
+
+	if (FREQ_TEMP_RELAX >= temp && scale_down) {
+		if (2000 > (ktime_to_ms(ktime_get()) - relax_time))
+			return;
+		relax_time = 0; scale_down = 0; scale_up = 1;
+		printk("<FRQ UP: temp %d>\n", temp);
+		set_max_scale(SYS_DVFS_SCALING_PATH, 1400000);
+	}
+
+	if (false == run) {
+		printk("<FRQ Restore>\n");
+		set_max_scale(SYS_DVFS_SCALING_PATH, 1400000);
+	}
+}
+#endif
+
+static struct nxp_adc_tmp_platdata adc_tmp_data = {
+	.channel = 0,
+	.tmp_offset = 13,
+#if defined (CONFIG_ARM_NXP_CPUFREQ)
+	.callback = adc_tmp_cb,
+#endif
+};
+
+static struct platform_device tmu_plat_device = {
+	.name			= "nxp-adc-tmp",
+	.dev			= {
+		.platform_data	= &adc_tmp_data,
 	}
 };
 #endif
@@ -1132,7 +1211,7 @@ static void front_camera_vin_setup_io(int module, bool force)
             { PAD_GPIO_B +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  4, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_B +  6, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  8, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
-#endif						
+#endif
 
 #if 1 //vid 2
             /* VCLK, HSYNC, VSYNC */
@@ -1213,9 +1292,9 @@ static int front_camera_power_enable(bool on);
 
 static int back_camera_power_enable(bool on)
 {
-#if 0	
+#if 0
     unsigned int io = CFG_IO_CAMERA_BACK_POWER_DOWN;
-#endif		
+#endif
     unsigned int reset_io = CFG_IO_CAMERA_BACK_RESET;
   	printk(KERN_INFO "%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
 
@@ -1225,7 +1304,7 @@ static int back_camera_power_enable(bool on)
             camera_power_control(1);
 						mdelay(100);
 
-#if 0						
+#if 0
             /* power enalbe & clk generration */
             nxp_soc_gpio_set_out_value(io, 1);
             nxp_soc_gpio_set_io_dir(io, 1);
@@ -1235,9 +1314,9 @@ static int back_camera_power_enable(bool on)
             /* RST signal */
             nxp_soc_gpio_set_out_value(reset_io, 0);
             nxp_soc_gpio_set_io_dir(reset_io, 1);
-#if 1						
+#if 1
             nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
-#endif						
+#endif
             mdelay(1);
 
             nxp_soc_gpio_set_out_value(reset_io, 1);
@@ -1379,14 +1458,14 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 				.parallel = {
             .is_mipi        = true,
             .external_sync  = true,
-            .h_active       = 640, 
-            .h_frontporch   = 100, 
+            .h_active       = 640,
+            .h_frontporch   = 100,
             .h_syncwidth    = 10,
-            .h_backporch    = 100, 
-            .v_active       = 480, 
-            .v_frontporch   = 1, 
-            .v_syncwidth    = 1, 
-            .v_backporch    = 1, 
+            .h_backporch    = 100,
+            .v_active       = 480,
+            .v_frontporch   = 1,
+            .v_syncwidth    = 1,
+            .v_backporch    = 1,
             .clock_invert   = false,
             .port           = NX_VIP_INPUTPORT_B,
             .data_order     = NXP_VIN_CBY0CRY1,
@@ -1398,8 +1477,8 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .setup_io       = back_vin_setup_io,
         },
         .deci = {
-            .start_delay_ms = 0, 
-            .stop_delay_ms  = 0, 
+            .start_delay_ms = 0,
+            .stop_delay_ms  = 0,
         },
         .csi = &s5k4ecgx_plat_data,
     },
@@ -1479,14 +1558,14 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 				.parallel = {
             .is_mipi        = true,
             .external_sync  = true,
-            .h_active       = 640, 
-            .h_frontporch   = 100, 
+            .h_active       = 640,
+            .h_frontporch   = 100,
             .h_syncwidth    = 10,
-            .h_backporch    = 100, 
-            .v_active       = 480, 
-            .v_frontporch   = 1, 
-            .v_syncwidth    = 1, 
-            .v_backporch    = 1, 
+            .h_backporch    = 100,
+            .v_active       = 480,
+            .v_frontporch   = 1,
+            .v_syncwidth    = 1,
+            .v_backporch    = 1,
             .clock_invert   = false,
             .port           = NX_VIP_INPUTPORT_B,
             .data_order     = NXP_VIN_CBY0CRY1,
@@ -1498,8 +1577,8 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .setup_io       = back_vin_setup_io,
         },
         .deci = {
-            .start_delay_ms = 0, 
-            .stop_delay_ms  = 0, 
+            .start_delay_ms = 0,
+            .stop_delay_ms  = 0,
         },
         .csi = &s5k4ecgx_plat_data,
 	},
@@ -1730,11 +1809,11 @@ static struct dw_mci_board _dwmci0_data = {
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 					  DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 80 * 1000 * 1000,
+	.bus_hz			= 50 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
 	.get_ro         = _dwmci_get_ro,
 	.get_cd			= _dwmci_get_cd,
 
@@ -1745,11 +1824,11 @@ static struct dw_mci_board _dwmci1_data = {
 static struct dw_mci_board _dwmci2_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 					  DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 80 * 1000 * 1000,
+	.bus_hz			= 50 * 1000 * 1000,
 	.caps			=	MMC_CAP_CMD23,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
 	.get_ro			= _dwmci_get_ro,
 	.get_cd			= _dwmci_get_cd,
 };
@@ -1826,6 +1905,11 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 	printk("plat: add dynamic frequency (pll.%d)\n", dfs_plat_data.pll_dev);
 	platform_device_register(&dfs_plat_device);
+#endif
+
+#if defined(CONFIG_SENSORS_NXP_ADC_TEMP)
+	printk("plat: add device ADC TMU\n");
+	platform_device_register(&tmu_plat_device);
 #endif
 
 #if defined (CONFIG_FB_NXP)
