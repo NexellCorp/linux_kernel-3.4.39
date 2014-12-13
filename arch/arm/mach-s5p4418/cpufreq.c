@@ -150,7 +150,7 @@ static inline void core_pll_change_lock(bool lock)
 static unsigned long cpu_pll_round(int pllno, unsigned long rate, int *p, int *m, int *s)
 {
 	struct pll_pms *pms;
-	int len, i = 0, n = 0, l = 0;
+	int len, idx = 0, n = 0, l = 0;
 	long freq = 0;
 
 	rate /= 1000;
@@ -165,20 +165,20 @@ static unsigned long cpu_pll_round(int pllno, unsigned long rate, int *p, int *m
 		return 0;
 	}
 
-	i = len/2;
+	idx = (len/2) - 1;
 
 	while (1) {
-		l = n + i;
+		l = n + idx;
 		freq = PMS_RATE(pms, l);
 		if (freq == rate)
 			break;
 
 		if (rate > freq)
-			len -= i, i >>= 1;
+			len -= idx, idx >>= 1;
 		else
-			n += i, i = (len-n-1)>>1;
+			n += idx, idx = (len-n-1)>>1;
 
-		if (0 == i) {
+		if (0 == idx) {
 			int k = l;
 			if (abs(rate - freq) > abs(rate - PMS_RATE(pms, k+1)))
 				k += 1;
