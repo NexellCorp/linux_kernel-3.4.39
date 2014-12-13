@@ -111,6 +111,15 @@ static struct asv_tb_info asv_tables[] = {
 };
 #define	ASV_ARRAY_SIZE	ARRAY_SIZE(asv_tables)
 
+struct asv_param {
+	int level;
+	int ids, ro;
+	int flag, group, shift;
+};
+
+static struct asv_tb_info *pAsv_Table = NULL;
+static struct asv_param	Asv_Param = { 0, };
+
 static inline unsigned int MtoL(unsigned int data, int bits)
 {
 	unsigned int result = 0;
@@ -122,9 +131,6 @@ static inline unsigned int MtoL(unsigned int data, int bits)
 	}
 	return result;
 }
-
-static struct asv_tb_info *pAsv_Table = NULL;
-static int Asv_Leveln = -1;
 
 static int s5p4418_asv_setup_table(unsigned long (*freq_tables)[2])
 {
@@ -141,10 +147,13 @@ static int s5p4418_asv_setup_table(unsigned long (*freq_tables)[2])
 		int ag = MtoL((ecid[2]>>24) & 0x0F, 4);
 		int gs = MtoL((ecid[2]>>28) & 0x07, 3);
 
-		Asv_Leveln = (ag - gs);
-		pAsv_Table = &asv_tables[Asv_Leveln];
+		Asv_Param.level = (ag - gs);
+		Asv_Param.flag = 1;
+		Asv_Param.group = ag;
+		Asv_Param.shift = gs;
+		pAsv_Table = &asv_tables[Asv_Param.level];
 		printk("DVFS: ASV[%d] IDS(%dmA) Ro(%d), Fusing Shift(%d), Group(%d)\n",
-			Asv_Leveln, pAsv_Table->ids, pAsv_Table->ro, ag, gs);
+			Asv_Param.level, pAsv_Table->ids, pAsv_Table->ro, ag, gs);
 		goto _find;
 	}
 
@@ -179,9 +188,11 @@ static int s5p4418_asv_setup_table(unsigned long (*freq_tables)[2])
 	asvlv = idslv > rolv ? rolv: idslv;
 
 	pAsv_Table = &asv_tables[asvlv];
-	Asv_Leveln = asvlv;
+	Asv_Param.level = asvlv;
+	Asv_Param.ids = ids;
+	Asv_Param.ro  = ro;
 	printk("DVFS: ASV[%d] IDS(%dmA,%3d) Ro(%d,%3d)\n",
-			Asv_Leveln, pAsv_Table->ids, ids, pAsv_Table->ro, ro);
+			Asv_Param.level, pAsv_Table->ids, ids, pAsv_Table->ro, ro);
 _find:
 
 	for (i=0; FREQ_ARRAY_SIZE > i; i++) {
@@ -232,9 +243,15 @@ static int s5p4418_asv_current_label(char *buf)
 {
 	char *s = buf;
 
-	if (s && pAsv_Table)
-		s += sprintf(s, "%d,%dmA,%d\n", Asv_Leveln, pAsv_Table->ids, pAsv_Table->ro);
-
+	if (s && pAsv_Table) {
+		 if (!Asv_Param.flag) {
+			s += sprintf(s, "%d:%dmA,%d\n",
+					Asv_Param.level, Asv_Param.ids, Asv_Param.ro);
+		} else {
+			s += sprintf(s, "%d:G%d,S%d\n",
+					Asv_Param.level, Asv_Param.group, Asv_Param.shift);
+		}
+	}
 	return (s - buf);
 }
 
