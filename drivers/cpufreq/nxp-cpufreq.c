@@ -29,8 +29,10 @@
 #include <linux/notifier.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
+
 #include <mach/platform.h>
 #include <mach/devices.h>
+#include <mach/tags.h>
 
 /*
 #define pr_debug	printk
@@ -650,9 +652,21 @@ static struct cpufreq_driver nxp_cpufreq_driver = {
 	.attr    = nxp_cpufreq_attr,
 };
 
-#define	DEFAULT_VOL_MARGIN_VAL		(0)
-#define	DEFAULT_VOL_MARGIN_DN		(true)
-#define	DEFAULT_VOL_MARGIN_PERCENT	(true)
+static struct tag_asv_margin tag_margin = { 0, };
+
+static int __init parse_tag_arm_margin(const struct tag *tag)
+{
+	struct tag_asv_margin *t = (struct tag_asv_margin *)&tag->u;
+	struct tag_asv_margin *p = &tag_margin;
+
+	p->value = t->value;
+	p->minus = t->minus;
+	p->percent = t->percent;
+	printk("ASV: Arm margin:%s%d%s\n",
+		p->minus?"-":"+", p->value, p->percent?"%":"mV");
+	return 0;
+}
+__tagtable(ATAG_ARM_MARGIN, parse_tag_arm_margin);
 
 static int nxp_cpufreq_probe(struct platform_device *pdev)
 {
@@ -665,19 +679,17 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 	int tb_size = 0;
 	int size = 0, i = 0;
 
+	struct tag_asv_margin *p = &tag_margin;
+
 	/*
 	 * check asv support
 	 */
 	if (asv_ops->setup_table) {
 		tb_size = asv_ops->setup_table(st_freq_tables);
 		/* for TEST */
-		#if (DEFAULT_VOL_MARGIN_VAL)
-		if (asv_ops->modify_vol)
+		if (p->value && asv_ops->modify_vol)
 			asv_ops->modify_vol(st_freq_tables,
-				DEFAULT_VOL_MARGIN_VAL,
-				DEFAULT_VOL_MARGIN_DN,
-				DEFAULT_VOL_MARGIN_PERCENT);
-		#endif
+				p->value, p->minus, p->percent);
 	}
 	if (0 >= tb_size &&
 		(!plat || !plat->freq_table || !plat->table_size)) {

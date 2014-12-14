@@ -35,6 +35,54 @@
 #include <linux/mfd/nxe2000.h>
 #include <linux/regulator/nxe2000-regulator.h>
 
+#include <mach/tags.h>
+
+#define	VOLTAGE_STEP_UV				(12500)	/* 12.5 mV */
+
+static struct tag_asv_margin tag_margin = { 0, };
+
+static int __init parse_tag_core_margin(const struct tag *tag)
+{
+	struct tag_asv_margin *t = (struct tag_asv_margin *)&tag->u;
+	struct tag_asv_margin *p = &tag_margin;
+
+	p->value = t->value;
+	p->minus = t->minus;
+	p->percent = t->percent;
+	printk("ASV: Core margin:%s%d%s\n",
+		p->minus?"-":"+", p->value, p->percent?"%":"mV");
+	return 0;
+}
+__tagtable(ATAG_CORE_MARGIN, parse_tag_core_margin);
+
+static long nxe2000_calculate_margin(long init_uv)
+{
+	struct tag_asv_margin *p = &tag_margin;
+	long step_vol = VOLTAGE_STEP_UV;
+	long uV = init_uv;
+	long dv, new, al = 0;
+
+	int  value = p->value;
+	bool minus = p->minus;
+	bool percent = p->percent;
+
+	if (0 == p->value)
+		return init_uv;
+
+	dv  = percent ? ((uV/100) * value) : (value * 1000);;
+	new = minus ? uV - dv : uV + dv;
+
+	if ((new % step_vol)) {
+		new = (new / step_vol) * step_vol;
+		al = 1;
+		if (minus) new += step_vol;	/* Upper */
+	}
+	printk("Core %7ld (%s%ld) align %ld (%s) -> %7ld\n",
+		uV, minus?"-":"+", dv, step_vol, al?"X":"O", new);
+
+	return new;
+}
+
 struct nxe2000_regulator {
 	int		id;
 	int		sleep_id;
@@ -133,6 +181,7 @@ static int nxe2000_list_voltage(struct regulator_dev *rdev, unsigned index)
 	return ri->min_uV + (ri->step_uV * index);
 }
 
+/*
 static int __nxe2000_set_s_voltage(struct device *parent,
 		struct nxe2000_regulator *ri, int min_uV, int max_uV)
 {
@@ -151,6 +200,7 @@ static int __nxe2000_set_s_voltage(struct device *parent,
 		dev_err(ri->dev, "Error in writing the sleep register\n");
 	return ret;
 }
+*/
 
 static int __nxe2000_set_voltage(struct device *parent,
 		struct nxe2000_regulator *ri, int min_uV, int max_uV,
@@ -393,7 +443,14 @@ static int nxe2000_regulator_preinit(struct device *parent,
 		struct nxe2000_regulator *ri,
 		struct nxe2000_regulator_platform_data *nxe2000_pdata)
 {
+	struct regulator_consumer_supply *consumer_supplies =
+		nxe2000_pdata->regulator.consumer_supplies;
 	int ret = 0;
+
+	if (0 == strcmp(consumer_supplies->supply, "vdd_core_1.2V")) {
+		if (nxe2000_pdata->init_uV > -1)
+			nxe2000_pdata->init_uV = nxe2000_calculate_margin(nxe2000_pdata->init_uV);
+	}
 
 	if (nxe2000_pdata->init_uV > -1) {
 		ret = __nxe2000_set_voltage(parent, ri,
@@ -554,3 +611,4 @@ module_exit(nxe2000_regulator_exit);
 MODULE_DESCRIPTION("NEXELL NXE2000 regulator driver");
 MODULE_ALIAS("platform:nxe2000-regulator");
 MODULE_LICENSE("GPL");
+
