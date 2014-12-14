@@ -206,7 +206,7 @@ _find:
 static void s5p4418_asv_modify_vol(unsigned long (*freq_tables)[2],
 				long value, bool down, bool percent)
 {
-	long step_align = VOLTAGE_STEP_UV;
+	long step_vol = VOLTAGE_STEP_UV;
 	long uV, dv, new;
 	int i = 0;
 
@@ -222,18 +222,20 @@ static void s5p4418_asv_modify_vol(unsigned long (*freq_tables)[2],
 
 	/* new voltage */
 	for (i=0; FREQ_ARRAY_SIZE > i; i++) {
-		uV  = freq_tables[i][1];
-		dv  = percent ? ((uV/100) * value) : (value*1000);
+		int al = 0;
+		uV = freq_tables[i][1];
+		dv = percent ? ((uV/100) * value) : (value*1000);
 		new = down ? uV - dv : uV + dv;
 
-		if ((new % step_align)) {
-			new = (new / step_align) * step_align;
-			if (down) new += step_align;	/* Upper */
+		if ((new % step_vol)) {
+			new = (new / step_vol) * step_vol;
+			al = 1;
+			if (down) new += step_vol;	/* Upper */
 		}
 
 		printk("%7ldkhz, %7ld (%s%ld) align %ld (%s) -> %7ld\n",
 			freq_tables[i][0], freq_tables[i][1],
-			down?"-":"+", dv, step_align, (new % step_align)?"X":"O", new);
+			down?"-":"+", dv, step_vol, al?"X":"O", new);
 
 		freq_tables[i][1] = new;
 	}
