@@ -580,6 +580,10 @@ void nxp_cpu_base_init(void)
 	unsigned int scu_ctrl = 0x0009;
 #endif
 
+#ifdef CONFIG_SMP
+    unsigned int scu_ctrl = 0x0009;
+#endif
+
 	cpu_base_init();
 	cpu_bus_init();
 
