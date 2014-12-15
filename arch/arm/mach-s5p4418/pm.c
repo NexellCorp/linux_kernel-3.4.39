@@ -722,7 +722,7 @@ static int __init suspend_ops_init(void)
 	sramptr = (unsigned int*)ioremap(0xFFFF0000, sram_length);
 	pr_debug("%s sram save [%d]\r\n", __func__, sram_length);
 
-	nxp_pm_data_save(NULL);
+    pm_suspend_data_save(NULL);
 	suspend_set_ops(&suspend_ops);
 
 #if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
