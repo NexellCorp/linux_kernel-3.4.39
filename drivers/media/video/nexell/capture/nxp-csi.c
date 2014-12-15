@@ -1,4 +1,4 @@
-#define DEBUG 0
+/*#define DEBUG 0*/
 
 #include <linux/module.h>
 #include <linux/delay.h>
@@ -140,7 +140,7 @@ static void _hw_run(struct nxp_csi *me)
     NX_MIPI_CSI_SetTimingControl(me->module, 1, 32, 16, 368);
     NX_MIPI_CSI_SetInterleaveChannel(me->module, 0, 1);
     NX_MIPI_CSI_SetInterleaveChannel(me->module, 1, 0);
-    pr_debug("%s: width %d, height %d\n", __func__, me->format.width, me->format.height);
+    vmsg("%s: width %d, height %d\n", __func__, me->format.width, me->format.height);
     NX_MIPI_CSI_SetSize(me->module, 1, me->format.width, me->format.height);
     NX_MIPI_CSI_SetVCLK(me->module, 1, NX_MIPI_CSI_VCLKSRC_EXTCLK);
     /* HACK!!! -> this is variation : confirm to camera sensor */
@@ -335,13 +335,13 @@ _get_pad_format(struct nxp_csi *me, struct v4l2_subdev_fh *fh,
  */
 static int nxp_csi_registered(struct v4l2_subdev *sd)
 {
-    pr_debug("%s\n", __func__);
+    vmsg("%s\n", __func__);
     return 0;
 }
 
 static void nxp_csi_unregistered(struct v4l2_subdev *sd)
 {
-    pr_debug("%s\n", __func__);
+    vmsg("%s\n", __func__);
 }
 
 static int nxp_csi_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
@@ -349,7 +349,7 @@ static int nxp_csi_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
     struct nxp_csi *me = v4l2_get_subdevdata(sd);
     struct v4l2_mbus_framefmt *format;
 
-    pr_debug("%s\n", __func__);
+    vmsg("%s\n", __func__);
 
     format = v4l2_subdev_get_try_format(fh, NXP_CSI_PAD_SINK);
     if (format) {
@@ -365,7 +365,7 @@ static int nxp_csi_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 
 static int nxp_csi_close(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 {
-    pr_debug("%s\n", __func__);
+    vmsg("%s\n", __func__);
     return 0;
 }
 
@@ -388,7 +388,7 @@ static int nxp_csi_s_power(struct v4l2_subdev *sd, int on)
     struct v4l2_subdev *remote_source = _get_remote_source_subdev(me);
     int ret = 0;
 
-    pr_debug("%s: %d\n", __func__, on);
+    vmsg("%s: %d\n", __func__, on);
 
     if (on) {
         _hw_set_clock(me, true);
@@ -416,7 +416,7 @@ static int nxp_csi_s_stream(struct v4l2_subdev *sd, int enable)
     struct v4l2_subdev *remote_source = _get_remote_source_subdev(me);
     int ret;
 
-    pr_debug("%s: %d\n", __func__, enable);
+    vmsg("%s: %d\n", __func__, enable);
     if (enable) {
         ret = v4l2_subdev_call(remote_source, video, s_stream, enable);
         /* _hw_start_stream(me); */
@@ -509,17 +509,17 @@ static int nxp_csi_link_setup(struct media_entity *entity,
     switch (local->index | media_entity_type(remote->entity)) {
     case NXP_CSI_PAD_SINK | MEDIA_ENT_T_V4L2_SUBDEV:
         if (flags & MEDIA_LNK_FL_ENABLED) {
-            pr_debug("%s: input sensor connected\n", __func__);
+            vmsg("%s: input sensor connected\n", __func__);
         } else {
-            pr_debug("%s: input sensor disconnected\n", __func__);
+            vmsg("%s: input sensor disconnected\n", __func__);
         }
         break;
 
     case NXP_CSI_PAD_SOURCE | MEDIA_ENT_T_V4L2_SUBDEV:
         if (flags & MEDIA_LNK_FL_ENABLED) {
-            pr_debug("%s: output connected\n", __func__);
+            vmsg("%s: output connected\n", __func__);
         } else {
-            pr_debug("%s: output disconnected\n", __func__);
+            vmsg("%s: output disconnected\n", __func__);
         }
         break;
 
@@ -608,7 +608,7 @@ int nxp_csi_register(struct nxp_csi *me)
         return ret;
     }
 
-    pr_debug("%s: success!!!\n", __func__);
+    vmsg("%s: success!!!\n", __func__);
 
     return 0;
 }

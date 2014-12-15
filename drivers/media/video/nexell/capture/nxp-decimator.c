@@ -1,4 +1,4 @@
-#define DEBUG 0
+/*#define DEBUG 0*/
 
 #include <linux/kernel.h>
 #include <linux/list.h>
@@ -69,7 +69,7 @@ static int _hw_configure(struct nxp_decimator *me)
     struct nxp_capture *parent = nxp_decimator_to_parent(me);
     int module = parent->get_module_num(parent);
 
-    printk("decimator %s: source(%dx%d), target(%dx%d)\n", __func__,
+    vmsg("decimator %s: source(%dx%d), target(%dx%d)\n", __func__,
             me->src_width, me->src_height,
             me->target_width, me->target_height);
 
@@ -124,7 +124,7 @@ static int _hw_set_addr(struct nxp_decimator *me, struct nxp_video_buffer *buf)
 
     if (me->code == V4L2_MBUS_FMT_YUYV8_2X8) {
         // YUYV422
-        /* printk("%s decimator: addr 0x%x\n", __func__, buf->dma_addr[0]); */
+         vmsg("%s decimator: addr 0x%x\n", __func__, buf->dma_addr[0]);
         NX_VIP_SetDecimatorAddr(module,
                 NX_VIP_FORMAT_YUYV,
                 me->target_width,
@@ -138,9 +138,9 @@ static int _hw_set_addr(struct nxp_decimator *me, struct nxp_video_buffer *buf)
                 buf->stride[0], 0);
 #endif
     } else {
-         /*printk("%s decimator: addr LU(0x%x) CB(0x%x) CR(0x%x), stride LU(%d) CB(%d) CR(%d)\n",*/
-                 /*__func__, buf->dma_addr[0], buf->dma_addr[1], buf->dma_addr[2],*/
-                 /*buf->stride[0], buf->stride[1], buf->stride[2]);*/
+         vmsg("%s decimator: addr LU(0x%x) CB(0x%x) CR(0x%x), stride LU(%d) CB(%d) CR(%d)\n",
+                 __func__, buf->dma_addr[0], buf->dma_addr[1], buf->dma_addr[2],
+                 buf->stride[0], buf->stride[1], buf->stride[2]);
         _lu_addr = buf->dma_addr[0];
         _cb_addr = buf->dma_addr[1];
         _cr_addr = buf->dma_addr[2];
@@ -216,7 +216,7 @@ static int decimator_buffer_queue(struct nxp_video_buffer *buf, void *me)
     unsigned long flags;
     struct nxp_decimator *_me = me;
 
-    pr_debug("%s: %p\n", __func__, buf);
+    vmsg("%s: %p\n", __func__, buf);
     spin_lock_irqsave(&_me->slock, flags);
     list_add_tail(&buf->list, &_me->buffer_list);
     spin_unlock_irqrestore(&_me->slock, flags);
@@ -266,7 +266,7 @@ static int _update_next_buffer(struct nxp_decimator *me)
         me->cur_buf = buf;
         spin_unlock_irqrestore(&me->slock, flags);
 
-        pr_debug("%s decimator: %p\n", __func__, buf);
+        vmsg("%s decimator: %p\n", __func__, buf);
 #ifndef CONFIG_ARCH_NXP4330_3200
         _hw_set_addr(me, buf);
 #endif
@@ -284,7 +284,7 @@ static int _done_buf(struct nxp_decimator *me, bool updated)
     me->cur_buf = NULL;
     spin_unlock_irqrestore(&me->slock, flags);
 
-    pr_debug("%s: %p\n", __func__, buf);
+    vmsg("%s: %p\n", __func__, buf);
 
     if (!buf)
         return 0;
@@ -330,7 +330,7 @@ static irqreturn_t decimator_irq_handler(void *data)
     _done_buf(me, true);
     if (NXP_ATOMIC_READ(&me->state) & NXP_DECIMATOR_STATE_STOPPING) {
         struct nxp_capture *parent = nxp_decimator_to_parent(me);
-        printk("%s: real stop...\n", __func__);
+        vmsg("%s: real stop...\n", __func__);
         parent->stop(parent, me);
         _unregister_irq_handler(me);
         _clear_buf(me);
@@ -371,11 +371,11 @@ static void _unregister_irq_handler(struct nxp_decimator *me)
 static void _disable_all(struct nxp_decimator *me)
 {
     if (NXP_ATOMIC_READ(&me->state) == NXP_DECIMATOR_STATE_RUNNING) {
-        printk("%s: decimator video stopping...\n", __func__);
+        vmsg("%s: decimator video stopping...\n", __func__);
         NXP_ATOMIC_SET_MASK(NXP_DECIMATOR_STATE_STOPPING, &me->state);
         if (!wait_for_completion_timeout(&me->stop_done, 5*HZ)) {
             struct nxp_capture *parent = nxp_decimator_to_parent(me);
-            printk("timeout wait stopping\n");
+            printk("timeout wait for decimator stopping\n");
             parent->stop(parent, me);
             _unregister_irq_handler(me);
             _clear_buf(me);
@@ -408,26 +408,26 @@ static int _handle_video_connection(struct nxp_decimator *me, bool connected)
 static int nxp_decimator_open(struct v4l2_subdev *sd,
         struct v4l2_subdev_fh *fh)
 {
-    pr_debug("%s\n", __func__);
+    vmsg("%s\n", __func__);
     return 0;
 }
 
 static int nxp_decimator_close(struct v4l2_subdev *sd,
         struct v4l2_subdev_fh *fh)
 {
-    pr_debug("%s\n", __func__);
+    vmsg("%s\n", __func__);
     return 0;
 }
 
 static int nxp_decimator_registered(struct v4l2_subdev *sd)
 {
-    pr_debug("%s\n", __func__);
+    vmsg("%s\n", __func__);
     return 0;
 }
 
 static void nxp_decimator_unregistered(struct v4l2_subdev *sd)
 {
-    pr_debug("%s\n", __func__);
+    vmsg("%s\n", __func__);
 }
 
 static const struct v4l2_subdev_internal_ops nxp_decimator_internal_ops = {
@@ -445,7 +445,7 @@ static int nxp_decimator_s_power(struct v4l2_subdev *sd, int on)
     struct nxp_decimator *me;
     struct v4l2_subdev *remote_source;
 
-    pr_debug("%s: %d\n", __func__, on);
+    vmsg("%s: %d\n", __func__, on);
 
     me = v4l2_get_subdevdata(sd);
     if (!me) {
@@ -507,7 +507,7 @@ static void simulation_isr(struct work_struct *work)
 
     memcpy(dst_virt, src_virt, me->src_width * me->src_height * 2);
     _done_buf(me, true);
-    pr_debug("%s: end _done_buf\n", __func__);
+    vmsg("%s: end _done_buf\n", __func__);
     _update_next_buffer(me);
 }
 
@@ -533,7 +533,7 @@ static int nxp_decimator_s_stream(struct v4l2_subdev *sd, int enable)
     int ret = 0;
     void *hostdata_back;
 
-    printk("%s: %d\n", __func__, enable);
+    vmsg("%s: %d\n", __func__, enable);
 
 #ifdef CONFIG_ARCH_NXP4330_3200
     if (enable) {
@@ -546,7 +546,7 @@ static int nxp_decimator_s_stream(struct v4l2_subdev *sd, int enable)
     }
 #else
     if (enable) {
-        printk("%s: my state 0x%x\n", __func__, NXP_ATOMIC_READ(&me->state));
+        vmsg("%s: my state 0x%x\n", __func__, NXP_ATOMIC_READ(&me->state));
         if (NXP_ATOMIC_READ(&me->state) != NXP_DECIMATOR_STATE_RUNNING) {
             struct v4l2_subdev *remote = _get_remote_source_subdev(me);
             if (!remote) {
@@ -559,7 +559,7 @@ static int nxp_decimator_s_stream(struct v4l2_subdev *sd, int enable)
             v4l2_subdev_call(remote, video, s_stream, 1);
             v4l2_set_subdev_hostdata(remote, hostdata_back);
 
-            printk("%s: lu %p, cb %p, cr %p\n", __func__, &_lu_addr, &_cb_addr, &_cr_addr);
+            vmsg("%s: lu %p, cb %p, cr %p\n", __func__, &_lu_addr, &_cb_addr, &_cr_addr);
 
             _hw_configure(me);
             ret = _register_irq_handler(me);
@@ -586,11 +586,10 @@ static int nxp_decimator_s_stream(struct v4l2_subdev *sd, int enable)
                 return -EINVAL;
             }
 
-            printk("decimator video stopping...\n");
+            vmsg("decimator video stopping...\n");
             NXP_ATOMIC_SET_MASK(NXP_DECIMATOR_STATE_STOPPING, &me->state);
-            /* if (!wait_for_completion_interruptible_timeout(&me->stop_done, 5*HZ)) { */
             if (!wait_for_completion_timeout(&me->stop_done, 5*HZ)) {
-                printk("timeout wait stopping\n");
+                printk("timeout wait for decimator stopping\n");
                 parent->stop(parent, me);
                 _unregister_irq_handler(me);
                 _clear_buf(me);
@@ -622,7 +621,7 @@ static const struct v4l2_subdev_video_ops nxp_decimator_video_ops = {
 static int nxp_decimator_enum_mbus_code(struct v4l2_subdev *sd,
         struct v4l2_subdev_fh *fh, struct v4l2_subdev_mbus_code_enum *code)
 {
-    pr_debug("%s\n", __func__);
+    vmsg("%s\n", __func__);
     return 0;
 }
 
@@ -645,7 +644,7 @@ static int nxp_decimator_set_fmt(struct v4l2_subdev *sd,
 {
     struct nxp_decimator *me = v4l2_get_subdevdata(sd);
 
-    pr_debug("%s: sw(%d)xsh(%d), code(0x%x)\n", __func__, format->format.width, format->format.height, format->format.code);
+    vmsg("%s: sw(%d)xsh(%d), code(0x%x)\n", __func__, format->format.width, format->format.height, format->format.code);
     me->src_width = format->format.width;
     me->src_height = format->format.height;
     me->code = format->format.code;
@@ -688,16 +687,16 @@ static int nxp_decimator_set_crop(struct v4l2_subdev *sd,
     }
 
     if (crop->pad == 1) {
-        printk("%s: setting decimator scale down(target crop)\n", __func__);
-        printk("[%d:%d-%d:%d]\n", crop->rect.left, crop->rect.top, crop->rect.width, crop->rect.height);
+        vmsg("%s: setting decimator scale down(target crop)\n", __func__);
+        vmsg("[%d:%d-%d:%d]\n", crop->rect.left, crop->rect.top, crop->rect.width, crop->rect.height);
         me->target_width = crop->rect.width;
         me->target_height = crop->rect.height;
     } else if (crop->pad == 2) {
         struct v4l2_subdev *remote_source;
         int ret;
 
-        printk("%s: setting decimator source crop\n", __func__);
-        printk("[%d:%d-%d:%d]\n", crop->rect.left, crop->rect.top, crop->rect.width, crop->rect.height);
+        vmsg("%s: setting decimator source crop\n", __func__);
+        vmsg("[%d:%d-%d:%d]\n", crop->rect.left, crop->rect.top, crop->rect.width, crop->rect.height);
 
         remote_source = _get_remote_source_subdev(me);
         if (!remote_source) {
@@ -761,7 +760,7 @@ static int nxp_decimator_link_setup(struct media_entity *entity,
     struct v4l2_subdev *sd = media_entity_to_v4l2_subdev(entity);
     struct nxp_decimator *me = v4l2_get_subdevdata(sd);
 
-    pr_debug("%s: local index %d, remote type 0x%x\n", __func__,
+    vmsg("%s: local index %d, remote type 0x%x\n", __func__,
             local->index, media_entity_type(remote->entity));
 
     switch (local->index | media_entity_type(remote->entity)) {
@@ -769,10 +768,10 @@ static int nxp_decimator_link_setup(struct media_entity *entity,
         /* link clipper to me */
         if (!(flags & MEDIA_LNK_FL_ENABLED)) {
             /* disconnect */
-            pr_debug("%s: clipper disconnected!!!\n", __func__);
+            vmsg("%s: clipper disconnected!!!\n", __func__);
         } else {
             /* connect */
-            pr_debug("%s: clipper connected!!!\n", __func__);
+            vmsg("%s: clipper connected!!!\n", __func__);
         }
         break;
 
@@ -780,11 +779,11 @@ static int nxp_decimator_link_setup(struct media_entity *entity,
         /* link decimator video device to me */
         if (!(flags & MEDIA_LNK_FL_ENABLED)) {
             /* disconnect */
-            pr_debug("%s: video device disconnected!!!\n", __func__);
+            vmsg("%s: video device disconnected!!!\n", __func__);
             _handle_video_connection(me, false);
         } else {
             /* connect */
-            pr_debug("%s: video device connected!!!\n", __func__);
+            vmsg("%s: video device connected!!!\n", __func__);
             _handle_video_connection(me, true);
         }
         break;
@@ -913,7 +912,7 @@ int  nxp_decimator_register(struct nxp_decimator *me)
         v4l2_device_unregister_subdev(&me->subdev);
     }
 
-    pr_debug("%s: success!!!\n", __func__);
+    vmsg("%s: success!!!\n", __func__);
     return ret;
 }
 

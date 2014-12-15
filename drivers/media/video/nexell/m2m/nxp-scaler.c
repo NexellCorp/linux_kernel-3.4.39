@@ -1,4 +1,4 @@
-#define DEBUG 1
+/*#define DEBUG 1*/
 
 #include <linux/kernel.h>
 #include <linux/list.h>
@@ -110,7 +110,7 @@ static int simulation_process(struct nxp_scaler *me,
     u32 width, height, stride;
     int y;
 
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
 
     p_in = vb2_plane_vaddr(in_vb, 0);
     p_out = vb2_plane_vaddr(out_vb, 0);
@@ -170,14 +170,14 @@ static int _hw_init(struct nxp_scaler *me)
 {
     int ret = 0;
 
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
 
 #ifdef SIMULATION_SCALER
     setup_timer(&me->timer, simulation_isr, (long)me);
     me->timeout = DEFAULT_SIMULATION_ISR_TIMEOUT_MS;
 #else
     NX_SCALER_Initialize();
-    printk("%s: SCALER REGISTER PHY 0x%x, VIR 0x%x\n", __func__, NX_SCALER_GetPhysicalAddress(0),
+    vmsg("%s: SCALER REGISTER PHY 0x%x, VIR 0x%x\n", __func__, NX_SCALER_GetPhysicalAddress(0),
             (U32)IO_ADDRESS(NX_SCALER_GetPhysicalAddress(0)));
     NX_SCALER_SetBaseAddress(0, IO_ADDRESS(NX_SCALER_GetPhysicalAddress(0)));
 
@@ -210,7 +210,7 @@ static int _hw_init(struct nxp_scaler *me)
 
 static void _hw_cleanup(struct nxp_scaler *me)
 {
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
 
 #ifdef SIMULATION_SCALER
     del_timer_sync(&me->timer);
@@ -220,8 +220,6 @@ static void _hw_cleanup(struct nxp_scaler *me)
     NX_SCALER_Stop(0);
     NX_SCALER_SetInterruptEnableAll(0, CFALSE);
     NX_SCALER_ClearInterruptPendingAll(0);
-    //NX_SCALER_SetClockPClkMode(0, NX_PCLKMODE_DYNAMIC);
-    /* NX_SCALER_SetClockBClkMode(0, NX_BCLKMODE_DISABLE); */
     NX_CLKGEN_SetClockBClkMode(NX_SCALER_GetClockNumber(0), NX_BCLKMODE_DISABLE);
 #endif
 }
@@ -231,7 +229,7 @@ static void _hw_cleanup(struct nxp_scaler *me)
  */
 static int _hw_set_format(struct nxp_scaler *me)
 {
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
 
 #ifndef SIMULATION_SCALER
     NX_SCALER_SetFilterEnable(0, CTRUE);
@@ -251,7 +249,7 @@ static inline void _make_cmd(unsigned int *c)
     /* start source address register : SCSRCADDRREG */
     command |= 3 << (10+0); // word
     *c = command;
-    /* printk("%s: command: 0x%x\n", __func__, command); */
+    vmsg("%s: command: 0x%x\n", __func__, command);
 }
 
 #if 0
@@ -579,7 +577,7 @@ static int _hw_run(struct nxp_scaler *me)
     list_del_init(&dst_buf->list);
     spin_unlock_irqrestore(&me->dlock, flags);
 
-    printk("%s: src_addr(0x%x), dst_addr(0x%x)\n",
+    vmsg("%s: src_addr(0x%x), dst_addr(0x%x)\n",
             __func__, src_buf->dma_addr[0], dst_buf->dma_addr[0]);
 
     me->cur_src_buf = src_buf;
@@ -597,9 +595,9 @@ static int _hw_run(struct nxp_scaler *me)
     mod_timer(&me->timer, jiffies + msecs_to_jiffies(me->timeout));
 #else
     /* if (s_run_count < 1) { */
-    printk("SCALER HW RUN!!!\n");
+    vmsg("SCALER HW RUN!!!\n");
     _make_command_buffer(me, src_buf, dst_buf);
-    printk("command buffer phys: 0x%x\n", me->command_buffer_phy);
+    vmsg("command buffer phys: 0x%x\n", me->command_buffer_phy);
     NX_SCALER_SetCmdBufAddr(0, me->command_buffer_phy);
     NX_SCALER_SetInterruptEnable(0, NX_SCALER_INT_CMD_PROC, CTRUE);
     NX_SCALER_SetMode(0, 0);
@@ -616,42 +614,6 @@ static int _hw_run(struct nxp_scaler *me)
  */
 static int _update_next_buffer(struct nxp_scaler *me)
 {
-#if 0
-    struct nxp_video_buffer *buf;
-    unsigned long flags;
-
-    printk("%s\n", __func__);
-
-    /* get src buffer */
-    spin_lock_irqsave(&me->slock, flags);
-    if (!me->cur_src_buf) {
-        if (list_empty(&me->src_buffer_list)) {
-            spin_unlock_irqrestore(&me->slock, flags);
-            pr_err("%s: src buf not ready!!!\n", __func__);
-            return 0;
-        }
-        buf = list_first_entry(&me->src_buffer_list, struct nxp_video_buffer, list);
-        list_del_init(&buf->list);
-        me->cur_src_buf = buf;
-    }
-    spin_unlock_irqrestore(&me->slock, flags);
-
-    /* get dst buffer */
-    spin_lock_irqsave(&me->dlock, flags);
-    if (!me->cur_dst_buf) {
-        if (list_empty(&me->dst_buffer_list)) {
-            spin_unlock_irqrestore(&me->dlock, flags);
-            pr_err("%s: dst buf not ready!!!\n", __func__);
-            return 0;
-        }
-        buf = list_first_entry(&me->dst_buffer_list, struct nxp_video_buffer, list);
-        list_del_init(&buf->list);
-        me->cur_dst_buf = buf;
-    }
-    spin_unlock_irqrestore(&me->dlock, flags);
-
-    return _hw_run(me);
-#else
     unsigned long flags;
     spin_lock_irqsave(&me->slock, flags);
     if (list_empty(&me->src_buffer_list)) {
@@ -670,7 +632,6 @@ static int _update_next_buffer(struct nxp_scaler *me)
     spin_unlock_irqrestore(&me->dlock, flags);
 
     return _hw_run(me);
-#endif
 }
 
 #ifndef CONFIG_ENABLE_SCALER_MISC_DEVICE
@@ -679,7 +640,7 @@ static int _done_buf(struct nxp_scaler *me, bool updated)
     unsigned long flags;
     struct nxp_video_buffer *buf;
 
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
 
     /* src buf */
     spin_lock_irqsave(&me->slock, flags);
@@ -738,7 +699,7 @@ static void simulation_isr(unsigned long priv)
 {
     struct nxp_scaler *me = (struct nxp_scaler *)priv;
 
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
 
     if (me)
         _done_buf(me, true);
@@ -750,9 +711,8 @@ static void simulation_isr(unsigned long priv)
 static irqreturn_t _irq_handler(int irq, void *param)
 {
     struct nxp_scaler *me = (struct nxp_scaler *)param;
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
     _done_buf(me, true);
-    /* NX_SCALER_ClearInterruptPending(0, NX_SCALER_INT_DONE); */
     NX_SCALER_ClearInterruptPending(0, NX_SCALER_INT_CMD_PROC);
     _update_next_buffer(me);
     return IRQ_HANDLED;
@@ -769,7 +729,7 @@ static int scaler_buffer_queue(struct nxp_video_buffer *buf, void *me)
     struct vb2_buffer *vb;
     u32 type;
 
-    printk("%s: %p\n", __func__, buf);
+    vmsg("%s: %p\n", __func__, buf);
     vb = buf->priv;
     type = vb->vb2_queue->type;
 
@@ -912,7 +872,7 @@ static struct v4l2_mbus_framefmt *
 _get_pad_format(struct nxp_scaler *me, struct v4l2_subdev_fh *fh,
         unsigned int pad, enum v4l2_subdev_format_whence which)
 {
-    printk("%s: which(0x%x), pad(%d)\n",
+    vmsg("%s: which(0x%x), pad(%d)\n",
             __func__, which, pad);
 
     switch (which) {
@@ -934,7 +894,7 @@ static int nxp_scaler_open(struct v4l2_subdev *sd,
     struct v4l2_mbus_framefmt *format;
     int ret;
 
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
 
     ret = v4l2_subdev_call(sd, core, s_power, 1);
     if (ret < 0) {
@@ -966,19 +926,19 @@ static int nxp_scaler_open(struct v4l2_subdev *sd,
 static int nxp_scaler_close(struct v4l2_subdev *sd,
         struct v4l2_subdev_fh *fh)
 {
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
     return v4l2_subdev_call(sd, core, s_power, 0);
 }
 
 static int nxp_scaler_registered(struct v4l2_subdev *sd)
 {
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
     return 0;
 }
 
 static void nxp_scaler_unregistered(struct v4l2_subdev *sd)
 {
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
 }
 
 static const struct v4l2_subdev_internal_ops nxp_scaler_internal_ops = {
@@ -996,7 +956,7 @@ static int nxp_scaler_s_power(struct v4l2_subdev *sd, int on)
     int ret;
     struct nxp_scaler *me;
 
-    printk("%s: %d\n", __func__, on);
+    vmsg("%s: %d\n", __func__, on);
 
     me = v4l2_get_subdevdata(sd);
 
@@ -1037,7 +997,7 @@ static int nxp_scaler_s_stream(struct v4l2_subdev *sd, int enable)
     int ret = 0;
     struct nxp_scaler *me = v4l2_get_subdevdata(sd);
 
-    printk("%s: %d\n", __func__, enable);
+    vmsg("%s: %d\n", __func__, enable);
 
     if (enable) {
         if (!me->streaming) {
@@ -1073,7 +1033,7 @@ static const struct v4l2_subdev_video_ops nxp_scaler_video_ops = {
 static int nxp_scaler_enum_mbus_code(struct v4l2_subdev *sd,
         struct v4l2_subdev_fh *fh, struct v4l2_subdev_mbus_code_enum *code)
 {
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
 
     if (code->index >= ARRAY_SIZE(supported_formats))
         return -EINVAL;
@@ -1087,7 +1047,7 @@ static int nxp_scaler_get_fmt(struct v4l2_subdev *sd,
 {
     struct nxp_scaler *me = v4l2_get_subdevdata(sd);
     format->format = *_get_pad_format(me, fh, format->pad, format->which);
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
     return 0;
 }
 
@@ -1098,7 +1058,7 @@ static int nxp_scaler_set_fmt(struct v4l2_subdev *sd,
     struct v4l2_mbus_framefmt *__format =
         _get_pad_format(me, fh, format->pad, format->which);
 
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
 
     if (!__format) {
         pr_err("%s: failed to _get_pad_format()\n", __func__);
@@ -1145,7 +1105,7 @@ static int nxp_scaler_link_setup(struct media_entity *entity,
     struct nxp_video *remote_nxp_video;
     int ret = 0;
 
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
 
     switch (local->index | media_entity_type(remote->entity)) {
     case NXP_SCALER_PAD_SINK | MEDIA_ENT_T_DEVNODE:
@@ -1245,24 +1205,12 @@ static irqreturn_t _irq_handler_misc(int irq, void *param)
 {
     struct nxp_scaler *me = (struct nxp_scaler *)param;
 #ifdef CONFIG_USE_SCALER_COMMAND_BUFFER
-    /* printk("%s\n", __func__); */
-
-#if 0
-    unsigned long flags;
-    NX_SCALER_ClearInterruptPending(0, NX_SCALER_INT_CMD_PROC);
-    spin_lock_irqsave(&me->running_lock, flags);
-    me->running = false;
-    spin_unlock_irqrestore(&me->running_lock, flags);
-    complete_all(&me->work_done);
-#else
     NX_SCALER_ClearInterruptPending(0, NX_SCALER_INT_CMD_PROC);
     NXP_ATOMIC_SET(&me->running, 0);
     wake_up_interruptible(&me->wq_end);
     wake_up_interruptible(&me->wq_start);
-#endif
-
 #else
-    printk("%s: %d\n", __func__, me->run_count);
+    vmsg("%s: %d\n", __func__, me->run_count);
     NX_SCALER_ClearInterruptPendingAll(0);
     me->run_count++;
     if (me->run_count < 3)
@@ -1556,18 +1504,6 @@ static int _run_step(struct nxp_scaler *me, struct nxp_scaler_ioctl_data *data)
 static int _set_and_run(struct nxp_scaler *me, struct nxp_scaler_ioctl_data *data)
 {
 #ifdef CONFIG_USE_SCALER_COMMAND_BUFFER
-
-#if 0
-    unsigned long flags;
-    spin_lock_irqsave(&me->running_lock, flags);
-    if (me->running) {
-        spin_unlock_irqrestore(&me->running_lock, flags);
-        if (!wait_for_completion_interruptible_timeout(&me->work_done, HZ))
-            printk(KERN_ERR "%s: timeout waiting start\n", __func__);
-    } else {
-        spin_unlock_irqrestore(&me->running_lock, flags);
-    }
-#else
     if (NXP_ATOMIC_READ(&me->running) == 1) {
         /* printk("wait start\n"); */
         if (!wait_event_interruptible_timeout(me->wq_start, NXP_ATOMIC_READ(&me->running) == 0, HZ)) {
@@ -1575,13 +1511,12 @@ static int _set_and_run(struct nxp_scaler *me, struct nxp_scaler_ioctl_data *dat
             return -EBUSY;
         }
     }
-#endif
     NXP_ATOMIC_SET(&me->running, 1);
     _make_command_buffer_misc(me, data);
     NX_SCALER_SetCmdBufAddr(0, me->command_buffer_phy);
     NX_SCALER_SetInterruptEnable(0, NX_SCALER_INT_CMD_PROC, CTRUE);
     NX_SCALER_SetMode(0, 0);
-    /* printk("start scaler\n"); */
+    vmsg("start scaler\n");
     NX_SCALER_RunCmdBuf(0);
 #else
     me->ioctl_data = data;
@@ -1590,14 +1525,8 @@ static int _set_and_run(struct nxp_scaler *me, struct nxp_scaler_ioctl_data *dat
     _run_step(me, data);
 #endif
 
-#if 0
-    if (!wait_for_completion_interruptible_timeout(&me->work_done, HZ))
-        printk(KERN_ERR "%s: timeout waiting end\n", __func__);
-#else
     if (!wait_event_interruptible_timeout(me->wq_end, NXP_ATOMIC_READ(&me->running) == 0, HZ))
-        printk("wait timeout for end\n");
-#endif
-    /* printk("end\n"); */
+        printk("wait timeout for scaling end\n");
     return 0;
 }
 
@@ -1609,10 +1538,10 @@ static int nxp_scaler_misc_open(struct inode *inode, struct file *file)
 
     if (NXP_ATOMIC_READ(&me->open_count) > 0) {
         NXP_ATOMIC_INC(&me->open_count);
-        printk("%s: open count %d\n", __func__, NXP_ATOMIC_READ(&me->open_count));
+        vmsg("%s: open count %d\n", __func__, NXP_ATOMIC_READ(&me->open_count));
         return 0;
     }
-    printk("%s: entered\n", __func__);
+    vmsg("%s: entered\n", __func__);
     _hw_init(me);
     _hw_set_filter_table(me, &_default_filter_table);
     _hw_set_format(me);
@@ -1622,7 +1551,7 @@ static int nxp_scaler_misc_open(struct inode *inode, struct file *file)
         return ret;
     }
     NXP_ATOMIC_INC(&me->open_count);
-    printk("%s: exit\n", __func__);
+    vmsg("%s: exit\n", __func__);
     return 0;
 }
 
@@ -1631,7 +1560,7 @@ static int nxp_scaler_misc_release(struct inode *inode, struct file *file)
     struct nxp_scaler *me = (struct nxp_scaler *)file->private_data;
     NXP_ATOMIC_DEC(&me->open_count);
     if (NXP_ATOMIC_READ(&me->open_count) == 0) {
-        printk("%s: hw cleanup\n", __func__);
+        vmsg("%s: hw cleanup\n", __func__);
         _hw_cleanup(me);
     }
     return 0;
@@ -1719,7 +1648,7 @@ struct nxp_scaler *create_nxp_scaler(void)
 
 void release_nxp_scaler(struct nxp_scaler *me)
 {
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
 #ifdef CONFIG_ENABLE_SCALER_MISC_DEVICE
     misc_deregister(&nxp_scaler_misc_device);
 #endif
@@ -1744,7 +1673,7 @@ int register_nxp_scaler(struct nxp_scaler *me)
         pr_err("%s: failed to register_nxp_video()\n", __func__);
         v4l2_device_unregister_subdev(&me->subdev);
     } else {
-        printk("%s: success!!!\n", __func__);
+        vmsg("%s: success!!!\n", __func__);
     }
 
     return ret;
@@ -1752,7 +1681,7 @@ int register_nxp_scaler(struct nxp_scaler *me)
 
 void unregister_nxp_scaler(struct nxp_scaler *me)
 {
-    printk("%s\n", __func__);
+    vmsg("%s\n", __func__);
     if (me->command_buffer_phy) {
         dma_free_coherent(NULL, COMMAND_BUFFER_SIZE, me->command_buffer_vir, me->command_buffer_phy);
         me->command_buffer_vir = NULL;

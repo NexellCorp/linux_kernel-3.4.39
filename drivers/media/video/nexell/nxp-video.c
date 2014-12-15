@@ -17,6 +17,7 @@
 #include <media/videobuf2-ion-nxp.h>
 #include <media/v4l2-subdev.h>
 
+#include "nxp-v4l2.h"
 #include "nxp-video.h"
 
 #ifndef ALIGN
@@ -787,7 +788,7 @@ static int nxp_video_set_format(struct file *file, void *fh,
         return -EINVAL;
     }
 
-    printk("%s: name(%s), width %d, height %d\n", __func__, me->name, pix->width, pix->height);
+    vmsg("%s: name(%s), width %d, height %d\n", __func__, me->name, pix->width, pix->height);
 
     subdev = _get_remote_subdev(me, f->type, &pad);
     if (!subdev) {
@@ -897,8 +898,7 @@ static int nxp_video_streamon(struct file *file, void *fh,
     struct v4l2_subdev *subdev = _get_remote_subdev(me, i, &pad);
     void *hostdata_back;
 
-    /* pr_debug("%s\n", __func__); */
-     printk("%s: me %p, %s\n", __func__, me, me->name);
+     vmsg("%s: me %p, %s\n", __func__, me, me->name);
 
     if (me->vbq) {
         ret = vb2_streamon(me->vbq, i);
@@ -918,7 +918,6 @@ static int nxp_video_streamon(struct file *file, void *fh,
     /* for mlc subdev */
     hostdata_back = v4l2_get_subdev_hostdata(subdev);
     v4l2_set_subdev_hostdata(subdev, me->name);
-    /* printk("call subdev s_stream!!!\n"); */
     ret = v4l2_subdev_call(subdev, video, s_stream, 1);
     v4l2_set_subdev_hostdata(subdev, hostdata_back);
     return ret;
@@ -952,14 +951,14 @@ static int nxp_video_streamoff(struct file *file, void *fh,
         }
     }
 
-    printk("%s %s\n", __func__, me->name);
+    vmsg("%s %s\n", __func__, me->name);
 
     hostdata_back = v4l2_get_subdev_hostdata(subdev);
     v4l2_set_subdev_hostdata(subdev, me->name);
     ret = v4l2_subdev_call(subdev, video, s_stream, 0);
     v4l2_set_subdev_hostdata(subdev, hostdata_back);
 
-    printk("%s: %s exit\n", __func__, me->name);
+    vmsg("%s: %s exit\n", __func__, me->name);
 
     return ret;
 }
@@ -1062,8 +1061,7 @@ static int nxp_video_set_crop(struct file *file, void *fh,
     struct v4l2_subdev *subdev = _get_remote_subdev(me, a->type, &pad);
     struct v4l2_subdev_crop subdev_crop;
 
-    /* pr_debug("%s\n", __func__); */
-     printk("%s: name %s, crop pad %d\n", __func__, me->name, a->pad);
+    vmsg("%s: name %s, crop pad %d\n", __func__, me->name, a->pad);
 
     subdev_crop.which = V4L2_SUBDEV_FORMAT_ACTIVE;
     /* TODO */
@@ -1092,7 +1090,7 @@ static int nxp_video_set_crop(struct file *file, void *fh,
 #endif
     subdev_crop.rect = a->c;
 
-     printk("%s: call subdev set_crop\n", __func__);
+    vmsg("%s: call subdev set_crop\n", __func__);
     ret = v4l2_subdev_call(subdev, pad, set_crop, NULL, &subdev_crop);
     if (ret < 0) {
         pr_err("%s: failed to subdev set_crop, ret %d\n", __func__, ret);

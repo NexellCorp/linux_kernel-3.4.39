@@ -1,4 +1,4 @@
-#define DEBUG 0
+/*#define DEBUG 0*/
 
 #include <linux/kernel.h>
 #include <linux/list.h>
@@ -346,18 +346,14 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
     }
 
     if (me->clip_enable != clip_enable || me->deci_enable != deci_enable) {
-        printk("%s: module %d changed clip %d-->%d, deci %d-->%d\n",
+        vmsg("%s: module %d changed clip %d-->%d, deci %d-->%d\n",
                 __func__, me->module, me->clip_enable, clip_enable, me->deci_enable, deci_enable);
         if (clip_enable || deci_enable) {
-#if 0
-    unsigned long flags;
-    spin_lock_irqsave(&me->lock, flags);
-#endif
             NX_VIP_SetInterruptEnableAll(me->module, CFALSE);
             NX_VIP_ClearInterruptPendingAll(me->module);
 #ifdef TURNAROUND_VIP_STOP_BUG
             if (me->deci_enable == false && me->clip_enable == false ) {
-                printk("%s: RESET & restore\n", __func__);
+                vmsg("%s: RESET & restore\n", __func__);
                 _backup_register(me->module);
                 NX_VIP_SetVIPEnable(me->module, CFALSE, CFALSE, CFALSE, CFALSE);
                 NX_VIP_ResetFIFO(me->module);
@@ -373,9 +369,6 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
 #endif
             NX_VIP_SetVIPEnable(me->module, CTRUE, CTRUE, clip_enable, deci_enable);
             NX_VIP_SetInterruptEnable(me->module, CAPTURE_CLIPPER_INT, CTRUE);
-#if 0
-    spin_unlock_irqrestore(&me->lock, flags);
-#endif
         } else {
             NX_VIP_SetVIPEnable(me->module, CFALSE, CFALSE, CFALSE, CFALSE);
         }
@@ -383,7 +376,7 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
         me->clip_enable = clip_enable;
         me->deci_enable = deci_enable;
 
-        printk("%s: exit\n", __func__);
+        vmsg("%s: exit\n", __func__);
     }
 
 }
@@ -391,8 +384,8 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
 static void _hw_run(struct nxp_capture *me, bool on)
 {
     if (on) {
-        /* pr_debug("%s: capture child 0x%x\n", __func__, me->running_child_bitmap); */
-        pr_debug("vip %d run!!!\n", me->module);
+        /* vmsg("%s: capture child 0x%x\n", __func__, me->running_child_bitmap); */
+        vmsg("vip %d run!!!\n", me->module);
         NX_VIP_SetInterruptEnableAll(me->module, CFALSE);
         NX_VIP_ClearInterruptPendingAll(me->module);
         NX_VIP_SetInterruptEnable(me->module, CAPTURE_CLIPPER_INT, CTRUE);
@@ -410,7 +403,7 @@ static void _hw_run(struct nxp_capture *me, bool on)
         NX_VIP_SetVIPEnable(me->module, CFALSE, CFALSE, CFALSE, CFALSE);
         NX_VIP_SetInterruptEnableAll(me->module, CFALSE);
         NX_VIP_ClearInterruptPendingAll(me->module);
-        pr_debug("vip %d stopped!!!\n", me->module);
+        vmsg("vip %d stopped!!!\n", me->module);
     }
 }
 
@@ -437,20 +430,6 @@ static irqreturn_t _irq_handler(int irq, void *desc)
         }
 
 OUT:
-#if 0
-    if (me->context_changed) {
-	printk("change context: %d, %d\n", me->clip_enable, me->deci_enable);
-        //NX_VIP_SetVIPEnable(me->module, CFALSE, CFALSE, CFALSE, CFALSE);
-        NX_VIP_SetVIPEnable(me->module, CTRUE, CTRUE, me->clip_enable, me->deci_enable);
-        NX_VIP_SetInterruptEnable(me->module, CAPTURE_CLIPPER_INT, CTRUE);
-        me->context_changed = false;
-        wake_up_interruptible(&me->wait_change_context);
-    }
-#endif
-
-#ifdef TURNAROUND_VIP_STOP_BUG
-#endif
-
     spin_unlock_irqrestore(&me->lock, flags);
 
     return IRQ_HANDLED;
@@ -486,7 +465,7 @@ static void *_get_alloc_ctx(struct nxp_capture *me)
 
 static int _run(struct nxp_capture *me, void *child)
 {
-    pr_debug("%s: %p\n", __func__, child);
+    vmsg("%s: %p\n", __func__, child);
     if (&me->vin_clipper == child)
         NXP_ATOMIC_SET_MASK(CAPTURE_CHILD_CLIPPER, &me->running_child_bitmap);
     else if (&me->decimator == child)
@@ -523,7 +502,7 @@ static int _register_irq_entry(struct nxp_capture *me,
     }
     list_add_tail(&entry->entry, &me->irq_entry_list);
     me->irq_entry_count++;
-    pr_debug("%s: irq_entry %d\n", __func__, me->irq_entry_count);
+    vmsg("%s: irq_entry %d\n", __func__, me->irq_entry_count);
     spin_unlock_irqrestore(&me->lock, flags);
 
     return 0;
@@ -533,18 +512,14 @@ static int _register_irq_entry(struct nxp_capture *me,
 static void _unregister_irq_entry(struct nxp_capture *me,
         struct nxp_v4l2_irq_entry *entry)
 {
-    /* unsigned long flags; */
-    /* spin_lock_irqsave(&me->lock, flags); */
     if (me->irq_entry_count <= 0) {
         printk("%s: INVALID CALL!!!\n", __func__);
         WARN_ON(1);
-        /* spin_unlock_irqrestore(&me->lock, flags); */
         return;
     }
     list_del(&entry->entry);
     me->irq_entry_count--;
-    pr_debug("%s: irq_entry %d\n", __func__, me->irq_entry_count);
-    /* spin_unlock_irqrestore(&me->lock, flags); */
+    vmsg("%s: irq_entry %d\n", __func__, me->irq_entry_count);
 }
 
 static struct v4l2_subdev *
@@ -574,7 +549,7 @@ static void _set_sensor_entity_name(int module, char *type, int i2c_adapter_num,
         return;
 
     sprintf(p_entity_name, "%s %d-00%x", type, i2c_adapter_num, i2c_addr);
-    printk("%s: module %d, sensor name %s\n", __func__, module, p_entity_name);
+    vmsg("%s: module %d, sensor name %s\n", __func__, module, p_entity_name);
 }
 
 static void _set_sensor_mipi_info(int module, int is_mipi)
@@ -708,7 +683,7 @@ struct nxp_capture *create_nxp_capture(int index,
     bool csi_enabled = pdata->type == NXP_CAPTURE_INF_CSI;
 #endif
 
-    pr_debug("%s entered\n", __func__);
+    vmsg("%s entered\n", __func__);
 
     me = kzalloc(sizeof(*me), GFP_KERNEL);
     if (!me) {
@@ -804,7 +779,7 @@ struct nxp_capture *create_nxp_capture(int index,
      */
     create_sensor_sysfs(me->module);
 
-    pr_debug("%s exit(%p)\n", __func__, me);
+    vmsg("%s exit(%p)\n", __func__, me);
 
     return me;
 
@@ -848,7 +823,7 @@ int register_nxp_capture(struct nxp_capture *me)
     bool csi_enabled = me->interface_type == NXP_CAPTURE_INF_CSI;
 #endif
 
-    pr_debug("%s entered\n", __func__);
+    vmsg("%s entered\n", __func__);
 
 #ifdef CONFIG_NXP_CAPTURE_MIPI_CSI
     if (csi_enabled) {
@@ -895,7 +870,7 @@ int register_nxp_capture(struct nxp_capture *me)
         goto error_irq;
     }
 
-    pr_debug("%s success!!!\n", __func__);
+    vmsg("%s success!!!\n", __func__);
     return 0;
 
 error_irq:
