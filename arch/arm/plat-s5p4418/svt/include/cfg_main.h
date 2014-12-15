@@ -279,7 +279,7 @@
  * 	usb ehci
  */
 #define CFG_USB_EHCI_LATE_LOAD					1
-#define CFG_USB_EHCI_LATE_LOADTIME				2000
+#define CFG_USB_EHCI_LATE_LOADTIME				500
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode
