@@ -31,10 +31,12 @@ struct nxp_rc_dev {
 		struct ir_raw_event ev[RAW_BUFFER_SIZE];
 		u32 count;
 	}data;
+	NX_PPM_INPUTPOL input_polarity;
 };
 
-#ifdef CONFIG_PPM_SYSFS
 struct nxp_rc_dev *nxp_ppm_dev= NULL;
+
+#ifdef CONFIG_PPM_SYSFS
 static ssize_t ppm_duty(struct kobject *kobj, struct kobj_attribute *attr,char *buf);
 
 static struct kobj_attribute ppm_attr =
@@ -201,7 +203,8 @@ static int __devinit nxp_ir_recv_probe(struct platform_device *pdev)
 
 	nxp_dev->rcdev = rcdev;
 	nxp_dev->data.count = 0;
-	NX_PPM_SetInputSignalPolarity(0, pdata->input_polarity);
+	nxp_dev->input_polarity = pdata->input_polarity;
+	NX_PPM_SetInputSignalPolarity(0, nxp_dev->input_polarity);
 
 	rc = rc_register_device(rcdev);
 	if (rc < 0) {
@@ -227,8 +230,9 @@ static int __devinit nxp_ir_recv_probe(struct platform_device *pdev)
 
 	NX_PPM_SetPPMEnable(0, true);
 
-#ifdef CONFIG_PPM_SYSFS
 	nxp_ppm_dev = nxp_dev;
+
+#ifdef CONFIG_PPM_SYSFS
 	kobj = kobject_create_and_add("ppm",&platform_bus.kobj);
     if (! kobj)
 		return -ENOMEM;
@@ -275,6 +279,19 @@ static int nxp_ir_recv_suspend(struct device *dev)
 
 static int nxp_ir_recv_resume(struct device *dev)
 {
+	struct nxp_rc_dev *nxp_dev = nxp_ppm_dev;
+	struct clk *clk;
+
+	nxp_soc_peri_reset_set(RESET_ID_PPM);
+
+   	clk = clk_get(NULL, DEV_NAME_PPM);
+	clk_set_rate(clk, CFG_PPM_CLK);
+	clk_enable(clk);
+
+	NX_PPM_SetInputSignalPolarity(0, nxp_dev->input_polarity);
+	NX_PPM_SetInterruptEnableAll(0,true);
+	NX_PPM_SetPPMEnable(0, true);
+
 	enable_irq(NX_PPM_GetInterruptNumber(0));
 	return 0;
 }
