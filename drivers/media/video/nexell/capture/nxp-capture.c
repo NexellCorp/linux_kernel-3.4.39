@@ -33,8 +33,6 @@
 #include <mach/platform.h>
 #endif
 
-#define TURNAROUND_VIP_STOP_BUG
-
 /*
  * child bitmap
  */
@@ -153,7 +151,7 @@ static int _hw_get_irq_num(struct nxp_capture *me)
     return NX_VIP_GetInterruptNumber(me->module);
 }
 
-#if defined(TURNAROUND_VIP_STOP_BUG)
+#if defined(CONFIG_TURNAROUND_VIP_RESET)
 static NX_VIP_RegisterSet s_reg_backup[3];
 static void _backup_register(int module)
 {
@@ -351,7 +349,7 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
         if (clip_enable || deci_enable) {
             NX_VIP_SetInterruptEnableAll(me->module, CFALSE);
             NX_VIP_ClearInterruptPendingAll(me->module);
-#ifdef TURNAROUND_VIP_STOP_BUG
+#ifdef CONFIG_TURNAROUND_VIP_RESET
             if (me->deci_enable == false && me->clip_enable == false ) {
                 vmsg("%s: RESET & restore\n", __func__);
                 _backup_register(me->module);

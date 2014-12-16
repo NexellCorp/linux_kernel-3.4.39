@@ -12,4 +12,10 @@ config NXP_CAPTURE_MIPI_CSI
     ---help---
       Say y here to enable capture mipi csi interface
 
+config TURNAROUND_VIP_RESET
+    bool "Apply turnaround vip reset"
+    default n
+    ---help---
+      Say y here to apply turnaround vip reset code
+
 endif
