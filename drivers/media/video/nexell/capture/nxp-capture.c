@@ -71,6 +71,7 @@ void dump_register(int module)
         (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
 
     DBGOUT("BASE ADDRESS: %p\n", pREG);
+#if defined(CONFIG_ARCH_S5P4418)
     DBGOUT(" VIP_CONFIG     = 0x%04x\r\n", pREG->VIP_CONFIG);
     DBGOUT(" VIP_HVINT      = 0x%04x\r\n", pREG->VIP_HVINT);
     DBGOUT(" VIP_SYNCCTRL   = 0x%04x\r\n", pREG->VIP_SYNCCTRL);
@@ -142,6 +143,52 @@ void dump_register(int module)
     /* DBGOUT(" VIPCLKGEN[0][1]= 0x%04x\r\n", pREG->VIPCLKGEN[0][1]); */
     /* DBGOUT(" VIPCLKGEN[1][0]= 0x%04x\r\n", pREG->VIPCLKGEN[1][0]); */
     /* DBGOUT(" VIPCLKGEN[1][1]= 0x%04x\r\n", pREG->VIPCLKGEN[1][1]); */
+#elif defined(CONFIG_ARCH_S5P6818)
+    DBGOUT(" VIP_CONFIG     = 0x%04x\r\n", pREG->VIP_CONFIG);
+    DBGOUT(" VIP_HVINT      = 0x%04x\r\n", pREG->VIP_HVINT);
+    DBGOUT(" VIP_SYNCCTRL   = 0x%04x\r\n", pREG->VIP_SYNCCTRL);
+    DBGOUT(" VIP_SYNCMON    = 0x%04x\r\n", pREG->VIP_SYNCMON);
+    DBGOUT(" VIP_VBEGIN     = 0x%04x\r\n", pREG->VIP_VBEGIN);
+    DBGOUT(" VIP_VEND       = 0x%04x\r\n", pREG->VIP_VEND);
+    DBGOUT(" VIP_HBEGIN     = 0x%04x\r\n", pREG->VIP_HBEGIN);
+    DBGOUT(" VIP_HEND       = 0x%04x\r\n", pREG->VIP_HEND);
+    DBGOUT(" VIP_FIFOCTRL   = 0x%04x\r\n", pREG->VIP_FIFOCTRL);
+    DBGOUT(" VIP_HCOUNT     = 0x%04x\r\n", pREG->VIP_HCOUNT);
+    DBGOUT(" VIP_VCOUNT     = 0x%04x\r\n", pREG->VIP_VCOUNT);
+    DBGOUT(" VIP_PADCLK_SEL = 0x%04x\r\n", pREG->VIP_PADCLK_SEL);
+    DBGOUT(" VIP_INFIFOCLR  = 0x%04x\r\n", pREG->VIP_INFIFOCLR);
+    DBGOUT(" VIP_CDENB      = 0x%04x\r\n", pREG->VIP_CDENB);
+    DBGOUT(" VIP_ODINT      = 0x%04x\r\n", pREG->VIP_ODINT);
+    DBGOUT(" VIP_IMGWIDTH   = 0x%04x\r\n", pREG->VIP_IMGWIDTH);
+    DBGOUT(" VIP_IMGHEIGHT  = 0x%04x\r\n", pREG->VIP_IMGHEIGHT);
+    DBGOUT(" CLIP_LEFT      = 0x%04x\r\n", pREG->CLIP_LEFT);
+    DBGOUT(" CLIP_RIGHT     = 0x%04x\r\n", pREG->CLIP_RIGHT);
+    DBGOUT(" CLIP_TOP       = 0x%04x\r\n", pREG->CLIP_TOP);
+    DBGOUT(" CLIP_BOTTOM    = 0x%04x\r\n", pREG->CLIP_BOTTOM);
+    DBGOUT(" DECI_TARGETW   = 0x%04x\r\n", pREG->DECI_TARGETW);
+    DBGOUT(" DECI_TARGETH   = 0x%04x\r\n", pREG->DECI_TARGETH);
+    DBGOUT(" DECI_DELTAW    = 0x%04x\r\n", pREG->DECI_DELTAW);
+    DBGOUT(" DECI_DELTAH    = 0x%04x\r\n", pREG->DECI_DELTAH);
+    DBGOUT(" DECI_CLEARW    = 0x%04x\r\n", pREG->DECI_CLEARW);
+    DBGOUT(" DECI_CLEARH    = 0x%04x\r\n", pREG->DECI_CLEARH);
+    DBGOUT(" DECI_FORMAT    = 0x%04x\r\n", pREG->DECI_FORMAT);
+    DBGOUT(" DECI_LUADDR    = 0x%04x\r\n", pREG->DECI_LUADDR);
+    DBGOUT(" DECI_LUSTRIDE  = 0x%04x\r\n", pREG->DECI_LUSTRIDE);
+    DBGOUT(" DECI_CRADDR    = 0x%04x\r\n", pREG->DECI_CRADDR);
+    DBGOUT(" DECI_CRSTRIDE  = 0x%04x\r\n", pREG->DECI_CRSTRIDE);
+    DBGOUT(" DECI_CBADDR    = 0x%04x\r\n", pREG->DECI_CBADDR);
+    DBGOUT(" DECI_CBSTRIDE  = 0x%04x\r\n", pREG->DECI_CBSTRIDE);
+    DBGOUT(" CLIP_FORMAT    = 0x%04x\r\n", pREG->CLIP_FORMAT);
+    DBGOUT(" CLIP_LUADDR    = 0x%04x\r\n", pREG->CLIP_LUADDR);
+    DBGOUT(" CLIP_LUSTRIDE  = 0x%04x\r\n", pREG->CLIP_LUSTRIDE);
+    DBGOUT(" CLIP_CRADDR    = 0x%04x\r\n", pREG->CLIP_CRADDR);
+    DBGOUT(" CLIP_CRSTRIDE  = 0x%04x\r\n", pREG->CLIP_CRSTRIDE);
+    DBGOUT(" CLIP_CBADDR    = 0x%04x\r\n", pREG->CLIP_CBADDR);
+    DBGOUT(" CLIP_CBSTRIDE  = 0x%04x\r\n", pREG->CLIP_CBSTRIDE);
+    DBGOUT(" VIP_SCANMODE   = 0x%04x\r\n", pREG->VIP_SCANMODE);
+    DBGOUT(" VIP_VIP1       = 0x%04x\r\n", pREG->VIP_VIP1);
+#endif
+
 #endif
 }
 
@@ -157,6 +204,7 @@ static void _backup_register(int module)
 {
     NX_VIP_RegisterSet *pREG = (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
     NX_VIP_RegisterSet *pBackupReg = &s_reg_backup[module];
+#if defined(CONFIG_ARCH_S5P4418)
     pBackupReg->VIP_CONFIG = pREG->VIP_CONFIG;
     pBackupReg->VIP_SYNCCTRL = pREG->VIP_SYNCCTRL;
     pBackupReg->VIP_VBEGIN = pREG->VIP_VBEGIN;
@@ -164,8 +212,6 @@ static void _backup_register(int module)
     pBackupReg->VIP_HBEGIN = pREG->VIP_HBEGIN;
     pBackupReg->VIP_HEND = pREG->VIP_HEND;
     pBackupReg->VIP_FIFOCTRL = pREG->VIP_FIFOCTRL;
-    /*pBackupReg->VIP_PADCLK_SEL = pREG->VIP_PADCLK_SEL;*/
-    /*pBackupReg->VIP_INFIFOCLR = pREG->VIP_INFIFOCLR;*/
     pBackupReg->VIP_CDENB = pREG->VIP_CDENB;
     pBackupReg->VIP_IMGWIDTH = pREG->VIP_IMGWIDTH;
     pBackupReg->VIP_IMGHEIGHT = pREG->VIP_IMGHEIGHT;
@@ -179,23 +225,6 @@ static void _backup_register(int module)
     pBackupReg->DECI_DELTAH = pREG->DECI_DELTAH;
     pBackupReg->DECI_CLEARW = pREG->DECI_CLEARW;
     pBackupReg->DECI_CLEARH = pREG->DECI_CLEARH;
-#if 0
-    pBackupReg->DECI_FORMAT = pREG->DECI_FORMAT;
-    pBackupReg->DECI_LUADDR = pREG->DECI_LUADDR;
-    pBackupReg->DECI_LUSTRIDE = pREG->DECI_LUSTRIDE;
-    pBackupReg->DECI_CRADDR = pREG->DECI_CRADDR;
-    pBackupReg->DECI_CRSTRIDE = pREG->DECI_CRSTRIDE;
-    pBackupReg->DECI_CBADDR = pREG->DECI_CBADDR;
-    pBackupReg->DECI_CBSTRIDE = pREG->DECI_CBSTRIDE;
-    pBackupReg->CLIP_FORMAT = pREG->CLIP_FORMAT;
-    pBackupReg->CLIP_LUADDR = pREG->CLIP_LUADDR;
-    pBackupReg->CLIP_LUSTRIDE = pREG->CLIP_LUSTRIDE;
-    pBackupReg->CLIP_CRADDR = pREG->CLIP_CRADDR;
-    pBackupReg->CLIP_CRSTRIDE = pREG->CLIP_CRSTRIDE;
-    pBackupReg->CLIP_CBADDR = pREG->CLIP_CBADDR;
-    pBackupReg->CLIP_CBSTRIDE = pREG->CLIP_CBSTRIDE;
-    pBackupReg->VIP_SCANMODE = pREG->VIP_SCANMODE;
-#else
     pBackupReg->DECI_LUSEG = pREG->DECI_LUSEG;
     pBackupReg->DECI_CRSEG = pREG->DECI_CRSEG;
     pBackupReg->DECI_CBSEG = pREG->DECI_CBSEG;
@@ -236,22 +265,60 @@ static void _backup_register(int module)
     pBackupReg->CLIP_BASEADDRL = pREG->CLIP_BASEADDRL;
     pBackupReg->CLIP_STRIDEH = pREG->CLIP_STRIDEH;
     pBackupReg->CLIP_STRIDEL = pREG->CLIP_STRIDEL;
-#endif
     pBackupReg->VIP_VIP1 = pREG->VIP_VIP1;
+#elif defined(CONFIG_ARCH_S5P6818)
+    pBackupReg->VIP_CONFIG = pREG->VIP_CONFIG;
+    pBackupReg->VIP_SYNCCTRL = pREG->VIP_SYNCCTRL;
+    pBackupReg->VIP_VBEGIN = pREG->VIP_VBEGIN;
+    pBackupReg->VIP_VEND = pREG->VIP_VEND;
+    pBackupReg->VIP_HBEGIN = pREG->VIP_HBEGIN;
+    pBackupReg->VIP_HEND = pREG->VIP_HEND;
+    pBackupReg->VIP_FIFOCTRL = pREG->VIP_FIFOCTRL;
+    pBackupReg->VIP_PADCLK_SEL = pREG->VIP_PADCLK_SEL;
+    pBackupReg->VIP_INFIFOCLR = pREG->VIP_INFIFOCLR;
+    pBackupReg->VIP_CDENB = pREG->VIP_CDENB;
+    pBackupReg->VIP_IMGWIDTH = pREG->VIP_IMGWIDTH;
+    pBackupReg->VIP_IMGHEIGHT = pREG->VIP_IMGHEIGHT;
+    pBackupReg->CLIP_LEFT = pREG->CLIP_LEFT;
+    pBackupReg->CLIP_RIGHT = pREG->CLIP_RIGHT;
+    pBackupReg->CLIP_TOP = pREG->CLIP_TOP;
+    pBackupReg->CLIP_BOTTOM = pREG->CLIP_BOTTOM;
+    pBackupReg->DECI_TARGETW = pREG->DECI_TARGETW;
+    pBackupReg->DECI_TARGETH = pREG->DECI_TARGETH;
+    pBackupReg->DECI_DELTAW = pREG->DECI_DELTAW;
+    pBackupReg->DECI_DELTAH = pREG->DECI_DELTAH;
+    pBackupReg->DECI_CLEARW = pREG->DECI_CLEARW;
+    pBackupReg->DECI_CLEARH = pREG->DECI_CLEARH;
+    pBackupReg->DECI_FORMAT = pREG->DECI_FORMAT;
+    pBackupReg->DECI_LUADDR = pREG->DECI_LUADDR;
+    pBackupReg->DECI_LUSTRIDE = pREG->DECI_LUSTRIDE;
+    pBackupReg->DECI_CRADDR = pREG->DECI_CRADDR;
+    pBackupReg->DECI_CRSTRIDE = pREG->DECI_CRSTRIDE;
+    pBackupReg->DECI_CBADDR = pREG->DECI_CBADDR;
+    pBackupReg->DECI_CBSTRIDE = pREG->DECI_CBSTRIDE;
+    pBackupReg->CLIP_FORMAT = pREG->CLIP_FORMAT;
+    pBackupReg->CLIP_LUADDR = pREG->CLIP_LUADDR;
+    pBackupReg->CLIP_LUSTRIDE = pREG->CLIP_LUSTRIDE;
+    pBackupReg->CLIP_CRADDR = pREG->CLIP_CRADDR;
+    pBackupReg->CLIP_CRSTRIDE = pREG->CLIP_CRSTRIDE;
+    pBackupReg->CLIP_CBADDR = pREG->CLIP_CBADDR;
+    pBackupReg->CLIP_CBSTRIDE = pREG->CLIP_CBSTRIDE;
+    pBackupReg->VIP_SCANMODE = pREG->VIP_SCANMODE;
+    pBackupReg->VIP_VIP1 = pREG->VIP_VIP1;
+#endif
 }
 
 static void _restore_register(int module)
 {
     NX_VIP_RegisterSet *pREG = (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
     NX_VIP_RegisterSet *pBackupReg = &s_reg_backup[module];
+#if defined(CONFIG_ARCH_S5P4418)
     pREG->VIP_SYNCCTRL = pBackupReg->VIP_SYNCCTRL;
     pREG->VIP_VBEGIN = pBackupReg->VIP_VBEGIN;
     pREG->VIP_VEND = pBackupReg->VIP_VEND;
     pREG->VIP_HBEGIN = pBackupReg->VIP_HBEGIN;
     pREG->VIP_HEND = pBackupReg->VIP_HEND;
     pREG->VIP_FIFOCTRL = pBackupReg->VIP_FIFOCTRL;
-    /*pREG->VIP_PADCLK_SEL = pBackupReg->VIP_PADCLK_SEL;*/
-    /*pREG->VIP_INFIFOCLR = pBackupReg->VIP_INFIFOCLR;*/
     pREG->VIP_IMGWIDTH = pBackupReg->VIP_IMGWIDTH;
     pREG->VIP_IMGHEIGHT = pBackupReg->VIP_IMGHEIGHT;
     pREG->CLIP_LEFT = pBackupReg->CLIP_LEFT;
@@ -264,24 +331,6 @@ static void _restore_register(int module)
     pREG->DECI_DELTAH = pBackupReg->DECI_DELTAH;
     pREG->DECI_CLEARW = pBackupReg->DECI_CLEARW;
     pREG->DECI_CLEARH = pBackupReg->DECI_CLEARH;
-#if 0
-    pREG->DECI_FORMAT = pBackupReg->DECI_FORMAT;
-    pREG->DECI_LUADDR = pBackupReg->DECI_LUADDR;
-    pREG->DECI_LUSTRIDE = pBackupReg->DECI_LUSTRIDE;
-    pREG->DECI_CRADDR = pBackupReg->DECI_CRADDR;
-    pREG->DECI_CRSTRIDE = pBackupReg->DECI_CRSTRIDE;
-    pREG->DECI_CBADDR = pBackupReg->DECI_CBADDR;
-    pREG->DECI_CBSTRIDE = pBackupReg->DECI_CBSTRIDE;
-    pREG->CLIP_FORMAT = pBackupReg->CLIP_FORMAT;
-    pREG->CLIP_LUADDR = pBackupReg->CLIP_LUADDR;
-    pREG->CLIP_LUSTRIDE = pBackupReg->CLIP_LUSTRIDE;
-    pREG->CLIP_CRADDR = pBackupReg->CLIP_CRADDR;
-    pREG->CLIP_CRSTRIDE = pBackupReg->CLIP_CRSTRIDE;
-    pREG->CLIP_CBADDR = pBackupReg->CLIP_CBADDR;
-    pREG->CLIP_CBSTRIDE = pBackupReg->CLIP_CBSTRIDE;
-    pREG->VIP_SCANMODE = pBackupReg->VIP_SCANMODE;
-    pREG->VIP_VIP1 = pBackupReg->VIP_VIP1;
-#else
     pREG->DECI_LUSEG = pBackupReg->DECI_LUSEG;
     pREG->DECI_CRSEG = pBackupReg->DECI_CRSEG;
     pREG->DECI_CBSEG = pBackupReg->DECI_CBSEG;
@@ -322,10 +371,48 @@ static void _restore_register(int module)
     pREG->CLIP_BASEADDRL = pBackupReg->CLIP_BASEADDRL;
     pREG->CLIP_STRIDEH = pBackupReg->CLIP_STRIDEH;
     pREG->CLIP_STRIDEL = pBackupReg->CLIP_STRIDEL;
-#endif
-
     pREG->VIP_CDENB = pBackupReg->VIP_CDENB;
     pREG->VIP_CONFIG = pBackupReg->VIP_CONFIG;
+#elif defined(CONFIG_ARCH_S5P6818)
+    pREG->VIP_SYNCCTRL = pBackupReg->VIP_SYNCCTRL;
+    pREG->VIP_VBEGIN = pBackupReg->VIP_VBEGIN;
+    pREG->VIP_VEND = pBackupReg->VIP_VEND;
+    pREG->VIP_HBEGIN = pBackupReg->VIP_HBEGIN;
+    pREG->VIP_HEND = pBackupReg->VIP_HEND;
+    pREG->VIP_FIFOCTRL = pBackupReg->VIP_FIFOCTRL;
+    pREG->VIP_PADCLK_SEL = pBackupReg->VIP_PADCLK_SEL;
+    pREG->VIP_INFIFOCLR = pBackupReg->VIP_INFIFOCLR;
+    pREG->VIP_IMGWIDTH = pBackupReg->VIP_IMGWIDTH;
+    pREG->VIP_IMGHEIGHT = pBackupReg->VIP_IMGHEIGHT;
+    pREG->CLIP_LEFT = pBackupReg->CLIP_LEFT;
+    pREG->CLIP_RIGHT = pBackupReg->CLIP_RIGHT;
+    pREG->CLIP_TOP = pBackupReg->CLIP_TOP;
+    pREG->CLIP_BOTTOM = pBackupReg->CLIP_BOTTOM;
+    pREG->DECI_TARGETW = pBackupReg->DECI_TARGETW;
+    pREG->DECI_TARGETH = pBackupReg->DECI_TARGETH;
+    pREG->DECI_DELTAW = pBackupReg->DECI_DELTAW;
+    pREG->DECI_DELTAH = pBackupReg->DECI_DELTAH;
+    pREG->DECI_CLEARW = pBackupReg->DECI_CLEARW;
+    pREG->DECI_CLEARH = pBackupReg->DECI_CLEARH;
+    pREG->DECI_FORMAT = pBackupReg->DECI_FORMAT;
+    pREG->DECI_LUADDR = pBackupReg->DECI_LUADDR;
+    pREG->DECI_LUSTRIDE = pBackupReg->DECI_LUSTRIDE;
+    pREG->DECI_CRADDR = pBackupReg->DECI_CRADDR;
+    pREG->DECI_CRSTRIDE = pBackupReg->DECI_CRSTRIDE;
+    pREG->DECI_CBADDR = pBackupReg->DECI_CBADDR;
+    pREG->DECI_CBSTRIDE = pBackupReg->DECI_CBSTRIDE;
+    pREG->CLIP_FORMAT = pBackupReg->CLIP_FORMAT;
+    pREG->CLIP_LUADDR = pBackupReg->CLIP_LUADDR;
+    pREG->CLIP_LUSTRIDE = pBackupReg->CLIP_LUSTRIDE;
+    pREG->CLIP_CRADDR = pBackupReg->CLIP_CRADDR;
+    pREG->CLIP_CRSTRIDE = pBackupReg->CLIP_CRSTRIDE;
+    pREG->CLIP_CBADDR = pBackupReg->CLIP_CBADDR;
+    pREG->CLIP_CBSTRIDE = pBackupReg->CLIP_CBSTRIDE;
+    pREG->VIP_SCANMODE = pBackupReg->VIP_SCANMODE;
+    pREG->VIP_VIP1 = pBackupReg->VIP_VIP1;
+    pREG->VIP_CDENB = pBackupReg->VIP_CDENB;
+    pREG->VIP_CONFIG = pBackupReg->VIP_CONFIG;
+#endif
 }
 #endif
 
@@ -358,10 +445,13 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
 #if 0
                 mdelay(100);
 #endif
+#if defined(CONFIG_ARCH_S5P4418)
                 NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(me->module), RSTCON_nDISABLE);
                 NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(me->module), RSTCON_nENABLE);
-                /*NX_RSTCON_SetRST(NX_VIP_GetResetNumber(me->module), RSTCON_ASSERT);*/
-                /*NX_RSTCON_SetRST(NX_VIP_GetResetNumber(me->module), RSTCON_NEGATE);*/
+#elif defined(CONFIG_ARCH_S5P6818)
+                NX_RSTCON_SetRST(NX_VIP_GetResetNumber(me->module), RSTCON_ASSERT);
+                NX_RSTCON_SetRST(NX_VIP_GetResetNumber(me->module), RSTCON_NEGATE);
+#endif
                 _restore_register(me->module);
             }
 #endif
