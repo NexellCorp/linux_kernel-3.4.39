@@ -1701,11 +1701,11 @@ static int _dwmci1_get_cd(u32 slot_id)
 
 static struct dw_mci_board _dwmci1_data = {
 	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 50 * 1000 * 1000,
+	.bus_hz			= 80 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 	.cd_type		= DW_MCI_CD_EXTERNAL,
 	.init			= _dwmci1_init,
 	.get_ro			= _dwmci_get_ro,
@@ -1740,7 +1740,7 @@ static int _dwmci2_get_cd(u32 slot_id)
 }
 static struct dw_mci_board _dwmci2_data = {
 	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 50 * 1000 * 1000,
+	.bus_hz			= 80 * 1000 * 1000,
 	.caps			=	MMC_CAP_CMD23,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
@@ -1750,7 +1750,7 @@ static struct dw_mci_board _dwmci2_data = {
 	.get_cd			= _dwmci2_get_cd,
 	.ext_cd_init	= _dwmci_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 
 };
 #endif
