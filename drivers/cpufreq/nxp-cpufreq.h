@@ -203,7 +203,30 @@ _find:
 	return FREQ_ARRAY_SIZE;
 }
 
-static void s5p4418_asv_modify_vol(unsigned long (*freq_tables)[2],
+static long s5p4418_asv_get_voltage(long freqkhz)
+{
+	long uV = 0;
+	int i = 0;
+
+	if (NULL == pAsv_Table)
+		return -EINVAL;;
+
+	for (i = 0; FREQ_ARRAY_SIZE > i; i++) {
+		if (freqkhz == (pAsv_Table->Mhz[i]*1000)) {
+			uV = pAsv_Table->uV[i];
+			break;
+		}
+	}
+
+	if (0 == uV) {
+		printk("FAIL: %ldkhz is not exist on the ASV TABLEs !!!\n", freqkhz);
+		return -EINVAL;
+	}
+
+	return uV;
+}
+
+static void s5p4418_asv_modify_vol_table(unsigned long (*freq_tables)[2],
 				long value, bool down, bool percent)
 {
 	long step_vol = VOLTAGE_STEP_UV;
@@ -259,7 +282,8 @@ static int s5p4418_asv_current_label(char *buf)
 
 static struct cpufreq_asv_ops asv_freq_ops = {
 	.setup_table = s5p4418_asv_setup_table,
-	.modify_vol = s5p4418_asv_modify_vol,
+	.get_voltage = s5p4418_asv_get_voltage,
+	.modify_vol_table = s5p4418_asv_modify_vol_table,
 	.current_label = s5p4418_asv_current_label,
 };
 #else

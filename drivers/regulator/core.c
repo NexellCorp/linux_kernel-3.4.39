@@ -330,11 +330,11 @@ static ssize_t regulator_uV_store(struct device *dev,
 	ret = regulator_check_voltage(rdev, &val, &val);
 	if (ret < 0)
 		return ret;
-
+/*
 	ret = regulator_check_consumers(rdev, &val, &val);
 	if (ret < 0)
 		return ret;
-
+*/
 	ret = _regulator_do_set_voltage(rdev, val, val);
 	if (ret < 0)
 		return ret;
@@ -342,9 +342,11 @@ static ssize_t regulator_uV_store(struct device *dev,
 	return size;
 }
 
-// psw0523 fix for cts: android.permission.cts.FileSystemPermissionTest#testAllFilesInSysAreNotWritable
-/*static DEVICE_ATTR(microvolts, 0666, regulator_uV_show, regulator_uV_store);*/
-static DEVICE_ATTR(microvolts, 0644, regulator_uV_show, regulator_uV_store);
+/*
+ * psw0523 fix for cts: android.permission.cts.FileSystemPermissionTest#testAllFilesInSysAreNotWritable
+ * 0666 -> 0664
+ */
+static DEVICE_ATTR(microvolts, 0664, regulator_uV_show, regulator_uV_store);
 
 static ssize_t regulator_uA_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
