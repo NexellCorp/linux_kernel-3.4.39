@@ -1406,6 +1406,45 @@ int nxp_soc_disp_video_set_position(int module, int left, int top,
 	return 0;
 }
 
+void nxp_soc_disp_video_set_crop(int module, bool enable, int left, int top, int width, int height, int waitvsync)
+{
+	DISP_MULTILY_VID(module, pvid);
+
+    pvid->en_source_crop = enable;
+
+    if (enable) {
+        int srcw = width;
+        int srch = height;
+        int dstw = pvid->right - pvid->left;
+        int dsth = pvid->bottom - pvid->top;
+        int hf = 1, vf = 1;
+
+        if (dstw == 0)
+            dstw = pvid->width;
+        if (dsth == 0)
+            dsth = pvid->height;
+
+        printk("%s: %s, L=%d, T=%d, W=%d, H=%d, dstw=%d, dsth=%d, wait=%d\n",
+                __func__, pvid->name, left, top, width, height, dstw, dsth, waitvsync);
+
+        if (srcw == dstw && srch == dsth)
+            hf = 0, vf = 0;
+
+        pvid->hFilter = hf;
+        pvid->vFilter = vf;
+
+        /* set scale */
+        NX_MLC_SetVideoLayerScale(module, srcw, srch, dstw, dsth,
+                (CBOOL)hf, (CBOOL)hf, (CBOOL)vf, (CBOOL)vf);
+        NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
+        disp_syncgen_waitsync(module, MLC_LAYER_VIDEO, waitvsync);
+    } else {
+        nxp_soc_disp_video_set_position(module, pvid->left, pvid->top,
+                pvid->right, pvid->bottom, waitvsync);
+    }
+}
+
+
 int nxp_soc_disp_video_get_position(int module, int *left, int *top, int *right, int *bottom)
 {
 	NX_MLC_GetVideoPosition(module, left, top, right, bottom);
