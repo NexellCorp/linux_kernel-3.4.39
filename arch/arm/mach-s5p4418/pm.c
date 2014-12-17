@@ -52,7 +52,7 @@ void pm_suspend_data_save(void *mem)
 	unsigned int *dst = mem ? mem : sramsave;
 	int i = 0;
 
-	for(; sram_length/4 > i; i++)
+	for(i = 0; sram_length/4 > i; i++)
 		dst[i] = src[i];
 }
 EXPORT_SYMBOL_GPL(pm_suspend_data_save);
@@ -63,7 +63,7 @@ void pm_suspend_data_restore(void *mem)
 	unsigned int *dst = sramptr;
 	int i = 0;
 
-	for( ; sram_length/4 > i; i++)
+	for(i = 0; sram_length/4 > i; i++)
 		dst[i] = src[i];
 }
 EXPORT_SYMBOL_GPL(pm_suspend_data_restore);
@@ -722,7 +722,7 @@ static int __init suspend_ops_init(void)
 	sramptr = (unsigned int*)ioremap(0xFFFF0000, sram_length);
 	pr_debug("%s sram save [%d]\r\n", __func__, sram_length);
 
-    pm_suspend_data_save(NULL);
+	pm_suspend_data_save(NULL);
 	suspend_set_ops(&suspend_ops);
 
 #if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
