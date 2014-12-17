@@ -32,6 +32,10 @@
 
 #include "alc5623.h"
 
+/*
+#define pr_debug				printk
+*/
+
 static struct i2c_client *i2c;
 static int caps_charge = 2000;
 module_param(caps_charge, int, 0);
@@ -51,7 +55,7 @@ static void alc5623_fill_cache(struct snd_soc_codec *codec)
 {
 	int i, step = codec->driver->reg_cache_step;
 	u16 *cache = codec->reg_cache;
-    /*printk("%s .....%d.......\n",__func__,__LINE__);*/
+    pr_debug("%s .....%d.......\n",__func__,__LINE__);
 	/* not really efficient ... */
 	codec->cache_bypass = 1;
 	for (i = 0 ; i < codec->driver->reg_cache_size ; i += step)
@@ -61,7 +65,7 @@ static void alc5623_fill_cache(struct snd_soc_codec *codec)
 
 static inline int alc5623_reset(struct snd_soc_codec *codec)
 {
-    /*printk("%s .....%d.......\n",__func__,__LINE__);*/
+    pr_debug("%s .....%d.......\n",__func__,__LINE__);
 	return i2c_smbus_write_word_data(i2c, ALC5623_RESET, 0);
 }
 
@@ -658,11 +662,11 @@ static int set_init_regs(struct snd_soc_codec *codec)
         }
         msleep(10);
         reg= i2c_smbus_read_word_data(i2c,(u8)init_regs[i][0]);
-        /*printk("Read reg[0x%02x] = 0x%04x \n",init_regs[i][0],reg);*/
+        pr_debug("Read reg[0x%02x] = 0x%04x \n",init_regs[i][0],reg);
 
 
     }
-    /*printk("%s over %d regs \n",__func__,REG_INIT_NUM);*/
+    pr_debug("%s over %d regs \n",__func__,REG_INIT_NUM);
     return 0;
 }
 
@@ -832,7 +836,7 @@ static int alc5623_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 {
 	struct snd_soc_codec *codec = codec_dai->codec;
 	struct alc5623_priv *alc5623 = snd_soc_codec_get_drvdata(codec);
-    /*printk("%s  freq is %d \n",__func__,freq);*/
+    pr_debug("%s  freq is %d \n",__func__,freq);
 
 	switch (freq) {
 	case  8192000:
@@ -952,7 +956,7 @@ static int alc5623_pcm_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 
 	coeff = coeff_div[coeff].regvalue;
-	dev_dbg(codec->dev, "%s: sysclk=%d,rate=%d,coeff=0x%04x\n",
+	pr_debug("%s: sysclk=%d,rate=%d,coeff=0x%04x\n",
 		__func__, alc5623->sysclk, rate, coeff);
 	//snd_soc_write(codec, ALC5623_STEREO_AD_DA_CLK_CTRL, coeff);
     i2c_smbus_write_word_data(i2c,ALC5623_STEREO_AD_DA_CLK_CTRL, coeff);
@@ -968,7 +972,7 @@ static int alc5623_mute(struct snd_soc_dai *dai, int mute)
 	struct snd_soc_codec *codec = dai->codec;
 	u16 hp_mute = ALC5623_MISC_M_DAC_L_INPUT | ALC5623_MISC_M_DAC_R_INPUT;
 	u16 mute_reg = i2c_smbus_read_word_data(i2c, ALC5623_MISC_CTRL) & ~hp_mute;
-    /*printk("%s .....%d.....mute : %d..\n",__func__,__LINE__,mute);*/
+    pr_debug("%s .....%d.....mute : %d..\n",__func__,__LINE__,mute);
 	if (mute)
 		mute_reg |= hp_mute;
 
@@ -996,7 +1000,7 @@ static int alc5623_mute(struct snd_soc_dai *dai, int mute)
 static void enable_power_depop(struct snd_soc_codec *codec)
 {
 	struct alc5623_priv *alc5623 = snd_soc_codec_get_drvdata(codec);
-    /*printk("%s .....%d.......\n",__func__,__LINE__);*/
+    pr_debug("%s .....%d.......\n",__func__,__LINE__);
 	//snd_soc_update_bits(codec, ALC5623_PWR_MANAG_ADD1,
 	//			ALC5623_PWR_ADD1_SOFTGEN_EN,
 	//			ALC5623_PWR_ADD1_SOFTGEN_EN);
@@ -1033,7 +1037,7 @@ static void enable_power_depop(struct snd_soc_codec *codec)
 static int alc5623_set_bias_level(struct snd_soc_codec *codec,
 				      enum snd_soc_bias_level level)
 {
-    /*printk("%s .....%d.......\n",__func__,__LINE__);*/
+    pr_debug("%s .....%d.......\n",__func__,__LINE__);
 	switch (level) {
 	case SND_SOC_BIAS_ON:
         init_codec(i2c);
@@ -1133,7 +1137,7 @@ static int alc5623_probe(struct snd_soc_codec *codec)
 	struct alc5623_priv *alc5623 = snd_soc_codec_get_drvdata(codec);
 	struct snd_soc_dapm_context *dapm = &codec->dapm;
 	int ret;
-    /*printk("%s ............\n",__func__);*/
+    pr_debug("%s ............\n",__func__);
 
 	ret = snd_soc_codec_set_cache_io(codec, 8, 16, alc5623->control_type);
 	if (ret < 0) {
@@ -1242,7 +1246,7 @@ static __devinit int alc5623_i2c_probe(struct i2c_client *client,
 	struct alc5623_priv *alc5623;
 	int ret, vid1, vid2;
 
-    /*printk("%s ............\n",__func__);*/
+    pr_debug("%s ............\n",__func__);
 
 	/*vid1 = i2c_smbus_read_word_data(client, ALC5623_VENDOR_ID1);
 	if (vid1 < 0) {
@@ -1266,7 +1270,6 @@ static __devinit int alc5623_i2c_probe(struct i2c_client *client,
 		return -ENODEV;
 	}
 
-	dev_dbg(&client->dev, "Found codec id : alc56%02x\n", vid2);
     printk("Found codec id : alc56%02x\n", vid2);*/
 	alc5623 = devm_kzalloc(&client->dev, sizeof(struct alc5623_priv),
 			       GFP_KERNEL);
