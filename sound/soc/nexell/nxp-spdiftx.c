@@ -40,10 +40,16 @@
 */
 
 #define	DEF_SAMPLE_RATE			48000
-#define	DEF_SAMPLE_BIT			24	// 8, 16, 24 (PCM)
+#define	DEF_SAMPLE_BIT			16	// 8, 16, 24 (PCM)
 
 #define	SPDIF_BASEADDR			PHY_BASEADDR_SPDIF_TX
+
+#if (DEF_SAMPLE_BIT == 16)
+#define	SPDIF_BUS_WIDTH			2	// Byte
+#else
 #define	SPDIF_BUS_WIDTH			4	// Byte
+#endif
+
 #define	SPDIF_MAX_BURST			4	// Byte
 #define	SPDIF_MAX_CLOCK			166000000
 
@@ -137,10 +143,10 @@ struct clock_ratio {
 };
 
 static struct clock_ratio clk_ratio [] = {
-	{  32000,  8192000, 122880000,  3, },
-	{  44100, 11289600, 169344000,  0, },
-	{  48000, 12288000, 184320000,  2, },
-	{  96000, 24576000, 368640000, 10, },
+	{  32000,  8192000, 12288000,  3, },
+	{  44100, 11289600, 16934400,  0, },
+	{  48000, 12288000, 18432000,  2, },
+	{  96000, 24576000, 36864000, 10, },
 };
 
 /*
@@ -278,7 +284,6 @@ static int nxp_spdif_check_param(struct nxp_spdif_snd_param *par)
 {
 	struct spdif_register *spdif = &par->spdif;
 	struct nxp_pcm_dma_param *dmap = &par->dma;
-	unsigned int  sample_rate = par->sample_rate;
 	unsigned long request = 0, rate_hz = 0;
 	int MCLK = 0; /* only support internal */
 	int PCM  = (DEF_SAMPLE_BIT == 24 ? PCM_24BIT : PCM_16BIT);
@@ -303,11 +308,11 @@ static int nxp_spdif_check_param(struct nxp_spdif_snd_param *par)
 	rate_hz = clk_round_rate(par->clk, request);
 
 	/* 256 RATIO */
-	RATIO = RATIO_256, request = clk_ratio[i].ratio_256;
-	if (rate_hz != par->sample_rate) {
+	if (rate_hz != request && PCM == PCM_16BIT) {
 		unsigned int o_rate = rate_hz;
+		RATIO = RATIO_256, request = clk_ratio[i].ratio_256;
 		rate_hz = clk_round_rate(par->clk, request);
-		if (abs(sample_rate - rate_hz) > abs(sample_rate - o_rate)) {
+		if (abs(request - rate_hz) > abs(request - o_rate)) {
 			rate_hz = o_rate, RATIO = RATIO_384;
 		}
 	}

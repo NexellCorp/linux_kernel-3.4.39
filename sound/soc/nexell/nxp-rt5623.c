@@ -31,7 +31,9 @@
 #include "nxp-i2s.h"
 
 
+/*
 #define	pr_debug	printk
+*/
 
 #define	AUDIO_AMP_POWER		CFG_IO_AUDIO_AMP_POWER
 
