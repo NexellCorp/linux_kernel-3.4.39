@@ -185,24 +185,20 @@ static int _hw_init(struct nxp_scaler *me)
 
     me->irq = NX_SCALER_GetInterruptNumber(0);
 
-#if 0
-    NX_SCALER_CLKGEN_SetBaseAddress(0, IO_ADDRESS(NX_SCALER_CLKGEN_GetPhysicalAddress(0)));
-    NX_SCALER_SetClockBClkMode(0, NX_BCLKMODE_ALWAYS);
-#else
     NX_CLKGEN_SetBaseAddress(NX_SCALER_GetClockNumber(0), IO_ADDRESS(NX_CLKGEN_GetPhysicalAddress(NX_SCALER_GetClockNumber(0))));
     NX_CLKGEN_SetClockBClkMode(NX_SCALER_GetClockNumber(0), NX_BCLKMODE_ALWAYS);
-#endif
+
+    #if defined(CONFIG_ARCH_S5P4418)
     NX_RSTCON_SetnRST(NX_SCALER_GetResetNumber(0), RSTCON_nENABLE);
-    /* nxp_soc_peri_reset_set(NX_SCALER_GetResetNumber(0)); */
+    #elif defined(CONFIG_ARCH_S5p6818)
+    NX_RSTCON_SetRST(NX_SCALER_GetResetNumber(0), RSTCON_NEGATE);
+    #endif
 
     NX_SCALER_SetInterruptEnableAll(0, CFALSE);
     NX_SCALER_ClearInterruptPendingAll(0);
-    /* NX_SCALER_SetInterruptEnable(0, NX_SCALER_INT_DONE, CTRUE); */
-    /* NX_SCALER_SetInterruptEnable(0, NX_SCALER_INT_CMD_PROC, CTRUE); */
 
     NX_SCALER_SetFilterEnable(0, CTRUE);
     NX_SCALER_SetMode(0, 0);
-    /* NX_SCALER_Stop(0); */
 #endif
 
     return ret;

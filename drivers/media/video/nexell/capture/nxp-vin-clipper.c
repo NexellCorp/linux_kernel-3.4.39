@@ -185,8 +185,13 @@ static int _hw_set_clock(struct nxp_vin_clipper *me, bool on)
         NX_CLKGEN_SetBaseAddress(NX_VIP_GetClockNumber(module), (U32)clkgen_base);
         NX_CLKGEN_SetClockDivisorEnable(NX_VIP_GetClockNumber(module), CTRUE);
         NX_CLKGEN_SetClockBClkMode(NX_VIP_GetClockNumber(module), NX_BCLKMODE_DYNAMIC);
+#if defined(CONFIG_ARCH_S5P4418)
         NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nDISABLE);
         NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nENABLE);
+#elif defined(CONFIG_ARCH_S5p6818)
+        NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_ASSERT);
+        NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_NEGATE);
+#endif
 
         if (me->platdata->is_mipi) {
             vmsg("%s: apply mipi csi clock!!!\n", __func__);
@@ -294,7 +299,11 @@ static int _hw_set_output_format(struct nxp_vin_clipper *me)
         }
     }
 
+#if defined(CONFIG_ARCH_S5P4418)
     NX_VIP_SetClipperFormat(module, nx_format, 0, 0, 0);
+#elif defined(CONFIG_ARCH_S5P6818)
+    NX_VIP_SetClipperFormat(module, nx_format);
+#endif
 
     return 0;
 }
@@ -382,7 +391,10 @@ static int _hw_set_addr(struct nxp_vin_clipper *me, struct nxp_video_buffer *buf
         if (me->format[1].code == V4L2_MBUS_FMT_YUYV8_2X8) {
             vmsg("%s: clipper bufs 0x%x, stride %d\n",
                 __func__, buf->dma_addr[0], buf->stride[0]);
+            /* TODO: how can s5p6818 do this? */
+#if defined(CONFIG_ARCH_S5P4418)
             NX_VIP_SetClipperAddrYUYV(module, buf->dma_addr[0], buf->stride[0]>>1);
+#endif
         } else {
             u32 nx_format = _convert_to_nxp_vip_format(me->format[1].code);
             struct v4l2_rect *c = &me->crop;

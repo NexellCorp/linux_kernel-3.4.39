@@ -104,8 +104,13 @@ static int _hw_configure(struct nxp_decimator *me)
                     me->src_width, me->src_height,
                     me->target_width, me->target_height);
         }
+
+    #if defined(CONFIG_ARCH_S5P4418)
         NX_VIP_SetDecimatorFormat(module,
                 _convert_to_vip_format(me->code) , false, false, false);
+    #elif defined(CONFIG_ARCH_S5P6818)
+        NX_VIP_SetDecimatorFormat(module, _convert_to_vip_format(me->code));
+    #endif
     }
 #endif
 
