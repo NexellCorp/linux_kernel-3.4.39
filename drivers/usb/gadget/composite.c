@@ -1159,6 +1159,12 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 				value = min(w_length, (u16) value);
 			}
 			break;
+		case USB_DT_DEBUG:
+			value = 0;
+			break;
+		default:
+			printk("not supported descriptor %x\n", w_value >> 8);
+			break;
 		}
 		break;
 

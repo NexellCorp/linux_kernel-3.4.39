@@ -1349,8 +1349,8 @@ static inline void do_gadget_setup(dwc_otg_pcd_t * pcd,
 	ret = pcd->fops->setup(pcd, (uint8_t *) ctrl);
 	DWC_SPINLOCK(pcd->lock);
 	if (ret < 0) {
+		DWC_SPINUNLOCK(pcd->lock);
 		ep0_do_stall(pcd, ret);
-		pcd->fops->disconnect(pcd);
 	}
 
 	/** @todo This is a g_file_storage gadget driver specific

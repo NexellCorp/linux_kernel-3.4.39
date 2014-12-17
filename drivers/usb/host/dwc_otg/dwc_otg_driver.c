@@ -75,9 +75,10 @@ void __DWC_DEBUG(char *format, ...)
 }
 */
 
-/* ADD by jhkim */
+#ifdef DEBUG
 #define	dev_dbg(d, m...)		printk(m)
 #define	KERN_DEBUG				KERN_INFO
+#endif
 
 #define DWC_DRIVER_VERSION	"3.00a 10-AUG-2012"
 #define DWC_DRIVER_DESC		"HS OTG USB Controller driver"
