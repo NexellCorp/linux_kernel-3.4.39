@@ -433,37 +433,32 @@ static ssize_t show_available_voltages(struct cpufreq_policy *policy, char *buf)
 {
 	struct cpufreq_dvfs_info *dvfs = get_dvfs_ptr();
  	unsigned long (*freq_volts)[2] = (unsigned long(*)[2])dvfs->freq_volts;
-	char *s = buf;
+ 	ssize_t count = 0;
 	int i = 0;
-
 
 	for (; dvfs->table_size > i; i++) {
 		long uV = freq_volts[i][1];
 		if (dvfs->asv_ops->get_voltage)
 			uV = dvfs->asv_ops->get_voltage(freq_volts[i][0]);
-		s += sprintf(s, "%8ld", uV);
+		count += sprintf(&buf[count], "%ld ", uV);
 	}
 
-	if (s != buf)
-		*(s-1) = '\n';
-
-	return (s - buf);
+	count += sprintf(&buf[count], "\n");
+	return count;
 }
 
 static ssize_t show_cur_voltages(struct cpufreq_policy *policy, char *buf)
 {
 	struct cpufreq_dvfs_info *dvfs = get_dvfs_ptr();
  	unsigned long (*freq_volts)[2] = (unsigned long(*)[2])dvfs->freq_volts;
-	char *s = buf;
+ 	ssize_t count = 0;
 	int i = 0;
 
 	for (; dvfs->table_size > i; i++)
-		s += sprintf(s, "%8ld", freq_volts[i][1]);
+		count += sprintf(&buf[count], "%ld ", freq_volts[i][1]);
 
-	if (s != buf)
-		*(s-1) = '\n';
-
-	return (s - buf);
+	count += sprintf(&buf[count], "\n");
+	return count;
 }
 
 static ssize_t store_cur_voltages(struct cpufreq_policy *policy,
