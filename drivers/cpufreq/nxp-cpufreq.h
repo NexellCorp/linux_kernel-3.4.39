@@ -145,9 +145,9 @@ static int s5p4418_asv_setup_table(unsigned long (*freq_tables)[2])
 	nxp_cpu_id_ecid(ecid);
 
 	/* Use Fusing Flags */
-	if ((ecid[2] & 1<<31)) {
-		int ag = MtoL((ecid[2]>>24) & 0x0F, 4);
-		int gs = MtoL((ecid[2]>>28) & 0x07, 3);
+	if ((ecid[2] & (1<<0))) {
+		int gs = MtoL((ecid[2]>>1) & 0x07, 3);
+		int ag = MtoL((ecid[2]>>4) & 0x0F, 4);
 
 		Asv_Param.level = (ag - gs);
 		Asv_Param.flag = 1;
