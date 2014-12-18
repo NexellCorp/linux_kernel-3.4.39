@@ -939,6 +939,9 @@ static const struct v4l2_subdev_core_ops nxp_vin_clipper_core_ops = {
 /**
  * v4l2_subdev_video_ops
  */
+#define YUV_STRIDE_ALIGN_FACTOR     128
+#define YUV_VSTRIDE_ALIGN_FACTOR    16
+#define YUV_YSTRIDE(w)   ALIGN(w, YUV_STRIDE_ALIGN_FACTOR)
 static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
 {
     /*
@@ -978,6 +981,7 @@ static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
                 return ret;
             }
             _update_next_buffer(me);
+#if 0
             if (NXP_ATOMIC_READ(&me->state) & NXP_VIN_STATE_RUNNING_DECIMATOR) {
                 struct v4l2_rect *c = &me->crop;
                 U32 src_width, src_height, dst_width, dst_height;
@@ -994,6 +998,40 @@ static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
                     }
                 }
             }
+#else
+            CBOOL vip_enable, deci_enable;
+            NX_VIP_GetVIPEnable(module, &vip_enable, NULL, NULL, &deci_enable);
+            if (vip_enable && deci_enable) {
+                struct v4l2_rect *c = &me->crop;
+                U32 src_width, src_height, dst_width, dst_height;
+                NX_VIP_GetDeciSource(module, &src_width, &src_height);
+                if (c->width != src_width || c->height != src_height) {
+                    NX_VIP_GetDecimation(module, &dst_width, &dst_height, NULL, NULL, NULL, NULL);
+                    if (dst_width > c->width || dst_height > c->height) {
+                        int deci_width = dst_width > c->width ? c->width : dst_width;
+                        int deci_height = dst_height > c->height ? c->height : dst_height;
+                        pr_err("%s: Decimator wxh(%dx%d) is bigger than clipper(%dx%d)\n", __func__, dst_width, dst_height, c->width, c->height);
+                        /*while (!NX_VIP_GetInterruptPending(module, 1));*/
+                        while (!NX_VIP_GetInterruptPendingAll(module));
+                        /*printk("OD INT\n");*/
+                        printk("ALL INT\n");
+    #ifdef CONFIG_TURNAROUND_VIP_RESET
+                        parent->backup_reset_restore_register(module);
+    #endif
+                        /*NX_VIP_SetDecimation(module, c->width, c->height, c->width, c->height);*/
+                        printk("set decimation: %d,%d --> %d,%d\n", c->width, c->height, YUV_YSTRIDE(deci_width-127), deci_height);
+                        NX_VIP_SetDecimation(module, c->width, c->height, YUV_YSTRIDE(deci_width-127), deci_height);
+    /*#ifdef CONFIG_TURNAROUND_VIP_RESET*/
+                        /*NX_VIP_SetVIPEnable(module, CTRUE, CTRUE, CFALSE, CTRUE);*/
+    /*#endif*/
+                    } else {
+                        vmsg("%s: SetDecimation: src(%dx%d), dst(%dx%d)\n", __func__, c->width, c->height, dst_width, dst_height);
+                        if (dst_width > 0 && dst_height > 0)
+                            NX_VIP_SetDecimation(module, c->width, c->height, dst_width, dst_height);
+                    }
+                }
+            }
+#endif
             parent->run(parent, me);
             NXP_ATOMIC_SET_MASK(NXP_VIN_STATE_RUNNING_CLIPPER, &me->state);
         } else {

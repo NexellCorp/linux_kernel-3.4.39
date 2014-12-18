@@ -414,6 +414,26 @@ static void _restore_register(int module)
     pREG->VIP_CONFIG = pBackupReg->VIP_CONFIG;
 #endif
 }
+
+static void _backup_reset_restore_register(int module)
+{
+    printk("%s!\n", __func__);
+    _backup_register(module);
+    NX_VIP_SetVIPEnable(module, CFALSE, CFALSE, CFALSE, CFALSE);
+    NX_VIP_ResetFIFO(module);
+#if 0
+    mdelay(100);
+#endif
+#if defined(CONFIG_ARCH_S5P4418)
+    NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nDISABLE);
+    NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nENABLE);
+#elif defined(CONFIG_ARCH_S5P6818)
+    NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_ASSERT);
+    NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_NEGATE);
+#endif
+    _restore_register(module);
+}
+
 #endif
 
 static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
@@ -439,20 +459,7 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
 #ifdef CONFIG_TURNAROUND_VIP_RESET
             if (me->deci_enable == false && me->clip_enable == false ) {
                 vmsg("%s: RESET & restore\n", __func__);
-                _backup_register(me->module);
-                NX_VIP_SetVIPEnable(me->module, CFALSE, CFALSE, CFALSE, CFALSE);
-                NX_VIP_ResetFIFO(me->module);
-#if 0
-                mdelay(100);
-#endif
-#if defined(CONFIG_ARCH_S5P4418)
-                NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(me->module), RSTCON_nDISABLE);
-                NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(me->module), RSTCON_nENABLE);
-#elif defined(CONFIG_ARCH_S5P6818)
-                NX_RSTCON_SetRST(NX_VIP_GetResetNumber(me->module), RSTCON_ASSERT);
-                NX_RSTCON_SetRST(NX_VIP_GetResetNumber(me->module), RSTCON_NEGATE);
-#endif
-                _restore_register(me->module);
+                _backup_reset_restore_register(me->module);
             }
 #endif
             NX_VIP_SetVIPEnable(me->module, CTRUE, CTRUE, clip_enable, deci_enable);
@@ -800,6 +807,10 @@ struct nxp_capture *create_nxp_capture(int index,
     me->unregister_irq_entry = _unregister_irq_entry;
     me->get_csi_subdev    = _get_csi_subdev;
     me->get_sensor_subdev = _get_sensor_subdev;
+
+#ifdef CONFIG_TURNAROUND_VIP_RESET
+    me->backup_reset_restore_register = _backup_reset_restore_register;
+#endif
 
     init_waitqueue_head(&me->wait_change_context);
     me->clip_enable = false;

@@ -53,6 +53,9 @@ struct nxp_capture {
     void (*unregister_irq_entry)(struct nxp_capture *, struct nxp_v4l2_irq_entry *);
     struct v4l2_subdev *(*get_csi_subdev)(struct nxp_capture *);
     struct v4l2_subdev *(*get_sensor_subdev)(struct nxp_capture *);
+#ifdef CONFIG_TURNAROUND_VIP_RESET
+    void (*backup_reset_restore_register)(int);
+#endif
 
     /* children */
     struct nxp_vin_clipper vin_clipper;
