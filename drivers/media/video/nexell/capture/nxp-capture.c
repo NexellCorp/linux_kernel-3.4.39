@@ -195,7 +195,11 @@ void dump_register(int module)
 
 static int _hw_get_irq_num(struct nxp_capture *me)
 {
+#if defined(CONFIG_ARCH_S5P4418)
     return NX_VIP_GetInterruptNumber(me->module);
+#elif defined(CONFIG_ARCH_S5P6818)
+    return NX_VIP_GetInterruptNumber(me->module) + 32;
+#endif
 }
 
 #if defined(CONFIG_TURNAROUND_VIP_RESET)

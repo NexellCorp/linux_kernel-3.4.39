@@ -184,6 +184,9 @@ static int _hw_init(struct nxp_scaler *me)
     /* NX_SCALER_OpenModule(0); */
 
     me->irq = NX_SCALER_GetInterruptNumber(0);
+#ifdef CONFIG_ARCH_S5P6818
+    me->irq += 32;
+#endif
 
     NX_CLKGEN_SetBaseAddress(NX_SCALER_GetClockNumber(0), IO_ADDRESS(NX_CLKGEN_GetPhysicalAddress(NX_SCALER_GetClockNumber(0))));
     NX_CLKGEN_SetClockBClkMode(NX_SCALER_GetClockNumber(0), NX_BCLKMODE_ALWAYS);
