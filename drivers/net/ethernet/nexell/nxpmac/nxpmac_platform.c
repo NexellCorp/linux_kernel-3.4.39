@@ -295,7 +295,7 @@ struct platform_driver stmmac_pltfr_driver = {
 	.driver = {
 		   .name = NXPMAC_RESOURCE_NAME,
 		   .owner = THIS_MODULE,
-		   .pm = &stmmac_pltfr_pm_ops,
+	//	   .pm = &stmmac_pltfr_pm_ops,
 		   .of_match_table = of_match_ptr(stmmac_dt_ids),
 		   },
 };
