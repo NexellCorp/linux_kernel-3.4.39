@@ -597,7 +597,6 @@ static void reset_config(struct usb_composite_dev *cdev)
 		bitmap_zero(f->endpoints, 32);
 	}
 	cdev->config = NULL;
-
 }
 
 static int set_config(struct usb_composite_dev *cdev,
@@ -1675,11 +1674,6 @@ void usb_composite_unregister(struct usb_composite_driver *driver)
 	if (composite != driver)
 		return;
 	usb_gadget_unregister_driver(&composite_driver);
-	// psw0523 add
-#ifdef CONFIG_PM
-	composite = NULL;
-#endif
-	// end psw0523
 }
 
 /**
