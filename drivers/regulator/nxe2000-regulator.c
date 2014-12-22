@@ -231,6 +231,10 @@ static int __nxe2000_set_voltage(struct device *parent,
 	else
 		ri->vout_reg_cache = vout_val;
 
+#if defined(CONFIG_PLAT_S5P4418_ASB) || defined(CONFIG_PLAT_S5P4418_SVT)
+	udelay(100);
+#endif
+
 	return ret;
 }
 
