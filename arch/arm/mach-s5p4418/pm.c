@@ -109,9 +109,11 @@ static struct board_suspend_ops *board_suspend = NULL;
 
 #if (0)
 #define	PM_SAVE_ADDR	(U32)virt_to_phys(&saved_regs)
+#define	PM_SAVE_VIRT	(U32)&saved_regs
 #define	PM_SAVE_SIZE	SUSPEND_SAVE_SIZE
 #else
 #define	PM_SAVE_ADDR	(U32)__pa(_stext)
+#define	PM_SAVE_VIRT	(U32)_stext
 #define	PM_SAVE_SIZE	SUSPEND_SAVE_SIZE
 #endif
 
@@ -327,9 +329,9 @@ static void suspend_mark(suspend_state_t stat)
 	writel((-1UL), SCR_SIGNAGURE_RESET);
 
 	if (SUSPEND_SUSPEND == stat) {
-		uint phy = mark.save_phy_addr;
+		uint phy = PM_SAVE_ADDR;
 		uint len = mark.save_phy_len;
-		mark.save_crc_ret = __calc_crc(__va(phy), len);
+		mark.save_crc_ret = __calc_crc(PM_SAVE_VIRT, len);
 	}
 
 	if (nxp_board_suspend_mark) {

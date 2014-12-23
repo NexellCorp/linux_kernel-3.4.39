@@ -752,6 +752,13 @@ static void dwc_otg_pcd_softconnect(dwc_otg_pcd_t * pcd, int is_set)
 		if (is_set) {
 			DWC_MODIFY_REG32(&core_if->dev_if->dev_global_regs->dctl, dctl.d32, 0);
 		} else {
+			if (gadget_wrapper->gadget.speed != USB_SPEED_UNKNOWN) {
+				if (gadget_wrapper->driver && gadget_wrapper->driver->disconnect) {
+					DWC_SPINUNLOCK_IRQRESTORE(pcd->lock, flags);
+					gadget_wrapper->driver->disconnect(&gadget_wrapper->gadget);
+					DWC_SPINLOCK_IRQSAVE(pcd->lock, &flags);
+				}
+			}
 			DWC_MODIFY_REG32(&core_if->dev_if->dev_global_regs->dctl, 0, dctl.d32);
 		}
 		DWC_SPINUNLOCK_IRQRESTORE(pcd->lock, flags);
