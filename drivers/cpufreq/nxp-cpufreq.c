@@ -184,7 +184,7 @@ static enum hrtimer_restart nxp_cpufreq_rest_timer(struct hrtimer *hrtimer)
 	return HRTIMER_NORESTART;
 }
 
-unsigned int nxp_cpufreq_voltage(unsigned long freqkhz)
+unsigned int nxp_cpufreq_voltage(unsigned long freqkhz, bool margin)
 {
 	struct cpufreq_dvfs_info *dvfs = get_dvfs_ptr();
  	unsigned long (*freq_volts)[2] = (unsigned long(*)[2])dvfs->freq_volts;
@@ -203,6 +203,9 @@ unsigned int nxp_cpufreq_voltage(unsigned long freqkhz)
 	uV = freq_volts[index][1];
 	wT = dvfs->supply_delay_us;
 
+	if (false == margin && dvfs->asv_ops->get_voltage)
+		uV = dvfs->asv_ops->get_voltage(freq_volts[index][0]);
+
 	regulator_set_voltage(dvfs->volt, uV, uV);
 
 	if (wT) {
@@ -220,7 +223,7 @@ unsigned int nxp_cpufreq_voltage(unsigned long freqkhz)
 }
 
 static unsigned long nxp_cpufreq_update(struct cpufreq_dvfs_info *dvfs,
-				struct cpufreq_freqs *freqs)
+				struct cpufreq_freqs *freqs, bool margin)
 {
 	struct clk *clk = dvfs->clk;
 	unsigned long rate = 0;
@@ -230,8 +233,8 @@ static unsigned long nxp_cpufreq_update(struct cpufreq_dvfs_info *dvfs,
 		return freqs->old;
 
 	/* pre voltage */
-	if (freqs->new > freqs->old)
-		nxp_cpufreq_voltage(freqs->new);
+	if (freqs->new >= freqs->old)
+		nxp_cpufreq_voltage(freqs->new, margin);
 
 	for_each_cpu(freqs->cpu, dvfs->cpus)
 		cpufreq_notify_transition(freqs, CPUFREQ_PRECHANGE);
@@ -252,7 +255,7 @@ static unsigned long nxp_cpufreq_update(struct cpufreq_dvfs_info *dvfs,
 
 	/* post voltage */
 	if (freqs->old > freqs->new)
-		nxp_cpufreq_voltage(freqs->new);
+		nxp_cpufreq_voltage(freqs->new, margin);
 
 	return rate;
 }
@@ -278,12 +281,11 @@ static int nxp_cpufreq_pm_notify(struct notifier_block *this,
 		}
 
 		freqs.old = clk_get_rate(clk)/1000;
-		if (0 == dvfs->target_freq)
-			dvfs->target_freq = freqs.new;
 
+		dvfs->target_freq = freqs.new;
 		dvfs->freq_index = nxp_cpufreq_freq_index(freqs.new);
 
-		nxp_cpufreq_update(dvfs, &freqs);
+		nxp_cpufreq_update(dvfs, &freqs, false);
 
     	clear_bit(FREQ_STATE_RESUME, &dvfs->resume_state);
 		mutex_unlock(&dvfs->lock);
@@ -297,7 +299,7 @@ static int nxp_cpufreq_pm_notify(struct notifier_block *this,
 		freqs.old = clk_get_rate(clk)/1000;
 		dvfs->freq_index = nxp_cpufreq_freq_index(freqs.new);
 
-		nxp_cpufreq_update(dvfs, &freqs);
+		nxp_cpufreq_update(dvfs, &freqs, true);
 
 		mutex_unlock(&dvfs->lock);
     	break;
@@ -323,7 +325,7 @@ static int nxp_cpufreq_proc_update(void *unused)
 			freqs.cpu = dvfs->cpu;
 			dvfs->freq_index = nxp_cpufreq_freq_index(freqs.new);
 
-			nxp_cpufreq_update(dvfs, &freqs);
+			nxp_cpufreq_update(dvfs, &freqs, true);
 
 			set_current_state(TASK_INTERRUPTIBLE);
 			mutex_unlock(&dvfs->lock);
@@ -491,7 +493,7 @@ static ssize_t store_cur_voltages(struct cpufreq_policy *policy,
 		dvfs->asv_ops->modify_vol_table(ftables, val, down, percent);
 
 	dvfs->freq_index = nxp_cpufreq_freq_index(dvfs->target_freq);
-	nxp_cpufreq_voltage(dvfs->target_freq);
+	nxp_cpufreq_voltage(dvfs->target_freq, true);
 
 	mutex_unlock(&dvfs->lock);
 	return count;
@@ -659,7 +661,7 @@ static int nxp_cpufreq_target(struct cpufreq_policy *policy,
 _cpu_freq:
 
 	pr_debug(" set rate %ukhz\n", freqs.new);
-	rate = nxp_cpufreq_update(dvfs, &freqs);
+	rate = nxp_cpufreq_update(dvfs, &freqs, true);
 
 	mutex_unlock(&dvfs->lock);
 
@@ -826,7 +828,7 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 
 		/* chnage to margin voltage */
 		if (tag->value) {
-			nxp_cpufreq_voltage(dvfs->boot_freq);
+			nxp_cpufreq_voltage(dvfs->boot_freq, true);
 			printk("DVFS: adjust %ld margin %s%d%s \n",
 				dvfs->boot_freq, tag->minus?"-":"+", tag->value, tag->percent?"%":"mV");
 		}
