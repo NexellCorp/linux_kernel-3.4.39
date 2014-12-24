@@ -163,7 +163,7 @@ static int set_max_scale(const char *file, long new)
 	return 0;
 }
 
-#define	FREQ_TEMP_OVER			45	// 85: 45, 70: 43
+#define	FREQ_TEMP_OVER			43	// 85: 45, 70: 43
 #define	FREQ_TEMP_RELAX			42	//	70
 static long relax_time = 0;
 static long scale_down = 0, scale_up   = 1;

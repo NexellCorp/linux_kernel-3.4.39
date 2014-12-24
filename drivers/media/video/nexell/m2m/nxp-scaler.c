@@ -1500,14 +1500,16 @@ static int _run_step(struct nxp_scaler *me, struct nxp_scaler_ioctl_data *data)
 }
 #endif
 
+#define WAIT_TIMEOUT_HZ     (HZ/5) // 200ms
 static int _set_and_run(struct nxp_scaler *me, struct nxp_scaler_ioctl_data *data)
 {
 #ifdef CONFIG_USE_SCALER_COMMAND_BUFFER
     if (NXP_ATOMIC_READ(&me->running) == 1) {
         /* printk("wait start\n"); */
-        if (!wait_event_interruptible_timeout(me->wq_start, NXP_ATOMIC_READ(&me->running) == 0, HZ)) {
+        if (!wait_event_interruptible_timeout(me->wq_start, NXP_ATOMIC_READ(&me->running) == 0, WAIT_TIMEOUT_HZ)) {
             printk("wait timeout for starting\n");
-            return -EBUSY;
+            /*return -EBUSY;*/
+            return 0;
         }
     }
     NXP_ATOMIC_SET(&me->running, 1);
@@ -1524,8 +1526,32 @@ static int _set_and_run(struct nxp_scaler *me, struct nxp_scaler_ioctl_data *dat
     _run_step(me, data);
 #endif
 
-    if (!wait_event_interruptible_timeout(me->wq_end, NXP_ATOMIC_READ(&me->running) == 0, HZ))
+    if (!wait_event_interruptible_timeout(me->wq_end, NXP_ATOMIC_READ(&me->running) == 0, WAIT_TIMEOUT_HZ)) {
         printk("wait timeout for scaling end\n");
+        // psw0523 add for scaler not reworking bug
+#if 1
+        printk("cleanup scaler!!!\n");
+        NXP_ATOMIC_SET(&me->running, 0);
+
+        NX_SCALER_Stop(0);
+        NX_SCALER_SetInterruptEnableAll(0, CFALSE);
+        NX_SCALER_ClearInterruptPendingAll(0);
+        NX_CLKGEN_SetClockBClkMode(NX_SCALER_GetClockNumber(0), NX_BCLKMODE_DISABLE);
+
+        _hw_init(me);
+
+        if (me->command_buffer_phy) {
+            dma_free_coherent(NULL, COMMAND_BUFFER_SIZE, me->command_buffer_vir, me->command_buffer_phy);
+            me->command_buffer_vir = NULL;
+            me->command_buffer_phy = 0;
+        }
+        _hw_set_filter_table(me, &_default_filter_table);
+        _hw_set_format(me);
+
+        /*wake_up_interruptible(&me->wq_end);*/
+        /*wake_up_interruptible(&me->wq_start);*/
+#endif
+    }
     return 0;
 }
 
