@@ -741,6 +741,33 @@ static const struct regval_list sp0838_qcif_regs[] = {
     ENDMARKER,
 };
 
+static const struct regval_list sp0838_semiqcif_regs[] = {
+    {0xfd, 0x00},
+    {0x47, 0x00},
+    {0x48, 0xa7},
+    {0x49, 0x00},
+    {0x4a, 0x91},
+    {0x4b, 0x00},
+    {0x4c, 0xd8},
+    {0x4d, 0x00},
+    {0x4e, 0xd0},
+    ENDMARKER,
+};
+
+static const struct regval_list sp0838_semicif_regs[] = {
+    {0xfd, 0x00},
+    {0x47, 0x00},
+    {0x48, 0x5f},
+    {0x49, 0x01},
+    {0x4a, 0x21},
+    {0x4b, 0x00},
+    {0x4c, 0x80},
+    {0x4d, 0x01},
+    {0x4e, 0x80},
+    ENDMARKER,
+};
+
+
 /********************************************************************************
  * structures
  */
@@ -871,7 +898,25 @@ static const struct sp0838_win_size sp0838_win_qcif = {
     .name     = "QCIF",
     .width    = 176,
     .height   = 144,
-    .win_regs = sp0838_cif_regs,
+    .win_regs = sp0838_qcif_regs,
+    .frame_rate_array = frame_rate_vga,
+};
+
+/* 384x289 */
+static const struct sp0838_win_size sp0838_win_semicif = {
+    .name     = "SEMICIF",
+    .width    = 384,
+    .height   = 289,
+    .win_regs = sp0838_semicif_regs,
+    .frame_rate_array = frame_rate_vga,
+};
+
+/* 208x145 */
+static const struct sp0838_win_size sp0838_win_semiqcif = {
+    .name     = "SEMIQCIF",
+    .width    = 208,
+    .height   = 145,
+    .win_regs = sp0838_semiqcif_regs,
     .frame_rate_array = frame_rate_vga,
 };
 
@@ -880,6 +925,8 @@ static const struct sp0838_win_size *sp0838_win[] = {
     &sp0838_win_qvga,
     &sp0838_win_cif,
     &sp0838_win_qcif,
+    &sp0838_win_semicif,
+    &sp0838_win_semiqcif,
 };
 
 /********************************************************************************
