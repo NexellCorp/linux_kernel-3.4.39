@@ -108,12 +108,12 @@ static struct pm_saved_regs saved_regs;
 static struct board_suspend_ops *board_suspend = NULL;
 
 #if (0)
-#define	PM_SAVE_ADDR	(U32)virt_to_phys(&saved_regs)
-#define	PM_SAVE_VIRT	(U32)&saved_regs
+#define	PM_SAVE_ADDR	virt_to_phys(&saved_regs)
+#define	PM_SAVE_VIRT	saved_regs
 #define	PM_SAVE_SIZE	SUSPEND_SAVE_SIZE
 #else
-#define	PM_SAVE_ADDR	(U32)__pa(_stext)
-#define	PM_SAVE_VIRT	(U32)_stext
+#define	PM_SAVE_ADDR	__pa(_stext)
+#define	PM_SAVE_VIRT	_stext
 #define	PM_SAVE_SIZE	SUSPEND_SAVE_SIZE
 #endif
 
@@ -318,7 +318,7 @@ static void suspend_mark(suspend_state_t stat)
 	struct suspend_mark_up mark = {
 		.resume_fn = (U32)virt_to_phys(cpu_resume),
 		.signature = SUSPEND_SIGNATURE,
-		.save_phy_addr = PM_SAVE_ADDR,
+		.save_phy_addr = (u32)PM_SAVE_ADDR,
 		.save_phy_len = PM_SAVE_SIZE,
 	};
 
@@ -329,9 +329,8 @@ static void suspend_mark(suspend_state_t stat)
 	writel((-1UL), SCR_SIGNAGURE_RESET);
 
 	if (SUSPEND_SUSPEND == stat) {
-		uint phy = PM_SAVE_ADDR;
 		uint len = mark.save_phy_len;
-		mark.save_crc_ret = __calc_crc(PM_SAVE_VIRT, len);
+		mark.save_crc_ret = __calc_crc((void*)PM_SAVE_VIRT, len);
 	}
 
 	if (nxp_board_suspend_mark) {
