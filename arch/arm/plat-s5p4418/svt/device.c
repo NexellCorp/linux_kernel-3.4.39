@@ -156,6 +156,7 @@ static int set_max_scale(const char *file, long new)
 	if (max != new) {
 		sprintf(buf, "%ld", new);
 		sys_write(fd, (void*)buf, sizeof(buf));
+        printk("********************** [%s] ***************************\n", buf);
 	}
 
 	set_fs(old_fs);
@@ -163,31 +164,39 @@ static int set_max_scale(const char *file, long new)
 	return 0;
 }
 
-#define	FREQ_TEMP_OVER			43	// 85: 45, 70: 43
-#define	FREQ_TEMP_RELAX			42	//	70
+#define	FREQ_TEMP_OVER			40	// 85: 45, 70: 43, 40
+#define	FREQ_TEMP_RELAX			38	//	70, 39
+#define	FREQ_MAX_DN_KHZ			400000
+#define	FREQ_MAX_UP_KHZ			1400000
+
 static long relax_time = 0;
 static long scale_down = 0, scale_up   = 1;
 
 static void adc_tmp_cb(int ch, int value, int temp, bool run)
 {
+    int ret = 0;
 	if (temp >= FREQ_TEMP_OVER && scale_up) {
-		printk("<FRQ DN: temp %d>\n", temp);
+		printk("<FRQ DN: temp %d, %d>\n", temp, FREQ_MAX_DN_KHZ);
+	    ret = set_max_scale(SYS_DVFS_SCALING_PATH, FREQ_MAX_DN_KHZ);
+	    if (0 > ret)
+            return;
 		relax_time = ktime_to_ms(ktime_get());
 		scale_down = 1; scale_up = 0;
-		set_max_scale(SYS_DVFS_SCALING_PATH, 400000);
-	}
+    }
 
 	if (FREQ_TEMP_RELAX >= temp && scale_down) {
 		if (2000 > (ktime_to_ms(ktime_get()) - relax_time))
 			return;
+		printk("<FRQ UP: temp %d, %d>\n", temp, FREQ_MAX_UP_KHZ);
+		ret = set_max_scale(SYS_DVFS_SCALING_PATH, FREQ_MAX_UP_KHZ);
+	    if (0 > ret)
+            return;
 		relax_time = 0; scale_down = 0; scale_up = 1;
-		printk("<FRQ UP: temp %d>\n", temp);
-		set_max_scale(SYS_DVFS_SCALING_PATH, 1400000);
-	}
+    }
 
 	if (false == run) {
-		printk("<FRQ Restore>\n");
-		set_max_scale(SYS_DVFS_SCALING_PATH, 1400000);
+		printk("<FRQ Restore: %d>\n");
+		set_max_scale(SYS_DVFS_SCALING_PATH, FREQ_MAX_UP_KHZ);
 	}
 }
 #endif
