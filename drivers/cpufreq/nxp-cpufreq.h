@@ -60,7 +60,7 @@ extern void nxp_cpu_id_string(u32 string[12]);
  * 	| 10: 400 MHZ	|	1,075 mV|	1,025 mV|	1,000 mV|	1,000 mV|	1,000 mV|
  *	=============================================================================
  */
-#define	FREQ_ARRAY_SIZE		(11)
+#define	FREQ_ARRAY_SIZE		(13)
 #define	UV(v)				(v*1000)
 
 struct asv_tb_info {
@@ -82,33 +82,35 @@ struct asv_tb_info {
 	[ 8] =  600,	\
 	[ 9] =  500,	\
 	[10] =  400,	\
+	[11] =  200,	\
+	[12] =  100,	\
 	}
 
 static struct asv_tb_info asv_tables[] = {
 	[0] = {	.ids = 10, .ro = 110,
 			.Mhz = ASB_FREQ_MHZ,
 			.uV  = { UV(1350), UV(1300), UV(1250), UV(1200), UV(1175), UV(1150),
-					 UV(1125), UV(1100), UV(1075), UV(1075), UV(1075), },
+					 UV(1125), UV(1100), UV(1075), UV(1075), UV(1075), UV(1075), UV(1075) },
 	},
 	[1] = {	.ids = 15, .ro = 130,
 			.Mhz = ASB_FREQ_MHZ,
 			.uV  = { UV(1300), UV(1250), UV(1200), UV(1150), UV(1125), UV(1100),
-					 UV(1075), UV(1050), UV(1025), UV(1025), UV(1025), },
+					 UV(1075), UV(1050), UV(1025), UV(1025), UV(1025), UV(1025), UV(1025) },
 	},
 	[2] = {	.ids = 20, .ro = 140,
 			.Mhz = ASB_FREQ_MHZ,
 			.uV  = { UV(1250), UV(1200), UV(1150), UV(1100), UV(1075), UV(1050),
-					 UV(1025), UV(1000), UV(1000), UV(1000), UV(1000), },
+					 UV(1025), UV(1000), UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
 	},
 	[3] = {	.ids = 50, .ro = 170,
 			.Mhz = ASB_FREQ_MHZ,
 			.uV  = { UV(1200), UV(1150), UV(1100), UV(1050), UV(1025), UV(1000),
-					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000), },
+					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
 	},
 	[4] = {	.ids = 50, .ro = 170,
 			.Mhz = ASB_FREQ_MHZ,
 			.uV  = { UV(1175), UV(1100), UV(1050), UV(1000), UV(1000), UV(1000),
-					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000), },
+					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
 	},
 };
 #define	ASV_ARRAY_SIZE	ARRAY_SIZE(asv_tables)
@@ -150,12 +152,15 @@ static int s5p4418_asv_setup_table(unsigned long (*freq_tables)[2])
 		int ag = MtoL((ecid[2]>>4) & 0x0F, 4);
 
 		Asv_Param.level = (ag - gs);
+		if (0 > Asv_Param.level)
+		    Asv_Param.level = 0;
+
 		Asv_Param.flag = 1;
 		Asv_Param.group = ag;
 		Asv_Param.shift = gs;
 		pAsv_Table = &asv_tables[Asv_Param.level];
 		printk("DVFS: ASV[%d] IDS(%dmA) Ro(%d), Fusing Shift(%d), Group(%d)\n",
-			Asv_Param.level, pAsv_Table->ids, pAsv_Table->ro, ag, gs);
+			Asv_Param.level, pAsv_Table->ids, pAsv_Table->ro, gs, ag);
 		goto _find;
 	}
 
