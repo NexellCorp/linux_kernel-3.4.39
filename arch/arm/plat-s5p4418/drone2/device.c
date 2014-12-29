@@ -93,17 +93,17 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-	{ 1400000, 1300000 },
-	{ 1300000, 1300000 },
-	{ 1200000, 1200000, },
-	{ 1100000, 1100000, },
-	{ 1000000, 1100000, },
-	{  900000, 1000000, },
-	{  800000,  960000, },
-	{  700000,  960000, },
-	{  600000,  960000, },
-	{  500000,  960000, },
-	{  400000,  960000, },
+	{ 1400000, 1200000  },
+//	{ 1300000, 1125000 },
+	{ 1200000, 1100000, },
+//	{ 1100000, 1100000, },
+	{ 1000000, 1000000, },
+//	{  900000, 1000000, },
+	{  800000, 1000000, },
+	{  700000, 975000, },
+	{  600000, 950000, },
+	{  500000, 950000, },
+	{  400000, 950000, },
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
@@ -112,7 +112,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1400*1000,
+	.max_cpufreq	= 1400*1000,
 	.max_retention  =   20*1000,
 	.rest_cpufreq   =  400*1000,
 	.rest_retention =    1*1000,
@@ -139,7 +139,7 @@ static struct nxp_cpufreq_limit_data freq_limit_data = {
 	.limit_name	 	= freq_proct_list,
 	.limit_num 		= ARRAY_SIZE(freq_proct_list),
 	.aval_max_freq 	= 1200000,
-	.op_max_freq	= 1400000,
+	.op_max_freq	= 1600000,
 	.sched_duration	= 1000,
 	.sched_timeout	= 3000,
 };
@@ -149,12 +149,13 @@ static char *freq_proct_list[] = { "com.antutu", };
 static struct nxp_cpufreq_limit_data freq_limit_data = {
 	.limit_name		= freq_proct_list,
 	.limit_num 		= ARRAY_SIZE(freq_proct_list),
-	.aval_max_freq 	= 1400000,
+	.aval_max_freq	= 1400000,
 	.op_max_freq	= 1200000,
 #if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
 	.limit_level0_freq	= 1200000,
 	.limit_level1_freq	= 1000000,
 	.min_max_freq	= 800000,
+	.prev_max_freq = 1400000,
 #endif
 };
 #endif
@@ -401,6 +402,7 @@ static struct i2c_board_info __initdata alc5623_i2c_bdi = {
 struct nxp_snd_dai_plat_data i2s_dai_data = {
 	.i2s_ch	= 0,
 	.sample_rate	= 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
 	.hp_jack 		= {
 		.support    	= 1,
 		.detect_io		= PAD_GPIO_B + 27,
@@ -650,7 +652,7 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,	 950000, 2000000, 1, 1, 1350000, 1,  2);	/* 1.2V ARM */
+NXE2000_PDATA_INIT(dc1,      0,	 950000, 2000000, 1, 1, 1200000, 1,  2);	/* 1.2V ARM */
 NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1,  2);	/* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
