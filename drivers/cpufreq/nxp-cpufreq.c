@@ -46,6 +46,7 @@ struct cpufreq_asv_ops {
 	long (*get_voltage)(long freqkhz);
 	void (*modify_vol_table)(unsigned long (*tables)[2], long val, bool dn, bool percent);
 	int  (*current_label)(char *string);
+	long (*get_vol_margin)(long uV, long val, bool dn, bool percent);
 };
 
 #include "nxp-cpufreq.h"
@@ -203,8 +204,13 @@ unsigned int nxp_cpufreq_voltage(unsigned long freqkhz, bool margin)
 	uV = freq_volts[index][1];
 	wT = dvfs->supply_delay_us;
 
-	if (false == margin && dvfs->asv_ops->get_voltage)
+	if (false == margin && dvfs->asv_ops->get_voltage) {
 		uV = dvfs->asv_ops->get_voltage(freq_volts[index][0]);
+		/*
+		if (dvfs->asv_ops->get_vol_margin)
+			uV = dvfs->asv_ops->get_vol_margin(uV, 13, false, false);
+		*/
+	}
 
 	regulator_set_voltage(dvfs->volt, uV, uV);
 

@@ -60,7 +60,7 @@ extern void nxp_cpu_id_string(u32 string[12]);
  * 	| 10: 400 MHZ	|	1,075 mV|	1,025 mV|	1,000 mV|	1,000 mV|	1,000 mV|
  *	=============================================================================
  */
-#define	FREQ_ARRAY_SIZE		(13)
+#define	FREQ_ARRAY_SIZE		(11)
 #define	UV(v)				(v*1000)
 
 struct asv_tb_info {
@@ -82,35 +82,33 @@ struct asv_tb_info {
 	[ 8] =  600,	\
 	[ 9] =  500,	\
 	[10] =  400,	\
-	[11] =  200,	\
-	[12] =  100,	\
 	}
 
 static struct asv_tb_info asv_tables[] = {
 	[0] = {	.ids = 10, .ro = 110,
 			.Mhz = ASB_FREQ_MHZ,
 			.uV  = { UV(1350), UV(1300), UV(1250), UV(1200), UV(1175), UV(1150),
-					 UV(1125), UV(1100), UV(1075), UV(1075), UV(1075), UV(1075), UV(1075) },
+					 UV(1125), UV(1100), UV(1075), UV(1075), UV(1075) },
 	},
 	[1] = {	.ids = 15, .ro = 130,
 			.Mhz = ASB_FREQ_MHZ,
 			.uV  = { UV(1300), UV(1250), UV(1200), UV(1150), UV(1125), UV(1100),
-					 UV(1075), UV(1050), UV(1025), UV(1025), UV(1025), UV(1025), UV(1025) },
+					 UV(1075), UV(1050), UV(1025), UV(1025), UV(1025) },
 	},
 	[2] = {	.ids = 20, .ro = 140,
 			.Mhz = ASB_FREQ_MHZ,
 			.uV  = { UV(1250), UV(1200), UV(1150), UV(1100), UV(1075), UV(1050),
-					 UV(1025), UV(1000), UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
+					 UV(1025), UV(1000), UV(1000), UV(1000), UV(1000) },
 	},
 	[3] = {	.ids = 50, .ro = 170,
 			.Mhz = ASB_FREQ_MHZ,
 			.uV  = { UV(1200), UV(1150), UV(1100), UV(1050), UV(1025), UV(1000),
-					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
+					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
 	},
 	[4] = {	.ids = 50, .ro = 170,
 			.Mhz = ASB_FREQ_MHZ,
 			.uV  = { UV(1175), UV(1100), UV(1050), UV(1000), UV(1000), UV(1000),
-					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
+					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
 	},
 };
 #define	ASV_ARRAY_SIZE	ARRAY_SIZE(asv_tables)
@@ -271,6 +269,21 @@ static void s5p4418_asv_modify_vol_table(unsigned long (*freq_tables)[2],
 	}
 }
 
+static long s5p4418_asv_get_vol_margin(long uV, long value, bool down, bool percent)
+{
+	long step_vol = VOLTAGE_STEP_UV;
+	long dv = percent ? ((uV/100) * value) : (value*1000);
+	long new = down ? uV - dv : uV + dv;
+	int al = 0;
+
+	if ((new % step_vol)) {
+		new = (new / step_vol) * step_vol;
+		al = 1;
+		if (down) new += step_vol;	/* Upper */
+	}
+	return new;
+}
+
 static int s5p4418_asv_current_label(char *buf)
 {
 	char *s = buf;
@@ -292,6 +305,7 @@ static struct cpufreq_asv_ops asv_freq_ops = {
 	.get_voltage = s5p4418_asv_get_voltage,
 	.modify_vol_table = s5p4418_asv_modify_vol_table,
 	.current_label = s5p4418_asv_current_label,
+	.get_vol_margin = s5p4418_asv_get_vol_margin,
 };
 #else
 static struct cpufreq_asv_ops asv_freq_ops = {
