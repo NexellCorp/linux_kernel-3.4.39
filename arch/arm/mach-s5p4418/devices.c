@@ -886,7 +886,7 @@ static struct amba_device spi2_device = {
 #endif /* CONFIG_SPI_PL022 */
 
 /*------------------------------------------------------------------------------
- * USB device
+ * USB device (EHCI/OHCI)
  */
 
 #if defined(CONFIG_USB_EHCI_SYNOPSYS)

@@ -9,25 +9,30 @@
  *
  */
 
+#include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/err.h>
 #include <linux/io.h>
 #include <linux/platform_device.h>
 
-#include <mach/usb.h>
+#include <mach/usb-phy.h>
 
 #include <mach/platform.h>
 #include <mach/iomap.h>
 #include <mach/s5p6818.h>
 #include <mach/s5p6818_irq.h>
 #include <nx_tieoff.h>
+#include <nx_gpio.h>
 
 #define SOC_PA_RSTCON		PHY_BASEADDR_RSTCON
 #define	SOC_VA_RSTCON		IO_ADDRESS(SOC_PA_RSTCON)
 
 #define SOC_PA_TIEOFF		PHY_BASEADDR_TIEOFF
 #define	SOC_VA_TIEOFF		IO_ADDRESS(SOC_PA_TIEOFF)
+
+#define USB2_HOST_CLKGEN     IO_ADDRESS(PHY_BASEADDR_CLKGEN32)
 
 #define HOST_SS_BUS_WIDTH16			(1)
 #define HOST_SS_ENA_INCR16			(0x1 << 25)
@@ -45,7 +50,7 @@
 	(HOST_SS_ENA_INCR4 | HOST_SS_ENA_INCRX_ALIGN)
 
 
-int nxp_soc_usb_phy_init(struct platform_device *pdev, int type)
+int nxp_usb_phy_init(struct platform_device *pdev, int type)
 {
 	PM_DBGOUT("++ %s\n", __func__);
 
@@ -122,7 +127,38 @@ int nxp_soc_usb_phy_init(struct platform_device *pdev, int type)
 		// 1. Release common reset of host controller
 		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<24), SOC_VA_RSTCON + 0x04);			// reset on
 		udelay(1);
+
+		if (type == NXP_USB_PHY_HSIC) {
+		    // GPIO Reset
+		    NX_GPIO_SetPadFunction( 4, 22, 0 );
+		    NX_GPIO_SetOutputEnable( 4, 22, CTRUE );
+		    NX_GPIO_SetPullSelect( 4, 22, CTRUE );
+		    NX_GPIO_SetPullEnable( 4, 22, CFALSE );
+		    NX_GPIO_SetOutputValue( 4, 22, CTRUE );
+		    udelay( 100 );
+		    NX_GPIO_SetOutputValue( 4, 22, CFALSE );
+		    udelay( 100 );
+		    NX_GPIO_SetOutputValue( 4, 22, CTRUE );
+		}
+
 		writel(readl(SOC_VA_RSTCON + 0x04) |  (1<<24), SOC_VA_RSTCON + 0x04);			// reset off
+
+		if (type == NXP_USB_PHY_HSIC) {
+		    // HSIC 12M rerference Clock setting
+		    writel( 0x02, USB2_HOST_CLKGEN);
+		    writel( 0x0C, USB2_HOST_CLKGEN + 0x4); // 8 : ok, c : no
+		    writel( 0x10, USB2_HOST_CLKGEN + 0xc);
+		    writel( 0x30, USB2_HOST_CLKGEN + 0xc);
+		    writel( 0x06, USB2_HOST_CLKGEN);
+
+		    // HSIC 480M clock setting
+			writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<23), SOC_VA_TIEOFF + 0x14);
+			writel(readl(SOC_VA_TIEOFF + 0x14) | (2<<23), SOC_VA_TIEOFF + 0x14);
+
+		    // HSIC Enable in PORT1 of LINK
+			writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<14), SOC_VA_TIEOFF + 0x14);
+			writel(readl(SOC_VA_TIEOFF + 0x14) | (2<<14), SOC_VA_TIEOFF + 0x14);
+		}
 
 		// 2. Program AHB Burst type
 		temp1 = readl(SOC_VA_TIEOFF + 0x1C) & ~HOST_SS_DMA_BURST_MASK;
@@ -181,8 +217,9 @@ int nxp_soc_usb_phy_init(struct platform_device *pdev, int type)
 
 	return 0;
 }
+EXPORT_SYMBOL(nxp_usb_phy_init);
 
-int nxp_soc_usb_phy_exit(struct platform_device *pdev, int type)
+int nxp_usb_phy_exit(struct platform_device *pdev, int type)
 {
 	u32 temp;
 
@@ -277,3 +314,4 @@ int nxp_soc_usb_phy_exit(struct platform_device *pdev, int type)
 
 	return 0;
 }
+EXPORT_SYMBOL(nxp_usb_phy_exit);
