@@ -132,8 +132,7 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 		    // GPIO Reset
 		    NX_GPIO_SetPadFunction( 4, 22, 0 );
 		    NX_GPIO_SetOutputEnable( 4, 22, CTRUE );
-		    NX_GPIO_SetPullSelect( 4, 22, CTRUE );
-		    NX_GPIO_SetPullEnable( 4, 22, CFALSE );
+		    NX_GPIO_SetPullEnable( 4, 22, NX_GPIO_PULL_UP );
 		    NX_GPIO_SetOutputValue( 4, 22, CTRUE );
 		    udelay( 100 );
 		    NX_GPIO_SetOutputValue( 4, 22, CFALSE );
