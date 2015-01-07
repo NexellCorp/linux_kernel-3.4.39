@@ -413,13 +413,13 @@ int miosys_print_wearleveldata(void)
                     validnum_erasecount += 1;
                 }
             }
-
+       
             if (validnum_erasecount)
             {
                 average_erasecount[0] = sum_erasecount / validnum_erasecount;
                 average_erasecount[1] = ((sum_erasecount % validnum_erasecount) * 100) / validnum_erasecount;
             }
-
+ 
             DBG_MIOSYS(KERN_INFO "bad blocks %d", badblock_count);
             DBG_MIOSYS(KERN_INFO "max erasecount %5d", max_erasecount);
             DBG_MIOSYS(KERN_INFO "min erasecount %5d", min_erasecount);

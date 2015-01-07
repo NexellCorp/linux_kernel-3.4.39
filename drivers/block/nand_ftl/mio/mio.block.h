@@ -89,7 +89,6 @@ struct mio_state
     struct
     {
         struct task_struct * thread;
-        wait_queue_head_t wq;
 
 #define MIO_BG_IDLE           (0)
 #define MIO_BG_SCHEDULED      (1)
@@ -99,7 +98,6 @@ struct mio_state
         // time
         struct
         {
-            u64 statistics;
             u64 flush;
             u64 standby;
             u64 bgjobs;
@@ -110,7 +108,6 @@ struct mio_state
         // event
         struct
         {
-            unsigned int statistics;
             unsigned int flush;
             unsigned int standby;
             unsigned int bgjobs;
@@ -126,6 +123,7 @@ struct mio_state
         struct task_struct * thread;
         struct request_queue * rq;
         spinlock_t queue_lock;
+        wait_queue_head_t wq;
 
 #define MIO_IDLE        (0)
 #define MIO_SCHEDULED   (1)
@@ -137,7 +135,6 @@ struct mio_state
         struct
         {
             int cnt;
-            u64 time;
 
         } wake;
 
@@ -160,6 +157,13 @@ struct mio_state
             } e;
 
         } trigger;
+
+        struct
+        {
+            spinlock_t s;
+            struct mutex m;
+
+        } lock;
 
     } transaction;
 };

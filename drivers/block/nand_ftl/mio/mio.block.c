@@ -101,6 +101,12 @@ static int mio_background_thread(void * _arg)
 
     while (!kthread_should_stop())
     {
+        Exchange.sys.fnSpor();
+
+        io_state->background.status = MIO_BG_SLEEP;
+        schedule_timeout(HZ/10); // Wake-Up Every 100 ms
+        io_state->background.status = MIO_BG_IDLE;
+
         if (io_state->power.suspending)
         {
             io_state->background.status = MIO_BG_SCHEDULED;
@@ -109,75 +115,53 @@ static int mio_background_thread(void * _arg)
         }
         else
         {
-            Exchange.sys.fnSpor();
+            u64 cur_jiffies = get_jiffies_64();
 
-            io_state->background.status = MIO_BG_SLEEP;
-
-            wait_event_timeout(io_state->background.wq,
-                               io_state->transaction.wake.cnt ||
-                               (mio_dev.capacity && (MioSmartInfo.volatile_writesectors > (mio_dev.capacity >> 6))) ||
-                               io_state->transaction.trigger.e.written_flush ||
-                               io_state->transaction.trigger.e.written_standby ||
-                               io_state->transaction.trigger.e.written_bgjobs,
-                               HZ);
-
-            io_state->background.status = MIO_BG_IDLE;
-
-            /******************************************************************
-             * Transaction Pending
-             ******************************************************************/
-            if (io_state->transaction.wake.cnt && (get_jiffies_64() > io_state->transaction.wake.time))
+            // Save Smart
+            if ((mio_dev.capacity && (MioSmartInfo.volatile_writesectors > (mio_dev.capacity >> 6))) || (cur_jiffies > io_state->background.t.save_smart))
             {
-                io_state->transaction.wake.time = get_jiffies_64() + MIO_TIME_MSEC(1);
-                wake_up_process(io_state->transaction.thread);
+                MioSmartInfo.volatile_writesectors = 0;
+                io_state->background.t.save_smart = cur_jiffies + MIO_TIME_SEC(1*60);
+                io_state->background.e.save_smart = 1;
             }
-            /******************************************************************
-             * MIO Background
-             ******************************************************************/
-            else
+
+            // Flush Job
+            if (io_state->transaction.trigger.e.written_flush && (cur_jiffies > io_state->background.t.flush))
             {
-                if ((mio_dev.capacity && (MioSmartInfo.volatile_writesectors > (mio_dev.capacity >> 6))) || (get_jiffies_64() > io_state->background.t.save_smart))
-                {
-                    MioSmartInfo.volatile_writesectors = 0;
-                    io_state->background.t.save_smart = get_jiffies_64() + MIO_TIME_SEC(1*60);
-                    io_state->background.e.save_smart = 1;
-                }
-
-                // Flush Job
-                if (io_state->transaction.trigger.e.written_flush && (get_jiffies_64() > io_state->background.t.flush))
-                {
-                    // Clear Trigger
-                    io_state->transaction.trigger.e.written_flush = 0;
-
-                    // Set Background Jobs
-                    io_state->background.t.flush = MIO_TIME_DIFF_MAX(get_jiffies_64());
-                    io_state->background.e.flush = 1;
-                }
-
-                // Stanby Job
-                if (io_state->transaction.trigger.e.written_standby && (get_jiffies_64() > io_state->background.t.standby))
-                {
-                    // Clear Trigger
-                    io_state->transaction.trigger.e.written_standby = 0;
-
-                    // Set Background Jobs
-                    io_state->background.t.standby = MIO_TIME_DIFF_MAX(get_jiffies_64());
-                    io_state->background.e.standby = 1;
-                }
-
-                // Background Job
-                if (io_state->transaction.trigger.e.written_bgjobs && (get_jiffies_64() > io_state->background.t.bgjobs))
-                {
-                    // Clear Trigger
-                    io_state->transaction.trigger.e.written_bgjobs = 0;
-
-                    // Set Background Jobs
-                    io_state->background.t.bgjobs = MIO_TIME_DIFF_MAX(get_jiffies_64());
-                    io_state->background.e.bgjobs = 1;
-                }
-
-                // Wake-Up Transaction Thread
-                if (io_state->background.e.save_smart + io_state->background.e.flush + io_state->background.e.standby + io_state->background.e.bgjobs)
+                // Clear Trigger
+                io_state->transaction.trigger.e.written_flush = 0;
+            
+                // Set Background Jobs
+                io_state->background.t.flush = MIO_TIME_DIFF_MAX(cur_jiffies);
+                io_state->background.e.flush = 1;
+            }
+   
+            // Stanby Job
+            if (io_state->transaction.trigger.e.written_standby && (cur_jiffies > io_state->background.t.standby))
+            {
+                // Clear Trigger
+                io_state->transaction.trigger.e.written_standby = 0;
+   
+                // Set Background Jobs
+                io_state->background.t.standby = MIO_TIME_DIFF_MAX(cur_jiffies);
+                io_state->background.e.standby = 1;
+            }
+   
+            // Background Job
+            if (io_state->transaction.trigger.e.written_bgjobs && (cur_jiffies > io_state->background.t.bgjobs))
+            {
+                // Clear Trigger
+                io_state->transaction.trigger.e.written_bgjobs = 0;
+   
+                // Set Background Jobs
+                io_state->background.t.bgjobs = MIO_TIME_DIFF_MAX(cur_jiffies);
+                io_state->background.e.bgjobs = 1;
+            }
+   
+            // Wake-Up Transaction Thread
+            if (io_state->background.e.save_smart || io_state->background.e.flush || io_state->background.e.standby || io_state->background.e.bgjobs)
+            {
+                if (!io_state->power.suspending)
                 {
                     wake_up_process(io_state->transaction.thread);
                 }
@@ -420,7 +404,8 @@ static int mio_transaction_thread(void * _arg)
             spin_unlock_irq(rq->queue_lock);
             {
                 io_state->transaction.status = MIO_SCHEDULED;
-                schedule();
+                wait_event(io_state->transaction.wq, io_state->transaction.wake.cnt);
+              //schedule();
                 io_state->transaction.status = MIO_IDLE;
             }
             spin_lock_irq(rq->queue_lock);
@@ -434,9 +419,7 @@ static int mio_transaction_thread(void * _arg)
         {
             media_super();
             res = mio_transaction(req, io_state);
-
             if (io_state->transaction.wake.cnt) { io_state->transaction.wake.cnt -= 1; }
-            io_state->transaction.wake.time = MIO_TIME_DIFF_MAX(get_jiffies_64());
 
             if (Exchange.sys.fn.LedReqIdle) { Exchange.sys.fn.LedReqIdle(); }
         }
@@ -470,7 +453,7 @@ static void mio_request_fetch(struct request_queue * _q)
 
     if (Exchange.sys.fn.LedReqBusy) { Exchange.sys.fn.LedReqBusy(); }
 
-    // Wake Up Background Thread
+    // Wake Up Background Thread for Suspend Resume
     if (!io_state->power.suspending && (MIO_BG_SCHEDULED == io_state->background.status))
     {
         wake_up_process(io_state->background.thread);
@@ -478,13 +461,32 @@ static void mio_request_fetch(struct request_queue * _q)
 
     // Wake Up Transaction Thread
     io_state->transaction.wake.cnt += 1;
-    io_state->transaction.wake.time = get_jiffies_64() + MIO_TIME_MSEC(1);
     wake_up_process(io_state->transaction.thread);
 }
 
 /******************************************************************************
  *
  ******************************************************************************/
+static void mio_spin_lock(void)
+{
+    spin_lock_irq(&mio_dev.io_state->transaction.lock.s);
+}
+
+static void mio_spin_unlock(void)
+{
+    spin_unlock_irq(&mio_dev.io_state->transaction.lock.s);
+}
+
+static void mio_mutex_lock(void)
+{
+    mutex_lock(&mio_dev.io_state->transaction.lock.m);
+}
+
+static void mio_mutext_unlock(void)
+{
+    mutex_unlock(&mio_dev.io_state->transaction.lock.m);
+}
+
 static int __init mio_init(void)
 {
     printk(KERN_INFO "MIO.BLOCK:\n");
@@ -499,6 +501,14 @@ static int __init mio_init(void)
     /**************************************************************************
      * Open Media
      **************************************************************************/
+    spin_lock_init(&mio_dev.io_state->transaction.lock.s);
+    mutex_init(&mio_dev.io_state->transaction.lock.m);
+
+    Exchange.sys.fn.slock   = mio_spin_lock;
+    Exchange.sys.fn.sunlock = mio_spin_unlock;
+    Exchange.sys.fn.mlock   = mio_mutex_lock;
+    Exchange.sys.fn.munlock = mio_mutext_unlock;
+
     if ((mio_dev.capacity = media_open()) < 0)
     {
         printk(KERN_ERR "MIO.BLOCK: media_open() Fail\n");
@@ -537,16 +547,13 @@ static int __init mio_init(void)
          * Initial Background Thread
          **********************************************************************/
         mio_dev.io_state->background.thread = NULL;
-        init_waitqueue_head(&mio_dev.io_state->background.wq);
 
         mio_dev.io_state->background.status = MIO_BG_IDLE;
 
-        mio_dev.io_state->background.t.statistics = MIO_TIME_DIFF_MAX(get_jiffies_64());
         mio_dev.io_state->background.t.flush = MIO_TIME_DIFF_MAX(get_jiffies_64());
         mio_dev.io_state->background.t.standby = MIO_TIME_DIFF_MAX(get_jiffies_64());
         mio_dev.io_state->background.t.bgjobs = MIO_TIME_DIFF_MAX(get_jiffies_64());
         mio_dev.io_state->background.t.save_smart = MIO_TIME_DIFF_MAX(get_jiffies_64());
-        mio_dev.io_state->background.e.statistics = 0;
         mio_dev.io_state->background.e.flush = 0;
         mio_dev.io_state->background.e.standby = 0;
         mio_dev.io_state->background.e.bgjobs = 0;
@@ -558,6 +565,7 @@ static int __init mio_init(void)
         mio_dev.io_state->transaction.thread = NULL;
         mio_dev.io_state->transaction.rq = NULL;
         spin_lock_init(&mio_dev.io_state->transaction.queue_lock);
+        init_waitqueue_head(&mio_dev.io_state->transaction.wq);
 
         mio_dev.io_state->transaction.status = MIO_IDLE;
 

@@ -793,13 +793,13 @@ void NFC_PHY_WriteProtect(unsigned int _wp_enable)
     }
 #elif defined (__BUILD_MODE_ARM_UBOOT_DEVICE_DRIVER__)
     // NAND WP direction Out
-    nxp_gpio_direction_output(CFG_IO_NAND_nWP, 1);
+    gpio_direction_output(CFG_IO_NAND_nWP, 1);
 
     // NAND WP is Active Low
     switch (_wp_enable)
     {
-        case 0:  { nxp_gpio_set_value(CFG_IO_NAND_nWP, 1); } break; // Writable
-        case 1:  { nxp_gpio_set_value(CFG_IO_NAND_nWP, 0); } break; // Write Protected
+        case 0:  { gpio_set_value(CFG_IO_NAND_nWP, 1); } break; // Writable
+        case 1:  { gpio_set_value(CFG_IO_NAND_nWP, 0); } break; // Write Protected
         default: { Exchange.sys.fn.print("NFC_PHY_WriteProtect(Warning) : Invaild Function Parameter - 0 : disable, 1 : enable\n"); } break;
     }
 #endif
