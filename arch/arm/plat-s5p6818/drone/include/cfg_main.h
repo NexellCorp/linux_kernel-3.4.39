@@ -134,16 +134,14 @@
 /*------------------------------------------------------------------------------
  * 	Audio I2S (0, 1, 2)
  */
+//#define CFG_AUDIO_I2S_SUPPLY_EXT_MCLK			1
+#define CFG_EXT_MCLK_PWM_CH						3
+
 #define	CFG_AUDIO_I2S0_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S0_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
 #define	CFG_AUDIO_I2S0_FRAME_BIT				32		// 32, 48
 #define	CFG_AUDIO_I2S0_SAMPLE_RATE				48000
 #define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			1
-#define CFG_AUDIO_I2S0_MASTER_CLOCK_IN			1
-#define CFG_AUDIO_I2S0_SUPPLY_EXT_MCLK			1
-#ifdef CFG_AUDIO_I2S0_SUPPLY_EXT_MCLK
-#define CFG_EXT_MCLK_PWM_CH						3
-#endif
 
 #define	CFG_AUDIO_I2S1_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S1_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */

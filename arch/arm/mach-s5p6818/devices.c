@@ -427,34 +427,66 @@ static struct platform_device vr_gpu_device =
  */
 #if defined(CONFIG_SND_NXP_I2S) || defined(CONFIG_SND_NXP_I2S_MODULE)
 
-#ifdef CFG_AUDIO_I2S0_SUPPLY_EXT_MCLK
-static int i2s_ext_mclk_set_clock(bool enable)
+#ifndef CFG_AUDIO_I2S_SUPPLY_EXT_MCLK
+#define CFG_AUDIO_I2S_SUPPLY_EXT_MCLK	0
+#endif
+
+extern void nxp_cpu_id_string(u32 *string);
+static bool i2s_ext_is_en(void)
 {
-	int clk_rate;
+	bool ret = false;
+	u8 name[12*4] = {0,};
+	u8 *cmp_name = "NEXELL-NXP5430-R0-LF3000------------------------";
 
-	if(CFG_AUDIO_I2S0_FRAME_BIT == 32)
-		clk_rate = 12287980;
-	else
-		clk_rate = 18432000;
+	nxp_cpu_id_string((u32*)name);
 
-    PM_DBGOUT("%s: %d\n", __func__, (int)clk_rate);
-
-	// set input & gpio_mode of I2S0_CODCLK
-	nxp_soc_gpio_set_io_dir(PAD_GPIO_D + 13, 0);
-	nxp_soc_gpio_set_io_func(PAD_GPIO_D + 13, NX_GPIO_PADFUNC_0);
-
-    if (enable){
-        nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, clk_rate, 50);
-		nxp_cpu_periph_clock_register(CLK_ID_I2S_0, clk_rate, 0);
+	if ((strcmp(name, cmp_name) == 0) || CFG_AUDIO_I2S_SUPPLY_EXT_MCLK){
+		printk("using i2s ext clk!!!!!\n");
+		ret = true;
 	}
-    else{
-        nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, 0, 0);
 
+	return ret;
+}
+
+unsigned long i2s_ext_clk_value;
+static unsigned long i2s_ext_mclk_set_clock(unsigned long clk)
+{
+	int ch = 0;
+	unsigned long ret_clk = 0;
+
+    PM_DBGOUT("%s: %ld\n", __func__, clk);
+
+    if (clk > 1) {
+		// set input & gpio_mode of I2S MCLK pin
+#if defined(CONFIG_SND_NXP_I2S_CH0)
+		nxp_soc_gpio_set_io_func(PAD_GPIO_D + 13, NX_GPIO_PADFUNC_0);
+		nxp_soc_gpio_set_io_dir(PAD_GPIO_D + 13, 0);
+		ch = 0;
+#elif defined(CONFIG_SND_NXP_I2S_CH1) || defined(CONFIG_SND_NXP_I2S_CH2)
+		nxp_soc_gpio_set_io_func(PAD_GPIO_A + 28, NX_GPIO_PADFUNC_0);
+		nxp_soc_gpio_set_io_dir(PAD_GPIO_A + 28, 0);
+		if (CONFIG_SND_NXP_I2S_CH1)
+			ch = 1;
+		else if (CONFIG_SND_NXP_I2S_CH2)
+			ch = 2;
+#endif
+#if defined(CFG_EXT_MCLK_PWM_CH)
+		nxp_cpu_periph_clock_register(CLK_ID_I2S_0 + ch, clk, 0);
+		i2s_ext_clk_value = clk;
+	} else {
+		if (clk) {
+	        ret_clk = nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, i2s_ext_clk_value, 50);
+		} else {
+	        ret_clk = nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, 0, 0);
+		}
 	}
     msleep(1);
-    return 0;
-}
+#else
+		printk("err!!! must have other ext_clk++\n");
+	}
 #endif
+    return ret_clk;
+}
 
 #ifndef CFG_AUDIO_I2S0_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S0_MASTER_CLOCK_IN		0
@@ -468,11 +500,8 @@ static struct nxp_i2s_plat_data i2s_data_ch0 = {
 	.frame_bit			= CFG_AUDIO_I2S0_FRAME_BIT,
 	.sample_rate		= CFG_AUDIO_I2S0_SAMPLE_RATE,
 	.pre_supply_mclk 	= CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK,
-#ifdef CFG_AUDIO_I2S0_SUPPLY_EXT_MCLK
+	.ext_is_en			= i2s_ext_is_en,
 	.set_ext_mclk		= i2s_ext_mclk_set_clock,
-#else
-	.set_ext_mclk		= NULL,
-#endif
 	/* DMA */
 	.dma_filter			= pl08x_filter_id,
 	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S0_TX,
@@ -499,6 +528,8 @@ static struct nxp_i2s_plat_data i2s_data_ch1 = {
 	.frame_bit			= CFG_AUDIO_I2S1_FRAME_BIT,
 	.sample_rate		= CFG_AUDIO_I2S1_SAMPLE_RATE,
 	.pre_supply_mclk 	= CFG_AUDIO_I2S1_PRE_SUPPLY_MCLK,
+	.ext_is_en			= i2s_ext_is_en,
+	.set_ext_mclk		= i2s_ext_mclk_set_clock,
 	/* DMA */
 	.dma_filter			= pl08x_filter_id,
 	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S1_TX,
@@ -525,6 +556,8 @@ static struct nxp_i2s_plat_data i2s_data_ch2 = {
 	.frame_bit			= CFG_AUDIO_I2S2_FRAME_BIT,
 	.sample_rate		= CFG_AUDIO_I2S2_SAMPLE_RATE,
 	.pre_supply_mclk 	= CFG_AUDIO_I2S2_PRE_SUPPLY_MCLK,
+	.ext_is_en			= i2s_ext_is_en,
+	.set_ext_mclk		= i2s_ext_mclk_set_clock,
 	/* DMA */
 	.dma_filter			= pl08x_filter_id,
 	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S2_TX,

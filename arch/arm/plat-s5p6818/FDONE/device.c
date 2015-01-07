@@ -386,6 +386,7 @@ static struct i2c_board_info __initdata alc5623_i2c_bdi = {
 struct nxp_snd_dai_plat_data i2s_dai_data = {
 	.i2s_ch	= 0,
 	.sample_rate	= 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
 	.hp_jack 		= {
 		.support    	= 1,
 		.detect_io		= PAD_GPIO_E + 8,

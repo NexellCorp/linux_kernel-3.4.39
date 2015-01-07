@@ -342,6 +342,7 @@ void nxp_cpu_id_string(u32 *string)
 	}
 	NX_ECID_GetChipName((char*)string);
 }
+EXPORT_SYMBOL(nxp_cpu_id_string);
 
 /*
  * Notify cpu version

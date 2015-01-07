@@ -119,7 +119,8 @@ struct nxp_i2s_plat_data {
     int     frame_bit;                  /* support only 32, 48 */
     int     LR_pol_inv;
     int     pre_supply_mclk;            /* codec require mclk out, before codec initialize */
-	int     (*set_ext_mclk)(bool enable);
+	bool	(*ext_is_en)(void);
+	unsigned long (*set_ext_mclk)(unsigned long clk);
     bool    (*dma_filter)(struct dma_chan *chan, void *filter_param);
     const char *dma_play_ch;
     const char *dma_capt_ch;
