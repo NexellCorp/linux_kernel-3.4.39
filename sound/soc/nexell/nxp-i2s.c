@@ -42,7 +42,7 @@
 #define pr_debug				printk
 */
 #define	DEF_SAMPLE_RATE			48000
-#define	DEF_FRAME_BIT			48	// 32, 48 	 (BFS)
+#define	DEF_FRAME_BIT			32	// 32, 48 	 (BFS)
 
 #define	I2S_BASEADDR			PHY_BASEADDR_I2S0
 #define	I2S_CH_OFFSET			0x1000
@@ -489,6 +489,8 @@ static int nxp_i2s_set_plat_param(struct nxp_i2s_snd_param *par, void *data)
 	if (plat->ext_is_en) {
 		par->ext_is_en = plat->ext_is_en();
     	par->mclk_in = 1;
+	} else {
+		par->ext_is_en = 0;
 	}
 	if (plat->set_ext_mclk)
 		par->set_ext_mclk = plat->set_ext_mclk;
