@@ -403,7 +403,7 @@ static ssize_t name_show(struct device *pdev,
 			struct device_attribute *attr, char *buf)
 {
 	char *s = buf;
-	u8 name[12*4];
+	u8 name[12*4] = {0,};
 
 	nxp_cpu_id_string((u32*)name);
 
