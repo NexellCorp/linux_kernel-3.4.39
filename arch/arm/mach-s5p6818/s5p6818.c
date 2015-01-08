@@ -342,6 +342,7 @@ void nxp_cpu_id_string(u32 *string)
 	}
 	NX_ECID_GetChipName((char*)string);
 }
+EXPORT_SYMBOL(nxp_cpu_id_string);
 
 /*
  * Notify cpu version
@@ -403,7 +404,7 @@ static ssize_t name_show(struct device *pdev,
 			struct device_attribute *attr, char *buf)
 {
 	char *s = buf;
-	u8 name[12*4];
+	u8 name[12*4] = {0,};
 
 	nxp_cpu_id_string((u32*)name);
 

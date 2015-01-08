@@ -1452,8 +1452,19 @@ static int __vb2_wait_for_done_vb(struct vb2_queue *q, int nonblocking)
 		 * All locks have been released, it is safe to sleep now.
 		 */
 		dprintk(3, "Will sleep waiting for buffers\n");
+        // psw0523 fix for v4l2 dqbuf timeout
+#if 0
 		ret = wait_event_interruptible(q->done_wq,
 				!list_empty(&q->done_list) || !q->streaming);
+#else
+		ret = wait_event_interruptible_timeout(q->done_wq,
+				!list_empty(&q->done_list) || !q->streaming,
+                HZ);
+        if (ret == 0)
+            ret = -ETIME;
+        else
+            ret = 0;
+#endif
 
 		/*
 		 * We need to reevaluate both conditions again after reacquiring

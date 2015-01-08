@@ -42,7 +42,7 @@
 #define pr_debug				printk
 */
 #define	DEF_SAMPLE_RATE			48000
-#define	DEF_FRAME_BIT			48	// 32, 48 	 (BFS)
+#define	DEF_FRAME_BIT			32	// 32, 48 	 (BFS)
 
 #define	I2S_BASEADDR			PHY_BASEADDR_I2S0
 #define	I2S_CH_OFFSET			0x1000
@@ -139,6 +139,8 @@ struct nxp_i2s_snd_param {
 	int LR_pol_inv;
 	int in_clkgen;
 	int pre_supply_mclk;
+	bool ext_is_en;
+	unsigned long (*set_ext_mclk)(unsigned long clk);	
 	int	status;
 	spinlock_t	lock;
 	/* clock control */
@@ -255,8 +257,11 @@ static int i2s_start(struct nxp_i2s_snd_param *par, int stream)
 	pr_debug("%s %d\n", __func__, par->channel);
 	spin_lock(&par->lock);
 
-	if (!par->pre_supply_mclk)
+	if (!par->pre_supply_mclk) {
+		if (par->ext_is_en)
+		    par->set_ext_mclk(CTRUE);
 		supply_master_clock(par);
+	}
 
 	if (SNDRV_PCM_STREAM_PLAYBACK == stream) {
 		FIC |= (1 << 15);	/* flush fifo */
@@ -319,8 +324,11 @@ static void i2s_stop(struct nxp_i2s_snd_param *par, int stream)
 
 	/* I2S Inactive */
 	if (!(par->status & SNDDEV_STATUS_RUNNING) &&
-		!par->pre_supply_mclk)
+		!par->pre_supply_mclk) {
 		cutoff_master_clock(par);
+		if (par->ext_is_en)
+		    par->set_ext_mclk(CFALSE);
+	}
 
 	spin_unlock(&par->lock);
 }
@@ -376,6 +384,14 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 		return -EINVAL;
 	}
 
+	if (par->ext_is_en) {
+		if (BFS_48BIT == BFS)
+			request = clk_ratio[i].ratio_384;
+		else	
+			request = clk_ratio[i].ratio_256;
+	    par->set_ext_mclk(request);
+	}
+
  	/* 384 RATIO */
 	RFS = RATIO_384, request = clk_ratio[i].ratio_384;
 	en_pclk = set_sample_rate_clock(par->clk, request, &rate_hz, &divide);
@@ -419,6 +435,21 @@ done:
 				(BFS << CSR_BFS_POS);
 	i2s->PSR = 	((PSRAEN &0x1) << PSR_PSRAEN_POS) | ((prescale & 0x3f) << PSR_PSVALA_POS);
 
+	i2s_reset(par);
+
+	if (par->pre_supply_mclk) {
+		if (par->ext_is_en)
+	    	rate_hz = par->set_ext_mclk(CTRUE);
+		supply_master_clock(par);
+		i2s->CON |=  1 << CON_I2SACTIVE_POS;
+		writel(i2s->CON, (base+I2S_CON_OFFSET));
+	} else {
+		if (par->ext_is_en) {
+	    	rate_hz = par->set_ext_mclk(CTRUE);
+	    	par->set_ext_mclk(CFALSE);
+		}
+	}
+
 	dmap_play->real_clock = rate_hz/(RATIO_256==RFS?256:384);
 	dmap_capt->real_clock = rate_hz/(RATIO_256==RFS?256:384);
 	printk("snd i2s: ch %d, %s, %s mode, %d(%ld)hz, %d FBITs, MCLK=%ldhz, RFS=%d\n",
@@ -428,14 +459,6 @@ done:
 		par->frame_bit, rate_hz, (RATIO_256==RFS?256:384));
 	pr_debug("snd i2s: BLC=%d, IMS=%d, LRP=%d, SDF=%d, RFS=%d, BFS=%d\n", BLC, IMS, LRP, SDF, RFS, BFS);
 	pr_debug("snd i2s: PSRAEN=%d, PSVALA=%d \n", PSRAEN, prescale);
-
-	i2s_reset(par);
-
-	if (par->pre_supply_mclk){
-		supply_master_clock(par);
-		i2s->CON |=  1 << CON_I2SACTIVE_POS;
-		writel(i2s->CON, (base+I2S_CON_OFFSET));
-	}
 
 	/* i2s support format */
 	if (RFS == RATIO_256 || BFS != BFS_48BIT) {
@@ -463,6 +486,14 @@ static int nxp_i2s_set_plat_param(struct nxp_i2s_snd_param *par, void *data)
     par->sample_rate = plat->sample_rate;
     par->LR_pol_inv = plat->LR_pol_inv;
     par->pre_supply_mclk = plat->pre_supply_mclk;
+	if (plat->ext_is_en) {
+		par->ext_is_en = plat->ext_is_en();
+    	par->mclk_in = 1;
+	} else {
+		par->ext_is_en = 0;
+	}
+	if (plat->set_ext_mclk)
+		par->set_ext_mclk = plat->set_ext_mclk;
 	par->base_addr = IO_ADDRESS(phy_base);
 	spin_lock_init(&par->lock);
 

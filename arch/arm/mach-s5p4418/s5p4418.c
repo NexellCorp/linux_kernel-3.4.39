@@ -455,7 +455,7 @@ static ssize_t name_show(struct device *pdev,
 			struct device_attribute *attr, char *buf)
 {
 	char *s = buf;
-	u32 name[12];
+	u32 name[12] = {0,};
 	int i = 0;
 	size_t count = 0;
 

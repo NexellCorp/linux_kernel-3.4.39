@@ -1392,7 +1392,7 @@ static void do_interrupt_dma_transfer(struct pl022 *pl022)
 	}
 	/* If we're using DMA, set up DMA here */
 
-	if (pl022->cur_chip->enable_dma && pl022->cur_transfer->len >= 4 ) {		//bok add
+	if (pl022->cur_chip->enable_dma && !(pl022->cur_transfer->len % 4) &&  (pl022->cur_transfer->len < 4096)) {		//bok add
 //	if (pl022->cur_chip->enable_dma) {
 		/* Configure DMA transfer */
 		if (configure_dma(pl022)) {

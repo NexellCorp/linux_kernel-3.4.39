@@ -29,7 +29,7 @@
  * 	System Name
  */
 #define	CFG_SYS_CPU_NAME						"s5p6818"
-#define	CFG_SYS_BOARD_NAME						"s5p6818-drone"
+#define	CFG_SYS_BOARD_NAME						"s5p6818-FDONE"
 
 /*------------------------------------------------------------------------------
  * 	BUS config
@@ -81,11 +81,11 @@
 
 #define CFG_DISP_PRI_MLC_INTERLACE              CFALSE
 
-#define	CFG_DISP_PRI_LCD_WIDTH_MM				152.4
-#define	CFG_DISP_PRI_LCD_HEIGHT_MM				91.44
+#define	CFG_DISP_PRI_LCD_WIDTH_MM				176.64
+#define	CFG_DISP_PRI_LCD_HEIGHT_MM				99.36
 
 #define CFG_DISP_PRI_RESOL_WIDTH          		1024	// X Resolution
-#define CFG_DISP_PRI_RESOL_HEIGHT				600	// Y Resolution
+#define CFG_DISP_PRI_RESOL_HEIGHT				600	    // Y Resolution
 
 #define CFG_DISP_PRI_HSYNC_SYNC_WIDTH            20
 #define CFG_DISP_PRI_HSYNC_BACK_PORCH           160
@@ -209,7 +209,7 @@
 /*------------------------------------------------------------------------------
  * 	SDHC
  */
-#define	CFG_SDMMC2_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
+#define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
 
 
 /*------------------------------------------------------------------------------

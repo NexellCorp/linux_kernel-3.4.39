@@ -288,6 +288,29 @@ static struct i2c_board_info __initdata gslX680_i2c_bdi = {
 #endif
 
 
+#if defined(CONFIG_TOUCHSCREEN_TSC2007)
+#include <linux/i2c.h>
+#include <linux/i2c/tsc2007.h>
+
+#define	TSC2007_I2C_BUS		(2)
+
+struct tsc2007_platform_data tsc2007_plat_data = {
+		//.touch_points	= 10,
+		//.x_resol	   	= CFG_DISP_PRI_RESOL_WIDTH,
+		//.y_resol	   	= CFG_DISP_PRI_RESOL_HEIGHT,
+		//.rotate			= 90,
+		.x_plate_ohms	= 1000,
+		//.max_rt			= 1400,//1200,
+	};
+
+static struct i2c_board_info __initdata tsc2007_i2c_bdi = {
+	.type	= "tsc2007",
+	.addr	= (0x90>>1),
+    .irq    = PB_PIO_IRQ(CFG_IO_TOUCH_PENDOWN_DETECT),
+    .platform_data = &tsc2007_plat_data,
+};
+#endif
+
 /*------------------------------------------------------------------------------
  * Keypad platform device
  */
@@ -516,7 +539,7 @@ static struct platform_device *i2c_devices[] = {
 //#include <linux/rtc/rtc-nxe2000.h>
 //#include <linux/rtc.h>
 
-#define NXE2000_I2C_BUS		(3)
+#define NXE2000_I2C_BUS		(5)  //gui0 for fake drv
 #define NXE2000_I2C_ADDR	(0x64 >> 1)
 #define NXE2000_IRQ			(PAD_GPIO_ALV + 4)
 
@@ -1290,6 +1313,83 @@ static struct spi_board_info spi_plat_board[] __initdata = {
 /*------------------------------------------------------------------------------
  * DW MMC board config
  */
+
+
+#if 1
+
+static int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
+{
+	return 0;
+}
+
+static int _dwmci_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
+{
+	return 0;
+}
+
+static int _dwmci_get_ro(u32 slot_id)
+{
+	return 0;
+}
+
+static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
+{
+	struct dw_mci *host = (struct dw_mci *)data;
+	int io  = CFG_SDMMC0_DETECT_IO;
+	int irq = IRQ_GPIO_START + io;
+	int id  = 0, ret = 0;
+
+	printk("dw_mmc dw_mmc.%d: Using external card detect irq %3d (io %2d)\n", id, irq, io);
+
+	ret  = request_irq(irq, handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+				DEV_NAME_SDHC "0", (void*)host->slot[slot_id]);
+	if (0 > ret)
+		pr_err("dw_mmc dw_mmc.%d: fail request interrupt %d ...\n", id, irq);
+	return 0;
+}
+static int _dwmci0_get_cd(u32 slot_id)
+{
+	int io = CFG_SDMMC0_DETECT_IO;
+	return nxp_soc_gpio_get_in_value(io);
+}
+
+#ifdef CONFIG_MMC_NXP_CH0
+static struct dw_mci_board _dwmci0_data = {
+	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
+	.bus_hz			= 50 * 1000 * 1000,
+	.caps			= MMC_CAP_CMD23,
+	.detect_delay_ms= 200,
+	.cd_type		= DW_MCI_CD_EXTERNAL,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(1),
+	.init			= _dwmci0_init,
+	.get_ro         = _dwmci_get_ro,
+	.get_cd			= _dwmci0_get_cd,
+	.ext_cd_init	= _dwmci_ext_cd_init,
+	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
+};
+#endif
+
+#ifdef CONFIG_MMC_NXP_CH2
+static struct dw_mci_board _dwmci2_data = {
+    .quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
+				  	  DW_MCI_QUIRK_HIGHSPEED |
+				  	  DW_MMC_QUIRK_HW_RESET_PW |
+				      DW_MCI_QUIRK_NO_DETECT_EBIT,
+	.bus_hz			= 100 * 1000 * 1000,
+	.caps			= MMC_CAP_UHS_DDR50 |
+					  MMC_CAP_NONREMOVABLE |
+			 	  	  MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23 |
+				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0x1c) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+
+	.desc_sz		= 4,
+	.detect_delay_ms= 200,
+	.sdr_timing		= 0x01010001,
+	.ddr_timing		= 0x03030002,
+};
+#endif
+
+#else
 #if defined(CONFIG_MMC_DW)
 static int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
 {
@@ -1376,7 +1476,7 @@ static struct dw_mci_board _dwmci2_data = {
 #endif
 
 #endif /* CONFIG_MMC_DW */
-
+#endif
 /*------------------------------------------------------------------------------
  * RFKILL driver
  */
@@ -1457,9 +1557,9 @@ void __init nxp_board_devs_register(void)
     #ifdef CONFIG_MMC_NXP_CH2
 	nxp_mmc_add_device(2, &_dwmci2_data);
 	#endif
-    #ifdef CONFIG_MMC_NXP_CH1
-	nxp_mmc_add_device(1, &_dwmci1_data);
-	#endif
+    //#ifdef CONFIG_MMC_NXP_CH1
+	//nxp_mmc_add_device(1, &_dwmci1_data);
+	//#endif
 #endif
 
 #if defined(CONFIG_DM9000) || defined(CONFIG_DM9000_MODULE)
@@ -1522,6 +1622,13 @@ void __init nxp_board_devs_register(void)
 	printk("plat: add touch(gslX680) device\n");
 	i2c_register_board_info(GSLX680_I2C_BUS, &gslX680_i2c_bdi, 1);
 #endif
+
+
+#if defined(CONFIG_TOUCHSCREEN_TSC2007)
+	printk("plat: add touch(tsc2007) device\n");
+	i2c_register_board_info(TSC2007_I2C_BUS, &tsc2007_i2c_bdi, 1);
+#endif
+
 
 #if defined(CONFIG_SENSORS_MMA865X) || defined(CONFIG_SENSORS_MMA865X_MODULE)
 	printk("plat: add g-sensor mma865x\n");

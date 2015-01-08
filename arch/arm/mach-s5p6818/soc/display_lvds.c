@@ -235,6 +235,8 @@ static int  lvds_prepare(struct disp_process_dev *pdev)
 	return 0;
 }
 
+extern void nxp_soc_rsc_enter(int);
+extern void nxp_soc_rsc_exit(int);
 static int  lvds_enable(struct disp_process_dev *pdev, int enable)
 {
 	int clkid = DISP_CLOCK_LVDS;

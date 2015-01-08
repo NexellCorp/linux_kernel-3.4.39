@@ -33,7 +33,7 @@
 #include <linux/pm_runtime.h>
 #include <linux/delay.h>
 
-/* nexell soc headers */
+/* slsi soc headers */
 #include <mach/platform.h>
 #include <mach/devices.h>
 #include <mach/soc.h>
@@ -212,11 +212,11 @@ static struct platform_device *i2c_devices[] = {
    * RTC (Real Time Clock) platform device
     */
 #if defined(CONFIG_RTC_DRV_NXP)
-static struct platform_device rtc_device = {
+static struct platform_device rtc_plat_device = {
 	.name   = DEV_NAME_RTC,
 	.id     = 0,
 };
-#endif  /* CONFIG_RTC_DRV_NEXELL */
+#endif  /* CONFIG_RTC_DRV_NXP */
 
 /*------------------------------------------------------------------------------
  * PWM platform device
@@ -427,34 +427,66 @@ static struct platform_device vr_gpu_device =
  */
 #if defined(CONFIG_SND_NXP_I2S) || defined(CONFIG_SND_NXP_I2S_MODULE)
 
-#ifdef CFG_AUDIO_I2S0_SUPPLY_EXT_MCLK
-static int i2s_ext_mclk_set_clock(bool enable)
+#ifndef CFG_AUDIO_I2S_SUPPLY_EXT_MCLK
+#define CFG_AUDIO_I2S_SUPPLY_EXT_MCLK	0
+#endif
+
+extern void nxp_cpu_id_string(u32 *string);
+static bool i2s_ext_is_en(void)
 {
-	int clk_rate;
+	bool ret = false;
+	u8 name[12*4] = {0,};
+	u8 *cmp_name = "NEXELL-NXP5430-R0-LF3000------------------------";
 
-	if(CFG_AUDIO_I2S0_FRAME_BIT == 32)
-		clk_rate = 12287980;
-	else
-		clk_rate = 18432000;
+	nxp_cpu_id_string((u32*)name);
 
-    PM_DBGOUT("%s: %d\n", __func__, (int)clk_rate);
-
-	// set input & gpio_mode of I2S0_CODCLK
-	nxp_soc_gpio_set_io_dir(PAD_GPIO_D + 13, 0);
-	nxp_soc_gpio_set_io_func(PAD_GPIO_D + 13, NX_GPIO_PADFUNC_0);
-
-    if (enable){
-        nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, clk_rate, 50);
-		nxp_cpu_periph_clock_register(CLK_ID_I2S_0, clk_rate, 0);
+	if ((strcmp(name, cmp_name) == 0) || CFG_AUDIO_I2S_SUPPLY_EXT_MCLK){
+		printk("using i2s ext clk!!!!!\n");
+		ret = true;
 	}
-    else{
-        nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, 0, 0);
 
+	return ret;
+}
+
+unsigned long i2s_ext_clk_value;
+static unsigned long i2s_ext_mclk_set_clock(unsigned long clk)
+{
+	int ch = 0;
+	unsigned long ret_clk = 0;
+
+    PM_DBGOUT("%s: %ld\n", __func__, clk);
+
+    if (clk > 1) {
+		// set input & gpio_mode of I2S MCLK pin
+#if defined(CONFIG_SND_NXP_I2S_CH0)
+		nxp_soc_gpio_set_io_func(PAD_GPIO_D + 13, NX_GPIO_PADFUNC_0);
+		nxp_soc_gpio_set_io_dir(PAD_GPIO_D + 13, 0);
+		ch = 0;
+#elif defined(CONFIG_SND_NXP_I2S_CH1) || defined(CONFIG_SND_NXP_I2S_CH2)
+		nxp_soc_gpio_set_io_func(PAD_GPIO_A + 28, NX_GPIO_PADFUNC_0);
+		nxp_soc_gpio_set_io_dir(PAD_GPIO_A + 28, 0);
+		if (CONFIG_SND_NXP_I2S_CH1)
+			ch = 1;
+		else if (CONFIG_SND_NXP_I2S_CH2)
+			ch = 2;
+#endif
+#if defined(CFG_EXT_MCLK_PWM_CH)
+		nxp_cpu_periph_clock_register(CLK_ID_I2S_0 + ch, clk, 0);
+		i2s_ext_clk_value = clk;
+	} else {
+		if (clk) {
+	        ret_clk = nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, i2s_ext_clk_value, 50);
+		} else {
+	        ret_clk = nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, 0, 0);
+		}
 	}
     msleep(1);
-    return 0;
-}
+#else
+		printk("err!!! must have other ext_clk++\n");
+	}
 #endif
+    return ret_clk;
+}
 
 #ifndef CFG_AUDIO_I2S0_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S0_MASTER_CLOCK_IN		0
@@ -468,11 +500,8 @@ static struct nxp_i2s_plat_data i2s_data_ch0 = {
 	.frame_bit			= CFG_AUDIO_I2S0_FRAME_BIT,
 	.sample_rate		= CFG_AUDIO_I2S0_SAMPLE_RATE,
 	.pre_supply_mclk 	= CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK,
-#ifdef CFG_AUDIO_I2S0_SUPPLY_EXT_MCLK
+	.ext_is_en			= i2s_ext_is_en,
 	.set_ext_mclk		= i2s_ext_mclk_set_clock,
-#else
-	.set_ext_mclk		= NULL,
-#endif
 	/* DMA */
 	.dma_filter			= pl08x_filter_id,
 	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S0_TX,
@@ -499,6 +528,8 @@ static struct nxp_i2s_plat_data i2s_data_ch1 = {
 	.frame_bit			= CFG_AUDIO_I2S1_FRAME_BIT,
 	.sample_rate		= CFG_AUDIO_I2S1_SAMPLE_RATE,
 	.pre_supply_mclk 	= CFG_AUDIO_I2S1_PRE_SUPPLY_MCLK,
+	.ext_is_en			= i2s_ext_is_en,
+	.set_ext_mclk		= i2s_ext_mclk_set_clock,
 	/* DMA */
 	.dma_filter			= pl08x_filter_id,
 	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S1_TX,
@@ -525,10 +556,12 @@ static struct nxp_i2s_plat_data i2s_data_ch2 = {
 	.frame_bit			= CFG_AUDIO_I2S2_FRAME_BIT,
 	.sample_rate		= CFG_AUDIO_I2S2_SAMPLE_RATE,
 	.pre_supply_mclk 	= CFG_AUDIO_I2S2_PRE_SUPPLY_MCLK,
+	.ext_is_en			= i2s_ext_is_en,
+	.set_ext_mclk		= i2s_ext_mclk_set_clock,
 	/* DMA */
 	.dma_filter			= pl08x_filter_id,
-	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S1_TX,
-	.dma_capt_ch		= DMA_PERIPHERAL_NAME_I2S1_RX,
+	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S2_TX,
+	.dma_capt_ch		= DMA_PERIPHERAL_NAME_I2S2_RX,
 };
 
 static struct platform_device i2s_device_ch2 = {
@@ -679,68 +712,69 @@ struct platform_device s3c64xx_device_spi0 = {
  * USB device (EHCI/OHCI)
  */
 
-#if defined(CONFIG_USB_EHCI_NXP_SYNOPSYS)
-#include <mach/usb.h>
+#if defined(CONFIG_USB_EHCI_SYNOPSYS)
+#include <mach/usb-phy.h>
 
-static int __hsic_phy_power_on(void) { return 0; }
-int usb_hsic_phy_power_on(struct platform_device *pdev, bool on)
-	__attribute__((weak, alias("__hsic_phy_power_on")));
+extern int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on);
+
 
 /* USB EHCI Host Controller registration */
-static struct resource ehci_resource[] = {
+
+static struct resource nxp_ehci_resource[] = {
     [0] = DEFINE_RES_MEM(PHY_BASEADDR_EHCI, SZ_256),
     [1] = DEFINE_RES_IRQ(IRQ_PHY_USB20HOST),
 };
 
-static struct nxp_ehci_plat_data ehci_data = {
-    .phy_init = nxp_soc_usb_phy_init,
-    .phy_exit = nxp_soc_usb_phy_exit,
-    .hsic_phy_pwr_on = usb_hsic_phy_power_on,
+struct nxp_ehci_platdata nxp_ehci_plat_data = {
+    .phy_init = nxp_usb_phy_init,
+    .phy_exit = nxp_usb_phy_exit,
+    .hsic_phy_pwr_on = nxp_hsic_phy_pwr_on,
 };
 
-static u64 ehci_dmamask = DMA_BIT_MASK(32);
+static u64 nxp_ehci_dmamask = DMA_BIT_MASK(32);
 
-static struct platform_device ehci_device = {
-    .name           = "nxp-ehci-synop",
+struct platform_device nxp_device_ehci = {
+    .name           = "nxp-ehci",
     .id             = -1,
-    .num_resources  = ARRAY_SIZE(ehci_resource),
-    .resource       = ehci_resource,
+    .num_resources  = ARRAY_SIZE(nxp_ehci_resource),
+    .resource       = nxp_ehci_resource,
     .dev            = {
-        .dma_mask           = &ehci_dmamask,
+        .dma_mask           = &nxp_ehci_dmamask,
         .coherent_dma_mask  = DMA_BIT_MASK(32),
-        .platform_data      = &ehci_data,
+        .platform_data      = &nxp_ehci_plat_data,
     }
 };
-#endif  /* CONFIG_USB_EHCI_NXP_SYNOPSYS */
+#endif  /* CONFIG_USB_EHCI_SYNOPSYS */
 
-#if defined(CONFIG_USB_OHCI_NXP_SYNOPSYS)
-#include <mach/usb.h>
+#if defined(CONFIG_USB_OHCI_SYNOPSYS)
+#include <mach/usb-phy.h>
 
 /* USB OHCI Host Controller registration */
-static struct resource ohci_resource[] = {
+
+static struct resource nxp_ohci_resource[] = {
     [0] = DEFINE_RES_MEM(PHY_BASEADDR_OHCI, SZ_256),
     [1] = DEFINE_RES_IRQ(IRQ_PHY_USB20HOST),
 };
 
-static struct nxp_ohci_plat_data ohci_data = {
-    .phy_init = nxp_soc_usb_phy_init,
-    .phy_exit = nxp_soc_usb_phy_exit,
+struct nxp_ohci_platdata nxp_ohci_plat_data = {
+    .phy_init = nxp_usb_phy_init,
+    .phy_exit = nxp_usb_phy_exit,
 };
 
-static u64 ohci_dmamask = DMA_BIT_MASK(32);
+static u64 nxp_ohci_dmamask = DMA_BIT_MASK(32);
 
-static struct platform_device ohci_device = {
-    .name           = "nxp-ohci-synop",
+struct platform_device nxp_device_ohci = {
+    .name           = "nxp-ohci",
     .id             = -1,
-    .num_resources  = ARRAY_SIZE(ohci_resource),
-    .resource       = ohci_resource,
+    .num_resources  = ARRAY_SIZE(nxp_ohci_resource),
+    .resource       = nxp_ohci_resource,
     .dev            = {
-        .dma_mask           = &ohci_dmamask,
+        .dma_mask           = &nxp_ohci_dmamask,
         .coherent_dma_mask  = DMA_BIT_MASK(32),
-        .platform_data      = &ohci_data,
+        .platform_data      = &nxp_ohci_plat_data,
     }
 };
-#endif  /* CONFIG_USB_OHCI_NXP_SYNOPSYS */
+#endif  /* CONFIG_USB_OHCI_SYNOPSYS */
 
 /*------------------------------------------------------------------------------
  * USB OTG Host or Gadget
@@ -1020,18 +1054,18 @@ static struct platform_device adc_device = {
  * Watchdog Timer
  */
 
-#if defined(CONFIG_NXP_WATCHDOG)
+#if defined(CONFIG_NXP_WDT)
 
-static struct resource wdt_resource[] = {
+static struct resource nxp_wdt_resource[] = {
         [0] = DEFINE_RES_MEM(PHY_BASEADDR_WDT, SZ_1K),
         [1] = DEFINE_RES_IRQ(IRQ_PHY_WDT),
 };
 
-static struct platform_device wdt_device = {
+struct platform_device nxp_device_wdt = {
         .name           = DEV_NAME_WDT,
         .id             = -1,
-        .num_resources  = ARRAY_SIZE(wdt_resource),
-        .resource       = wdt_resource,
+        .num_resources  = ARRAY_SIZE(nxp_wdt_resource),
+        .resource       = nxp_wdt_resource,
 };
 #endif
 
@@ -1137,7 +1171,7 @@ void __init nxp_cpu_devs_register(void)
 #endif
 #if defined(CONFIG_RTC_DRV_NXP)
     printk("mach: add device Real Time Clock  \n");
-    platform_device_register(&rtc_device);
+    platform_device_register(&rtc_plat_device);
 #endif
 
 #if defined(CONFIG_HAVE_PWM)
@@ -1165,14 +1199,14 @@ void __init nxp_cpu_devs_register(void)
     platform_device_register(&spdif_device_rx);
 #endif
 
-#if defined(CONFIG_USB_EHCI_NXP_SYNOPSYS)
+#if defined(CONFIG_USB_EHCI_SYNOPSYS)
     printk("mach: add device usb_ehci\n");
-    platform_device_register(&ehci_device);
+    platform_device_register(&nxp_device_ehci);
 #endif
 
-#if defined(CONFIG_USB_OHCI_NXP_SYNOPSYS)
+#if defined(CONFIG_USB_OHCI_SYNOPSYS)
     printk("mach: add device usb_ohci\n");
-    platform_device_register(&ohci_device);
+    platform_device_register(&nxp_device_ohci);
 #endif
 
 #if defined(CONFIG_USB_DWCOTG)
@@ -1194,9 +1228,9 @@ void __init nxp_cpu_devs_register(void)
     printk("mach: add graphic device opengl|es\n");
     platform_device_register(&vr_gpu_device);
 
-#if defined(CONFIG_NXP_WATCHDOG)
+#if defined(CONFIG_NXP_WDT)
     printk("mach: add device watchdog\n");
-    platform_device_register(&wdt_device);
+    platform_device_register(&nxp_device_wdt);
 #endif
 
 #if defined(CONFIG_SPI_SLSI_PORT0)

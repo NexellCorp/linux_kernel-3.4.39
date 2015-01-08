@@ -20,6 +20,11 @@ choice
 		help
    	 		Support for the drone board.
 
+   	config PLAT_S5P6818_FDONE
+		bool "FDONE: Android FDONE board"
+		help
+   	 		Support for the FDONE board.
+
 endchoice
 
 #
