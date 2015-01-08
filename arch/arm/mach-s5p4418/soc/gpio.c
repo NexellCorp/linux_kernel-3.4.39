@@ -39,10 +39,11 @@ const unsigned char gpio_alt_no[][GPIO_NUM_PER_BANK] = {
 /*-----------------------------------------------------------------------------*/
 #define	ALIVE_INDEX			NUMBER_OF_GPIO_MODULE
 static spinlock_t 			lock[ALIVE_INDEX + 1];	/* A, B, C, D, E, alive */
+static unsigned long 		lock_flags[ALIVE_INDEX + 1];
 
-#define	IO_LOCK_INIT(_n)	{ spin_lock_init(&lock[_n]); }
-#define	IO_LOCK(_n)			{ spin_lock(&lock[_n]); }
-#define	IO_UNLOCK(_n)		{ spin_unlock(&lock[_n]); }
+#define	IO_LOCK_INIT(x)		spin_lock_init(&lock[x])
+#define	IO_LOCK(x)			spin_lock_irqsave(&lock[x], lock_flags[x])
+#define	IO_UNLOCK(x)		spin_unlock_irqrestore(&lock[x], lock_flags[x])
 
 /*------------------------------------------------------------------------------
  * 	Description	: set gpio pad function

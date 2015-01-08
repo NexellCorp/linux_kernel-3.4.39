@@ -143,6 +143,7 @@ struct nxp_i2s_snd_param {
 	unsigned long (*set_ext_mclk)(unsigned long clk);	
 	int	status;
 	spinlock_t	lock;
+	unsigned long flags;
 	/* clock control */
 	struct clk *clk;
 	long clk_rate;
@@ -153,6 +154,10 @@ struct nxp_i2s_snd_param {
 	unsigned int base_addr;
 	struct i2s_register i2s;
 };
+
+#define	SND_I2S_LOCK_INIT(x)		spin_lock_init(x)
+#define	SND_I2S_LOCK(x, f)		spin_lock_irqsave(x, f);
+#define	SND_I2S_UNLOCK(x, f)		spin_unlock_irqrestore(x, f);
 
 /*
  * return 0 = clkgen, 1 = peripheral clock
@@ -255,7 +260,8 @@ static int i2s_start(struct nxp_i2s_snd_param *par, int stream)
 	unsigned int FIC = 0;
 
 	pr_debug("%s %d\n", __func__, par->channel);
-	spin_lock(&par->lock);
+
+	SND_I2S_LOCK(&par->lock, par->flags);
 
 	if (!par->pre_supply_mclk) {
 		if (par->ext_is_en)
@@ -289,7 +295,8 @@ static int i2s_start(struct nxp_i2s_snd_param *par, int stream)
 	writel(i2s->CSR, (base+I2S_CSR_OFFSET));
 	writel(i2s->CON, (base+I2S_CON_OFFSET));
 
-	spin_unlock(&par->lock);
+	SND_I2S_UNLOCK(&par->lock, par->flags);
+
 	return 0;
 }
 
@@ -299,7 +306,8 @@ static void i2s_stop(struct nxp_i2s_snd_param *par, int stream)
 	unsigned int base = par->base_addr;
 
 	pr_debug("%s %d\n", __func__, par->channel);
-	spin_lock(&par->lock);
+
+	SND_I2S_LOCK(&par->lock, par->flags);
 
 	if (SNDRV_PCM_STREAM_PLAYBACK == stream) {
 		par->status &= ~SNDDEV_STATUS_PLAY;
@@ -330,7 +338,7 @@ static void i2s_stop(struct nxp_i2s_snd_param *par, int stream)
 		    par->set_ext_mclk(CFALSE);
 	}
 
-	spin_unlock(&par->lock);
+	SND_I2S_UNLOCK(&par->lock, par->flags);
 }
 
 static struct snd_soc_dai_driver i2s_dai_driver;
@@ -366,11 +374,10 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 	if (!par->master_mode){ 
 	 	/* 384 RATIO */
 		RFS = RATIO_384, request = clk_ratio[i].ratio_384;
-		
 		/* 256 RATIO */
 		if (BFS_32BIT == BFS)
 			RFS = RATIO_256, request = clk_ratio[i].ratio_256;
-	goto done;
+		goto done;
 	}
 
 	for (i = 0; ARRAY_SIZE(clk_ratio) > i; i++) {
@@ -421,8 +428,8 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 	}
 
 	if (en_pclk) {
-		PSRAEN    = 1;
-		prescale  = divide - 1;
+		PSRAEN = 1;
+		prescale = divide - 1;
 	}
 
 done:
@@ -495,7 +502,7 @@ static int nxp_i2s_set_plat_param(struct nxp_i2s_snd_param *par, void *data)
 	if (plat->set_ext_mclk)
 		par->set_ext_mclk = plat->set_ext_mclk;
 	par->base_addr = IO_ADDRESS(phy_base);
-	spin_lock_init(&par->lock);
+	SND_I2S_LOCK_INIT(&par->lock);
 
     for (i = 0; 2 > i; i++, dma = &par->capt) {
 		if (! plat->dma_play_ch) {
@@ -528,10 +535,10 @@ static int nxp_i2s_setup(struct snd_soc_dai *dai)
 	struct i2s_register *i2s = &par->i2s;
 	unsigned int base = par->base_addr;
 
-	spin_lock(&par->lock);
+	SND_I2S_LOCK(&par->lock, par->flags);
 
 	if (SNDDEV_STATUS_SETUP & par->status) {
-		spin_unlock(&par->lock);
+		SND_I2S_UNLOCK(&par->lock, par->flags);
 		return 0;
 	}
 
@@ -539,7 +546,9 @@ static int nxp_i2s_setup(struct snd_soc_dai *dai)
 	writel(i2s->PSR, (base+I2S_PSR_OFFSET));
 
 	par->status |= SNDDEV_STATUS_SETUP;
-	spin_unlock(&par->lock);
+
+	SND_I2S_UNLOCK(&par->lock, par->flags);
+
 	return 0;
 }
 
@@ -549,7 +558,7 @@ static void nxp_i2s_release(struct snd_soc_dai *dai)
 	struct i2s_register *i2s = &par->i2s;
 	unsigned int base = par->base_addr;
 
-	spin_lock(&par->lock);
+	SND_I2S_LOCK(&par->lock, par->flags);
 
 	i2s->CON =~((1 << CON_TXDMAPAUSE_POS) | (1 << CON_RXDMAPAUSE_POS) |
 				(1 << CON_TXCHPAUSE_POS) | (1 << CON_RXCHPAUSE_POS) |
@@ -563,7 +572,7 @@ static void nxp_i2s_release(struct snd_soc_dai *dai)
 
 	par->status = SNDDEV_STATUS_CLEAR;
 
-	spin_unlock(&par->lock);
+	SND_I2S_UNLOCK(&par->lock, par->flags);
 }
 
 /*
