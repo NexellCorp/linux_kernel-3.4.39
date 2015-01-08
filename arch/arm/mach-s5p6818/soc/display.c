@@ -24,6 +24,7 @@
 #include <linux/init.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
+#include <linux/clk.h>
 #include <linux/platform_device.h>
 
 /* nexell soc headers */
@@ -154,6 +155,7 @@ struct disp_control_info {
 	unsigned int 	  	wait_time;
 	wait_queue_head_t 	wait_queue;
 	ktime_t 	      	time_stamp;
+	long	 	      	fps;	/* ms */
 	unsigned int	  	status;
 	struct list_head 	link;
 	struct lcd_operation    *lcd_ops;		/* LCD and Backlight */
@@ -323,6 +325,21 @@ static int display_framerate_jiffies(int module, struct disp_vsync_info *psync)
 	unsigned long hpix, vpix, pixclk;
 	long rate_jiffies;
 	long fps, rate;
+	struct clk *clk = NULL;
+	char name[32] = {0,};
+
+	sprintf(name, "pll%d", psync->clk_src_lv0);
+	clk = clk_get(NULL, name);
+
+	/* clock divider align */
+	if (1 != psync->clk_div_lv0 && (psync->clk_div_lv0&0x1))
+		psync->clk_div_lv0 += 1;
+
+	if (1 != psync->clk_div_lv1 && (psync->clk_div_lv1&0x1))
+		psync->clk_div_lv1 += 1;
+
+	/* get pixel clock */
+	psync->pixel_clock_hz = ((clk_get_rate(clk)/psync->clk_div_lv0)/psync->clk_div_lv1);
 
 	hpix = psync->h_active_len + psync->h_front_porch +
 			psync->h_back_porch + psync->h_sync_width;
@@ -463,13 +480,17 @@ static irqreturn_t	disp_syncgen_irqhandler(int irq, void *desc)
 	struct disp_control_info *info = desc;
 	int module = info->module;
 	int version = nxp_cpu_version();
+	ktime_t ts;
 
 	info->condition = 1;
 	wake_up_interruptible(&info->wait_queue);
 
 	if (info->active_notify) {
 		info->cond_notify = 1;
-		info->time_stamp = ktime_get();
+		ts = ktime_get();
+		info->fps = ktime_to_us(ts) - ktime_to_us(info->time_stamp);
+		info->time_stamp = ts;
+
 		schedule_work(&info->work);
 	}
 	NX_DPC_ClearInterruptPendingAll(module);
@@ -477,12 +498,6 @@ static irqreturn_t	disp_syncgen_irqhandler(int irq, void *desc)
 	if (!version)
 		NX_MLC_SetTopDirtyFlag(module);
 
-#if 0
-	if (info->callback) {
-		void *data = info->callback_data;
-		info->callback(data);
-	}
-#else
     spin_lock(&info->lock_callback);
     if (!list_empty(&info->callback_list)) {
         struct disp_irq_callback *callback;
@@ -490,7 +505,6 @@ static irqreturn_t	disp_syncgen_irqhandler(int irq, void *desc)
             callback->handler(callback->data);
     }
     spin_unlock(&info->lock_callback);
-#endif
 
 #if (0)
     {
@@ -579,28 +593,24 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 	struct disp_process_dev *pdev = info->proc_dev;
 	struct disp_syncgen_par *psgen = &pdev->sync_gen;
 	struct disp_vsync_info *psync = &pdev->vsync;
-
 	int module = info->module;
 	unsigned int out_format = psgen->out_format;
 	unsigned int delay_mask = psgen->delay_mask;
-#if 0
-	int 	   invert_field = psgen->invert_field;
-	int 		 swap_RB    = psgen->swap_RB;
-	unsigned int yc_order   = psgen->yc_order;
-#endif
-
 	int rgb_pvd = 0, hsync_cp1 = 7, vsync_fram = 7, de_cp2 = 7;
 	int v_vso = 1, v_veo = 1, e_vso = 1, e_veo = 1;
-#if 0
-	int interlace = psgen->interlace;
-#endif
+
 	int clk_src_lv0 = psync->clk_src_lv0;
 	int clk_div_lv0 = psync->clk_div_lv0;
 	int clk_src_lv1 = psync->clk_src_lv1;
 	int clk_div_lv1 = psync->clk_div_lv1;
 	int clk_dly_lv0 = psgen->clk_delay_lv0;
 	int clk_dly_lv1 = psgen->clk_delay_lv1;
+
 #if 0
+	int 	   invert_field = psgen->invert_field;
+	int 		 swap_RB    = psgen->swap_RB;
+	unsigned int yc_order   = psgen->yc_order;
+	int interlace = psgen->interlace;
 	int vclk_select = psgen->vclk_select;
 	int vclk_invert = psgen->clk_inv_lv0 | psgen->clk_inv_lv1;
 	CBOOL EmbSync = (out_format == DPC_FORMAT_CCIR656 ? CTRUE : CFALSE);
@@ -1443,7 +1453,6 @@ void nxp_soc_disp_video_set_crop(int module, bool enable, int left, int top, int
                 pvid->right, pvid->bottom, waitvsync);
     }
 }
-
 
 int nxp_soc_disp_video_get_position(int module, int *left, int *top, int *right, int *bottom)
 {
@@ -2452,10 +2461,50 @@ static struct device_attribute vblank0_attr =
 static struct device_attribute vblank1_attr =
 	__ATTR(vsync.1, S_IRUGO | S_IWUSR, vsync_show, NULL);
 
+/*
+ * Notify vertical sync timestamp
+ *
+ * /sys/devices/platform/display/fps.N
+ */
+static ssize_t fps_show(struct device *pdev,
+		struct device_attribute *attr, char *buf)
+{
+	struct attribute *at = &attr->attr;
+	struct disp_control_info *info;
+	struct disp_process_dev *dev;
+	const char *c;
+	int a, i, d[2], m = 0;
+
+	c = &at->name[strlen("vsync.")];
+	a = simple_strtoul(c, NULL, 10);
+
+	for (i = 0; 2 > i; i++) {
+		info = get_module_to_info(i);
+		dev  = info->proc_dev;
+		d[i] = dev->dev_in;
+	}
+
+	/* not fb */
+	if (d[0] != DISP_DEVICE_END && d[1] != DISP_DEVICE_END)
+		m = a;
+	else /* 1 fb */
+		m = (d[0] == a) ? 0 : 1;
+
+	info = get_module_to_info(m);
+
+    return scnprintf(buf, PAGE_SIZE, "%ld.%3ld\n", info->fps/1000, info->fps%1000);
+}
+
+static struct device_attribute fps0_attr =
+	__ATTR(fps.0, S_IRUGO | S_IWUSR, fps_show, NULL);
+static struct device_attribute fps1_attr =
+	__ATTR(fps.1, S_IRUGO | S_IWUSR, fps_show, NULL);
+
 /* sys attribte group */
 static struct attribute *attrs[] = {
 	&active0_attr.attr,	&active1_attr.attr,
 	&vblank0_attr.attr,	&vblank1_attr.attr,
+	&fps0_attr.attr, &fps1_attr.attr,
 	NULL,
 };
 
