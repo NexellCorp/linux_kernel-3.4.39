@@ -104,8 +104,8 @@
 
 #define CFG_DISP_PRI_MLC_INTERLACE              CFALSE
 
-#define	CFG_DISP_PRI_LCD_WIDTH_MM				152.4
-#define	CFG_DISP_PRI_LCD_HEIGHT_MM				91.44
+#define	CFG_DISP_PRI_LCD_WIDTH_MM				155
+#define	CFG_DISP_PRI_LCD_HEIGHT_MM				90
 
 #define CFG_DISP_PRI_RESOL_WIDTH          		1024	// X Resolution
 #define CFG_DISP_PRI_RESOL_HEIGHT				 600	// Y Resolution
