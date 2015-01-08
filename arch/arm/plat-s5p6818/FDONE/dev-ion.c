@@ -10,6 +10,7 @@ extern struct platform_device nxp_device_ion;
 
 void __init nxp_ion_set_platdata(void)
 {
+#if 0
     struct ion_platform_data *pdata;
     pdata = kzalloc(sizeof(struct ion_platform_data), GFP_KERNEL);
     pdata->heaps = kzalloc(5 * sizeof(struct ion_platform_heap), GFP_KERNEL);
@@ -27,4 +28,33 @@ void __init nxp_ion_set_platdata(void)
         pdata->heaps[2].id   = ION_HEAP_TYPE_NXP_CONTIG;
         nxp_device_ion.dev.platform_data = pdata;
     }
+#else
+    struct ion_platform_data *pdata;
+    pdata = kzalloc(sizeof(struct ion_platform_data), GFP_KERNEL);
+    pdata->heaps = kzalloc(5 * sizeof(struct ion_platform_heap), GFP_KERNEL);
+
+    if (pdata) {
+        pdata->nr = 2;
+        pdata->heaps[0].type = ION_HEAP_TYPE_SYSTEM;
+        pdata->heaps[0].name = "ion_noncontig_heap";
+        pdata->heaps[0].id   = ION_HEAP_TYPE_SYSTEM;
+        pdata->heaps[1].type = ION_HEAP_TYPE_SYSTEM_CONTIG;
+        pdata->heaps[1].name = "ion_contig_heap";
+        pdata->heaps[1].id   = ION_HEAP_TYPE_SYSTEM_CONTIG;
+#ifdef CONFIG_ION_NXP_CONTIGHEAP_SIZE
+        pdata->heaps[2].type = ION_HEAP_TYPE_NXP_CONTIG;
+        pdata->heaps[2].name = "nxp_contig_heap";
+        pdata->heaps[2].id   = ION_HEAP_TYPE_NXP_CONTIG;
+        pdata->nr++;
+#endif
+#ifdef CONFIG_ION_NXP_RESERVEHEAP_SIZE
+        pdata->heaps[3].type = ION_HEAP_TYPE_NXP_RESERVE;
+        pdata->heaps[3].name = "nxp_reserve_heap";
+        pdata->heaps[3].id   = ION_HEAP_TYPE_NXP_RESERVE;
+        pdata->nr++;
+#endif
+
+        nxp_device_ion.dev.platform_data = pdata;
+    }
+#endif
 }

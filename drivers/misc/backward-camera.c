@@ -7,7 +7,6 @@
 #include <linux/i2c.h>
 
 #include <mach/platform.h>
-#include <mach/nxp4330.h>
 #include <mach/soc.h>
 #include <mach/nxp-backward-camera.h>
 
@@ -27,28 +26,199 @@ static struct nxp_backward_camera_context {
 #endif
 } _context;
 
+static void _vip_dump_register(int module)
+{
+#define DBGOUT(args...)  printk(args)
+    NX_VIP_RegisterSet *pREG =
+        (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
+
+    DBGOUT("BASE ADDRESS: %p\n", pREG);
+#if defined(CONFIG_ARCH_S5P4418)
+    DBGOUT(" VIP_CONFIG     = 0x%04x\r\n", pREG->VIP_CONFIG);
+    DBGOUT(" VIP_HVINT      = 0x%04x\r\n", pREG->VIP_HVINT);
+    DBGOUT(" VIP_SYNCCTRL   = 0x%04x\r\n", pREG->VIP_SYNCCTRL);
+    DBGOUT(" VIP_SYNCMON    = 0x%04x\r\n", pREG->VIP_SYNCMON);
+    DBGOUT(" VIP_VBEGIN     = 0x%04x\r\n", pREG->VIP_VBEGIN);
+    DBGOUT(" VIP_VEND       = 0x%04x\r\n", pREG->VIP_VEND);
+    DBGOUT(" VIP_HBEGIN     = 0x%04x\r\n", pREG->VIP_HBEGIN);
+    DBGOUT(" VIP_HEND       = 0x%04x\r\n", pREG->VIP_HEND);
+    DBGOUT(" VIP_FIFOCTRL   = 0x%04x\r\n", pREG->VIP_FIFOCTRL);
+    DBGOUT(" VIP_HCOUNT     = 0x%04x\r\n", pREG->VIP_HCOUNT);
+    DBGOUT(" VIP_VCOUNT     = 0x%04x\r\n", pREG->VIP_VCOUNT);
+    DBGOUT(" VIP_CDENB      = 0x%04x\r\n", pREG->VIP_CDENB);
+    DBGOUT(" VIP_ODINT      = 0x%04x\r\n", pREG->VIP_ODINT);
+    DBGOUT(" VIP_IMGWIDTH   = 0x%04x\r\n", pREG->VIP_IMGWIDTH);
+    DBGOUT(" VIP_IMGHEIGHT  = 0x%04x\r\n", pREG->VIP_IMGHEIGHT);
+    DBGOUT(" CLIP_LEFT      = 0x%04x\r\n", pREG->CLIP_LEFT);
+    DBGOUT(" CLIP_RIGHT     = 0x%04x\r\n", pREG->CLIP_RIGHT);
+    DBGOUT(" CLIP_TOP       = 0x%04x\r\n", pREG->CLIP_TOP);
+    DBGOUT(" CLIP_BOTTOM    = 0x%04x\r\n", pREG->CLIP_BOTTOM);
+    DBGOUT(" DECI_TARGETW   = 0x%04x\r\n", pREG->DECI_TARGETW);
+    DBGOUT(" DECI_TARGETH   = 0x%04x\r\n", pREG->DECI_TARGETH);
+    DBGOUT(" DECI_DELTAW    = 0x%04x\r\n", pREG->DECI_DELTAW);
+    DBGOUT(" DECI_DELTAH    = 0x%04x\r\n", pREG->DECI_DELTAH);
+    DBGOUT(" DECI_CLEARW    = 0x%04x\r\n", pREG->DECI_CLEARW);
+    DBGOUT(" DECI_CLEARH    = 0x%04x\r\n", pREG->DECI_CLEARH);
+    DBGOUT(" DECI_LUSEG     = 0x%04x\r\n", pREG->DECI_LUSEG);
+    DBGOUT(" DECI_CRSEG     = 0x%04x\r\n", pREG->DECI_CRSEG);
+    DBGOUT(" DECI_CBSEG     = 0x%04x\r\n", pREG->DECI_CBSEG);
+    DBGOUT(" DECI_FORMAT    = 0x%04x\r\n", pREG->DECI_FORMAT);
+    DBGOUT(" DECI_ROTFLIP   = 0x%04x\r\n", pREG->DECI_ROTFLIP);
+    DBGOUT(" DECI_LULEFT    = 0x%04x\r\n", pREG->DECI_LULEFT);
+    DBGOUT(" DECI_CRLEFT    = 0x%04x\r\n", pREG->DECI_CRLEFT);
+    DBGOUT(" DECI_CBLEFT    = 0x%04x\r\n", pREG->DECI_CBLEFT);
+    DBGOUT(" DECI_LURIGHT   = 0x%04x\r\n", pREG->DECI_LURIGHT);
+    DBGOUT(" DECI_CRRIGHT   = 0x%04x\r\n", pREG->DECI_CRRIGHT);
+    DBGOUT(" DECI_CBRIGHT   = 0x%04x\r\n", pREG->DECI_CBRIGHT);
+    DBGOUT(" DECI_LUTOP     = 0x%04x\r\n", pREG->DECI_LUTOP);
+    DBGOUT(" DECI_CRTOP     = 0x%04x\r\n", pREG->DECI_CRTOP);
+    DBGOUT(" DECI_CBTOP     = 0x%04x\r\n", pREG->DECI_CBTOP);
+    DBGOUT(" DECI_LUBOTTOM  = 0x%04x\r\n", pREG->DECI_LUBOTTOM);
+    DBGOUT(" DECI_CRBOTTOM  = 0x%04x\r\n", pREG->DECI_CRBOTTOM);
+    DBGOUT(" DECI_CBBOTTOM  = 0x%04x\r\n", pREG->DECI_CBBOTTOM);
+    DBGOUT(" CLIP_LUSEG     = 0x%04x\r\n", pREG->CLIP_LUSEG);
+    DBGOUT(" CLIP_CRSEG     = 0x%04x\r\n", pREG->CLIP_CRSEG);
+    DBGOUT(" CLIP_CBSEG     = 0x%04x\r\n", pREG->CLIP_CBSEG);
+    DBGOUT(" CLIP_FORMAT    = 0x%04x\r\n", pREG->CLIP_FORMAT);
+    DBGOUT(" CLIP_ROTFLIP   = 0x%04x\r\n", pREG->CLIP_ROTFLIP);
+    DBGOUT(" CLIP_LULEFT    = 0x%04x\r\n", pREG->CLIP_LULEFT);
+    DBGOUT(" CLIP_CRLEFT    = 0x%04x\r\n", pREG->CLIP_CRLEFT);
+    DBGOUT(" CLIP_CBLEFT    = 0x%04x\r\n", pREG->CLIP_CBLEFT);
+    DBGOUT(" CLIP_LURIGHT   = 0x%04x\r\n", pREG->CLIP_LURIGHT);
+    DBGOUT(" CLIP_CRRIGHT   = 0x%04x\r\n", pREG->CLIP_CRRIGHT);
+    DBGOUT(" CLIP_CBRIGHT   = 0x%04x\r\n", pREG->CLIP_CBRIGHT);
+    DBGOUT(" CLIP_LUTOP     = 0x%04x\r\n", pREG->CLIP_LUTOP);
+    DBGOUT(" CLIP_CRTOP     = 0x%04x\r\n", pREG->CLIP_CRTOP);
+    DBGOUT(" CLIP_CBTOP     = 0x%04x\r\n", pREG->CLIP_CBTOP);
+    DBGOUT(" CLIP_LUBOTTOM  = 0x%04x\r\n", pREG->CLIP_LUBOTTOM);
+    DBGOUT(" CLIP_CRBOTTOM  = 0x%04x\r\n", pREG->CLIP_CRBOTTOM);
+    DBGOUT(" CLIP_CBBOTTOM  = 0x%04x\r\n", pREG->CLIP_CBBOTTOM);
+    DBGOUT(" VIP_SCANMODE   = 0x%04x\r\n", pREG->VIP_SCANMODE);
+    DBGOUT(" CLIP_YUYVENB   = 0x%04x\r\n", pREG->CLIP_YUYVENB);
+    DBGOUT(" CLIP_BASEADDRH = 0x%04x\r\n", pREG->CLIP_BASEADDRH);
+    DBGOUT(" CLIP_BASEADDRL = 0x%04x\r\n", pREG->CLIP_BASEADDRL);
+    DBGOUT(" CLIP_STRIDEH   = 0x%04x\r\n", pREG->CLIP_STRIDEH);
+    DBGOUT(" CLIP_STRIDEL   = 0x%04x\r\n", pREG->CLIP_STRIDEL);
+    DBGOUT(" VIP_VIP1       = 0x%04x\r\n", pREG->VIP_VIP1);
+    /* DBGOUT(" VIPCLKENB      = 0x%04x\r\n", pREG->VIPCLKENB); */
+    /* DBGOUT(" VIPCLKGEN[0][0]= 0x%04x\r\n", pREG->VIPCLKGEN[0][0]); */
+    /* DBGOUT(" VIPCLKGEN[0][1]= 0x%04x\r\n", pREG->VIPCLKGEN[0][1]); */
+    /* DBGOUT(" VIPCLKGEN[1][0]= 0x%04x\r\n", pREG->VIPCLKGEN[1][0]); */
+    /* DBGOUT(" VIPCLKGEN[1][1]= 0x%04x\r\n", pREG->VIPCLKGEN[1][1]); */
+#elif defined(CONFIG_ARCH_S5P6818)
+    DBGOUT(" VIP_CONFIG     = 0x%04x\r\n", pREG->VIP_CONFIG);
+    DBGOUT(" VIP_HVINT      = 0x%04x\r\n", pREG->VIP_HVINT);
+    DBGOUT(" VIP_SYNCCTRL   = 0x%04x\r\n", pREG->VIP_SYNCCTRL);
+    DBGOUT(" VIP_SYNCMON    = 0x%04x\r\n", pREG->VIP_SYNCMON);
+    DBGOUT(" VIP_VBEGIN     = 0x%04x\r\n", pREG->VIP_VBEGIN);
+    DBGOUT(" VIP_VEND       = 0x%04x\r\n", pREG->VIP_VEND);
+    DBGOUT(" VIP_HBEGIN     = 0x%04x\r\n", pREG->VIP_HBEGIN);
+    DBGOUT(" VIP_HEND       = 0x%04x\r\n", pREG->VIP_HEND);
+    DBGOUT(" VIP_FIFOCTRL   = 0x%04x\r\n", pREG->VIP_FIFOCTRL);
+    DBGOUT(" VIP_HCOUNT     = 0x%04x\r\n", pREG->VIP_HCOUNT);
+    DBGOUT(" VIP_VCOUNT     = 0x%04x\r\n", pREG->VIP_VCOUNT);
+    DBGOUT(" VIP_PADCLK_SEL = 0x%04x\r\n", pREG->VIP_PADCLK_SEL);
+    DBGOUT(" VIP_INFIFOCLR  = 0x%04x\r\n", pREG->VIP_INFIFOCLR);
+    DBGOUT(" VIP_CDENB      = 0x%04x\r\n", pREG->VIP_CDENB);
+    DBGOUT(" VIP_ODINT      = 0x%04x\r\n", pREG->VIP_ODINT);
+    DBGOUT(" VIP_IMGWIDTH   = 0x%04x\r\n", pREG->VIP_IMGWIDTH);
+    DBGOUT(" VIP_IMGHEIGHT  = 0x%04x\r\n", pREG->VIP_IMGHEIGHT);
+    DBGOUT(" CLIP_LEFT      = 0x%04x\r\n", pREG->CLIP_LEFT);
+    DBGOUT(" CLIP_RIGHT     = 0x%04x\r\n", pREG->CLIP_RIGHT);
+    DBGOUT(" CLIP_TOP       = 0x%04x\r\n", pREG->CLIP_TOP);
+    DBGOUT(" CLIP_BOTTOM    = 0x%04x\r\n", pREG->CLIP_BOTTOM);
+    DBGOUT(" DECI_TARGETW   = 0x%04x\r\n", pREG->DECI_TARGETW);
+    DBGOUT(" DECI_TARGETH   = 0x%04x\r\n", pREG->DECI_TARGETH);
+    DBGOUT(" DECI_DELTAW    = 0x%04x\r\n", pREG->DECI_DELTAW);
+    DBGOUT(" DECI_DELTAH    = 0x%04x\r\n", pREG->DECI_DELTAH);
+    DBGOUT(" DECI_CLEARW    = 0x%04x\r\n", pREG->DECI_CLEARW);
+    DBGOUT(" DECI_CLEARH    = 0x%04x\r\n", pREG->DECI_CLEARH);
+    DBGOUT(" DECI_FORMAT    = 0x%04x\r\n", pREG->DECI_FORMAT);
+    DBGOUT(" DECI_LUADDR    = 0x%04x\r\n", pREG->DECI_LUADDR);
+    DBGOUT(" DECI_LUSTRIDE  = 0x%04x\r\n", pREG->DECI_LUSTRIDE);
+    DBGOUT(" DECI_CRADDR    = 0x%04x\r\n", pREG->DECI_CRADDR);
+    DBGOUT(" DECI_CRSTRIDE  = 0x%04x\r\n", pREG->DECI_CRSTRIDE);
+    DBGOUT(" DECI_CBADDR    = 0x%04x\r\n", pREG->DECI_CBADDR);
+    DBGOUT(" DECI_CBSTRIDE  = 0x%04x\r\n", pREG->DECI_CBSTRIDE);
+    DBGOUT(" CLIP_FORMAT    = 0x%04x\r\n", pREG->CLIP_FORMAT);
+    DBGOUT(" CLIP_LUADDR    = 0x%04x\r\n", pREG->CLIP_LUADDR);
+    DBGOUT(" CLIP_LUSTRIDE  = 0x%04x\r\n", pREG->CLIP_LUSTRIDE);
+    DBGOUT(" CLIP_CRADDR    = 0x%04x\r\n", pREG->CLIP_CRADDR);
+    DBGOUT(" CLIP_CRSTRIDE  = 0x%04x\r\n", pREG->CLIP_CRSTRIDE);
+    DBGOUT(" CLIP_CBADDR    = 0x%04x\r\n", pREG->CLIP_CBADDR);
+    DBGOUT(" CLIP_CBSTRIDE  = 0x%04x\r\n", pREG->CLIP_CBSTRIDE);
+    DBGOUT(" VIP_SCANMODE   = 0x%04x\r\n", pREG->VIP_SCANMODE);
+    DBGOUT(" VIP_VIP1       = 0x%04x\r\n", pREG->VIP_VIP1);
+#endif
+}
+
+#if defined(CONFIG_ARCH_S5P6818)
+static void _vip_hw_set_addr(int module, struct nxp_backward_camera_platform_data *param, u32 lu_addr, u32 cb_addr, u32 cr_addr);
+static void _vip_hw_set_clock(int module, struct nxp_backward_camera_platform_data *param, bool on);
+static void _vip_hw_set_sensor_param(int module, struct nxp_backward_camera_platform_data *param);
+#endif
+
 static void vip_run(int module)
 {
+#if defined(CONFIG_ARCH_S5P6818)
+    struct nxp_backward_camera_context *me = &_context;
+    u32 lu_addr = me->plat_data->lu_addr;
+    u32 cb_addr = me->plat_data->cb_addr;
+    u32 cr_addr = me->plat_data->cr_addr;
+    _vip_hw_set_clock(module, me->plat_data, true);
+    _vip_hw_set_sensor_param(module, me->plat_data);
+    _vip_hw_set_addr(module, me->plat_data, lu_addr, cb_addr, cr_addr);
+#endif
     NX_VIP_SetVIPEnable(module, CTRUE, CTRUE, CTRUE, CFALSE);
+    _vip_dump_register(module);
 }
 
 static void vip_stop(int module)
 {
+#if defined(CONFIG_ARCH_S5p6818)
+    {
+        int intnum = 0;
+        /*int intnum = 2; ODINT*/
+        NX_VIP_SetInterruptEnable( module, intnum, CTRUE );
+        while (CFALSE == NX_VIP_GetInterruptPending( module, intnum ));
+        NX_VIP_ClearInterruptPendingAll( module );
+    }
+#endif
     NX_VIP_SetVIPEnable(module, CFALSE, CFALSE, CFALSE, CFALSE);
+#if defined(CONFIG_ARCH_S5p6818)
+    NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_ASSERT);
+    NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_NEGATE);
+#endif
 }
 
 static void mlc_run(int module)
 {
+#if defined(CONFIG_ARCH_S5P4418)
     NX_MLC_SetTopDirtyFlag(module);
+#endif
+
+#if 1
+    NX_MLC_SetVideoLayerLineBufferPowerMode(module, CTRUE);
+    NX_MLC_SetVideoLayerLineBufferSleepMode(module, CFALSE);
+#endif
+
     NX_MLC_SetLayerEnable(module, MLC_LAYER_VIDEO, CTRUE);
     NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
 }
 
 static void mlc_stop(int module)
 {
+#if defined(CONFIG_ARCH_S5P4418)
     NX_MLC_SetTopDirtyFlag(module);
+#endif
     NX_MLC_SetLayerEnable(module, MLC_LAYER_VIDEO, CFALSE);
     NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
+
+#if 1
+    NX_MLC_SetVideoLayerLineBufferPowerMode(module, CFALSE);
+    NX_MLC_SetVideoLayerLineBufferSleepMode(module, CTRUE);
+    NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
+#endif
 }
 
 static void mlc_overlay_run(int module)
@@ -65,26 +235,46 @@ static void mlc_overlay_stop(int module)
     NX_MLC_SetDirtyFlag(module, layer);
 }
 
+#if 1
+static void _mlc_video_set_param(int module, struct nxp_backward_camera_platform_data *param);
+static void _mlc_video_set_addr(int module, u32 lu_a, u32 cb_a, u32 cr_a, u32 lu_s, u32 cb_s, u32 cr_s);
+#endif
+static bool _s_first = true;
 static void _turn_on(struct nxp_backward_camera_context *me)
 {
     printk("%s\n", __func__);
-    vip_run(me->plat_data->vip_module_num);
-    mlc_overlay_run(me->plat_data->mlc_module_num);
+    if (_s_first == true) {
+        vip_run(me->plat_data->vip_module_num);
+        _s_first = false;
+    }
+    /*mlc_overlay_run(me->plat_data->mlc_module_num);*/
+#if 0
+    _mlc_video_set_param(me->plat_data->mlc_module_num, me->plat_data);
+    {
+        u32 lu_addr = me->plat_data->lu_addr;
+        u32 cb_addr = me->plat_data->cb_addr;
+        u32 cr_addr = me->plat_data->cr_addr;
+        u32 lu_stride = me->plat_data->lu_stride;
+        u32 cb_stride = me->plat_data->cb_stride;
+        u32 cr_stride = me->plat_data->cr_stride;
+        _mlc_video_set_addr(me->plat_data->mlc_module_num, lu_addr, cb_addr, cr_addr, lu_stride, cb_stride, cr_stride);
+    }
+#endif
     mlc_run(me->plat_data->mlc_module_num);
 }
 
 static void _turn_off(struct nxp_backward_camera_context *me)
 {
     printk("%s\n", __func__);
-    mlc_overlay_stop(me->plat_data->mlc_module_num);
+    /*mlc_overlay_stop(me->plat_data->mlc_module_num);*/
     mlc_stop(me->plat_data->mlc_module_num);
-    vip_stop(me->plat_data->vip_module_num);
+    /*vip_stop(me->plat_data->vip_module_num);*/
 }
 
 static inline bool _is_backgear_on(struct nxp_backward_camera_platform_data *pdata)
 {
     bool is_on = nxp_soc_gpio_get_in_value(pdata->backgear_gpio_num);
-    printk("%s: is_on %d\n", __func__, is_on);
+    /*printk("%s: is_on %d\n", __func__, is_on);*/
     if (!pdata->active_high)
         is_on ^= 1;
     return is_on;
@@ -227,8 +417,13 @@ static void _vip_hw_set_clock(int module, struct nxp_backward_camera_platform_da
         /* printk("RSTCON Base: 0x%x\n", NX_RSTCON_GetBaseAddress()); */
         /* printk("RSTCON VIP %d Reset Number %d, REG Number %d\n", module, NX_VIP_GetResetNumber(module), NX_VIP_GetResetNumber(module)>>5); */
         /* printk("CLKGEN Base: 0x%x\n", clkgen_base); */
+#if defined(CONFIG_ARCH_S5P4418)
         NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nDISABLE);
         NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nENABLE);
+#elif defined(CONFIG_ARCH_S5p6818)
+        NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_ASSERT);
+        NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_NEGATE);
+#endif
 
         if (param->is_mipi) {
             printk("%s: apply mipi csi clock!!!\n", __func__);
@@ -266,11 +461,18 @@ static void _vip_hw_set_sensor_param(int module, struct nxp_backward_camera_plat
                 param->v_backporch);
     } else {
         NX_VIP_SetDataMode(module, param->data_order, 8);
+        printk("%s: interlace %d\n", __func__, param->interlace);
         NX_VIP_SetFieldMode(module,
                 CFALSE,
                 0,
                 param->interlace,
                 CFALSE);
+        {
+            NX_VIP_RegisterSet *pREG =
+                (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
+            printk("%s: VIP_SYNCCTRL   = 0x%04x\r\n", __func__, pREG->VIP_SYNCCTRL);
+        }
+
         NX_VIP_SetDValidMode(module,
                 CFALSE,
                 CFALSE,
@@ -290,7 +492,12 @@ static void _vip_hw_set_sensor_param(int module, struct nxp_backward_camera_plat
                 param->v_backporch);
     }
 
+#if defined(CONFIG_ARCH_S5P4418)
     NX_VIP_SetClipperFormat(module, NX_VIP_FORMAT_420, 0, 0, 0);
+#else
+    NX_VIP_SetClipperFormat(module, NX_VIP_FORMAT_420);
+#endif
+
     NX_VIP_SetClipRegion(module,
             0,
             0,
