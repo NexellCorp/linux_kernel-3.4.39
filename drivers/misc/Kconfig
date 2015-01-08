@@ -565,9 +565,9 @@ source "drivers/misc/lis3lv02d/Kconfig"
 source "drivers/misc/carma/Kconfig"
 source "drivers/misc/altera-stapl/Kconfig"
 
-config NXP4330_BACKWARD_CAMERA
-    bool "NXP4330 Fast Preview of Backward Camera"
-    depends on ARCH_NXP4330
+config SLSIAP_BACKWARD_CAMERA
+    bool "SLSIAP Fast Preview of Backward Camera"
+    depends on (ARCH_S5P4418 || ARCH_S5P6818)
     default n
     help
       If you say yes here, you can view camera as soon as kernel booting, and
