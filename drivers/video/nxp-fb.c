@@ -610,7 +610,7 @@ static void nxp_fb_setup_info(struct fb_info *info)
 	info->var.right_margin	= dev->hs_right;
 	info->var.upper_margin	= dev->vs_upper;
 	info->var.lower_margin	= dev->vs_lower;
-	info->var.pixclock		= (1000000000 / dev->pixelclk) * 1000;	/* pico second */
+	info->var.pixclock		= KHZ2PICOS(dev->pixelclk/1000);	/* pico second */
 
 	/* get resolution */
 	info->var.xres	    	= dev->x_resol;
