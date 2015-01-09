@@ -181,27 +181,6 @@ static int nxe2000_list_voltage(struct regulator_dev *rdev, unsigned index)
 	return ri->min_uV + (ri->step_uV * index);
 }
 
-/*
-static int __nxe2000_set_s_voltage(struct device *parent,
-		struct nxe2000_regulator *ri, int min_uV, int max_uV)
-{
-	int vsel;
-	int ret;
-
-	if ((min_uV < ri->min_uV) || (max_uV > ri->max_uV))
-		return -EDOM;
-
-	vsel = (min_uV - ri->min_uV + ri->step_uV - 1)/ri->step_uV;
-	if (vsel > ri->nsteps)
-		return -EDOM;
-
-	ret = nxe2000_update(parent, ri->sleep_volt_reg, vsel, ri->vout_mask);
-	if (ret < 0)
-		dev_err(ri->dev, "Error in writing the sleep register\n");
-	return ret;
-}
-*/
-
 static int __nxe2000_set_voltage(struct device *parent,
 		struct nxe2000_regulator *ri, int min_uV, int max_uV,
 		unsigned *selector, int sleep_mode)
@@ -231,11 +210,31 @@ static int __nxe2000_set_voltage(struct device *parent,
 	else
 		ri->vout_reg_cache = vout_val;
 
-#if defined(CONFIG_PLAT_S5P4418_ASB) || defined(CONFIG_PLAT_S5P4418_SVT)
-	udelay(100);
-#endif
-
 	return ret;
+}
+
+static int nxe2000_set_voltage_time_sel(struct regulator_dev *rdev,
+					     unsigned int old_sel,
+					     unsigned int new_sel)
+{
+	struct nxe2000_regulator *ri = rdev_get_drvdata(rdev);
+	return ri->delay;
+}
+
+static int nxe2000_set_voltage_sel(struct regulator_dev *rdev,
+				       unsigned selector)
+{
+	struct nxe2000_regulator *ri = rdev_get_drvdata(rdev);
+	struct device *parent = to_nxe2000_dev(rdev);
+
+	int uV;
+
+	uV = ri->min_uV + (ri->step_uV * selector);
+
+	if (nxe2000_suspend_status)
+		return -EBUSY;
+
+	return __nxe2000_set_voltage(parent, ri, uV, uV, NULL, 0);
 }
 
 static int nxe2000_set_voltage(struct regulator_dev *rdev,
@@ -248,6 +247,15 @@ static int nxe2000_set_voltage(struct regulator_dev *rdev,
 		return -EBUSY;
 
 	return __nxe2000_set_voltage(parent, ri, min_uV, max_uV, selector, 0);
+}
+
+static int nxe2000_get_voltage_sel(struct regulator_dev *rdev)
+{
+	struct nxe2000_regulator *ri = rdev_get_drvdata(rdev);
+	uint8_t vsel;
+
+	vsel = ri->vout_reg_cache & ri->vout_mask;
+	return vsel ;
 }
 
 static int nxe2000_get_voltage(struct regulator_dev *rdev)
@@ -317,14 +325,24 @@ int nxe2000_regulator_disable_eco_slp_mode(struct regulator_dev *rdev)
 }
 EXPORT_SYMBOL_GPL(nxe2000_regulator_disable_eco_slp_mode);
 
+static struct regulator_ops nxe2000_dcdc1_ops = {
+	.list_voltage		= nxe2000_list_voltage,
+	.set_voltage_sel	= nxe2000_set_voltage_sel,
+	.set_voltage_time_sel = nxe2000_set_voltage_time_sel,
+	.get_voltage_sel	= nxe2000_get_voltage_sel,
+	.enable				= nxe2000_reg_enable,
+	.disable			= nxe2000_reg_disable,
+	.is_enabled			= nxe2000_reg_is_enabled,
+	.enable_time		= nxe2000_regulator_enable_time,
+};
 
 static struct regulator_ops nxe2000_ops = {
 	.list_voltage	= nxe2000_list_voltage,
 	.set_voltage	= nxe2000_set_voltage,
 	.get_voltage	= nxe2000_get_voltage,
-	.enable		= nxe2000_reg_enable,
-	.disable	= nxe2000_reg_disable,
-	.is_enabled	= nxe2000_reg_is_enabled,
+	.enable			= nxe2000_reg_enable,
+	.disable		= nxe2000_reg_disable,
+	.is_enabled		= nxe2000_reg_is_enabled,
 	.enable_time	= nxe2000_regulator_enable_time,
 };
 
@@ -363,7 +381,7 @@ static struct regulator_ops nxe2000_ops = {
 
 static struct nxe2000_regulator nxe2000_regulator[] = {
 	NXE2000_REG(DC1, 0x2C, 0, 0x2C, 1, 0x36, 0xFF, 0x3B, 0x16,
-			600, 3500, 12500, 0xE8, nxe2000_ops, 500,
+			600, 3500, 12500, 0xE8, nxe2000_dcdc1_ops, 100,
 			0x00, 0, 0x00, 0),
 
 	NXE2000_REG(DC2, 0x2E, 0, 0x2E, 1, 0x37, 0xFF, 0x3C, 0x17,
