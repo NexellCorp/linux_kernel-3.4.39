@@ -55,7 +55,7 @@ endchoice
 
 config CPU_S5P4418_EX_PERI_BUS
 	bool "Assign Exclusive Bus for IO"
-	default n
+	default y
 
 config HAVE_PWM
 	prompt "PWM driver"
