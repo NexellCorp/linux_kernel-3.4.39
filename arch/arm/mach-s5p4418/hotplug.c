@@ -159,7 +159,7 @@ void platform_cpu_die(unsigned int cpu)
 	/*
 	 * we're ready for shutdown now, so do it
 	 */
-	cpu_enter_lowpower_a9();
+	cpu_enter_lowpower();
 	platform_do_lowpower(cpu, &spurious);
 
 	/*
