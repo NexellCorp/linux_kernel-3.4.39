@@ -32,7 +32,6 @@
  */
 #define	UART_DEBUG_HZ				CFG_UART_CLKGEN_CLOCK_HZ
 #define	UART_DEBUG_BAUDRATE			CFG_UART_DEBUG_BAUDRATE
-#define	LOCK_INTERRUPT				(1)
 
 #if	  (0 == CFG_UART_DEBUG_CH)
 	#define	UART_PHYS_BASE		IO_ADDRESS(PHY_BASEADDR_UART0)
@@ -352,16 +351,15 @@ int lldebug_tstc(void)
 /*
  * Low level debug interface.
  */
+static DEFINE_SPINLOCK(dlock);
+
 void lldebugout(const char *fmt, ...)
 {
 	va_list va;
 	char buff[256];
 	u_long flags;
 
-#if	LOCK_INTERRUPT
-	/* disable irq */
-	local_irq_save(flags);
-#endif
+	spin_lock_irqsave(&dlock, flags);
 
 	lldebug_init();
 
@@ -372,10 +370,7 @@ void lldebugout(const char *fmt, ...)
 	/* direct debug out */
 	lldebug_puts(buff);
 
-#if	LOCK_INTERRUPT
-	/* enable irq */
-	local_irq_restore(flags);
-#endif
+	spin_unlock_irqrestore(&dlock, flags);
 }
 EXPORT_SYMBOL_GPL(lldebugout);
 
