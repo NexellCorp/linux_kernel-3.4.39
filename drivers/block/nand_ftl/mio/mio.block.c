@@ -404,7 +404,7 @@ static int mio_transaction_thread(void * _arg)
             spin_unlock_irq(rq->queue_lock);
             {
                 io_state->transaction.status = MIO_SCHEDULED;
-                wait_event(io_state->transaction.wq, io_state->transaction.wake.cnt);
+                wait_event_timeout(io_state->transaction.wq, io_state->transaction.wake.cnt, HZ);
               //schedule();
                 io_state->transaction.status = MIO_IDLE;
             }
