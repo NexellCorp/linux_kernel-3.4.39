@@ -218,7 +218,11 @@ static int nxe2000_set_voltage_time_sel(struct regulator_dev *rdev,
 					     unsigned int new_sel)
 {
 	struct nxe2000_regulator *ri = rdev_get_drvdata(rdev);
-	return ri->delay;
+
+	if (old_sel < new_sel)
+		return (new_sel - old_sel) * ri->delay;
+
+	return 0;
 }
 
 static int nxe2000_set_voltage_sel(struct regulator_dev *rdev,
@@ -381,7 +385,7 @@ static struct regulator_ops nxe2000_ops = {
 
 static struct nxe2000_regulator nxe2000_regulator[] = {
 	NXE2000_REG(DC1, 0x2C, 0, 0x2C, 1, 0x36, 0xFF, 0x3B, 0x16,
-			600, 3500, 12500, 0xE8, nxe2000_dcdc1_ops, 100,
+			600, 3500, 12500, 0xE8, nxe2000_dcdc1_ops, 2,
 			0x00, 0, 0x00, 0),
 
 	NXE2000_REG(DC2, 0x2E, 0, 0x2E, 1, 0x37, 0xFF, 0x3C, 0x17,
