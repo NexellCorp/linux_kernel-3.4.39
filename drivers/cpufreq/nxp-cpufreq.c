@@ -78,7 +78,7 @@ struct cpufreq_dvfs_info {
 	cpumask_var_t cpus;
 	int cpu;
 	long target_freq;
-	int  freq_index;
+	int  freq_id;
 	struct mutex lock;
 	/* limited max frequency */
 	struct cpufreq_dvfs_limits limits;
@@ -92,7 +92,7 @@ struct cpufreq_dvfs_info {
     long boot_freq;
     int  boot_voltage;
     /* check frequency duration */
-	int  pre_freq_index;
+	int  pre_freq_id;
     unsigned long check_state;
     struct cpufreq_dvfs_time *freq_times;
     /* ASV operation */
@@ -127,23 +127,25 @@ static int __init parse_tag_arm_margin(const struct tag *tag)
 }
 __tagtable(ATAG_ARM_MARGIN, parse_tag_arm_margin);
 
-static int nxp_cpufreq_freq_idx(unsigned long freqkhz)
+static int nxp_cpufreq_dvfs_frequency(struct cpufreq_dvfs_info *dvfs, unsigned long frequency)
 {
-	struct cpufreq_dvfs_info *dvfs = get_dvfs_ptr();
 	unsigned long (*freq_tables)[2] = (unsigned long(*)[2])dvfs->freq_volts;
 	int len = dvfs->table_size;
-	int index = 0;
+	int id = 0;
 
-	for (index = 0; len > index; index++) {
-		if (freqkhz == freq_tables[index][0])
+	for (id = 0; len > id; id++) {
+		if (frequency == freq_tables[id][0])
 			break;
 	}
 
-	if (index == len) {
-		index = CPUFREQ_ENTRY_INVALID;
-		printk("Fail : invalid frequency (%ld) index !!!\n", freqkhz);
+	if (id == len) {
+		printk("Fail : invalid frequency (%ld) id !!!\n", frequency);
+		return -EINVAL;
 	}
-	return index;
+
+	dvfs->freq_id = id;
+
+	return 0;
 }
 
 static enum hrtimer_restart nxp_cpufreq_restore_timer(struct hrtimer *hrtimer)
@@ -186,28 +188,28 @@ static enum hrtimer_restart nxp_cpufreq_rest_timer(struct hrtimer *hrtimer)
 	return HRTIMER_NORESTART;
 }
 
-static long nxp_cpufreq_voltage(unsigned long freqkhz, bool margin)
+static long nxp_cpufreq_voltage(unsigned long frequency, bool margin)
 {
 	struct cpufreq_dvfs_info *dvfs = get_dvfs_ptr();
  	unsigned long (*freq_volts)[2] = (unsigned long(*)[2])dvfs->freq_volts;
 	long mS = 0, uS = 0, uV = 0, wT = 0;
-	int index = dvfs->freq_index;
+	int id = dvfs->freq_id;
 
 	if (!dvfs->volt)
 		return 0;
 
 	/* when rest duration */
-	if (freqkhz != freq_volts[index][0]) {
-		printk("%s: failed invalid freq %ld and index [%d] %ld !!!\n",
-			__func__, freqkhz, index, freq_volts[index][0]);
+	if (frequency != freq_volts[id][0]) {
+		printk("%s: failed invalid freq %ld and id [%d] %ld !!!\n",
+			__func__, frequency, id, freq_volts[id][0]);
 		return -EINVAL;
 	}
 
-	uV = freq_volts[index][1];
+	uV = freq_volts[id][1];
 	wT = dvfs->supply_delay_us;
 
 	if (false == margin && dvfs->asv_ops->get_voltage) {
-		uV = dvfs->asv_ops->get_voltage(freq_volts[index][0]);
+		uV = dvfs->asv_ops->get_voltage(freq_volts[id][0]);
 		/*
 		if (dvfs->asv_ops->get_vol_margin)
 			uV = dvfs->asv_ops->get_vol_margin(uV, 13, false, false);
@@ -225,7 +227,7 @@ static long nxp_cpufreq_voltage(unsigned long freqkhz, bool margin)
 
 #ifdef CONFIG_ARM_NXP_CPUFREQ_VOLTAGE_DEBUG
 	printk(" volt (%lukhz %ld.%06ld v, delay %ld.%03ld us)\n",
-			freq_volts[index][0], uV/1000000, uV%1000000, mS, uS);
+			freq_volts[id][0], uV/1000000, uV%1000000, mS, uS);
 #endif
 	return uV;
 }
@@ -235,7 +237,7 @@ static unsigned long nxp_cpufreq_update(struct cpufreq_dvfs_info *dvfs,
 {
 	struct clk *clk = dvfs->clk;
 	unsigned long rate = 0;
-	int index = dvfs->freq_index;
+	int id = dvfs->freq_id;
 
 	if (!test_bit(FREQ_STATE_RESUME, &dvfs->resume_state))
 		return freqs->old;
@@ -250,12 +252,12 @@ static unsigned long nxp_cpufreq_update(struct cpufreq_dvfs_info *dvfs,
 	rate = clk_set_rate(clk, freqs->new*1000);
 
 	if (test_bit(FREQ_STATE_TIME_RUN, &dvfs->check_state)) {
-		int prev = dvfs->pre_freq_index;
+		int prev = dvfs->pre_freq_id;
 		long ms = ktime_to_ms(ktime_get());
 
 		dvfs->freq_times[prev].duration += (ms - dvfs->freq_times[prev].start);
-		dvfs->freq_times[index].start = ms;
-		dvfs->pre_freq_index = index;
+		dvfs->freq_times[id].start = ms;
+		dvfs->pre_freq_id = id;
 	}
 
 	for_each_cpu(freqs->cpu, dvfs->cpus)
@@ -289,8 +291,10 @@ static int nxp_cpufreq_pm_notify(struct notifier_block *this,
 		}
 
 		freqs.old = clk_get_rate(clk)/1000;
+
 		dvfs->target_freq = freqs.new;
-		dvfs->freq_index = nxp_cpufreq_freq_idx(freqs.new);
+
+		nxp_cpufreq_dvfs_frequency(dvfs, freqs.new);
 		nxp_cpufreq_update(dvfs, &freqs, false);
 
     	clear_bit(FREQ_STATE_RESUME, &dvfs->resume_state);
@@ -303,8 +307,8 @@ static int nxp_cpufreq_pm_notify(struct notifier_block *this,
 
 		freqs.new = dvfs->target_freq;
 		freqs.old = clk_get_rate(clk)/1000;
-		dvfs->freq_index = nxp_cpufreq_freq_idx(freqs.new);
 
+		nxp_cpufreq_dvfs_frequency(dvfs, freqs.new);
 		nxp_cpufreq_update(dvfs, &freqs, true);
 
 		mutex_unlock(&dvfs->lock);
@@ -329,8 +333,8 @@ static int nxp_cpufreq_proc_update(void *unused)
 			freqs.new = dvfs->limits.new_freq;
 			freqs.old = clk_get_rate(clk)/1000;;
 			freqs.cpu = dvfs->cpu;
-			dvfs->freq_index = nxp_cpufreq_freq_idx(freqs.new);
 
+			nxp_cpufreq_dvfs_frequency(dvfs, freqs.new);
 			nxp_cpufreq_update(dvfs, &freqs, true);
 
 			set_current_state(TASK_INTERRUPTIBLE);
@@ -385,16 +389,16 @@ static inline int nxp_cpufreq_setup(struct cpufreq_dvfs_info *dvfs)
 static ssize_t show_speed_duration(struct cpufreq_policy *policy, char *buf)
 {
 	struct cpufreq_dvfs_info *dvfs = get_dvfs_ptr();
-	int index = dvfs->freq_index;
+	int id = dvfs->freq_id;
 	ssize_t count = 0;
 	int i = 0;
 
 	if (test_bit(FREQ_STATE_TIME_RUN, &dvfs->check_state)) {
 		long ms = ktime_to_ms(ktime_get());
-		if (dvfs->freq_times[index].start)
-			dvfs->freq_times[index].duration += (ms - dvfs->freq_times[index].start);
-		dvfs->freq_times[index].start = ms;
-		dvfs->pre_freq_index = index;
+		if (dvfs->freq_times[id].start)
+			dvfs->freq_times[id].duration += (ms - dvfs->freq_times[id].start);
+		dvfs->freq_times[id].start = ms;
+		dvfs->pre_freq_id = id;
 	}
 
 	for (; dvfs->table_size > i; i++)
@@ -408,15 +412,15 @@ static ssize_t store_speed_duration(struct cpufreq_policy *policy,
 			const char *buf, size_t count)
 {
 	struct cpufreq_dvfs_info *dvfs = get_dvfs_ptr();
-	int index = dvfs->freq_index;
+	int id = dvfs->freq_id;
 	long ms = ktime_to_ms(ktime_get());
 	const char *s = buf;
 
 	mutex_lock(&dvfs->lock);
 
 	if (0 == strncmp(s, "run", strlen("run"))) {
-		dvfs->pre_freq_index = index;
-		dvfs->freq_times[index].start = ms;
+		dvfs->pre_freq_id = id;
+		dvfs->freq_times[id].start = ms;
 		set_bit(FREQ_STATE_TIME_RUN, &dvfs->check_state);
 	}
 	else if (0 == strncmp(s, "stop", strlen("stop"))) {
@@ -425,8 +429,8 @@ static ssize_t store_speed_duration(struct cpufreq_policy *policy,
 	else if (0 == strncmp(s, "clear", strlen("clear"))) {
 		memset(dvfs->freq_times, 0, sizeof(__freq_times));
 		if (test_bit(FREQ_STATE_TIME_RUN, &dvfs->check_state)) {
-			dvfs->freq_times[index].start = ms;
-			dvfs->pre_freq_index = index;
+			dvfs->freq_times[id].start = ms;
+			dvfs->pre_freq_id = id;
 		}
 	} else {
 		count = -1;
@@ -499,7 +503,7 @@ static ssize_t store_cur_voltages(struct cpufreq_policy *policy,
 		dvfs->asv_ops->modify_vol_table(dvfs_tables, dvfs->table_size,
 							val, down, percent);
 
-	dvfs->freq_index = nxp_cpufreq_freq_idx(dvfs->target_freq);
+	nxp_cpufreq_dvfs_frequency(dvfs, dvfs->target_freq);
 	nxp_cpufreq_voltage(dvfs->target_freq, true);
 
 	mutex_unlock(&dvfs->lock);
@@ -639,13 +643,13 @@ static int nxp_cpufreq_target(struct cpufreq_policy *policy,
 
 	dvfs->cpu = policy->cpu;
 	dvfs->target_freq = freqs.new;
-	dvfs->freq_index = table->index;
 
 	/* rest period */
 	if (ktime_to_ms(dvfs->limits.rest_ktime) && freqs.new > dvfs->limits.rest_freq) {
 		ts = (ktime_to_ms(ktime_get()) - ktime_to_ms(dvfs->limits.rest_ktime));
 		if (dvfs->limits.rest_retent > ts) {
-			freqs.new = dvfs->limits.rest_freq;	/* reset rest freq */
+			/* set with rest freq */
+			freqs.new = dvfs->limits.rest_freq;
 			pr_debug("rest %4ld:%4ldms (%u khz)\n", dvfs->limits.rest_retent, ts, freqs.new);
 			goto freq_up;	/* retry */
 		}
@@ -666,8 +670,9 @@ static int nxp_cpufreq_target(struct cpufreq_policy *policy,
 	}
 
 freq_up:
-
 	pr_debug(" set rate %ukhz\n", freqs.new);
+
+	nxp_cpufreq_dvfs_frequency(dvfs, freqs.new);
 	rate = nxp_cpufreq_update(dvfs, &freqs, true);
 
 	mutex_unlock(&dvfs->lock);
@@ -785,8 +790,7 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 	dvfs->supply_delay_us = plat->supply_delay_us;
 	dvfs->boot_freq = nxp_cpufreq_get_speed(cpu);
 	dvfs->target_freq = dvfs->boot_freq;
-	dvfs->freq_index = nxp_cpufreq_freq_idx(dvfs->boot_freq);
-	dvfs->pre_freq_index = -1;
+	dvfs->pre_freq_id = -1;
 	dvfs->check_state = 0;
 	dvfs->freq_times = __freq_times;
 	dvfs->limits.max_freq = plat->max_cpufreq;
@@ -795,6 +799,8 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 	dvfs->limits.rest_retent = plat->rest_retention;
 	dvfs->limits.rest_ktime = ktime_set(0, 0);
 	dvfs->limits.run_monitor = 0;
+
+	nxp_cpufreq_dvfs_frequency(dvfs, dvfs->boot_freq);
 
 	/*
      * make frequency table with platform data
