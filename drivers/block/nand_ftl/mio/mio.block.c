@@ -386,7 +386,11 @@ static int mio_transaction_thread(void * _arg)
                 io_state->transaction.status = MIO_BACKGROUND;
                 spin_unlock_irq(rq->queue_lock);
                 {
+                    mutex_lock(miosys_dev.ioctl_mutex);
+
                     mio_background(io_state);
+
+                    mutex_unlock(miosys_dev.ioctl_mutex);
                 }
                 spin_lock_irq(rq->queue_lock);
                 io_state->transaction.status = MIO_IDLE;
@@ -417,8 +421,13 @@ static int mio_transaction_thread(void * _arg)
         io_state->transaction.status = MIO_REQ_BUSY;
         spin_unlock_irq(rq->queue_lock);
         {
+            mutex_lock(miosys_dev.ioctl_mutex);
+
             media_super();
             res = mio_transaction(req, io_state);
+
+            mutex_unlock(miosys_dev.ioctl_mutex);
+
             if (io_state->transaction.wake.cnt) { io_state->transaction.wake.cnt -= 1; }
 
             if (Exchange.sys.fn.LedReqIdle) { Exchange.sys.fn.LedReqIdle(); }
@@ -494,7 +503,6 @@ static int __init mio_init(void)
     printk(KERN_INFO "MIO.BLOCK:  Init Begin\n");
     printk(KERN_INFO "MIO.BLOCK: --------------------------------------------------------------------------\n");
 
-    mio_dev.miosys = &miosys;
     mio_dev.mutex = &mio_mutex;
     mio_dev.io_state = &io_state;
 
@@ -710,7 +718,7 @@ static int __init mio_init(void)
     /**************************************************************************
      * Register : /sys/class/misc/miosys
      **************************************************************************/
-    if (misc_register(mio_dev.miosys))
+    if (misc_register(miosys_dev.miscdev))
     {
         printk(KERN_ERR "MIO.BLOCK: misc_register() Fail\n");
         return -ENODEV;
@@ -740,7 +748,7 @@ static void __exit mio_exit(void)
     /**************************************************************************
      * Un-Register : /sys/class/misc/miosys
      **************************************************************************/
-    misc_deregister(mio_dev.miosys);
+    misc_deregister(miosys_dev.miscdev);
 
     /**************************************************************************
      * Un-Register Block Device Driver
@@ -824,6 +832,7 @@ static struct platform_driver nand_driver =
 static int __init nand_init(void)
 {
     platform_driver_register(&nand_driver);
+    miosys_init();
     mio_init();
 
     return 0;

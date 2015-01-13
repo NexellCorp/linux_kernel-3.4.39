@@ -185,6 +185,5 @@ struct mio_device
     unsigned int capacity;
     struct gendisk * disk;
     struct mio_state * io_state;
-    struct miscdevice * miosys;
 };
 

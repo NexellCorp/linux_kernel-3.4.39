@@ -15,6 +15,7 @@
 #include "mio.media.h"
 
 #include "mio.definition.h"
+#include "media/nfc/phy/nfc.phy.lowapi.h"
 
 #if defined (__BUILD_MODE_X86_LINUX_DEVICE_DRIVER__)
 #define __MEDIA_ON_RAM__
@@ -112,6 +113,7 @@ int media_open(void)
   //Exchange.debug.nfc.phy.info_readretry = 1;
   //Exchange.debug.nfc.phy.info_readretry_table = 1;
   //Exchange.debug.nfc.phy.info_readretry_otp_table = 1;
+  //Exchange.debug.nfc.phy.info_lowapi = 1;
     Exchange.debug.nfc.phy.warn_prohibited_block_access = 1;
   //Exchange.debug.nfc.phy.warn_ecc_uncorrectable = 1;
   //Exchange.debug.nfc.phy.warn_ecc_uncorrectable_show = 1;
@@ -200,6 +202,8 @@ int media_open(void)
     }
 
     capacity = *Exchange.ftl.Capacity;
+
+    NFC_PHY_LOWAPI_init();
 
     printk(KERN_INFO "MIO.MEDIA: Open End\n");
 
