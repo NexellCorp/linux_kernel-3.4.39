@@ -104,7 +104,7 @@ static int mio_background_thread(void * _arg)
         Exchange.sys.fnSpor();
 
         io_state->background.status = MIO_BG_SLEEP;
-        schedule_timeout(HZ/10); // Wake-Up Every 100 ms
+        wait_event_timeout(io_state->background.wake.q, io_state->background.wake.cnt, HZ/10); // Wake-Up Every 100 ms
         io_state->background.status = MIO_BG_IDLE;
 
         if (io_state->power.suspending)
@@ -404,7 +404,7 @@ static int mio_transaction_thread(void * _arg)
             spin_unlock_irq(rq->queue_lock);
             {
                 io_state->transaction.status = MIO_SCHEDULED;
-                wait_event_timeout(io_state->transaction.wq, io_state->transaction.wake.cnt, HZ);
+                wait_event_timeout(io_state->transaction.wake.q, io_state->transaction.wake.cnt, HZ);
               //schedule();
                 io_state->transaction.status = MIO_IDLE;
             }
@@ -550,6 +550,9 @@ static int __init mio_init(void)
 
         mio_dev.io_state->background.status = MIO_BG_IDLE;
 
+        init_waitqueue_head(&mio_dev.io_state->background.wake.q);
+        mio_dev.io_state->background.wake.cnt = 0;
+
         mio_dev.io_state->background.t.flush = MIO_TIME_DIFF_MAX(get_jiffies_64());
         mio_dev.io_state->background.t.standby = MIO_TIME_DIFF_MAX(get_jiffies_64());
         mio_dev.io_state->background.t.bgjobs = MIO_TIME_DIFF_MAX(get_jiffies_64());
@@ -565,9 +568,11 @@ static int __init mio_init(void)
         mio_dev.io_state->transaction.thread = NULL;
         mio_dev.io_state->transaction.rq = NULL;
         spin_lock_init(&mio_dev.io_state->transaction.queue_lock);
-        init_waitqueue_head(&mio_dev.io_state->transaction.wq);
 
         mio_dev.io_state->transaction.status = MIO_IDLE;
+
+        init_waitqueue_head(&mio_dev.io_state->transaction.wake.q);
+        mio_dev.io_state->transaction.wake.cnt = 0;
 
         mio_dev.io_state->transaction.trigger.t.ioed = MIO_TIME_DIFF_MAX(get_jiffies_64());
         mio_dev.io_state->transaction.trigger.e.written_flush = 0;

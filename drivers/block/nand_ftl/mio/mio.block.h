@@ -95,6 +95,13 @@ struct mio_state
 #define MIO_BG_SLEEP          (2)
         unsigned short status;
 
+        struct
+        {
+            wait_queue_head_t q;
+            int cnt;
+
+        } wake;
+
         // time
         struct
         {
@@ -123,7 +130,6 @@ struct mio_state
         struct task_struct * thread;
         struct request_queue * rq;
         spinlock_t queue_lock;
-        wait_queue_head_t wq;
 
 #define MIO_IDLE        (0)
 #define MIO_SCHEDULED   (1)
@@ -134,6 +140,7 @@ struct mio_state
 
         struct
         {
+            wait_queue_head_t q;
             int cnt;
 
         } wake;
