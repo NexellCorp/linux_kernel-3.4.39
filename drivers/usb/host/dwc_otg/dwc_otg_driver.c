@@ -351,8 +351,8 @@ static void dwc_otg_driver_suspend_regs(dwc_otg_core_if_t *core_if, int suspend)
 		regs->adpctl = DWC_READ_REG32(&global_regs->adpctl);
 	//	regs->reserved39[39] = DWC_READ_REG32(&global_regs->reserved39[39]);
 		regs->hptxfsiz = DWC_READ_REG32(&global_regs->hptxfsiz);
-		for (i = 0; 16 > i; i++)
-			regs->dtxfsiz[i] = DWC_READ_REG32(&global_regs->dtxfsiz[i]);	// 0~15
+		for (i = 0; ARRAY_SIZE(regs->dtxfsiz) > i; i++)
+			regs->dtxfsiz[i] = DWC_READ_REG32(&global_regs->dtxfsiz[i]);	// 0~14
 	} else {
 		DWC_WRITE_REG32(&global_regs->gotgctl, regs->gotgctl);
 		DWC_WRITE_REG32(&global_regs->gotgint, regs->gotgint);
@@ -381,8 +381,8 @@ static void dwc_otg_driver_suspend_regs(dwc_otg_core_if_t *core_if, int suspend)
 		DWC_WRITE_REG32(&global_regs->adpctl, regs->adpctl);
 	//	DWC_WRITE_REG32(&global_regs->reserved39[39], regs->reserved39[39]);
 		DWC_WRITE_REG32(&global_regs->hptxfsiz, regs->hptxfsiz);
-		for (i = 0; 16 > i; i++)
-			DWC_WRITE_REG32(&global_regs->dtxfsiz[i], regs->dtxfsiz[i]);	// 0~15
+		for (i = 0; ARRAY_SIZE(regs->dtxfsiz) > i; i++)
+			DWC_WRITE_REG32(&global_regs->dtxfsiz[i], regs->dtxfsiz[i]);	// 0~14
 	}
 }
 
@@ -660,7 +660,7 @@ static int set_parameters(dwc_otg_core_if_t * core_if)
 							  dwc_otg_module_params.
 							  en_multiple_tx_fifo);
 	}
-	for (i = 0; i < 15; i++) {
+	for (i = 0; i < ARRAY_SIZE(dwc_otg_module_params.dev_perio_tx_fifo_size); i++) {
 		if (dwc_otg_module_params.dev_perio_tx_fifo_size[i] != -1) {
 			retval +=
 			    dwc_otg_set_param_dev_perio_tx_fifo_size(core_if,
@@ -670,7 +670,7 @@ static int set_parameters(dwc_otg_core_if_t * core_if)
 		}
 	}
 
-	for (i = 0; i < 15; i++) {
+	for (i = 0; i < ARRAY_SIZE(dwc_otg_module_params.dev_tx_fifo_size); i++) {
 		if (dwc_otg_module_params.dev_tx_fifo_size[i] != -1) {
 			retval += dwc_otg_set_param_dev_tx_fifo_size(core_if,
 								     dwc_otg_module_params.
