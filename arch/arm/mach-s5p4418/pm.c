@@ -42,6 +42,8 @@ static unsigned int *sramptr;
 static unsigned int sram_length = SRAM_SAVE_SIZE;
 extern void nxp_cpu_id_string(u32 *string);
 
+#define	FLUSH_CACHE()	do { flush_cache_all();outer_flush_all(); } while(0);
+
 void (*nxp_board_suspend_mark)(struct suspend_mark_up *mark, int suspend) = NULL;
 void (*do_suspend)(ulong, ulong) = NULL;
 EXPORT_SYMBOL_GPL(do_suspend);
@@ -256,7 +258,7 @@ static void suspend_cores(suspend_state_t stat)
 	unsigned int core = 0, clamp = 0;
 	unsigned int reset = 0;
 	int cpu = 0, num = nr_cpu_ids;
-	int cur = smp_processor_id();
+	int cur = raw_smp_processor_id();
 
 	for (cpu = 0; num > cpu; cpu++) {
 		if (cpu == cur) {
@@ -565,9 +567,7 @@ static int __powerdown(unsigned long arg)
 	lldebugout("Go to STOP...\n");
 #endif
 
-	flush_cache_all();
-	outer_flush_all();
-
+	FLUSH_CACHE();
 	if (0 > ret)
 		return ret;	/* wake up */
 
@@ -584,6 +584,7 @@ static int __powerdown(unsigned long arg)
 
 	lldebugout("suspend machine\n");
 	power_down = (void (*)(ulong, ulong))((ulong)do_suspend + 0x220);
+	FLUSH_CACHE();
 	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
 
 	while (1) { ; }

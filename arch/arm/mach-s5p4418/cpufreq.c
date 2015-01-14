@@ -46,18 +46,18 @@ static struct pll_pms pll0_1_pms [] =
     [ 1] = { .rate = 1500000, .P = 3, .M =  375, .S = 1, },
     [ 2] = { .rate = 1400000, .P = 3, .M =  350, .S = 1, },
     [ 3] = { .rate = 1300000, .P = 3, .M =  325, .S = 1, },
-    [ 4] = { .rate = 1200000, .P = 6, .M =  600, .S = 1, },
-    [ 5] = { .rate = 1100000, .P = 6, .M =  550, .S = 1, },
-    [ 6] = { .rate = 1000000, .P = 6, .M =  500, .S = 1, },
-    [ 7] = { .rate =  900000, .P = 6, .M =  450, .S = 1, },
-    [ 8] = { .rate =  800000, .P = 6, .M =  400, .S = 1, },
-    [ 9] = { .rate =  700000, .P = 6, .M =  350, .S = 1, },
-    [10] = { .rate =  600000, .P = 6, .M =  600, .S = 2, },
-    [11] = { .rate =  500000, .P = 6, .M =  500, .S = 2, },
-    [12] = { .rate =  400000, .P = 6, .M =  400, .S = 2, },
-    [13] = { .rate =  300000, .P = 6, .M =  600, .S = 3, },
-    [14] = { .rate =  200000, .P = 6, .M =  400, .S = 3, },
-    [15] = { .rate =  100000, .P = 6, .M =  400, .S = 4, },
+    [ 4] = { .rate = 1200000, .P = 3, .M =  300, .S = 1, },
+    [ 5] = { .rate = 1100000, .P = 3, .M =  275, .S = 1, },
+    [ 6] = { .rate = 1000000, .P = 3, .M =  250, .S = 1, },
+    [ 7] = { .rate =  900000, .P = 3, .M =  225, .S = 1, },
+    [ 8] = { .rate =  800000, .P = 3, .M =  200, .S = 1, },
+    [ 9] = { .rate =  700000, .P = 3, .M =  175, .S = 1, },
+    [10] = { .rate =  600000, .P = 2, .M =  200, .S = 2, },
+    [11] = { .rate =  500000, .P = 3, .M =  250, .S = 2, },
+    [12] = { .rate =  400000, .P = 3, .M =  200, .S = 2, },
+    [13] = { .rate =  300000, .P = 2, .M =  200, .S = 3, },
+    [14] = { .rate =  200000, .P = 3, .M =  200, .S = 3, },
+    [15] = { .rate =  100000, .P = 3, .M =  200, .S = 4, },
 };
 
 // PLL 2,3
@@ -101,8 +101,7 @@ static void core_pll_change(int PLL, int P, int M, int S)
 	// 1. change PLL0 clock to Oscillator Clock
 	clkpwr->PLLSETREG[PLL] &= ~(1 << 28); 	// pll bypass on, xtal clock use
 	clkpwr->CLKMODEREG0 = (1 << PLL); 		// update pll
-
-	while(clkpwr->CLKMODEREG0 & (1<<31)); 		// wait for change update pll
+	while(clkpwr->CLKMODEREG0 & (1<<31)); 	// wait for change update pll
 
 	// 2. PLL Power Down & PMS value setting
 	clkpwr->PLLSETREG[PLL] =((1UL << 29)			| // power down
@@ -110,7 +109,6 @@ static void core_pll_change(int PLL, int P, int M, int S)
 							 (S   << PLL_S_BITPOS) 	|
 							 (M   << PLL_M_BITPOS) 	|
 							 (P   << PLL_P_BITPOS));
-
 	clkpwr->CLKMODEREG0 = (1 << PLL); 				// update pll
 
 	while(clkpwr->CLKMODEREG0 & (1<<31)); 			// wait for change update pll
@@ -119,18 +117,16 @@ static void core_pll_change(int PLL, int P, int M, int S)
 
 	// 3. Update PLL & wait PLL locking
 	clkpwr->PLLSETREG[PLL] &= ~((U32)(1UL<<29)); // pll power up
-
 	clkpwr->CLKMODEREG0 = (1 << PLL); 			// update pll
-
 	while(clkpwr->CLKMODEREG0 & (1<<31)); 		// wait for change update pll
 
 	udelay(10);	// 1000us
 
 	// 4. Change to PLL clock
 	clkpwr->PLLSETREG[PLL] |= (1<<28); 			// pll bypass off, pll clock use
-	clkpwr->CLKMODEREG0 = (1<<PLL); 				// update pll
+	clkpwr->CLKMODEREG0 = (1<<PLL); 			// update pll
 
-	while(clkpwr->CLKMODEREG0 & (1<<31)); 				// wait for change update pll
+	while(clkpwr->CLKMODEREG0 & (1<<31)); 		// wait for change update pll
 }
 
 static DEFINE_SPINLOCK(_pll_lock);
@@ -200,24 +196,24 @@ static unsigned long cpu_pll_round(int pllno, unsigned long rate, int *p, int *m
 	return PMS_RATE(pms, l);
 }
 
+static DEFINE_SPINLOCK(lock);
+
 unsigned long nxp_cpu_pll_change_frequency(int pllno, unsigned long rate)
 {
 	int p = 0, m = 0, s = 0;
 	unsigned long freq;
+	u_long flags;
 
 #ifdef CONFIG_NXP_DFS_BCLK
     mdelay(1);
 #endif
 
+	spin_lock_irqsave(&lock, flags);
+
 	freq = cpu_pll_round(pllno, rate, &p, &m, &s);
-
-    preempt_disable();
-    local_irq_disable();
-
 	core_pll_change(pllno, p, m, s);
 
-    preempt_enable();
-    local_irq_enable();
+	spin_unlock_irqrestore(&lock, flags);
 
 #ifdef CONFIG_NXP_DFS_BCLK
     mdelay(1);
