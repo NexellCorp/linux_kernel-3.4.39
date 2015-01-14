@@ -436,9 +436,12 @@ static int disp_syncgen_waitsync(int module, int layer, int waitvsync)
 		 */
 		ret = wait_event_interruptible_timeout(info->wait_queue,
 					info->condition, info->wait_time);
-		if (0 == info->condition)
-			printk(KERN_ERR "Fail, wait vsync %d, time:%s, condition:%d\n",
-				module, !ret?"out":"remain", info->condition);
+        if (0 == info->condition) {
+			printk(KERN_ERR "Fail, wait vsync %d, time:%s, condition:%d, wait_time:%d\n",
+				module, !ret?"out":"remain", info->condition, info->wait_time);
+            // psw0523 test for miware
+            info->wait_time = HZ/60 + 1;
+        }
 	}
 
 	return ret;	/* 0: success, -1: fail */
@@ -498,6 +501,24 @@ static irqreturn_t	disp_syncgen_irqhandler(int irq, void *desc)
 	if (!version)
 		NX_MLC_SetTopDirtyFlag(module);
 
+#if (1)
+    {
+#if 0
+		static long ts[2] = {0, };
+		long new = ktime_to_ms(ktime_get());
+		/* if (ts) printk("[%dms]\n", new-ts); */
+        if ((new - ts[module]) > 18) {
+            printk("[DPC %d]INTR OVERRUN %ld ms, fps %ld\n", module, new - ts[module], info->fps);
+        }
+		ts[module] = new;
+#else
+        if (info->fps >= 17000) {
+            printk("[DPC %d]INTR OVERRUN fps %ld\n", module, info->fps);
+        }
+#endif
+    }
+#endif
+
     spin_lock(&info->lock_callback);
     if (!list_empty(&info->callback_list)) {
         struct disp_irq_callback *callback;
@@ -511,7 +532,8 @@ static irqreturn_t	disp_syncgen_irqhandler(int irq, void *desc)
 		static long ts[2] = {0, };
 		long new = ktime_to_ms(ktime_get());
 		/* if (ts) printk("[%dms]\n", new-ts); */
-        if ((new - ts[module]) > 18) {
+        /*if ((new - ts[module]) > 18) {*/
+        if ((new - ts[module]) > 17) {
             printk("[DPC %d]INTR OVERRUN %ld ms\n", module, new - ts[module]);
         }
 		ts[module] = new;

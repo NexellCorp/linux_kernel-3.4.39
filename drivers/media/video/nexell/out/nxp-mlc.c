@@ -176,12 +176,24 @@ static void _hw_set_rgb_addr(struct nxp_mlc *me, struct nxp_video_buffer *buf)
             false); /* waitsync */
 }
 
+// for debugging
+static u64 s_old_jiffies = 0;
+#define JIFFIES_LIMIT_THRESHOLD 34
 static void _hw_set_video_addr(struct nxp_mlc *me, struct nxp_video_buffer *buf)
 {
     pr_debug("%s: buf(0x%x)\n", __func__, buf->dma_addr[0]);
     /* printk("%s: bufs 0x%x, 0x%x, 0x%x, stride %d, %d, %d\n", */
     /*         __func__, buf->dma_addr[0], buf->dma_addr[1], buf->dma_addr[2], */
     /*         buf->stride[0], buf->stride[1], buf->stride[2]); */
+
+#if 1
+    u64 cur_jiffies = get_jiffies_64();
+    if (cur_jiffies - s_old_jiffies > JIFFIES_LIMIT_THRESHOLD) {
+         printk("Render Diff: %llu\n", cur_jiffies - s_old_jiffies);
+    }
+    s_old_jiffies = cur_jiffies;
+#endif
+
     nxp_soc_disp_video_set_address(me->id, /* module */
             buf->dma_addr[0], buf->stride[0], /* lu_a, lu_s */
             buf->dma_addr[1], buf->stride[1], /* cb_a, cb_s */
