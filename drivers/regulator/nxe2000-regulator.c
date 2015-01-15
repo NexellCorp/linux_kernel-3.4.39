@@ -220,7 +220,7 @@ static int nxe2000_set_voltage_time_sel(struct regulator_dev *rdev,
 	struct nxe2000_regulator *ri = rdev_get_drvdata(rdev);
 
 	if (old_sel < new_sel)
-		return (new_sel - old_sel) * ri->delay;
+		return ((new_sel - old_sel) * ri->delay) + 50;
 
 	return 0;
 }
