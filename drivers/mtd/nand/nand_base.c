@@ -1530,7 +1530,7 @@ static int nand_setup_read_retry(struct mtd_info *mtd, int retry_mode)
 {
 	struct nand_chip *chip = mtd->priv;
 
-	printk("setting READ RETRY mode %d\n", retry_mode); /* FIXME: printk -> pr_debug */
+	pr_debug("setting READ RETRY mode %d\n", retry_mode);
 
 	if (retry_mode >= chip->read_retries)
 		return -EINVAL;
@@ -3772,8 +3772,7 @@ int nand_scan_tail(struct mtd_info *mtd)
 		     ecc->read_page == nand_read_page_hwecc ||
 		     !ecc->write_page ||
 		     ecc->write_page == nand_write_page_hwecc)) {
-			pr_warn("No ECC functions supplied; "
-				   "hardware ECC not possible\n");
+			pr_warn("No ECC functions supplied; hardware ECC not possible\n");
 			BUG();
 		}
 		/* Use standard syndrome read/write page function? */
@@ -3797,9 +3796,8 @@ int nand_scan_tail(struct mtd_info *mtd)
 			}
 			break;
 		}
-		pr_warn("%d byte HW ECC not possible on "
-			   "%d byte page size, fallback to SW ECC\n",
-			   ecc->size, mtd->writesize);
+		pr_warn("%d byte HW ECC not possible on %d byte page size, fallback to SW ECC\n",
+			ecc->size, mtd->writesize);
 		ecc->mode = NAND_ECC_SOFT;
 
 	case NAND_ECC_SOFT:
@@ -3840,7 +3838,7 @@ int nand_scan_tail(struct mtd_info *mtd)
 		 */
 		if (!ecc->size && (mtd->oobsize >= 64)) {
 			ecc->size = 512;
-			ecc->bytes = 7;
+			ecc->bytes = DIV_ROUND_UP(13 * ecc->strength, 8);
 		}
 		ecc->priv = nand_bch_init(mtd, ecc->size, ecc->bytes,
 					       &ecc->layout);
@@ -3852,8 +3850,7 @@ int nand_scan_tail(struct mtd_info *mtd)
 		break;
 
 	case NAND_ECC_NONE:
-		pr_warn("NAND_ECC_NONE selected by board driver. "
-			   "This is not recommended!\n");
+		pr_warn("NAND_ECC_NONE selected by board driver. This is not recommended!\n");
 		ecc->read_page = nand_read_page_raw;
 		ecc->write_page = nand_write_page_raw;
 		ecc->read_oob = nand_read_oob_std;
