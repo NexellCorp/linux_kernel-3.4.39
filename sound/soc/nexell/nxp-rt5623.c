@@ -40,6 +40,7 @@
 //static struct snd_soc_jack_gpio jack_gpio;
 static struct snd_soc_codec *alc5623 = NULL;
 static int codec_bias_level = 0;
+static int (*cpu_resume_fn)(struct snd_soc_dai *dai) = NULL;
 
 #if defined(CONFIG_PLAT_S5P4418_NBOX)
 /***************************************/
@@ -209,10 +210,22 @@ static int alc5623_suspend_pre(struct snd_soc_card *card)
 
 static int alc5623_resume_pre(struct snd_soc_card *card)
 {
+    struct snd_soc_dai *cpu_dai = card->rtd->cpu_dai;
 	struct snd_soc_codec *codec = alc5623;
+
+	int ret = 0;
+
+	if (cpu_dai->driver->resume && ! cpu_resume_fn) {
+		cpu_resume_fn = cpu_dai->driver->resume;
+		cpu_dai->driver->resume = NULL;
+	}
+
+	if (cpu_resume_fn)
+		ret = cpu_resume_fn(cpu_dai);
+
 	PM_DBGOUT("%s BAIAS=%d\n", __func__, codec->dapm.bias_level);
 	codec_bias_level = codec->dapm.bias_level;
-	return 0;
+	return ret;
 }
 
 static int alc5623_resume_post(struct snd_soc_card *card)

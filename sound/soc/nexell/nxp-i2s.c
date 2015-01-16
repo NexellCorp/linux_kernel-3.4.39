@@ -697,6 +697,9 @@ static int nxp_i2s_dai_resume(struct snd_soc_dai *dai)
 
 	i2s_reset(par);
 
+	if (par->pre_supply_mclk && par->ext_is_en)
+	    par->set_ext_mclk(CTRUE);
+
 	if (par->master_mode && par->in_clkgen) {
 		clk_set_rate(par->clk, par->clk_rate);
 		if(SNDDEV_STATUS_POWER & par->status)
