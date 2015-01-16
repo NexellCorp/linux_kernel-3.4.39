@@ -105,7 +105,6 @@ struct mio_state
         // time
         struct
         {
-            u64 flush;
             u64 standby;
             u64 bgjobs;
             u64 save_smart;
@@ -115,7 +114,6 @@ struct mio_state
         // event
         struct
         {
-            unsigned int flush;
             unsigned int standby;
             unsigned int bgjobs;
             unsigned int save_smart;
@@ -155,11 +153,8 @@ struct mio_state
 
             struct
             {
-                unsigned int written_flush;
                 unsigned int written_standby;
                 unsigned int written_bgjobs;
-
-                unsigned int force_flush;
 
             } e;
 

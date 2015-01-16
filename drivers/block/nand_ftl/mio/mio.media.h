@@ -71,6 +71,7 @@ MIO_MEDIA_EXT void media_write(sector_t _lba, unsigned int _seccnt, u8 * _buffer
 MIO_MEDIA_EXT void media_read(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_state);
 MIO_MEDIA_EXT int media_super(void);
 MIO_MEDIA_EXT void media_flush(void * _io_state);
+MIO_MEDIA_EXT void media_trim(void * _io_state, int _lba, int _seccnt);
 MIO_MEDIA_EXT void media_background(void * _io_state);
 MIO_MEDIA_EXT void media_standby(void * _io_state);
 MIO_MEDIA_EXT void media_powerdown(void * _io_state);

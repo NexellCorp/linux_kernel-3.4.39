@@ -28,6 +28,14 @@
 #include <mach/soc.h>
 
 /******************************************************************************
+ * Optimize Option
+ ******************************************************************************/
+#if defined (__COMPILE_MODE_BEST_DEBUGGING__)
+#pragma GCC push_options
+#pragma GCC optimize("O0")
+#endif
+
+/******************************************************************************
  *
  *
  *
@@ -120,22 +128,14 @@ static int mio_background_thread(void * _arg)
             // Save Smart
             if ((mio_dev.capacity && (MioSmartInfo.volatile_writesectors > (mio_dev.capacity >> 6))) || (cur_jiffies > io_state->background.t.save_smart))
             {
+                // Clear Trigger
                 MioSmartInfo.volatile_writesectors = 0;
+
+                // Set Background Jobs
                 io_state->background.t.save_smart = cur_jiffies + MIO_TIME_SEC(1*60);
                 io_state->background.e.save_smart = 1;
             }
 
-            // Flush Job
-            if (io_state->transaction.trigger.e.written_flush && (cur_jiffies > io_state->background.t.flush))
-            {
-                // Clear Trigger
-                io_state->transaction.trigger.e.written_flush = 0;
-            
-                // Set Background Jobs
-                io_state->background.t.flush = MIO_TIME_DIFF_MAX(cur_jiffies);
-                io_state->background.e.flush = 1;
-            }
-   
             // Stanby Job
             if (io_state->transaction.trigger.e.written_standby && (cur_jiffies > io_state->background.t.standby))
             {
@@ -159,7 +159,7 @@ static int mio_background_thread(void * _arg)
             }
    
             // Wake-Up Transaction Thread
-            if (io_state->background.e.save_smart || io_state->background.e.flush || io_state->background.e.standby || io_state->background.e.bgjobs)
+            if (io_state->background.e.save_smart || io_state->background.e.standby || io_state->background.e.bgjobs)
             {
                 if (!io_state->power.suspending)
                 {
@@ -186,13 +186,11 @@ void mio_background(struct mio_state * _io_state)
      **************************************************************************/
     if (io_state->background.e.save_smart)
     {
-        io_state->background.e.save_smart = 0;
-        
         miosmart_update_eccstatus();
         miosmart_save();
     
-        // Over-Head Spread
-        io_state->background.e.flush = 0;
+        // Clear Event
+        io_state->background.e.save_smart = 0;
         io_state->background.e.standby = 0;
         io_state->background.e.bgjobs = 0;
     }
@@ -200,30 +198,23 @@ void mio_background(struct mio_state * _io_state)
     /**************************************************************************
      * MIO Background : Background Operations (Migration, Garbage Collection, ...)
      **************************************************************************/
-    if (io_state->background.e.flush)
-    {
-        io_state->background.e.flush = 0;
-        media_flush(io_state);
-        while (!media_is_idle(io_state));
-
-        if (Exchange.debug.misc.block_background) { Exchange.sys.fn.print("MIO.BLOCK: Background flush\n"); }
-    }
-
     if (io_state->background.e.standby)
     {
-        io_state->background.e.standby = 0;
         media_standby(io_state);
         while (!media_is_idle(io_state));
 
+        // Clear Event
+        io_state->background.e.standby = 0;
         if (Exchange.debug.misc.block_background) { Exchange.sys.fn.print("MIO.BLOCK: Background standby\n"); }
     }
 
     if (io_state->background.e.bgjobs)
     {
-        io_state->background.e.bgjobs = 0;
         media_background(io_state);
         while (!media_is_idle(io_state));
 
+        // Clear Event
+        io_state->background.e.bgjobs = 0;
         if (Exchange.debug.misc.block_background) { Exchange.sys.fn.print("MIO.BLOCK: Background bgjobs\n"); }
     }
 }
@@ -233,31 +224,47 @@ void mio_background(struct mio_state * _io_state)
  ******************************************************************************/
 static int mio_transaction(struct request * _req, struct mio_state * _io_state)
 {
-    int ret = 0;
-
     struct request * req = _req;
     struct mio_state * io_state = _io_state;
 
+    unsigned int total_seccnt = get_capacity(req->rq_disk);
     unsigned int req_dir = rq_data_dir(req);
-    unsigned long req_lba = blk_rq_pos(req);
-    unsigned long req_seccnt = blk_rq_cur_bytes(req) >> 9;
+    unsigned int req_lba = blk_rq_pos(req);
+    unsigned int req_seccnt = 0; //blk_rq_cur_sectors(req);
+    unsigned int req_bytes = blk_rq_cur_bytes(req);
     char * req_buffer = req->buffer;
 
     unsigned int cmd_flags = req->cmd_flags;
     enum rq_cmd_type_bits cmd_type = req->cmd_type;
 
+    req_seccnt = req_bytes >> 9;
+
+    /**************************************************************************
+     * Request Validation
+     **************************************************************************/
     if (cmd_type != REQ_TYPE_FS)
     {
         return -EIO;
     }
 
-    if (cmd_flags & REQ_FLUSH)
+    /**************************************************************************
+     *
+     **************************************************************************/
+    if (cmd_flags & REQ_DISCARD)
+    {
+        media_flush(io_state);
+        media_trim(io_state, req_lba, req_seccnt);
+        while (!media_is_idle(io_state));
+
+        return 0;
+    }
+    else if (cmd_flags & REQ_FLUSH)
     {
         media_flush(io_state);
         while (!media_is_idle(io_state));
 
         // Strange ??
-        if ((blk_rq_pos(req) + blk_rq_cur_sectors(req)) <= get_capacity(req->rq_disk))
+        if ((req_lba + req_seccnt) <= total_seccnt)
         {
             return -EIO;
         }
@@ -270,63 +277,75 @@ static int mio_transaction(struct request * _req, struct mio_state * _io_state)
         io_state->background.e.bgjobs = 0;
         io_state->transaction.trigger.e.written_bgjobs = 1;
 
-        return ret;
+        return 0;
     }
-
-    if ((blk_rq_pos(req) + blk_rq_cur_sectors(req)) > get_capacity(req->rq_disk))
+    else
     {
-        return -EIO;
+        /**********************************************************************
+         * Request Validation
+         **********************************************************************/
+        if ((req_lba + req_seccnt) > total_seccnt)
+        {
+            return -EIO;
+        }
     }
 
-    switch (req_dir)
-    {
-        case READ:  { req_dir = 0; media_read(req_lba, req_seccnt, req_buffer, io_state); } break;
-        case WRITE: { media_write(req_lba, req_seccnt, req_buffer, io_state); } break;
-        default:    { return -EIO; }
-    }
-
+    /**************************************************************************
+     * Transaction
+     **************************************************************************/
     switch (req_dir)
     {
         case READ:
         {
-            MioSmartInfo.io_current.read_bytes += (req_seccnt << 9);
+            media_read(req_lba, req_seccnt, req_buffer, io_state);
+
+            MioSmartInfo.io_current.read_bytes += req_bytes;
             MioSmartInfo.io_current.read_sectors += req_seccnt;
-            MioSmartInfo.io_accumulate.read_bytes += (req_seccnt << 9);
+            MioSmartInfo.io_accumulate.read_bytes += req_bytes;
             MioSmartInfo.io_accumulate.read_sectors += req_seccnt;
 
         } break;
 
         case WRITE:
         {
+            media_write(req_lba, req_seccnt, req_buffer, io_state);
+
             MioSmartInfo.volatile_writesectors += req_seccnt;
 
-            MioSmartInfo.io_current.write_bytes += (req_seccnt << 9);
+            MioSmartInfo.io_current.write_bytes += req_bytes;
             MioSmartInfo.io_current.write_sectors += req_seccnt;
-            MioSmartInfo.io_accumulate.write_bytes += (req_seccnt << 9);
+            MioSmartInfo.io_accumulate.write_bytes += req_bytes;
             MioSmartInfo.io_accumulate.write_sectors += req_seccnt;
 
         } break;
+
+        default:
+        {
+            return -EIO;
+        }
     }
 
+    /**************************************************************************
+     * !! Do Not Modify !!
+     **************************************************************************/
     io_state->transaction.trigger.t.ioed = get_jiffies_64();
-    io_state->background.t.flush = get_jiffies_64() + MIO_TIME_MSEC(100);
-    io_state->background.e.flush = 0;
-    io_state->background.t.standby = get_jiffies_64() + MIO_TIME_MSEC(500);
+    io_state->background.t.standby = get_jiffies_64() + MIO_TIME_MSEC(400);
     io_state->background.e.standby = 0;
-    io_state->background.t.bgjobs = get_jiffies_64() + MIO_TIME_SEC(1);
+    io_state->background.t.bgjobs = get_jiffies_64() + MIO_TIME_SEC(5);
     io_state->background.e.bgjobs = 0;
 
-    // !! Trigger Must Be Here !!
     if (WRITE == req_dir)
     {
-        io_state->transaction.trigger.e.written_flush = 1;
         io_state->transaction.trigger.e.written_standby = 1;
         io_state->transaction.trigger.e.written_bgjobs = 1;
     }
 
+    /**************************************************************************
+     * Debug Transaction
+     **************************************************************************/
     if (Exchange.debug.misc.block_transaction)
     {
-        unsigned int _req_bcnt = req_seccnt << 9;
+        unsigned int _req_bcnt = req_bytes;
         unsigned int _i = 0;
         unsigned int _j = 0;
 
@@ -356,7 +375,7 @@ static int mio_transaction(struct request * _req, struct mio_state * _io_state)
         }
     }
     
-    return ret;
+    return 0;
 }
 
 /******************************************************************************
@@ -409,7 +428,6 @@ static int mio_transaction_thread(void * _arg)
             {
                 io_state->transaction.status = MIO_SCHEDULED;
                 wait_event_timeout(io_state->transaction.wake.q, io_state->transaction.wake.cnt, HZ);
-              //schedule();
                 io_state->transaction.status = MIO_IDLE;
             }
             spin_lock_irq(rq->queue_lock);
@@ -498,9 +516,15 @@ static void mio_mutext_unlock(void)
 
 static int __init mio_init(void)
 {
+    int capacity = 0;
+
     printk(KERN_INFO "MIO.BLOCK:\n");
     printk(KERN_INFO "MIO.BLOCK: --------------------------------------------------------------------------\n");
+#if !defined (__COMPILE_MODE_BEST_DEBUGGING__)
     printk(KERN_INFO "MIO.BLOCK:  Init Begin\n");
+#else
+    printk(KERN_INFO "MIO.BLOCK:  Init Begin (!!! WARNING : Driver Compiled Best Debug Mode !!!\n");
+#endif
     printk(KERN_INFO "MIO.BLOCK: --------------------------------------------------------------------------\n");
 
     mio_dev.mutex = &mio_mutex;
@@ -517,13 +541,13 @@ static int __init mio_init(void)
     Exchange.sys.fn.mlock   = mio_mutex_lock;
     Exchange.sys.fn.munlock = mio_mutext_unlock;
 
-    if ((mio_dev.capacity = media_open()) < 0)
+    if ((capacity = media_open()) < 0)
     {
         printk(KERN_ERR "MIO.BLOCK: media_open() Fail\n");
-        mio_dev.capacity = 0;
-
         return -1;
     }
+
+    mio_dev.capacity = capacity;
 
     /**************************************************************************
      * Open Smart of Media
@@ -561,11 +585,9 @@ static int __init mio_init(void)
         init_waitqueue_head(&mio_dev.io_state->background.wake.q);
         mio_dev.io_state->background.wake.cnt = 0;
 
-        mio_dev.io_state->background.t.flush = MIO_TIME_DIFF_MAX(get_jiffies_64());
         mio_dev.io_state->background.t.standby = MIO_TIME_DIFF_MAX(get_jiffies_64());
         mio_dev.io_state->background.t.bgjobs = MIO_TIME_DIFF_MAX(get_jiffies_64());
         mio_dev.io_state->background.t.save_smart = MIO_TIME_DIFF_MAX(get_jiffies_64());
-        mio_dev.io_state->background.e.flush = 0;
         mio_dev.io_state->background.e.standby = 0;
         mio_dev.io_state->background.e.bgjobs = 0;
         mio_dev.io_state->background.e.save_smart = 0;
@@ -583,10 +605,8 @@ static int __init mio_init(void)
         mio_dev.io_state->transaction.wake.cnt = 0;
 
         mio_dev.io_state->transaction.trigger.t.ioed = MIO_TIME_DIFF_MAX(get_jiffies_64());
-        mio_dev.io_state->transaction.trigger.e.written_flush = 0;
         mio_dev.io_state->transaction.trigger.e.written_standby = 0;
         mio_dev.io_state->transaction.trigger.e.written_bgjobs = 0;
-        mio_dev.io_state->transaction.trigger.e.force_flush = 0;
 
         /**********************************************************************
          * Request Queue Create
@@ -707,8 +727,24 @@ static int __init mio_init(void)
           //mio_dev.disk->flags = GENHD_FL_SUPPRESS_PARTITION_INFO;
             set_capacity(mio_dev.disk, mio_dev.capacity);
 
-          //blk_queue_flush(mio_dev.io_state->transaction.rq, REQ_FLUSH);
-            mio_dev.io_state->transaction.rq->flush_flags = REQ_FLUSH & (REQ_FLUSH | REQ_FUA);
+            /******************************************************************
+             * Block Device Driver Support Flush Feature
+             ******************************************************************/
+            blk_queue_flush(mio_dev.io_state->transaction.rq, REQ_FLUSH);
+          //mio_dev.io_state->transaction.rq->flush_flags = REQ_FLUSH & (REQ_FLUSH | REQ_FUA);
+
+            /******************************************************************
+             * Block Device Is Solid Disk
+             ******************************************************************/
+            queue_flag_set_unlocked(QUEUE_FLAG_NONROT, mio_dev.io_state->transaction.rq);
+
+            /******************************************************************
+             * Block Device Driver Support Discard Feature
+             ******************************************************************/
+            queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, mio_dev.io_state->transaction.rq);
+            mio_dev.io_state->transaction.rq->limits.discard_granularity = 1<<9;
+            mio_dev.io_state->transaction.rq->limits.max_discard_sectors = mio_dev.capacity;
+            mio_dev.io_state->transaction.rq->limits.discard_zeroes_data = 1;
 
             add_disk(mio_dev.disk);
         }

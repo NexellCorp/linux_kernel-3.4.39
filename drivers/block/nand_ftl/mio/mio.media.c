@@ -51,6 +51,11 @@ static u8 * media_on_ram;
 /******************************************************************************
  *
  ******************************************************************************/
+static unsigned char * __trim_buffer = 0;
+
+/******************************************************************************
+ *
+ ******************************************************************************/
 void media_gpio_init(void);
 void media_gpio_c00_high(void);
 void media_gpio_c00_low(void);
@@ -139,6 +144,13 @@ int media_open(void)
         printk(KERN_ERR "MIO.MEDIA: Memory Pool Pre-Allocation Fail\n");
         return -1;
     }
+
+    /**************************************************************************
+     * Media Need Trim Buffer
+     **************************************************************************/
+    __trim_buffer = (unsigned char *)Exchange.buffer.mpool;
+    Exchange.buffer.mpool += 1024;
+    Exchange.buffer.mpool_size -= 1024;
 
     /**************************************************************************
      * MIO Sys Options
@@ -322,13 +334,6 @@ void media_write(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_s
 
     // Put Command to FTL
     Exchange.ftl.fnPutCommand(IO_CMD_WRITE, 0, lba, seccnt);
-
-    if (io_state->transaction.trigger.e.force_flush)
-    {
-        Exchange.ftl.fnPrePutCommand(IO_CMD_WCACHE_OFF, 0, 0, 0);
-        Exchange.ftl.fnPutCommand(IO_CMD_WCACHE_OFF, 0, 0, 0);
-        io_state->transaction.trigger.e.force_flush = 0;
-    }
 
     // IO Summary
     Exchange.statistics.ios.cur.write += (seccnt << 9);
@@ -573,6 +578,30 @@ void media_flush(void * _io_state)
             if (Exchange.ftl.fnPrePutCommand(IO_CMD_FLUSH, 0, 0, 0) >= 0)
             {
                 Exchange.ftl.fnPutCommand(IO_CMD_FLUSH, 0, 0, 0);
+                break;
+            }
+        }
+    }
+}
+
+void media_trim(void * _io_state, int _lba, int _seccnt)
+{
+    // Make Trim Buffer
+    unsigned int (*entry)[2] = (unsigned int (*)[2])__trim_buffer;
+
+    memset((void *)__trim_buffer, 0, 512);
+    entry[0][0] = _lba;
+    entry[0][1] = (_seccnt<<16);
+
+    while (1)
+    {
+        media_super();
+
+        if (Exchange.ftl.fnIsReady())
+        {
+            if (Exchange.ftl.fnPrePutCommand(IO_CMD_DATA_SET_MANAGEMENT, IO_CMD_DATA_SET_MANAGEMENT_FEATURE_TRIM, (int)__trim_buffer, 1) >= 0)
+            {
+                Exchange.ftl.fnPutCommand(IO_CMD_DATA_SET_MANAGEMENT, IO_CMD_DATA_SET_MANAGEMENT_FEATURE_TRIM, (int)__trim_buffer, 1);
                 break;
             }
         }
