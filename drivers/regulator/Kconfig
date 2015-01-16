@@ -81,6 +81,13 @@ config REGULATOR_NXE2000
 	  This driver supports regulator driver for the Nexell NXE2000
 	  Power Management device.
 
+config REGULATOR_MP8845C
+	tristate "MPS MP8845C Power regulator"
+	depends on I2C
+	help
+	  This driver supports regulator driver for the MPS MP8845C
+	  Power Management device.	  
+	
 config REGULATOR_AD5398
 	tristate "Analog Devices AD5398/AD5821 regulators"
 	depends on I2C

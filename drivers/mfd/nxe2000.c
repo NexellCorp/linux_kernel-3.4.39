@@ -970,7 +970,7 @@ static int __init nxe2000_i2c_init(void)
 	return ret;
 }
 
-subsys_initcall(nxe2000_i2c_init);
+subsys_initcall_sync(nxe2000_i2c_init);
 
 static void __exit nxe2000_i2c_exit(void)
 {

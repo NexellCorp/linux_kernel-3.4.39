@@ -875,6 +875,81 @@ static struct i2c_board_info __initdata nxe2000_regulators[] = {
 };
 #endif  /* CONFIG_REGULATOR_NXE2000 */
 
+#if defined(CONFIG_REGULATOR_MP8845C)
+#include <linux/i2c.h>
+#include <linux/regulator/machine.h>
+#include <linux/gpio.h>
+#include <linux/io.h>
+#include <linux/regulator/fixed.h>
+#include <linux/regulator/mp8845c-regulator.h>
+
+#define MP8845C_PDATA_INIT(_name, _sname, _minuv, _maxuv, _always_on, _boot_on, _init_uv, _init_enable, _slp_slots) \
+	static struct mp8845c_regulator_platform_data pdata_##_name##_##_sname = \
+	{									\
+		.regulator = {					\
+			.constraints = {			\
+				.min_uV		= _minuv,	\
+				.max_uV		= _maxuv,	\
+				.valid_modes_mask	= (REGULATOR_MODE_NORMAL |	\
+									REGULATOR_MODE_STANDBY),	\
+				.valid_ops_mask		= (REGULATOR_CHANGE_MODE |	\
+									REGULATOR_CHANGE_STATUS |	\
+									REGULATOR_CHANGE_VOLTAGE),	\
+				.always_on	= _always_on,	\
+				.boot_on	= _boot_on,		\
+				.apply_uV	= 1,				\
+			},								\
+			.num_consumer_supplies =		\
+				ARRAY_SIZE(mp8845c_##_name##_##_sname),			\
+			.consumer_supplies	= mp8845c_##_name##_##_sname, 	\
+			.supply_regulator	= 0,			\
+		},									\
+		.init_uV		= _init_uv,			\
+		.init_enable	= _init_enable,		\
+		.sleep_slots	= _slp_slots,		\
+	}
+
+#define MP8845C_REGULATOR(_dev_id, _name, _sname)	\
+{												\
+	.id		= MP8845C_##_dev_id##_VOUT,				\
+	.name	= "mp8845c-regulator",				\
+	.platform_data	= &pdata_##_name##_##_sname,\
+}
+
+#define I2C_FLATFORM_INFO(dev_type, dev_addr, dev_data)\
+{										\
+	.type = dev_type, 					\
+	.addr = (dev_addr),					\
+	.platform_data = dev_data,			\
+}
+
+static struct regulator_consumer_supply mp8845c_vout_0[] = {
+	REGULATOR_SUPPLY("mp8845c_arm", NULL),
+};
+
+static struct regulator_consumer_supply mp8845c_vout_1[] = {
+	REGULATOR_SUPPLY("mp8845c_core", NULL),
+};
+
+MP8845C_PDATA_INIT(vout, 0, 600000, 1500000, 1, 1, 1200000, 1, -1);	/* ARM */
+MP8845C_PDATA_INIT(vout, 1, 600000, 1500000, 1, 1, 1100000, 1, -1);	/* CORE */
+
+static struct mp8845c_platform_data __initdata mp8845c_platform[] = {
+	MP8845C_REGULATOR(0, vout, 0),
+	MP8845C_REGULATOR(1, vout, 1),
+};
+
+#define MP8845C_I2C_BUS0		(0)
+#define MP8845C_I2C_BUS1		(1)
+#define MP8845C_I2C_ADDR		(0x1c)
+
+static struct i2c_board_info __initdata mp8845c_regulators[] = {
+	I2C_FLATFORM_INFO("mp8845c", MP8845C_I2C_ADDR, &mp8845c_platform[0]),
+	I2C_FLATFORM_INFO("mp8845c", MP8845C_I2C_ADDR, &mp8845c_platform[1]),
+};
+#endif  /* CONFIG_REGULATOR_MP8845C */
+
+
 /*------------------------------------------------------------------------------
  * v4l2 platform device
  */
@@ -1529,6 +1604,15 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device nxe2000 pmic\n");
 	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_regulators, ARRAY_SIZE(nxe2000_regulators));
 #endif
+
+#if defined(CONFIG_REGULATOR_MP8845C)
+	printk("plat: add device mp8845c ARM\n");
+	i2c_register_board_info(MP8845C_I2C_BUS0, &mp8845c_regulators[0], 1);
+
+	printk("plat: add device mp8845c CORE\n");
+	i2c_register_board_info(MP8845C_I2C_BUS1, &mp8845c_regulators[1], 1);
+#endif
+
 
 #if defined(CONFIG_SND_CODEC_WM8976) || defined(CONFIG_SND_CODEC_WM8976_MODULE)
 	printk("plat: add device asoc-wm8976\n");
