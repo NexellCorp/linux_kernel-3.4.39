@@ -435,7 +435,7 @@ extern void nxp_cpu_id_string(u32 *string);
 static bool i2s_ext_is_en(void)
 {
 	bool ret = false;
-	u8 name[12*4] = {0,};
+	u8 name[49] = {0,};
 	u8 *cmp_name = "NEXELL-NXP5430-R0-LF3000------------------------";
 
 	nxp_cpu_id_string((u32*)name);
