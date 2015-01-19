@@ -228,6 +228,7 @@ int nxp_cpu_vic_table(void)
 EXPORT_SYMBOL(nxp_cpu_vic_table);
 
 #ifdef CONFIG_ARM_GIC
+#define DEBUG_TIMESTAMP		(0)
 
 static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 {
@@ -236,6 +237,11 @@ static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 	int i = 0, gic = irq;
 	int cpu, n;
 	static u32 vic_nr[4] = { 0, 1, 0, 1};
+
+#if (DEBUG_TIMESTAMP)
+	long long ts = ktime_to_us(ktime_get());
+	static long long max = 0;
+#endif
 
 	stat[0] = readl_relaxed(VIC0_INT_BASE+VIC_IRQ_STATUS);
 	stat[1] = readl_relaxed(VIC1_INT_BASE+VIC_IRQ_STATUS);
@@ -287,6 +293,14 @@ irq_hnd:
 
 irq_eoi:
 	writel_relaxed(31, GIC_CPUI_BASE + GIC_CPU_EOI);
+
+#if (DEBUG_TIMESTAMP)
+	ts = ktime_to_us(ktime_get()) - ts;
+	if (ts > 1000) {
+		max = ts;
+		printk("[cpu.%d irq.%d, %03lldms]\n", cpu, irq, div64_s64(ts, 1000));
+	}
+#endif
 	return;
 }
 
@@ -478,8 +492,10 @@ static void alive_handler(unsigned int irq, struct irq_desc *desc)
 		__func__, cpu, phy, bit, stat, mask);
 
 	if (-1 == bit) {
+	#if !defined (CONFIG_SMP)
 		printk(KERN_ERR "Unknown cpu.%d alive irq=%d, stat=0x%08x, mask=0x%02x\r\n",
 			cpu, phy, stat, mask);
+	#endif
 		writel(-1, (base + ALIVE_INT_STATUS));	/* clear alive status all */
 		writel(1<<phy, (VIC0_INT_BASE + VIC_INT_SOFT_CLEAR));
 		return;
@@ -676,8 +692,10 @@ static void gpio_handler(unsigned int irq, struct irq_desc *desc)
 		__func__, cpu, phy, PIO_NAME(phy), bit, stat, mask);
 
 	if (-1 == bit) {
+	#if !defined (CONFIG_SMP)
 		printk(KERN_ERR "Unknown cpu.%d gpio phy irq=%d, stat=0x%08x, mask=0x%08x\r\n",
 			cpu, phy, stat, mask);
+	#endif
 		writel(-1, (base + GPIO_INT_STATUS));	/* clear gpio status all */
     	writel(1<<phy, (VIC1_INT_BASE + VIC_INT_SOFT_CLEAR));
 		return;

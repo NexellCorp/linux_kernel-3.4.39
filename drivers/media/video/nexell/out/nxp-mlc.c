@@ -178,20 +178,36 @@ static void _hw_set_rgb_addr(struct nxp_mlc *me, struct nxp_video_buffer *buf)
 
 // for debugging
 static u64 s_old_jiffies = 0;
-#define JIFFIES_LIMIT_THRESHOLD 34
+/*static bool is_over = false;*/
+/*#define JIFFIES_LIMIT_THRESHOLD 34*/
+#define JIFFIES_LIMIT_OVER_THRESHOLD 35
+#define JIFFIES_LIMIT_UNDER_THRESHOLD 31
 static void _hw_set_video_addr(struct nxp_mlc *me, struct nxp_video_buffer *buf)
 {
-    pr_debug("%s: buf(0x%x)\n", __func__, buf->dma_addr[0]);
+    /*pr_debug("%s: buf(0x%x)\n", __func__, buf->dma_addr[0]);*/
     /* printk("%s: bufs 0x%x, 0x%x, 0x%x, stride %d, %d, %d\n", */
     /*         __func__, buf->dma_addr[0], buf->dma_addr[1], buf->dma_addr[2], */
     /*         buf->stride[0], buf->stride[1], buf->stride[2]); */
 
-#if 1
+#if 0
     u64 cur_jiffies = get_jiffies_64();
-    if (cur_jiffies - s_old_jiffies > JIFFIES_LIMIT_THRESHOLD) {
-         printk("Render Diff: %llu\n", cur_jiffies - s_old_jiffies);
-    }
+    u64 diff = cur_jiffies - s_old_jiffies;
+    /*if (diff > JIFFIES_LIMIT_OVER_THRESHOLD) {*/
+         /*printk("OVER: %u, jiffies: %llu\n", diff, cur_jiffies);*/
+    /*} else if (diff < JIFFIES_LIMIT_UNDER_THRESHOLD) {*/
+         /*printk("UNDER: %u, jiffies: %llu\n", diff, cur_jiffies);*/
+         /*[>msleep(diff);<]*/
+         /*[>cur_jiffies = get_jiffies_64();<]*/
+    /*}*/
+    printk("%llu\n", diff);
     s_old_jiffies = cur_jiffies;
+#else
+    /*static long old_time;*/
+    /*[>ktime_t ts = ktime_get();<]*/
+    /*long cur_time = ktime_to_ms(ktime_get());*/
+    /*long diff = cur_time - old_time;*/
+    /*old_time = cur_time;*/
+    /*printk("%ld\n", diff);*/
 #endif
 
     nxp_soc_disp_video_set_address(me->id, /* module */
@@ -199,6 +215,12 @@ static void _hw_set_video_addr(struct nxp_mlc *me, struct nxp_video_buffer *buf)
             buf->dma_addr[1], buf->stride[1], /* cb_a, cb_s */
             buf->dma_addr[2], buf->stride[2], /* cr_a, cr_s */
             false);
+
+#if 0
+    s_old_jiffies = get_jiffies_64();
+#else
+    /*printk("SA\n");*/
+#endif
 }
 
 static void _hw_rgb_enable(struct nxp_mlc *me, bool enable)
@@ -419,8 +441,11 @@ static void _update_vid_buffer(struct nxp_mlc *me)
     }
 }
 
+
 static int mlc_vid_buffer_queue(struct nxp_video_buffer *buf, void *data)
 {
+    // psw0523 test for miware
+#if 1
     unsigned long flags;
     struct nxp_mlc *me = data;
 
@@ -432,6 +457,14 @@ static int mlc_vid_buffer_queue(struct nxp_video_buffer *buf, void *data)
     if (me->vid_streaming) {
         _update_vid_buffer(me);
     }
+#else
+    struct nxp_mlc *me = data;
+    _hw_set_video_addr(me, buf);
+    if (!me->enabled) {
+        _hw_enable(me, true);
+        me->enabled = true;
+    }
+#endif
 
     return 0;
 }

@@ -1382,6 +1382,13 @@ void nxp_soc_disp_video_set_address(int module, unsigned int lu_a, unsigned int 
         NX_MLC_SetVideoLayerAddress(module, lu_a, cb_a, cr_a);
     }
 
+    // psw0523 debugging
+#if 1
+    if (NX_MLC_GetDirtyFlag(module, MLC_LAYER_VIDEO)) {
+        printk("Error in Dirty\n");
+        return;
+    }
+#endif
 	NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
 	disp_syncgen_waitsync(module, MLC_LAYER_VIDEO, waitvsync);
 }
