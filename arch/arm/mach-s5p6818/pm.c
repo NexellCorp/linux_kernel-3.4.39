@@ -39,6 +39,7 @@
 
 static unsigned int  sramsave[SRAM_SAVE_SIZE/4];
 static unsigned int *sramptr;
+static unsigned int  sram_length = SRAM_SAVE_SIZE;
 
 void (*nxp_board_suspend_mark)(struct suspend_mark_up *mark, int suspend) = NULL;
 void (*do_suspend)(ulong, ulong) = NULL;
@@ -53,18 +54,6 @@ struct save_gpio {
 	unsigned long reg_val[10];  /* 0x40 ~ 0x64 */
 };
 
-struct save_l2c {
-	unsigned long tieoff;
-	unsigned long tag_latency;
-	unsigned long data_latency;
-	unsigned long filter_start;
-	unsigned long filter_end;
-	unsigned long prefetch_ctrl;
-	unsigned long pwr_ctrl;
-	unsigned long aux_ctrl;
-	unsigned long l2x0_way_mask;
-};
-
 struct save_alive {
 	unsigned long  detmod[6];
 	unsigned long  detenb;
@@ -75,7 +64,6 @@ struct save_alive {
 };
 
 struct pm_saved_regs {
-	struct save_l2c   l2c;
 	struct save_gpio  gpio[5];	/* A,B,C,D,E */
 	struct save_alive alive;
 };
@@ -84,10 +72,12 @@ static struct pm_saved_regs saved_regs;
 static struct board_suspend_ops *board_suspend = NULL;
 
 #if (0)
-#define	PM_SAVE_ADDR	(U32)virt_to_phys(&saved_regs)
+#define	PM_SAVE_ADDR	(u32)virt_to_phys(&saved_regs)
+#define	PM_SAVE_VIRT	saved_regs
 #define	PM_SAVE_SIZE	SUSPEND_SAVE_SIZE
 #else
-#define	PM_SAVE_ADDR	(U32)__pa(_stext)
+#define	PM_SAVE_ADDR	__pa(_stext)
+#define	PM_SAVE_VIRT	_stext
 #define	PM_SAVE_SIZE	SUSPEND_SAVE_SIZE
 #endif
 
@@ -114,7 +104,7 @@ static const char * __wake_event_name [] = {
 
 static int suspend_machine(void)
 {
-	const U32 pads[][2] = {
+	const u32 pads[][2] = {
 		{ CFG_PWR_WAKEUP_SRC_ALIVE0, CFG_PWR_WAKEUP_MOD_ALIVE0 },
 		{ CFG_PWR_WAKEUP_SRC_ALIVE1, CFG_PWR_WAKEUP_MOD_ALIVE1 },
 		{ CFG_PWR_WAKEUP_SRC_ALIVE2, CFG_PWR_WAKEUP_MOD_ALIVE2 },
@@ -151,7 +141,7 @@ static int suspend_machine(void)
 		}
 	}
 
-	NX_ALIVE_SetOutputEnable32(mask_bits);
+	NX_ALIVE_SetInputEnable32(mask_bits);
 	NX_ALIVE_SetDetectEnable32(mask_bits);
 	NX_ALIVE_SetInterruptEnable32(mask_bits);
 
@@ -229,28 +219,26 @@ static void suspend_cores(suspend_state_t stat)
 	int cpu = 1, num = nr_cpu_ids;
 
 #ifndef CONFIG_S5P6818_PM_IDLE
-	NX_CLKPWR_SetBaseAddress(IO_ADDRESS(NX_CLKPWR_GetPhysicalAddress()));
-	NX_CLKPWR_SetCPUResetMode(NX_CLKPWR_CPU_RESETMODE_SAFE);
+	if (SUSPEND_SUSPEND == stat) {
+		NX_CLKPWR_SetBaseAddress(IO_ADDRESS(NX_CLKPWR_GetPhysicalAddress()));
+		NX_CLKPWR_SetCPUResetMode(NX_CLKPWR_CPU_RESETMODE_SAFE);
+		NX_CLKPWR_SetCPUPowerOn32(0x00);
 
-	NX_CLKPWR_SetCPUPowerOn32(0x00);
+    	/* CCI400 BUS */
+		#define CCI_REG __PB_IO_MAP_CCI4_VIRT   // 0xe0090000
+    	writel(0x8, (CCI_REG + 0x0000));        // CCI
+    	writel(0x0, (CCI_REG + 0x1000));        // S0: coresight
+    	writel(0x0, (CCI_REG + 0x2000));        // S1: bottom bus
+    	writel(0x0, (CCI_REG + 0x3000));        // S2: top bus
+    	writel(0x0, (CCI_REG + 0x4000));        // S3: cpu cluster 1
+    	writel(0x0, (CCI_REG + 0x5000));        // S4: cpu cluster 0
 
-    /*
-     * CCI400 BUS
-     */
-#define CCI_REG __PB_IO_MAP_CCI4_VIRT       // 0xe0090000
-    writel(0x8, (CCI_REG + 0x0000));        // CCI
-    writel(0x0, (CCI_REG + 0x1000));        // S0: coresight
-    writel(0x0, (CCI_REG + 0x2000));        // S1: bottom bus
-    writel(0x0, (CCI_REG + 0x3000));        // S2: top bus
-    writel(0x0, (CCI_REG + 0x4000));        // S3: cpu cluster 1
-    writel(0x0, (CCI_REG + 0x5000));        // S4: cpu cluster 0
-
-	num = 7;
-	for (; num > cpu; cpu++) {
-		NX_CLKPWR_SetCPUPowerOff(cpu);
-		while(NX_CLKPWR_GetCPUPowerOnStatus(cpu));
-
-		PM_DBGOUT("Power off cpu.%d\n", cpu);
+		num = 7;
+		for (; num > cpu; cpu++) {
+			NX_CLKPWR_SetCPUPowerOff(cpu);
+			while(NX_CLKPWR_GetCPUPowerOnStatus(cpu));
+			PM_DBGOUT("Power off cpu.%d\n", cpu);
+		}
 	}
 #endif
 }
@@ -277,7 +265,7 @@ static inline unsigned int __calc_crc(void *addr, int len)
 static void suspend_mark(suspend_state_t stat)
 {
 	struct suspend_mark_up mark = {
-		.resume_fn = (U32)virt_to_phys(cpu_resume),
+		.resume_fn = (u32)virt_to_phys(cpu_resume),
 		.signature = SUSPEND_SIGNATURE,
 		.save_phy_addr = PM_SAVE_ADDR,
 		.save_phy_len = PM_SAVE_SIZE,
@@ -290,9 +278,8 @@ static void suspend_mark(suspend_state_t stat)
 	writel((-1UL), SCR_SIGNAGURE_RESET);
 
 	if (SUSPEND_SUSPEND == stat) {
-		uint phy = mark.save_phy_addr;
-		uint len = mark.save_phy_len;
-		mark.save_crc_ret = __calc_crc(__va(phy), len);
+		u32 len = mark.save_phy_len;
+		mark.save_crc_ret = __calc_crc((void*)PM_SAVE_VIRT, len);
 	}
 
 	if (nxp_board_suspend_mark) {
@@ -345,7 +332,6 @@ static void suspend_gpio(suspend_state_t stat)
 			for (j = 0; j < 10; j++)
 				writel(gpio->reg_val[j], (base+0x40+(j<<2)));
 #endif
-
 			writel(gpio->output, (base+0x04));
 			writel(gpio->data,   (base+0x00));
 			writel(gpio->alfn[0],(base+0x20));
@@ -355,7 +341,6 @@ static void suspend_gpio(suspend_state_t stat)
 			writel(gpio->mode[2],(base+0x28));
 			writel(gpio->mask,   (base+0x10));
 			writel(gpio->mask,   (base+0x3C));
-
 			writel((-1UL),       (base+0x14));	/* clear pend */
 		}
 	}
@@ -434,6 +419,8 @@ static void pm_suspend_data_restore(void *mem)
 		dst[i] = src[i];
 }
 
+#define	FLUSH_CACHE()	do { flush_cache_all();outer_flush_all(); } while(0);
+
 static int __powerdown(unsigned long arg)
 {
 	int ret = suspend_machine();
@@ -448,9 +435,7 @@ static int __powerdown(unsigned long arg)
 	lldebugout("Go to IDLE...\n");
 #endif
 
-	flush_cache_all();
-	outer_flush_all();
-
+	FLUSH_CACHE();
 	if (0 > ret)
 		return ret;	/* wake up */
 
@@ -464,6 +449,7 @@ static int __powerdown(unsigned long arg)
 
 	lldebugout("suspend machine\n", __func__);
 	power_down = (void (*)(ulong, ulong))((ulong)do_suspend + 0x220);
+	FLUSH_CACHE();
 	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
 
 	while (1) { ; }
@@ -518,6 +504,7 @@ static int suspend_prepare(void)
 }
 
 /* return : 0 = goto suspend, 1 = wake up */
+extern void clear_fault_bad(int cpu);
 static int suspend_enter(suspend_state_t state)
 {
 	int ret = 0;
@@ -566,6 +553,7 @@ static int suspend_enter(suspend_state_t state)
 	/* print wakeup evnet */
 	print_wake_event();
 
+	clear_fault_bad(0);
 	return 0;
 }
 
@@ -594,7 +582,7 @@ static struct platform_suspend_ops suspend_ops = {
 
 static int __init suspend_ops_init(void)
 {
-	sramptr = (unsigned int*)ioremap(0xFFFF0000, SRAM_SAVE_SIZE);
+	sramptr = (unsigned int*)ioremap(0xFFFF0000, sram_length);
 
 	pr_debug("%s sram save\r\n", __func__);
 	pm_suspend_data_save(NULL);
@@ -640,26 +628,3 @@ static int pm_check_wakeup_dev(char *dev, int io)
 
 int (*nxp_check_pm_wakeup_dev)(char *dev, int io) = pm_check_wakeup_dev;
 EXPORT_SYMBOL(nxp_check_pm_wakeup_dev);
-
-void nxp_cpu_goto_stop(void)
-{
-	printk("%s enter\n", __func__);
-
-	suspend_clock(SUSPEND_SUSPEND);
-	suspend_gpio(SUSPEND_SUSPEND);
-	suspend_alive(SUSPEND_SUSPEND);
-	suspend_l2cache(SUSPEND_SUSPEND);
-#ifndef CONFIG_S5P6818_PM_IDLE
-	suspend_mark(SUSPEND_SUSPEND);
-#endif
-
-	/* SMP power down */
-	suspend_cores(SUSPEND_SUSPEND);
-
-	/*
-	 * goto suspend off
-	 */
-	cpu_suspend(0, __powerdown);
-}
-EXPORT_SYMBOL(nxp_cpu_goto_stop);
-

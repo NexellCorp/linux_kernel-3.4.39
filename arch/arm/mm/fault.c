@@ -503,16 +503,23 @@ do_sect_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 /*
  * This abort handler always returns "fault".
  */
+#if defined (CONFIG_ARCH_S5P6818)
+static int fault_bad_count[NR_CPUS] = { 0, };
+void clear_fault_bad(int cpu)
+{
+	fault_bad_count[cpu] = 0;
+}
+#endif
+
 static int
 do_bad(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 {
 #if defined (CONFIG_ARCH_S5P6818)
 	int cpu = raw_smp_processor_id();
-	static int bad[NR_CPUS] = { 0, };
-	printk("[ cpu.%d skip bad (%d) ]\n", cpu, bad[cpu]);
+	printk("[ cpu.%d skip bad (%d) ]\n", cpu, fault_bad_count[cpu]);
 	if (0 == cpu) {	/* twoice exception */
-		if (0 == bad[cpu]) {
-			bad[cpu] += 1;
+		if (0 == fault_bad_count[cpu]) {
+			fault_bad_count[cpu] += 1;
 			return 0;
 		}
 		return 1;

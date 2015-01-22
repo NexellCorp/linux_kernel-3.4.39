@@ -490,7 +490,6 @@ static int nxp_i2s_set_plat_param(struct nxp_i2s_snd_param *par, void *data)
     par->trans_mode = plat->trans_mode;
     par->sample_rate = plat->sample_rate ? plat->sample_rate : DEF_SAMPLE_RATE;
     par->frame_bit = plat->frame_bit ? plat->frame_bit : DEF_FRAME_BIT;
-    par->sample_rate = plat->sample_rate;
     par->LR_pol_inv = plat->LR_pol_inv;
     par->pre_supply_mclk = plat->pre_supply_mclk;
 	if (plat->ext_is_en) {
@@ -697,6 +696,9 @@ static int nxp_i2s_dai_resume(struct snd_soc_dai *dai)
 	PM_DBGOUT("%s\n", __func__);
 
 	i2s_reset(par);
+
+	if (par->pre_supply_mclk && par->ext_is_en)
+	    par->set_ext_mclk(CTRUE);
 
 	if (par->master_mode && par->in_clkgen) {
 		clk_set_rate(par->clk, par->clk_rate);

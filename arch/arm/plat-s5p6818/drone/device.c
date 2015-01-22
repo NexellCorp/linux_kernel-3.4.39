@@ -472,7 +472,7 @@ void __init nxp_reserve_mem(void)
 }
 #endif
 
-#if defined(CONFIG_I2C_NXP)
+#if defined(CONFIG_I2C_NXP) || defined (CONFIG_I2C_SLSI)
 #define I2CUDELAY(x)	1000000/x
 /* gpio i2c 3 */
 #define	I2C3_SCL	PAD_GPIO_E + 14
@@ -498,7 +498,7 @@ static struct platform_device i2c_device_ch3 = {
 static struct platform_device *i2c_devices[] = {
 	&i2c_device_ch3,
 };
-#endif /* CONFIG_I2C_NXP */
+#endif /* CONFIG_I2C_NXP || CONFIG_I2C_SLSI */
 
 /*------------------------------------------------------------------------------
  * PMIC platform device
@@ -1482,7 +1482,7 @@ void __init nxp_board_devs_register(void)
 	platform_device_register(&key_plat_device);
 #endif
 
-#if defined(CONFIG_I2C_NXP)
+#if defined(CONFIG_I2C_NXP) || defined (CONFIG_I2C_SLSI)
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif
 

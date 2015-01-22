@@ -39,6 +39,10 @@
 #include <mach/soc.h>
 #include <linux/vr/vr_utgard.h>
 
+#include <mach/iic.h>
+#include <mach/regs-iic.h>
+
+
 /*------------------------------------------------------------------------------
  * Serial platform device
  */
@@ -50,7 +54,7 @@
  * I2C Bus platform device
  */
 
-#if defined(CONFIG_I2C_NXP)
+#if defined( CONFIG_I2C_NXP) || defined ( CONFIG_I2C_SLSI )
 #define I2CUDELAY(x)	1000000/x/2
 /* gpio i2c 0 */
 #ifdef CFG_IO_I2C0_SCL
@@ -86,7 +90,16 @@
 #define	I2C2_SDA	NXP_I2C2_MOD_SDA
 #endif
 
+
+
 #if	defined(CONFIG_I2C_NXP_PORT0)
+static struct resource s3c_i2c0_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C0, SZ_256),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C0),
+};
+
+
+#if  defined(CONFIG_I2C_NXP_PORT0_GPIO_MODE)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port0 = {
 	.sda_pin	= I2C0_SDA,
 	.scl_pin	= I2C0_SCL,
@@ -94,7 +107,6 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port0 = {
 	.timeout	= 10,
 };
 
-#if  defined(CONFIG_I2C_NXP_PORT0_GPIO_MODE)
 static struct platform_device i2c_device_ch0 = {
 	.name	= "i2c-gpio",
 	.id		= 0,
@@ -103,17 +115,20 @@ static struct platform_device i2c_device_ch0 = {
 	},
 };
 #else
-static struct nxp_i2c_plat_data i2c_data_ch0 = {
-	.port		= 0,
-	.irq		= IRQ_PHY_I2C0,
-	.gpio 		= &nxp_i2c_gpio_port0,
-	.base_addr	= PHY_BASEADDR_I2C0,
-	.rate 		= CFG_I2C0_CLK,
+struct s3c2410_platform_i2c i2c_data_ch0 __initdata = {
+	.bus_num	= 0,
+    .flags      = 0, 
+    .slave_addr = 0x10,
+    .frequency  = 100*1000,
+    .sda_delay  = 100, 
 };
 
 static struct platform_device i2c_device_ch0 = {
-	.name	= DEV_NAME_I2C,
+	//.name	= DEV_NAME_I2C,
+	.name = "s3c2440-i2c",
 	.id		= 0,
+	.num_resources  = ARRAY_SIZE(s3c_i2c0_resource),
+	.resource   = s3c_i2c0_resource,
 	.dev    = {
 		.platform_data	= &i2c_data_ch0
 	},
@@ -124,6 +139,12 @@ static struct platform_device i2c_device_ch0 = {
 #endif
 
 #if	defined(CONFIG_I2C_NXP_PORT1)
+static struct resource s3c_i2c1_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C1, SZ_4K),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C1),
+};
+
+#if  defined(CONFIG_I2C_NXP_PORT1_GPIO_MODE)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port1 = {
 	.sda_pin	= I2C1_SDA,
 	.scl_pin	= I2C1_SCL,
@@ -132,7 +153,6 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port1 = {
 };
 
 
-#if  defined(CONFIG_I2C_NXP_PORT1_GPIO_MODE)
 static struct platform_device i2c_device_ch1 = {
 	.name	= "i2c-gpio",
 	.id		= 1,
@@ -141,17 +161,20 @@ static struct platform_device i2c_device_ch1 = {
 	},
 };
 #else
-static struct nxp_i2c_plat_data i2c_data_ch1 = {
-	.port		= 1,
-	.irq		= IRQ_PHY_I2C1,
-	.gpio 		= &nxp_i2c_gpio_port1,
-	.base_addr	= PHY_BASEADDR_I2C1,
-	.rate 		= CFG_I2C1_CLK,
+struct s3c2410_platform_i2c i2c_data_ch1 __initdata = {
+	.bus_num	= 1,
+    .flags      = 0, 
+    .slave_addr = 0x10,
+    .frequency  = 100*1000,
+    .sda_delay  = 100, 
 };
 
 static struct platform_device i2c_device_ch1 = {
-	.name	= DEV_NAME_I2C,
+	//.name	= DEV_NAME_I2C,
+	.name = "s3c2440-i2c",
 	.id		= 1,
+	.num_resources  = ARRAY_SIZE(s3c_i2c1_resource),
+	.resource   = s3c_i2c1_resource,
 	.dev    = {
 		.platform_data	= &i2c_data_ch1
 	},
@@ -160,6 +183,12 @@ static struct platform_device i2c_device_ch1 = {
 #endif
 
 #if	defined(CONFIG_I2C_NXP_PORT2)
+static struct resource s3c_i2c2_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C2, SZ_4K),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C2),
+};
+
+#if  defined(CONFIG_I2C_NXP_PORT2_GPIO_MODE)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port2 = {
 	.sda_pin	= I2C2_SDA,
 	.scl_pin	= I2C2_SCL,
@@ -167,8 +196,6 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port2 = {
 
 	.timeout	= 10,
 };
-
-#if  defined(CONFIG_I2C_NXP_PORT2_GPIO_MODE)
 static struct platform_device i2c_device_ch2 = {
 	.name	= "i2c-gpio",
 	.id		= 2,
@@ -177,17 +204,19 @@ static struct platform_device i2c_device_ch2 = {
 	},
 };
 #else
-static struct nxp_i2c_plat_data i2c_data_ch2 = {
-	.port		= 2,
-	.irq		= IRQ_PHY_I2C2,
-	.gpio 		= &nxp_i2c_gpio_port2,
-	.base_addr	= PHY_BASEADDR_I2C2,
-	.rate 		= CFG_I2C2_CLK,
+struct s3c2410_platform_i2c i2c_data_ch2 __initdata = {
+	.bus_num	= 2,
+    .flags      = 0, 
+    .slave_addr = 0x10,
+    .frequency  = 100*1000,
+    .sda_delay  = 100, 
 };
 
 static struct platform_device i2c_device_ch2 = {
-	.name	= DEV_NAME_I2C,
+	.name	="s3c2440-i2c",
 	.id		= 2,
+	.num_resources  = ARRAY_SIZE(s3c_i2c2_resource),
+	.resource   = s3c_i2c2_resource,
 	.dev    = {
 		.platform_data	= &i2c_data_ch2
 	},
@@ -435,7 +464,7 @@ extern void nxp_cpu_id_string(u32 *string);
 static bool i2s_ext_is_en(void)
 {
 	bool ret = false;
-	u8 name[12*4] = {0,};
+	u8 name[49] = {0,};
 	u8 *cmp_name = "NEXELL-NXP5430-R0-LF3000------------------------";
 
 	nxp_cpu_id_string((u32*)name);
@@ -1165,7 +1194,7 @@ void __init nxp_cpu_devs_register(void)
     platform_add_devices(uart_devices, ARRAY_SIZE(uart_devices));
 #endif
 
-#if defined(CONFIG_I2C_NXP)
+#if defined(CONFIG_I2C_NXP) || defined(CONFIG_I2C_SLSI)
     printk("mach: add device i2c bus (array:%d) \n", ARRAY_SIZE(i2c_devices));
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif
