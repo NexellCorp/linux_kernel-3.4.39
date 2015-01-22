@@ -98,29 +98,9 @@ const u8 g_DispBusSI[3] = {
  */
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
-static unsigned long dfs_freq_table[][2] = {
-	{ 1400000, 1200000, },
-	{ 1300000, 1200000, },
-	{ 1200000, 1100000, },
-	{ 1100000, 1100000, },
-	{ 1000000, 1000000, },
-	{  900000, 1000000, },
-	{  800000, 1000000, },
-	{  700000,  960000, },
-	{  600000,  960000, },
-	{  500000,  960000, },
-	{  400000,  960000, },
-};
-
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
-	.freq_table	   	= dfs_freq_table,
-	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1200*1000,
-	.max_retention  =   20*1000,
-	.rest_cpufreq   =  400*1000,
-	.rest_retention =    1*1000,
-	.supply_name 	= "vdd_arm_1.3V",
+		.supply_name 	= "vdd_arm_1.3V",
 };
 
 static struct platform_device dfs_plat_device = {
@@ -164,8 +144,8 @@ static int set_max_scale(const char *file, long new)
 	return 0;
 }
 
-#define	FREQ_TEMP_OVER			40	// 85: 45, 70: 43, 40
-#define	FREQ_TEMP_RELAX			38	//	70, 39
+#define	FREQ_TEMP_OVER			45	// 85: 45, 70: 43, 40
+#define	FREQ_TEMP_RELAX			43	//	70, 39
 #define	FREQ_MAX_DN_KHZ			400000
 #define	FREQ_MAX_UP_KHZ			1400000
 

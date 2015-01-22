@@ -24,6 +24,7 @@ extern void nxp_cpu_id_string(u32 string[12]);
 
 #define	CPU_ID_S5P4418		(0xE4418000)
 #define	VOLTAGE_STEP_UV		(12500)	/* 12.5 mV */
+#define	ASV_DEFAULT_LEVEL	(0)		/* for 4330 */
 
 #define ASV_TABLE_COND(id)	(id == CPU_ID_S5P4418)
 
@@ -60,7 +61,9 @@ extern void nxp_cpu_id_string(u32 string[12]);
  * 	| 10: 400 MHZ	|	1,075 mV|	1,025 mV|	1,000 mV|	1,000 mV|	1,000 mV|
  *	=============================================================================
  */
-#define	FREQ_ARRAY_SIZE		(11)
+
+#define	FREQ_MAX_FREQ_KHZ	(1400*1000)
+#define	FREQ_ARRAY_SIZE		(13)
 #define	UV(v)				(v*1000)
 
 struct asv_tb_info {
@@ -71,43 +74,50 @@ struct asv_tb_info {
 };
 
 #define	ASB_FREQ_MHZ {	\
-	[ 0] = 1400,	\
-	[ 1] = 1300,	\
-	[ 2] = 1200,	\
-	[ 3] = 1100,	\
-	[ 4] = 1000,	\
-	[ 5] =  900,	\
-	[ 6] =  800,	\
-	[ 7] =  700,	\
-	[ 8] =  600,	\
-	[ 9] =  500,	\
-	[10] =  400,	\
+	[ 0] = 1600,	\
+	[ 1] = 1500,	\
+	[ 2] = 1400,	\
+	[ 3] = 1300,	\
+	[ 4] = 1200,	\
+	[ 5] = 1100,	\
+	[ 6] = 1000,	\
+	[ 7] =  900,	\
+	[ 8] =  800,	\
+	[ 9] =  700,	\
+	[10] =  600,	\
+	[11] =  500,	\
+	[12] =  400,	\
 	}
 
 static struct asv_tb_info asv_tables[] = {
 	[0] = {	.ids = 10, .ro = 110,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1350), UV(1300), UV(1250), UV(1200), UV(1175), UV(1150),
+			.uV  = { UV(1350), UV(1350),	/* OVER FREQ */
+					 UV(1350), UV(1300), UV(1250), UV(1200), UV(1175), UV(1150),
 					 UV(1125), UV(1100), UV(1075), UV(1075), UV(1075) },
 	},
 	[1] = {	.ids = 15, .ro = 130,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1300), UV(1250), UV(1200), UV(1150), UV(1125), UV(1100),
+			.uV  = { UV(1300), UV(1300),	/* OVER FREQ */
+				     UV(1300), UV(1250), UV(1200), UV(1150), UV(1125), UV(1100),
 					 UV(1075), UV(1050), UV(1025), UV(1025), UV(1025) },
 	},
 	[2] = {	.ids = 20, .ro = 140,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1250), UV(1200), UV(1150), UV(1100), UV(1075), UV(1050),
+			.uV  = { UV(1250), UV(1250),	/* OVER FREQ */
+					 UV(1250), UV(1200), UV(1150), UV(1100), UV(1075), UV(1050),
 					 UV(1025), UV(1000), UV(1000), UV(1000), UV(1000) },
 	},
 	[3] = {	.ids = 50, .ro = 170,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1200), UV(1150), UV(1100), UV(1050), UV(1025), UV(1000),
+			.uV  = { UV(1200), UV(1200),	/* OVER FREQ */
+					 UV(1200), UV(1150), UV(1100), UV(1050), UV(1025), UV(1000),
 					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
 	},
 	[4] = {	.ids = 50, .ro = 170,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1175), UV(1100), UV(1050), UV(1000), UV(1000), UV(1000),
+			.uV  = { UV(1175), UV(1175),	/* OVER FREQ */
+					 UV(1175), UV(1100), UV(1050), UV(1000), UV(1000), UV(1000),
 					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
 	},
 };
@@ -141,6 +151,11 @@ static int s5p4418_asv_setup_table(unsigned long (*freq_tables)[2])
 	int i, ids = 0, ro = 0;
 	int idslv, rolv, asvlv;
 
+	if (2 > nxp_cpu_version()) {
+		asvlv = ASV_DEFAULT_LEVEL;
+		goto asv_find;
+	}
+
 	nxp_cpu_id_string(string);
 	nxp_cpu_id_ecid(ecid);
 
@@ -159,19 +174,12 @@ static int s5p4418_asv_setup_table(unsigned long (*freq_tables)[2])
 		pAsv_Table = &asv_tables[Asv_Param.level];
 		printk("DVFS: ASV[%d] IDS(%dmA) Ro(%d), Fusing Shift(%d), Group(%d)\n",
 			Asv_Param.level, pAsv_Table->ids, pAsv_Table->ro, gs, ag);
-		goto _find;
+		goto asv_done;
 	}
 
-	/* Use IDS/Ro Flags */
+	/* Use IDS/Ro */
 	ids = MtoL((ecid[1]>>16) & 0xFF, 8);
 	ro  = MtoL((ecid[1]>>24) & 0xFF, 8);
-
-	if (ASV_TABLE_COND(string[0])) {
-		if (!ids || !ro) {
-			printk("DVFS: ASV not support (0x%08x, IDS:%d, RO:%d)\n", string[0], ids, ro);
-			return -1;
-		}
-	}
 
 	/* find IDS Level */
 	for (i=0; (ASV_ARRAY_SIZE-1) > i; i++) {
@@ -192,14 +200,15 @@ static int s5p4418_asv_setup_table(unsigned long (*freq_tables)[2])
 	/* find Lowest ASV Level */
 	asvlv = idslv > rolv ? rolv: idslv;
 
+asv_find:
 	pAsv_Table = &asv_tables[asvlv];
 	Asv_Param.level = asvlv;
 	Asv_Param.ids = ids;
 	Asv_Param.ro  = ro;
 	printk("DVFS: ASV[%d] IDS(%dmA,%3d) Ro(%d,%3d)\n",
 			Asv_Param.level, pAsv_Table->ids, ids, pAsv_Table->ro, ro);
-_find:
 
+asv_done:
 	for (i=0; FREQ_ARRAY_SIZE > i; i++) {
 		freq_tables[i][0] = pAsv_Table->Mhz[i] * 1000;	/* frequency */
 		freq_tables[i][1] = pAsv_Table->uV [i];			/* voltage */
@@ -214,7 +223,7 @@ static long s5p4418_asv_get_voltage(long freqkhz)
 	int i = 0;
 
 	if (NULL == pAsv_Table)
-		return -EINVAL;;
+		return -EINVAL;
 
 	for (i = 0; FREQ_ARRAY_SIZE > i; i++) {
 		if (freqkhz == (pAsv_Table->Mhz[i]*1000)) {
@@ -231,25 +240,30 @@ static long s5p4418_asv_get_voltage(long freqkhz)
 	return uV;
 }
 
-static void s5p4418_asv_modify_vol_table(unsigned long (*freq_tables)[2],
+static int s5p4418_asv_modify_vol_table(unsigned long (*freq_tables)[2], int table_size,
 				long value, bool down, bool percent)
 {
 	long step_vol = VOLTAGE_STEP_UV;
 	long uV, dv, new;
-	int i = 0;
+	int i = 0, n = 0;
 
 	if (NULL == freq_tables ||
 		NULL == pAsv_Table || (0 > value))
-		return;
+		return -EINVAL;
 
 	/* initialzie */
-	for (i=0; FREQ_ARRAY_SIZE > i; i++)
-		freq_tables[i][1] = pAsv_Table->uV[i];
-
+	for (i = 0; table_size > i; i++) {
+		for (n = 0; FREQ_ARRAY_SIZE > n; n++) {
+			if (freq_tables[i][0] == (pAsv_Table->Mhz[n]*1000)) {
+				freq_tables[i][1] = pAsv_Table->uV[n];
+				break;
+			}
+		}
+	}
 	printk("DVFS:%s%ld%s\n", down?"-":"+", value, percent?"%":"mV");
 
 	/* new voltage */
-	for (i=0; FREQ_ARRAY_SIZE > i; i++) {
+	for (i = 0; table_size > i; i++) {
 		int al = 0;
 		uV = freq_tables[i][1];
 		dv = percent ? ((uV/100) * value) : (value*1000);
@@ -267,6 +281,7 @@ static void s5p4418_asv_modify_vol_table(unsigned long (*freq_tables)[2],
 
 		freq_tables[i][1] = new;
 	}
+	return 0;
 }
 
 static long s5p4418_asv_get_vol_margin(long uV, long value, bool down, bool percent)
@@ -275,6 +290,9 @@ static long s5p4418_asv_get_vol_margin(long uV, long value, bool down, bool perc
 	long dv = percent ? ((uV/100) * value) : (value*1000);
 	long new = down ? uV - dv : uV + dv;
 	int al = 0;
+
+	if (NULL == pAsv_Table)
+		return -EINVAL;
 
 	if ((new % step_vol)) {
 		new = (new / step_vol) * step_vol;
@@ -287,6 +305,9 @@ static long s5p4418_asv_get_vol_margin(long uV, long value, bool down, bool perc
 static int s5p4418_asv_current_label(char *buf)
 {
 	char *s = buf;
+
+	if (NULL == pAsv_Table)
+		return -EINVAL;
 
 	if (s && pAsv_Table) {
 		 if (!Asv_Param.flag) {
