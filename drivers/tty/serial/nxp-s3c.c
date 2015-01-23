@@ -54,7 +54,7 @@
 
 #include "nxp-s3c.h"
 
-#if  0
+#if  1
 #define dbg(x...)	printk(x)
 #else
 #define dbg(x...) 	do { } while (0)
@@ -122,7 +122,7 @@ static int s3c24xx_serial_txempty_nofifo(struct uart_port *port)
  * in the interrupt controller. Check if the port type is s3c64xx or higher.
  */
  
-#if 1 //def CONFIG_DMA_ENGINE
+#ifdef CONFIG_DMA_ENGINE
 #define PL011_DMA_BUFFER_SIZE PAGE_SIZE
 
 static int pl011_sgbuf_init(struct dma_chan *chan, struct pl011_sgbuf *sg,
