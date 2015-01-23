@@ -122,7 +122,7 @@ static int s3c24xx_serial_txempty_nofifo(struct uart_port *port)
  * in the interrupt controller. Check if the port type is s3c64xx or higher.
  */
  
-#ifdef CONFIG_DMA_ENGINE
+#if 1// def CONFIG_DMA_ENGINE
 #define PL011_DMA_BUFFER_SIZE PAGE_SIZE
 
 static int pl011_sgbuf_init(struct dma_chan *chan, struct pl011_sgbuf *sg,
