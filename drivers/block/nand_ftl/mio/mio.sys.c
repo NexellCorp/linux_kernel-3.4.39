@@ -39,6 +39,7 @@ static long miosys_ioctl_control(unsigned int cmd, unsigned long arg);
 static int miosys_print_wearleveldata(void);
 static int miosys_print_smart(void);
 static int miosys_print_readretrytable(void);
+static int miosys_print_elapsed_t(void);
 
 struct file_operations miosys_fops =
 {
@@ -102,6 +103,7 @@ static ssize_t miosys_write(struct file * file, const char * buf, size_t count, 
             MIOSYS_REQUEST_SMART = 0x10000000,
             MIOSYS_REQUEST_WEARLEVEL = 0x20000000,
             MIOSYS_REQUEST_READRETRYTABLE = 0x30000000,
+            MIOSYS_REQUEST_ELAPSED_T = 0x40000000,
 
             MIOSYS_MAX = 0xFFFFFFFF
 
@@ -129,6 +131,10 @@ static ssize_t miosys_write(struct file * file, const char * buf, size_t count, 
                     {
                         state = MIOSYS_REQUEST_READRETRYTABLE;
                     }
+                    else if (!memcmp((const void *)token, (const void *)"elapse_t", strlen("elapse_t")))
+                    {
+                        state = MIOSYS_REQUEST_ELAPSED_T;
+                    }
                     else
                     {
                         breaker = 1;
@@ -152,6 +158,7 @@ static ssize_t miosys_write(struct file * file, const char * buf, size_t count, 
             case MIOSYS_REQUEST_SMART:          { miosys_print_smart(); } break;
             case MIOSYS_REQUEST_WEARLEVEL:      { miosys_print_wearleveldata(); } break;
             case MIOSYS_REQUEST_READRETRYTABLE: { miosys_print_readretrytable(); } break;
+            case MIOSYS_REQUEST_ELAPSED_T:      { miosys_print_elapsed_t(); } break;
 
             default: {} break;
         }
@@ -467,6 +474,93 @@ int miosys_print_readretrytable(void)
     return 0;
 }
 
+int miosys_print_elapsed_t(void)
+{
+    unsigned char sz[32];
+
+    unsigned long long * sum = Exchange.debug.elapse_t.sum;
+    unsigned long long * avg = Exchange.debug.elapse_t.avg;
+    unsigned long long * min = Exchange.debug.elapse_t.min;
+    unsigned long long * max = Exchange.debug.elapse_t.max;
+
+    unsigned long long gt_sum     = sum[ELAPSE_T_TRANSACTION_THREAD_BACKGROUND] + sum[ELAPSE_T_TRANSACTION_THREAD_SCHEDULED] + sum[ELAPSE_T_TRANSACTION_THREAD_IO];
+    unsigned long long sum_nfc_rw = sum[ELAPSE_T_IO_NFC_RW] - (sum[ELAPSE_T_IO_NFC_RANDOMIZER_RW] + sum[ELAPSE_T_IO_NFC_DELAY_RW]);
+    unsigned long long avg_nfc_rw = avg[ELAPSE_T_IO_NFC_RW] - (avg[ELAPSE_T_IO_NFC_RANDOMIZER_RW] + avg[ELAPSE_T_IO_NFC_DELAY_RW]);
+    unsigned long long min_nfc_rw = min[ELAPSE_T_IO_NFC_RW] - (min[ELAPSE_T_IO_NFC_RANDOMIZER_RW] + min[ELAPSE_T_IO_NFC_DELAY_RW]);
+    unsigned long long max_nfc_rw = max[ELAPSE_T_IO_NFC_RW] - (max[ELAPSE_T_IO_NFC_RANDOMIZER_RW] + max[ELAPSE_T_IO_NFC_DELAY_RW]);
+    unsigned long long sum_nfc_r  = sum[ELAPSE_T_IO_NFC_R]  - (sum[ELAPSE_T_IO_NFC_RANDOMIZER_R]  + sum[ELAPSE_T_IO_NFC_DELAY_R]);
+    unsigned long long avg_nfc_r  = avg[ELAPSE_T_IO_NFC_R]  - (avg[ELAPSE_T_IO_NFC_RANDOMIZER_R]  + avg[ELAPSE_T_IO_NFC_DELAY_R]);
+    unsigned long long min_nfc_r  = min[ELAPSE_T_IO_NFC_R]  - (min[ELAPSE_T_IO_NFC_RANDOMIZER_R]  + min[ELAPSE_T_IO_NFC_DELAY_R]);
+    unsigned long long max_nfc_r  = max[ELAPSE_T_IO_NFC_R]  - (max[ELAPSE_T_IO_NFC_RANDOMIZER_R]  + max[ELAPSE_T_IO_NFC_DELAY_R]);
+    unsigned long long sum_nfc_w  = sum[ELAPSE_T_IO_NFC_W]  - (sum[ELAPSE_T_IO_NFC_RANDOMIZER_W]  + sum[ELAPSE_T_IO_NFC_DELAY_W]);
+    unsigned long long avg_nfc_w  = avg[ELAPSE_T_IO_NFC_W]  - (avg[ELAPSE_T_IO_NFC_RANDOMIZER_W]  + avg[ELAPSE_T_IO_NFC_DELAY_W]);
+    unsigned long long min_nfc_w  = min[ELAPSE_T_IO_NFC_W]  - (min[ELAPSE_T_IO_NFC_RANDOMIZER_W]  + min[ELAPSE_T_IO_NFC_DELAY_W]);
+    unsigned long long max_nfc_w  = max[ELAPSE_T_IO_NFC_W]  - (max[ELAPSE_T_IO_NFC_RANDOMIZER_W]  + max[ELAPSE_T_IO_NFC_DELAY_W]);
+
+    sum[ELAPSE_T_IO_FTL_RW] = sum[ELAPSE_T_IO_MEDIA_RW] - sum_nfc_rw;
+    avg[ELAPSE_T_IO_FTL_RW] = avg[ELAPSE_T_IO_MEDIA_RW] - avg_nfc_rw;
+    min[ELAPSE_T_IO_FTL_RW] = min[ELAPSE_T_IO_MEDIA_RW] - min_nfc_rw;
+    max[ELAPSE_T_IO_FTL_RW] = max[ELAPSE_T_IO_MEDIA_RW] - max_nfc_rw;
+    sum[ELAPSE_T_IO_FTL_R]  = sum[ELAPSE_T_IO_MEDIA_R]  - sum_nfc_r;
+    avg[ELAPSE_T_IO_FTL_R]  = avg[ELAPSE_T_IO_MEDIA_R]  - avg_nfc_r;
+    min[ELAPSE_T_IO_FTL_R]  = min[ELAPSE_T_IO_MEDIA_R]  - min_nfc_r;
+    max[ELAPSE_T_IO_FTL_R]  = max[ELAPSE_T_IO_MEDIA_R]  - max_nfc_r;
+    sum[ELAPSE_T_IO_FTL_W]  = sum[ELAPSE_T_IO_MEDIA_W]  - sum_nfc_w;
+    avg[ELAPSE_T_IO_FTL_W]  = avg[ELAPSE_T_IO_MEDIA_W]  - avg_nfc_w;
+    min[ELAPSE_T_IO_FTL_W]  = min[ELAPSE_T_IO_MEDIA_W]  - min_nfc_w;
+    max[ELAPSE_T_IO_FTL_W]  = max[ELAPSE_T_IO_MEDIA_W]  - max_nfc_w;
+                                                                                                            __PRINT(KERN_INFO "\n");
+                                                                                                            __PRINT(KERN_INFO " Measured On Transaction Thread (Measured Unit is nano second)");
+                                                                                                            __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
+                                                                                                            __PRINT(KERN_INFO " |                       |                  Sum |             Avg |             Min |             Max |     Ratio |");
+                                                                                                            __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
+    Exchange.sys.fn.ratio(sz, gt_sum, sum[ELAPSE_T_TRANSACTION_THREAD_BACKGROUND]);                         __PRINT(KERN_INFO " | BackGround            | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_TRANSACTION_THREAD_BACKGROUND], avg[ELAPSE_T_TRANSACTION_THREAD_BACKGROUND], min[ELAPSE_T_TRANSACTION_THREAD_BACKGROUND], max[ELAPSE_T_TRANSACTION_THREAD_BACKGROUND], sz);
+    Exchange.sys.fn.ratio(sz, gt_sum, sum[ELAPSE_T_TRANSACTION_THREAD_SCHEDULED ]);                         __PRINT(KERN_INFO " | Scheduled             | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_TRANSACTION_THREAD_SCHEDULED ], avg[ELAPSE_T_TRANSACTION_THREAD_SCHEDULED ], min[ELAPSE_T_TRANSACTION_THREAD_SCHEDULED ], max[ELAPSE_T_TRANSACTION_THREAD_SCHEDULED ], sz);
+    Exchange.sys.fn.ratio(sz, gt_sum, sum[ELAPSE_T_TRANSACTION_THREAD_IO        ]);                         __PRINT(KERN_INFO " | Transaction           | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_TRANSACTION_THREAD_IO        ], avg[ELAPSE_T_TRANSACTION_THREAD_IO        ], min[ELAPSE_T_TRANSACTION_THREAD_IO        ], max[ELAPSE_T_TRANSACTION_THREAD_IO        ], sz);
+                                                                                                            __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
+                                                                                                            __PRINT(KERN_INFO "\n");
+                                                                                                            __PRINT(KERN_INFO " Measured On Transaction (Measured Unit is nano second)");
+                                                                                                            __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
+                                                                                                            __PRINT(KERN_INFO " |                       |                  Sum |             Avg |             Min |             Max |     Ratio |");
+                                                                                                            __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_TRANSACTION_THREAD_IO], sum[ELAPSE_T_TRANSACTION_THREAD_IO]);    __PRINT(KERN_INFO " | Transaction           | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_TRANSACTION_THREAD_IO], avg[ELAPSE_T_TRANSACTION_THREAD_IO], min[ELAPSE_T_TRANSACTION_THREAD_IO], max[ELAPSE_T_TRANSACTION_THREAD_IO], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_TRANSACTION_THREAD_IO], sum[ELAPSE_T_IO_MEDIA_DISCARD     ]);    __PRINT(KERN_INFO " | - Media Discard       | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_MEDIA_DISCARD     ], avg[ELAPSE_T_IO_MEDIA_DISCARD     ], min[ELAPSE_T_IO_MEDIA_DISCARD     ], max[ELAPSE_T_IO_MEDIA_DISCARD     ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_TRANSACTION_THREAD_IO], sum[ELAPSE_T_IO_MEDIA_FLUSH       ]);    __PRINT(KERN_INFO " | - Media Flush         | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_MEDIA_FLUSH       ], avg[ELAPSE_T_IO_MEDIA_FLUSH       ], min[ELAPSE_T_IO_MEDIA_FLUSH       ], max[ELAPSE_T_IO_MEDIA_FLUSH       ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_TRANSACTION_THREAD_IO], sum[ELAPSE_T_IO_MEDIA_RW          ]);    __PRINT(KERN_INFO " | - Media I/O           | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_MEDIA_RW          ], avg[ELAPSE_T_IO_MEDIA_RW          ], min[ELAPSE_T_IO_MEDIA_RW          ], max[ELAPSE_T_IO_MEDIA_RW          ], sz);
+                                                                                                            __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
+                                                                                                            __PRINT(KERN_INFO "\n");
+                                                                                                            __PRINT(KERN_INFO " Measured On Media I/O (Measured Unit is nano second)");
+                                                                                                            __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
+                                                                                                            __PRINT(KERN_INFO " |                       |                  Sum |             Avg |             Min |             Max |     Ratio |");
+                                                                                                            __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_MEDIA_RW          ]);    __PRINT(KERN_INFO " | Media I/O         R/W | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_MEDIA_RW          ], avg[ELAPSE_T_IO_MEDIA_RW          ], min[ELAPSE_T_IO_MEDIA_RW          ], max[ELAPSE_T_IO_MEDIA_RW          ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_FTL_RW            ]);    __PRINT(KERN_INFO " | - FTL             R/W | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_FTL_RW            ], avg[ELAPSE_T_IO_FTL_RW            ], min[ELAPSE_T_IO_FTL_RW            ], max[ELAPSE_T_IO_FTL_RW            ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum_nfc_rw                         );    __PRINT(KERN_INFO " | - NFC             R/W | %20lld | %15lld | %15lld | %15lld | %s |", sum_nfc_rw                         , avg_nfc_rw                         , min_nfc_rw                         , max_nfc_rw                         , sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_NFC_RANDOMIZER_RW ]);    __PRINT(KERN_INFO " | - NFC Randomizer  R/W | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_NFC_RANDOMIZER_RW ], avg[ELAPSE_T_IO_NFC_RANDOMIZER_RW ], min[ELAPSE_T_IO_NFC_RANDOMIZER_RW ], max[ELAPSE_T_IO_NFC_RANDOMIZER_RW ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_NFC_DELAY_RW      ]);    __PRINT(KERN_INFO " | - NFC Delay       R/W | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_NFC_DELAY_RW      ], avg[ELAPSE_T_IO_NFC_DELAY_RW      ], min[ELAPSE_T_IO_NFC_DELAY_RW      ], max[ELAPSE_T_IO_NFC_DELAY_RW      ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_MEMIO_RW          ]);    __PRINT(KERN_INFO " | - Memory I/O      R/W | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_MEMIO_RW          ], avg[ELAPSE_T_IO_MEMIO_RW          ], min[ELAPSE_T_IO_MEMIO_RW          ], max[ELAPSE_T_IO_MEMIO_RW          ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_FTL_MAP_SEARCH_RW ]);    __PRINT(KERN_INFO " | - Ftl Map Search  R/W | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_FTL_MAP_SEARCH_RW ], avg[ELAPSE_T_IO_FTL_MAP_SEARCH_RW ], min[ELAPSE_T_IO_FTL_MAP_SEARCH_RW ], max[ELAPSE_T_IO_FTL_MAP_SEARCH_RW ], sz);
+                                                                                                            __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_MEDIA_R           ]);    __PRINT(KERN_INFO " | Media I/O         RD  | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_MEDIA_R           ], avg[ELAPSE_T_IO_MEDIA_R           ], min[ELAPSE_T_IO_MEDIA_R           ], max[ELAPSE_T_IO_MEDIA_R           ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_FTL_R             ]);    __PRINT(KERN_INFO " | - FTL             RD  | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_FTL_R             ], avg[ELAPSE_T_IO_FTL_R             ], min[ELAPSE_T_IO_FTL_R             ], max[ELAPSE_T_IO_FTL_R             ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum_nfc_r                          );    __PRINT(KERN_INFO " | - NFC             RD  | %20lld | %15lld | %15lld | %15lld | %s |", sum_nfc_r                          , avg_nfc_r                          , min_nfc_r                          , max_nfc_r                          , sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_NFC_RANDOMIZER_R  ]);    __PRINT(KERN_INFO " | - NFC Randomizer  RD  | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_NFC_RANDOMIZER_R  ], avg[ELAPSE_T_IO_NFC_RANDOMIZER_R  ], min[ELAPSE_T_IO_NFC_RANDOMIZER_R  ], max[ELAPSE_T_IO_NFC_RANDOMIZER_R  ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_NFC_DELAY_R       ]);    __PRINT(KERN_INFO " | - NFC Delay       RD  | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_NFC_DELAY_R       ], avg[ELAPSE_T_IO_NFC_DELAY_R       ], min[ELAPSE_T_IO_NFC_DELAY_R       ], max[ELAPSE_T_IO_NFC_DELAY_R       ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_MEMIO_R           ]);    __PRINT(KERN_INFO " | - Memory I/O      RD  | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_MEMIO_R           ], avg[ELAPSE_T_IO_MEMIO_R           ], min[ELAPSE_T_IO_MEMIO_R           ], max[ELAPSE_T_IO_MEMIO_R           ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_FTL_MAP_SEARCH_R  ]);    __PRINT(KERN_INFO " | - Ftl Map Search  RD  | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_FTL_MAP_SEARCH_R  ], avg[ELAPSE_T_IO_FTL_MAP_SEARCH_R  ], min[ELAPSE_T_IO_FTL_MAP_SEARCH_R  ], max[ELAPSE_T_IO_FTL_MAP_SEARCH_R  ], sz);
+                                                                                                            __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_MEDIA_W           ]);    __PRINT(KERN_INFO " | Media I/O         WR  | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_MEDIA_W           ], avg[ELAPSE_T_IO_MEDIA_W           ], min[ELAPSE_T_IO_MEDIA_W           ], max[ELAPSE_T_IO_MEDIA_W           ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_FTL_W             ]);    __PRINT(KERN_INFO " | - FTL             WR  | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_FTL_W             ], avg[ELAPSE_T_IO_FTL_W             ], min[ELAPSE_T_IO_FTL_W             ], max[ELAPSE_T_IO_FTL_W             ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum_nfc_w                          );    __PRINT(KERN_INFO " | - NFC             WR  | %20lld | %15lld | %15lld | %15lld | %s |", sum_nfc_w                          , avg_nfc_w                          , min_nfc_w                          , max_nfc_w                          , sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_NFC_RANDOMIZER_W  ]);    __PRINT(KERN_INFO " | - NFC Randomizer  WR  | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_NFC_RANDOMIZER_W  ], avg[ELAPSE_T_IO_NFC_RANDOMIZER_W  ], min[ELAPSE_T_IO_NFC_RANDOMIZER_W  ], max[ELAPSE_T_IO_NFC_RANDOMIZER_W  ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_NFC_DELAY_W       ]);    __PRINT(KERN_INFO " | - NFC Delay       WR  | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_NFC_DELAY_W       ], avg[ELAPSE_T_IO_NFC_DELAY_W       ], min[ELAPSE_T_IO_NFC_DELAY_W       ], max[ELAPSE_T_IO_NFC_DELAY_W       ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_MEMIO_W           ]);    __PRINT(KERN_INFO " | - Memory I/O      WR  | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_MEMIO_W           ], avg[ELAPSE_T_IO_MEMIO_W           ], min[ELAPSE_T_IO_MEMIO_W           ], max[ELAPSE_T_IO_MEMIO_W           ], sz);
+    Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_FTL_MAP_SEARCH_W  ]);    __PRINT(KERN_INFO " | - Ftl Map Search  WR  | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_FTL_MAP_SEARCH_W  ], avg[ELAPSE_T_IO_FTL_MAP_SEARCH_W  ], min[ELAPSE_T_IO_FTL_MAP_SEARCH_W  ], max[ELAPSE_T_IO_FTL_MAP_SEARCH_W  ], sz);
+                                                                                                            __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
+                                                                                                            __PRINT(KERN_INFO "\n");
+    return 0;
+}
+
 /******************************************************************************
  * 
  ******************************************************************************/
@@ -559,13 +653,11 @@ static long miosys_ioctl_get_user_argument(unsigned int cmd, unsigned long arg, 
     long ret = 0;
     void __user *argp = (void __user *)arg;
     int arg_size = 0;
-  //struct miosys_media_io    *arg_media   = (struct miosys_media_io *)arg_buf;
-    struct miosys_nand_io     *arg_nand    = (struct miosys_nand_io *)arg_buf;
-    struct miosys_nand_raw_io *arg_nandraw = (struct miosys_nand_raw_io *)arg_buf;
+  //struct miosys_media_io *arg_media = (struct miosys_media_io *)arg_buf;
+    struct miosys_nand_io  *arg_nand  = (struct miosys_nand_io *)arg_buf;
 
     if ((arg_buf_size < sizeof(struct miosys_media_io)) ||
-        (arg_buf_size < sizeof(struct miosys_nand_io)) ||
-        (arg_buf_size < sizeof(struct miosys_nand_raw_io)))
+        (arg_buf_size < sizeof(struct miosys_nand_io)))
     {
         return -EFAULT;
     }
@@ -584,18 +676,18 @@ static long miosys_ioctl_get_user_argument(unsigned int cmd, unsigned long arg, 
     // check arguments
     switch (cmd)
     {
-#if 0
-    case MIOSYS_MEDIA_READ:
-    case MIOSYS_MEDIA_WRITE:
-    {
-        if (!arg_media->buf)    { return -EINVAL; }
-        if (!arg_media->blkcnt) { return -EINVAL; }
-        if (arg_media->blknr + arg_media->blkcnt > *Exchange.ftl.Capacity) { return -ENXIO; }
-    } break;
-#endif
+  //case MIOSYS_MEDIA_READ:
+  //case MIOSYS_MEDIA_WRITE:
+  //{
+  //    if (!arg_media->buf)    { return -EINVAL; }
+  //    if (!arg_media->blkcnt) { return -EINVAL; }
+  //    if (arg_media->blknr + arg_media->blkcnt > *Exchange.ftl.Capacity) { return -ENXIO; }
+  //} break;
 
     case MIOSYS_NAND_READ:
     case MIOSYS_NAND_WRITE:
+    case MIOSYS_NANDRAW_READ:
+    case MIOSYS_NANDRAW_WRITE:
     {
         if (!arg_nand->buf) { return -EINVAL; }
         if (!arg_nand->len) { return -EINVAL; }
@@ -603,25 +695,10 @@ static long miosys_ioctl_get_user_argument(unsigned int cmd, unsigned long arg, 
     } break;
 
     case MIOSYS_NAND_ERASE:
+    case MIOSYS_NANDRAW_ERASE:
     {
         if (!arg_nand->len) { return -EINVAL; }
         if (((arg_nand->ofs >> 9) + (arg_nand->len >> 9)) > *Exchange.ftl.Capacity) { return -ENXIO; }
-    } break;
-
-    case MIOSYS_NANDRAW_READ:
-    case MIOSYS_NANDRAW_WRITE:
-    {
-        if (!arg_nandraw->buf) { return -EINVAL; }
-        if (!arg_nandraw->len) { return -EINVAL; }
-        if (((arg_nandraw->ofs >> 9) + (arg_nandraw->len >> 9)) > *Exchange.ftl.Capacity) { return -ENXIO; }
-        if (!arg_nandraw->pages_per_block || !arg_nandraw->bytes_per_page || !arg_nandraw->blocks_per_lun) { return -EINVAL; }
-    } break;
-
-    case MIOSYS_NANDRAW_ERASE:
-    {
-        if (!arg_nandraw->len) { return -EINVAL; }
-        if (((arg_nandraw->ofs >> 9) + (arg_nandraw->len >> 9)) > *Exchange.ftl.Capacity) { return -ENXIO; }
-        if (!arg_nandraw->pages_per_block || !arg_nandraw->bytes_per_page || !arg_nandraw->blocks_per_lun) { return -EINVAL; }
     } break;
 
     default: { return -ENOEXEC; } break;
@@ -639,9 +716,9 @@ static long miosys_ioctl_read(unsigned int cmd, unsigned long arg)
     unsigned int arg_buf_size = 40;
     char __user arg_buf[40] = {0,};
     unsigned int buf_size = 0;
-  //struct miosys_media_io    *arg_media   = (struct miosys_media_io *)arg_buf;
-    struct miosys_nand_io     *arg_nand    = (struct miosys_nand_io *)arg_buf;
-    struct miosys_nand_raw_io *arg_nandraw = (struct miosys_nand_raw_io *)arg_buf;
+    unsigned char enable_ecc = 0;
+  //struct miosys_media_io *arg_media = (struct miosys_media_io *)arg_buf;
+    struct miosys_nand_io  *arg_nand  = (struct miosys_nand_io *)arg_buf;
 
     ret = miosys_ioctl_get_user_argument(cmd, arg, (void *)arg_buf, arg_buf_size);
     if (ret < 0)
@@ -652,9 +729,9 @@ static long miosys_ioctl_read(unsigned int cmd, unsigned long arg)
 
     switch (cmd)
     {
-  //case MIOSYS_MEDIA_READ:   { buf = (unsigned char *)arg_media->buf;   buf_size = arg_media->blkcnt << 9; } break;
-    case MIOSYS_NAND_READ:    { buf = (unsigned char *)arg_nand->buf;    buf_size = arg_nand->len;          } break;
-    case MIOSYS_NANDRAW_READ: { buf = (unsigned char *)arg_nandraw->buf; buf_size = arg_nandraw->len;       } break;
+  //case MIOSYS_MEDIA_READ:   { buf = (unsigned char *)arg_media->buf; buf_size = arg_media->blkcnt << 9; } break;
+    case MIOSYS_NAND_READ:    { buf = (unsigned char *)arg_nand->buf;  buf_size = arg_nand->len;          } break;
+    case MIOSYS_NANDRAW_READ: { buf = (unsigned char *)arg_nand->buf;  buf_size = arg_nand->len;          } break;
     }
 
     kbuf = (unsigned char *)vmalloc(buf_size);
@@ -672,6 +749,7 @@ static long miosys_ioctl_read(unsigned int cmd, unsigned long arg)
   //} break;
 
     case MIOSYS_NAND_READ:
+    case MIOSYS_NANDRAW_READ:
     {
         if (!NFC_PHY_LOWAPI_is_init())
         {
@@ -681,25 +759,9 @@ static long miosys_ioctl_read(unsigned int cmd, unsigned long arg)
         }
 
         len = arg_nand->len;
-        if (NFC_PHY_LOWAPI_nand_read(arg_nand->ofs, &len, (u_char *)kbuf) < 0)
-        {
-            ret = -EIO;
-        }
+        enable_ecc = (cmd == MIOSYS_NAND_READ)? 1: 0;
 
-    } break;
-
-    case MIOSYS_NANDRAW_READ:
-    {
-        MIO_NAND_RAW_INFO info;
-
-        info.channel = arg_nandraw->channel;
-        info.phyway = arg_nandraw->phyway;
-        info.pages_per_block = arg_nandraw->pages_per_block;
-        info.bytes_per_page = arg_nandraw->bytes_per_page;
-        info.blocks_per_lun = arg_nandraw->blocks_per_lun;
-
-        len = arg_nandraw->len;
-        if (NFC_PHY_LOWAPI_nand_raw_read(&info, arg_nandraw->ofs, &len, (u_char *)kbuf) < 0)
+        if (NFC_PHY_LOWAPI_nand_read(arg_nand->ofs, &len, (u_char *)kbuf, enable_ecc) < 0)
         {
             ret = -EIO;
         }
@@ -754,9 +816,9 @@ static long miosys_ioctl_write(unsigned int cmd, unsigned long arg)
     unsigned int arg_buf_size = 40;
     char __user arg_buf[40] = {0,};
     unsigned int buf_size = 0;
-  //struct miosys_media_io    *arg_media   = (struct miosys_media_io *)arg_buf;
-    struct miosys_nand_io     *arg_nand    = (struct miosys_nand_io *)arg_buf;
-    struct miosys_nand_raw_io *arg_nandraw = (struct miosys_nand_raw_io *)arg_buf;
+    unsigned char enable_ecc = 0;
+  //struct miosys_media_io *arg_media = (struct miosys_media_io *)arg_buf;
+    struct miosys_nand_io  *arg_nand  = (struct miosys_nand_io *)arg_buf;
 
     ret = miosys_ioctl_get_user_argument(cmd, arg, (void *)arg_buf, arg_buf_size);
     if (ret < 0)
@@ -766,9 +828,9 @@ static long miosys_ioctl_write(unsigned int cmd, unsigned long arg)
 
     switch (cmd)
     {
-  //case MIOSYS_MEDIA_WRITE:   { buf = (unsigned char *)arg_media->buf;   buf_size = arg_media->blkcnt << 9; } break;
-    case MIOSYS_NAND_WRITE:    { buf = (unsigned char *)arg_nand->buf;    buf_size = arg_nand->len;          } break;
-    case MIOSYS_NANDRAW_WRITE: { buf = (unsigned char *)arg_nandraw->buf; buf_size = arg_nandraw->len;       } break;
+  //case MIOSYS_MEDIA_WRITE:   { buf = (unsigned char *)arg_media->buf; buf_size = arg_media->blkcnt << 9; } break;
+    case MIOSYS_NAND_WRITE:    { buf = (unsigned char *)arg_nand->buf;  buf_size = arg_nand->len;          } break;
+    case MIOSYS_NANDRAW_WRITE: { buf = (unsigned char *)arg_nand->buf;  buf_size = arg_nand->len;          } break;
     }
 
     kbuf = (unsigned char *)vmalloc(buf_size);
@@ -792,6 +854,7 @@ static long miosys_ioctl_write(unsigned int cmd, unsigned long arg)
   //} break;
 
     case MIOSYS_NAND_WRITE:
+    case MIOSYS_NANDRAW_WRITE:
     {
         if (!NFC_PHY_LOWAPI_is_init())
         {
@@ -801,25 +864,9 @@ static long miosys_ioctl_write(unsigned int cmd, unsigned long arg)
         }
 
         len = arg_nand->len;
-        if (NFC_PHY_LOWAPI_nand_write(arg_nand->ofs, &len, (u_char *)kbuf) < 0)
-        {
-            ret = -EIO;
-        }
+        enable_ecc = (cmd == MIOSYS_NAND_WRITE)? 1: 0;
 
-    } break;
-
-    case MIOSYS_NANDRAW_WRITE:
-    {
-        MIO_NAND_RAW_INFO info;
-
-        info.channel = arg_nandraw->channel;
-        info.phyway = arg_nandraw->phyway;
-        info.pages_per_block = arg_nandraw->pages_per_block;
-        info.bytes_per_page = arg_nandraw->bytes_per_page;
-        info.blocks_per_lun = arg_nandraw->blocks_per_lun;
-
-        len = arg_nandraw->len;
-        if (NFC_PHY_LOWAPI_nand_raw_write(&info, arg_nandraw->ofs, &len, (u_char *)kbuf) < 0)
+        if (NFC_PHY_LOWAPI_nand_write(arg_nand->ofs, &len, (u_char *)kbuf, enable_ecc) < 0)
         {
             ret = -EIO;
         }
@@ -864,7 +911,6 @@ static long miosys_ioctl_erase(unsigned int cmd, unsigned long arg)
     unsigned int arg_buf_size = 40;
     char __user arg_buf[40] = {0,};
     struct miosys_nand_io     *arg_nand    = (struct miosys_nand_io *)arg_buf;
-    struct miosys_nand_raw_io *arg_nandraw = (struct miosys_nand_raw_io *)arg_buf;
 
     ret = miosys_ioctl_get_user_argument(cmd, arg, (void *)arg_buf, arg_buf_size);
     if (ret < 0)
@@ -875,6 +921,7 @@ static long miosys_ioctl_erase(unsigned int cmd, unsigned long arg)
     switch (cmd)
     {
     case MIOSYS_NAND_ERASE:
+    case MIOSYS_NANDRAW_ERASE:
     {
         if (!NFC_PHY_LOWAPI_is_init())
         {
@@ -889,22 +936,7 @@ static long miosys_ioctl_erase(unsigned int cmd, unsigned long arg)
         }
     } break;
 
-    case MIOSYS_NANDRAW_ERASE:
-    {
-        MIO_NAND_RAW_INFO info;
-    
-        info.channel = arg_nandraw->channel;
-        info.phyway = arg_nandraw->phyway;
-        info.pages_per_block = arg_nandraw->pages_per_block;
-        info.bytes_per_page = arg_nandraw->bytes_per_page;
-        info.blocks_per_lun = arg_nandraw->blocks_per_lun;
-    
-        if (NFC_PHY_LOWAPI_nand_raw_erase(&info, arg_nandraw->ofs, arg_nandraw->len) < 0)
-        {
-            ret = -EIO;
-        }
-    } break;
-
+    default: {} break;
     }
 
     return ret;
@@ -919,5 +951,3 @@ static long miosys_ioctl_control(unsigned int cmd, unsigned long arg)
 
     return ret;
 }
-
-

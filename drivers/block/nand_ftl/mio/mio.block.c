@@ -252,17 +252,29 @@ static int mio_transaction(struct request * _req, struct mio_state * _io_state)
      **************************************************************************/
     if (cmd_flags & REQ_DISCARD)
     {
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+        if (Exchange.sys.fn.elapse_t_start) { Exchange.sys.fn.elapse_t_start(ELAPSE_T_IO_MEDIA_DISCARD); }
+#endif
         media_flush(io_state);
         media_trim(io_state, req_lba, req_seccnt);
         while (!media_is_idle(io_state));
 
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+        if (Exchange.sys.fn.elapse_t_end) { Exchange.sys.fn.elapse_t_end(ELAPSE_T_IO_MEDIA_DISCARD); }
+#endif
         return 0;
     }
     else if (cmd_flags & REQ_FLUSH)
     {
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+        if (Exchange.sys.fn.elapse_t_start) { Exchange.sys.fn.elapse_t_start(ELAPSE_T_IO_MEDIA_FLUSH); }
+#endif
         media_flush(io_state);
         while (!media_is_idle(io_state));
 
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+        if (Exchange.sys.fn.elapse_t_end) { Exchange.sys.fn.elapse_t_end(ELAPSE_T_IO_MEDIA_FLUSH); }
+#endif
         // Strange ??
         if ((req_lba + req_seccnt) <= total_seccnt)
         {
@@ -310,12 +322,12 @@ static int mio_transaction(struct request * _req, struct mio_state * _io_state)
         {
             media_write(req_lba, req_seccnt, req_buffer, io_state);
 
-            MioSmartInfo.volatile_writesectors += req_seccnt;
-
             MioSmartInfo.io_current.write_bytes += req_bytes;
             MioSmartInfo.io_current.write_sectors += req_seccnt;
             MioSmartInfo.io_accumulate.write_bytes += req_bytes;
             MioSmartInfo.io_accumulate.write_sectors += req_seccnt;
+
+            MioSmartInfo.volatile_writesectors += req_seccnt;
 
         } break;
 
@@ -407,8 +419,14 @@ static int mio_transaction_thread(void * _arg)
                 {
                     mutex_lock(miosys_dev.ioctl_mutex);
 
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+                    if (Exchange.sys.fn.elapse_t_start) { Exchange.sys.fn.elapse_t_start(ELAPSE_T_TRANSACTION_THREAD_BACKGROUND); }
+#endif
                     mio_background(io_state);
 
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+                    if (Exchange.sys.fn.elapse_t_end) { Exchange.sys.fn.elapse_t_end(ELAPSE_T_TRANSACTION_THREAD_BACKGROUND); }
+#endif
                     mutex_unlock(miosys_dev.ioctl_mutex);
                 }
                 spin_lock_irq(rq->queue_lock);
@@ -427,7 +445,15 @@ static int mio_transaction_thread(void * _arg)
             spin_unlock_irq(rq->queue_lock);
             {
                 io_state->transaction.status = MIO_SCHEDULED;
-                wait_event_timeout(io_state->transaction.wake.q, io_state->transaction.wake.cnt, HZ);
+
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+                if (Exchange.sys.fn.elapse_t_start) { Exchange.sys.fn.elapse_t_start(ELAPSE_T_TRANSACTION_THREAD_SCHEDULED); }
+#endif
+                wait_event_timeout(io_state->transaction.wake.q, io_state->transaction.wake.cnt, HZ/10);
+
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+                if (Exchange.sys.fn.elapse_t_end) { Exchange.sys.fn.elapse_t_end(ELAPSE_T_TRANSACTION_THREAD_SCHEDULED); }
+#endif
                 io_state->transaction.status = MIO_IDLE;
             }
             spin_lock_irq(rq->queue_lock);
@@ -442,8 +468,15 @@ static int mio_transaction_thread(void * _arg)
             mutex_lock(miosys_dev.ioctl_mutex);
 
             media_super();
+
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+            if (Exchange.sys.fn.elapse_t_start) { Exchange.sys.fn.elapse_t_start(ELAPSE_T_TRANSACTION_THREAD_IO); }
+#endif
             res = mio_transaction(req, io_state);
 
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+            if (Exchange.sys.fn.elapse_t_end) { Exchange.sys.fn.elapse_t_end(ELAPSE_T_TRANSACTION_THREAD_IO); }
+#endif
             mutex_unlock(miosys_dev.ioctl_mutex);
 
             if (io_state->transaction.wake.cnt) { io_state->transaction.wake.cnt -= 1; }
@@ -514,6 +547,149 @@ static void mio_mutext_unlock(void)
     mutex_unlock(&mio_dev.io_state->transaction.lock.m);
 }
 
+static void mio_elapse_t_init(void)
+{
+    memset(Exchange.debug.elapse_t.sum, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
+    memset(Exchange.debug.elapse_t.avg, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
+    memset(Exchange.debug.elapse_t.cnt, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
+    memset(Exchange.debug.elapse_t.min, 0xFF, sizeof(unsigned long long) * ELAPSE_T_MAX);
+    memset(Exchange.debug.elapse_t.max, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
+}
+
+/******************************************************************************
+ * Elapse Time
+ ******************************************************************************/
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+
+static struct
+{
+    ktime_t t1[ELAPSE_T_MAX];
+    ktime_t t2[ELAPSE_T_MAX];
+    ktime_t dt[ELAPSE_T_MAX];
+
+} measure_t;
+
+static unsigned char mio_elapse_t_condition(int _i)
+{
+    unsigned char measure_condition = 0;
+
+    switch (_i)
+    {
+        case ELAPSE_T_TRANSACTION_THREAD_00:
+        case ELAPSE_T_TRANSACTION_THREAD_01:
+        case ELAPSE_T_TRANSACTION_THREAD_02:
+        case ELAPSE_T_TRANSACTION_THREAD_03:
+        case ELAPSE_T_TRANSACTION_THREAD_04:
+        case ELAPSE_T_TRANSACTION_THREAD_05:
+        case ELAPSE_T_TRANSACTION_THREAD_06:
+        case ELAPSE_T_TRANSACTION_THREAD_07:
+        {
+            measure_condition = 1;
+
+        } break;
+
+        case ELAPSE_T_IO_MEDIA_DISCARD:
+        case ELAPSE_T_IO_MEDIA_FLUSH:
+        case ELAPSE_T_IO_MEDIA_RW:
+        case ELAPSE_T_IO_MEDIA_R:
+        case ELAPSE_T_IO_MEDIA_W:
+        {
+            measure_condition = 1;
+
+        } break;
+
+        case ELAPSE_T_IO_NFC_RW:
+        case ELAPSE_T_IO_NFC_RANDOMIZER_RW:
+        case ELAPSE_T_IO_NFC_DELAY_RW:
+        case ELAPSE_T_IO_MEMIO_RW:
+        case ELAPSE_T_IO_FTL_MAP_SEARCH_RW:
+        {
+            if (Exchange.debug.elapse_t.io.read || Exchange.debug.elapse_t.io.write)
+            {
+                measure_condition = 1;
+            }
+
+        } break;
+
+        case ELAPSE_T_IO_NFC_R:
+        case ELAPSE_T_IO_NFC_RANDOMIZER_R:
+        case ELAPSE_T_IO_NFC_DELAY_R:
+        case ELAPSE_T_IO_MEMIO_R:
+        case ELAPSE_T_IO_FTL_MAP_SEARCH_R:
+        {
+            if (Exchange.debug.elapse_t.io.read)
+            {
+                measure_condition = 1;
+            }
+
+        } break;
+
+        case ELAPSE_T_IO_NFC_W:
+        case ELAPSE_T_IO_NFC_RANDOMIZER_W:
+        case ELAPSE_T_IO_NFC_DELAY_W:
+        case ELAPSE_T_IO_MEMIO_W:
+        case ELAPSE_T_IO_FTL_MAP_SEARCH_W:
+        {
+            if (Exchange.debug.elapse_t.io.write)
+            {
+                measure_condition = 1;
+            }
+
+        } break;
+    }
+
+    return measure_condition;
+}
+
+static void mio_elapse_t_start(int _i)
+{
+    if (mio_elapse_t_condition(_i))
+    {
+        measure_t.t1[_i] = ktime_get();
+    }
+}
+
+static void mio_elapse_t_end(int _i)
+{
+    if (mio_elapse_t_condition(_i))
+    {
+        measure_t.t2[_i] = ktime_get();
+        measure_t.dt[_i].tv64 = ktime_to_ns(ktime_sub(measure_t.t2[_i], measure_t.t1[_i]));
+
+        Exchange.debug.elapse_t.cnt[_i] += 1;
+        Exchange.debug.elapse_t.sum[_i] += measure_t.dt[_i].tv64;
+        Exchange.debug.elapse_t.avg[_i] = Exchange.sys.fn.div64(Exchange.debug.elapse_t.sum[_i], Exchange.debug.elapse_t.cnt[_i]);
+        if (measure_t.dt[_i].tv64 < Exchange.debug.elapse_t.min[_i]) { Exchange.debug.elapse_t.min[_i] = measure_t.dt[_i].tv64; }
+        if (measure_t.dt[_i].tv64 > Exchange.debug.elapse_t.max[_i]) { Exchange.debug.elapse_t.max[_i] = measure_t.dt[_i].tv64; }
+    }
+}
+
+static void mio_elapse_t_io_measure_start(int _rw, int _r, int _w)
+{
+    if (Exchange.debug.elapse_t.io.read || Exchange.debug.elapse_t.io.write)
+    {
+        mio_elapse_t_start(_rw);
+
+             if (Exchange.debug.elapse_t.io.read)  { mio_elapse_t_start(_r); }
+        else if (Exchange.debug.elapse_t.io.write) { mio_elapse_t_start(_w); }
+    }
+}
+
+static void mio_elapse_t_io_measure_end(int _rw, int _r, int _w)
+{
+    if (Exchange.debug.elapse_t.io.read || Exchange.debug.elapse_t.io.write)
+    {
+             if (Exchange.debug.elapse_t.io.read)  { mio_elapse_t_end(_r); }
+        else if (Exchange.debug.elapse_t.io.write) { mio_elapse_t_end(_w); }
+
+        mio_elapse_t_end(_rw);
+    }
+}
+#endif
+
+/******************************************************************************
+ *
+ ******************************************************************************/
 static int __init mio_init(void)
 {
     int capacity = 0;
@@ -540,6 +716,15 @@ static int __init mio_init(void)
     Exchange.sys.fn.sunlock = mio_spin_unlock;
     Exchange.sys.fn.mlock   = mio_mutex_lock;
     Exchange.sys.fn.munlock = mio_mutext_unlock;
+
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+    Exchange.sys.fn.elapse_t_init             = mio_elapse_t_init;
+    Exchange.sys.fn.elapse_t_start            = mio_elapse_t_start;
+    Exchange.sys.fn.elapse_t_end              = mio_elapse_t_end;
+    Exchange.sys.fn.elapse_t_io_measure_start = mio_elapse_t_io_measure_start;
+    Exchange.sys.fn.elapse_t_io_measure_end   = mio_elapse_t_io_measure_end;
+    Exchange.sys.fn.elapse_t_init();
+#endif
 
     if ((capacity = media_open()) < 0)
     {
@@ -628,9 +813,9 @@ static int __init mio_init(void)
 
         mio_dev.io_state->transaction.rq->queuedata = mio_dev.io_state;
 
-        /**************************************************************************
+        /**********************************************************************
          * KThreads
-         **************************************************************************/
+         **********************************************************************/
 //#define THREAD_BIND_TO_CORE
 
         if (NULL == mio_dev.io_state->transaction.thread)
@@ -867,6 +1052,8 @@ static struct platform_driver nand_driver =
  ******************************************************************************/
 static int __init nand_init(void)
 {
+    memset((void *)&Exchange, 0, sizeof(EXCHANGES));
+
     platform_driver_register(&nand_driver);
     miosys_init();
     mio_init();
@@ -889,3 +1076,10 @@ MODULE_LICENSE("EWS");
 MODULE_AUTHOR("SD.LEE (mcdu1214@eastwho.com)");
 MODULE_DESCRIPTION("Media I/O Block Driver");
 MODULE_ALIAS_BLOCKDEV_MAJOR(mio_major);
+
+/******************************************************************************
+ * Optimize Restore
+ ******************************************************************************/
+#if defined (__COMPILE_MODE_BEST_DEBUGGING__)
+#pragma GCC pop_options
+#endif

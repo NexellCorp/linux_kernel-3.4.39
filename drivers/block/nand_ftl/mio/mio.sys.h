@@ -65,19 +65,6 @@ struct miosys_nand_io
     u_char *buf;
 };
 
-struct miosys_nand_raw_io
-{
-    loff_t ofs;
-    size_t len;
-    u_char *buf;
-
-    unsigned char channel;
-    unsigned char phyway;
-    unsigned short pages_per_block;
-    unsigned short bytes_per_page;
-    unsigned short blocks_per_lun;
-};
-
 /******************************************************************************
  *
  ******************************************************************************/
@@ -85,7 +72,6 @@ struct miosys_device
 {
     struct mutex * ioctl_mutex;
     struct miscdevice * miscdev;
-
 };
 
 MIO_BLOCK_SYSFS_EXT struct miosys_device miosys_dev;
@@ -102,7 +88,7 @@ MIO_BLOCK_SYSFS_EXT int miosys_init(void);
 #define MIOSYS_NAND_READ     _IOR('M', 4, struct miosys_nand_io)
 #define MIOSYS_NAND_WRITE    _IOW('M', 5, struct miosys_nand_io)
 #define MIOSYS_NAND_ERASE    _IOW('M', 6, struct miosys_nand_io)
-#define MIOSYS_NANDRAW_READ  _IOR('M', 7, struct miosys_nand_raw_io)
-#define MIOSYS_NANDRAW_WRITE _IOW('M', 8, struct miosys_nand_raw_io)
-#define MIOSYS_NANDRAW_ERASE _IOW('M', 9, struct miosys_nand_raw_io)
+#define MIOSYS_NANDRAW_READ  _IOR('M', 7, struct miosys_nand_io)
+#define MIOSYS_NANDRAW_WRITE _IOW('M', 8, struct miosys_nand_io)
+#define MIOSYS_NANDRAW_ERASE _IOW('M', 9, struct miosys_nand_io)
 

@@ -276,6 +276,11 @@ void media_write(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_s
     u8 * buffer = _buffer;
     struct mio_state * io_state = _io_state;
 
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+    Exchange.debug.elapse_t.io.write = 1;
+    if (Exchange.sys.fn.elapse_t_io_measure_start) { Exchange.sys.fn.elapse_t_io_measure_start(ELAPSE_T_IO_MEDIA_RW, ELAPSE_T_IO_MEDIA_R, ELAPSE_T_IO_MEDIA_W); }
+#endif
+
 #if defined (__MEDIA_ON_RAM__)
     memcpy(media_on_ram + lba * __SECTOR_SIZEOF(1), buffer, seccnt * __SECTOR_SIZEOF(1));
 #elif defined (__MEDIA_ON_NAND__)
@@ -313,19 +318,22 @@ void media_write(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_s
             dest = *Exchange.buffer.BaseOfWriteCache + (wcidx << 9);
             src  = (unsigned int)buffer;
             size = (*Exchange.buffer.SectorsOfWriteCache - wcidx) << 9;
-            memcpy((void *)dest, (const void *)src, size);
+            if (Exchange.sys.fn._memcpy) { Exchange.sys.fn._memcpy((void *)dest, (const void *)src, size); }
+            else                         {                  memcpy((void *)dest, (const void *)src, size); }
 
             dest = *Exchange.buffer.BaseOfWriteCache;
             src  = (unsigned int)buffer + size;
             size = (seccnt << 9) - size;
-            memcpy((void *)dest, (const void *)src, size);
+            if (Exchange.sys.fn._memcpy) { Exchange.sys.fn._memcpy((void *)dest, (const void *)src, size); }
+            else                         {                  memcpy((void *)dest, (const void *)src, size); }
         }
         else
         {
             dest = *Exchange.buffer.BaseOfWriteCache + (wcidx << 9);
             src  = (unsigned int)buffer;
             size = seccnt << 9;
-            memcpy((void *)dest, (const void *)src, size);
+            if (Exchange.sys.fn._memcpy) { Exchange.sys.fn._memcpy((void *)dest, (const void *)src, size); }
+            else                         {                  memcpy((void *)dest, (const void *)src, size); }
         }
     }
 
@@ -343,6 +351,11 @@ void media_write(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_s
 
     media_super();
 #endif
+
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+    if (Exchange.sys.fn.elapse_t_io_measure_end) { Exchange.sys.fn.elapse_t_io_measure_end(ELAPSE_T_IO_MEDIA_RW, ELAPSE_T_IO_MEDIA_R, ELAPSE_T_IO_MEDIA_W); }
+    Exchange.debug.elapse_t.io.write = 0;
+#endif
 }
 
 /******************************************************************************
@@ -356,6 +369,11 @@ void media_read(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_st
     unsigned int req_trseccnt = 0;
     u8 * buffer = _buffer;
   //struct mio_state * io_state = _io_state;
+
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+    Exchange.debug.elapse_t.io.read = 1;
+    if (Exchange.sys.fn.elapse_t_io_measure_start) { Exchange.sys.fn.elapse_t_io_measure_start(ELAPSE_T_IO_MEDIA_RW, ELAPSE_T_IO_MEDIA_R, ELAPSE_T_IO_MEDIA_W); }
+#endif
 
 #if defined (__MEDIA_ON_RAM__)
     memcpy(buffer, media_on_ram + lba * __SECTOR_SIZEOF(1), seccnt * __SECTOR_SIZEOF(1));
@@ -400,7 +418,7 @@ void media_read(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_st
 
         if (readed)
         {
-            /**********************************************************************
+            /******************************************************************
              * Case By Case
              *
              *   Case 1) "FTL Readed Buffer" is Linear
@@ -439,7 +457,7 @@ void media_read(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_st
              *                                | +++ |                                                     | ++ |
              *                                +-----+-----------------------------------------------------+----+
              *
-             **********************************************************************/
+             ******************************************************************/
             unsigned int IsLinear = 1;
 
             unsigned int dest = 0;
@@ -463,7 +481,8 @@ void media_read(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_st
                     src  = *Exchange.buffer.BaseOfReadBuffer + (rbidx << 9);
                     size = seccnt << 9;
                     trseccnt += size >> 9;
-                    memcpy((void *)dest, (const void *)src, size);
+                    if (Exchange.sys.fn._memcpy) { Exchange.sys.fn._memcpy((void *)dest, (const void *)src, size); }
+                    else                         {                  memcpy((void *)dest, (const void *)src, size); }
                 }
                 // "FTL Readed Buffer" is Roll Over
                 else
@@ -475,7 +494,8 @@ void media_read(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_st
                         src  = *Exchange.buffer.BaseOfReadBuffer + (rbidx << 9);
                         size = seccnt << 9;
                         trseccnt += size >> 9;
-                        memcpy((void *)dest, (const void *)src, size);
+                        if (Exchange.sys.fn._memcpy) { Exchange.sys.fn._memcpy((void *)dest, (const void *)src, size); }
+                        else                         {                  memcpy((void *)dest, (const void *)src, size); }
                     }
                     else
                     {
@@ -483,13 +503,15 @@ void media_read(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_st
                         src  = *Exchange.buffer.BaseOfReadBuffer + (rbidx << 9);
                         size = (*Exchange.buffer.SectorsOfReadBuffer - rbidx) << 9;
                         trseccnt += size >> 9;
-                        memcpy((void *)dest, (const void *)src, size);
+                        if (Exchange.sys.fn._memcpy) { Exchange.sys.fn._memcpy((void *)dest, (const void *)src, size); }
+                        else                         {                  memcpy((void *)dest, (const void *)src, size); }
 
                         dest = (unsigned int)buffer + size;
                         src  = *Exchange.buffer.BaseOfReadBuffer;
                         size = (seccnt << 9) - size;
                         trseccnt += size >> 9;
-                        memcpy((void *)dest, (const void *)src, size);
+                        if (Exchange.sys.fn._memcpy) { Exchange.sys.fn._memcpy((void *)dest, (const void *)src, size); }
+                        else                         {                  memcpy((void *)dest, (const void *)src, size); }
                     }
                 }
             }
@@ -503,7 +525,8 @@ void media_read(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_st
                     src  = *Exchange.buffer.BaseOfReadBuffer + (rbidx << 9);
                     size = readed << 9;
                     trseccnt += size >> 9;
-                    memcpy((void *)dest, (const void *)src, size);
+                    if (Exchange.sys.fn._memcpy) { Exchange.sys.fn._memcpy((void *)dest, (const void *)src, size); }
+                    else                         {                  memcpy((void *)dest, (const void *)src, size); }
                 }
                 // "FTL Readed Buffer" is Roll Over
                 else
@@ -512,13 +535,15 @@ void media_read(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_st
                     src  = *Exchange.buffer.BaseOfReadBuffer + (rbidx << 9);
                     size = (*Exchange.buffer.SectorsOfReadBuffer - rbidx) << 9;
                     trseccnt += size >> 9;
-                    memcpy((void *)dest, (const void *)src, size);
+                    if (Exchange.sys.fn._memcpy) { Exchange.sys.fn._memcpy((void *)dest, (const void *)src, size); }
+                    else                         {                  memcpy((void *)dest, (const void *)src, size); }
 
                     dest = (unsigned int)buffer + size;
                     src  = *Exchange.buffer.BaseOfReadBuffer;
                     size = (readed << 9) - size;
                     trseccnt += size >> 9;
-                    memcpy((void *)dest, (const void *)src, size);
+                    if (Exchange.sys.fn._memcpy) { Exchange.sys.fn._memcpy((void *)dest, (const void *)src, size); }
+                    else                         {                  memcpy((void *)dest, (const void *)src, size); }
                 }
             }
 
@@ -542,6 +567,11 @@ void media_read(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_st
     }
 
     media_super();
+#endif
+
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+    if (Exchange.sys.fn.elapse_t_io_measure_end) { Exchange.sys.fn.elapse_t_io_measure_end(ELAPSE_T_IO_MEDIA_RW, ELAPSE_T_IO_MEDIA_R, ELAPSE_T_IO_MEDIA_W); }
+    Exchange.debug.elapse_t.io.read = 0;
 #endif
 }
 
