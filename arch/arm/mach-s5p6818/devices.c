@@ -494,10 +494,11 @@ static unsigned long i2s_ext_mclk_set_clock(unsigned long clk)
 #elif defined(CONFIG_SND_NXP_I2S_CH1) || defined(CONFIG_SND_NXP_I2S_CH2)
 		nxp_soc_gpio_set_io_func(PAD_GPIO_A + 28, NX_GPIO_PADFUNC_0);
 		nxp_soc_gpio_set_io_dir(PAD_GPIO_A + 28, 0);
-		if (CONFIG_SND_NXP_I2S_CH1)
+#if defined(CONFIG_SND_NXP_I2S_CH1)
 			ch = 1;
-		else if (CONFIG_SND_NXP_I2S_CH2)
+#elif defined(CONFIG_SND_NXP_I2S_CH2)
 			ch = 2;
+#endif
 #endif
 #if defined(CFG_EXT_MCLK_PWM_CH)
 		nxp_cpu_periph_clock_register(CLK_ID_I2S_0 + ch, clk, 0);

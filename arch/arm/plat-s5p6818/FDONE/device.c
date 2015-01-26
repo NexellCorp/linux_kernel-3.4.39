@@ -340,70 +340,6 @@ static struct platform_device key_plat_device = {
 /*------------------------------------------------------------------------------
  * ASoC Codec platform device
  */
-#if defined(CONFIG_SND_CODEC_WM8976) || defined(CONFIG_SND_CODEC_WM8976_MODULE)
-#include <linux/i2c.h>
-
-#define	WM8976_I2C_BUS		(0)
-
-/* CODEC */
-static struct i2c_board_info __initdata wm8976_i2c_bdi = {
-	.type	= "wm8978",			// compatilbe with wm8976
-	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
-};
-
-/* DAI */
-struct nxp_snd_dai_plat_data i2s_dai_data = {
-	.i2s_ch	= 0,
-	.sample_rate	= 48000,
-	.hp_jack 		= {
-		.support    	= 1,
-		.detect_io		= PAD_GPIO_E + 8,
-		.detect_level	= 1,
-	},
-};
-
-static struct platform_device wm8976_dai = {
-	.name			= "wm8976-audio",
-	.id				= 0,
-	.dev			= {
-		.platform_data	= &i2s_dai_data,
-	}
-};
-#endif
-
-#if defined(CONFIG_SND_CODEC_ALC5623)
-#include <linux/i2c.h>
-
-#define	ALC5623_I2C_BUS		(0)
-
-/* CODEC */
-static struct i2c_board_info __initdata alc5623_i2c_bdi = {
-	.type	= "alc562x-codec",			// compatilbe with wm8976
-	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
-};
-
-/* DAI */
-struct nxp_snd_dai_plat_data i2s_dai_data = {
-	.i2s_ch	= 0,
-	.sample_rate	= 48000,
-	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
-	.hp_jack 		= {
-		.support    	= 1,
-		.detect_io		= PAD_GPIO_E + 8,
-		.detect_level	= 1,
-	},
-};
-
-static struct platform_device alc5623_dai = {
-	.name			= "alc5623-audio",
-	.id				= 0,
-	.dev			= {
-		.platform_data	= &i2s_dai_data,
-	}
-};
-#endif
-
-
 #if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)
 static struct platform_device spdif_transciever = {
 	.name	= "spdif-dit",
@@ -423,6 +359,75 @@ static struct platform_device spdif_trans_dai = {
 	}
 };
 #endif
+
+#if defined(CONFIG_SND_CODEC_RT5631) || defined(CONFIG_SND_CODEC_RT5631_MODULE)
+#include <linux/i2c.h>
+
+#define	RT5631_I2C_BUS		(0)
+
+/* CODEC */
+static struct i2c_board_info __initdata rt5631_i2c_bdi = {
+	.type	= "rt5631",
+	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
+};
+
+/* DAI */
+struct nxp_snd_dai_plat_data rt5631_i2s_dai_data = {
+	.i2s_ch	= 0,
+	.sample_rate	= 48000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
+#if 0
+	.hp_jack 		= {
+		.support    	= 1,
+		.detect_io		= PAD_GPIO_A + 0,
+		.detect_level	= 1,
+	},
+#endif
+};
+
+static struct platform_device rt5631_dai = {
+	.name			= "rt5631-audio",
+	.id				= 0,
+	.dev			= {
+		.platform_data	= &rt5631_i2s_dai_data,
+	}
+};
+#endif
+
+#if defined(CONFIG_SND_CODEC_ALC5623)
+#include <linux/i2c.h>
+
+#define	ALC5623_I2C_BUS		(3)
+
+/* CODEC */
+static struct i2c_board_info __initdata alc5623_i2c_bdi = {
+	.type	= "alc562x-codec",			// compatilbe with wm8976
+	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
+};
+
+/* DAI */
+struct nxp_snd_dai_plat_data alc5623_i2s_dai_data = {
+	.i2s_ch	= 1,
+	.sample_rate	= 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
+/*
+	.hp_jack 		= {
+		.support    	= 1,
+		.detect_io		= PAD_GPIO_E + 8,
+		.detect_level	= 1,
+	},
+*/	
+};
+
+static struct platform_device alc5623_dai = {
+	.name			= "alc5623-audio",
+	.id				= 0,
+	.dev			= {
+		.platform_data	= &alc5623_i2s_dai_data,
+	}
+};
+#endif
+
 
 /*------------------------------------------------------------------------------
  * G-Sensor platform device
@@ -510,8 +515,8 @@ void __init nxp_reserve_mem(void)
 }
 #endif
 
-#if defined(CONFIG_I2C_NXP)
-#define I2CUDELAY(x)	1000000/x
+#if defined(CONFIG_I2C_NXP) || defined (CONFIG_I2C_SLSI)
+#define I2CUDELAY(x)	1000000/x/2
 
 /* GPIO I2C */
 #define	I2C3_SDA	PAD_GPIO_C + 9
@@ -556,7 +561,7 @@ static struct platform_device *i2c_devices[] = {
 	&i2c_device_ch3,
 	&i2c_device_ch4,
 };
-#endif /* CONFIG_I2C_NXP */
+#endif /* CONFIG_I2C_NXP || CONFIG_I2C_SLSI */
 
 /*------------------------------------------------------------------------------
  * PMIC platform device
@@ -1762,22 +1767,22 @@ void __init nxp_board_devs_register(void)
 	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_regulators, ARRAY_SIZE(nxe2000_regulators));
 #endif
 
-#if defined(CONFIG_SND_CODEC_WM8976) || defined(CONFIG_SND_CODEC_WM8976_MODULE)
-	printk("plat: add device asoc-wm8976\n");
-	i2c_register_board_info(WM8976_I2C_BUS, &wm8976_i2c_bdi, 1);
-	platform_device_register(&wm8976_dai);
+#if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)
+	printk("plat: add device spdif playback\n");
+	platform_device_register(&spdif_transciever);
+	platform_device_register(&spdif_trans_dai);
+#endif
+
+#if defined(CONFIG_SND_CODEC_RT5631) || defined(CONFIG_SND_CODEC_RT5631_MODULE)
+	printk("plat: add device asoc-rt5631\n");
+	i2c_register_board_info(RT5631_I2C_BUS, &rt5631_i2c_bdi, 1);
+	platform_device_register(&rt5631_dai);
 #endif
 
 #if defined(CONFIG_SND_CODEC_ALC5623) || defined(CONFIG_SND_CODEC_ALC5623_MODULE)
 	printk("plat: add device asoc-alc5623\n");
 	i2c_register_board_info(ALC5623_I2C_BUS, &alc5623_i2c_bdi, 1);
 	platform_device_register(&alc5623_dai);
-#endif
-
-#if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)
-	printk("plat: add device spdif playback\n");
-	platform_device_register(&spdif_transciever);
-	platform_device_register(&spdif_trans_dai);
 #endif
 
 #if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)
