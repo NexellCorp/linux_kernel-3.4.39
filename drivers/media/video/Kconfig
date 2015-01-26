@@ -295,6 +295,8 @@ config VIDEO_SAA6588
 
 comment "Video decoders"
 
+source "drivers/media/video/tw/Kconfig"
+
 config VIDEO_ADV7180
 	tristate "Analog Devices ADV7180 decoder"
 	depends on VIDEO_V4L2 && I2C
@@ -567,7 +569,7 @@ config VIDEO_MT9D111_CAM
 	  MT9D111 1600x1200 CMOS sensor.
 
 source "drivers/media/video/thine/Kconfig"
-	  
+
 config VIDEO_TCM825X
 	tristate "TCM825x camera sensor support"
 	depends on I2C && VIDEO_V4L2

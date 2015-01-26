@@ -512,15 +512,25 @@ void __init nxp_reserve_mem(void)
 
 #if defined(CONFIG_I2C_NXP)
 #define I2CUDELAY(x)	1000000/x
-/* gpio i2c 3 */
-#define	I2C3_SCL	PAD_GPIO_E + 14
-#define	I2C3_SDA	PAD_GPIO_E + 15
+
+/* GPIO I2C */
+#define	I2C3_SDA	PAD_GPIO_C + 9
+#define	I2C3_SCL	PAD_GPIO_C + 10
+
+#define	I2C4_SDA	PAD_GPIO_C + 12
+#define	I2C4_SCL	PAD_GPIO_C + 11
 
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port3 = {
 	.sda_pin	= I2C3_SDA,
 	.scl_pin	= I2C3_SCL,
 	.udelay		= I2CUDELAY(CFG_I2C3_CLK),				/* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
+	.timeout	= 10,
+};
 
+static struct i2c_gpio_platform_data nxp_i2c_gpio_port4 = {
+	.sda_pin	= I2C4_SDA,
+	.scl_pin	= I2C4_SCL,
+	.udelay		= I2CUDELAY(CFG_I2C4_CLK),				/* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
 	.timeout	= 10,
 };
 
@@ -533,8 +543,18 @@ static struct platform_device i2c_device_ch3 = {
 	},
 };
 
+static struct platform_device i2c_device_ch4 = {
+	.name	= "i2c-gpio",
+	.id		= 4,
+	.dev    = {
+		.platform_data	= &nxp_i2c_gpio_port4,
+	},
+};
+
+
 static struct platform_device *i2c_devices[] = {
 	&i2c_device_ch3,
+	&i2c_device_ch4,
 };
 #endif /* CONFIG_I2C_NXP */
 
@@ -1055,57 +1075,58 @@ static struct i2c_board_info back_camera_i2c_boardinfo[] = {
     },
 };
 
+
+static void front_vin_setup_io(int module, bool force)
+{
+    /* do nothing */
+	return;
+}
+
+static int front_phy_enable(bool en)
+{
+    return 0;
+}
+
+static int front_camera_set_clock(ulong clk_rate)
+{
+    /* do nothing */
+    return 0;
+}
+
 static int front_camera_power_enable(bool on)
 {
-    unsigned int io = CFG_IO_CAMERA_FRONT_POWER_DOWN;
-    unsigned int reset_io = CFG_IO_CAMERA_RESET;
-    PM_DBGOUT("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
-    if (on) {
-        back_camera_power_enable(0);
-        if (!is_front_camera_enabled) {
-            camera_power_control(1);
-            /* First RST signal to low */
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-            nxp_soc_gpio_set_io_dir(reset_io, 1);
-            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(io));
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            mdelay(1);
+#ifdef CONFIG_VIDEO_TW9992
+    unsigned int reset_io = (PAD_GPIO_ALV + 0);
 
-            /* PWDN signal High to Low */
-            nxp_soc_gpio_set_out_value(io, 0);
-            nxp_soc_gpio_set_io_dir(io, 1);
-            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-            nxp_soc_gpio_set_out_value(io, 1);
-            camera_common_set_clock(24000000);
-            mdelay(10);
-            /* mdelay(1); */
-            nxp_soc_gpio_set_out_value(io, 0);
-            /* mdelay(10); */
-            mdelay(10);
+    printk("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
 
-            /* RST signal  to High */
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-            /* mdelay(100); */
-            mdelay(5);
-
+    if (on) 
+	{
+        if (!is_front_camera_enabled) 
+		{
+	        nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
+	        nxp_soc_gpio_set_io_dir(reset_io, 1);
+	        nxp_soc_gpio_set_out_value(reset_io, 1);
+	        mdelay(1);
+	        nxp_soc_gpio_set_out_value(reset_io, 0);
+	        mdelay(10);
+	        nxp_soc_gpio_set_out_value(reset_io, 1);
+	        mdelay(10);
             is_front_camera_enabled = true;
             is_front_camera_power_state_changed = true;
         } else {
             is_front_camera_power_state_changed = false;
         }
-    } else {
+    }
+	else 
+	{
         if (is_front_camera_enabled) {
-            nxp_soc_gpio_set_out_value(io, 1);
+            nxp_soc_gpio_set_out_value(reset_io, 0);
             is_front_camera_enabled = false;
             is_front_camera_power_state_changed = true;
-        } else {
-            nxp_soc_gpio_set_out_value(io, 1);
-            is_front_camera_power_state_changed = false;
-        }
-        if (!(is_back_camera_enabled || is_front_camera_enabled)) {
-            camera_power_control(0);
-        }
+        } 
     }
+#endif /* CONFIG_VIDEO_TW9992 */
 
     return 0;
 }
@@ -1115,94 +1136,77 @@ static bool front_camera_power_state_changed(void)
     return is_front_camera_power_state_changed;
 }
 
+#ifdef CONFIG_VIDEO_TW9992
+#define FRONT_CAM_WIDTH  640
+#define FRONT_CAM_HEIGHT 480
+
 static struct i2c_board_info front_camera_i2c_boardinfo[] = {
     {
-        I2C_BOARD_INFO("SP0838", 0x18),
+        I2C_BOARD_INFO("tw9992", 0x7a>>1),
     },
 };
+
+struct nxp_mipi_csi_platformdata front_plat_data = {
+    .module     = 0,
+    .clk_rate   = 27000000, // 27MHz
+    .lanes      = 1,
+    .alignment = 0,
+    .hs_settle  = 0,
+    .width      = FRONT_CAM_WIDTH,
+    .height     = FRONT_CAM_HEIGHT,
+    .fixed_phy_vdd = false,
+    .irq        = 0, /* not used */
+    .base       = 0, /* not used */
+    .phy_enable = front_phy_enable,
+};
+
 
 static struct nxp_v4l2_i2c_board_info sensor[] = {
     {
-        .board_info = &back_camera_i2c_boardinfo[0],
-        .i2c_adapter_id = 0,
-    },
-    {
         .board_info = &front_camera_i2c_boardinfo[0],
-        .i2c_adapter_id = 0,
+        .i2c_adapter_id = 4,
     },
 };
-
+#endif /* CONFIG_VIDEO_TW9992 */
 
 static struct nxp_capture_platformdata capture_plat_data[] = {
-    {
-        /* back_camera 656 interface */
-        // for 5430
-        /*.module = 1,*/
-        .module = 0,
-        .sensor = &sensor[0],
-        .type = NXP_CAPTURE_INF_PARALLEL,
-        .parallel = {
-            /* for 656 */
-            .is_mipi        = false,
-            .external_sync  = false, /* 656 interface */
-            .h_active       = 800,
-            .h_frontporch   = 7,
-            .h_syncwidth    = 1,
-            .h_backporch    = 10,
-            .v_active       = 600,
-            .v_frontporch   = 0,
-            .v_syncwidth    = 2,
-            .v_backporch    = 3,
-            .clock_invert   = true,
-            .port           = 0,
-            .data_order     = NXP_VIN_Y0CBY1CR,
-            .interlace      = false,
-            .clk_rate       = 24000000,
-            .late_power_down = true,
-            .power_enable   = back_camera_power_enable,
-            .power_state_changed = back_camera_power_state_changed,
-            .set_clock      = camera_common_set_clock,
-            .setup_io       = camera_common_vin_setup_io,
-        },
-        .deci = {
-            .start_delay_ms = 0,
-            .stop_delay_ms  = 0,
-        },
-    },
+#ifdef CONFIG_VIDEO_TW9992
     {
         /* front_camera 601 interface */
         // for 5430
         /*.module = 1,*/
-        .module = 0,
-        .sensor = &sensor[1],
-        .type = NXP_CAPTURE_INF_PARALLEL,
+        .module = 1,
+        .sensor = &sensor[0],
+        .type = NXP_CAPTURE_INF_CSI,
         .parallel = {
-            .is_mipi        = false,
+            .is_mipi        = true,
             .external_sync  = true,
-            .h_active       = 640,
-            .h_frontporch   = 0,
-            .h_syncwidth    = 0,
-            .h_backporch    = 2,
-            .v_active       = 480,
-            .v_frontporch   = 0,
-            .v_syncwidth    = 0,
-            .v_backporch    = 2,
+            .h_active       = FRONT_CAM_WIDTH,
+            .h_frontporch   = 1,
+            .h_syncwidth    = 1,
+            .h_backporch    = 1,
+            .v_active       = FRONT_CAM_HEIGHT,
+            .v_frontporch   = 1,
+            .v_syncwidth    = 1,
+            .v_backporch    = 1,
             .clock_invert   = false,
-            .port           = 0,
+            .port           = NX_VIP_INPUTPORT_B,
             .data_order     = NXP_VIN_CBY0CRY1,
             .interlace      = false,
             .clk_rate       = 24000000,
             .late_power_down = true,
             .power_enable   = front_camera_power_enable,
             .power_state_changed = front_camera_power_state_changed,
-            .set_clock      = camera_common_set_clock,
-            .setup_io       = camera_common_vin_setup_io,
+            .set_clock      = front_camera_set_clock,
+            .setup_io       = front_vin_setup_io,
         },
         .deci = {
             .start_delay_ms = 0,
             .stop_delay_ms  = 0,
         },
+		.csi = &front_plat_data,
     },
+#endif /* CONFIG_VIDEO_TW9992 */
     { 0, NULL, 0, },
 };
 /* out platformdata */
@@ -1259,7 +1263,9 @@ static struct nxp_out_platformdata out_plat_data = {
 };
 
 static struct nxp_v4l2_platformdata v4l2_plat_data = {
-    /*.captures = &capture_plat_data[0],*/
+#ifdef CONFIG_VIDEO_TW9992
+    .captures = &capture_plat_data[0],
+#endif
     .out = &out_plat_data,
 };
 
