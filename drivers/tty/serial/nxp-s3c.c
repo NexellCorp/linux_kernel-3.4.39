@@ -54,7 +54,7 @@
 
 #include "nxp-s3c.h"
 
-#if  1
+#if 0 
 #define dbg(x...)	printk(x)
 #else
 #define dbg(x...) 	do { } while (0)
