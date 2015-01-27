@@ -64,7 +64,7 @@
 
 #define	SCR_SMP_WAKE_CPU_ID		SCR_ARM_SECOND_BOOT_REG1
 
-struct board_suspend_ops {
+struct board_pm_ops {
 	int  (*valid)		(suspend_state_t state);	/* before driver suspend */
 	int  (*begin)		(suspend_state_t state);	/* before driver suspend */
 	int  (*prepare)		(void);						/* after driver suspend */
@@ -83,12 +83,12 @@ struct suspend_mark_up {
 	unsigned int save_crc_ret;
 };
 
-extern void nxp_board_suspend_register(struct board_suspend_ops *ops);
+extern void nxp_board_pm_register(struct board_pm_ops *ops);
 
 /* Implement */
 extern void (*nxp_board_shutdown)(void);
 extern void (*nxp_board_pre_shutdown)(void);
-extern void (*nxp_board_suspend_mark)(struct suspend_mark_up *mark, int suspend);
+extern void (*nxp_board_pm_mark)(struct suspend_mark_up *mark, int suspend);
 extern void (*nxp_board_reset)(char str, const char *cmd);
 
 extern void nxp_cpu_goto_stop(void);
