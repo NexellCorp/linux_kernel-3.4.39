@@ -98,7 +98,7 @@ void __init 	nxp_board_devices_register(void);
 void		 	nxp_cpu_periph_register_clock(int id, long ext1, long ext2);
 unsigned long 	nxp_cpu_pll_change_frequency(int pllno, unsigned long rate);
 
-extern int (*nxp_check_pm_wakeup_dev)(char *dev, int io);
+extern int 	 nxp_check_pm_wakeup_dev(char *dev, int io);
 extern int   nxp_check_pm_wakeup_alive(int alive_no);
 extern void  nxp_key_power_event(void);
 

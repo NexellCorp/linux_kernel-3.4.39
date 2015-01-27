@@ -42,9 +42,10 @@ static unsigned int *sramptr;
 static unsigned int sram_length = SRAM_SAVE_SIZE;
 extern void nxp_cpu_id_string(u32 *string);
 
-#define	FLUSH_CACHE()	do { flush_cache_all();outer_flush_all(); } while(0);
+#define	FLUSH_CACHE()		do { flush_cache_all(); outer_flush_all(); } while(0);
+#define	END_FLUSH_CACHE()	do { dmb(); outer_disable(); dmb(); FLUSH_CACHE() } while(0);
 
-void (*nxp_board_suspend_mark)(struct suspend_mark_up *mark, int suspend) = NULL;
+void (*nxp_board_pm_mark)(struct suspend_mark_up *mark, int suspend) = NULL;
 void (*do_suspend)(ulong, ulong) = NULL;
 EXPORT_SYMBOL_GPL(do_suspend);
 
@@ -107,7 +108,7 @@ struct pm_saved_regs {
 };
 
 static struct pm_saved_regs saved_regs;
-static struct board_suspend_ops *board_suspend = NULL;
+static struct board_pm_ops *board_pm = NULL;
 
 #if (0)
 #define	PM_SAVE_ADDR	virt_to_phys(&saved_regs)
@@ -121,7 +122,7 @@ static struct board_suspend_ops *board_suspend = NULL;
 
 #define	SUSPEND_STATUS(s)	(SUSPEND_SUSPEND == s ? "suspend" : "resume")
 
-unsigned int __wake_event_bits = 0;	/* VDDTOGLE, RTC, ALIVE0, 1, ... */
+unsigned int st_wake_events = 0;	/* VDDTOGLE, RTC, ALIVE0, 1, ... */
 static const char * __wake_event_name [] = {
 	[0] = "VDDPWRTOGGLE",
 	[1] = "RTC",
@@ -205,8 +206,8 @@ static int suspend_machine(void)
 	/*
 	 * wakeup from board.
 	 */
-	if (board_suspend && board_suspend->poweroff)
-		ret = board_suspend->poweroff();
+	if (board_pm && board_pm->poweroff)
+		ret = board_pm->poweroff();
 
 	if (ret < 0)
 		return ret;
@@ -234,12 +235,12 @@ static int resume_machine(void)
 	}
 
 	/* set wake event */
-	__wake_event_bits = status & ((1<<WAKE_EVENT_NUM) - 1);
+	st_wake_events = status & ((1<<WAKE_EVENT_NUM) - 1);
 
 	/* reset machine */
 	nxp_cpu_base_init();
-	if (board_suspend && board_suspend->poweron)
-		board_suspend->poweron();
+	if (board_pm && board_pm->poweron)
+		board_pm->poweron();
 
 	return 0;
 }
@@ -248,7 +249,7 @@ static void print_wake_event(void)
 {
 	int i = 0;
 	for (i = 0; WAKE_EVENT_NUM > i; i++) {
-		if (__wake_event_bits & 1<<i)
+		if (st_wake_events & 1<<i)
 			printk("%s WAKE [%s]\n", __func__, __wake_event_name[i]);
 	}
 }
@@ -282,7 +283,7 @@ static void suspend_cores(suspend_state_t stat)
 				break;
 		}
 
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE)
 		if (SUSPEND_SUSPEND == stat) {
 			NX_RSTCON_SetBaseAddress(IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
 			NX_RSTCON_SetnRST(reset, RSTCON_nDISABLE);
@@ -314,7 +315,7 @@ static inline unsigned int __calc_crc(void *addr, int len)
 	return crc;
 }
 
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE)
 static void suspend_mark(suspend_state_t stat)
 {
 	struct suspend_mark_up mark = {
@@ -335,8 +336,8 @@ static void suspend_mark(suspend_state_t stat)
 		mark.save_crc_ret = __calc_crc((void*)PM_SAVE_VIRT, len);
 	}
 
-	if (nxp_board_suspend_mark) {
-		nxp_board_suspend_mark(&mark, (SUSPEND_SUSPEND == stat ? 1: 0));
+	if (nxp_board_pm_mark) {
+		nxp_board_pm_mark(&mark, (SUSPEND_SUSPEND == stat ? 1: 0));
 		return;
 	}
 
@@ -460,7 +461,7 @@ static void suspend_gpio(suspend_state_t stat)
 		}
 	} else {
 		for (i = 0; size > i; i++, gpio++, base += 0x1000) {
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE)
 			for (j = 0; j < 10; j++)
 				writel(gpio->reg_val[j], (base+0x40+(j<<2)));
 #endif
@@ -539,32 +540,20 @@ static void suspend_intc(suspend_state_t stat)
 	}
 }
 
-#if defined (CONFIG_S5P4418_PM_STOP)
-static void cpu_do_stop(void)
-{
-    struct NX_CLKPWR_RegisterSet *clkpwr =
-    	(struct NX_CLKPWR_RegisterSet *)IO_ADDRESS(PHY_BASEADDR_CLKPWR_MODULE);
-
-    clkpwr->PWRCONT &= ~(0xFF<<8);
-    clkpwr->PWRMODE |= 1<<1;    // goto stop mode
-}
-#endif
-
 static int __powerdown(unsigned long arg)
 {
-	int ret = suspend_machine();
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
-	void (*power_down)(ulong, ulong) = NULL;
+#if !defined (CONFIG_S5P4418_PM_IDLE)
+	void (*power_down)(ulong, ulong) =
+			(void (*)(ulong, ulong))((ulong)do_suspend + 0x220);
 #endif
+	int ret;
 
+	ret = suspend_machine();
 	if (0 == ret)
 		pm_suspend_data_restore(NULL);
 
 #if defined (CONFIG_S5P4418_PM_IDLE)
 	lldebugout("Go to IDLE...\n");
-#endif
-#if defined (CONFIG_S5P4418_PM_STOP)
-	lldebugout("Go to STOP...\n");
 #endif
 
 	FLUSH_CACHE();
@@ -573,21 +562,19 @@ static int __powerdown(unsigned long arg)
 
 #if defined (CONFIG_S5P4418_PM_IDLE)
 	cpu_do_idle();
-#elif defined (CONFIG_S5P4418_PM_STOP)
-	cpu_do_stop();
-	mdelay(10);
 #else
+
 	if(do_suspend == NULL) {
 		lldebugout("Fail, inavalid suspend callee\n");
 		return 0;
 	}
 
 	lldebugout("suspend machine\n");
-	power_down = (void (*)(ulong, ulong))((ulong)do_suspend + 0x220);
-	FLUSH_CACHE();
+
+	END_FLUSH_CACHE();
 	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
 
-	while (1) { ; }
+	while (1);
 #endif
 	return 0;
 }
@@ -600,8 +587,9 @@ static int __powerdown(unsigned long arg)
 static int suspend_valid(suspend_state_t state)
 {
 	int ret = 1;
-	/* clear */
-	__wake_event_bits = 0;
+
+	/* clear events */
+	st_wake_events = 0;
 
 #ifdef CONFIG_SUSPEND
 	if (!suspend_valid_only_mem(state)) {
@@ -609,8 +597,9 @@ static int suspend_valid(suspend_state_t state)
 		return 0;
 	}
 #endif
-	if (board_suspend && board_suspend->valid)
-		ret = board_suspend->valid(state);
+
+	if (board_pm && board_pm->valid)
+		ret = board_pm->valid(state);
 
 	PM_DBGOUT("%s %s\n", __func__, ret ? "DONE":"WAKE");
 	return ret;
@@ -620,8 +609,8 @@ static int suspend_valid(suspend_state_t state)
 static int suspend_begin(suspend_state_t state)
 {
 	int ret = 0;
-	if (board_suspend && board_suspend->begin)
-		ret = board_suspend->begin(state);
+	if (board_pm && board_pm->begin)
+		ret = board_pm->begin(state);
 
 	PM_DBGOUT("%s %s\n", __func__, ret ? "WAKE":"DONE");
 	return 0;
@@ -631,8 +620,8 @@ static int suspend_begin(suspend_state_t state)
 static int suspend_prepare(void)
 {
 	int ret = 0;
-	if (board_suspend && board_suspend->prepare)
-		ret = board_suspend->prepare();
+	if (board_pm && board_pm->prepare)
+		ret = board_pm->prepare();
 
 	PM_DBGOUT("%s %s\n", __func__, ret ? "WAKE":"DONE");
 	return ret;
@@ -644,8 +633,8 @@ static int suspend_enter(suspend_state_t state)
 	int ret = 0;
 	lldebugout("%s enter\n", __func__);
 
-	if (board_suspend && board_suspend->enter) {
-		if ((ret = board_suspend->enter(state)))
+	if (board_pm && board_pm->enter) {
+		if ((ret = board_pm->enter(state)))
 			return ret;
 	}
 
@@ -653,7 +642,7 @@ static int suspend_enter(suspend_state_t state)
 	suspend_gpio(SUSPEND_SUSPEND);
 	suspend_alive(SUSPEND_SUSPEND);
 	suspend_l2cache(SUSPEND_SUSPEND);
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE)
 	suspend_mark(SUSPEND_SUSPEND);
 #endif
 
@@ -670,7 +659,7 @@ static int suspend_enter(suspend_state_t state)
 	/*
 	 * Wakeup status
 	 */
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE)
 	suspend_mark(SUSPEND_RESUME);
 #endif
 	suspend_l2cache(SUSPEND_RESUME);
@@ -693,15 +682,15 @@ static int suspend_enter(suspend_state_t state)
 static void suspend_finish(void)
 {
 	PM_DBGOUT("%s\n", __func__);
-	if (board_suspend && board_suspend->finish)
-		board_suspend->finish();
+	if (board_pm && board_pm->finish)
+		board_pm->finish();
 }
 
 static void suspend_end(void)
 {
 	PM_DBGOUT("%s\n", __func__);
-	if (board_suspend && board_suspend->end)
-		board_suspend->end();
+	if (board_pm && board_pm->end)
+		board_pm->end();
 }
 
 static struct platform_suspend_ops suspend_ops = {
@@ -727,7 +716,7 @@ static int __init suspend_ops_init(void)
 	pm_suspend_data_save(NULL);
 	suspend_set_ops(&suspend_ops);
 
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE)
 	do_suspend = __arm_ioremap_exec(0xffff0000, 0x10000, 0);
 	if (!do_suspend)
 		printk("Fail, ioremap for suspend callee\n");
@@ -739,9 +728,9 @@ core_initcall(suspend_ops_init);
 /*
  * 	cpu board suspend fn
  */
-void nxp_board_suspend_register(struct board_suspend_ops *ops)
+void nxp_board_pm_register(struct board_pm_ops *ops)
 {
-    board_suspend = ops;
+    board_pm = ops;
 }
 
 /*
@@ -755,17 +744,15 @@ int nxp_check_pm_wakeup_alive(int num)
 	if (PAD_GET_GROUP(PAD_GPIO_ALV) != grp)
 		return 0;
 
-	return (__wake_event_bits & 1<<(io+2)) ? 1 : 0;
+	return (st_wake_events & 1<<(io+2)) ? 1 : 0;
 }
 EXPORT_SYMBOL(nxp_check_pm_wakeup_alive);
 
-static int pm_check_wakeup_dev(char *dev, int io)
+int nxp_check_pm_wakeup_dev(char *dev, int io)
 {
 	printk("Check PM wakeup : %s, io[%d]\n", dev, io);
 	return nxp_check_pm_wakeup_alive(io);
 }
-
-int (*nxp_check_pm_wakeup_dev)(char *dev, int io) = pm_check_wakeup_dev;
 EXPORT_SYMBOL(nxp_check_pm_wakeup_dev);
 
 void nxp_cpu_goto_stop(void)
@@ -776,7 +763,7 @@ void nxp_cpu_goto_stop(void)
 	suspend_gpio(SUSPEND_SUSPEND);
 	suspend_alive(SUSPEND_SUSPEND);
 	suspend_l2cache(SUSPEND_SUSPEND);
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE)
 	suspend_mark(SUSPEND_SUSPEND);
 #endif
 
