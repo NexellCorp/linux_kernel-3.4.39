@@ -42,77 +42,43 @@ struct pll_pms {
 // PLL 0,1
 static struct pll_pms pll0_1_pms [] =
 {
-#if defined(CONFIG_ARCH_NXP4330)
-    [ 0] = { .rate = 2000000, .P = 3, .M = 4000, .S = 4, },
-    [ 1] = { .rate = 1900000, .P = 3, .M = 3800, .S = 4, },
-    [ 2] = { .rate = 1800000, .P = 3, .M = 3600, .S = 4, },
-    [ 3] = { .rate = 1700000, .P = 3, .M = 3400, .S = 4, },
-    [ 4] = { .rate = 1600000, .P = 3, .M =  400, .S = 1, },
-    [ 5] = { .rate = 1500000, .P = 3, .M =  375, .S = 1, },
-    [ 6] = { .rate = 1400000, .P = 3, .M =  350, .S = 1, },
-    [ 7] = { .rate = 1300000, .P = 3, .M =  325, .S = 1, },
-#endif
-#if defined(CONFIG_ARCH_S5P6818)
-    [ 0] = { .rate = 2000000, .P = 6, .M =  500, .S = 0, },
-    [ 1] = { .rate = 1900000, .P = 6, .M =  475, .S = 0, },
-    [ 2] = { .rate = 1800000, .P = 6, .M =  450, .S = 0, },
-    [ 3] = { .rate = 1700000, .P = 6, .M =  425, .S = 0, },
-    [ 4] = { .rate = 1600000, .P = 6, .M =  400, .S = 0, },
-    [ 5] = { .rate = 1500000, .P = 6, .M =  375, .S = 0, },
-    [ 6] = { .rate = 1400000, .P = 6, .M =  350, .S = 0, },
-    [ 7] = { .rate = 1300000, .P = 6, .M =  325, .S = 0, },
-#endif
-    [ 8] = { .rate = 1200000, .P = 3, .M =  300, .S = 1, },
-    [ 9] = { .rate = 1100000, .P = 3, .M =  275, .S = 1, },
-    [10] = { .rate = 1000000, .P = 3, .M =  250, .S = 1, },
-    [11] = { .rate =  900000, .P = 3, .M =  225, .S = 1, },
-    [12] = { .rate =  800000, .P = 3, .M =  200, .S = 1, },
-    [13] = { .rate =  700000, .P = 3, .M =  175, .S = 1, },
-    [14] = { .rate =  666000, .P = 2, .M =  111, .S = 1, },
-    [15] = { .rate =  600000, .P = 2, .M =  200, .S = 2, },
-    [16] = { .rate =  533000, .P = 6, .M =  533, .S = 2, },
-    [17] = { .rate =  500000, .P = 3, .M =  250, .S = 2, },
-    [18] = { .rate =  400000, .P = 3, .M =  200, .S = 2, },
-    [19] = { .rate =  333000, .P = 2, .M =  111, .S = 2, },
-    [20] = { .rate =  300000, .P = 2, .M =  200, .S = 3, },
-    [21] = { .rate =  266000, .P = 3, .M =  266, .S = 3, },
-    [22] = { .rate =  200000, .P = 3, .M =  200, .S = 3, },
-    [23] = { .rate =  166000, .P = 3, .M =  166, .S = 3, },
-    [24] = { .rate =  147500, .P = 3, .M =  295, .S = 4, },  // 147.456000
-    [25] = { .rate =  133000, .P = 3, .M =  266, .S = 4, },
-    [26] = { .rate =  100000, .P = 3, .M =  200, .S = 4, },
+    [ 0] = { .rate = 1600000, .P = 6, .M =  400, .S = 0, },
+    [ 1] = { .rate = 1500000, .P = 6, .M =  375, .S = 0, },
+    [ 2] = { .rate = 1400000, .P = 6, .M =  350, .S = 0, },
+    [ 3] = { .rate = 1300000, .P = 6, .M =  325, .S = 0, },
+    [ 4] = { .rate = 1200000, .P = 3, .M =  300, .S = 1, },
+    [ 5] = { .rate = 1100000, .P = 3, .M =  275, .S = 1, },
+    [ 6] = { .rate = 1000000, .P = 3, .M =  250, .S = 1, },
+    [ 7] = { .rate =  900000, .P = 3, .M =  225, .S = 1, },
+    [ 8] = { .rate =  800000, .P = 3, .M =  200, .S = 1, },
+    [ 9] = { .rate =  700000, .P = 3, .M =  175, .S = 1, },
+    [10] = { .rate =  600000, .P = 2, .M =  200, .S = 2, },
+    [11] = { .rate =  500000, .P = 3, .M =  250, .S = 2, },
+    [12] = { .rate =  400000, .P = 3, .M =  200, .S = 2, },
+    [13] = { .rate =  300000, .P = 2, .M =  200, .S = 3, },
+    [14] = { .rate =  200000, .P = 3, .M =  200, .S = 3, },
+    [15] = { .rate =  100000, .P = 3, .M =  200, .S = 4, },
 };
 
 // PLL 2,3
 static struct pll_pms pll2_3_pms [] =
 {
-    [ 0] = { .rate = 2000000, .P = 3, .M = 500, .S = 1, },
-    [ 1] = { .rate = 1900000, .P = 3, .M = 475, .S = 1, },
-    [ 2] = { .rate = 1800000, .P = 3, .M = 450, .S = 1, },
-    [ 3] = { .rate = 1700000, .P = 3, .M = 425, .S = 1, },
-    [ 4] = { .rate = 1600000, .P = 3, .M = 400, .S = 1, },
-    [ 5] = { .rate = 1500000, .P = 3, .M = 375, .S = 1, },
-    [ 6] = { .rate = 1400000, .P = 3, .M = 350, .S = 1, },
-    [ 7] = { .rate = 1300000, .P = 3, .M = 325, .S = 1, },
-    [ 8] = { .rate = 1200000, .P = 3, .M = 300, .S = 1, },
-    [ 9] = { .rate = 1100000, .P = 3, .M = 275, .S = 1, },
-    [10] = { .rate = 1000000, .P = 3, .M = 250, .S = 1, },
-    [11] = { .rate =  900000, .P = 3, .M = 225, .S = 1, },
-    [12] = { .rate =  800000, .P = 3, .M = 200, .S = 1, },
-    [13] = { .rate =  700000, .P = 3, .M = 175, .S = 1, },
-    [14] = { .rate =  666000, .P = 4, .M = 222, .S = 1, },
-    [15] = { .rate =  600000, .P = 3, .M = 150, .S = 1, },
-    [16] = { .rate =  533000, .P = 4, .M = 355, .S = 2, },
-    [17] = { .rate =  500000, .P = 3, .M = 250, .S = 2, },
-    [18] = { .rate =  400000, .P = 3, .M = 200, .S = 2, },
-    [19] = { .rate =  333000, .P = 4, .M = 222, .S = 2, },
-    [20] = { .rate =  300000, .P = 3, .M = 150, .S = 2, },
-    [21] = { .rate =  266000, .P = 3, .M = 266, .S = 3, },
-    [22] = { .rate =  200000, .P = 3, .M = 200, .S = 3, },
-    [23] = { .rate =  166000, .P = 3, .M = 166, .S = 3, },
-    [24] = { .rate =  147500, .P = 4, .M = 197, .S = 3, },  // 147.456000
-    [25] = { .rate =  133000, .P = 3, .M = 266, .S = 4, },
-    [26] = { .rate =  100000, .P = 3, .M = 200, .S = 4, },
+    [ 0] = { .rate = 1600000, .P = 3, .M = 400, .S = 1, },
+    [ 1] = { .rate = 1500000, .P = 3, .M = 375, .S = 1, },
+    [ 2] = { .rate = 1400000, .P = 3, .M = 350, .S = 1, },
+    [ 3] = { .rate = 1300000, .P = 3, .M = 325, .S = 1, },
+    [ 4] = { .rate = 1200000, .P = 3, .M = 300, .S = 1, },
+    [ 5] = { .rate = 1100000, .P = 3, .M = 275, .S = 1, },
+    [ 6] = { .rate = 1000000, .P = 3, .M = 250, .S = 1, },
+    [ 7] = { .rate =  900000, .P = 3, .M = 225, .S = 1, },
+    [ 8] = { .rate =  800000, .P = 3, .M = 200, .S = 1, },
+    [ 9] = { .rate =  700000, .P = 3, .M = 175, .S = 1, },
+    [10] = { .rate =  600000, .P = 3, .M = 150, .S = 1, },
+    [11] = { .rate =  500000, .P = 3, .M = 250, .S = 2, },
+    [12] = { .rate =  400000, .P = 3, .M = 200, .S = 2, },
+    [13] = { .rate =  300000, .P = 3, .M = 150, .S = 2, },
+    [14] = { .rate =  200000, .P = 3, .M = 200, .S = 3, },
+    [15] = { .rate =  100000, .P = 3, .M = 200, .S = 4, },
 };
 
 #define	PLL0_1_SIZE		ARRAY_SIZE(pll0_1_pms)
@@ -134,9 +100,8 @@ static void core_pll_change(int PLL, int P, int M, int S)
 
 	// 1. change PLL0 clock to Oscillator Clock
 	clkpwr->PLLSETREG[PLL] &= ~(1 << 28); 	// pll bypass on, xtal clock use
-	clkpwr->CLKMODEREG0 = (1 << PLL); 		// update pll
-
-	while(clkpwr->CLKMODEREG0 & (1<<31)); 		// wait for change update pll
+	clkpwr->CLKMODEREG0 = (1 << PLL); 			// update pll
+	while(clkpwr->CLKMODEREG0 & (1<<31)); 	// wait for change update pll
 
 	// 2. PLL Power Down & PMS value setting
 	clkpwr->PLLSETREG[PLL] =((1UL << 29)			| // power down
@@ -144,7 +109,6 @@ static void core_pll_change(int PLL, int P, int M, int S)
 							 (S   << PLL_S_BITPOS) 	|
 							 (M   << PLL_M_BITPOS) 	|
 							 (P   << PLL_P_BITPOS));
-
 	clkpwr->CLKMODEREG0 = (1 << PLL); 				// update pll
 
 	while(clkpwr->CLKMODEREG0 & (1<<31)); 			// wait for change update pll
@@ -153,9 +117,7 @@ static void core_pll_change(int PLL, int P, int M, int S)
 
 	// 3. Update PLL & wait PLL locking
 	clkpwr->PLLSETREG[PLL] &= ~((U32)(1UL<<29)); // pll power up
-
 	clkpwr->CLKMODEREG0 = (1 << PLL); 			// update pll
-
 	while(clkpwr->CLKMODEREG0 & (1<<31)); 		// wait for change update pll
 
 	udelay(10);	// 1000us
@@ -164,7 +126,7 @@ static void core_pll_change(int PLL, int P, int M, int S)
 	clkpwr->PLLSETREG[PLL] |= (1<<28); 			// pll bypass off, pll clock use
 	clkpwr->CLKMODEREG0 = (1<<PLL); 				// update pll
 
-	while(clkpwr->CLKMODEREG0 & (1<<31)); 				// wait for change update pll
+	while(clkpwr->CLKMODEREG0 & (1<<31)); 		// wait for change update pll
 }
 
 static DEFINE_SPINLOCK(_pll_lock);
@@ -200,7 +162,7 @@ static unsigned long cpu_pll_round(int pllno, unsigned long rate, int *p, int *m
 	}
 
 	/* array index so -1 */
-	idx = len/2;
+	idx = (len/2) - 1;
 
 	while (1) {
 		l = n + idx;
@@ -234,24 +196,24 @@ static unsigned long cpu_pll_round(int pllno, unsigned long rate, int *p, int *m
 	return PMS_RATE(pms, l);
 }
 
+static DEFINE_SPINLOCK(lock);
+
 unsigned long nxp_cpu_pll_change_frequency(int pllno, unsigned long rate)
 {
 	int p = 0, m = 0, s = 0;
 	unsigned long freq;
+	u_long flags;
 
 #ifdef CONFIG_NXP_DFS_BCLK
     mdelay(1);
 #endif
 
+	spin_lock_irqsave(&lock, flags);
+
 	freq = cpu_pll_round(pllno, rate, &p, &m, &s);
-
-    preempt_disable();
-    local_irq_disable();
-
 	core_pll_change(pllno, p, m, s);
 
-    preempt_enable();
-    local_irq_enable();
+	spin_unlock_irqrestore(&lock, flags);
 
 #ifdef CONFIG_NXP_DFS_BCLK
     mdelay(1);
@@ -259,4 +221,3 @@ unsigned long nxp_cpu_pll_change_frequency(int pllno, unsigned long rate)
 
 	return freq;
 }
-
