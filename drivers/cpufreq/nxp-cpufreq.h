@@ -329,8 +329,10 @@ static struct cpufreq_asv_ops asv_freq_ops = {
 	.get_vol_margin = s5p4418_asv_get_vol_margin,
 };
 #else
-static struct cpufreq_asv_ops asv_freq_ops = {
-};
+#define	FREQ_MAX_FREQ_KHZ	(1400*1000)
+#define	FREQ_ARRAY_SIZE		(11)
+
+static struct cpufreq_asv_ops asv_freq_ops = { };
 #endif
 
 

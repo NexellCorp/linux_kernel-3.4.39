@@ -803,36 +803,44 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 	/*
      * make frequency table with platform data
 	 */
-	for (n = 0, i = 0; tbsize > i && asv_tb_len > n; n++) {
-		if (plat_tables) {
-			for (n = 0; asv_tb_len > n; n++) {
-				if (plat_tables[i][0] == dvfs_tables[n][0]) {
-					dvfs_tables[i][0] = dvfs_tables[n][0];	/* frequency */
-					dvfs_tables[i][1] = dvfs_tables[n][1];	/* voltage */
-					break;
+	if (asv_tb_len > 0) {
+		for (n = 0, i = 0; tbsize > i && asv_tb_len > n; n++) {
+			if (plat_tables) {
+				for (n = 0; asv_tb_len > n; n++) {
+					if (plat_tables[i][0] == dvfs_tables[n][0]) {
+						dvfs_tables[i][0] = dvfs_tables[n][0];	/* frequency */
+						dvfs_tables[i][1] = dvfs_tables[n][1];	/* voltage */
+						break;
+					}
 				}
+			} else {
+				if (dvfs_tables[n][0] > FREQ_MAX_FREQ_KHZ)
+					continue;
+				dvfs_tables[i][0] = dvfs_tables[n][0];	/* frequency */
+				dvfs_tables[i][1] = dvfs_tables[n][1];	/* voltage */
 			}
-		} else {
-			if (dvfs_tables[n][0] > FREQ_MAX_FREQ_KHZ)
-				continue;
-			dvfs_tables[i][0] = dvfs_tables[n][0];	/* frequency */
-			dvfs_tables[i][1] = dvfs_tables[n][1];	/* voltage */
+			table->index = i;
+			table->frequency = dvfs_tables[i][0];
+			pr_debug("[%s] %2d = %8ldkhz, %8ld uV (%lu us)\n",
+				name, i, dvfs_tables[i][0], dvfs_tables[i][1], dvfs->supply_delay_us);
+			/* next */
+			i++, table++;
 		}
-
-		table->index = i;
-		table->frequency = dvfs_tables[i][0];
-		pr_debug("[%s] %2d = %8ldkhz, %8ld uV (%lu us)\n",
-			name, i, dvfs_tables[i][0], dvfs_tables[i][1], dvfs->supply_delay_us);
-		/* next */
-		i++, table++;
+	} else {
+		for (i = 0; tbsize > i; i++, table++) {
+			dvfs_tables[i][0] = plat_tables[i][0];	/* frequency */
+			dvfs_tables[i][1] = plat_tables[i][1];	/* voltage */
+			table->index = i;
+			table->frequency = dvfs_tables[i][0];
+			pr_debug("[%s] %2d = %8ldkhz, %8ld uV (%lu us)\n",
+				name, i, dvfs_tables[i][0], dvfs_tables[i][1], dvfs->supply_delay_us);
+		}
 	}
 
 	table->index = i;
 	table->frequency = CPUFREQ_TABLE_END;
 
-	/*
-     * get voltage regulator table with platform data
-	 */
+	/* get voltage regulator */
 	if (plat->supply_name) {
 		dvfs->volt = regulator_get(NULL, plat->supply_name);
 		if (IS_ERR(dvfs->volt)) {
