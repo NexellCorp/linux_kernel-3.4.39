@@ -144,8 +144,8 @@ static int set_max_scale(const char *file, long new)
 	return 0;
 }
 
-#define	FREQ_TEMP_OVER			40	// 85: 45, 70: 43, 40
-#define	FREQ_TEMP_RELAX			38	//	70, 39
+#define	FREQ_TEMP_OVER			45	// 85: 45, 70: 43, 40
+#define	FREQ_TEMP_RELAX			43	//	70, 39
 #define	FREQ_MAX_DN_KHZ			400000
 #define	FREQ_MAX_UP_KHZ			1400000
 
