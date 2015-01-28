@@ -203,7 +203,7 @@ static void _hw_set_video_addr(struct nxp_mlc *me, struct nxp_video_buffer *buf)
     s_old_jiffies = cur_jiffies;
 #else
     /*static long old_time;*/
-    /*[>ktime_t ts = ktime_get();<]*/
+    /*ktime_t ts = ktime_get();*/
     /*long cur_time = ktime_to_ms(ktime_get());*/
     /*long diff = cur_time - old_time;*/
     /*old_time = cur_time;*/
@@ -292,6 +292,10 @@ static void _hw_configure_video(struct nxp_mlc *me)
         nxp_soc_disp_video_set_crop(me->id, false, 0, 0, 0, 0, true);
 
     nxp_soc_disp_video_set_priority(id, attr->priority);
+
+    // psw0523 test for miware
+    /*nxp_soc_disp_video_set_colorkey(id, 0x0, 1);*/
+    // end miware
 
     /* layer enable */
     _hw_video_enable(me, true);

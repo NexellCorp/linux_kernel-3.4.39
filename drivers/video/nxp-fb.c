@@ -700,8 +700,8 @@ static int nxp_fb_map_ion_handle(struct nxp_fb_device *fb_dev,
 
     dma_buf_put(ctx->dma_buf);	/* decrease file count */
 
-    printk(KERN_INFO "%s.%d: dma addr = 0x%x, buf[0x%08x]\n",
-        DEV_NAME_FB, fb_dev->device_id, ctx->dma_addr, (uint)buf);
+    /*printk(KERN_INFO "%s.%d: dma addr = 0x%x, buf[0x%08x]\n",*/
+        /*DEV_NAME_FB, fb_dev->device_id, ctx->dma_addr, (uint)buf);*/
     return 0;
 
 err_map_attachment:
@@ -1219,34 +1219,6 @@ static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
         break;
     case NXPFB_SET_FB_FD:
         {
-#if 0
-            u32 import_fd;
-            struct ion_handle *handle;
-            struct nxp_fb_dma_buf_data dma_buf_data;
-            struct nxp_fb_dma_buf_data *d = &dev->dma_buf_data;
-
-            if (get_user(import_fd, (u32 __user *)arg)) {
-                ret = -EFAULT;
-                break;
-            }
-
-            handle = ion_import_dma_buf(d->ion_client, import_fd);
-            if (IS_ERR(handle)) {
-                pr_err("%s Error: NXPFB_SET_FB_FD, ion_import_dma_buf()\n", __func__);
-                ret = PTR_ERR(handle);
-                break;
-            }
-
-            if (nxp_fb_map_ion_handle(dev, &dma_buf_data, handle, import_fd)) {
-                pr_err("%s Error: NXPFB_SET_FB_FD, nxp_fb_map_ion_handle()\n", __func__);
-                ion_free(d->ion_client, handle);
-                ret = -EINVAL;
-                break;
-            }
-
-            nxp_fb_update_from_dma_buf_data(info, &dma_buf_data);
-            nxp_fb_copy_dma_buf_data(dev, &dma_buf_data);
-#else
             u32 import_fd;
             struct nxp_fb_dma_buf_data *d;
             int i;
@@ -1260,15 +1232,49 @@ static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                     break;
             }
             if (i >= 3) {
+                // psw0523 test for miware
+#if 0
                 printk("%s: can't find index for user fd %d\n", __func__, import_fd);
                 ret = -EINVAL;
+#else
+                struct ion_handle *handle;
+                struct nxp_fb_dma_buf_data *d = &dev->dma_buf_data;
+                struct dma_buf_context ctx;
+                struct dma_buf *buf;
+
+                handle = ion_import_dma_buf(d->ion_client, import_fd);
+                if (IS_ERR(handle)) {
+                    pr_err("%s Error: NXPFB_SET_FB_FD, ion_import_dma_buf()\n", __func__);
+                    ret = PTR_ERR(handle);
+                    break;
+                }
+
+                buf = ion_share_dma_buf(d->ion_client, handle);
+                if (IS_ERR_OR_NULL(buf)) {
+                    pr_err("%s Error: failed to ion_share_dma_buf()\n", __func__);
+                    ret = PTR_ERR(buf);
+                    break;
+                }
+
+                if (nxp_fb_map_ion_handle(dev, &ctx, handle, buf)) {
+                    pr_err("%s Error: NXPFB_SET_FB_FD, nxp_fb_map_ion_handle()\n", __func__);
+                    ion_free(d->ion_client, handle);
+                    ret = -EINVAL;
+                    break;
+                }
+                if (dev->fb_pan_phys != ctx.dma_addr) {
+                    dev->fb_pan_phys = ctx.dma_addr;
+                    NX_MLC_SetFormatRGB(dev->device_id, dev->layer, MLC_RGBFMT_A8B8G8R8);
+                    nxp_fb_update_buffer(info, 1);
+                }
+#endif
             } else {
                 if (dev->fb_pan_phys != d->context[i].dma_addr) {
                     dev->fb_pan_phys = d->context[i].dma_addr;
+                    NX_MLC_SetFormatRGB(dev->device_id, dev->layer, MLC_RGBFMT_A8R8G8B8);
                     nxp_fb_update_buffer(info, 1);
                 }
             }
-#endif
         }
         break;
     }

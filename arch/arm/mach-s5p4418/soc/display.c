@@ -1386,6 +1386,7 @@ void nxp_soc_disp_video_set_address(int module, unsigned int lu_a, unsigned int 
 #if 1
     if (NX_MLC_GetDirtyFlag(module, MLC_LAYER_VIDEO)) {
         printk("Error in Dirty\n");
+        disp_syncgen_waitsync(module, MLC_LAYER_VIDEO, 1);
         return;
     }
 #endif
