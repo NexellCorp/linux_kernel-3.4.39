@@ -5,7 +5,7 @@
 menuconfig NEXELL_FTL
 	bool "Nexell NAND FTL"
 	depends on BLOCK
-	default y
+	default n
 	---help---
 
 if NEXELL_FTL
