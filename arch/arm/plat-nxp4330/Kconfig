@@ -93,6 +93,11 @@ choice
 		help
    	 		Support for the svt board.
 
+	config PLAT_NXP4330_KINGCOBRA
+		bool "KINGCOBRA: Android kingcobra board"
+		help
+   	 		Support for the kingcobra board.
+
 endchoice
 
 #

@@ -63,6 +63,10 @@ ifeq ($(CONFIG_PLAT_NXP4330_SVT),y)
 PLATBOARD :=svt
 endif
 
+ifeq ($(CONFIG_PLAT_NXP4330_KINGCOBRA),y)
+PLATBOARD :=kingcobra
+endif
+
 #
 # Build options
 #
