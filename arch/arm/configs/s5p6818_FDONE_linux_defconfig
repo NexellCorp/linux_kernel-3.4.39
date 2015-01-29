@@ -984,6 +984,7 @@ CONFIG_BLK_DEV_RAM_SIZE=61440
 # CONFIG_ATA_OVER_ETH is not set
 # CONFIG_MG_DISK is not set
 # CONFIG_BLK_DEV_RBD is not set
+# CONFIG_NXP_FTL is not set
 
 #
 # Misc devices
