@@ -29,6 +29,15 @@
 
 #include "../codecs/rt5631.h"
 
+/*
+#define	pr_debug	printk
+*/
+
+#if defined (CFG_IO_AUDIO_AMP_POWER)
+#include <linux/gpio.h>
+#define AUDIO_AMP_POWER     CFG_IO_AUDIO_AMP_POWER
+#endif
+
 static char str_dai_name[16] = DEV_NAME_I2S;
 static int (*cpu_resume_fn)(struct snd_soc_dai *dai) = NULL;
 static struct snd_soc_codec *rt5631 = NULL;
@@ -98,6 +107,12 @@ static int rt5631_spk_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *k, int event)
 {
 	pr_debug("%s:%d (event:%d)\n", __func__, __LINE__, event);
+#if defined (CFG_IO_AUDIO_AMP_POWER)
+	if (SND_SOC_DAPM_EVENT_ON(event))
+		gpio_set_value(AUDIO_AMP_POWER, 1);
+	else
+		gpio_set_value(AUDIO_AMP_POWER, 0);
+#endif
 	return 0;
 }
 
@@ -237,7 +252,10 @@ static int rt5631_probe(struct platform_device *pdev)
 			jack->name = NULL;
 		}
 	}
-
+#if defined (CFG_IO_AUDIO_AMP_POWER)
+	gpio_request(AUDIO_AMP_POWER, "rt5631_amp_en");
+	gpio_direction_output(AUDIO_AMP_POWER, 0);
+#endif
 	card->dev = &pdev->dev;
 	ret = snd_soc_register_card(card);
 	if (ret) {
@@ -284,6 +302,9 @@ static int rt5631_remove(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = platform_get_drvdata(pdev);
 	snd_soc_unregister_card(card);
+#if defined (CFG_IO_AUDIO_AMP_POWER)
+	gpio_free(AUDIO_AMP_POWER);
+#endif
 	return 0;
 }
 
