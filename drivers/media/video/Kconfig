@@ -618,6 +618,13 @@ config VIDEO_SP2518_FIXED_FRAMERATE
     ---help---
       if this option on, framerate is fixed 30frame, else variable 8-12frame
 
+config VIDEO_SP2519
+    tristate "SP2519 2M pixel camera sensor support"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+      This driver supports SuperPix SP2519 SoC camera module.
+
+
 config VIDEO_GC2035
     tristate "GC2035 2M pixel camera sensor support"
     depends on I2C && VIDEO_V4L2
@@ -654,11 +661,26 @@ config VIDEO_SP0838_FIXED_FRAMERATE
     ---help---
       if this option on, framerate is fixed 15frame, else variable 8-10frame
 
+config VIDEO_SP0718
+    tristate "SP0718 0.3M pixel camera sensor support"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+      This driver supports SuperPix SP0718 SoC camera module.
+
 config VIDEO_OV5645
 	tristate "ov5645 mipi camera support"
 	depends on VIDEO_V4L2 && I2C
 	help
 	  This is a V4L2 camera driver for the OmniVision OV5645 sensor
+
+config VIDEO_GM7150
+	tristate "Texas Instruments TVP5150 video decoder but made in China"
+	depends on VIDEO_V4L2 && I2C
+	---help---
+	  Support for the Texas Instruments GM7150 video decoder.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called tvp5150.
 
 config VIDEO_S5K4E5
         tristate "S5K4E5 sensor support"
