@@ -172,7 +172,9 @@ static void _hw_set_rgb_addr(struct nxp_mlc *me, struct nxp_video_buffer *buf)
             me->rgb_attr.pixelbyte, buf->stride[0]);
     nxp_soc_disp_rgb_set_address(me->id, layer, /* module, layer */
             buf->dma_addr[0],  /* addr */
-            me->rgb_attr.pixelbyte, buf->stride[0], /* pixelbyte, stride */
+            // psw0523 test for miware
+            /*me->rgb_attr.pixelbyte, buf->stride[0], [> pixelbyte, stride <]*/
+            me->rgb_attr.pixelbyte, 128, /* pixelbyte, stride */
             false); /* waitsync */
 }
 
@@ -244,18 +246,30 @@ static void _hw_configure_rgb(struct nxp_mlc *me)
 
     printk("%s %d: code(0x%x), w(%d), h(%d), pixelbyte(%d)\n", __func__, id,
             attr->format.code, attr->format.width, attr->format.height, _get_pixel_byte(attr->format.code));
+    // psw0523 test for miware
+#if 0
     nxp_soc_disp_rgb_set_format(id, layer,
             attr->format.code,
             attr->format.width, attr->format.height,
             _get_pixel_byte(attr->format.code));
+#else
+    nxp_soc_disp_rgb_set_format(id, layer,
+            /*attr->format.code,*/
+            NX_MLC_RGBFMT_A8R8G8B8,
+            attr->format.width, attr->format.height,
+            _get_pixel_byte(attr->format.code));
+            /*_fmt->code = NX_MLC_RGBFMT_A8R8G8B8;*/
+#endif
 
     nxp_soc_disp_set_bg_color(id, 0x00000000);
-    nxp_soc_disp_rgb_set_position(id, layer, 0, 0, false);
+    // for MIWare
+    /*nxp_soc_disp_rgb_set_position(id, layer, 0, 0, false);*/
+    nxp_soc_disp_rgb_set_position(id, layer, attr->crop.left, attr->crop.top, false);
 
     // psw0523 debugging
-    printk("%s %d crop(%d:%d:%d:%d)\n",
-            __func__, id, attr->crop.left, attr->crop.top, attr->crop.width, attr->crop.height);
-    nxp_soc_disp_rgb_set_clipping(id, layer, attr->crop.left, attr->crop.top, attr->crop.width, attr->crop.height);
+    /*printk("%s %d crop(%d:%d:%d:%d)\n",*/
+            /*__func__, id, attr->crop.left, attr->crop.top, attr->crop.width, attr->crop.height);*/
+    /*nxp_soc_disp_rgb_set_clipping(id, layer, attr->crop.left, attr->crop.top, attr->crop.width, attr->crop.height);*/
 
     /* layer enable */
     _hw_rgb_enable(me, true);
@@ -380,6 +394,7 @@ static int mlc_rgb_buffer_queue(struct nxp_video_buffer *buf, void *data)
     unsigned long flags;
     struct nxp_mlc *me = data;
 
+    /*printk("%s: %p\n", __func__, buf);*/
     spin_lock_irqsave(&me->rlock, flags);
     list_add_tail(&buf->list, &me->rgb_buffer_list);
     spin_unlock_irqrestore(&me->rlock, flags);
@@ -486,6 +501,7 @@ static int _register_rgb_buffer_consumer(struct nxp_mlc *me,
         }
     }
 
+    printk("%s\n", __func__);
     me->rgb_consumer->priv  = me;
     me->rgb_consumer->queue = mlc_rgb_buffer_queue;
     ret = video->register_buffer_consumer(video, me->rgb_consumer, type);
@@ -1132,8 +1148,8 @@ static int nxp_mlc_set_crop(struct v4l2_subdev *sd,
         return -EINVAL;
     }
 
-    printk("%s: pad(%d), crop(%d,%d,%d,%d)\n", __func__, crop->pad,
-            crop->rect.left, crop->rect.top, crop->rect.width, crop->rect.height);
+    /*printk("%s: pad(%d), crop(%d,%d,%d,%d)\n", __func__, crop->pad,*/
+            /*crop->rect.left, crop->rect.top, crop->rect.width, crop->rect.height);*/
     *_crop = crop->rect;
 
     /* psw0523 add for runtime video layer config */
@@ -1152,6 +1168,9 @@ static int nxp_mlc_set_crop(struct v4l2_subdev *sd,
             printk("%s: source crop off\n", __func__);
             nxp_soc_disp_video_set_crop(me->id, false, 0, 0, 0, 0, true);
         }
+    } else if (crop->pad == NXP_MLC_PAD_SINK_RGB) {
+        /*printk("%s: RGB crop(%d:%d-%d:%d)\n", __func__, crop->rect.left, crop->rect.top, crop->rect.width, crop->rect.height);*/
+        nxp_soc_disp_rgb_set_position(me->id, RGB_0_LAYER, crop->rect.left, crop->rect.top, false);
     }
     return 0;
 }
