@@ -82,6 +82,7 @@ struct mio_state
     struct
     {
         unsigned int suspending;
+        unsigned int pm_verify_fault;
 
     } power;
 

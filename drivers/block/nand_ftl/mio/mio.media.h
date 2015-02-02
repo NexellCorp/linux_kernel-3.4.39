@@ -65,8 +65,8 @@
  ******************************************************************************/
 MIO_MEDIA_EXT int  media_open(void);
 MIO_MEDIA_EXT void media_close(void);
-MIO_MEDIA_EXT void media_suspend(void);
-MIO_MEDIA_EXT void media_resume(void);
+MIO_MEDIA_EXT unsigned int media_suspend(void);
+MIO_MEDIA_EXT unsigned int media_resume(void);
 MIO_MEDIA_EXT void media_write(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_state);
 MIO_MEDIA_EXT void media_read(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_state);
 MIO_MEDIA_EXT int media_super(void);
