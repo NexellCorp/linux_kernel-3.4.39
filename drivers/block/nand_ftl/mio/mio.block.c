@@ -509,19 +509,40 @@ static int mio_transaction_thread(void * _arg)
  ******************************************************************************/
 static void mio_request_fetch(struct request_queue * _q)
 {
-    struct mio_state * io_state = _q->queuedata;
+    struct mio_state * io_state = mio_dev.io_state;
+    struct request_queue * rq = io_state->transaction.rq;
+    struct request * req = NULL;
 
     if (Exchange.sys.fn.LedReqBusy) { Exchange.sys.fn.LedReqBusy(); }
 
-    // Wake Up Background Thread for Suspend Resume
-    if (!io_state->power.suspending && (MIO_BG_SCHEDULED == io_state->background.status))
+    // If Suspend/Resume Memory Pool CheckSum Verify Fault
+    if (io_state->power.pm_verify_fault)
     {
-        wake_up_process(io_state->background.thread);
+        if (!req && !(req = blk_fetch_request(rq)))
+        {
+            __blk_end_request_cur(req, -1);
+        }
     }
+    // If Suspend Mode
+    else if (io_state->power.suspending)
+    {
+        if (!req && !(req = blk_fetch_request(rq)))
+        {
+            __blk_end_request_cur(req, -1);
+        }
+    }
+    else
+    {
+        // Wake Up Background Thread for Suspend Resume
+        if (!io_state->power.suspending && (MIO_BG_SCHEDULED == io_state->background.status))
+        {
+            wake_up_process(io_state->background.thread);
+        }
 
-    // Wake Up Transaction Thread
-    io_state->transaction.wake.cnt += 1;
-    wake_up_process(io_state->transaction.thread);
+        // Wake Up Transaction Thread
+        io_state->transaction.wake.cnt += 1;
+        wake_up_process(io_state->transaction.thread);
+    }
 }
 
 /******************************************************************************
@@ -1000,8 +1021,10 @@ static void __exit mio_exit(void)
 }
 
 /******************************************************************************
- *
+ * Suspend/Resume
  ******************************************************************************/
+static unsigned int nand_pm_verify = 0; // If Set, Can't Revert Power-On Time
+
 static int nand_suspend(struct device * dev)
 {
     mio_dev.io_state->power.suspending = 1;
@@ -1016,20 +1039,20 @@ static int nand_suspend(struct device * dev)
         usleep_range(1,1);
     }
 
-    media_suspend();
+    nand_pm_verify = media_suspend();
 
     return 0;
 }
 
-/******************************************************************************
- *
- ******************************************************************************/
 static int nand_resume(struct device * dev)
 {
-    media_resume();
+    if (media_resume() != nand_pm_verify)
+    {
+        mio_dev.io_state->power.pm_verify_fault = 1;
+        return -1;
+    }
 
     mio_dev.io_state->power.suspending = 0;
-
     return 0;
 }
 

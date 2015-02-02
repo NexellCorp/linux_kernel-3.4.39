@@ -138,6 +138,7 @@ int media_open(void)
     Exchange.buffer.mpool_size += 1 * 2 * (1<<20); // 1CH x 2WAY x 1MB (Update Map Table per Lun)
     Exchange.buffer.mpool_size += (1<<20);         // 1MB (Misc)
     Exchange.buffer.mpool = (unsigned char *)vmalloc(Exchange.buffer.mpool_size);
+    Exchange.sys.fn._memset((void *)Exchange.buffer.mpool, 0, Exchange.buffer.mpool_size);
 
     if (!Exchange.buffer.mpool)
     {
@@ -146,7 +147,7 @@ int media_open(void)
     }
 
     /**************************************************************************
-     * Media Need Trim Buffer
+     * Media Need Extra Buffer
      **************************************************************************/
     __trim_buffer = (unsigned char *)Exchange.buffer.mpool;
     Exchange.buffer.mpool += 1024;
@@ -245,24 +246,64 @@ void media_close(void)
 /******************************************************************************
  *
  ******************************************************************************/
-void media_suspend(void)
+unsigned int media_suspend(void)
 {
 #if defined (__MEDIA_ON_RAM__)
+    return 0;
+
 #elif defined (__MEDIA_ON_NAND__)
+    unsigned int looper = 0;
+    unsigned int * mpool = (unsigned int *)Exchange.buffer.mpool;
+    unsigned int mpool_size = Exchange.buffer.mpool_size;
+    unsigned int sum = 0;
+
+    /**************************************************************************
+     * FTL Suspend
+     **************************************************************************/
     media_powerdown(NULL);
     while (!media_is_idle(NULL));
     Exchange.nfc.fnSuspend();
+
+    /**************************************************************************
+     * Memory Pool CheckSum After Suspend
+     **************************************************************************/
+    for (looper = 0; looper < (mpool_size/4); looper++)
+    {
+        sum += *mpool; mpool++;
+    }
+
+    return sum;
 #endif
 }
 
 /******************************************************************************
  *
  ******************************************************************************/
-void media_resume(void)
+unsigned int media_resume(void)
 {
 #if defined (__MEDIA_ON_RAM__)
+    return 0;
+
 #elif defined (__MEDIA_ON_NAND__)
+    unsigned int looper = 0;
+    unsigned int * mpool = (unsigned int *)Exchange.buffer.mpool;
+    unsigned int mpool_size = Exchange.buffer.mpool_size;
+    unsigned int sum = 0;
+
+    /**************************************************************************
+     * Memory Pool CheckSum Before Resume
+     **************************************************************************/
+    for (looper = 0; looper < (mpool_size/4); looper++)
+    {
+        sum += *mpool; mpool++;
+    }
+
+    /**************************************************************************
+     * Resume
+     **************************************************************************/
     Exchange.nfc.fnResume();
+
+    return sum;
 #endif
 }
 
@@ -276,16 +317,16 @@ void media_write(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_s
     u8 * buffer = _buffer;
     struct mio_state * io_state = _io_state;
 
-#if defined (__COMPILE_MODE_ELAPSE_T__)
-    Exchange.debug.elapse_t.io.write = 1;
-    if (Exchange.sys.fn.elapse_t_io_measure_start) { Exchange.sys.fn.elapse_t_io_measure_start(ELAPSE_T_IO_MEDIA_RW, ELAPSE_T_IO_MEDIA_R, ELAPSE_T_IO_MEDIA_W); }
-#endif
-
 #if defined (__MEDIA_ON_RAM__)
     memcpy(media_on_ram + lba * __SECTOR_SIZEOF(1), buffer, seccnt * __SECTOR_SIZEOF(1));
 #elif defined (__MEDIA_ON_NAND__)
     int wcidxfar = 0;
     int wcidx = 0;
+
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+    Exchange.debug.elapse_t.io.write = 1;
+    if (Exchange.sys.fn.elapse_t_io_measure_start) { Exchange.sys.fn.elapse_t_io_measure_start(ELAPSE_T_IO_MEDIA_RW, ELAPSE_T_IO_MEDIA_R, ELAPSE_T_IO_MEDIA_W); }
+#endif
 
     // Test Put Command To FTL
     while (1)
@@ -350,11 +391,11 @@ void media_write(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_s
     Exchange.statistics.ios.accumulate.write_seccnt += seccnt;
 
     media_super();
-#endif
 
 #if defined (__COMPILE_MODE_ELAPSE_T__)
     if (Exchange.sys.fn.elapse_t_io_measure_end) { Exchange.sys.fn.elapse_t_io_measure_end(ELAPSE_T_IO_MEDIA_RW, ELAPSE_T_IO_MEDIA_R, ELAPSE_T_IO_MEDIA_W); }
     Exchange.debug.elapse_t.io.write = 0;
+#endif
 #endif
 }
 
@@ -370,15 +411,15 @@ void media_read(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_st
     u8 * buffer = _buffer;
   //struct mio_state * io_state = _io_state;
 
-#if defined (__COMPILE_MODE_ELAPSE_T__)
-    Exchange.debug.elapse_t.io.read = 1;
-    if (Exchange.sys.fn.elapse_t_io_measure_start) { Exchange.sys.fn.elapse_t_io_measure_start(ELAPSE_T_IO_MEDIA_RW, ELAPSE_T_IO_MEDIA_R, ELAPSE_T_IO_MEDIA_W); }
-#endif
-
 #if defined (__MEDIA_ON_RAM__)
     memcpy(buffer, media_on_ram + lba * __SECTOR_SIZEOF(1), seccnt * __SECTOR_SIZEOF(1));
 #elif defined (__MEDIA_ON_NAND__)
     int rbidxfar = 0;
+
+#if defined (__COMPILE_MODE_ELAPSE_T__)
+    Exchange.debug.elapse_t.io.read = 1;
+    if (Exchange.sys.fn.elapse_t_io_measure_start) { Exchange.sys.fn.elapse_t_io_measure_start(ELAPSE_T_IO_MEDIA_RW, ELAPSE_T_IO_MEDIA_R, ELAPSE_T_IO_MEDIA_W); }
+#endif
 
     // Test Put Command to FTL
     while (1)
@@ -567,11 +608,11 @@ void media_read(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_st
     }
 
     media_super();
-#endif
 
 #if defined (__COMPILE_MODE_ELAPSE_T__)
     if (Exchange.sys.fn.elapse_t_io_measure_end) { Exchange.sys.fn.elapse_t_io_measure_end(ELAPSE_T_IO_MEDIA_RW, ELAPSE_T_IO_MEDIA_R, ELAPSE_T_IO_MEDIA_W); }
     Exchange.debug.elapse_t.io.read = 0;
+#endif
 #endif
 }
 
