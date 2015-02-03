@@ -457,6 +457,6 @@ static void __exit mp8845c_exit(void)
 module_exit(mp8845c_exit);
 
 MODULE_DESCRIPTION("MP8845C current regulator driver");
-MODULE_AUTHOR("Sonic Zhang");
+MODULE_AUTHOR("pjsin865@nexell.co.kr");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("i2c:mp8845c-regulator");
