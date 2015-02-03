@@ -54,6 +54,15 @@
 #define V4L2_CID_SCENE_EXPOSURE         (V4L2_CTRL_CLASS_CAMERA | 0x1001)
 #define V4L2_CID_PRIVATE_PREV_CAPT      (V4L2_CTRL_CLASS_CAMERA | 0x1002)
 
+enum {
+    WB_AUTO = 0 ,
+    WB_INCANDESCENT,
+    WB_FLUORESCENT,
+    WB_DAYLIGHT,
+    WB_CLOUDY,
+    WB_TUNGSTEN,
+    WB_MAX
+};
 #if 0
 enum {
     V4L2_WHITE_BALANCE_INCANDESCENT = 0,
@@ -195,13 +204,13 @@ static struct regval_list sp0718_init_regs[] =
 {0xfd,0x00},
 {0x03,0x01},
 {0x04,0x6e},
-{0x06,0x00},
-{0x09,0x04},
-{0x0a,0x5d},
+{0x06,0x64},
+{0x09,0x03},
+{0x0a,0x15},
 {0xfd,0x01},
 {0xef,0x3d},
 {0xf0,0x00},
-{0x02,0x0c},
+{0x02,0x0f},
 {0x03,0x01},
 {0x06,0x37},
 {0x07,0x00},
@@ -209,13 +218,13 @@ static struct regval_list sp0718_init_regs[] =
 {0x09,0x00},
 //Status                 
 {0xfd,0x02},
-{0xbe,0xdc},
-{0xbf,0x02},
-{0xd0,0xdc},
-{0xd1,0x02},
+{0xbe,0x93},
+{0xbf,0x03},
+{0xd0,0x93},
+{0xd1,0x03},
 {0xfd,0x01},
-{0x5b,0x02},
-{0x5c,0xdc},
+{0x5b,0x03},
+{0x5c,0x93},
 
 	//rpc
 	{0xfd,0x01},
@@ -568,6 +577,7 @@ static struct regval_list sp0718_fmt_yuv422_uyvy[] =
 static const struct regval_list sp0718_awb_regs_enable[] =
 {
 
+
     ENDMARKER,
 };
 static const struct regval_list sp0718_awb_regs_diable[] =
@@ -576,33 +586,70 @@ static const struct regval_list sp0718_awb_regs_diable[] =
     ENDMARKER,
 };
 
-static struct regval_list sp0718_wb_cloud_regs[] =
-{
+static struct regval_list sp0718_wb_auto_regs[] =
+{   
+	{0xfd,0x01},
+	{0x32,0x15},
+	{0xfd,0x02},
+	{0x26,0xc8},
+	{0x27,0xb6},
+	{0xfd,0x00},
+    ENDMARKER,
+};
 
+static struct regval_list sp0718_wb_cloud_regs[] =
+{  
+	{0xfd,0x01},
+	{0x32,0x05},
+	{0xfd,0x02},
+	{0x26,0xdc},
+	{0x27,0x75},
+	{0xfd,0x00},
     ENDMARKER,
 };
 
 static struct regval_list sp0718_wb_daylight_regs[] =
 {
+	{0xfd,0x01},
+	{0x32,0x05},
+	{0xfd,0x02},
+	{0x26,0xc8},
+	{0x27,0x89},
+	{0xfd,0x00},
 
     ENDMARKER,
 };
 
 static struct regval_list sp0718_wb_incandescence_regs[] =
 {
-
+	{0xfd,0x01},
+	{0x32,0x05},
+	{0xfd,0x02},
+	{0x26,0xaa},
+	{0x27,0xce},
+	{0xfd,0x00},
     ENDMARKER,
 };
 
 static struct regval_list sp0718_wb_fluorescent_regs[] =
 {
-
+	{0xfd,0x01},
+	{0x32,0x05},
+	{0xfd,0x02},
+	{0x26,0x91},
+	{0x27,0xc8},
+	{0xfd,0x00},
     ENDMARKER,
 };
 
 static struct regval_list sp0718_wb_tungsten_regs[] =
 {
-
+	{0xfd,0x01},
+	{0x32,0x05},
+	{0xfd,0x02},
+	{0x26,0x75},
+	{0x27,0xe2},
+	{0xfd,0x00},
     ENDMARKER,
 };
 
@@ -611,25 +658,41 @@ static struct regval_list sp0718_wb_tungsten_regs[] =
  */
 static struct regval_list sp0718_colorfx_none_regs[] =
 {
-
+	{0xfd, 0x01},
+	{0x66, 0x00},
+	{0x67, 0x80},
+	{0x68, 0x80},
+	{0xfd, 0x00},
     ENDMARKER,
 };
 
 static struct regval_list sp0718_colorfx_bw_regs[] =
 {
-
+	{0xfd, 0x01},
+	{0x66, 0x20},
+	{0x67, 0x80},
+	{0x68, 0x80},
+	{0xfd, 0x00},
     ENDMARKER,
 };
 
 static struct regval_list sp0718_colorfx_sepia_regs[] =
 {
-
+	{0xfd, 0x01},
+	{0x66, 0x10},
+	{0x67, 0xc0},
+	{0x68, 0x20},
+	{0xfd, 0x00},
     ENDMARKER,
 };
 
 static struct regval_list sp0718_colorfx_negative_regs[] =
 {
-
+	{0xfd, 0x01},
+	{0x66, 0x08},
+	{0x67, 0x80},
+	{0x68, 0x80},
+	{0xfd, 0x00},
     ENDMARKER,
 };
 
@@ -932,26 +995,28 @@ static int sp0718_set_white_balance_temperature(struct v4l2_subdev *sd, struct v
     printk("%s: val %d\n", __func__, ctrl->val);
 
     switch(white_balance_temperature) {
-        case V4L2_WHITE_BALANCE_INCANDESCENT:
+        case WB_INCANDESCENT:
             ret = sp0718_write_array(client, sp0718_wb_incandescence_regs);
             break;
-        case V4L2_WHITE_BALANCE_FLUORESCENT:
+        case WB_FLUORESCENT:
             ret = sp0718_write_array(client,sp0718_wb_fluorescent_regs);
             break;
-        case V4L2_WHITE_BALANCE_DAYLIGHT:
+        case WB_DAYLIGHT:
             ret = sp0718_write_array(client,sp0718_wb_daylight_regs);
             break;
-        case V4L2_WHITE_BALANCE_CLOUDY_DAYLIGHT:
+        case WB_CLOUDY:
             ret = sp0718_write_array(client,sp0718_wb_cloud_regs);
             break;
-        case V4L2_WHITE_BALANCE_TUNGSTEN:
+        case WB_TUNGSTEN:
             ret = sp0718_write_array(client,sp0718_wb_tungsten_regs);
+            break;
+        case WB_AUTO:
+            ret = sp0718_write_array(client, sp0718_wb_auto_regs);
             break;
         default:
             dev_err(&client->dev, "set white_balance_temperature over range, white_balance_temperature = %d\n", white_balance_temperature);
             return -ERANGE;
     }
-
     assert(ret == 0);
 
     return 0;
@@ -1035,13 +1100,69 @@ static int sp0718_set_prev_capt_mode(struct v4l2_subdev *sd, struct v4l2_ctrl *c
     return 0;
 }
 
+
+static int sp0718_set_brightness(struct v4l2_subdev *sd, struct v4l2_ctrl *ctrl)
+{
+    struct i2c_client *client = v4l2_get_subdevdata(sd);
+    unsigned int reg_0xdb;
+    int ret;
+
+    int val = ctrl->val;
+
+    printk("%s: val %d\n", __func__, val);
+
+    if (val < 0 || val > 6) {
+        dev_err(&client->dev, "set brightness over range, brightness = %d\n", val);
+        return -ERANGE;
+    }
+
+    switch(val) {
+        case 0:
+            reg_0xdb = 0xd0;
+            break;
+        case 1:
+			reg_0xdb = 0xe0;
+            break;
+        case 2:
+            reg_0xdb = 0xf0;
+            break;
+        case 3:
+            reg_0xdb = 0x00;
+    
+            break;
+        case 4:
+            reg_0xdb = 0x10;
+        
+            break;
+        case 5:
+            reg_0xdb = 0x20;
+     
+            break;
+        case 6:
+            reg_0xdb = 0x30;
+        
+            break;
+    }
+
+   ret = i2c_smbus_write_byte_data(client, 0xfd, 0x01);
+   ret |= i2c_smbus_write_byte_data(client,0xdb, reg_0xdb);
+   assert(ret == 0);
+
+    return 0;
+}
+
 static int sp0718_s_ctrl(struct v4l2_ctrl *ctrl)
 {
     struct v4l2_subdev *sd = ctrl_to_sd(ctrl);
     struct i2c_client *client = v4l2_get_subdevdata(sd);
     int ret = 0;
 
+    printk("%s: val is %d \n",__func__,ctrl->id);
+
     switch (ctrl->id) {
+        case V4L2_CID_BRIGHTNESS:
+            sp0718_set_brightness(sd, ctrl);
+            break;
         case V4L2_CID_AUTO_WHITE_BALANCE:
             sp0718_set_auto_white_balance(sd, ctrl);
             break;

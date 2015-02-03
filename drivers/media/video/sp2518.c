@@ -64,6 +64,16 @@ static struct i2c_board_info asoc_i2c_camera = {
 #define V4L2_CID_SCENE_EXPOSURE         (V4L2_CTRL_CLASS_CAMERA | 0x1001)
 #define V4L2_CID_PRIVATE_PREV_CAPT      (V4L2_CTRL_CLASS_CAMERA | 0x1002)
 
+enum {
+    WB_AUTO = 0 ,
+    WB_INCANDESCENT,
+    WB_FLUORESCENT,
+    WB_DAYLIGHT,
+    WB_CLOUDY,
+    WB_TUNGSTEN,
+    WB_MAX
+};
+
 #if 0
 enum {
     V4L2_WHITE_BALANCE_INCANDESCENT = 0,
@@ -150,6 +160,17 @@ static const struct regval_list sp2518_awb_regs_diable[] =
     //{0x29,0x8a},
     {0xfd,0x00},
     {0x32,0x05},
+    ENDMARKER,
+};
+
+static struct regval_list sp2518_wb_auto_regs[] =
+{   
+	  {0xfd,0x00},
+    {0x32,0x0d},
+    {0xfd,0x01},
+    {0x28,0xce},
+    {0x29,0x8a},
+    {0xfd,0x00},
     ENDMARKER,
 };
 
@@ -1147,7 +1168,7 @@ static int sp2518_set_params(struct v4l2_subdev *sd, u32 *width, u32 *height, en
 static int sp2518_set_brightness(struct v4l2_subdev *sd, struct v4l2_ctrl *ctrl)
 {
     struct i2c_client *client = v4l2_get_subdevdata(sd);
-    unsigned int reg_0xb5, reg_0xd3;
+    unsigned int reg_0xdc;
     int ret;
 
     int val = ctrl->val;
@@ -1161,37 +1182,37 @@ static int sp2518_set_brightness(struct v4l2_subdev *sd, struct v4l2_ctrl *ctrl)
 
     switch(val) {
         case 0:
-            reg_0xb5 = 0xd0;
-            reg_0xd3 = 0x68;
+            reg_0xdc = 0xc0;
+         
             break;
         case 1:
-            reg_0xb5 = 0xe0;
-            reg_0xd3 = 0x70;
+            reg_0xdc = 0xe0;
+           
             break;
         case 2:
-            reg_0xb5 = 0xf0;
-            reg_0xd3 = 0x78;
+            reg_0xdc = 0xf0;
+        
             break;
         case 3:
-            reg_0xb5 = 0x10;
-            reg_0xd3 = 0x88;//80
+            reg_0xdc = 0x00;
+    
             break;
         case 4:
-            reg_0xb5 = 0x20;
-            reg_0xd3 = 0x88;
+            reg_0xdc = 0x10;
+      
             break;
         case 5:
-            reg_0xb5 = 0x30;
-            reg_0xd3 = 0x90;
+            reg_0xdc = 0x20;
+            
             break;
         case 6:
-            reg_0xb5 = 0x40;
-            reg_0xd3 = 0x98;
+            reg_0xdc = 0x30;
+          
             break;
     }
 
-    ret = i2c_smbus_write_byte_data(client, 0xb5, reg_0xb5);
-    ret |= i2c_smbus_write_byte_data(client, 0xd3, reg_0xd3);
+    ret = i2c_smbus_write_byte_data(client, 0xfd, 0x00);
+    ret |= i2c_smbus_write_byte_data(client, 0xdc, reg_0xdc);
     assert(ret == 0);
 
     return 0;
@@ -1298,20 +1319,23 @@ static int sp2518_set_white_balance_temperature(struct v4l2_subdev *sd, struct v
     printk("%s: val %d\n", __func__, ctrl->val);
 
     switch(white_balance_temperature) {
-        case V4L2_WHITE_BALANCE_INCANDESCENT:
+        case WB_INCANDESCENT:
             ret = sp2518_write_array(client, sp2518_wb_incandescence_regs);
             break;
-        case V4L2_WHITE_BALANCE_FLUORESCENT:
+        case WB_FLUORESCENT:
             ret = sp2518_write_array(client, sp2518_wb_fluorescent_regs);
             break;
-        case V4L2_WHITE_BALANCE_DAYLIGHT:
+        case WB_DAYLIGHT:
             ret = sp2518_write_array(client, sp2518_wb_daylight_regs);
             break;
-        case V4L2_WHITE_BALANCE_CLOUDY_DAYLIGHT:
+        case WB_CLOUDY:
             ret = sp2518_write_array(client, sp2518_wb_cloud_regs);
             break;
-        case V4L2_WHITE_BALANCE_TUNGSTEN:
+        case WB_TUNGSTEN:
             ret = sp2518_write_array(client, sp2518_wb_tungsten_regs);
+            break;
+        case WB_AUTO:
+            ret = sp2518_write_array(client, sp2518_wb_auto_regs);
             break;
         default:
             dev_err(&client->dev, "set white_balance_temperature over range, white_balance_temperature = %d\n", white_balance_temperature);

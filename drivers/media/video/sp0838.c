@@ -54,6 +54,17 @@
 #define V4L2_CID_SCENE_EXPOSURE         (V4L2_CTRL_CLASS_CAMERA | 0x1001)
 #define V4L2_CID_PRIVATE_PREV_CAPT      (V4L2_CTRL_CLASS_CAMERA | 0x1002)
 
+enum {
+    WB_AUTO = 0 ,
+    WB_INCANDESCENT,
+    WB_FLUORESCENT,
+    WB_DAYLIGHT,
+    WB_CLOUDY,
+    WB_TUNGSTEN,
+    WB_MAX
+};
+
+
 #if 0
 enum {
     V4L2_WHITE_BALANCE_INCANDESCENT = 0,
@@ -135,7 +146,7 @@ struct regval_list {
 #define  Pre_Value_P0_0xde  0x98//0x98 xg 20121013
 //AWB pre gain
 #define  Pre_Value_P1_0x28  0x75
-#define  Pre_Value_P1_0x29  0x4a//0x4e
+#define  Pre_Value_P1_0x29  0x4e//0x4a
 
 //VBLANK
 #define  Pre_Value_P0_0x05  0x00
@@ -558,6 +569,17 @@ static const struct regval_list sp0838_awb_regs_diable[] =
 {
     {0xfd,0x00},
     {0x32,0x05},
+    {0xfd,0x00},
+    ENDMARKER,
+};
+
+static struct regval_list sp0838_wb_auto_regs[] =
+{
+    {0xfd,0x00},
+    {0x32,0x15},
+    {0xfd,0x01},
+    {0x28,0x75},
+    {0x29,0x4e},
     {0xfd,0x00},
     ENDMARKER,
 };
@@ -996,6 +1018,32 @@ static int sp0838_set_white_balance_temperature(struct v4l2_subdev *sd, struct v
             dev_err(&client->dev, "set white_balance_temperature over range, white_balance_temperature = %d\n", white_balance_temperature);
             return -ERANGE;
     }
+
+    switch(white_balance_temperature) {
+        case WB_INCANDESCENT:
+            ret = sp0838_write_array(client, sp0838_wb_incandescence_regs);
+            break;
+        case WB_FLUORESCENT:
+            ret = sp0838_write_array(client, sp0838_wb_fluorescent_regs);
+            break;
+        case WB_DAYLIGHT:
+            ret = sp0838_write_array(client, sp0838_wb_daylight_regs);
+            break;
+        case WB_CLOUDY:
+            ret = sp0838_write_array(client, sp0838_wb_cloud_regs);
+            break;
+        case WB_TUNGSTEN:
+            ret = sp0838_write_array(client, sp0838_wb_tungsten_regs);
+            break;
+        case WB_AUTO:
+            ret = sp0838_write_array(client, sp0838_wb_auto_regs);
+            break;
+        default:
+            dev_err(&client->dev, "set white_balance_temperature over range, white_balance_temperature = %d\n", white_balance_temperature);
+            return -ERANGE;
+    }
+
+
 
     assert(ret == 0);
 
