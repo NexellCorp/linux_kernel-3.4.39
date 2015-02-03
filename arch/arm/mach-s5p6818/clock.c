@@ -52,19 +52,7 @@
 
 #define	INPUT_CLKS		6		/* PLL0, PLL1, PLL2, PLL3, EXT1, EXT2 */
 
-#if defined(CONFIG_NXP_DFS_BCLK)
-	#if defined(CONFIG_NXP_DFS_BCLK_PLL_0)
-	#define CONFIG_NXP_BCLKFREQ_PLLDEV 	0
-	#elif defined(CONFIG_NXP_DFS_BCLK_PLL_1)
-	#define CONFIG_NXP_BCLKFREQ_PLLDEV 	1
-	#else
-	#define CONFIG_NXP_BCLKFREQ_PLLDEV	0
-	#endif
-#define	DVFS_BCLK_PLL	~(1<<CONFIG_NXP_BCLKFREQ_PLLDEV)
-#else
 #define	DVFS_BCLK_PLL	(-1UL)
-#endif
-
 #ifdef  CONFIG_ARM_NXP_CPUFREQ
 #define	DVFS_CPU_PLL	~(1<<CONFIG_NXP_CPUFREQ_PLLDEV)
 #else
@@ -291,10 +279,6 @@ static inline void clk_gen_rate(void *base, int level, int src, int div)
 	#ifdef CONFIG_NXP_CPUFREQ_PLLDEV
 	if (CONFIG_NXP_CPUFREQ_PLLDEV == src)
 		printk("*** %s: Fail pll.%d for CPU  DFS ***\n", __func__, src);
-	#endif
-	#ifdef CONFIG_NXP_BCLKFREQ_PLLDEV
-	if (CONFIG_NXP_BCLKFREQ_PLLDEV == src)
-		printk("*** %s: Fail pll.%d for BCLK DFS ***\n", __func__, src);
 	#endif
 
 	val  = readl(&reg->CLKGEN[level<<1]);
@@ -551,11 +535,6 @@ static long core_set_rate(struct clk *clk, long rate)
 
 	pr_debug("%s change pll.%d (dvfs pll.%d) %ld \n",
 		__func__, pll, CONFIG_NXP_CPUFREQ_PLLDEV, rate);
-
-	#ifdef CONFIG_NXP_DFS_BCLK
-	WARN(0 != raw_smp_processor_id(), "Dynamic Frequency CPU.%d  conflict with BCLK DFS...\n",
-		raw_smp_processor_id());
-	#endif
 
 	if (pll != -1 &&
 		pll == CONFIG_NXP_CPUFREQ_PLLDEV) {
@@ -1182,5 +1161,3 @@ void nxp_cpu_clock_resume(void)
 		}
 	}
 }
-
-
