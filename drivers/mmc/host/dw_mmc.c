@@ -2295,7 +2295,7 @@ static irqreturn_t dw_mci_detect_interrupt(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static int __devinit dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 {
 	struct mmc_host *mmc;
 	struct dw_mci_slot *slot;
