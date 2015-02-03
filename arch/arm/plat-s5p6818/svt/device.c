@@ -93,29 +93,29 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-//	{ 1400000, 1300000, },
-//	{ 1300000, 1300000, },
-	{ 1200000, 1200000, },
-	{ 1100000, 1200000, },
-	{ 1000000, 1100000, },
-	{  900000, 1100000, },
-	{  800000, 1100000, },
-	{  700000, 1000000, },
-	{  600000, 1000000, },
-	{  500000, 1000000, },
-	{  400000, 1000000, },
+//	{ 1400000, },
+//	{ 1300000, },
+	{ 1200000, },
+	{ 1100000, },
+	{ 1000000, },
+	{  900000, },
+	{  800000, },
+	{  700000, },
+	{  600000, },
+	{  500000, },
+	{  400000, },
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
-	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
+//	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1200*1000,
-	.max_retention  =   20*1000,
-	.rest_cpufreq   =  400*1000,
-	.rest_retention =    1*1000,
+//	.max_cpufreq    = 1200*1000,
+//	.max_retention  =   20*1000,
+//	.rest_cpufreq   =  400*1000,
+//	.rest_retention =    1*1000,
 };
 
 static struct platform_device dfs_plat_device = {
