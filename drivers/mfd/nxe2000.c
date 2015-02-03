@@ -525,7 +525,7 @@ static irqreturn_t nxe2000_watchdog_isr(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-static void __devinit nxe2000_watchdog_init(struct nxe2000 *nxe2000)
+static void nxe2000_watchdog_init(struct nxe2000 *nxe2000)
 {
 	int ret;
 
@@ -599,7 +599,7 @@ static int nxe2000_gpio_to_irq(struct gpio_chip *gc, unsigned off)
 }
 
 
-static void __devinit nxe2000_gpio_init(struct nxe2000 *nxe2000,
+static void nxe2000_gpio_init(struct nxe2000 *nxe2000,
 	struct nxe2000_platform_data *pdata)
 {
 	int ret;
@@ -682,7 +682,7 @@ static int nxe2000_remove_subdevs(struct nxe2000 *nxe2000)
 				     nxe2000_remove_subdev);
 }
 
-static int __devinit nxe2000_add_subdevs(struct nxe2000 *nxe2000,
+static int nxe2000_add_subdevs(struct nxe2000 *nxe2000,
 				struct nxe2000_platform_data *pdata)
 {
 	struct nxe2000_subdev_info *subdev;
@@ -761,7 +761,7 @@ static const struct file_operations debug_fops = {
 	.llseek		= seq_lseek,
 	.release	= single_release,
 };
-static void __init nxe2000_debuginit(struct nxe2000 *nxe2000)
+static void nxe2000_debuginit(struct nxe2000 *nxe2000)
 {
 	(void)debugfs_create_file("nxe2000", S_IRUGO, NULL,
 			nxe2000, &debug_fops);
@@ -783,7 +783,7 @@ static void print_regs(const char *header, struct i2c_client *client,
 	}
 	printk(KERN_INFO "------------------\n");
 }
-static void __init nxe2000_debuginit(struct nxe2000 *nxe2000)
+static void nxe2000_debuginit(struct nxe2000 *nxe2000)
 {
 	struct i2c_client *client = nxe2000->client;
 
@@ -805,7 +805,7 @@ static void __init nxe2000_debuginit(struct nxe2000 *nxe2000)
 }
 #endif
 
-static void __devinit nxe2000_noe_init(struct nxe2000 *nxe2000)
+static void nxe2000_noe_init(struct nxe2000 *nxe2000)
 {
 #if 0
 	struct i2c_client *client = nxe2000->client;
