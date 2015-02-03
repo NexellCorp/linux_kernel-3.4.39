@@ -15,7 +15,6 @@
 
 #include <mach/ppm.h>
 
-
 #define NXP_IR_DEVICE_NAME	"nxp_ir_recv"
 #define RAW_BUFFER_SIZE 100
 

@@ -27,19 +27,21 @@
 #include <linux/power_supply.h>
 #include <linux/irq.h>
 #include <linux/amba/pl022.h>
-#include <linux/syscalls.h>
-#include <linux/fs.h>
 
 /* nexell soc headers */
 #include <mach/platform.h>
 #include <mach/devices.h>
 #include <mach/soc.h>
 
+#if defined(CONFIG_NXP_HDMI_CEC)
+#include <mach/nxp-hdmi-cec.h>
+#endif
+
 /*------------------------------------------------------------------------------
  * BUS Configure
  */
 #if (CFG_BUS_RECONFIG_ENB == 1)
-#include <mach/s5p4418_bus.h>
+#include <mach/s5p6818_bus.h>
 
 const u16 g_DrexQoS[2] = {
 	0x100,		// S0
@@ -68,8 +70,6 @@ const u8 g_BottomBusSI[8] = {
 	BOTBUS_SI_SLOT_2ND_CODA
 };
 
-#if 0
-// default
 const u8 g_BottomQoSSI[2] = {
 	1,	// Tidemark
 	(1<<BOTBUS_SI_SLOT_1ST_ARM) |	// Control
@@ -79,17 +79,11 @@ const u8 g_BottomQoSSI[2] = {
 	(1<<BOTBUS_SI_SLOT_DEINTERLACE) |
 	(1<<BOTBUS_SI_SLOT_1ST_CODA)
 };
-#else
-const u8 g_BottomQoSSI[2] = {
-	1,	// Tidemark
-	(1<<BOTBUS_SI_SLOT_TOP)	// Control
-};
-#endif
 
 const u8 g_DispBusSI[3] = {
 	DISBUS_SI_SLOT_1ST_DISPLAY,
 	DISBUS_SI_SLOT_2ND_DISPLAY,
-	DISBUS_SI_SLOT_GMAC
+	DISBUS_SI_SLOT_2ND_DISPLAY  //DISBUS_SI_SLOT_GMAC
 };
 #endif	/* #if (CFG_BUS_RECONFIG_ENB == 1) */
 
@@ -98,9 +92,30 @@ const u8 g_DispBusSI[3] = {
  */
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
+static unsigned long dfs_freq_table[][2] = {
+//	{ 1400000, 1300000, },
+//	{ 1300000, 1300000, },
+	{ 1200000, 1200000, },
+	{ 1100000, 1200000, },
+	{ 1000000, 1100000, },
+	{  900000, 1100000, },
+	{  800000, 1100000, },
+	{  700000, 1000000, },
+	{  600000, 1000000, },
+	{  500000, 1000000, },
+	{  400000, 1000000, },
+};
+
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
-		.supply_name 	= "vdd_arm_1.3V",
+	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
+	.supply_delay_us = 0,
+	.freq_table	   	= dfs_freq_table,
+	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
+	.max_cpufreq    = 1200*1000,
+	.max_retention  =   20*1000,
+	.rest_cpufreq   =  400*1000,
+	.rest_retention =    1*1000,
 };
 
 static struct platform_device dfs_plat_device = {
@@ -109,6 +124,7 @@ static struct platform_device dfs_plat_device = {
 		.platform_data	= &dfs_plat_data,
 	}
 };
+
 #endif
 
 /*------------------------------------------------------------------------------
@@ -304,11 +320,11 @@ int  nxpmac_init(struct platform_device *pdev)
 	NX_RSTCON_Initialize();
 	addr = NX_RSTCON_GetPhysicalAddress();
 	NX_RSTCON_SetBaseAddress( (u32)IO_ADDRESS(addr) );
-	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
+	NX_RSTCON_SetRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_NEGATE);
 	udelay(100);
-	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_DISABLE);
+	NX_RSTCON_SetRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ASSERT);
 	udelay(100);
-	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
+	NX_RSTCON_SetRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_NEGATE);
 	udelay(100);
 
 
@@ -505,18 +521,7 @@ static struct platform_device nand_plat_device = {
 		.platform_data	= &nand_plat_data,
 	},
 };
-#elif defined(CONFIG_NXP_FTL)
-static struct resource nand_resource =
-{
-};
-
-static struct platform_device nand_plat_device = {
-	.name	= DEV_NAME_NAND,
-	.id		= -1,
-	.dev	= {
-	},
-};
-#endif	/* CONFIG_NXP_FTL */
+#endif	/* CONFIG_MTD_NAND_NXP */
 
 /*------------------------------------------------------------------------------
  * Touch platform device
@@ -877,7 +882,7 @@ NXE2000_PDATA_INIT(ldo4,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V
 NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  2);	/* 2.8V VCAM */
 NXE2000_PDATA_INIT(ldo6,     0, 1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
 NXE2000_PDATA_INIT(ldo7,     0, 1000000, 3500000, 1, 0, 2800000, 1,  2);	/* 2.8V VID */
-#if defined(CONFIG_RFKILL_NXP)
+#if defined(CONFIG_NXP_RFKILL)
 NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 0,  2);	/* 3.3V WIFI */
 #else
 NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 1,  2);	/* 3.3V WIFI */
@@ -1694,66 +1699,40 @@ static struct i2c_board_info __initdata inv_mpu_i2c0_boardinfo[] =  {
 /*------------------------------------------------------------------------------
  * SSP/SPI
  */
+
 #if defined(CONFIG_SPI_SPIDEV) || defined(CONFIG_SPI_SPIDEV_MODULE)
+#include <mach/slsi-spi.h>
 #include <linux/spi/spi.h>
-#if (CFG_SPI0_CS_GPIO_MODE)
-static void spi0_cs(u32 chipselect)
-{
-	if(nxp_soc_gpio_get_io_func( CFG_SPI0_CS )!= nxp_soc_gpio_get_altnum( CFG_SPI0_CS))
-		nxp_soc_gpio_set_io_func( CFG_SPI0_CS, nxp_soc_gpio_get_altnum( CFG_SPI0_CS));
-
-	nxp_soc_gpio_set_io_dir( CFG_SPI0_CS,1);
-	nxp_soc_gpio_set_out_value(	 CFG_SPI0_CS , chipselect);
-}
-#endif
-struct pl022_config_chip spi0_info = {
-    /* available POLLING_TRANSFER, INTERRUPT_TRANSFER, DMA_TRANSFER */
-    .com_mode = CFG_SPI0_COM_MODE,
-    .iface = SSP_INTERFACE_MOTOROLA_SPI,
-    /* We can only act as master but SSP_SLAVE is possible in theory */
-    .hierarchy = SSP_MASTER,
-    /* 0 = drive TX even as slave, 1 = do not drive TX as slave */
-    .slave_tx_disable = 1,
-    .rx_lev_trig = SSP_RX_4_OR_MORE_ELEM,
-    .tx_lev_trig = SSP_TX_4_OR_MORE_EMPTY_LOC,
-    .ctrl_len = SSP_BITS_8,
-    .wait_state = SSP_MWIRE_WAIT_ZERO,
-    .duplex = SSP_MICROWIRE_CHANNEL_FULL_DUPLEX,
-    /*
-     * This is where you insert a call to a function to enable CS
-     * (usually GPIO) for a certain chip.
-     */
-#if (CFG_SPI0_CS_GPIO_MODE)
-    .cs_control = spi0_cs,
-#endif
-	.clkdelay = SSP_FEEDBACK_CLK_DELAY_1T,
-
-};
-
-static struct spi_board_info spi_plat_board[] __initdata = {
+#include <linux/gpio.h>
+static struct s3c64xx_spi_csinfo spi0_csi[] = {
     [0] = {
-        .modalias        = "spidev",    /* fixup */
-        .max_speed_hz    = 3125000,     /* max spi clock (SCK) speed in HZ */
-        .bus_num         = 0,           /* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
-        .chip_select     = 0,           /* Note> set chip select num, must be smaller than spi cs_num */
-        .controller_data = &spi0_info,
-        .mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
+        .line       = CFG_SPI0_CS,
+        .set_level  = gpio_set_value,
+        .fb_delay   = 0x2,
     },
 };
-
+struct spi_board_info spi0_board_info[] __initdata = {
+    {
+        .modalias       = "spidev",
+        .platform_data  = NULL,
+        .max_speed_hz   = 10 * 1000 * 1000,
+        .bus_num        = 0,
+        .chip_select    = 0,
+        .mode           = SPI_MODE_0,
+        .controller_data    = &spi0_csi[0],
+    }
+};
 #endif
 /*------------------------------------------------------------------------------
  * DW MMC board config
  */
 #if defined(CONFIG_MMC_DW)
-#include <linux/mmc/dw_mmc.h>
-
-int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
+static int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
 {
 	return 0;
 }
 
-int _dwmci_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
+static int _dwmci_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
 {
 	return 0;
 }
@@ -1840,7 +1819,7 @@ static struct dw_mci_board _dwmci2_data = {
 /*------------------------------------------------------------------------------
  * RFKILL driver
  */
-#if defined(CONFIG_RFKILL_NXP)
+#if defined(CONFIG_NXP_RFKILL)
 
 struct rfkill_dev_data  rfkill_dev_data =
 {
@@ -1894,11 +1873,19 @@ void nxp_otgvbus_pwr_set(int enable)
 }
 EXPORT_SYMBOL(nxp_otgvbus_pwr_set);
 #endif
+/*------------------------------------------------------------------------------
+ * HDMI CEC driver
+ */
+#if defined(CONFIG_NXP_HDMI_CEC)
+static struct platform_device hdmi_cec_device = {
+	.name			= NXP_HDMI_CEC_DRV_NAME,
+};
+#endif /* CONFIG_NXP_HDMI_CEC */
 
 /*------------------------------------------------------------------------------
  * register board platform devices
  */
-void __init nxp_board_devices_register(void)
+void __init nxp_board_devs_register(void)
 {
 	printk("[Register board platform devices]\n");
 
@@ -1944,7 +1931,7 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(FT5X0X_I2C_BUS, &ft5x0x_i2c_bdi, 1);
 #endif
 
-#if defined(CONFIG_MTD_NAND_NXP) || defined(CONFIG_NXP_FTL)
+#if defined(CONFIG_MTD_NAND_NXP)
 	platform_device_register(&nand_plat_device);
 #endif
 
@@ -2004,7 +1991,7 @@ void __init nxp_board_devices_register(void)
 #endif
 
 #if defined(CONFIG_SPI_SPIDEV) || defined(CONFIG_SPI_SPIDEV_MODULE)
-    spi_register_board_info(spi_plat_board, ARRAY_SIZE(spi_plat_board));
+    spi_register_board_info(spi0_board_info, ARRAY_SIZE(spi0_board_info));
     printk("plat: register spidev\n");
 #endif
 
@@ -2021,6 +2008,17 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_PPM_NXP)
     printk("plat: add device ppm\n");
     platform_device_register(&ppm_device);
+#endif
+
+#if defined(CONFIG_NXP_HDMI_CEC)
+    printk("plat: add device hdmi-cec\n");
+    platform_device_register(&hdmi_cec_device);
+#endif
+
+#if 0//defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
+	back_camera_power_enable(0);
+	front_camera_power_enable(0);
+	camera_power_control(0);
 #endif
 
 	/* END */

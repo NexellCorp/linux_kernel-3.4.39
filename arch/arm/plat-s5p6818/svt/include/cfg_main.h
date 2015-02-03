@@ -28,19 +28,13 @@
 /*------------------------------------------------------------------------------
  * 	System Name
  */
-#define	CFG_SYS_CPU_NAME						"s5p4418"
-#define	CFG_SYS_BOARD_NAME						"s5p4418-svt"
+#define	CFG_SYS_CPU_NAME						"s5p6818"
+#define	CFG_SYS_BOARD_NAME						"s5p6818-svt"
 
 /*------------------------------------------------------------------------------
  * 	BUS config
  */
-#define CFG_BUS_RECONFIG_ENB					1		/* if want bus reconfig, select this first */
-
-#define CFG_BUS_RECONFIG_DREXQOS				0
-#define CFG_BUS_RECONFIG_TOPBUSSI				0
-#define CFG_BUS_RECONFIG_BOTTOMBUSSI			0
-#define CFG_BUS_RECONFIG_BOTTOMBUSQOS			0
-#define CFG_BUS_RECONFIG_DISPBUSSI				1
+#define CFG_BUS_RECONFIG_ENB					0
 
 /*------------------------------------------------------------------------------
  * 	Uart
@@ -84,9 +78,6 @@
 #define CFG_NAND_ECC_BYTES 						1024
 #define CFG_NAND_ECC_BITS               		40			/* 512 - 4,8,16,24 1024 - 24,40,60 */
 //#define CFG_NAND_ECCIRQ_MODE
-
-/* FTL */
-#define CFG_NAND_FTL_START_BLOCK				0x6000000	/* byte address, Must Be Multiple of 8MB */
 
 /*------------------------------------------------------------------------------
  *	Nand (GPIO)
@@ -155,6 +146,9 @@
 #define CFG_LCD_PRI_PWM_FREQ					20000
 #define CFG_LCD_PRI_PWM_DUTYCYCLE				50		/* (%) */
 
+#define CFG_PWM2_CLK_SRC						1		// 0:pclk 1:tclk
+#define CFG_PWM3_CLK_SRC						1		// 0:pclk 1:tclk
+
 /*------------------------------------------------------------------------------
  * 	PPM
  */
@@ -163,6 +157,9 @@
 /*------------------------------------------------------------------------------
  * 	Audio I2S (0, 1, 2)
  */
+//#define CFG_AUDIO_I2S_SUPPLY_EXT_MCLK			1
+#define CFG_EXT_MCLK_PWM_CH						3
+
 #define	CFG_AUDIO_I2S0_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S0_TRANS_MODE				1		// 0:I2S, 1:Left 2:Right justified */
 #define	CFG_AUDIO_I2S0_FRAME_BIT				48		// 32, 48
@@ -211,7 +208,7 @@
 /*------------------------------------------------------------------------------
  * 	SPI
  */
-#define CFG_SPI0_CLK							100000000
+#define CFG_SPI0_CLK							10000000
 #define CFG_SPI1_CLK							10000000
 #define CFG_SPI2_CLK							10000000
 
@@ -223,7 +220,7 @@
 #define CFG_SPI1_CS_GPIO_MODE					0	/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
 #define CFG_SPI2_CS_GPIO_MODE					0	/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
 
-#define CFG_SPI0_CS								PAD_GPIO_C + 30
+#define CFG_SPI0_CS							PAD_GPIO_C + 30	/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
 /*------------------------------------------------------------------------------
  * 	Keypad
  */

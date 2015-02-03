@@ -43,7 +43,9 @@
 #include <mach/platform.h>
 #include <mach/devices.h>
 #include <mach/soc.h>
+#ifdef CONFIG_NXP_DFS_BCLK
 #include <mach/nxp-dfs-bclk.h>
+#endif
 
 #define CONFIG_NXP_WATCHDOG_DEFAULT_TIME	(10)
 #define CONFIG_NXP_WATCHDOG_MAX_TIME		(10)
@@ -301,8 +303,7 @@ static irqreturn_t nxp_wdt_irq(int irqno, void *param)
 	return IRQ_HANDLED;
 }
 
-#ifdef CONFIG_NEXELL_DFS_BCLK
-
+#ifdef CONFIG_NXP_DFS_BCLK
 static int nxp_wdt_bclk_dfs_transition(struct notifier_block *nb,
 					  unsigned long val, void *data)
 {
@@ -358,7 +359,6 @@ static inline void nxp_wdt_bclk_dfs_deregister(void)
 {
 	bclk_dfs_unregister_notify(&nxp_wdt_bclk_dfs_transition_nb);
 }
-
 #else
 static inline int nxp_wdt_bclk_dfs_register(void)
 {

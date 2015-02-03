@@ -25,6 +25,11 @@ choice
 		help
    	 		Support for the FDONE board.
 
+   	config PLAT_S5P6818_SVT
+		bool "SVT: Android SVT board"
+		help
+   	 		Support for the SVT board.
+
 endchoice
 
 #
