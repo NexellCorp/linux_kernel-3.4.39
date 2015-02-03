@@ -115,7 +115,7 @@ static struct platform_device i2c_device_ch0 = {
 	},
 };
 #else
-struct s3c2410_platform_i2c i2c_data_ch0 __initdata = {
+struct s3c2410_platform_i2c i2c_data_ch0 = {
 	.bus_num	= 0,
     .flags      = 0, 
     .slave_addr = 0x10,
@@ -161,7 +161,7 @@ static struct platform_device i2c_device_ch1 = {
 	},
 };
 #else
-struct s3c2410_platform_i2c i2c_data_ch1 __initdata = {
+struct s3c2410_platform_i2c i2c_data_ch1 = {
 	.bus_num	= 1,
     .flags      = 0, 
     .slave_addr = 0x10,
@@ -204,7 +204,7 @@ static struct platform_device i2c_device_ch2 = {
 	},
 };
 #else
-struct s3c2410_platform_i2c i2c_data_ch2 __initdata = {
+struct s3c2410_platform_i2c i2c_data_ch2 = {
 	.bus_num	= 2,
     .flags      = 0, 
     .slave_addr = 0x10,
