@@ -871,9 +871,9 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 			printk("DVFS: adjust %ld margin %s%d%s \n",
 				dvfs->boot_freq, tag->minus?"-":"+", tag->value, tag->percent?"%":"mV");
 		}
-		set_bit(FREQ_STATE_RESUME, &dvfs->resume_state);
 	}
 
+	set_bit(FREQ_STATE_RESUME, &dvfs->resume_state);
 	nxp_cpufreq_set_freq_id(dvfs, dvfs->boot_freq);
 
 	if (0 > nxp_cpufreq_setup(dvfs))
