@@ -8,6 +8,10 @@ config ARCH_CPU_SLSI
 	select MULTI_IRQ_HANDLER
 	default y
 
+config ARCH_S5P6818_REV
+	bool "s5p6818 revision"
+	default n
+
 choice
 	prompt "Prototype build mode"
 	default S5P6818_PROTO_RELEASE

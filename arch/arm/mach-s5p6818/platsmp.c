@@ -64,6 +64,7 @@ static void __cpuinit write_pen_release(int val)
 static inline int boot_second_core(int cpu)
 {
 	__raw_writel(virt_to_phys(__secondary_startup), SCR_ARM_SECOND_BOOT);
+	__raw_writel(cpu, SCR_SMP_WAKE_CPU_ID);
 	return 0;
 }
 

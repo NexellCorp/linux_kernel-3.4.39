@@ -452,7 +452,7 @@ static int __init timer_event_init(int ch)
 }
 
 #ifdef CONFIG_HAVE_ARM_TWD
-#define	SCU_PVT_PHYBASE		(__PB_IO_MAP_MPPR_PHYS + 0x00000600) 	// 0xF0001000
+#define	SCU_PVT_PHYBASE		(0xF0000000 + 0x00000600) 	// 0xF0001000
 #define IRQ_LOCALTIMER      IRQ_GIC_PPI_PVT
 #define IRQ_LOCALWDOG       IRQ_GIC_PPI_WDT
 
