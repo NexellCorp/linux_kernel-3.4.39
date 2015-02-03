@@ -939,7 +939,7 @@ static struct mp8845c_platform_data __initdata mp8845c_platform[] = {
 };
 
 #define MP8845C_I2C_BUS0		(0)
-#define MP8845C_I2C_BUS1		(1)
+#define MP8845C_I2C_BUS1		(2)
 #define MP8845C_I2C_ADDR		(0x1c)
 
 static struct i2c_board_info __initdata mp8845c_regulators[] = {
