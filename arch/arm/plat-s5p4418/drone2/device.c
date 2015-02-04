@@ -751,7 +751,7 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 		.ch_ichg_slp	= 0x0E,	/* SLEEP  ICHG	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_adp 	= 0x18,	/* ILIM_ADP	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_usb 	= 0x04,	/* ILIM_USB	= 0 - 0x1D (100mA - 3000mA) */
-		.ch_icchg		= 0x03,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
+		.ch_icchg		= 0x00,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
 		.fg_target_vsys	= 3250,	/* This value is the target one to DSOC=0% */
 		.fg_target_ibat	= 1000,	/* This value is the target one to DSOC=0% */
 		.fg_poff_vbat	= 3350,	/* setting value of 0 per Vbat */

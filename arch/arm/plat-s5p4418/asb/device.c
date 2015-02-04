@@ -873,7 +873,6 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 
 	.low_vbat_vol_mv	= 3600,
 	.low_vsys_vol_mv	= 3600,
-	.alarm_vol_mv		= 3450,	//3450,
 	.bat_impe			= 1500,
 	.slp_ibat			= 10,
 //	.adc_channel		= NXE2000_ADC_CHANNEL_VBAT,
@@ -885,12 +884,13 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 		.ch_vrchg		= 0x03,	/* VRCHG	= 0 - 4 (3.85v, 3.90v, 3.95v, 4.00v, 4.10v) */
 		.ch_vbatovset	= 0xFF,	/* VBATOVSET	= 0 or 1 (0 : 4.38v(up)/3.95v(down) 1: 4.53v(up)/4.10v(down)) */
 		.ch_ichg 		= 0x0E,	/* ICHG		= 0 - 0x1D (100mA - 3000mA) */
+		.ch_ichg_slp	= 0x0E,	/* SLEEP  ICHG	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_adp 	= 0x18,	/* ILIM_ADP	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_usb 	= 0x04,	/* ILIM_USB	= 0 - 0x1D (100mA - 3000mA) */
-		.ch_icchg		= 0x03,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
-		.fg_target_vsys	= 3450,	/* This value is the target one to DSOC=0% */
+		.ch_icchg		= 0x00,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
+		.fg_target_vsys	= 3250,	/* This value is the target one to DSOC=0% */
 		.fg_target_ibat	= 1000,	/* This value is the target one to DSOC=0% */
-		.fg_poff_vbat	= 3450,	/* setting value of 0 per Vbat */
+		.fg_poff_vbat	= 3350,	/* setting value of 0 per Vbat */
 		.jt_en			= 0,	/* JEITA Enable	  = 0 or 1 (1:enable, 0:disable) */
 		.jt_hw_sw		= 1,	/* JEITA HW or SW = 0 or 1 (1:HardWare, 0:SoftWare) */
 		.jt_temp_h		= 50,	/* degree C */
