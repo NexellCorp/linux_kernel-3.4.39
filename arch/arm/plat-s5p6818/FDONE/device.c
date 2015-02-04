@@ -428,6 +428,74 @@ static struct platform_device alc5623_dai = {
 };
 #endif
 
+#if defined(CONFIG_SND_CODEC_RT5631_FDONE) || defined(CONFIG_SND_CODEC_RT5631_FDONE_MODULE)
+#include <linux/i2c.h>
+
+#define	RT5631_I2C_BUS		(0)
+
+/* CODEC */
+static struct i2c_board_info __initdata rt5631_i2c_bdi = {
+	.type	= "rt5631",
+	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
+};
+
+/* DAI */
+struct nxp_snd_dai_plat_data rt5631_i2s_dai_data = {
+	.i2s_ch	= 0,
+	.sample_rate	= 48000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
+#if 0
+	.hp_jack 		= {
+		.support    	= 1,
+		.detect_io		= PAD_GPIO_A + 0,
+		.detect_level	= 1,
+	},
+#endif
+};
+
+static struct platform_device rt5631_dai = {
+	.name			= "rt5631-audio",
+	.id				= 0,
+	.dev			= {
+		.platform_data	= &rt5631_i2s_dai_data,
+	}
+};
+#endif
+
+#if defined(CONFIG_SND_CODEC_RT5623_FDONE)
+#include <linux/i2c.h>
+
+#define	RT5623_I2C_BUS		(3)
+
+/* CODEC */
+static struct i2c_board_info __initdata rt5623_i2c_bdi = {
+	.type	= "rt5623",			// compatilbe with wm8976
+	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
+};
+
+/* DAI */
+struct nxp_snd_dai_plat_data rt5623_i2s_dai_data = {
+	.i2s_ch	= 1,
+	.sample_rate	= 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
+/*
+	.hp_jack 		= {
+		.support    	= 1,
+		.detect_io		= PAD_GPIO_E + 8,
+		.detect_level	= 1,
+	},
+*/	
+};
+
+static struct platform_device rt5623_dai = {
+	.name			= "rt5623-audio",
+	.id				= 0,
+	.dev			= {
+		.platform_data	= &rt5623_i2s_dai_data,
+	}
+};
+#endif
+
 
 /*------------------------------------------------------------------------------
  * G-Sensor platform device
@@ -1724,6 +1792,7 @@ static struct platform_device backward_camera_device = {
 };
 #endif
 /*------------------------------------------------------------------------------
+ * register board platform devices
  */
 void __init nxp_board_devs_register(void)
 {
@@ -1795,6 +1864,18 @@ void __init nxp_board_devs_register(void)
 	printk("plat: add device asoc-alc5623\n");
 	i2c_register_board_info(ALC5623_I2C_BUS, &alc5623_i2c_bdi, 1);
 	platform_device_register(&alc5623_dai);
+#endif
+
+#if defined(CONFIG_SND_CODEC_RT5631_FDONE) || defined(CONFIG_SND_CODEC_RT5631_FDONE_MODULE)
+	printk("plat: add device asoc-rt5631\n");
+	i2c_register_board_info(RT5631_I2C_BUS, &rt5631_i2c_bdi, 1);
+	platform_device_register(&rt5631_dai);
+#endif
+
+#if defined(CONFIG_SND_CODEC_RT5623_FDONE) || defined(CONFIG_SND_CODEC_RT5623_FDONE_MODULE)
+	printk("plat: add device asoc-rt5623\n");
+	i2c_register_board_info(RT5623_I2C_BUS, &rt5623_i2c_bdi, 1);
+	platform_device_register(&rt5623_dai);
 #endif
 
 #if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)

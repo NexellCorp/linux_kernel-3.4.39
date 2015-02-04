@@ -276,6 +276,16 @@
  */
 #define CFG_IO_AUDIO_AMP_POWER				(PAD_GPIO_A + 23)		/* GPIO */
 
+#define CFG_IO_AUDIO_RT5631_AMP_EN			(PAD_GPIO_A + 23)		/* GPIO */
+#define CFG_IO_AUDIO_RT5631_LINE_OUT_SEL1	(PAD_GPIO_E + 31)		/* GPIO */
+#define CFG_IO_AUDIO_RT5631_LINE_OUT_SEL2	(PAD_GPIO_E + 30)		/* GPIO */
+
+/*------------------------------------------------------------------------------
+ *	AUDIO AMP for rt5623
+ */
+#define CFG_IO_AUDIO_RT5623_AMP_EN			(PAD_GPIO_A + 24)		/* GPIO */
+#define CFG_IO_AUDIO_RT5623_AMP_PWR_EN		(PAD_GPIO_B + 16)		/* GPIO */
+
 
 #define	 CFG_IO_I2C0_SCL	((PAD_GPIO_D + 3) | PAD_FUNC_ALT0)  // CODEC_SCL
 #define	 CFG_IO_I2C0_SDA	((PAD_GPIO_D + 2) | PAD_FUNC_ALT0)
