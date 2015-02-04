@@ -1415,11 +1415,11 @@ static struct dw_mci_board _dwmci2_data = {
 				  	  DW_MMC_QUIRK_HW_RESET_PW |
 				      DW_MCI_QUIRK_NO_DETECT_EBIT,
 	.bus_hz			= 200 * 1000 * 1000,
-	.caps			= MMC_CAP_UHS_DDR50 |  MMC_CAP_1_8V_DDR |
+	.caps			= MMC_CAP_UHS_DDR50 |  
 					  MMC_CAP_NONREMOVABLE |
 			 	  	  MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23 |
 				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0x0) | DW_MMC_DRIVE_PHASE(3) | DW_MMC_SAMPLE_PHASE(1),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0x0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
