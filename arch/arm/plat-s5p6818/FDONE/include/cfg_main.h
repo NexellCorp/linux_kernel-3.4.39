@@ -206,6 +206,13 @@
  */
 #define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
 
+/*------------------------------------------------------------------------------
+ * 	DWCOTG
+ */
+
+#define CFG_SWITCH_USB_5V_EN        			(PAD_GPIO_A + 19)
+#define CFG_SWITCH_USB_HOST_DEVICE     			(PAD_GPIO_B + 27)
+#define CFG_OTG_BOOT_MODE           			CFG_OTG_MODE_HOST
 
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
