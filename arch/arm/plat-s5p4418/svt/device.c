@@ -769,10 +769,6 @@ void __init nxp_reserve_mem(void)
 
 #define NXE2000_I2C_BUS		(2)
 #define NXE2000_I2C_ADDR	(0x64 >> 1)
-#define NXE2000_IRQ			(PAD_GPIO_ALV + 4)
-
-#define PMC_CTRL			0x0
-#define PMC_CTRL_INTR_LOW	(1 << 17)
 
 /* NXE2000 IRQs */
 #define NXE2000_IRQ_BASE	(IRQ_SYSTEM_END)
@@ -1081,10 +1077,10 @@ static struct nxe2000_platform_data nxe2000_platform = {
 	.enable_shutdown_pin	= true,
 };
 
-static struct i2c_board_info __initdata nxe2000_regulators[] = {
+static struct i2c_board_info __initdata nxe2000_i2c_boardinfo[] = {
 	{
 		I2C_BOARD_INFO("nxe2000", NXE2000_I2C_ADDR),
-		.irq		= NXE2000_IRQ,
+		.irq			= CFG_GPIO_PMIC_INTR,
 		.platform_data	= &nxe2000_platform,
 	},
 };
@@ -1960,7 +1956,7 @@ void __init nxp_board_devices_register(void)
 
 #if defined(CONFIG_REGULATOR_NXE2000)
 	printk("plat: add device nxe2000 pmic\n");
-	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_regulators, ARRAY_SIZE(nxe2000_regulators));
+	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_i2c_boardinfo, ARRAY_SIZE(nxe2000_i2c_boardinfo));
 #endif
 
 #if defined(CONFIG_NXP_MP2TS_IF)
