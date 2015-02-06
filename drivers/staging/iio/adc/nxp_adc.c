@@ -109,12 +109,16 @@ struct nxp_adc_info {
 
 static const char *str_adc_ch[] = {
 	"adc.0", "adc.1", "adc.2", "adc.3",
+#ifdef CONFIG_ARCH_S5P4418
 	"adc.4", "adc.5", "adc.6", "adc.7",
+#endif
 };
 
 static const char *str_adc_label[] = {
 	"ADC0", "ADC1", "ADC2", "ADC3",
+#ifdef CONFIG_ARCH_S5P4418
 	"ADC4", "ADC5", "ADC6", "ADC7",
+#endif
 };
 
 #define ADC_CHANNEL_SPEC(_id) {	\
@@ -129,10 +133,12 @@ static struct iio_chan_spec nxp_adc_iio_channels [] = {
 	ADC_CHANNEL_SPEC(1),
 	ADC_CHANNEL_SPEC(2),
 	ADC_CHANNEL_SPEC(3),
+#ifdef CONFIG_ARCH_S5P4418
 	ADC_CHANNEL_SPEC(4),
 	ADC_CHANNEL_SPEC(5),
 	ADC_CHANNEL_SPEC(6),
 	ADC_CHANNEL_SPEC(7),
+#endif
 };
 
 /*
