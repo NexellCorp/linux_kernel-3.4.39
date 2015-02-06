@@ -631,6 +631,44 @@ static struct platform_device *i2c_devices[] = {
 };
 #endif /* CONFIG_I2C_NXP || CONFIG_I2C_SLSI */
 
+#if defined(CONFIG_USB_HUB_USB2514)
+#define	USB2514_I2C_BUS		(5)
+
+/* CODEC */
+static struct i2c_board_info __initdata usb2514_i2c_bdi = {
+	.type	= "usb2514",			
+	.addr	= 0x58>>1,
+};
+
+#if defined(CONFIG_I2C_NXP)
+/* gpio i2c 5 */
+#define	I2C5_SDA	(PAD_GPIO_C+5)
+#define	I2C5_SCL	(PAD_GPIO_C+6)
+
+#define I2CUDELAY(x)	1000000/x/2
+
+static struct i2c_gpio_platform_data nxp_i2c_gpio_port5 = {
+	.sda_pin	= I2C5_SDA,
+	.scl_pin	= I2C5_SCL,
+	.udelay		= I2CUDELAY(CFG_I2C3_CLK),				/* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
+	.timeout	= 10,
+};
+static struct platform_device i2c_device_ch5 = {
+	.name	= "i2c-gpio",
+	.id		= 5,
+	.dev    = {
+		.platform_data	= &nxp_i2c_gpio_port5,
+	},
+};
+
+static struct platform_device *i2c_devices1[] = {
+	&i2c_device_ch5,
+};
+#endif /* CONFIG_I2C_NXP */
+#endif /* CONFIG_USB_HUB_USB2514 */
+
+
+
 /*------------------------------------------------------------------------------
  * PMIC platform device
  */
@@ -1459,7 +1497,7 @@ static int _dwmci0_get_cd(u32 slot_id)
 #ifdef CONFIG_MMC_NXP_CH0
 static struct dw_mci_board _dwmci0_data = {
 	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 60 * 1000 * 1000,
+	.bus_hz			= 20 * 1000 * 1000, /*60*/
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
@@ -1478,12 +1516,13 @@ static struct dw_mci_board _dwmci2_data = {
 				  	  DW_MCI_QUIRK_HIGHSPEED |
 				  	  DW_MMC_QUIRK_HW_RESET_PW |
 				      DW_MCI_QUIRK_NO_DETECT_EBIT,
-	.bus_hz			= 200 * 1000 * 1000,
-	.caps			= MMC_CAP_UHS_DDR50 |  
+	.bus_hz			= 100 * 1000 * 1000, /*200*/
+	.caps			= MMC_CAP_UHS_DDR50 |
 					  MMC_CAP_NONREMOVABLE |
 			 	  	  MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23 |
 				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0x0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	//.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0x0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0x1c) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
@@ -1837,6 +1876,9 @@ void __init nxp_board_devs_register(void)
 
 #if defined(CONFIG_I2C_NXP)
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
+#if defined(CONFIG_USB_HUB_USB2514)
+    platform_add_devices(i2c_devices1, ARRAY_SIZE(i2c_devices1));
+#endif
 #endif
 
 #if defined(CONFIG_REGULATOR_NXE2000)
@@ -1924,6 +1966,11 @@ void __init nxp_board_devs_register(void)
 #if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
     printk("plat: add device backward-camera\n");
     platform_device_register(&backward_camera_device);
+#endif
+
+#if defined(CONFIG_USB_HUB_USB2514)
+	printk("plat: add device usb2514\n");
+	i2c_register_board_info(USB2514_I2C_BUS, &usb2514_i2c_bdi, 1);
 #endif
 
 	/* END */
