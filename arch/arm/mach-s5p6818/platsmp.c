@@ -126,7 +126,6 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 			break;
 
 		udelay(10);
-	//	gic_raise_softirq(cpumask_of(cpu), 1);
 	}
 
 	/*
