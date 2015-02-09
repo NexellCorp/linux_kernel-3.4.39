@@ -839,6 +839,7 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 
 	table->index = i;
 	table->frequency = CPUFREQ_TABLE_END;
+	dvfs->table_size = table->index;	/* must be reset table size with table index */
 
 	/* get voltage regulator */
 	if (plat->supply_name) {
