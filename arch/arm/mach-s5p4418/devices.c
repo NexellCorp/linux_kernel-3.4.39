@@ -1015,7 +1015,11 @@ void otg_phy_init(void)
     // 1-1. VBUS reconfig - Over current Issue
 #if 1
     temp  = readl(SOC_VA_TIEOFF + 0x38) & ~(0x7<<23);
+#if defined(CFG_OTG_OVC_VALUE)
+    temp |= (CFG_OTG_OVC_VALUE << 23);
+#else
     temp |= (0x3<<23);
+#endif
     writel(temp, SOC_VA_TIEOFF + 0x38);
 #endif
 
