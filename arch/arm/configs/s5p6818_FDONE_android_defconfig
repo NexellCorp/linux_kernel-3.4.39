@@ -2520,6 +2520,8 @@ CONFIG_HAVE_MACH_CLKDEV=y
 #
 # MobiCore secure driver
 #
+CONFIG_INC_DMB=y
+CONFIG_INC_T3A00=y
 
 #
 # File systems
