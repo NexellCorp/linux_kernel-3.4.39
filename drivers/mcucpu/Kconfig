@@ -1,0 +1,14 @@
+menuconfig MCU_CPU_COMM
+	bool "MCU CPU Comm Driver"
+	default y
+
+config SMARTA_MCU_CPU_COMM
+	bool "MCU CPU Communication Module"
+	default y
+	depends on MCU_CPU_COMM
+	
+config SMARTA_BATTERY
+	bool "Battery Module"
+	default y
+	depends on SMARTA_MCU_CPU_COMM
+	

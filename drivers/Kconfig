@@ -146,4 +146,6 @@ source "drivers/nfc/Kconfig"
 
 source "drivers/gud/Kconfig"
 
+source "drivers/mcucpu/Kconfig"
+
 endmenu
