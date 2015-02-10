@@ -88,10 +88,11 @@ void __cpuinit platform_secondary_init(unsigned int cpu)
 	/*
 	 * Synchronise with the boot thread.
 	 */
+#ifdef CONFIG_ARCH_S5P6818_REV
 	spin_lock(&boot_lock);
 	spin_unlock(&boot_lock);
+#endif
 }
-
 
 int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 {
