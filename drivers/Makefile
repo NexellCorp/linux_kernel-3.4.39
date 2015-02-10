@@ -138,5 +138,7 @@ obj-$(CONFIG_PM_DEVFREQ)	+= devfreq/
 
 obj-$(CONFIG_MOBICORE_DRIVER)	+= gud/
 
-
 obj-$(CONFIG_SMARTA_MCU_CPU_COMM)     += mcucpu/
+
+obj-$(CONFIG_INC_DMB)	+= inc_dmb/
+

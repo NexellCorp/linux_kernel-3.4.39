@@ -712,9 +712,7 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 		}
 		else
 		{
-
 				status = readl(regs + S3C64XX_SPI_STATUS);
-				printk(" done : %x %x \n",status, RX_FIFO_LVL(status, sci));
 		}
 	} else {
 		/* If it was only Tx */

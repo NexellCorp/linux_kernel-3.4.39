@@ -1056,6 +1056,7 @@ void __init nxp_cpu_clock_init(void)
 		}
 
 		/* prevent uart clock disable for low level debug message */
+#ifndef	CONFIG_PLAT_S5P6818_FDONE
 		#ifndef CONFIG_DEBUG_NXP_UART
 		if (peri->dev_name) {
 			#ifdef CONFIG_BACKLIGHT_PWM
@@ -1067,6 +1068,7 @@ void __init nxp_cpu_clock_init(void)
 			clk_gen_pclk(peri->base_addr, 0);
 		}
 		#endif
+#endif		
 	}
 
 	cdev = clk_dev_get(CLK_CORE_NUM);

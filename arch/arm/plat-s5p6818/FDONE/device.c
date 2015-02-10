@@ -1393,18 +1393,22 @@ static struct platform_device nxp_v4l2_dev = {
 #include <mach/slsi-spi.h>
 #include <linux/spi/spi.h>
 #include <linux/gpio.h>
+
 static struct s3c64xx_spi_csinfo spi0_csi[] = {
     [0] = {
         .line       = CFG_SPI0_CS,
         .set_level  = gpio_set_value,
-        .fb_delay   = 0x2,
+        //.fb_delay   = 0x2,
     },
 };
+
 struct spi_board_info spi0_board_info[] __initdata = {
     {
-        .modalias       = "spidev",
+        //.modalias       = "spidev",
+        .modalias       = "INC_SPI",
         .platform_data  = NULL,
-        .max_speed_hz   = 10 * 1000 * 1000,
+        //.max_speed_hz   = 10 * 1000 * 1000,
+        .max_speed_hz   = 4 * 1000 * 1000,
         .bus_num        = 0,
         .chip_select    = 0,
         .mode           = SPI_MODE_0,
@@ -1497,7 +1501,7 @@ static int _dwmci0_get_cd(u32 slot_id)
 #ifdef CONFIG_MMC_NXP_CH0
 static struct dw_mci_board _dwmci0_data = {
 	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 20 * 1000 * 1000, /*60*/
+	.bus_hz			= 60 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
 	.cd_type		= DW_MCI_CD_EXTERNAL,

@@ -1,0 +1,19 @@
+#
+# DMB device configuration
+#
+
+menuconfig INC_DMB
+	bool "DMB support "
+	depends on ARCH_S5P6818
+#	depends on SPI
+	default n
+	help
+	  TDMB/ISDB-T driver for I&C technology T3A0N, J3000 and newer Chips
+
+config INC_T3A00
+	bool "T3A00 for TDMB (I&C Technology)"
+	depends on INC_DMB
+	default n
+	help
+	  T3A00 driver for TDMB
+
