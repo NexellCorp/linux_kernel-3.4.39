@@ -26,6 +26,7 @@
 #include <linux/interrupt.h>
 #include <linux/i2c.h>
 #include <linux/i2c/tsc2007.h>
+#include <linux/delay.h>
 
 #include <mach/platform.h>
 #include <mach/devices.h>
@@ -140,11 +141,16 @@ static u32 tsc2007_calculate_pressure(struct tsc2007 *tsc, struct ts_event *tc)
 
 	if (likely(tc->x && tc->z1)) {
 		/* compute touch pressure resistance using equation #1 */
+#if 1
 		rt = tc->z2 - tc->z1;
 		rt *= tc->x;
 		rt *= tsc->x_plate_ohms;
 		rt /= tc->z1;
 		rt = (rt + 2047) >> 12;
+#else
+
+		rt = (float)(tsc->x_plate_ohms) * (float)((float)tc->x/4096) * ((float)((float)tc->z2/(float)tc->z1) - 1);
+#endif
 	}
 
 	return rt;
@@ -165,14 +171,20 @@ static bool tsc2007_is_pen_down(struct tsc2007 *ts)
 	 * in that case we assume that the pen is down and expect caller
 	 * to fall back on the pressure reading.
 	 */
+	bool val, prev_val;
+	int i;
+#define DEBOUNCE_COUNT	5
 
-	//if (!ts->get_pendown_state)
-	//	return true;
-
-	//return ts->get_pendown_state();
-	bool val;
-
-	val = nxp_soc_gpio_get_in_value(CFG_IO_TOUCH_PENDOWN_DETECT);	
+	do {
+		prev_val = nxp_soc_gpio_get_in_value(CFG_IO_TOUCH_PENDOWN_DETECT);	
+		for (i = 0 ; i < DEBOUNCE_COUNT; i++)
+		{
+			val = nxp_soc_gpio_get_in_value(CFG_IO_TOUCH_PENDOWN_DETECT);	
+			if (prev_val != val)
+				break;
+			mdelay(10);
+		}	
+	} while (i < DEBOUNCE_COUNT);
 
 	return ((val == 0) ? 1 : 0);
 }
@@ -264,6 +276,7 @@ static irqreturn_t tsc2007_soft_irq(int irq, void *handle)
 				   msecs_to_jiffies(ts->poll_period));
 	}
 
+	printk("UP\n");
 	dev_dbg(&ts->client->dev, "UP\n");
 
 	input_report_key(input, BTN_TOUCH, 0);
