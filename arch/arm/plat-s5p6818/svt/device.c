@@ -782,13 +782,14 @@ void __init nxp_reserve_mem(void)
 
 //#define CONFIG_NXE2000_RTC
 
-
+#ifndef CONFIG_REGULATOR_MP8845C
 static struct regulator_consumer_supply nxe2000_dc1_supply_0[] = {
 	REGULATOR_SUPPLY("vdd_arm_1.3V", NULL),
 };
 static struct regulator_consumer_supply nxe2000_dc2_supply_0[] = {
 	REGULATOR_SUPPLY("vdd_core_1.2V", NULL),
 };
+#endif
 static struct regulator_consumer_supply nxe2000_dc3_supply_0[] = {
 	REGULATOR_SUPPLY("vdd_sys_3.3V", NULL),
 };
@@ -865,8 +866,10 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
+#ifndef CONFIG_REGULATOR_MP8845C
 NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1100000, 1,  2);	/* 1.1V ARM */
 NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1100000, 1,  2);	/* 1.0V CORE */
+#endif
 NXE2000_PDATA_INIT(dc3,      0, 1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0, 1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
 NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  2);	/* 1.5V SYS */
@@ -1025,7 +1028,7 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 };
 
 
-
+#ifndef CONFIG_REGULATOR_MP8845C
 #define NXE2000_DEV_REG 		\
 	NXE2000_REG(DC1, dc1, 0),	\
 	NXE2000_REG(DC2, dc2, 0),	\
@@ -1044,6 +1047,24 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 	NXE2000_REG(LDO10, ldo10, 0),	\
 	NXE2000_REG(LDORTC1, ldortc1, 0),	\
 	NXE2000_REG(LDORTC2, ldortc2, 0)
+#else
+#define NXE2000_DEV_REG 		\
+	NXE2000_REG(DC3, dc3, 0),	\
+	NXE2000_REG(DC4, dc4, 0),	\
+	NXE2000_REG(DC5, dc5, 0),	\
+	NXE2000_REG(LDO1, ldo1, 0),	\
+	NXE2000_REG(LDO2, ldo2, 0),	\
+	NXE2000_REG(LDO3, ldo3, 0),	\
+	NXE2000_REG(LDO4, ldo4, 0),	\
+	NXE2000_REG(LDO5, ldo5, 0),	\
+	NXE2000_REG(LDO6, ldo6, 0),	\
+	NXE2000_REG(LDO7, ldo7, 0),	\
+	NXE2000_REG(LDO8, ldo8, 0),	\
+	NXE2000_REG(LDO9, ldo9, 0),	\
+	NXE2000_REG(LDO10, ldo10, 0),	\
+	NXE2000_REG(LDORTC1, ldortc1, 0),	\
+	NXE2000_REG(LDORTC2, ldortc2, 0)
+#endif
 
 static struct nxe2000_subdev_info nxe2000_devs_dcdc[] = {
 	NXE2000_DEV_REG,
@@ -2016,17 +2037,17 @@ void __init nxp_board_devs_register(void)
 	platform_device_register(&android_timed_gpios);
 #endif
 
-#if defined(CONFIG_REGULATOR_NXE2000)
-	printk("plat: add device nxe2000 pmic\n");
-	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_i2c_boardinfo, ARRAY_SIZE(nxe2000_i2c_boardinfo));
-#endif
-
 #if defined(CONFIG_REGULATOR_MP8845C)
 	printk("plat: add device mp8845c ARM\n");
 	i2c_register_board_info(MP8845C_I2C_BUS0, &mp8845c_regulators[0], 1);
 
 	printk("plat: add device mp8845c CORE\n");
 	i2c_register_board_info(MP8845C_I2C_BUS1, &mp8845c_regulators[1], 1);
+#endif
+
+#if defined(CONFIG_REGULATOR_NXE2000)
+	printk("plat: add device nxe2000 pmic\n");
+	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_i2c_boardinfo, ARRAY_SIZE(nxe2000_i2c_boardinfo));
 #endif
 
 #if defined(CONFIG_NXP_MP2TS_IF)

@@ -95,6 +95,8 @@ struct mp8845c_regulator {
 	u16 en_delay;
 	u16 cmd_delay;
 	struct regulator_desc desc;
+	int const *voltages;
+	int voltages_len;
 
 	struct device *dev;
 	struct i2c_client *client;

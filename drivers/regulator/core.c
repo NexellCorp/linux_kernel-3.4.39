@@ -1907,9 +1907,10 @@ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
 			if (ret < 0)
 				continue;
 
-			if (ret < best_val && ret >= min_uV && ret <= max_uV) {
+			if (ret < best_val && ret >= min_uV) {
 				best_val = ret;
 				selector = i;
+				break;
 			}
 		}
 

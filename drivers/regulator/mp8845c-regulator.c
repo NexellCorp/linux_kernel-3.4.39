@@ -30,6 +30,138 @@
 #include <linux/regulator/machine.h>
 #include <linux/regulator/mp8845c-regulator.h>
 
+static const int vout_uV_list[] = {
+	6000,    // 0
+	6067,    
+	6134,    
+	6201,    
+	6268,    
+	6335,    
+	6401,    
+	6468,    
+	6535,    
+	6602,    
+	6669,    // 10
+	6736,    
+	6803,    
+	6870,    
+	6937,    
+	7004,    
+	7070,    
+	7137,    
+	7204,    
+	7271,    
+	7338,    // 20
+	7405,    
+	7472,    
+	7539,    
+	7606,    
+	7673,    
+	7739,    
+	7806,    
+	7873,    
+	7940,    
+	8007,    // 30
+	8074,   
+	8141,   
+	8208,   
+	8275,   
+	8342,   
+	8408,   
+	8475,   
+	8542,   
+	8609,   
+	8676,   // 40
+	8743,   
+	8810,   
+	8877,   
+	8944,   
+	9011,   
+	9077,   
+	9144,   
+	9211,   
+	9278,   
+	9345,   // 50
+	9412,   
+	9479,   
+	9546,   
+	9613,   
+	9680,   
+	9746,   
+	9813,   
+	9880,   
+	9947,   
+	10014,   // 60
+	10081,   
+	10148,   
+	10215,   
+	10282,   
+	10349,   
+	10415,   
+	10482,   
+	10549,   
+	10616,   
+	10683,   // 70
+	10750,   
+	10817,   
+	10884,   
+	10951,   
+	11018,   
+	11084,   
+	11151,   
+	11218,   
+	11285,   
+	11352,   // 80
+	11419,   
+	11486,   
+	11553,   
+	11620,   
+	11687,   
+	11753,   
+	11820,   
+	11887,   
+	11954,   
+	12021,   // 90
+	12088,   
+	12155,   
+	12222,   
+	12289,   
+	12356,   
+	12422,
+	12489,
+	12556,
+	12623,
+	12690,   // 100
+	12757,
+	12824,
+	12891,
+	12958,
+	13025,
+	13091,
+	13158,
+	13225,
+	13292,
+	13359,   // 110
+	13426,
+	13493,
+	13560,
+	13627,
+	13694,
+	13760,
+	13827,
+	13894,
+	13961,
+	14028,   // 120
+	14095,
+	14162,
+	14229,
+	14296,
+	14363,
+	14429,
+	14496,
+};
+
+
 static int mp8845c_read(struct i2c_client *client, u8 reg, uint8_t *val)
 {
 	int ret = 0;
@@ -167,12 +299,18 @@ static int mp8845c_reg_disable(struct regulator_dev *rdev)
 static int mp8845c_list_voltage(struct regulator_dev *rdev, unsigned index)
 {
 	struct mp8845c_regulator *ri = rdev_get_drvdata(rdev);
+	int ret = 0;
 
-	return ri->min_uV + (ri->step_uV * index);
+	//ret = ri->min_uV + (ri->step_uV * index);
+
+	ret = ri->voltages[index]*100;
+
+	return ret;
 }
 
 static int __mp8845c_set_voltage(struct mp8845c_regulator *ri, int min_uV, int max_uV, unsigned *selector)
 {
+	int i,j;
 	int vsel;
 	int ret;
 	uint8_t vout_val;
@@ -180,7 +318,14 @@ static int __mp8845c_set_voltage(struct mp8845c_regulator *ri, int min_uV, int m
 	if ((min_uV < ri->min_uV) || (max_uV > ri->max_uV))
 		return -EDOM;
 
-	vsel = (min_uV - ri->min_uV + ri->step_uV - 1)/ri->step_uV;
+	j = ((min_uV - ri->min_uV + ri->step_uV)/ri->step_uV)-1;
+	for(i=j; i<ri->voltages_len; i++)
+	{
+		if(min_uV <= ri->voltages[i]*100)
+			break;
+	}
+	vsel = i;
+
 	if (vsel > ri->nsteps)
 		return -EDOM;
 
@@ -189,6 +334,7 @@ static int __mp8845c_set_voltage(struct mp8845c_regulator *ri, int min_uV, int m
 
 	vout_val = (ri->vout_en << ri->en_bit)|(ri->vout_reg_cache & ~ri->vout_mask)|(vsel & ri->vout_mask);
 
+	mp8845c_set_bits(ri->client, MP8845C_REG_SYSCNTL2, (1 << MP8845C_POS_GO));
 	ret = mp8845c_write(ri->client, ri->vout_reg, vout_val);
 
 	if (ret < 0)
@@ -215,7 +361,8 @@ static int mp8845c_set_voltage_sel(struct regulator_dev *rdev, unsigned selector
 	struct mp8845c_regulator *ri = rdev_get_drvdata(rdev);
 	int uV;
 
-	uV = ri->min_uV + (ri->step_uV * selector);
+	//uV = ri->min_uV + (ri->step_uV * selector);
+	uV = ri->voltages[selector]*100;
 
 	return __mp8845c_set_voltage(ri, uV, uV, NULL);
 }
@@ -224,8 +371,15 @@ static int mp8845c_get_voltage_sel(struct regulator_dev *rdev)
 {
 	struct mp8845c_regulator *ri = rdev_get_drvdata(rdev);
 	uint8_t vsel;
+	uint8_t vout_val;
+	int ret = 0;
 
-	vsel = ri->vout_reg_cache & ri->vout_mask;
+	ret = mp8845c_read(ri->client, ri->vout_reg, &vout_val);
+	if(ret < 0)
+		vsel = ri->vout_reg_cache & ri->vout_mask;
+	else
+		vsel = vout_val & ri->vout_mask;
+
 	return vsel;
 }
 #else
@@ -284,6 +438,8 @@ static struct regulator_ops mp8845c_vout_ops = {
 		.type		= REGULATOR_VOLTAGE,	\
 		.owner		= THIS_MODULE,			\
 	},										\
+	.voltages		= vout_uV_list,			\
+	.voltages_len		= ARRAY_SIZE(vout_uV_list),	\
 }
 
 static struct mp8845c_regulator mp8845c_regulator_data[] = 
@@ -322,14 +478,6 @@ static int mp8845c_regulator_preinit(struct mp8845c_regulator *ri, struct mp8845
 {
 	int ret = 0;
 
-	if (mp8845c_pdata->init_uV > -1) {
-		ret = __mp8845c_set_voltage(ri, mp8845c_pdata->init_uV, mp8845c_pdata->init_uV, NULL);
-		if (ret < 0) {
-			dev_err(ri->dev, "Not able to initialize voltage %d for rail %d err %d\n", 
-								mp8845c_pdata->init_uV, ri->desc.id, ret);
-			return ret;
-		}
-	}
 
 	if (mp8845c_pdata->init_enable)
 	{
@@ -339,7 +487,6 @@ static int mp8845c_regulator_preinit(struct mp8845c_regulator *ri, struct mp8845
 			dev_err(ri->dev, "Not able to enable rail %d err %d\n", ri->desc.id, ret);
 		else
 			ri->vout_en = 1;
-
 	}
 	else
 	{
@@ -348,6 +495,15 @@ static int mp8845c_regulator_preinit(struct mp8845c_regulator *ri, struct mp8845
 			dev_err(ri->dev, "Not able to disable rail %d err %d\n", ri->desc.id, ret);
 		else
 			ri->vout_en = 0;
+	}
+
+	if (mp8845c_pdata->init_uV > -1) {
+		ret = __mp8845c_set_voltage(ri, mp8845c_pdata->init_uV, mp8845c_pdata->init_uV, NULL);
+		if (ret < 0) {
+			dev_err(ri->dev, "Not able to initialize voltage %d for rail %d err %d\n", 
+								mp8845c_pdata->init_uV, ri->desc.id, ret);
+			return ret;
+		}
 	}
 
 	return ret;
