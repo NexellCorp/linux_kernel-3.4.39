@@ -29,6 +29,11 @@ choice
 		help
    	 		Support for the asb board.
 
+	config PLAT_S5P4418_LEPUS
+		bool "DRONE: Android lepus board"
+		help
+   	 		Support for the drone board.
+
 endchoice
 
 #
