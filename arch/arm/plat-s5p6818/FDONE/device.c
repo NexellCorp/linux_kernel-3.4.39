@@ -416,7 +416,7 @@ struct nxp_snd_dai_plat_data alc5623_i2s_dai_data = {
 		.detect_io		= PAD_GPIO_E + 8,
 		.detect_level	= 1,
 	},
-*/	
+*/
 };
 
 static struct platform_device alc5623_dai = {
@@ -484,7 +484,7 @@ struct nxp_snd_dai_plat_data rt5623_i2s_dai_data = {
 		.detect_io		= PAD_GPIO_E + 8,
 		.detect_level	= 1,
 	},
-*/	
+*/
 };
 
 static struct platform_device rt5623_dai = {
@@ -636,7 +636,7 @@ static struct platform_device *i2c_devices[] = {
 
 /* CODEC */
 static struct i2c_board_info __initdata usb2514_i2c_bdi = {
-	.type	= "usb2514",			
+	.type	= "usb2514",
 	.addr	= 0x58>>1,
 };
 
@@ -1207,9 +1207,9 @@ static int front_camera_power_enable(bool on)
 
     printk("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
 
-    if (on) 
+    if (on)
 	{
-        if (!is_front_camera_enabled) 
+        if (!is_front_camera_enabled)
 		{
 	        nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
 	        nxp_soc_gpio_set_io_dir(reset_io, 1);
@@ -1225,13 +1225,13 @@ static int front_camera_power_enable(bool on)
             is_front_camera_power_state_changed = false;
         }
     }
-	else 
+	else
 	{
         if (is_front_camera_enabled) {
             nxp_soc_gpio_set_out_value(reset_io, 0);
             is_front_camera_enabled = false;
             is_front_camera_power_state_changed = true;
-        } 
+        }
     }
 #endif /* CONFIG_VIDEO_TW9992 */
 

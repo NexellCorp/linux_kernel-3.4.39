@@ -195,6 +195,9 @@ static int handle_create(const char *nodename, umode_t mode, struct device *dev)
 	struct path path;
 	int err;
 
+    // psw0523 debugging
+    /*printk("%s: name %s, mode 0x%x\n", __func__, nodename, mode);*/
+
 	dentry = kern_path_create(AT_FDCWD, nodename, &path, 0);
 	if (dentry == ERR_PTR(-ENOENT)) {
 		create_path(nodename);
@@ -368,7 +371,9 @@ int devtmpfs_mount(const char *mntdir)
 	if (!thread)
 		return 0;
 
-	err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", MS_SILENT, NULL);
+    // psw0523 test
+    err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", MS_SILENT, NULL);
+	/*err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", MS_SILENT, "mode=0777");*/
 	if (err)
 		printk(KERN_INFO "devtmpfs: error mounting %i\n", err);
 	else

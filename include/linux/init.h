@@ -4,7 +4,7 @@
 #include <linux/compiler.h>
 #include <linux/types.h>
 
-/* These macros are used to mark some functions or 
+/* These macros are used to mark some functions or
  * initialized data (doesn't apply to uninitialized data)
  * as `initialization' functions. The kernel can take this
  * as hint that the function is used only during the initialization
@@ -12,7 +12,7 @@
  *
  * Usage:
  * For functions:
- * 
+ *
  * You should add __init immediately before the function name, like:
  *
  * static void __init initme(int x, int y)
@@ -35,7 +35,7 @@
  * Don't forget to initialize data not at file scope, i.e. within a function,
  * as gcc otherwise puts the data into the bss section and not into the init
  * section.
- * 
+ *
  * Also note, that this data cannot be "const".
  */
 
@@ -160,15 +160,15 @@ extern void (*late_time_init)(void);
 extern bool initcall_debug;
 
 #endif
-  
+
 #ifndef MODULE
 
 #ifndef __ASSEMBLY__
 
-/* initcalls are now grouped by functionality into separate 
+/* initcalls are now grouped by functionality into separate
  * subsections. Ordering inside the subsections is determined
- * by link order. 
- * For backwards compatibility, initcall() puts the call in 
+ * by link order.
+ * For backwards compatibility, initcall() puts the call in
  * the device init subsection.
  *
  * The `id' arg to __define_initcall() is needed so that multiple initcalls
@@ -223,6 +223,10 @@ extern bool initcall_debug;
 	static initcall_t __initcall_##fn \
 	__used __section(.security_initcall.init) = fn
 
+#define deferred_initcall(fn) \
+	static initcall_t __initcall_##fn \
+	__used __section(.deferred_initcall.init) = fn
+
 struct obs_kernel_param {
 	const char *str;
 	int (*setup_func)(char *);
@@ -259,17 +263,18 @@ void __init parse_early_options(char *cmdline);
 /**
  * module_init() - driver initialization entry point
  * @x: function to be run at kernel boot time or module insertion
- * 
+ *
  * module_init() will either be called during do_initcalls() (if
  * builtin) or at module insertion time (if a module).  There can only
  * be one per module.
  */
 #define module_init(x)	__initcall(x);
+#define deferred_module_init(x)	deferred_initcall(x);
 
 /**
  * module_exit() - driver exit entry point
  * @x: function to be run when driver is removed
- * 
+ *
  * module_exit() will wrap the driver clean-up code
  * with cleanup_module() when used with rmmod when
  * the driver is a module.  If the driver is statically

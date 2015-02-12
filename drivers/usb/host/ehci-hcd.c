@@ -1530,7 +1530,8 @@ err_debug:
 	clear_bit(USB_EHCI_LOADED, &usb_hcds_loaded);
 	return retval;
 }
-module_init(ehci_hcd_init);
+//module_init(ehci_hcd_init);
+deferred_module_init(ehci_hcd_init);
 
 static void __exit ehci_hcd_cleanup(void)
 {

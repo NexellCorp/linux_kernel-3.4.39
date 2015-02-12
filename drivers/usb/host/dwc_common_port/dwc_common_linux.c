@@ -1438,7 +1438,8 @@ static void dwc_common_port_exit_module(void)
 #endif
 }
 
-module_init(dwc_common_port_init_module);
+/*module_init(dwc_common_port_init_module);*/
+deferred_module_init(dwc_common_port_init_module);
 module_exit(dwc_common_port_exit_module);
 
 MODULE_DESCRIPTION("DWC Common Library - Portable version");
