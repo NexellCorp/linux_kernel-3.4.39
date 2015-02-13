@@ -478,6 +478,7 @@ static int mp8845c_regulator_preinit(struct mp8845c_regulator *ri, struct mp8845
 {
 	int ret = 0;
 
+	mp8845c_set_bits(ri->client, MP8845C_REG_SYSCNTL1, (1 << MP8845C_POS_MODE));
 
 	if (mp8845c_pdata->init_enable)
 	{
