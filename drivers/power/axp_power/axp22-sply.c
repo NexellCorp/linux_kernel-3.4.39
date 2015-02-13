@@ -1462,8 +1462,8 @@ static int axp_battery_probe(struct platform_device *pdev)
 {
   struct axp_charger *charger;
   struct axp_supply_init_data *pdata = pdev->dev.platform_data;
-  int ret,var,tmp;
-  uint8_t val2,val;
+  int ret,var;
+  uint8_t val2,tmp,val;
   uint8_t ocv_cap[63];
   int Cur_CoulombCounter,rdc;
   
@@ -1663,8 +1663,7 @@ static int axp_battery_probe(struct platform_device *pdev)
   ocv_cap[60] = OCVREG1E;
   ocv_cap[61] = 0xDF;
   ocv_cap[62] = OCVREG1F;
-  axp_writes(charger->master, 0xC0,31,ocv_cap);
-  axp_writes(charger->master, 0xD0,31,ocv_cap+32);
+  axp_writes(charger->master, 0xC0,63,ocv_cap);
 	/* pok open time set */
 	axp_read(charger->master,AXP22_POK_SET,&val);
 	if (PEKOPEN < 1000)
@@ -1941,7 +1940,8 @@ static int axp22_suspend(struct platform_device *dev, pm_message_t state)
     axp_writes(charger->master, AXP22_INTSTS1, 9, irq_w);
 
     /* close all irqs*/
-    axp_unregister_notifier(charger->master, &charger->nb, AXP22_NOTIFIER_ON);
+  //  axp_unregister_notifier(charger->master, &charger->nb, AXP22_NOTIFIER_ON);	//此处要去掉
+  	/*在此处添加将PMU的irq 注册为系统唤醒源代码*/
 
 #if defined (CONFIG_AXP_CHGCHANGE)
     if(SUSCHGCUR == 0)
@@ -1968,7 +1968,7 @@ static int axp22_resume(struct platform_device *dev)
     int pre_rest_vol;
     uint8_t val,tmp;
     /*wakeup IQR notifier work sequence*/
-    axp_register_notifier(charger->master, &charger->nb, AXP22_NOTIFIER_ON);
+    //axp_register_notifier(charger->master, &charger->nb, AXP22_NOTIFIER_ON);//此处要去掉
 
     axp_charger_update_state(charger);
 
