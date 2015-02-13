@@ -298,7 +298,7 @@
 /*------------------------------------------------------------------------------
  * 	Backward Camera
  */
-#define	CFG_BACKWARD_GEAR					((PAD_GPIO_A + 3) | PAD_FUNC_ALT0)
+#define	CFG_BACKWARD_GEAR					(PAD_GPIO_ALV + 4)
 
 #endif	/* __CFG_GPIO_H__ */
 

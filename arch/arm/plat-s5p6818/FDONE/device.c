@@ -536,6 +536,32 @@ static struct i2c_board_info __initdata stk831x_i2c_bdi = {
  *   */
 #ifdef CONFIG_CMA
 #include <linux/cma.h>
+#include <linux/memblock.h>
+
+static int reserve_mem_boot_animation(void)
+{
+	ulong addr 	 = 0x7A000000;
+	ulong length = 0x06000000; /* 96 MB */
+	int new = 0;
+
+	if (memblock_is_region_reserved(addr, length)) {
+		printk("*** Error: boot animation zone(0x%lx ~ 0x%lx) is reserved !!! ***\n",
+			addr, addr+length);
+		return -ENOMEM;
+	}
+
+	memblock_reserve(addr, length);
+	new = memblock_is_region_reserved(addr, length);
+	if (0 == new) {
+		printk("*** Error: boot animation zone(0x%lx ~ 0x%lx) reserve !!! ***\n",
+			addr, addr+length);
+		return -ENOMEM;
+	}
+
+	printk("Reserve boot animation mem 0x%lx ~ 0x%lx\n", addr, addr+length);
+	return 0;
+}
+
 extern void nxp_cma_region_reserve(struct cma_region *, const char *);
 
 void __init nxp_reserve_mem(void)
@@ -570,6 +596,9 @@ void __init nxp_reserve_mem(void)
         "ion-nxp/ion-reserve=ion-reserve;"
         "ion-nxp/ion-nxp=ion;"
         "nx_vpu=ion;";
+
+    /* reserv bootanimation zone */
+	reserve_mem_boot_animation();
 
 #ifdef CONFIG_ION_NXP_RESERVEHEAP_SIZE
     printk("%s: reserve CMA: size %d\n", __func__, CONFIG_ION_NXP_RESERVEHEAP_SIZE * SZ_1K);
@@ -1682,6 +1711,7 @@ static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_dat
 #define BACKWARD_CAM_HEIGHT 480
 
 static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
+    .backgear_irq_num   = IRQ_ALIVE_4,
     .backgear_gpio_num  = CFG_BACKWARD_GEAR,
     .active_high        = false,
     .vip_module_num     = 0,
@@ -1711,19 +1741,12 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .interlace          = true,
 
 
-    // u-boot define
-/*#define CONFIG_VIP_LU_ADDR          0x7FD28000*/
-/*#define CONFIG_VIP_CB_ADDR          0x7FD98800*/
-/*#define CONFIG_VIP_CR_ADDR          0x7FDAF000*/
-
-    .lu_addr            = 0x7FD28000,
-#if 0
-    .cb_addr            = 0x7FD7A800,
-    .cr_addr            = 0x7FD91000,
-#else
-    .cb_addr            = 0x7FD98800,
-    .cr_addr            = 0x7FDAF000,
-#endif
+    /*.lu_addr            = 0x79D28000,*/
+    /*.cb_addr            = 0x79D98800,*/
+    /*.cr_addr            = 0x79DAF000,*/
+    .lu_addr            = 0x79D28000,
+    .cb_addr            = 0x79D7A800,
+    .cr_addr            = 0x79D91000,
 
     .lu_stride          = 704,
     .cb_stride          = 384,
@@ -1732,7 +1755,7 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .rgb_format         = MLC_RGBFMT_A8R8G8B8,
     .width              = 1024,
     .height             = 600,
-    .rgb_addr           = 0x7FDA8000,
+    .rgb_addr           = 0x79DA8000,
     .draw_rgb_overlay   = _draw_rgb_overlay,
 };
 

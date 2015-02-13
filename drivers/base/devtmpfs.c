@@ -372,8 +372,8 @@ int devtmpfs_mount(const char *mntdir)
 		return 0;
 
     // psw0523 test
-    err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", MS_SILENT, NULL);
-	/*err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", MS_SILENT, "mode=0777");*/
+    /*err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", MS_SILENT, NULL);*/
+    err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", MS_SILENT, "mode=0777");
 	if (err)
 		printk(KERN_INFO "devtmpfs: error mounting %i\n", err);
 	else

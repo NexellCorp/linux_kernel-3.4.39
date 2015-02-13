@@ -274,7 +274,7 @@ static void _turn_off(struct nxp_backward_camera_context *me)
 static inline bool _is_backgear_on(struct nxp_backward_camera_platform_data *pdata)
 {
     bool is_on = nxp_soc_gpio_get_in_value(pdata->backgear_gpio_num);
-    /*printk("%s: is_on %d\n", __func__, is_on);*/
+    printk("%s: is_on %d\n", __func__, is_on);
     if (!pdata->active_high)
         is_on ^= 1;
     return is_on;
@@ -329,7 +329,8 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
 
     printk("%s\n", __func__);
     me->plat_data = pdata;
-    me->irq = IRQ_GPIO_START + pdata->backgear_gpio_num;
+    /*me->irq = IRQ_GPIO_START + pdata->backgear_gpio_num;*/
+    me->irq = pdata->backgear_irq_num;
 
     NX_MLC_SetBaseAddress(pdata->mlc_module_num, IO_ADDRESS(NX_MLC_GetPhysicalAddress(pdata->mlc_module_num)));
     NX_VIP_SetBaseAddress(pdata->vip_module_num, IO_ADDRESS(NX_VIP_GetPhysicalAddress(pdata->vip_module_num)));

@@ -173,11 +173,88 @@ void nxp_board_base_init(void)
 	}
 }
 
+/*------------------------------------------------------------------------------
+ * SMP interface
+ */
+#include <linux/device.h>
+#include <linux/delay.h>
+#include <linux/io.h>
+#include <linux/memblock.h>
+#include <linux/fs.h>
+#include <linux/syscalls.h>
+#include <mach/devices.h>
+#include <mach/pm.h>
+
+static ssize_t core_down(struct device *pdev,
+			struct device_attribute *attr, const char *buf, size_t n)
+{
+	ulong addr 	 = 0x7A000000;
+	ulong length = 0x06000000; /* 96 MB */
+	int count = 1500;
+	int ret = -1;
+	int down;
+
+	sscanf(buf,"%d", &down);
+	if (!down)
+		return -EINVAL;
+
+	/* must clear secondary boot register, WFE */
+	__raw_writel((-1UL), SCR_ARM_SECOND_BOOT);
+	__raw_writel((-1UL), SCR_SMP_SIG_RESET);
+	__raw_writel(SMP_SIGNATURE_STOP, SCR_SMP_SIG_SET);
+	udelay(100);
+
+	while (count-- > 0) {
+		if (!(ret = !(SMP_SIGNATURE_EXIT == __raw_readl(SCR_SMP_SIG_READ))))
+			break;
+		mdelay(1);
+	}
+	printk("End Boot Animation (%s) (0x%x) (%d)...\n",
+		(ret?"fail":"done"), __raw_readl(SCR_SMP_SIG_READ), count);
+
+	/* free bootloader mem */
+	ret = memblock_is_region_reserved(addr, length);
+	printk("%s 0x%lx ~ 0x%lx\n", ret?"Reserved":"Not Reserved", addr, addr+length);
+
+	if (ret) {
+		ret = memblock_free(addr, length);
+	//	ret = memblock_add(addr, length);
+		printk("Free 0x%lx ~ 0x%lx\n", addr, addr+length);
+	}
+	return n;
+}
+
+static struct device_attribute dn_attr = __ATTR(core_down, 0664, NULL, core_down);
+static struct attribute *attrs[] = {
+	&dn_attr.attr,
+	NULL,
+};
+
+static struct attribute_group attr_group = {
+	.attrs = (struct attribute **)attrs,
+};
+
 #if defined (CONFIG_INITRAMFS_SOURCE) && defined (CONFIG_DEVTMPFS_MOUNT)
 #include <linux/device.h>
 static int __init devtmpfs_init(void)
 {
+	struct kobject *kobj = NULL;
 	char *rdsrc = CONFIG_INITRAMFS_SOURCE;
+	int ret = 0;
+
+	kobj = kobject_create_and_add("board", &platform_bus.kobj);
+	if (! kobj) {
+		printk(KERN_ERR "Fail, create kobject for cpu\n");
+		return -ret;
+	}
+
+	ret = sysfs_create_group(kobj, &attr_group);
+	if (ret) {
+		printk(KERN_ERR "Fail, create sysfs group for cpu\n");
+		kobject_del(kobj);
+		return -ret;
+	}
+
 	if (!strcmp(rdsrc, ""))
 		return 0;
 
@@ -185,5 +262,28 @@ static int __init devtmpfs_init(void)
 	devtmpfs_mount("dev");
 	return 0;
 }
-late_initcall(devtmpfs_init);
+#else
+#include <linux/device.h>
+static int __init devtmpfs_init(void)
+{
+	struct kobject *kobj = NULL;
+	int ret = 0;
+
+	kobj = kobject_create_and_add("board", &platform_bus.kobj);
+	if (! kobj) {
+		printk(KERN_ERR "Fail, create kobject for cpu\n");
+		return -ret;
+	}
+
+	ret = sysfs_create_group(kobj, &attr_group);
+	if (ret) {
+		printk(KERN_ERR "Fail, create sysfs group for cpu\n");
+		kobject_del(kobj);
+		return -ret;
+	}
+
+	return 0;
+}
 #endif
+
+late_initcall(devtmpfs_init);
