@@ -392,6 +392,18 @@ static inline struct axp_regulator_info *find_regulator_info(int id)
 	return NULL;
 }
 
+static inline int axp_set_sleep_mod(struct regulator_dev *rdev)
+{
+	//Shut down DCDC5 ALDO123 when in sleep.
+	struct device *axp_dev = to_axp_dev(rdev);
+	axp_set_bits(axp_dev, 0x8C,0x0f);
+	//axp_set_bits(axp_dev, 0x8D,0x01);
+	axp_set_bits(axp_dev, 0x92,0x07);
+	axp_set_bits(axp_dev, 0x100,0x04);
+	printk("[AXP228] :Set PMIC sleep mode  \n");
+	return 0;
+}
+
 static int __devinit axp_regulator_probe(struct platform_device *pdev)
 {
 	struct axp_regulator_info *ri = NULL;
@@ -430,6 +442,8 @@ static int __devinit axp_regulator_probe(struct platform_device *pdev)
 		return PTR_ERR(rdev);
 	}
 	platform_set_drvdata(pdev, rdev);
+
+	//axp_set_sleep_mod(rdev);
 	
 	if(ri->desc.id == AXP22_ID_DCDC1 ||ri->desc.id == AXP22_ID_DCDC2 \
 		|| ri->desc.id == AXP22_ID_DCDC3 ||ri->desc.id == AXP22_ID_DCDC4 \

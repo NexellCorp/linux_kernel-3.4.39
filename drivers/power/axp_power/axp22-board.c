@@ -247,7 +247,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				.uV = AXP_LDO5_VALUE * 1000,
-				.enabled = 0,
+				.enabled = 1,
 			}
 #endif
 		},
@@ -264,7 +264,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				.uV = AXP_LDO6_VALUE * 1000,
-				.enabled = 0,
+				.enabled = 1,
 			}
 #endif
 		},
@@ -315,7 +315,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				.uV = AXP_LDO9_VALUE * 1000,
-				.enabled = 0,
+				.enabled = 1,
 			}
 #endif
 		},
@@ -332,7 +332,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				.uV = AXP_LDO10_VALUE * 1000,
-				.enabled = 0,
+				.enabled = 1,
 			}
 #endif
 		},
@@ -366,7 +366,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				.uV = AXP_LDO12_VALUE * 1000,
-				.enabled = 1,
+				.enabled = 0,
 			}
 #endif
 		},
@@ -606,8 +606,9 @@ static struct axp_platform_data axp_pdata = {
 	.gpio_base = 0,
 };
 
-   /*×¢²áÉè±¸ */
+
 static struct i2c_board_info __initdata axp_mfd_i2c_board_info[] = {
+
 	{
 		.type = "axp22_mfd",
 		.addr = AXP_DEVICES_ADDR,

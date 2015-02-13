@@ -17,8 +17,7 @@
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
-#include <mach/platform.h>
-#include <mach/devices.h>
+//#include <mach/system.h>
 
 //#include "axp-cfg.h"
 #include "axp22-mfd.h"

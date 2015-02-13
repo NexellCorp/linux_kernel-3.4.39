@@ -24,73 +24,73 @@
 	ldo2：
 		AXP22:700~3300,100/step
 */
-#define AXP_LDO2_VALUE		3300 //ALDO1
+#define AXP_LDO2_VALUE		3300	//ALDO1
 /*
 	ldo3：
 		AXP22:700~3300,100/step
 */
-#define AXP_LDO3_VALUE		1800 //ALDO2
+#define AXP_LDO3_VALUE		1800	//ALDO2
 /*
 	ldo4：
 		AXP22:700~3300,100/step
 */
-#define AXP_LDO4_VALUE		1000  //ALDO3
+#define AXP_LDO4_VALUE		1000	//ALDO3
 /*
 	ldo5：
 		AXP22:700~3300,100/step
 */
-#define AXP_LDO5_VALUE		3300   //DLDO1
+#define AXP_LDO5_VALUE		3300	//DLDO1
 /*
 	ldo6：
 		AXP22:700~3300,100/step
 */
-#define AXP_LDO6_VALUE		1800    //DLDO2
+#define AXP_LDO6_VALUE		1800	
 /*
 	ldo7：
 		AXP22:700~3300,100/step
 */
-#define AXP_LDO7_VALUE		700    //DLDO3
+#define AXP_LDO7_VALUE		700	//DLDO3
 /*
 	ldo8：
 		AXP22:700~3300,100/step
 */
-#define AXP_LDO8_VALUE		700  // DLDO4
+#define AXP_LDO8_VALUE		700
 /*
 	ldo9：
 		AXP22:700~3300,100/step
 */
-#define AXP_LDO9_VALUE		1800 //ELDO1
+#define AXP_LDO9_VALUE		1800	//ELDO1
 /*
 	ldo10：
 		AXP22:700~3300,100/step
 */
-#define AXP_LDO10_VALUE		3300 //ELDO2
+#define AXP_LDO10_VALUE		3300	//ELDO2
 /*
 	ldo11：
 		AXP22:700~3300,100/step
 */
-#define AXP_LDO11_VALUE		700  //ELDO3
+#define AXP_LDO11_VALUE		700	//ELDO3
 /*
 	ldo12：
 		AXP22:700~1400,100/step
 */
-#define AXP_LDO12_VALUE		1100 
+#define AXP_LDO12_VALUE		1100
 
 /*
 	DCDC1:
 		AXP22:1600~3400,100/setp
 */
-#define AXP_DCDC1_VALUE		3300
+#define AXP_DCDC1_VALUE		3300	//DCDC1
 /*
 	DCDC2：
 		AXP22:600~1540，20/step
 */
-#define AXP_DCDC2_VALUE		1300
+#define AXP_DCDC2_VALUE		1200	//DCDC2
 /*
 	DCDC3：
 		AXP22:600~1860，20/step
 */
-#define AXP_DCDC3_VALUE		1200
+#define AXP_DCDC3_VALUE		1100	//DCDC3
 /*
 	DCDC4：
 		AXP22:600~1540，20/step
@@ -100,7 +100,7 @@
 	DCDC5：
 		AXP22:1000~2550，50/step
 */
-#define AXP_DCDC5_VALUE		1500
+#define AXP_DCDC5_VALUE		1500	//DCDC5
 
 /*电池容量，mAh：根据实际电池容量来定义，对库仑计方法来说
 这个参数很重要，必须配置*/
