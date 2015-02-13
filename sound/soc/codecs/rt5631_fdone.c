@@ -2110,6 +2110,9 @@ static int rt5631_probe(struct snd_soc_codec *codec)
 	}
 	rt5631_reg_init(codec);
 
+	// mic mute off 
+	snd_soc_write(codec, RT5631_ADC_REC_MIXER, 0x00b0);
+
 	codec->dapm.bias_level = SND_SOC_BIAS_STANDBY;
 	rt5631->codec = codec;
 
