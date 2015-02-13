@@ -522,12 +522,17 @@ static unsigned long i2s_ext_mclk_set_clock(unsigned long clk)
 #define CFG_AUDIO_I2S0_MASTER_CLOCK_IN		0
 #endif
 
+#ifndef CFG_AUDIO_I2S0_LR_POL_INV
+#define CFG_AUDIO_I2S0_LR_POL_INV			0
+#endif
+
 #if defined (CONFIG_SND_NXP_I2S_CH0)
 static struct nxp_i2s_plat_data i2s_data_ch0 = {
 	.master_mode		= CFG_AUDIO_I2S0_MASTER_MODE,
 	.master_clock_in	= CFG_AUDIO_I2S0_MASTER_CLOCK_IN,
 	.trans_mode			= CFG_AUDIO_I2S0_TRANS_MODE,
 	.frame_bit			= CFG_AUDIO_I2S0_FRAME_BIT,
+	.LR_pol_inv			= CFG_AUDIO_I2S0_LR_POL_INV,
 	.sample_rate		= CFG_AUDIO_I2S0_SAMPLE_RATE,
 	.pre_supply_mclk 	= CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK,
 	.ext_is_en			= i2s_ext_is_en,

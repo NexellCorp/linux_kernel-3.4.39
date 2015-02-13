@@ -270,6 +270,10 @@ config SPI_SLSI_PORT2
 	bool "port 2"
 	depends on SPI_SLSI
 
+config SPI_UART_XR20
+	bool "XR20M1172"
+	depends on SPI_SLSI
+
 
 config SPI_PL022
 	tristate "ARM AMBA PL022 SSP controller"
