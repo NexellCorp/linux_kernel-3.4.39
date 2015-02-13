@@ -34,6 +34,11 @@ choice
 		help
    	 		Support for the drone board.
 
+	config PLAT_S5P4418_DRONEL
+		bool "DRONEL: Android drone2 low cost version board"
+		help
+   	 		Support for the drone2 low cost board.
+
 endchoice
 
 #
