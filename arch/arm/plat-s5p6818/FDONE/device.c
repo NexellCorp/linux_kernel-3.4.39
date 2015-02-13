@@ -1425,9 +1425,9 @@ static struct s3c64xx_spi_csinfo spi1_csi[] = {
 };
 struct spi_board_info spi1_board_info[] __initdata = {
     {
-        .modalias       = "spidev",
+        .modalias       = "xr20m1172", // "spidev",
         .platform_data  = NULL,
-        .max_speed_hz   = 10 * 1000 * 1000,
+        .max_speed_hz   = 8 * 1000 * 1000,
         .bus_num        = 1,
         .chip_select    = 0,
         .mode           = SPI_MODE_0,
