@@ -47,7 +47,8 @@
 //#include <mach/devices.h>
 #include <mach/soc.h>
 
-#if 0
+#define DEBUG 0
+#if (DEBUG)
 #define dev_dbg(fmt,msg...) printk(msg)
 #define dev_err(fmt,msg...) printk(msg)
 #endif
@@ -101,7 +102,7 @@ const static int i2c_reset[3] = {20,21,22};
 
 static inline void dump_i2c_register(struct s3c24xx_i2c *i2c)
 {
-	//dev_dbg(i2c->dev, "Register dump(%d) : %x %x %x %x %x\n"
+	#if(DEBUG)
 	printk("\e[31m Register dump(%d) (%d) : %x %x %x %x %x\n \e[0m"
 		, i2c->pdata->bus_num
 		, i2c->is_suspended
@@ -110,6 +111,7 @@ static inline void dump_i2c_register(struct s3c24xx_i2c *i2c)
 		, readl(i2c->regs + S3C2410_IICADD)
 		, readl(i2c->regs + S3C2410_IICDS)
 		, readl(i2c->regs + S3C2440_IICLC));
+	#endif
 }
 
 /* s3c24xx_i2c_is2440()

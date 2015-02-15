@@ -845,9 +845,11 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, int force)
 	}
 
 	/* Set the current slot bus width */
-	 if(slot->ctype == SDMMC_CTYPE_8BIT)
+	if(slot->ctype == SDMMC_CTYPE_8BIT)
+	{
+		printk("\e[31m Set 8bit\n\e[0m");
 		NX_TIEOFF_Set(TIEOFFINDEX_OF_MMC_8BIT , 1 );
-
+	}
 	mci_writel(host, CTYPE, (slot->ctype << slot->id));
 }
 
