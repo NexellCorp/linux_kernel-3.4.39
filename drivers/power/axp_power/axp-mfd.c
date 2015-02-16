@@ -17,6 +17,7 @@
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
+#include <mach/pm.h>
 //#include <mach/system.h>
 
 //#include "axp-cfg.h"
@@ -127,25 +128,25 @@ static int __devinit axp_mfd_add_subdevs(struct axp_mfd_chip *chip,
 
 	/* register for power supply */
 	for (i = 0; i < pdata->num_sply_devs; i++) {
-	sply_dev = &pdata->sply_devs[i];
-	pdev = platform_device_alloc(sply_dev->name, sply_dev->id);
-	pdev->dev.parent = chip->dev;
-	pdev->dev.platform_data = sply_dev->platform_data;
-	ret = platform_device_add(pdev);
-	if (ret)
-		goto failed;
+		sply_dev = &pdata->sply_devs[i];
+		pdev = platform_device_alloc(sply_dev->name, sply_dev->id);
+		pdev->dev.parent = chip->dev;
+		pdev->dev.platform_data = sply_dev->platform_data;
+		ret = platform_device_add(pdev);
+		if (ret)
+			goto failed;
 
 	}
 
 	/* register for gpio */
 	for (i = 0; i < pdata->num_gpio_devs; i++) {
-	gpio_dev = &pdata->gpio_devs[i];
-	pdev = platform_device_alloc(gpio_dev->name, gpio_dev->id);
-	pdev->dev.parent = chip->dev;
-	pdev->dev.platform_data = gpio_dev->platform_data;
-	ret = platform_device_add(pdev);
-	if (ret)
-		goto failed;
+		gpio_dev = &pdata->gpio_devs[i];
+		pdev = platform_device_alloc(gpio_dev->name, gpio_dev->id);
+		pdev->dev.parent = chip->dev;
+		pdev->dev.platform_data = gpio_dev->platform_data;
+		ret = platform_device_add(pdev);
+		if (ret)
+			goto failed;
 	}
 
 	return 0;
@@ -255,6 +256,7 @@ static int __devinit axp_mfd_probe(struct i2c_client *client,
 	/* PM hookup */
 	if(!pm_power_off)
 		pm_power_off = axp_power_off;
+	//nxp_board_shutdown = axp_power_off;
 
 	ret = axp_mfd_create_attrs(chip);
 	if(ret){
@@ -276,7 +278,7 @@ static int __devexit axp_mfd_remove(struct i2c_client *client)
 {
 	struct axp_mfd_chip *chip = i2c_get_clientdata(client);
 
-	pm_power_off = NULL;
+	//nxp_board_shutdown = NULL;
 	axp = NULL;
 
 	axp_mfd_remove_subdevs(chip);

@@ -48,6 +48,7 @@ enum {
 #define AXP22_OFF_CTL             (0x32)
 #define AXP22_CHARGE1             (0x33)
 #define AXP22_CHARGE2             (0x34)
+#define AXP22_CHARGE3             (0x35)
 #define AXP22_POK_SET             (0x36)
 #define AXP22_INTEN1              (0x40)
 #define AXP22_INTEN2              (0x41)

@@ -213,7 +213,7 @@
 
 
 /*------------------------------------------------------------------------------
- * 	NXE2000 PMIC
+ * 	PMIC
  */
 #define CFG_SW_UBC_ENABLE						(1)
 
@@ -229,6 +229,10 @@
 #define CFG_GPIO_PMIC_LOWBAT_DET				(PAD_GPIO_ALV + 3)		/* Critical low battery detect */
 #define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
+
+#define CFG_POLY_PHASE_FUNCTION					(1) /* DC-DC 2&3 Poly-phase function enable/disable,   0: disable   1: enable */
+#define CFG_BATTERY_CAP							3000
+
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode

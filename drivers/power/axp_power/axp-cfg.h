@@ -1,5 +1,7 @@
 #ifndef __LINUX_AXP_CFG_H_
 #define __LINUX_AXP_CFG_H_
+
+#include <mach/platform.h>
 #include "axp-mfd.h"
 
 /*设备地址*/
@@ -12,7 +14,7 @@
 #define	AXP_I2CBUS			3
 /*电源芯片对应的中断号：具体看所使用的平台硬件的连接，
 中断线nmi连接cpu的哪路irq或者gpio*/
-#define AXP_IRQNO			164
+#define AXP_IRQNO			CFG_GPIO_PMIC_INTR // 164
 
 /*初始化各路输出，单位mV，0都为关闭*/
 /*
@@ -104,7 +106,7 @@
 
 /*电池容量，mAh：根据实际电池容量来定义，对库仑计方法来说
 这个参数很重要，必须配置*/
-#define BATCAP				4000
+#define BATCAP				CFG_BATTERY_CAP
 
 /*初始化电池内阻，mΩ：一般在100~200之间，不过最好根据实际
 测试出来的确定，方法是打开打印信息，不接电池烧好固件后，
@@ -131,6 +133,14 @@
 #define SUSCHGCUR			1500*1000
 /*关机充电电流，uA*/
 #define CLSCHGCUR			1500*1000
+
+
+#define AC_CHARGE_CURRENT	1500*1000
+
+#define AC_LIMIT_CURRENT	1500*1000
+#define AC_LIMIT_EARLY		1500*1000
+#define AC_LIMIT_SUSPEND	1500*1000
+#define AC_LIMIT_PWROFF		1500*1000
 
 /*目标充电电压，mV*/
 /*
@@ -234,7 +244,7 @@
 /*
 	AXP22:500/900
 */
-#define USBCURLIM			0
+#define USBCURLIM			0//900
 /* usb 充电限流，mA，0为不限制*/
 /*
 	AXP22:500/900

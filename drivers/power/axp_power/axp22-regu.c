@@ -409,7 +409,7 @@ static int __devinit axp_regulator_probe(struct platform_device *pdev)
 	struct axp_regulator_info *ri = NULL;
 	struct regulator_dev *rdev;
 	int ret;
-	
+
 	ri = find_regulator_info(pdev->id);
 	if (ri == NULL) {
 		dev_err(&pdev->dev, "invalid regulator ID specified\n");
@@ -453,7 +453,7 @@ static int __devinit axp_regulator_probe(struct platform_device *pdev)
 			return ret;
 		}
 	}
-	
+
 	return 0;
 }
 
