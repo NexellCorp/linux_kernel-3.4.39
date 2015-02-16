@@ -866,14 +866,14 @@ static void camera_common_vin_setup_io(int module, bool force)
         /* VIP0:0 = VCLK, VID0 ~ 7 */
         const u_int port[][2] = {
             /* VCLK, HSYNC, VSYNC */
-            { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  6, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_A +  28, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_E +  13, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_E +  7, NX_GPIO_PADFUNC_1 },
             /* DATA */
-            { PAD_GPIO_D + 28, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 29, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_A + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  0, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  4, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  6, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  8, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
         };
 
         printk("%s\n", __func__);
@@ -893,6 +893,8 @@ static void camera_common_vin_setup_io(int module, bool force)
 }
 
 static bool camera_power_enabled = false;
+// fix for dronel
+#if 0
 static void camera_power_control(int enable)
 {
     struct regulator *cam_io_28V = NULL;
@@ -939,6 +941,33 @@ static void camera_power_control(int enable)
 
     camera_power_enabled = enable ? true : false;
 }
+#else
+static void camera_power_control(int enable)
+{
+    struct regulator *cam_core_18V = NULL;
+
+    if (enable && camera_power_enabled)
+        return;
+    if (!enable && !camera_power_enabled)
+        return;
+
+    cam_core_18V = regulator_get(NULL, "axp22_dldo2");
+    if (IS_ERR(cam_core_18V)) {
+        printk(KERN_ERR "%s: failed to regulator_get() for axp22_dldo2", __func__);
+        return;
+    }
+    printk("%s: %d\n", __func__, enable);
+    if (enable) {
+        regulator_enable(cam_core_18V);
+    } else {
+        regulator_disable(cam_core_18V);
+    }
+
+    regulator_put(cam_core_18V);
+
+    camera_power_enabled = enable ? true : false;
+}
+#endif
 
 static bool is_back_camera_enabled = false;
 static bool is_back_camera_power_state_changed = false;
@@ -1094,8 +1123,8 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
     {
         /* back_camera 656 interface */
         // for 5430
-        /*.module = 1,*/
-        .module = 0,
+        .module = 1,
+        /*.module = 0,*/
         .sensor = &sensor[0],
         .type = NXP_CAPTURE_INF_PARALLEL,
         .parallel = {
@@ -1129,21 +1158,21 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
     {
         /* front_camera 601 interface */
         // for 5430
-        /*.module = 1,*/
-        .module = 0,
+        .module = 1,
+        /*.module = 0,*/
         .sensor = &sensor[1],
         .type = NXP_CAPTURE_INF_PARALLEL,
         .parallel = {
             .is_mipi        = false,
             .external_sync  = true,
             .h_active       = 640,
-            .h_frontporch   = 0,
-            .h_syncwidth    = 0,
-            .h_backporch    = 2,
+            .h_frontporch   = 1,
+            .h_syncwidth    = 1,
+            .h_backporch    = 0,
             .v_active       = 480,
             .v_frontporch   = 0,
-            .v_syncwidth    = 0,
-            .v_backporch    = 2,
+            .v_syncwidth    = 1,
+            .v_backporch    = 0,
             .clock_invert   = false,
             .port           = 0,
             .data_order     = NXP_VIN_CBY0CRY1,
