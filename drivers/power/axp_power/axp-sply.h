@@ -7,21 +7,24 @@ static 	struct input_dev * powerkeydev;
 /*      AXP22      */
 #define AXP22_CHARGE_STATUS					AXP22_STATUS
 #define AXP22_IN_CHARGE						(1 << 6)
-#define AXP22_PDBC                             (0x32)
+#define AXP22_PDBC							(0x32)
 
 #define AXP22_CHARGE_CONTROL1				AXP22_CHARGE1
 #define AXP22_CHARGER_ENABLE				(1 << 7)
 #define AXP22_CHARGE_CONTROL2				AXP22_CHARGE2
+
+#define AXP22_CHARGE_CONTROL3				AXP22_CHARGE3
+
 //#define AXP22_BUCHARGE_CONTROL				AXP22_BACKUP_CHG
 //#define AXP22_BUCHARGER_ENABLE				(1 << 7)
 #define AXP22_CHARGE_VBUS					AXP22_IPS_SET
-#define AXP22_CAP                    (0xB9)
-#define AXP22_BATCAP0                    (0xe0)
-#define AXP22_BATCAP1                    (0xe1)
-#define AXP22_RDC0                    (0xba)
-#define AXP22_RDC1                    (0xbb)
-#define AXP22_WARNING_LEVEL           (0xe6)
-#define AXP22_ADJUST_PARA             (0xe8)
+#define AXP22_CAP							(0xB9)
+#define AXP22_BATCAP0						(0xe0)
+#define AXP22_BATCAP1						(0xe1)
+#define AXP22_RDC0							(0xba)
+#define AXP22_RDC1							(0xbb)
+#define AXP22_WARNING_LEVEL					(0xe6)
+#define AXP22_ADJUST_PARA					(0xe8)
 
 
 #define AXP22_FAULT_LOG1					AXP22_MODE_CHGSTATUS
@@ -57,16 +60,16 @@ static 	struct input_dev * powerkeydev;
 #define AXP22_ADC_GPIO2_ENABLE				(1 << 1)
 #define AXP22_ADC_GPIO3_ENABLE				(1 << 0)
 
-#define AXP22_ADC_CONTROL3                 (0x84)
+#define AXP22_ADC_CONTROL3					(0x84)
 
-#define AXP22_VBATH_RES						    (0x78)
-#define AXP22_VBATL_RES						    (0x79)
+#define AXP22_VBATH_RES						(0x78)
+#define AXP22_VBATL_RES						(0x79)
 
-#define AXP22_OCVBATH_RES						 (0xBC)
-#define AXP22_OCVBATL_RES						 (0xBD)
+#define AXP22_OCVBATH_RES					(0xBC)
+#define AXP22_OCVBATL_RES					(0xBD)
 
 
-#define AXP22_INTTEMP                      (0x56)
+#define AXP22_INTTEMP						(0x56)
 #define AXP22_DATA_BUFFER0					AXP22_BUFFER1
 #define AXP22_DATA_BUFFER1					AXP22_BUFFER2
 #define AXP22_DATA_BUFFER2					AXP22_BUFFER3
@@ -162,6 +165,8 @@ struct axp_charger {
 	int vusb;
 	int iusb;
 	int ocv;
+	uint8_t OCV_percentage ;
+	uint8_t Coulumb_percentage;
 	
 	int disvbat;
 	int disibat;

@@ -19,7 +19,6 @@
 #include <linux/platform_device.h>
 #include <linux/seq_file.h>
 #include <linux/i2c.h>
-#include <asm-generic/gpio.h>
 #include <mach/gpio.h>
 #include "axp-gpio.h"
 #include "axp-cfg.h"

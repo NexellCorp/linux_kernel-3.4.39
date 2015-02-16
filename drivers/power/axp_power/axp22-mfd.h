@@ -1,10 +1,11 @@
 #include "axp-rw.h"
 #include "axp-cfg.h"
-
+#include "axp-regu.h"
+#include "axp-mfd.h"
 
 static int __devinit axp22_init_chip(struct axp_mfd_chip *chip)
 {
-	uint8_t chip_id;
+	uint8_t chip_id = 0;
 	uint8_t v[19] = {0xd8,AXP22_INTEN2, 0xff,AXP22_INTEN3,0x03,
 						  AXP22_INTEN4, 0x01,AXP22_INTEN5, 0x00,
 						  AXP22_INTSTS1,0xff,AXP22_INTSTS2, 0xff,
@@ -32,6 +33,11 @@ static int __devinit axp22_init_chip(struct axp_mfd_chip *chip)
 	/* mask and clear all IRQs */
 	chip->irqs_enabled = 0xffffffff | (uint64_t)0xff << 32;
 	chip->ops->disable_irqs(chip, chip->irqs_enabled);
+
+#if (CFG_POLY_PHASE_FUNCTION == 1)
+	/* Enable DC-DC 2&3 Poly-phase Function*/
+	axp_set_bits(chip->dev, AXP22_BUCKFREQ, 0x10);
+#endif
 
 	return 0;
 }
