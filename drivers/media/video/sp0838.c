@@ -1387,7 +1387,12 @@ static int sp0838_s_stream(struct v4l2_subdev *sd, int enable)
             return -EIO;
         }
 
+        // psw0523 test for 6818
+#ifdef CONFIG_ARCH_S5P6818
+        sp0838_write_array(client, sp0838_fmt_yuv422_uyvy);
+#else
         sp0838_write_array(client, sp0838_fmt_yuv422_yuyv);
+#endif
         if (ret < 0) {
             printk(KERN_ERR "%s: failed to sp0830_write_array format regs\n", __func__);
             return -EIO;

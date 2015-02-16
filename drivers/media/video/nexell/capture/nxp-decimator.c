@@ -89,6 +89,7 @@ static int _hw_configure(struct nxp_decimator *me)
 #else
     // check clipper on & clipper region
     {
+    #if defined(CONFIG_ARCH_S5P4418)
         int left, top, right, bottom;
         NX_VIP_GetClipRegion(module, &left, &top, &right, &bottom);
         if ((me->src_width != (right - left)) || (me->src_height != (bottom - top))) {
@@ -108,6 +109,12 @@ static int _hw_configure(struct nxp_decimator *me)
                     me->src_width, me->src_height,
                     me->target_width, me->target_height);
         }
+    #else
+        NX_VIP_SetClipRegion(module, 0, 0, me->src_width, me->src_height);
+        NX_VIP_SetDecimation(module,
+                me->src_width, me->src_height,
+                me->target_width, me->target_height);
+    #endif
 
     #if defined(CONFIG_ARCH_S5P4418)
         NX_VIP_SetDecimatorFormat(module,
