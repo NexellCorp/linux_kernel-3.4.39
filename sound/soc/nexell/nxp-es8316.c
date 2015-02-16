@@ -119,7 +119,7 @@ static int es8316_spk_event(struct snd_soc_dapm_widget *w,
 /* es8316 machine dapm widgets */
 static const struct snd_soc_dapm_widget es8316_dapm_widgets[] = {
 	SND_SOC_DAPM_SPK("Ext Spk", es8316_spk_event),
-//	SND_SOC_DAPM_HP("Headphone Jack", NULL),
+	SND_SOC_DAPM_HP("Headphone Jack", NULL),
 };
 
 /* Corgi machine audio map (connections to the codec pins) */
@@ -133,7 +133,7 @@ static const struct snd_soc_dapm_route es8316_audio_map[] = {
 	{"Ext Spk", NULL, "HPOR"},
 };
 
-#if defined(CONFIG_PLAT_S5P4418_SECRET) || !defined(CONFIG_ANDROID)
+#if !defined(CONFIG_ANDROID)
 /* Headphones jack detection DAPM pin */
 static struct snd_soc_jack_pin jack_pins[] = {
 	{
@@ -148,15 +148,42 @@ static struct snd_soc_jack_pin jack_pins[] = {
 };
 #endif
 
+static int es8316_jack_status_check(void);
 /* Headphones jack detection GPIO */
 static struct snd_soc_jack_gpio jack_gpio = {
 	.invert		= false,			// High detect : invert = false
 	.name		= "hp-gpio",
 	.report		= SND_JACK_HEADPHONE,
 	.debounce_time	= 200,
+	.jack_status_check = es8316_jack_status_check,
 };
 
 static struct snd_soc_jack hp_jack;
+
+static int es8316_jack_status_check(void)
+{
+	struct snd_soc_codec *codec = es8316;
+	int jack = jack_gpio.gpio;
+	int invert = jack_gpio.invert;
+	int level = gpio_get_value_cansleep(jack);
+
+	if (!codec)
+		return -1;
+
+	if (invert)
+		level = !level;
+
+	pr_debug("%s: hp jack %s\n", __func__, level?"IN":"OUT");
+
+	if (!level) {
+       gpio_direction_output(AUDIO_AMP_POWER, 1);
+	} else {
+       gpio_direction_output(AUDIO_AMP_POWER, 0);
+	}
+
+	return !level;
+}
+
 
 static int es8316_dai_init(struct snd_soc_pcm_runtime *rtd)
 {

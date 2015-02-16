@@ -384,7 +384,7 @@ static const struct snd_soc_dapm_widget es8316_dapm_widgets[] = {
 		&es8316_analog_in_mux_controls),
 	/* D2SE PGA */
 	SND_SOC_DAPM_PGA("D2SE PGA", ES8316_ADC_D2SEPGA_REG24,
-		0, 0, NULL, 1),			
+		0, 0, NULL, 0),			
 	/* Line input PGA */
 	SND_SOC_DAPM_PGA("Line input PGA", ES8316_ADC_PDN_LINSEL_REG22,
 		7, 0, NULL, 0),
@@ -481,26 +481,26 @@ static const struct snd_soc_dapm_route es8316_dapm_routes[] = {
 	
 	{"Digital Mic Mux", "dmic disable", "Mono ADC"},
 	{"Digital Mic Mux", "dmic data at high level", "DMIC"},
-  {"Digital Mic Mux", "dmic data at low level", "DMIC"},
+	{"Digital Mic Mux", "dmic data at low level", "DMIC"},
   
-  {"I2S OUT", NULL, "Digital Mic Mux"},
+	{"I2S OUT", NULL, "Digital Mic Mux"},
    /*
    * playback route map
    */
-  {"DAC SRC Mux", "LDATA TO LDAC, RDATA TO RDAC", "I2S IN"},
-  {"DAC SRC Mux", "LDATA TO LDAC, LDATA TO RDAC", "I2S IN"},
-  {"DAC SRC Mux", "RDATA TO LDAC, RDATA TO RDAC", "I2S IN"},
-  {"DAC SRC Mux", "RDATA TO LDAC, LDATA TO RDAC", "I2S IN"},
+	{"DAC SRC Mux", "LDATA TO LDAC, RDATA TO RDAC", "I2S IN"},
+	{"DAC SRC Mux", "LDATA TO LDAC, LDATA TO RDAC", "I2S IN"},
+	{"DAC SRC Mux", "RDATA TO LDAC, RDATA TO RDAC", "I2S IN"},
+	{"DAC SRC Mux", "RDATA TO LDAC, LDATA TO RDAC", "I2S IN"},
   
-  {"Left Hp mux", "lin1-rin1", "MIC1"},
-  {"Left Hp mux", "lin2-rin2", "MIC2"},
-  {"Left Hp mux", "lin-rin with Boost", "D2SE PGA"},
-  {"Left Hp mux", "lin-rin with Boost and PGA", "Line input PGA"},
+	{"Left Hp mux", "lin1-rin1", "MIC1"},
+	{"Left Hp mux", "lin2-rin2", "MIC2"},
+	{"Left Hp mux", "lin-rin with Boost", "D2SE PGA"},
+	{"Left Hp mux", "lin-rin with Boost and PGA", "Line input PGA"},
   
-  {"Right Hp mux", "lin1-rin1", "MIC1"},
-  {"Right Hp mux", "lin2-rin2", "MIC2"},
-  {"Right Hp mux", "lin-rin with Boost", "D2SE PGA"},
-  {"Right Hp mux", "lin-rin with Boost and PGA", "Line input PGA"},
+	{"Right Hp mux", "lin1-rin1", "MIC1"},
+	{"Right Hp mux", "lin2-rin2", "MIC2"},
+	{"Right Hp mux", "lin-rin with Boost", "D2SE PGA"},
+	{"Right Hp mux", "lin-rin with Boost and PGA", "Line input PGA"},
 
 	{"Left Hp mixer", "LLIN Switch", "Left Hp mux"},
 	{"Left Hp mixer", "Left DAC Switch", "DAC SRC Mux"},
@@ -508,8 +508,8 @@ static const struct snd_soc_dapm_route es8316_dapm_routes[] = {
 	{"Right Hp mixer", "RLIN Switch", "Right Hp mux"},
 	{"Right Hp mixer", "Right DAC Switch", "DAC SRC Mux"},
 
-	{"HPCP L", NULL, "Left output mixer"},
-	{"HPCP R", NULL, "Right output mixer"},
+	{"HPCP L", NULL, "Left Hp mixer"},
+	{"HPCP R", NULL, "Right Hp mixer"},
 
 	{"HPVOL L", NULL, "HPCP L"},
 	{"HPVOL R", NULL, "HPCP R"},
@@ -830,8 +830,6 @@ static int es8316_mute(struct snd_soc_dai *dai, int mute)
 static int es8316_set_bias_level(struct snd_soc_codec *codec,
 				 enum snd_soc_bias_level level)
 {        
-	printk("%s %d\n", __func__, level);
-
 	switch (level) {
 	case SND_SOC_BIAS_ON:
 		dev_dbg(codec->dev, "%s on\n", __func__);
