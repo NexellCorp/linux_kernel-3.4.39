@@ -86,6 +86,8 @@ enum {
 #define AXP22_DCDC_MODESET        (0x80)
 #define AXP22_DCDC_FREQSET        (0x37) 
 #define AXP22_ADC_EN              (0x82)
+#define AXP22_PWREN_CTL1          (0x8C)
+#define AXP22_PWREN_CTL2          (0x8D)
 #define AXP22_HOTOVER_CTL         (0x8F)
 
 #define AXP22_GPIO0_CTL           (0x90)

@@ -71,81 +71,101 @@
 #define AXP22_BUCKMODE      AXP22_DCDC_MODESET
 #define AXP22_BUCKFREQ      AXP22_DCDC_FREQSET
 
+#define AXP22_PWREN_CONTROL1	AXP22_PWREN_CTL1
+#define AXP_DCDC1_BIT			(7)
+#define AXP_DCDC2_BIT			(6)
+#define AXP_DCDC3_BIT			(5)
+#define AXP_DCDC4_BIT			(4)
+#define AXP_DCDC5_BIT			(3)
+#define AXP_ALDO1_BIT			(2)
+#define AXP_ALDO2_BIT			(1)
+#define AXP_ALDO3_BIT			(0)
+
+#define AXP22_PWREN_CONTROL2	AXP22_PWREN_CTL2
+#define AXP_DLDO1_BIT			(7)
+#define AXP_DLDO2_BIT			(6)
+#define AXP_DLDO3_BIT			(5)
+#define AXP_DLDO4_BIT			(4)
+#define AXP_ELDO1_BIT			(3)
+#define AXP_ELDO2_BIT			(2)
+#define AXP_ELDO3_BIT			(1)
+#define AXP_DC5LDO_BIT			(0)
+
 #endif
 
 #define AXP_LDO(_pmic, _id, min, max, step, vreg, shift, nbits, ereg, ebit)	\
-{									\
-	.desc	= {							\
-		.name	= #_pmic"_LDO" #_id,					\
-		.type	= REGULATOR_VOLTAGE,				\
-		.id	= _pmic##_ID_LDO##_id,				\
+{											\
+	.desc	= {								\
+		.name	= #_pmic"_LDO" #_id,		\
+		.type	= REGULATOR_VOLTAGE,		\
+		.id	= _pmic##_ID_LDO##_id,			\
 		.n_voltages = (step) ? ((max - min) / step + 1) : 1,	\
-		.owner	= THIS_MODULE,					\
-	},								\
-	.min_uV		= (min) * 1000,					\
-	.max_uV		= (max) * 1000,					\
+		.owner	= THIS_MODULE,				\
+	},										\
+	.min_uV		= (min) * 1000,				\
+	.max_uV		= (max) * 1000,				\
 	.step_uV	= (step) * 1000,				\
-	.vol_reg	= _pmic##_##vreg,				\
+	.vol_reg	= _pmic##_##vreg,			\
 	.vol_shift	= (shift),					\
 	.vol_nbits	= (nbits),					\
-	.enable_reg	= _pmic##_##ereg,				\
+	.enable_reg	= _pmic##_##ereg,			\
 	.enable_bit	= (ebit),					\
 }
 
 #define AXP_BUCK(_pmic, _id, min, max, step, vreg, shift, nbits, ereg, ebit)	\
-{									\
-	.desc	= {							\
-		.name	= #_pmic"_BUCK" #_id,					\
-		.type	= REGULATOR_VOLTAGE,				\
-		.id	= _pmic##_ID_BUCK##_id,				\
+{											\
+	.desc	= {								\
+		.name	= #_pmic"_BUCK" #_id,		\
+		.type	= REGULATOR_VOLTAGE,		\
+		.id	= _pmic##_ID_BUCK##_id,			\
 		.n_voltages = (step) ? ((max - min) / step + 1) : 1,	\
-		.owner	= THIS_MODULE,					\
-	},								\
-	.min_uV		= (min) * 1000,					\
-	.max_uV		= (max) * 1000,					\
+		.owner	= THIS_MODULE,				\
+	},										\
+	.min_uV		= (min) * 1000,				\
+	.max_uV		= (max) * 1000,				\
 	.step_uV	= (step) * 1000,				\
-	.vol_reg	= _pmic##_##vreg,				\
+	.vol_reg	= _pmic##_##vreg,			\
 	.vol_shift	= (shift),					\
 	.vol_nbits	= (nbits),					\
-	.enable_reg	= _pmic##_##ereg,				\
+	.enable_reg	= _pmic##_##ereg,			\
 	.enable_bit	= (ebit),					\
 }
 
 #define AXP_DCDC(_pmic, _id, min, max, step, vreg, shift, nbits, ereg, ebit)	\
-{									\
-	.desc	= {							\
-		.name	= #_pmic"_DCDC" #_id,					\
-		.type	= REGULATOR_VOLTAGE,				\
-		.id	= _pmic##_ID_DCDC##_id,				\
+{											\
+	.desc	= {								\
+		.name	= #_pmic"_DCDC" #_id,		\
+		.type	= REGULATOR_VOLTAGE,		\
+		.id	= _pmic##_ID_DCDC##_id,			\
 		.n_voltages = (step) ? ((max - min) / step + 1) : 1,	\
-		.owner	= THIS_MODULE,					\
-	},								\
-	.min_uV		= (min) * 1000,					\
-	.max_uV		= (max) * 1000,					\
+		.owner	= THIS_MODULE,				\
+	},										\
+	.min_uV		= (min) * 1000,				\
+	.max_uV		= (max) * 1000,				\
 	.step_uV	= (step) * 1000,				\
-	.vol_reg	= _pmic##_##vreg,				\
+	.vol_reg	= _pmic##_##vreg,			\
 	.vol_shift	= (shift),					\
 	.vol_nbits	= (nbits),					\
-	.enable_reg	= _pmic##_##ereg,				\
+	.enable_reg	= _pmic##_##ereg,			\
 	.enable_bit	= (ebit),					\
 }
 
 #define AXP_SW(_pmic, _id, min, max, step, vreg, shift, nbits, ereg, ebit)	\
-{									\
-	.desc	= {							\
-		.name	= #_pmic"_SW" #_id,					\
-		.type	= REGULATOR_VOLTAGE,				\
-		.id	= _pmic##_ID_SW##_id,				\
+{											\
+	.desc	= {								\
+		.name	= #_pmic"_SW" #_id,			\
+		.type	= REGULATOR_VOLTAGE,		\
+		.id	= _pmic##_ID_SW##_id,			\
 		.n_voltages = (step) ? ((max - min) / step + 1) : 1,	\
-		.owner	= THIS_MODULE,					\
-	},								\
-	.min_uV		= (min) * 1000,					\
-	.max_uV		= (max) * 1000,					\
+		.owner	= THIS_MODULE,				\
+	},										\
+	.min_uV		= (min) * 1000,				\
+	.max_uV		= (max) * 1000,				\
 	.step_uV	= (step) * 1000,				\
-	.vol_reg	= _pmic##_##vreg,				\
+	.vol_reg	= _pmic##_##vreg,			\
 	.vol_shift	= (shift),					\
 	.vol_nbits	= (nbits),					\
-	.enable_reg	= _pmic##_##ereg,				\
+	.enable_reg	= _pmic##_##ereg,			\
 	.enable_bit	= (ebit),					\
 }
 

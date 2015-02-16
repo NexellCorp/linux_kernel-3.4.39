@@ -188,25 +188,25 @@ static struct regulator_ops axp22_ldoio01_ops = {
 	AXP_DCDC(AXP22, _id, min, max, step, vreg, shift, nbits, ereg, ebit)
 
 static struct axp_regulator_info axp_regulator_info[] = {
-	AXP22_LDO(	1,	AXP_LDO1_VALUE,	AXP_LDO1_VALUE,	0,  LDO1,   0,	0,	LDO1EN,	0),//ldo1 for rtc
-	AXP22_LDO(	2,	700,		3300,		100,	LDO2,	0,	5,	LDO2EN,	6),//ldo2 for aldo1 
-	AXP22_LDO(	3,	700,		3300,		100,	LDO3,	0,	5,	LDO3EN,	7),//ldo3 for aldo2
-	AXP22_LDO(	4,	700,		3300,		100,	LDO4,	0,	5,	LDO4EN,	7),//ldo3 for aldo3
-	AXP22_LDO(	5,	700,		3300,		100,	LDO5,	0,	5,	LDO5EN,	3),//ldo5 for dldo1
-	AXP22_LDO(	6,	700,		3300,		100,	LDO6,	0,	5,	LDO6EN,	4),//ldo6 for dldo2
-	AXP22_LDO(	7,	700,		3300,		100,	LDO7,	0,	5,	LDO7EN,	5),//ldo7 for dldo3
-	AXP22_LDO(	8,	700,		3300,		100,	LDO8,	0,	5,	LDO8EN,	6),//ldo8 for dldo4
-	AXP22_LDO(	9,	700,		3300,		100,	LDO9,	0,	5,	LDO9EN,	0),//ldo9 for eldo1
-	AXP22_LDO(	10,	700,		3300,		100,	LDO10,	0,	5,	LDO10EN,1),//ldo10 for eldo2 
-	AXP22_LDO(	11,	700,		3300,		100,	LDO11,	0,	5,	LDO11EN,2),//ldo11 for eldo3
-	AXP22_LDO(	12,	700,		3300,		100,	LDO12,	0,	3,	LDO12EN,0),//ldo12 for dc5ldo
-	AXP22_DCDC(1,	1600,		3400,		100,	DCDC1,	0,	5,	DCDC1EN,1),//buck1 for io
-	AXP22_DCDC(2,	600,		1540,		20,		DCDC2,	0,	6,	DCDC2EN,2),//buck2 for cpu
-	AXP22_DCDC(3,	600,		1860,		20,		DCDC3,	0,	6,	DCDC3EN,3),//buck3 for gpu
-	AXP22_DCDC(4,	600,		1540,		20,		DCDC4,	0,	6,	DCDC4EN,4),//buck4 for core
-	AXP22_DCDC(5,	1000,		2550,		50,		DCDC5,	0,	5,	DCDC5EN,5),//buck5 for ddr
-	AXP22_LDO(	IO0,700,		3300,		100,	LDOIO0,	0,	5,	LDOIO0EN,0),//ldoio0 
-	AXP22_LDO(	IO1,700,		3300,		100,	LDOIO1,	0,	5,	LDOIO1EN,0),//ldoio1
+	AXP22_LDO(  1, 3000,	3000,   0, LDO1,   0, 0,	LDO1EN,   0),//ldo1 for rtc
+	AXP22_LDO(  2,  700,	3300, 100, LDO2,   0,	 5,	LDO2EN,   6),//ldo2 for aldo1 
+	AXP22_LDO(  3,  700,	3300, 100, LDO3,   0,	 5,	LDO3EN,   7),//ldo3 for aldo2
+	AXP22_LDO(  4,  700,	3300, 100, LDO4,   0,	 5,	LDO4EN,   7),//ldo3 for aldo3
+	AXP22_LDO(  5,  700,	3300, 100, LDO5,   0,	 5,	LDO5EN,   3),//ldo5 for dldo1
+	AXP22_LDO(  6,  700,	3300, 100, LDO6,   0,	 5,	LDO6EN,   4),//ldo6 for dldo2
+	AXP22_LDO(  7,  700,	3300, 100, LDO7,   0,	 5,	LDO7EN,   5),//ldo7 for dldo3
+	AXP22_LDO(  8,  700,	3300, 100, LDO8,   0,	 5,	LDO8EN,   6),//ldo8 for dldo4
+	AXP22_LDO(  9,  700,	3300, 100, LDO9,   0,	 5,	LDO9EN,   0),//ldo9 for eldo1
+	AXP22_LDO( 10,  700,	3300, 100, LDO10,  0,	 5,	LDO10EN,  1),//ldo10 for eldo2 
+	AXP22_LDO( 11,  700,	3300, 100, LDO11,  0,	 5,	LDO11EN,  2),//ldo11 for eldo3
+	AXP22_LDO( 12,  700,	3300, 100, LDO12,  0,	 3,	LDO12EN,  0),//ldo12 for dc5ldo
+	AXP22_DCDC( 1, 1600,	3400, 100, DCDC1,  0,	 5,	DCDC1EN,  1),//buck1 for io
+	AXP22_DCDC( 2,  600,	1540,  20, DCDC2,  0, 6,	DCDC2EN,  2),//buck2 for cpu
+	AXP22_DCDC( 3,  600,	1860,  20, DCDC3,  0, 6,	DCDC3EN,  3),//buck3 for gpu
+	AXP22_DCDC( 4,  600,	1540,  20, DCDC4,  0, 6,	DCDC4EN,  4),//buck4 for core
+	AXP22_DCDC( 5, 1000,	2550,  50, DCDC5,  0, 5,	DCDC5EN,  5),//buck5 for ddr
+	AXP22_LDO(IO0,  700,	3300, 100, LDOIO0, 0,	 5,	LDOIO0EN, 0),//ldoio0 
+	AXP22_LDO(IO1,  700,	3300, 100, LDOIO1, 0,	 5,	LDOIO1EN, 0),//ldoio1
 };
 
 static ssize_t workmode_show(struct device *dev,

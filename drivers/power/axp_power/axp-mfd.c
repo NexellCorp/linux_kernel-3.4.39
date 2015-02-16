@@ -12,11 +12,13 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/interrupt.h>
+#include <linux/irq.h>
 #include <linux/platform_device.h>
 #include <linux/i2c.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
+#include <linux/gpio.h>
 #include <mach/pm.h>
 //#include <mach/system.h>
 
@@ -47,13 +49,13 @@ static void axp_mfd_irq_work(struct work_struct *work)
 			blocking_notifier_call_chain(&chip->notifier_list, (uint32_t)irqs, (void *)0);
 		}
 	}
-	enable_irq(chip->client->irq);
+	//enable_irq(chip->client->irq);
 }
 
 static irqreturn_t axp_mfd_irq_handler(int irq, void *data)
 {
 	struct axp_mfd_chip *chip = data;
-	disable_irq_nosync(irq);
+	//disable_irq_nosync(irq);
 	(void)schedule_work(&chip->irq_work);
 
 	return IRQ_HANDLED;
@@ -161,7 +163,8 @@ static void axp_power_off(void)
 	uint8_t val;
 
 #if defined (CONFIG_KP_AXP22)
-	if(SHUTDOWNVOL >= 2600 && SHUTDOWNVOL <= 3300){
+	if(SHUTDOWNVOL >= 2600 && SHUTDOWNVOL <= 3300)
+	{
 		if (SHUTDOWNVOL > 3200){
 			val = 0x7;
 		}
@@ -188,29 +191,35 @@ static void axp_power_off(void)
 
 		axp_update(&axp->dev, AXP22_VOFF_SET, val, 0x7);
 	}
+
 	val = 0xff;
+
     printk("[axp] send power-off command!\n");
+
     mdelay(20);
-    if(POWER_START != 1){
+
+    if(POWER_START != 1)
+	{
 		axp_read(&axp->dev, AXP22_STATUS, &val);
-		if(val & 0xF0){
+		if(val & 0xF0)
+		{
 	    	axp_read(&axp->dev, AXP22_MODE_CHGSTATUS, &val);
-	    	if(val & 0x20){
-            	printk("[axp] set flag!\n");
+	    	if(val & 0x20)
+			{
+            	//printk("[axp] set flag!\n");
 	        	axp_write(&axp->dev, AXP22_BUFFERC, 0x0f);
             	mdelay(20);
-		    	printk("[axp] reboot!\n");
+		    	//printk("[axp] reboot!\n");
 		    	//arch_reset(0,NULL);
-		    	printk("[axp] warning!!! arch can't ,reboot, maybe some error happend!\n");
+		    	//printk("[axp] warning!!! arch can't ,reboot, maybe some error happend!\n");
 	    	}
 		}
 	}
     axp_write(&axp->dev, AXP22_BUFFERC, 0x00);
     mdelay(20);
-    axp_set_bits(&axp->dev, AXP22_OFF_CTL, 0x80);
+    axp_set_bits(&axp->dev, AXP22_OFF_CTL, 0x87);
     mdelay(20);
     printk("[axp] warning!!! axp can't power-off, maybe some error happend!\n");
-
 #endif
 }
 
@@ -241,8 +250,16 @@ static int __devinit axp_mfd_probe(struct i2c_client *client,
 	if (ret)
 		goto out_free_chip;
 
+#if 1
+	ret = request_threaded_irq(gpio_to_irq(client->irq), NULL, 
+								axp_mfd_irq_handler,
+								IRQ_TYPE_EDGE_FALLING|IRQF_DISABLED|IRQF_ONESHOT,
+								"axp_mfd", chip);
+#else
 	ret = request_irq(client->irq, axp_mfd_irq_handler,
 		IRQF_SHARED|IRQF_DISABLED, "axp_mfd", chip);
+#endif
+
   	if (ret) {
   		dev_err(&client->dev, "failed to request irq %d\n",
   				client->irq);
@@ -254,9 +271,13 @@ static int __devinit axp_mfd_probe(struct i2c_client *client,
 		goto out_free_irq;
 
 	/* PM hookup */
+#if 1
+	if(!nxp_board_shutdown)
+		nxp_board_shutdown = axp_power_off;
+#else
 	if(!pm_power_off)
 		pm_power_off = axp_power_off;
-	//nxp_board_shutdown = axp_power_off;
+#endif
 
 	ret = axp_mfd_create_attrs(chip);
 	if(ret){
@@ -278,8 +299,8 @@ static int __devexit axp_mfd_remove(struct i2c_client *client)
 {
 	struct axp_mfd_chip *chip = i2c_get_clientdata(client);
 
-	//nxp_board_shutdown = NULL;
-	axp = NULL;
+	//pm_power_off = NULL;
+	//axp = NULL;
 
 	axp_mfd_remove_subdevs(chip);
 	kfree(chip);
