@@ -49,11 +49,6 @@
 #include "axp-sply.h"
 
 
-
-
-// #define ENABLE_DEBUG
-// #define DBG_AXP_PSY 1
-
 #ifdef DBG_AXP_PSY
 #define DBG_PSY_MSG(format,args...)   printk(KERN_ERR "[AXP22]"format,##args)
 #else
@@ -723,6 +718,7 @@ static void axp_change(struct axp_charger *charger)
 	power_supply_changed(&charger->batt);
 }
 
+#ifdef ENABEL_PWRKEY
 static void axp_presslong(struct axp_charger *charger)
 {
 	DBG_PSY_MSG("press long\n");
@@ -757,6 +753,7 @@ static void axp_keydown(struct axp_charger *charger)
 	input_report_key(powerkeydev, KEY_POWER, 1);
 	input_sync(powerkeydev);
 }
+#endif
 
 static void axp_capchange(struct axp_charger *charger)
 {
@@ -816,6 +813,7 @@ static int axp_battery_event(struct notifier_block *nb, unsigned long event,
 			axp_change(charger);
 		}
 
+#ifdef ENABEL_PWRKEY
 		if(event & AXP22_IRQ_POKLO) {
 			axp_presslong(charger);
 		}
@@ -823,6 +821,7 @@ static int axp_battery_event(struct notifier_block *nb, unsigned long event,
 		if(event & AXP22_IRQ_POKSH) {
 			axp_pressshort(charger);
 		}
+#endif
 		w[0] = (uint8_t) ((event) & 0xFF);
 		w[1] = AXP22_INTSTS2;
 		w[2] = (uint8_t) ((event >> 8) & 0xFF);
@@ -832,7 +831,10 @@ static int axp_battery_event(struct notifier_block *nb, unsigned long event,
 		w[6] = (uint8_t) ((event >> 24) & 0xFF);
 		w[7] = AXP22_INTSTS5;
 		w[8] = 0;
-	} else {
+	}
+	else
+	{
+#ifdef ENABEL_PWRKEY
 		if((event) & (AXP22_IRQ_PEKFE>>32)) {
 			axp_keydown(charger);
 		}
@@ -840,7 +842,7 @@ static int axp_battery_event(struct notifier_block *nb, unsigned long event,
 		if((event) & (AXP22_IRQ_PEKRE>>32)) {
 			axp_keyup(charger);
 		}
-
+#endif
 		if(axp_debug){
 			DBG_PSY_MSG("high 32bit status...\n");
 		}
@@ -1612,6 +1614,7 @@ static int axp_battery_probe(struct platform_device *pdev)
 
 	dev_info(&pdev->dev, " %s\n", AXP228_BATTERY_VERSION);
 
+#ifdef ENABEL_PWRKEY
 	powerkeydev = input_allocate_device();
 	if (!powerkeydev) 
 	{
@@ -1638,6 +1641,7 @@ static int axp_battery_probe(struct platform_device *pdev)
 	if(ret) {
 		printk("Unable to Register the power key\n");
 	}
+#endif
 
 	if (pdata == NULL)
 		return -EINVAL;
@@ -2072,8 +2076,10 @@ err_notifier:
 
 err_charger_init:
 	kfree(charger);
+#ifdef ENABEL_PWRKEY
 	input_unregister_device(powerkeydev);
 	kfree(powerkeydev);
+#endif
 	return ret;
 }
 
@@ -2093,9 +2099,10 @@ static int axp_battery_remove(struct platform_device *dev)
     power_supply_unregister(&charger->batt);
 
     kfree(charger);
+#ifdef ENABEL_PWRKEY
     input_unregister_device(powerkeydev);
     kfree(powerkeydev);
-
+#endif
     return 0;
 }
 

@@ -1,7 +1,14 @@
 #ifndef	_LINUX_AXP_SPLY_H_
 #define	_LINUX_AXP_SPLY_H_
 
+//#define ENABEL_PWRKEY
+
+// #define ENABLE_DEBUG
+// #define DBG_AXP_PSY 1
+
+#ifdef ENABEL_PWRKEY
 static 	struct input_dev * powerkeydev;
+#endif
 
 #ifdef	CONFIG_KP_AXP22
 /*      AXP22      */
