@@ -193,7 +193,7 @@ int media_open(void)
      **************************************************************************/
 #if defined (__COMPILE_MODE_FORMAT__)
     if (Exchange.debug.misc.media_format) { Exchange.sys.fn.print("MIO.MEDIA: Exchange.ftl.fnFormat()\n"); }
-    if (Exchange.ftl.fnFormat("NXP4330", 0xF0067000, 0) < 0)
+    if (Exchange.ftl.fnFormat(CHIP_NAME, CHIP_ID_BASE, 0) < 0)
     {
         printk(KERN_ERR "MIO.MEDIA: Exchange.ftl.fnFormat() Fail\n");
         return -1;
@@ -201,7 +201,7 @@ int media_open(void)
 #endif
 
     if (Exchange.debug.misc.media_open) { Exchange.sys.fn.print("MIO.MEDIA: Exchange.ftl.fnOpen()\n"); }
-    if (Exchange.ftl.fnOpen("NXP4330", 0xF0067000, 0) < 0)
+    if (Exchange.ftl.fnOpen(CHIP_NAME, CHIP_ID_BASE, 0) < 0)
     {
         printk(KERN_ERR "MIO.MEDIA: Exchange.ftl.fnOpen() Fail\n");
         return -1;
