@@ -1156,7 +1156,7 @@ void nxp_cpu_clock_resume(void)
 		peri = &clk_periphs[i];
 		/* exception */
 		if (_GATE_PCLK_ & peri->clk_mask0) {
-	#ifdef CONFIG_I2C_NXP
+	#ifdef CONFIG_I2C_SLSI
 			if (!strcmp("nxp-i2c", peri->dev_name))
 				clk_gen_pclk(peri->base_addr, 1);
 	#endif

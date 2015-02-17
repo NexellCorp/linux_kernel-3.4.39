@@ -43,7 +43,7 @@
 
 #include <mach/regs-iic.h>
 #include <mach/iic.h>
-//#include <mach/platform.h>
+#include <mach/platform.h>
 //#include <mach/devices.h>
 #include <mach/soc.h>
 
@@ -97,7 +97,7 @@ struct s3c24xx_i2c {
 	unsigned int freq;
 };
 
-const static int i2c_reset[3] = {20,21,22};
+const static int i2c_reset[3] = {RESET_ID_I2C0, RESET_ID_I2C1, RESET_ID_I2C2};
 /* default platform data removed, dev should always carry data. */
 
 static inline void dump_i2c_register(struct s3c24xx_i2c *i2c)
@@ -1159,12 +1159,15 @@ static int s3c24xx_i2c_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
-	int ret;
+	int rsc = i2c_reset[i2c->pdata->bus_num];
 
+	int ret;
+	
 	i2c_lock_adapter(&i2c->adap);
 
 	clk_enable(i2c->clk);
 
+	nxp_soc_peri_reset_set(rsc);
 	ret = s3c24xx_i2c_init(i2c);
 	if (ret) {
 		i2c_unlock_adapter(&i2c->adap);
@@ -1172,7 +1175,7 @@ static int s3c24xx_i2c_resume(struct device *dev)
 		return ret;
 	}
 
-	clk_disable(i2c->clk);
+	//clk_disable(i2c->clk);
 
 	i2c->is_suspended = false;
 
