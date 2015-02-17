@@ -522,8 +522,6 @@ void __init prepare_namespace(void)
 
 	md_run_setup();
 
-    // psw0523 fix
-#if 0
 	if (saved_root_name[0]) {
 		root_device_name = saved_root_name;
 		if (!strncmp(root_device_name, "mtd", 3) ||
@@ -553,15 +551,6 @@ void __init prepare_namespace(void)
 
 	if (is_floppy && rd_doload && rd_load_disk(0))
 		ROOT_DEV = Root_RAM0;
-#else
-    /*printk("%s: %d\n", __func__, __LINE__);*/
-	if (saved_root_name[0]) {
-		root_device_name = saved_root_name;
-		ROOT_DEV = name_to_dev_t(root_device_name);
-		if (strncmp(root_device_name, "/dev/", 5) == 0)
-			root_device_name += 5;
-	}
-#endif
 
 	mount_root();
     /*printk("%s: %d\n", __func__, __LINE__);*/

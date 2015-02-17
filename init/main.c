@@ -384,36 +384,6 @@ static noinline void __init_refok rest_init(void)
 	cpu_idle();
 }
 
-
-extern initcall_t __deferred_initcall_start[], __deferred_initcall_end[];
-
-/* call deferred init routines */
-void do_deferred_initcalls(void)
-{
-	initcall_t *call;
-	static int already_run=0;
-
-	if (already_run) {
-		printk("do_deferred_initcalls() has already run\n");
-		return;
-	}
-
-	already_run=1;
-
-	printk("Running do_deferred_initcalls()\n");
-
-// 	lock_kernel();	/* make environment similar to early boot */
-
-	for(call = __deferred_initcall_start;
-	    call < __deferred_initcall_end; call++)
-		do_one_initcall(*call);
-
-	flush_scheduled_work();
-
-	free_initmem();
-// 	unlock_kernel();
-}
-
 /* Check for early params. */
 static int __init do_early_param(char *param, char *val)
 {
@@ -832,7 +802,7 @@ static noinline int init_post(void)
 {
 	/* need to finish all async __init code before freeing the memory */
 	async_synchronize_full();
-	/*free_initmem();*/
+    free_initmem();
 	mark_rodata_ro();
 	system_state = SYSTEM_RUNNING;
 	numa_default_policy();
