@@ -192,7 +192,7 @@
 /*
 	AXP22:500/900
 */
-#define USBCURLIM			0//900
+#define USBCURLIM			500//900
 /* usb 充电限流，mA，0为不限制*/
 /*
 	AXP22:500/900

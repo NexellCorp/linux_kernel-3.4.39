@@ -4,7 +4,7 @@
 #include "axp-mfd.h"
 
 
-//#define ENABLE_REGISTER_DEUMP
+// #define ENABLE_REGISTER_DEUMP
 
 #ifdef ENABLE_REGISTER_DEUMP
 static void axp228_register_dump(struct i2c_client *client)
