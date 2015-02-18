@@ -388,8 +388,7 @@ static struct clock_event_device tm_event_clk = {
 #define	TIMER_TICK_MSG(ch, cn) 	{	\
 		static long count = 0;			\
 		if (0 == (count++ % cn))		\
-			printk("[cpu.%d evt: %4ld, cnt=%8u]\n", 	\
-			smp_processor_id(), count-1, readl((U8*)&(TIMER_BASE)->TCNTB0+(TIMER_CH_OFFS*ch)));	\
+			printk("[cpu.%d ch.%d evt: %6ld]\n", smp_processor_id(), ch, count-1);	\
 		}
 
 static irqreturn_t timer_event_handler(int irq, void *dev_id)

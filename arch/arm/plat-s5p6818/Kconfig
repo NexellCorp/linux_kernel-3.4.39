@@ -20,10 +20,20 @@ choice
 		help
    	 		Support for the drone board.
 
+	config PLAT_S5P6818_DRONEL
+		bool "DRONEL: Android dronel board"
+		help
+   	 		Support for the drone board.
+
    	config PLAT_S5P6818_FDONE
 		bool "FDONE: Android FDONE board"
 		help
    	 		Support for the FDONE board.
+
+   	config PLAT_S5P6818_SVT
+		bool "SVT: Android SVT board"
+		help
+   	 		Support for the SVT board.
 
 endchoice
 

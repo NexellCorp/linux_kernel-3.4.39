@@ -540,10 +540,10 @@ long funcGetMaxFreq_OnBoost(struct cpufreq_limit_data *limit)//, int *t)
 		cpu_up_force_byResource(ctrl_cpuTemp.stopped_cpu);
 		ctrl_cpuTemp.stopped_cpu=0;
 	}
-
+#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 	if(isOccured_dieError() || ctrl_cpuTemp.occuredError) // over temperature.
 		return limit->min_max_freq;
-
+#endif
 	if(ctrl_cpuTemp.board_temperature < TEMPERTURE_BOOST_MAX)
 	{
 		max_freq = limit->aval_max_freq;

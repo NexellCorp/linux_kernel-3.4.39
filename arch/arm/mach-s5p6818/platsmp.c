@@ -64,6 +64,7 @@ static void __cpuinit write_pen_release(int val)
 static inline int boot_second_core(int cpu)
 {
 	__raw_writel(virt_to_phys(__secondary_startup), SCR_ARM_SECOND_BOOT);
+	__raw_writel(cpu, SCR_SMP_WAKE_CPU_ID);
 	return 0;
 }
 
@@ -87,10 +88,11 @@ void __cpuinit platform_secondary_init(unsigned int cpu)
 	/*
 	 * Synchronise with the boot thread.
 	 */
+#ifdef CONFIG_ARCH_S5P6818_REV
 	spin_lock(&boot_lock);
 	spin_unlock(&boot_lock);
+#endif
 }
-
 
 int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 {
@@ -125,7 +127,6 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 			break;
 
 		udelay(10);
-	//	gic_raise_softirq(cpumask_of(cpu), 1);
 	}
 
 	/*

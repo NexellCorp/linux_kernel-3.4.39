@@ -11,6 +11,8 @@
 #include <mach/platform.h>
 #include <mach/pm.h>
 
+#ifndef CONFIG_ARCH_S5P6818_REV
+
 #define	IPI_USE_QUEUE
 //#define	IPI_DEBUG_COUNTER
 
@@ -52,7 +54,7 @@ static inline int kqueue_push(struct kqueue *queue, int in, bool overwrite)
 	int ret = 1;
 	_inc_queue_pos(queue->in, queue->size);
 	if (queue->in == queue->out) {
-		pr_debug("[full qno.%d in:%d, out:%d, overwrite]\n", 
+		pr_debug("[full qno.%d in:%d, out:%d, overwrite]\n",
 			queue->qno, queue->in, queue->out);
 		_dec_queue_pos(queue->in, queue->size);
 		ret = 0;
@@ -240,4 +242,4 @@ static __init int core_IPI_init(void)
 }
 early_initcall(core_IPI_init);
 #endif
-
+#endif	/* CONFIG_ARCH_S5P6818_REV */

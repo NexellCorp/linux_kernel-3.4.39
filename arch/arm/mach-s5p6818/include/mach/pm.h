@@ -63,6 +63,12 @@
 #define RECOVERY_SIGNATURE		(0x52455343)	/* (ASCII) : R.E.S.C */
 
 #define	SCR_SMP_WAKE_CPU_ID		SCR_ARM_SECOND_BOOT_REG1
+#define	SCR_SMP_SIG_RESET		SCR_USER_SIG6_RESET
+#define	SCR_SMP_SIG_SET			SCR_USER_SIG6_SET
+#define	SCR_SMP_SIG_READ		SCR_USER_SIG6_READ
+
+#define SMP_SIGNATURE_STOP		(0xDEADDEAD)
+#define SMP_SIGNATURE_EXIT		(0x0E0D0E0D)
 
 struct board_pm_ops {
 	int  (*valid)		(suspend_state_t state);	/* before driver suspend */

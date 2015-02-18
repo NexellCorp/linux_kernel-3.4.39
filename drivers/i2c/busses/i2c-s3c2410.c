@@ -43,11 +43,12 @@
 
 #include <mach/regs-iic.h>
 #include <mach/iic.h>
-//#include <mach/platform.h>
+#include <mach/platform.h>
 //#include <mach/devices.h>
 #include <mach/soc.h>
 
-#if 0
+#define DEBUG 0
+#if (DEBUG)
 #define dev_dbg(fmt,msg...) printk(msg)
 #define dev_err(fmt,msg...) printk(msg)
 #endif
@@ -96,12 +97,12 @@ struct s3c24xx_i2c {
 	unsigned int freq;
 };
 
-const static int i2c_reset[3] = {20,21,22};
+const static int i2c_reset[3] = {RESET_ID_I2C0, RESET_ID_I2C1, RESET_ID_I2C2};
 /* default platform data removed, dev should always carry data. */
 
 static inline void dump_i2c_register(struct s3c24xx_i2c *i2c)
 {
-	//dev_dbg(i2c->dev, "Register dump(%d) : %x %x %x %x %x\n"
+	#if(DEBUG)
 	printk("\e[31m Register dump(%d) (%d) : %x %x %x %x %x\n \e[0m"
 		, i2c->pdata->bus_num
 		, i2c->is_suspended
@@ -110,6 +111,7 @@ static inline void dump_i2c_register(struct s3c24xx_i2c *i2c)
 		, readl(i2c->regs + S3C2410_IICADD)
 		, readl(i2c->regs + S3C2410_IICDS)
 		, readl(i2c->regs + S3C2440_IICLC));
+	#endif
 }
 
 /* s3c24xx_i2c_is2440()
@@ -1157,12 +1159,15 @@ static int s3c24xx_i2c_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
-	int ret;
+	int rsc = i2c_reset[i2c->pdata->bus_num];
 
+	int ret;
+	
 	i2c_lock_adapter(&i2c->adap);
 
 	clk_enable(i2c->clk);
 
+	nxp_soc_peri_reset_set(rsc);
 	ret = s3c24xx_i2c_init(i2c);
 	if (ret) {
 		i2c_unlock_adapter(&i2c->adap);
@@ -1170,7 +1175,7 @@ static int s3c24xx_i2c_resume(struct device *dev)
 		return ret;
 	}
 
-	clk_disable(i2c->clk);
+	//clk_disable(i2c->clk);
 
 	i2c->is_suspended = false;
 

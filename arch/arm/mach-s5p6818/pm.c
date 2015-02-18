@@ -504,7 +504,10 @@ static int suspend_prepare(void)
 }
 
 /* return : 0 = goto suspend, 1 = wake up */
+#if !defined (CONFIG_ARCH_S5P6818_REV)
 extern void clear_fault_bad(int cpu);
+#endif
+
 static int suspend_enter(suspend_state_t state)
 {
 	int ret = 0;
@@ -553,7 +556,9 @@ static int suspend_enter(suspend_state_t state)
 	/* print wakeup evnet */
 	print_wake_event();
 
+#if !defined (CONFIG_ARCH_S5P6818_REV)
 	clear_fault_bad(0);
+#endif
 	return 0;
 }
 

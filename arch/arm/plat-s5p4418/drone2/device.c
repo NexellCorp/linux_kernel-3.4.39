@@ -555,10 +555,6 @@ static struct platform_device *i2c_devices[] = {
 
 #define NXE2000_I2C_BUS		(3)
 #define NXE2000_I2C_ADDR	(0x64 >> 1)
-#define NXE2000_IRQ			(PAD_GPIO_ALV + 4)
-
-#define PMC_CTRL			0x0
-#define PMC_CTRL_INTR_LOW	(1 << 17)
 
 /* NXE2000 IRQs */
 #define NXE2000_IRQ_BASE	(IRQ_SYSTEM_END)
@@ -751,8 +747,8 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 		.ch_ichg_slp	= 0x0E,	/* SLEEP  ICHG	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_adp 	= 0x18,	/* ILIM_ADP	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_usb 	= 0x04,	/* ILIM_USB	= 0 - 0x1D (100mA - 3000mA) */
-		.ch_icchg		= 0x03,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
-		.fg_target_vsys	= 3350,	/* This value is the target one to DSOC=0% */
+		.ch_icchg		= 0x00,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
+		.fg_target_vsys	= 3250,	/* This value is the target one to DSOC=0% */
 		.fg_target_ibat	= 1000,	/* This value is the target one to DSOC=0% */
 		.fg_poff_vbat	= 3350,	/* setting value of 0 per Vbat */
 		.jt_en			= 0,	/* JEITA Enable	  = 0 or 1 (1:enable, 0:disable) */
@@ -865,10 +861,10 @@ static struct nxe2000_platform_data nxe2000_platform = {
 	.enable_shutdown_pin	= true,
 };
 
-static struct i2c_board_info __initdata nxe2000_regulators[] = {
+static struct i2c_board_info __initdata nxe2000_i2c_boardinfo[] = {
 	{
 		I2C_BOARD_INFO("nxe2000", NXE2000_I2C_ADDR),
-		.irq		= NXE2000_IRQ,
+		.irq			= CFG_GPIO_PMIC_INTR,
 		.platform_data	= &nxe2000_platform,
 	},
 };
@@ -1536,7 +1532,7 @@ void __init nxp_board_devices_register(void)
 
 #if defined(CONFIG_REGULATOR_NXE2000)
 	printk("plat: add device nxe2000 pmic\n");
-	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_regulators, ARRAY_SIZE(nxe2000_regulators));
+	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_i2c_boardinfo, ARRAY_SIZE(nxe2000_i2c_boardinfo));
 #endif
 
 #if defined(CONFIG_SND_CODEC_WM8976) || defined(CONFIG_SND_CODEC_WM8976_MODULE)

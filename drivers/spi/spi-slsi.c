@@ -362,10 +362,7 @@ static void setup_dma_scatter(struct s3c64xx_spi_driver_data *sdd,
 			 * we just feed in this, else we stuff in as much
 			 * as we can.
 			 */
-			if (bytesleft < (PAGE_SIZE - offset_in_page(bufp)))
 				mapbytes = bytesleft;
-			else
-				mapbytes = PAGE_SIZE - offset_in_page(bufp);
 			sg_set_page(sg, virt_to_page(bufp),
 				    mapbytes, offset_in_page(bufp));
 			bufp += mapbytes;
@@ -390,7 +387,7 @@ static void setup_dma_scatter(struct s3c64xx_spi_driver_data *sdd,
 
 		}
 	}
-	BUG_ON(bytesleft);
+	//BUG_ON(bytesleft);
 }
 
 static int configure_dma(struct s3c64xx_spi_driver_data *sdd, struct spi_transfer *xfer)

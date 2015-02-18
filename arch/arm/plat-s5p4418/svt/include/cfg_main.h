@@ -111,7 +111,7 @@
 #define	CFG_DISP_PRI_LCD_HEIGHT_MM				90
 
 #define CFG_DISP_PRI_RESOL_WIDTH          		1024	// X Resolution
-#define CFG_DISP_PRI_RESOL_HEIGHT				 600	// Y Resolution
+#define CFG_DISP_PRI_RESOL_HEIGHT				600	// Y Resolution
 
 #define CFG_DISP_PRI_HSYNC_SYNC_WIDTH           20
 #define CFG_DISP_PRI_HSYNC_BACK_PORCH           140
@@ -227,9 +227,9 @@
 /*------------------------------------------------------------------------------
  * 	Keypad
  */
+
 #define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0 }
 #define CFG_KEYPAD_KEY_CODE						{ KEY_POWER }
-
 #define CFG_KEYPAD_REPEAT						CFALSE /* 0: Repeat Off 1 : Repeat On */
 
 /*------------------------------------------------------------------------------
@@ -297,7 +297,7 @@
 #define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE3				CFALSE					/* PMIC - CRITICAL LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_ASYNC_LOWLEVEL
-#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR */
+#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR - LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE

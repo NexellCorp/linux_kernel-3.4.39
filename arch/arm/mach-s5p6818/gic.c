@@ -276,15 +276,16 @@ asmlinkage void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
 	u32 irqstat, irqnr;
 	struct gic_chip_data *gic = &gic_data[0];
 	void __iomem *cpu_base = gic_data_cpu_base(gic);
-	int cpu = raw_smp_processor_id();
 
+#ifndef CONFIG_ARCH_S5P6818_REV
+	int cpu = raw_smp_processor_id();
 	if (0 != cpu) {
 		irqnr = core_IPI_rclear(cpu);
 		if (irqnr)
 			handle_IPI(irqnr, regs);
 		return;
 	}
-
+#endif
 	do {
 		irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
 		irqnr = irqstat & ~0x1c00;
@@ -360,9 +361,13 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
 	u32 cpumask;
 	unsigned int gic_irqs = gic->gic_irqs;
 	void __iomem *base = gic_data_dist_base(gic);
-	u32 cpu = cpu_logical_map(smp_processor_id());
 
+#if	defined (CONFIG_SMP) && defined (CONFIG_ARCH_S5P6818_REV)
+	cpumask = 0xff;	/* transfer interrupt to all cores */
+#else
+	u32 cpu = cpu_logical_map(smp_processor_id());
 	cpumask = 1 << cpu;
+#endif
 	cpumask |= cpumask << 8;
 	cpumask |= cpumask << 16;
 
@@ -709,19 +714,12 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
 	 * Find out how many interrupts are supported.
 	 * The GIC only supports up to 1020 interrupt sources.
 	 */
-#if defined (CONFIG_ARCH_NXP4330)
-	gic_irqs = 0;
-#else
 	gic_irqs = readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_CTR) & 0x1f;
-#endif
 	gic_irqs = (gic_irqs + 1) * 32;
 	if (gic_irqs > 1020)
 		gic_irqs = 1020;
 
-#if defined (CONFIG_ARCH_S5P6818)
 	gic_irqs  = NR_IRQS;
-#endif
-
 	gic->gic_irqs = gic_irqs;
 
 	gic_irqs -= hwirq_base; /* calculate # of irqs to allocate */
@@ -759,6 +757,16 @@ void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
 	for_each_cpu(cpu, mask)
 		map |= 1 << cpu_logical_map(cpu);
 
+#ifdef CONFIG_ARCH_S5P6818_REV
+	/*
+	 * Ensure that stores to Normal memory are visible to the
+	 * other CPUs before issuing the IPI.
+	 */
+	dsb();
+
+	/* this always happens on GIC0 */
+	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
+#else
 	if (map & 1) {	/* core 0 */
 		/*
 	 	 * Ensure that stores to Normal memory are visible to the
@@ -774,6 +782,7 @@ void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
 	if (map & 0xFE) {
 		core_IPI_raise(map & 0xFE, irq);
 	}
+#endif
 }
 #endif
 

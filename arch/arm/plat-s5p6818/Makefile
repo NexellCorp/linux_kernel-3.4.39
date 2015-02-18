@@ -15,6 +15,14 @@ ifeq ($(CONFIG_PLAT_S5P6818_FDONE),y)
 PLATBOARD :=FDONE
 endif
 
+ifeq ($(CONFIG_PLAT_S5P6818_SVT),y)
+PLATBOARD :=svt
+endif
+
+ifeq ($(CONFIG_PLAT_S5P6818_DRONEL),y)
+PLATBOARD :=dronel
+endif
+
 #
 # Build options
 #

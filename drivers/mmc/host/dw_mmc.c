@@ -39,6 +39,8 @@
 #include "dw_mmc.h"
 #include "dw_mmc_dbg.h"
 
+#include <mach/platform.h>
+
 //#define	MMC_RESUME_WORK_QUEUE
 
 /* Common flag combinations */
@@ -843,6 +845,12 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, int force)
 	}
 
 	/* Set the current slot bus width */
+#ifdef CONFIG_ARCH_S5P6818	
+	if(slot->ctype == SDMMC_CTYPE_8BIT)
+	{
+		NX_TIEOFF_Set(TIEOFFINDEX_OF_MMC_8BIT , 1 );
+	}
+#endif
 	mci_writel(host, CTYPE, (slot->ctype << slot->id));
 }
 
@@ -2295,7 +2303,7 @@ static irqreturn_t dw_mci_detect_interrupt(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static int __devinit dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 {
 	struct mmc_host *mmc;
 	struct dw_mci_slot *slot;
