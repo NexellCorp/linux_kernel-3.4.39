@@ -848,6 +848,7 @@ static int es8316_set_bias_level(struct snd_soc_codec *codec,
 		snd_soc_write(codec, ES8316_CPHP_PDN1_REG19, 0x02);
 		snd_soc_write(codec, ES8316_CPHP_ICAL_VOL_REG18, 0x00);
 		snd_soc_write(codec, ES8316_RESET_REG00, 0xC0);	
+		snd_soc_write(codec, ES8316_DAC_SET1_REG30, 0x11);		
 		snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66);		
 		break;
 	case SND_SOC_BIAS_STANDBY:
@@ -888,6 +889,7 @@ static int es8316_set_bias_level(struct snd_soc_codec *codec,
 		snd_soc_write(codec, ES8316_CPHP_PDN1_REG19, 0x02);
 		snd_soc_write(codec, ES8316_CPHP_ICAL_VOL_REG18, 0x00);
 		snd_soc_write(codec, ES8316_RESET_REG00, 0xC0);	
+		snd_soc_write(codec, ES8316_DAC_SET1_REG30, 0x11);		
 		snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66);	
 			#endif
 		break;
@@ -990,6 +992,7 @@ static int es8316_init_regs(struct snd_soc_codec *codec)
 	snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x33); //CHARGE PUMP 	
 	snd_soc_write(codec, ES8316_RESET_REG00,0xC0);  //CSM POWER UP
 	msleep(50);	
+	snd_soc_write(codec, ES8316_DAC_SET1_REG30, 0x11);		
 	snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17,0x66);  //HPOUT SET
 	snd_soc_write(codec, ES8316_GPIO_SEL_REG4D, 0x00); 
 	snd_soc_write(codec, ES8316_GPIO_DEBUNCE_INT_REG4E, 0x02);
@@ -1037,6 +1040,7 @@ static int es8316_resume(struct snd_soc_codec *codec)
 		snd_soc_write(codec, ES8316_HPMIX_VOL_REG16, 0xbb);
 		snd_soc_write(codec, ES8316_ADC_PDN_LINSEL_REG22, 0x20);
 		snd_soc_write(codec, ES8316_CLKMGR_CLKSW_REG01, 0x7f);
+		snd_soc_write(codec, ES8316_DAC_SET1_REG30, 0x11);		
 		snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66);
 	es8316_off_amp(false);
 	return 0;
