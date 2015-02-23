@@ -280,7 +280,7 @@ static int es8316_probe(struct platform_device *pdev)
 	}
 #if defined (CFG_IO_AUDIO_AMP_POWER)
 	gpio_request(AUDIO_AMP_POWER, "es8316_amp_en");
-	gpio_direction_output(AUDIO_AMP_POWER, 1);
+	gpio_direction_output(AUDIO_AMP_POWER, 0);
 #endif
 	card->dev = &pdev->dev;
 	ret = snd_soc_register_card(card);
