@@ -1,0 +1,8 @@
+menu "SLSIAP CODA960"
+config SLSIAP_CODA960
+    bool "SLSIAP CODA960 D/Encoder Driver"
+    depends on ARCH_CPU_SLSI
+    default n
+    ---help---
+      This enables CODA960 D/Encoder Device of SLSIAP
+endmenu
