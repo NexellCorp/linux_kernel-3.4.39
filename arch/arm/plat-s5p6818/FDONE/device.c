@@ -1498,11 +1498,11 @@ static int _dwmci0_get_cd(u32 slot_id)
 #ifdef CONFIG_MMC_NXP_CH0
 static struct dw_mci_board _dwmci0_data = {
 	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 60 * 1000 * 1000,
+	.bus_hz			= 80 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(1),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
 	.init			= _dwmci0_init,
 	.get_ro         = _dwmci_get_ro,
 	.get_cd			= _dwmci0_get_cd,
