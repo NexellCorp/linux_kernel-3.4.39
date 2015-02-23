@@ -1025,6 +1025,9 @@ static void __exit mio_exit(void)
  ******************************************************************************/
 static unsigned int nand_pm_verify = 0; // If Set, Can't Revert Power-On Time
 
+#define __SUPPORT_DEBUG_NAND_PM__
+
+#if !defined (__SUPPORT_DEBUG_NAND_PM__)
 static int nand_suspend(struct device * dev)
 {
     mio_dev.io_state->power.suspending = 1;
@@ -1046,8 +1049,11 @@ static int nand_suspend(struct device * dev)
 
 static int nand_resume(struct device * dev)
 {
-    if (media_resume() != nand_pm_verify)
+    unsigned int resume = media_resume();
+
+    if (resume != nand_pm_verify)
     {
+        printk(KERN_ERR "nand_resume : mio mpool verify fail (%x != %x)\n", nand_pm_verify, resume);
         mio_dev.io_state->power.pm_verify_fault = 1;
         return -1;
     }
@@ -1055,6 +1061,88 @@ static int nand_resume(struct device * dev)
     mio_dev.io_state->power.suspending = 0;
     return 0;
 }
+
+#else
+extern void lldebugout(const char *fmt, ...);
+
+static int nand_suspend(struct device * dev)
+{
+    ktime_t t1, t2;
+    unsigned int dt = 0;
+    unsigned int step = 0;
+    unsigned int tout = 0;
+    unsigned long long lcnt = 0;
+
+    t1 = ktime_get();
+
+    mio_dev.io_state->power.suspending = 1;
+
+    while (1)
+    {
+        if ((MIO_SCHEDULED == mio_dev.io_state->transaction.status) && (MIO_BG_SCHEDULED == mio_dev.io_state->background.status))
+        {
+            break;
+        }
+
+        usleep_range(1,1);
+
+        t2 = ktime_get();
+        dt = (unsigned int)ktime_to_us(ktime_sub(t2, t1));
+        lcnt += 1;
+
+        switch (step)
+        {
+            case 0:  { if (dt >=  1*1000*1000) { step += 1; /*1 */ } } break;
+            case 2:  { if (dt >=  2*1000*1000) { step += 1; /*3 */ } } break;
+            case 4:  { if (dt >=  3*1000*1000) { step += 1; /*5 */ } } break;
+            case 6:  { if (dt >=  4*1000*1000) { step += 1; /*7 */ } } break;
+            case 8:  { if (dt >=  5*1000*1000) { step += 1; /*9;*/ } } break;
+            case 10: { if (dt >=  6*1000*1000) { step += 1; /*11*/ } } break;
+            case 12: { if (dt >=  7*1000*1000) { step += 1; /*13*/ } } break;
+            case 14: { if (dt >=  8*1000*1000) { step += 1; /*15*/ } } break;
+            case 16: { if (dt >=  9*1000*1000) { step += 1; /*17*/ } } break;
+            case 18: { if (dt >= 10*1000*1000) { step += 1; /*19*/ } } break;
+
+            case 1:  { tout = 1;  step += 1; /*2 */ } break;
+            case 3:  { tout = 2;  step += 1; /*4 */ } break;
+            case 5:  { tout = 3;  step += 1; /*6 */ } break;
+            case 7:  { tout = 4;  step += 1; /*8 */ } break;
+            case 9:  { tout = 5;  step += 1; /*10*/ } break;
+            case 11: { tout = 6;  step += 1; /*12*/ } break;
+            case 13: { tout = 7;  step += 1; /*14*/ } break;
+            case 15: { tout = 8;  step += 1; /*16*/ } break;
+            case 17: { tout = 9;  step += 1; /*18*/ } break;
+            case 19: { tout = 10; step += 1; /*20*/ } break;
+        }
+
+        if (tout)
+        {
+            lldebugout("nand_suspend : elapsed %d sec, loop %lld times, thread status (tr:%d, bg:%d) \n", tout, lcnt, mio_dev.io_state->transaction.status, mio_dev.io_state->background.status);
+            tout = 0;
+        }
+    }
+
+    nand_pm_verify = media_suspend();
+
+    return 0;
+}
+
+static int nand_resume(struct device * dev)
+{
+    unsigned int resume = media_resume();
+
+    if (resume != nand_pm_verify)
+    {
+        printk(KERN_ERR "nand_resume : mio mpool verify fail (%x != %x)\n", nand_pm_verify, resume);
+        mio_dev.io_state->power.pm_verify_fault = 1;
+        return -1;
+    }
+
+    mio_dev.io_state->power.suspending = 0;
+    return 0;
+}
+
+#endif
 
 /******************************************************************************
  *
