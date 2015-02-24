@@ -450,31 +450,13 @@ static int __init timer_event_init(int ch)
 	return 0;
 }
 
-#ifdef CONFIG_HAVE_ARM_TWD
-#define	SCU_PVT_PHYBASE		(0xF0000000 + 0x00000600) 	// 0xF0001000
-#define IRQ_LOCALTIMER      IRQ_GIC_PPI_PVT
-#define IRQ_LOCALWDOG       IRQ_GIC_PPI_WDT
-
-static DEFINE_TWD_LOCAL_TIMER(twd_local_timer,
-			      SCU_PVT_PHYBASE,
-			      IRQ_LOCALTIMER);
-
-static void __init timer_twd_init(void)
-{
-	int err = twd_local_timer_register(&twd_local_timer);
-	if (err)
-		pr_err("fail: twd_local_timer_register err = %d\n", err);
-}
-#else
-#define timer_twd_init()	do { } while(0)
-#endif
-
 static void __init timer_initialize(void)
 {
 	pr_debug("%s\n", __func__);
+
 	timer_source_init(CFG_TIMER_SYS_TICK_CH);
 	timer_event_init(CFG_TIMER_EVT_TICK_CH);
-	timer_twd_init();
+
 	return;
 }
 

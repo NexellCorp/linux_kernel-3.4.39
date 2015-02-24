@@ -195,8 +195,8 @@ static struct regulator_init_data axp_regl_init_data[] = {
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_LDO2_VALUE * 1000,
-				.enabled = 1,
+				.uV = AXP_ALDO1_VALUE * 1000,
+				.enabled = AXP_ALDO1_ENABLE,
 			}
 #endif
 		},
@@ -212,8 +212,8 @@ static struct regulator_init_data axp_regl_init_data[] = {
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_LDO3_VALUE * 1000,
-				.enabled = 1,
+				.uV = AXP_ALDO2_VALUE * 1000,
+				.enabled = AXP_ALDO2_ENABLE,
 			}
 #endif
 		},
@@ -229,8 +229,8 @@ static struct regulator_init_data axp_regl_init_data[] = {
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_LDO4_VALUE * 1000,
-				.enabled = 1,
+				.uV = AXP_ALDO3_VALUE * 1000,
+				.enabled = AXP_ALDO3_ENABLE,
 			}
 #endif
 		},
@@ -246,8 +246,8 @@ static struct regulator_init_data axp_regl_init_data[] = {
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_LDO5_VALUE * 1000,
-				.enabled = 1,
+				.uV = AXP_DLDO1_VALUE * 1000,
+				.enabled = AXP_DLDO1_ENABLE,
 			}
 #endif
 		},
@@ -263,8 +263,8 @@ static struct regulator_init_data axp_regl_init_data[] = {
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_LDO6_VALUE * 1000,
-				.enabled = 1,
+				.uV = AXP_DLDO2_VALUE * 1000,
+				.enabled = AXP_DLDO2_ENABLE,
 			}
 #endif
 		},
@@ -280,8 +280,8 @@ static struct regulator_init_data axp_regl_init_data[] = {
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_LDO7_VALUE * 1000,
-				.enabled = 0,
+				.uV = AXP_DLDO3_VALUE * 1000,
+				.enabled = AXP_DLDO3_ENABLE,
 			}
 #endif
 		},
@@ -297,8 +297,8 @@ static struct regulator_init_data axp_regl_init_data[] = {
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_LDO8_VALUE * 1000,
-				.enabled = 0,
+				.uV = AXP_DLDO4_VALUE * 1000,
+				.enabled = AXP_DLDO4_ENABLE,
 			}
 #endif
 		},
@@ -314,8 +314,8 @@ static struct regulator_init_data axp_regl_init_data[] = {
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_LDO9_VALUE * 1000,
-				.enabled = 1,
+				.uV = AXP_ELDO1_VALUE * 1000,
+				.enabled = AXP_ELDO1_ENABLE,
 			}
 #endif
 		},
@@ -331,8 +331,8 @@ static struct regulator_init_data axp_regl_init_data[] = {
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_LDO10_VALUE * 1000,
-				.enabled = 1,
+				.uV = AXP_ELDO2_VALUE * 1000,
+				.enabled = AXP_ELDO2_ENABLE,
 			}
 #endif
 		},
@@ -348,8 +348,8 @@ static struct regulator_init_data axp_regl_init_data[] = {
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_LDO11_VALUE * 1000,
-				.enabled = 0,
+				.uV = AXP_ELDO3_VALUE * 1000,
+				.enabled = AXP_ELDO3_ENABLE,
 			}
 #endif
 		},
@@ -365,8 +365,8 @@ static struct regulator_init_data axp_regl_init_data[] = {
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_LDO12_VALUE * 1000,
-				.enabled = 0,
+				.uV = AXP_DC5LDO_VALUE * 1000,
+				.enabled = AXP_DC5LDO_ENABLE,
 			}
 #endif
 		},
@@ -383,7 +383,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				.uV = AXP_DCDC1_VALUE * 1000,
-				.enabled = 1,
+				.enabled = AXP_DCDC1_ENABLE,
 			}
 #endif
 		},
@@ -400,7 +400,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				.uV = AXP_DCDC2_VALUE * 1000,
-				.enabled = 1,
+				.enabled = AXP_DCDC2_ENABLE,
 			}
 #endif
 		},
@@ -417,7 +417,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				.uV = AXP_DCDC3_VALUE * 1000,
-				.enabled = 1,
+				.enabled = AXP_DCDC3_ENABLE,
 			}
 #endif
 		},
@@ -434,7 +434,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				.uV = AXP_DCDC4_VALUE * 1000,
-				.enabled = 1,
+				.enabled = AXP_DCDC4_ENABLE,
 			}
 #endif
 		},
@@ -451,7 +451,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				.uV = AXP_DCDC5_VALUE * 1000,
-				.enabled = 1,
+				.enabled = AXP_DCDC5_ENABLE,
 			}
 #endif
 		},

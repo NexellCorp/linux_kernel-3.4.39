@@ -213,6 +213,13 @@ static int __nxe2000_set_voltage(struct device *parent,
 	else
 		ri->vout_reg_cache = vout_val;
 
+#ifdef CONFIG_PM_DBGOUT
+	vout_val = 0x00;
+	nxe2000_read(parent, ri->vout_reg, &vout_val);
+	if(ri->vout_reg_cache != vout_val)
+		printk(KERN_ERR "## \e[31m%s()\e[0m Data is different! set:0x%02x, read:0x%02x  \n", __func__, ri->vout_reg_cache, vout_val);
+#endif
+
 	return ret;
 }
 

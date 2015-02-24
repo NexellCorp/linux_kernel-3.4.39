@@ -18,41 +18,58 @@
 /*初始化各路输出，单位mV，0都为关闭*/
 /* ldo1： 由硬件决定输出电压，软件改不了，只是软件的显示电压： */
 
-#define AXP_LDO1_VALUE			3000
-#define AXP_LDO2_VALUE			3300		/* ALDO1		ldo2： 	AXP22:  700~3300, 100/step*/
-#define AXP_LDO3_VALUE			1800		/* ALDO2		ldo3： 	AXP22:  700~3300, 100/step*/
-#define AXP_LDO4_VALUE			1000		/* ALDO3		ldo4： 	AXP22:  700~3300, 100/step*/
-#define AXP_LDO5_VALUE			3300		/* DLDO1		ldo5： 	AXP22:  700~3300, 100/step*/
-#define AXP_LDO6_VALUE			1800		/* DLDO2		ldo6： 	AXP22 : 700~3300, 100/step*/
-#define AXP_LDO7_VALUE			700		/* DLDO3		ldo7： 	AXP22:  700~3300, 100/step*/
-#define AXP_LDO8_VALUE			700		/* DLDO4		ldo8： 	AXP22:  700~3300, 100/step*/
-#define AXP_LDO9_VALUE			1800		/* ELDO1		ldo9： 	AXP22:  700~3300, 100/step*/
-#define AXP_LDO10_VALUE			3300		/* ELDO2		ldo10： 	AXP22:  700~3300, 100/step*/
-#define AXP_LDO11_VALUE			700		/* ELDO3		ldo11： 	AXP22:  700~3300, 100/step*/
-#define AXP_LDO12_VALUE			1100		/* DC5LDO		ldo12： 	AXP22:  700~1400, 100/step*/
-#define AXP_DCDC1_VALUE			3300		/* DCDC1		DCDC1 : 	AXP22:1600~3400, 100/setp*/
-#define AXP_DCDC2_VALUE			1100		/* DCDC2		DCDC2： 	AXP22:  600~1540,   20/step*/
-#define AXP_DCDC3_VALUE			1100		/* DCDC3		DCDC3： 	AXP22:  600~1860,   20/step*/
-#define AXP_DCDC4_VALUE			1500		/* DCDC4		DCDC4： 	AXP22:  600~1540,   20/step*/
-#define AXP_DCDC5_VALUE			1500		/* DCDC5		DCDC5： 	AXP22:1000~2550,   50/step*/
+#define AXP_ALDO1_VALUE			3300		/* VCC3P3_ALIVE		ALDO1	： 	AXP22:  700~3300, 100/step*/
+#define AXP_ALDO2_VALUE			1800		/* VCC1P8_ALIVE		ALDO2	： 	AXP22:  700~3300, 100/step*/
+#define AXP_ALDO3_VALUE			1000		/* VCC1P0_ALIVE		ALDO3	： 	AXP22:  700~3300, 100/step*/
+#define AXP_DLDO1_VALUE			3300		/* VCC_WIDE			DLDO1	： 	AXP22:  700~3300, 100/step*/
+#define AXP_DLDO2_VALUE			1800		/* VCC1P8_CAM			DLDO2	： 	AXP22 : 700~3300, 100/step*/
+#define AXP_DLDO3_VALUE			700		/* NC					DLDO3	： 	AXP22:  700~3300, 100/step*/
+#define AXP_DLDO4_VALUE			700		/* NC					DLDO4	： 	AXP22:  700~3300, 100/step*/
+#define AXP_ELDO1_VALUE			1800		/* VCC1P8_SYS			ELDO1	： 	AXP22:  700~3300, 100/step*/
+#define AXP_ELDO2_VALUE			3300		/* VCC3P3_WIFI			ELDO2	： 	AXP22:  700~3300, 100/step*/
+#define AXP_ELDO3_VALUE			700		/* NC					ELDO3	： 	AXP22:  700~3300, 100/step*/
+#define AXP_DC5LDO_VALUE		1200		/* VCC1P2_CVBS		DC5LDO	： 	AXP22:  700~1400, 100/step*/
+#define AXP_DCDC1_VALUE			3300		/* VCC3P3_SYS			DCDC1	 : 	AXP22:1600~3400, 100/setp*/
+#define AXP_DCDC2_VALUE			1100		/* VCC1P1_ARM			DCDC2	： 	AXP22:  600~1540,   20/step*/
+#define AXP_DCDC3_VALUE			1100		/* VCC1P1_ARM(CORE)	DCDC3	： 	AXP22:  600~1860,   20/step*/
+#define AXP_DCDC4_VALUE			1500		/* VCC1P5_SYS			DCDC4	： 	AXP22:  600~1540,   20/step*/
+#define AXP_DCDC5_VALUE			1500		/* VCC1P5_DDR			DCDC5	： 	AXP22:1000~2550,   50/step*/
 
-#define AXP_DLDO1_SLEEP_OFF		(1)		/* 0 : sleep on, 1 : sleep off */
-#define AXP_DLDO2_SLEEP_OFF		(1)		/* 0 : sleep on, 1 : sleep off */
-#define AXP_DLDO3_SLEEP_OFF		(1)		/* 0 : sleep on, 1 : sleep off */
-#define AXP_DLDO4_SLEEP_OFF		(1)		/* 0 : sleep on, 1 : sleep off */
-#define AXP_ELDO1_SLEEP_OFF		(1)		/* 0 : sleep on, 1 : sleep off */
-#define AXP_ELDO2_SLEEP_OFF		(1)		/* 0 : sleep on, 1 : sleep off */
-#define AXP_ELDO3_SLEEP_OFF		(1)		/* 0 : sleep on, 1 : sleep off */
-#define AXP_DC5LDO_SLEEP_OFF	(1)		/* 0 : sleep on, 1 : sleep off */
 
-#define AXP_DCDC1_SLEEP_OFF		(1)		/* 0 : sleep on, 1 : sleep off */
-#define AXP_DCDC2_SLEEP_OFF		(1)		/* 0 : sleep on, 1 : sleep off */
-#define AXP_DCDC3_SLEEP_OFF		(1)		/* 0 : sleep on, 1 : sleep off */
-#define AXP_DCDC4_SLEEP_OFF		(1)		/* 0 : sleep on, 1 : sleep off */
-#define AXP_DCDC5_SLEEP_OFF		(0)		/* 0 : sleep on, 1 : sleep off */
-#define AXP_ALDO1_SLEEP_OFF		(0)		/* 0 : sleep on, 1 : sleep off */
-#define AXP_ALDO2_SLEEP_OFF		(0)		/* 0 : sleep on, 1 : sleep off */
-#define AXP_ALDO3_SLEEP_OFF		(0)		/* 0 : sleep on, 1 : sleep off */
+#define AXP_ALDO1_ENABLE		1		/* VCC3P3_ALIVE		ALDO1	： 	AXP22:  700~3300, 100/step*/
+#define AXP_ALDO2_ENABLE		1		/* VCC1P8_ALIVE		ALDO2	： 	AXP22:  700~3300, 100/step*/
+#define AXP_ALDO3_ENABLE		1		/* VCC1P0_ALIVE		ALDO3	： 	AXP22:  700~3300, 100/step*/
+#define AXP_DLDO1_ENABLE		1		/* VCC_WIDE			DLDO1	： 	AXP22:  700~3300, 100/step*/
+#define AXP_DLDO2_ENABLE		1		/* VCC1P8_CAM			DLDO2	： 	AXP22 : 700~3300, 100/step*/
+#define AXP_DLDO3_ENABLE		0		/* NC					DLDO3	： 	AXP22:  700~3300, 100/step*/
+#define AXP_DLDO4_ENABLE		0		/* NC					DLDO4	： 	AXP22:  700~3300, 100/step*/
+#define AXP_ELDO1_ENABLE		1		/* VCC1P8_SYS			ELDO1	： 	AXP22:  700~3300, 100/step*/
+#define AXP_ELDO2_ENABLE		1		/* VCC3P3_WIFI			ELDO2	： 	AXP22:  700~3300, 100/step*/
+#define AXP_ELDO3_ENABLE		0		/* NC					ELDO3	： 	AXP22:  700~3300, 100/step*/
+#define AXP_DC5LDO_ENABLE		0		/* VCC1P2_CVBS		DC5LDO	： 	AXP22:  700~1400, 100/step*/
+#define AXP_DCDC1_ENABLE		1		/* VCC3P3_SYS			DCDC1	 : 	AXP22:1600~3400, 100/setp*/
+#define AXP_DCDC2_ENABLE		1		/* VCC1P1_ARM			DCDC2	： 	AXP22:  600~1540,   20/step*/
+#define AXP_DCDC3_ENABLE		1		/* VCC1P1_ARM(CORE)	DCDC3	： 	AXP22:  600~1860,   20/step*/
+#define AXP_DCDC4_ENABLE		1		/* VCC1P5_SYS			DCDC4	： 	AXP22:  600~1540,   20/step*/
+#define AXP_DCDC5_ENABLE		1		/* VCC1P5_DDR			DCDC5	： 	AXP22:1000~2550,   50/step*/
+
+
+#define AXP_DLDO1_SLEEP_OFF		(1)		/* VCC_WIDE			0 : sleep on, 1 : sleep off */
+#define AXP_DLDO2_SLEEP_OFF		(1)		/* VCC1P8_CAM			0 : sleep on, 1 : sleep off */
+#define AXP_DLDO3_SLEEP_OFF		(1)		/* NC					0 : sleep on, 1 : sleep off */
+#define AXP_DLDO4_SLEEP_OFF		(1)		/* NC					0 : sleep on, 1 : sleep off */
+#define AXP_ELDO1_SLEEP_OFF		(1)		/* VCC1P8_SYS			0 : sleep on, 1 : sleep off */
+#define AXP_ELDO2_SLEEP_OFF		(1)		/* VCC3P3_WIFI			0 : sleep on, 1 : sleep off */
+#define AXP_ELDO3_SLEEP_OFF		(1)		/* NC					0 : sleep on, 1 : sleep off */
+#define AXP_DC5LDO_SLEEP_OFF	(1)		/* VCC1P2_CVBS		0 : sleep on, 1 : sleep off */
+#define AXP_DCDC1_SLEEP_OFF		(1)		/* VCC3P3_SYS			0 : sleep on, 1 : sleep off */
+#define AXP_DCDC2_SLEEP_OFF		(1)		/* VCC1P1_ARM			0 : sleep on, 1 : sleep off */
+#define AXP_DCDC3_SLEEP_OFF		(1)		/* VCC1P1_ARM(CORE)	0 : sleep on, 1 : sleep off */
+#define AXP_DCDC4_SLEEP_OFF		(1)		/* VCC1P5_SYS			0 : sleep on, 1 : sleep off */
+#define AXP_DCDC5_SLEEP_OFF		(0)		/* VCC1P5_DDR			0 : sleep on, 1 : sleep off */
+#define AXP_ALDO1_SLEEP_OFF		(0)		/* VCC3P3_ALIVE		0 : sleep on, 1 : sleep off */
+#define AXP_ALDO2_SLEEP_OFF		(0)		/* VCC1P8_ALIVE		0 : sleep on, 1 : sleep off */
+#define AXP_ALDO3_SLEEP_OFF		(0)		/* VCC1P0_ALIVE		0 : sleep on, 1 : sleep off */
 
 
 /*电池容量，mAh：根据实际电池容量来定义，对库仑计方法来说

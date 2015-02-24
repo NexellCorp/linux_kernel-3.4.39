@@ -158,8 +158,6 @@ int axp_otg_power_control(int enable)
 	//	0 			1 			Low 			X 			Yes
 	//	1 			X 			X 			X 			Yes
 
-    uint8_t val;
-
 	DBG_MSG("## [\e[31m%s\e[0m():%d] enable:%d\n", __func__, __LINE__, enable);
 
 	if (enable)
@@ -174,11 +172,14 @@ int axp_otg_power_control(int enable)
 	}
 
 #ifdef ENABLE_DEBUG
-    axp_read(axp_charger->master,AXP22_CHARGE_VBUS,&val);
-	printk(KERN_ERR "## REG_30H[7]:[0x%02x]:0x%02x  \n", (val&0x80)?1:0, val);
-	printk(KERN_ERR "## REG_30H[2]:[0x%02x]:0x%02x  \n", (val&0x04)?1:0, val);
-    axp_read(axp_charger->master,AXP22_HOTOVER_CTL,&val);
-	printk(KERN_ERR "## REG_8FH[4]:[0x%02x]:0x%02x  \n", (val&0x10)?1:0, val);
+	{
+	    uint8_t val;
+	    axp_read(axp_charger->master,AXP22_CHARGE_VBUS,&val);
+		printk(KERN_ERR "## REG_30H[7]:[0x%02x]:0x%02x  \n", (val&0x80)?1:0, val);
+		printk(KERN_ERR "## REG_30H[2]:[0x%02x]:0x%02x  \n", (val&0x04)?1:0, val);
+	    axp_read(axp_charger->master,AXP22_HOTOVER_CTL,&val);
+		printk(KERN_ERR "## REG_8FH[4]:[0x%02x]:0x%02x  \n", (val&0x10)?1:0, val);
+	}
 #endif
 
 	return 0;

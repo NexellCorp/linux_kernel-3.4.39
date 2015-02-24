@@ -64,6 +64,9 @@
 #ifdef CONFIG_BATTERY_NXE2000
 #include <linux/power/nxe2000_battery.h>
 #endif
+#ifdef CONFIG_KP_AXP22
+extern int axp_otg_power_control(int enable);
+#endif
 
 static int dwc_otg_setup_params(dwc_otg_core_if_t * core_if);
 
@@ -2107,7 +2110,7 @@ void dwc_otg_core_host_init(dwc_otg_core_if_t * core_if)
 	hfir_data_t hfir;
 	dwc_otg_hc_regs_t *hc_regs;
 	int num_channels;
-#ifdef CONFIG_BATTERY_NXE2000
+#if defined(CONFIG_BATTERY_NXE2000) || defined(CONFIG_KP_AXP22)
 	int ret;
 #endif
 	gotgctl_data_t gotgctl = {.d32 = 0 };
@@ -2262,9 +2265,13 @@ void dwc_otg_core_host_init(dwc_otg_core_if_t * core_if)
 	/* Turn on the vbus power. */
 	DWC_PRINTF("Init: Port Power? op_state=%d\n", core_if->op_state);
 	if (core_if->op_state == A_HOST) {
-#ifdef CONFIG_BATTERY_NXE2000
+#if defined(CONFIG_BATTERY_NXE2000) || defined(CONFIG_KP_AXP22)
 		do{
+#if defined(CONFIG_BATTERY_NXE2000)
 			ret = otgid_power_control_by_dwc(1);
+#elif defined(CONFIG_KP_AXP22)
+			ret = axp_otg_power_control(1);
+#endif
 			if(ret < 0)
 				dwc_msleep(100);
 		} while(ret < 0);

@@ -44,8 +44,8 @@
 int es8316_spk_con_gpio = INVALID_GPIO;
 int es8316_hp_con_gpio = INVALID_GPIO;
 int es8316_hp_det_gpio = INVALID_GPIO;
-static int HP_IRQ=0;
-static int hp_irq_flag = 0;
+//static int HP_IRQ=0;
+//static int hp_irq_flag = 0;
 
 #define GPIO_LOW  0
 #define GPIO_HIGH 1
@@ -732,6 +732,7 @@ static int es8316_set_dai_fmt(struct snd_soc_dai *codec_dai,
     return 0;
 }
 
+#if 0
 static int es8316_pcm_startup(struct snd_pcm_substream *substream,
 			      struct snd_soc_dai *dai)
 {
@@ -755,6 +756,7 @@ static int es8316_pcm_startup(struct snd_pcm_substream *substream,
 
 	return 0;
 }
+#endif
 
 static int es8316_pcm_hw_params(struct snd_pcm_substream *substream,
 				struct snd_pcm_hw_params *params,
@@ -811,6 +813,7 @@ static int es8316_pcm_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
+#if 0
 static int es8316_mute(struct snd_soc_dai *dai, int mute)
 {
 	struct snd_soc_codec *codec = dai->codec;
@@ -826,6 +829,7 @@ static int es8316_mute(struct snd_soc_dai *dai, int mute)
 			}
 	return 0;
 }
+#endif
 
 static int es8316_set_bias_level(struct snd_soc_codec *codec,
 				 enum snd_soc_bias_level level)
@@ -848,6 +852,7 @@ static int es8316_set_bias_level(struct snd_soc_codec *codec,
 		snd_soc_write(codec, ES8316_CPHP_PDN1_REG19, 0x02);
 		snd_soc_write(codec, ES8316_CPHP_ICAL_VOL_REG18, 0x00);
 		snd_soc_write(codec, ES8316_RESET_REG00, 0xC0);	
+		snd_soc_write(codec, ES8316_DAC_SET1_REG30, 0x11);		
 		snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66);		
 		break;
 	case SND_SOC_BIAS_STANDBY:
@@ -888,6 +893,7 @@ static int es8316_set_bias_level(struct snd_soc_codec *codec,
 		snd_soc_write(codec, ES8316_CPHP_PDN1_REG19, 0x02);
 		snd_soc_write(codec, ES8316_CPHP_ICAL_VOL_REG18, 0x00);
 		snd_soc_write(codec, ES8316_RESET_REG00, 0xC0);	
+		snd_soc_write(codec, ES8316_DAC_SET1_REG30, 0x11);		
 		snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66);	
 			#endif
 		break;
@@ -990,6 +996,7 @@ static int es8316_init_regs(struct snd_soc_codec *codec)
 	snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x33); //CHARGE PUMP 	
 	snd_soc_write(codec, ES8316_RESET_REG00,0xC0);  //CSM POWER UP
 	msleep(50);	
+	snd_soc_write(codec, ES8316_DAC_SET1_REG30, 0x11);		
 	snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17,0x66);  //HPOUT SET
 	snd_soc_write(codec, ES8316_GPIO_SEL_REG4D, 0x00); 
 	snd_soc_write(codec, ES8316_GPIO_DEBUNCE_INT_REG4E, 0x02);
@@ -1008,9 +1015,10 @@ static int es8316_init_regs(struct snd_soc_codec *codec)
 	return 0;
 }
 
-static int es8316_suspend(struct snd_soc_codec *codec, pm_message_t state)
+#ifdef CONFIG_PM
+static int es8316_suspend(struct snd_soc_codec *codec)
 {
-  printk("###########%s %d ", __func__, __LINE__);
+  DBG("###########%s %d ", __func__, __LINE__);
 	es8316_off_amp(true);
 		snd_soc_write(codec, ES8316_CPHP_ICAL_VOL_REG18, 0x33);
 		snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x00);
@@ -1027,7 +1035,7 @@ static int es8316_suspend(struct snd_soc_codec *codec, pm_message_t state)
 
 static int es8316_resume(struct snd_soc_codec *codec)
 {
-  printk("###########%s %d ", __func__, __LINE__);	
+  DBG("###########%s %d ", __func__, __LINE__);	
 		snd_soc_write(codec, ES8316_CPHP_ICAL_VOL_REG18, 0x00);
 		snd_soc_write(codec, ES8316_CPHP_LDOCTL_REG1B, 0x30);		
 		snd_soc_write(codec, ES8316_CPHP_PDN2_REG1A, 0x10);
@@ -1037,12 +1045,18 @@ static int es8316_resume(struct snd_soc_codec *codec)
 		snd_soc_write(codec, ES8316_HPMIX_VOL_REG16, 0xbb);
 		snd_soc_write(codec, ES8316_ADC_PDN_LINSEL_REG22, 0x20);
 		snd_soc_write(codec, ES8316_CLKMGR_CLKSW_REG01, 0x7f);
+		snd_soc_write(codec, ES8316_DAC_SET1_REG30, 0x11);		
 		snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66);
 	es8316_off_amp(false);
 	return 0;
 }
+#else
+#define es8316_suspend NULL
+#define es8316_resume NULL
+#endif
 
-static  es8316_i2c_write(const struct i2c_client *client, const char *buf, int count)
+#if 0
+static int es8316_i2c_write(const struct i2c_client *client, const char *buf, int count)
 {
 	
 		int ret;
@@ -1065,10 +1079,12 @@ static  es8316_i2c_write(const struct i2c_client *client, const char *buf, int c
 		 */
 		return (ret == 1) ? count : ret;
 }
+#endif
+
 static int es8316_probe(struct snd_soc_codec *codec)
 {
 	int ret = 0;
- 	printk("---%s--start--\n",__FUNCTION__);
+ 	DBG("---%s--start--\n",__FUNCTION__);
 	codec->read  = es8316_read_reg_cache;
 	codec->write = es8316_write;
 	codec->hw_write = (hw_write_t)i2c_master_send;
@@ -1106,9 +1122,9 @@ static int es8316_probe(struct snd_soc_codec *codec)
 #elif defined(HS_TIMER)
 	hsdet_init();
 #endif
-printk("---%s--ok--\n",__FUNCTION__);
+DBG("---%s--ok--\n",__FUNCTION__);
 err:	
-    printk("###########%s %d ", __func__, __LINE__);
+    DBG("###########%s %d ", __func__, __LINE__);
 	return ret;
 }
 
@@ -1119,10 +1135,10 @@ static int es8316_remove(struct snd_soc_codec *codec)
 }
 
 static struct snd_soc_codec_driver soc_codec_dev_es8316 = {
-	.probe =	es8316_probe,
-	.remove =	es8316_remove,
-	.suspend =	es8316_suspend,
-	.resume =	es8316_resume,
+	.probe = es8316_probe,
+	.remove = es8316_remove,
+	.suspend = es8316_suspend,
+	.resume = es8316_resume,
 	.set_bias_level = es8316_set_bias_level,	
 	.reg_cache_size = ARRAY_SIZE(es8316_reg),
 	.reg_word_size = sizeof(u16),
@@ -1214,8 +1230,11 @@ static u32 cur_reg=0;
 
 static ssize_t es8316_show(struct device *dev, struct device_attribute *attr, char *_buf)
 {
-		sprintf(_buf, "%s(): get 0x%04x=0x%04x\n", __FUNCTION__, cur_reg, 
+		int ret;
+		ret = sprintf(_buf, "%s(): get 0x%04x=0x%04x\n", __FUNCTION__, cur_reg, 
 		snd_soc_read(es8316_codec, cur_reg));
+
+		return ret;
 }
 
 static u32 strtol(const char *nptr, int base)
@@ -1292,10 +1311,10 @@ static int es8316_i2c_probe(struct i2c_client *i2c,
 {
 	struct es8316_priv *es8316;
 	struct i2c_adapter *adapter = to_i2c_adapter(i2c->dev.parent);
-	char reg;
-	char tmp;
+//	char reg;
+//	char tmp;
 	int ret = -1;
- 	printk("---%s---probe start\n",__FUNCTION__);
+ 	DBG("---%s---probe start\n",__FUNCTION__);
 
 	if (!i2c_check_functionality(adapter, I2C_FUNC_I2C)) {
 		dev_warn(&adapter->dev,
@@ -1336,7 +1355,7 @@ static int es8316_i2c_probe(struct i2c_client *i2c,
         if (ret < 0)
                 printk("failed to add dev_attr_es8316 file\n");
  //   this_client=i2c;
- 	printk("---%s---probe ok\n",__FUNCTION__);
+ 	DBG("---%s---probe ok\n",__FUNCTION__);
 	return ret;
 }
 
@@ -1367,7 +1386,7 @@ static struct i2c_driver es8316_i2c_driver = {
 
 static int __init es8316_init(void)
 {
-	printk("--%s--start--\n",__FUNCTION__);
+	DBG("--%s--start--\n",__FUNCTION__);
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	return i2c_add_driver(&es8316_i2c_driver);
 #endif
