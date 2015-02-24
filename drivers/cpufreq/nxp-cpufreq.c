@@ -250,6 +250,7 @@ static unsigned long nxp_cpufreq_update(struct cpufreq_dvfs_info *dvfs,
 		cpufreq_notify_transition(freqs, CPUFREQ_PRECHANGE);
 
 	rate = clk_set_rate(clk, freqs->new*1000);
+	pr_debug(" set rate %ukhz\n", freqs->new);
 
 	if (test_bit(FREQ_STATE_TIME_RUN, &dvfs->check_state)) {
 		int prev = dvfs->pre_freq_id;
@@ -670,8 +671,6 @@ static int nxp_cpufreq_target(struct cpufreq_policy *policy,
 	}
 
 freq_up:
-	pr_debug(" set rate %ukhz\n", freqs.new);
-
 	nxp_cpufreq_set_freq_id(dvfs, freqs.new);
 	rate = nxp_cpufreq_update(dvfs, &freqs, true);
 
