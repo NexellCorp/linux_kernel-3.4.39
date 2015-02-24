@@ -15,6 +15,8 @@
 #include <linux/i2c.h>
 #include "axp-mfd.h"
 
+#define AXP_I2C_RETRY_CNT	3
+
 static uint8_t axp_reg_addr = 0;
 
 struct i2c_client *axp;
@@ -23,11 +25,21 @@ EXPORT_SYMBOL_GPL(axp);
 static inline int __axp_read(struct i2c_client *client,
 				int reg, uint8_t *val)
 {
-	int ret;
+	int ret = 0;
+	int i = 0;
 
-	ret = i2c_smbus_read_byte_data(client, reg);
-	if (ret < 0) {
-		dev_err(&client->dev, "failed reading at 0x%02x\n", reg);
+	for(i=0; i<AXP_I2C_RETRY_CNT; i++)
+	{
+		ret = i2c_smbus_read_byte_data(client, reg);
+		if (ret >= 0)
+			break;
+
+		mdelay(10);
+	}
+
+	if (ret < 0) 
+	{
+		dev_err(&client->dev, "\e[31mfailed\e[0m reading at 0x%02x\n", reg);
 		return ret;
 	}
 
@@ -38,11 +50,19 @@ static inline int __axp_read(struct i2c_client *client,
 static inline int __axp_reads(struct i2c_client *client, int reg,
 				 int len, uint8_t *val)
 {
-	int ret;
+	int ret = 0;
+	int i = 0;
 
-	ret = i2c_smbus_read_i2c_block_data(client, reg, len, val);
+	for(i=0; i<AXP_I2C_RETRY_CNT; i++)
+	{
+		ret = i2c_smbus_read_i2c_block_data(client, reg, len, val);
+		if (ret >= 0)
+			break;
+		mdelay(10);
+	}
+
 	if (ret < 0) {
-		dev_err(&client->dev, "failed reading from 0x%02x\n", reg);
+		dev_err(&client->dev, "\e[31mfailed\e[0m reading from 0x%02x\n", reg);
 		return ret;
 	}
 	return 0;
@@ -51,12 +71,19 @@ static inline int __axp_reads(struct i2c_client *client, int reg,
 static inline int __axp_write(struct i2c_client *client,
 				 int reg, uint8_t val)
 {
-	int ret;
+	int ret = 0;
+	int i = 0;
 
-	ret = i2c_smbus_write_byte_data(client, reg, val);
+	for(i=0; i<AXP_I2C_RETRY_CNT; i++)
+	{
+		ret = i2c_smbus_write_byte_data(client, reg, val);
+		if (ret >= 0)
+			break;
+		mdelay(10);
+	}
+
 	if (ret < 0) {
-		dev_err(&client->dev, "failed writing 0x%02x to 0x%02x\n",
-				val, reg);
+		dev_err(&client->dev, "\e[31mfailed\e[0m writing 0x%02x to 0x%02x\n", val, reg);
 		return ret;
 	}
 	return 0;
@@ -66,11 +93,19 @@ static inline int __axp_write(struct i2c_client *client,
 static inline int __axp_writes(struct i2c_client *client, int reg,
 				  int len, uint8_t *val)
 {
-	int ret;
+	int ret = 0;
+	int i = 0;
 
-	ret = i2c_smbus_write_i2c_block_data(client, reg, len, val);
+	for(i=0; i<AXP_I2C_RETRY_CNT; i++)
+	{
+		ret = i2c_smbus_write_i2c_block_data(client, reg, len, val);
+		if (ret >= 0)
+			break;
+		mdelay(10);
+	}
+
 	if (ret < 0) {
-		dev_err(&client->dev, "failed writings to 0x%02x\n", reg);
+		dev_err(&client->dev, "\e[31mfailed\e[0m writings to 0x%02x\n", reg);
 		return ret;
 	}
 	return 0;
