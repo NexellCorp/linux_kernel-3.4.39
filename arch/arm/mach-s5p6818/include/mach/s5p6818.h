@@ -308,6 +308,7 @@
 #include <nx_vip.h>
 #include <nx_adc.h>
 #include <nx_ecid.h>
+#include <nx_tmu.h>
 
 #endif /* 	__ASSEMBLY__ */
 #endif /*	__S5P6818_H__ */
