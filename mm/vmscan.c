@@ -3361,7 +3361,10 @@ static int __init kswapd_init(void)
 	return 0;
 }
 
+// psw0523 test : disable kswapd
+#ifndef CONFIG_PLAT_S5P6818_DRONEL
 module_init(kswapd_init)
+#endif
 
 #ifdef CONFIG_NUMA
 /*
