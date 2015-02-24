@@ -3,9 +3,6 @@
 
 //#define ENABEL_PWRKEY
 
-// #define ENABLE_DEBUG
-// #define DBG_AXP_PSY 1
-
 #ifdef ENABEL_PWRKEY
 static 	struct input_dev * powerkeydev;
 #endif

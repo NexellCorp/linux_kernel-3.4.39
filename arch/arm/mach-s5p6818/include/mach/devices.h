@@ -307,13 +307,20 @@ struct nxp_ohci_platdata {
 };
 
 /*
- * ADC TMU
+ * TMU
  */
-struct nxp_adc_tmp_platdata {
+struct nxp_tmu_trigger {
+	int	  trig_degree;
+	long  trig_duration;	/* ms */
+	long  trig_cpufreq;
+};
+
+struct nxp_tmu_platdata {
 	int channel;
-	int tmp_offset;
-	int duration;				/* default 100ms */
-	void (*callback)(int ch, int value, int temp, bool run);
+	int poll_duration;					/* default 500ms */
+	struct nxp_tmu_trigger *triggers;
+	int trigger_size;
+	void (*callback)(int ch, int temp, bool run);
 };
 
 #endif    /* __DEVICES_H__ */

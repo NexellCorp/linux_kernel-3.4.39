@@ -25,8 +25,6 @@
 //#include "axp-cfg.h"
 #include "axp22-mfd.h"
 
-
-
 static void axp_mfd_irq_work(struct work_struct *work)
 {
 	struct axp_mfd_chip *chip = container_of(work, struct axp_mfd_chip, irq_work);

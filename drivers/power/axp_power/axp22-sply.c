@@ -32,6 +32,7 @@
 #include <linux/delay.h>
 #include <linux/kthread.h>
 #include <linux/slab.h>
+#include <linux/i2c.h>
 
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
@@ -47,7 +48,7 @@
 
 #include "axp-cfg.h"
 #include "axp-sply.h"
-
+#include "axp-mfd.h"
 
 #ifdef ENABLE_DEBUG
 #define DBG_MSG(format,args...)   printk(KERN_ERR format,##args)
@@ -74,6 +75,40 @@ int pmu_usbvolnew = 0;
 int pmu_usbcurnew = 0;
 int axp_usbcurflag = 0;
 int axp_usbvolflag = 0;
+
+#ifdef ENABLE_REGISTER_DEUMP
+static void axp228_register_dump(struct axp_charger *charger)
+{
+	s32 ret=0;
+	u16 i=0;
+	u8 value[0xff]={0};
+
+	PM_DBGOUT("\n##########################################################\n");
+	PM_DBGOUT("##\e[31m %s()\e[0m                               #\n", __func__);
+	PM_DBGOUT("##########################################################\n");
+	PM_DBGOUT("       0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F\n");
+
+	for(i=0; i<=0xff; i++)
+	{
+		if(i%16 == 0)
+			PM_DBGOUT("  %02X:", i);
+
+		if(i%4 == 0)
+			PM_DBGOUT(" ");
+
+		ret = axp_read(charger->master, i, &value[i]);
+		if(!ret)
+			PM_DBGOUT("%02x ", value[i]);
+		else
+			PM_DBGOUT("\e[31mxx\e[0m ");
+
+		if((i+1)%16 == 0)
+			PM_DBGOUT("\n");
+	}
+	PM_DBGOUT("##########################################################\n\n");
+}
+#endif
+
 
 int axp_chip_id_get(uint8_t chip_id[16])
 {
@@ -2124,6 +2159,10 @@ static int axp_battery_probe(struct platform_device *pdev)
 	/* 调试接口注册 */
 	class_register(&axppower_class);
 
+#ifdef ENABLE_REGISTER_DEUMP
+	axp228_register_dump(charger);
+#endif
+
 	return ret;
 
 err_ps_register:
@@ -2202,6 +2241,10 @@ static int axp22_suspend(struct platform_device *dev, pm_message_t state)
 	}
 #endif
 
+#ifdef ENABLE_REGISTER_DEUMP
+	axp228_register_dump(charger);
+#endif
+
 	return 0;
 }
 
@@ -2213,6 +2256,10 @@ static int axp22_resume(struct platform_device *dev)
 	uint8_t val,tmp;
 	/*wakeup IQR notifier work sequence*/
 	//axp_register_notifier(charger->master, &charger->nb, AXP22_NOTIFIER_ON);//此处要去掉
+
+#ifdef ENABLE_REGISTER_DEUMP
+	axp228_register_dump(charger);
+#endif
 
 	axp_charger_update_state(charger);
 

@@ -3,44 +3,6 @@
 #include "axp-regu.h"
 #include "axp-mfd.h"
 
-
-// #define ENABLE_REGISTER_DEUMP
-
-#ifdef ENABLE_REGISTER_DEUMP
-static void axp228_register_dump(struct i2c_client *client)
-{
-	s32 ret=0;
-	u16 i=0;
-	u8 value[0xff]={0};
-
-	printk("##########################################################\n");
-	printk("##\e[31m %s()\e[0m                               #\n", __func__);
-	printk("##########################################################\n");
-	printk("       0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F\n");
-
-	for(i=0; i<=0xff; i++)
-	{
-		if(i%16 == 0)
-			printk("  %02X:", i);
-
-		if(i%4 == 0)
-			printk(" ");
-
-		ret = __axp_read(client, i, &value[i]);
-		if(!ret)
-			printk("%02x ", value[i]);
-		else
-			printk("\e[31mxx\e[0m ");
-
-		if((i+1)%16 == 0)
-			printk("\n");
-	}
-	printk("##########################################################\n");
-}
-#else
-#define axp228_register_dump(a)		do {} while (0)
-#endif
-
 static int __devinit axp22_init_chip(struct axp_mfd_chip *chip)
 {
 	uint8_t chip_id = 0;
@@ -101,7 +63,6 @@ static int __devinit axp22_init_chip(struct axp_mfd_chip *chip)
 			|(AXP_DC5LDO_SLEEP_OFF << AXP_DC5LDO_BIT);
 	axp_write(chip->dev, AXP22_PWREN_CONTROL2, val);
 
-	axp228_register_dump(chip->client);
 	return 0;
 }
 
