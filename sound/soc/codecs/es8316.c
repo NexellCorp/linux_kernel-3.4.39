@@ -834,6 +834,8 @@ static int es8316_mute(struct snd_soc_dai *dai, int mute)
 static int es8316_set_bias_level(struct snd_soc_codec *codec,
 				 enum snd_soc_bias_level level)
 {        
+	DBG("%s %d\n", __func__, level);
+
 	switch (level) {
 	case SND_SOC_BIAS_ON:
 		dev_dbg(codec->dev, "%s on\n", __func__);
@@ -964,7 +966,7 @@ static int es8316_init_regs(struct snd_soc_codec *codec)
 	snd_soc_write(codec, ES8316_ADC_PDN_LINSEL_REG22, 0x20); //INPUT SELECT INPUT1:0X20,INPUT2:0X30
 	snd_soc_write(codec, ES8316_ADC_D2SEPGA_REG24, 0x01); //DC MEASURE DISABLE, 10db disable
 	snd_soc_write(codec, ES8316_ADC_VOLUME_REG27,0x00);//ADC VOL=0DB, MIN=0XC0(-96DB),STEP=0.5DB
-	snd_soc_write(codec, ES8316_DAC_SET2_REG31,0x20);  //DAC double speed,auto mute disable
+	snd_soc_write(codec, ES8316_DAC_SET2_REG31,0x00);  //DAC double speed,auto mute disable
 	snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x00);  //VPP SET AND ZERO L/R,MONO SET
 	snd_soc_write(codec, ES8316_DAC_VOLL_REG33, 0x00); //LDAC VOL=0DB, MIN=0XC0(-96DB),STEP=0.5DB
 	snd_soc_write(codec, ES8316_DAC_VOLR_REG34, 0x00); //RDAC VOL=0DB, MIN=0XC0(-96DB),STEP=0.5DB
