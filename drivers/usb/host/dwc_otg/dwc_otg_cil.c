@@ -5153,12 +5153,13 @@ void dwc_otg_core_reset(dwc_otg_core_if_t * core_if)
 {
 	dwc_otg_core_global_regs_t *global_regs = core_if->core_global_regs;
 	volatile grstctl_t greset = {.d32 = 0 };
+	volatile gintsts_data_t gintsts =  { .d32 = 0 };
 	int count = 0;
 
 	DWC_DEBUGPL(DBG_CILV, "%s\n", __func__);
 	/* Wait for AHB master IDLE state. */
 	do {
-		if(core_if->host_flag)
+		if (core_if->host_flag)
 			dwc_udelay(10);
 		greset.d32 = DWC_READ_REG32(&global_regs->grstctl);
 		if (++count > 100000) {
@@ -5180,14 +5181,26 @@ void dwc_otg_core_reset(dwc_otg_core_if_t * core_if)
 				 __func__, greset.d32);
 			break;
 		}
-		if(core_if->host_flag)
+		if (core_if->host_flag)
 			dwc_udelay(1);
 	}
 	while (greset.b.csftrst == 1);
 
 	/* Wait for 3 PHY Clocks */
-	if(core_if->host_flag)
-		dwc_mdelay(150);
+	dwc_mdelay(100);
+	count = 0;
+	if (core_if->host_flag) {
+		do {    
+			gintsts.d32 = DWC_READ_REG32(&global_regs->gintsts);
+			if (++count > 100) 
+			{
+				DWC_WARN("%s() ERROR! Force host mode GINTSTS=%0x\n", __func__, 
+					gintsts.d32);
+				break;
+			}
+			dwc_mdelay(5);
+		} while (gintsts.b.curmode != DWC_HOST_MODE);
+	}
 }
 
 uint8_t dwc_otg_is_device_mode(dwc_otg_core_if_t * _core_if)
