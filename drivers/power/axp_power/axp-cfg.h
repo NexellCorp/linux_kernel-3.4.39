@@ -204,7 +204,7 @@
 /*
 	AXP22:0-关闭，1-打开
 */
-#define USBCURLIMEN			1
+#define USBCURLIMEN			0
 /* 充电限流，mA，0为不限制*/
 /*
 	AXP22:500/900
@@ -214,7 +214,7 @@
 /*
 	AXP22:500/900
 */
-#define USBCURLIMPC			500
+#define USBCURLIMPC			0//500
 /* PMU 中断触发唤醒使能*/
 /*
 	AXP22:0-不唤醒，1-唤醒
@@ -234,7 +234,7 @@
 /*
 	AXP22:0-驱动马达，1-由充电功能控制
 */
-#define CHGLEDFUN			0
+#define CHGLEDFUN			1
 /* CHGLED LED 类型设置*/
 /*
 	AXP22:0-充电时led长亮，1-充电时led闪烁
@@ -359,8 +359,7 @@
 static const uint64_t AXP22_NOTIFIER_ON = (AXP_IRQ_USBIN |AXP_IRQ_USBRE |
 				       		                            AXP_IRQ_ACIN |AXP_IRQ_ACRE |
 				       		                            AXP_IRQ_BATIN |AXP_IRQ_BATRE |
-				       		                            AXP_IRQ_CHAST |AXP_IRQ_CHAOV|
-						                            (uint64_t)AXP_IRQ_PEKFE |(uint64_t)AXP_IRQ_PEKRE);
+				       		                            AXP_IRQ_CHAST |AXP_IRQ_CHAOV);
 
 /* 需要做插入火牛、usb关机重启进boot时power_start设置为1，否则为0*/
 #define POWER_START 0

@@ -8,11 +8,11 @@ static int __devinit axp22_init_chip(struct axp_mfd_chip *chip)
 	uint8_t chip_id = 0;
 	uint8_t val = 0;
 
-	uint8_t v[19] = {0xd8,AXP22_INTEN2, 0xff,AXP22_INTEN3,0x03,
-						  AXP22_INTEN4, 0x01,AXP22_INTEN5, 0x00,
-						  AXP22_INTSTS1,0xff,AXP22_INTSTS2, 0xff,
-						  AXP22_INTSTS3,0xff,AXP22_INTSTS4, 0xff,
-						  AXP22_INTSTS5,0xff};
+	uint8_t v[19] = {0xd8,AXP22_INTEN2,  0xff, AXP22_INTEN3, 0x00,
+						  AXP22_INTEN4,  0x01, AXP22_INTEN5, 0x00,
+						  AXP22_INTSTS1, 0xff, AXP22_INTSTS2, 0xff,
+						  AXP22_INTSTS3, 0xff, AXP22_INTSTS4, 0xff,
+						  AXP22_INTSTS5, 0xff };
 	int err;
 	
 	/*read chip id*/	//???which int should enable must check with SD4
@@ -33,7 +33,7 @@ static int __devinit axp22_init_chip(struct axp_mfd_chip *chip)
 	chip->type = AXP22;
 
 	/* mask and clear all IRQs */
-	chip->irqs_enabled = 0xffffffff | (uint64_t)0xff << 32;
+	chip->irqs_enabled = 0xffffffff | (uint64_t)0xff<< 32;
 	chip->ops->disable_irqs(chip, chip->irqs_enabled);
 
 #if (CFG_POLY_PHASE_FUNCTION == 1)
