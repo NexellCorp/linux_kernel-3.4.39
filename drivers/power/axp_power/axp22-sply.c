@@ -753,22 +753,18 @@ static void axp_usb_limit_set(struct axp_charger *charger)
 	axp_read(charger->master, AXP22_CHARGE_VBUS,&val);
 	val &= 0xFC;
 	var = dwc_otg_pcd_get_ep0_state();
-	printk("val:0x%x, var:0x%x, usbvalid:0x%x", val, var, charger->usb_valid);
 	if(charger->usb_valid)
 	{
 		if(var == 1)
 		{
-			printk("11111111");
 			val |= 0x01;
 		}
 		else if(var == 2)
 		{
-			printk("222222222");
 			val |= 0x00;
 		}
 		else
 		{
-			printk("33333333");
 			val |= 0x03;
 		}
 	}
