@@ -87,7 +87,7 @@
 #define AXP_VOL_MAX			1
 
 /*	充电功能使能：        AXP22:0-关闭，1-打开*/
-#define CHGEN       1
+#define CHGEN				1
 
 /*	充电电流设置，uA，0为关闭：		AXP22:300~2550,100/step*/
 /*开机充电电流，uA*/
@@ -165,7 +165,7 @@
 	按power键超过关机时长硬件关机还是重启选择:
 		AXP22:0-只关机不重启，1-关机后重启
 */
-#define PEKOFFRESTART			0
+#define PEKOFFRESTART		0
 /*pekpwr延迟时间，ms*/
 /*
 	开机后powerok信号的延迟时间：
@@ -188,7 +188,7 @@
 /*
 	AXP22:0-关闭，1-打开
 */
-#define USBVOLLIMEN		1
+#define USBVOLLIMEN			1
 /*  充电限压，mV，0为不限制*/
 /*
 	AXP22:4000~4700，100/step
@@ -204,7 +204,7 @@
 /*
 	AXP22:0-关闭，1-打开
 */
-#define USBCURLIMEN		1
+#define USBCURLIMEN			1
 /* 充电限流，mA，0为不限制*/
 /*
 	AXP22:500/900
@@ -224,12 +224,12 @@
 /*
 	AXP22:0-输出，驱动OTG升压模块，1-输入，控制VBUS通路
 */
-#define VBUSEN			1
+#define VBUSEN				1
 /* ACIN/VBUS In-short 功能设置*/
 /*
 	AXP22:0-AC VBUS分开，1-使用VBUS当AC,无单独AC
 */
-#define VBUSACINSHORT			0
+#define VBUSACINSHORT		0
 /* CHGLED 管脚控制设置*/
 /*
 	AXP22:0-驱动马达，1-由充电功能控制
@@ -244,7 +244,7 @@
 /*
 	AXP22:0-关闭，1-打开
 */
-#define BATCAPCORRENT			0
+#define BATCAPCORRENT		0
 /* 充电完成后，充电输出使能*/
 /*
 	AXP22:0-关闭，1-打开
@@ -254,33 +254,33 @@
 /*
 	AXP22:0-关闭，1-打开
 */
-#define BATDET		1
+#define BATDET				1
 /* PMU重置使能*/
 /*
 	AXP22:0-关闭，1-打开按电源键16秒重置PMU功能
 */
-#define PMURESET		0
+#define PMURESET			0
 /*低电警告电压1，%*/
 /*
 	根据系统设计来定：
 	AXP22:5%~20%
 */
-#define BATLOWLV1    15
+#define BATLOWLV1			15
 /*低电警告电压2，%*/
 /*
 	根据系统设计来定：
 	AXP22:0%~15%
 */
-#define BATLOWLV2    0
+#define BATLOWLV2			0
 
 #define ABS(x)				((x) >0 ? (x) : -(x) )
 
 #ifdef	CONFIG_KP_AXP22
 /*AXP GPIO start NUM,根据平台实际情况定义*/
-#define AXP22_NR_BASE 100
+#define AXP22_NR_BASE 		100
 
 /*AXP GPIO NUM,包括马达驱动、LCD power以及VBUS driver pin*/
-#define AXP22_NR 5
+#define AXP22_NR 			5
 
 /*初始化开路电压对应百分比表*/
 /*
@@ -327,14 +327,14 @@
 #define AXP_IRQ_USBRE		AXP22_IRQ_USBRE	//usb 拔出
 #define AXP_IRQ_USBIN		AXP22_IRQ_USBIN	//usb 插入
 #define AXP_IRQ_USBOV		AXP22_IRQ_USBOV	//usb 过压
-#define AXP_IRQ_ACRE			AXP22_IRQ_ACRE	//ac  拔出
-#define AXP_IRQ_ACIN			AXP22_IRQ_ACIN	//ac  插入
+#define AXP_IRQ_ACRE		AXP22_IRQ_ACRE	//ac  拔出
+#define AXP_IRQ_ACIN		AXP22_IRQ_ACIN	//ac  插入
 #define AXP_IRQ_ACOV		AXP22_IRQ_ACOV //ac  过压
 #define AXP_IRQ_TEMLO		AXP22_IRQ_TEMLO //电池低温
 #define AXP_IRQ_TEMOV		AXP22_IRQ_TEMOV //电池过温
 #define AXP_IRQ_CHAOV		AXP22_IRQ_CHAOV //电池充电结束
 #define AXP_IRQ_CHAST		AXP22_IRQ_CHAST //电池充电开始
-#define AXP_IRQ_BATATOU	AXP22_IRQ_BATATOU //电池退出激活模式
+#define AXP_IRQ_BATATOU		AXP22_IRQ_BATATOU //电池退出激活模式
 #define AXP_IRQ_BATATIN		AXP22_IRQ_BATATIN //电池进入激活模式
 #define AXP_IRQ_BATRE		AXP22_IRQ_BATRE //电池拔出
 #define AXP_IRQ_BATIN		AXP22_IRQ_BATIN //电池插入
@@ -365,5 +365,9 @@ static const uint64_t AXP22_NOTIFIER_ON = (AXP_IRQ_USBIN |AXP_IRQ_USBRE |
 /* 需要做插入火牛、usb关机重启进boot时power_start设置为1，否则为0*/
 #define POWER_START 0
 
+
+//#define ENABLE_REGISTER_DEUMP
+//#define ENABLE_DEBUG
+//#define DBG_AXP_PSY
 
 #endif

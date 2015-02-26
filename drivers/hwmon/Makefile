@@ -133,6 +133,7 @@ obj-$(CONFIG_PMBUS)		+= pmbus/
 obj-$(CONFIG_BOSCH)		+= bosch/
 obj-$(CONFIG_SENSORS_BMA222E_NX)	+= bma222-nx.o
 obj-$(CONFIG_SENSORS_NXP_ADC_TEMP)	+= nxp_adc_temp.o
+obj-$(CONFIG_SENSORS_NXP_TMU)	+= nxp_tmu.o
 
 ccflags-$(CONFIG_HWMON_DEBUG_CHIP) := -DDEBUG
 

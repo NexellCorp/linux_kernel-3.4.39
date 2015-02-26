@@ -37,5 +37,3 @@ endif
 #	Build options for nexell soc
 #===============================================================================
 KBUILD_CFLAGS += -mfpu=vfp -mfloat-abi=softfp
-#KBUILD_CFLAGS += -mtune=cortex-a53 -mfpu=vfp -mfloat-abi=softfp
-# -mfpu=vfpv3
