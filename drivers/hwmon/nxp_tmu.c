@@ -20,6 +20,7 @@
 #include <linux/init.h>
 #include <linux/types.h>
 #include <linux/slab.h>
+#include <linux/interrupt.h>
 #include <linux/hwmon.h>
 #include <linux/hwmon-vid.h>
 #include <linux/sysfs.h>
@@ -42,11 +43,13 @@
 #define DRVNAME	"nxp-tmu"
 
 struct tmu_trigger {
-	int	 trig_degree;
-	long trig_duration;
-	long trig_cpufreq;
-	long process_time;
-   	bool is_trigger;
+	int	  trig_degree;
+	long  trig_duration;
+	long  trig_cpufreq;
+	long  new_cpufreq;
+	ulong expire_time;
+	bool  triggered;
+   	bool  limited;
 };
 
 struct tmu_info {
@@ -69,123 +72,11 @@ struct tmu_info {
 #define	STATE_STOP_ENTER		(1)		/* bit position */
 #define TMU_POLL_TIME			(500)	/* ms */
 
-/*
- * Sysfs
- */
-enum { SHOW_TEMP, SHOW_LABEL, SHOW_NAME };
+#define TMU_IRQ_MAX				3	/* ms */
+#define TMU_CPU_FREQ_STEP		100000	/* khz */
+#define TMU_CPU_FREQ_MIN		400000	/* khz */
 
-static ssize_t tmu_show_temp(struct device *dev,
-			 struct device_attribute *devattr, char *buf)
-{
-	struct tmu_info *info = dev_get_drvdata(dev);
-	char *s = buf;
-
-	s += sprintf(s, "%4d\n", info->temperature);
-	if (s != buf)
-		*(s-1) = '\n';
-	return (s - buf);
-}
-
-static SENSOR_DEVICE_ATTR(temp_label, 0666, tmu_show_temp , NULL, SHOW_LABEL);
-
-static struct attribute *adc_temp_attr[] = {
-	&sensor_dev_attr_temp_label.dev_attr.attr,
-	NULL
-};
-
-static const struct attribute_group tmu_attr_group = {
-	.attrs = adc_temp_attr,
-};
-
-/*
- * TMU operation
- */
-#define	TIME_100US	0x6B3	// 0x4305
-#define	TIME_20us 	0x16A	// 0xE29
-#define	TIME_2us 	0x024	// 0x170
-
-static int nxp_tmu_start(int channel)
-{
-	u32 mode = 7;
-	u32 mask = 0;
-	int time = 1000;
-	//	((0x1<<28) | (0x1<<24) | (0x1<<20) | (0x1<<16) |
-	// (0x1<<12) | (0x1<<8) | (0x1<<4) | (0x1<<0));
-
-	NX_TMU_SetBaseAddress(channel, IO_ADDRESS(NX_TMU_GetPhysicalAddress(channel)));
-	NX_TMU_ClearInterruptPendingAll(channel);
-	NX_TMU_SetInterruptEnableAll(channel, CFALSE);
-
-	// Set CounterValue0, CounterValue1
-	NX_TMU_SetCounterValue0(channel, ((TIME_20us<<16) | TIME_100US));
-	NX_TMU_SetCounterValue1(channel, ((TIME_100US<<16) | TIME_2us));
-	NX_TMU_SetSamplingInterval(channel, 0x1);
-
-	// Emulstion mode enable
-	NX_TMU_SetTmuEmulEn(channel, CFALSE);
-
-	// Interrupt Enable <--- disable
-	NX_TMU_SetP0IntEn(channel, mask);
-
-	// Thermal tripping mode selection
-	NX_TMU_SetTmuTripMode(channel, mode);
-
-	// Thermal tripping enable
-	NX_TMU_SetTmuTripEn(channel, 0x0);
-
-	// Check sensing operation is idle
-	while (time-- > 0 && NX_TMU_IsBusy(channel)) { msleep(1); }
-
-	NX_TMU_SetTmuStart(channel, CTRUE);
-	return 0;
-}
-
-static void nxp_tmu_stop(int channel)
-{
-	NX_TMU_SetTmuStart(channel, CFALSE);
-}
-
-static int nxp_tmu_temp(int channel)
-{
-//	int time = 1000;
-//	while (time-- > 0 && NX_TMU_IsBusy(channel)) { msleep(1); }
-	NX_TMU_ClearInterruptPendingAll(channel);
-
-	return NX_TMU_GetCurrentTemp0(channel);	// can't use temp1
-}
-
-static int nxp_tmu_triggers(struct nxp_tmu_platdata *plat, struct tmu_info *info)
-{
-	struct tmu_trigger *trig = NULL;
-	struct nxp_tmu_trigger *data = plat->triggers;
-	int i = 0;
-
-	if (!plat->triggers || !plat->trigger_size)
-		return 0;
-
-	trig = kzalloc(sizeof(*trig)*plat->trigger_size, GFP_KERNEL);
-	if (!trig) {
-		pr_err("%s: Out of memory\n", __func__);
-		return -ENOMEM;
-	}
-
-	info->triggers = trig;
-	info->trigger_size = plat->trigger_size;
-
-	for (i = 0; plat->trigger_size > i; i++, trig++, data++) {
-		trig->trig_degree = data->trig_degree;
-		trig->trig_duration = data->trig_duration;
-		trig->trig_cpufreq = data->trig_cpufreq;
-		trig->process_time = 0;
-		pr_debug("TMU[%d] = %3d (%6ldms) -> %8ld kzh\n",
-			i, trig->trig_degree, trig->trig_duration,
-			trig->trig_cpufreq);
-	}
-
-	return 0;
-}
-
-static int nxp_tmu_max_freq(long new)
+static int nxp_tmu_frequency(long new)
 {
 	char *file = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq";
 	mm_segment_t old_fs;
@@ -212,57 +103,224 @@ static int nxp_tmu_max_freq(long new)
 	return 0;
 }
 
+/*
+ * TMU operation
+ */
+#define	TIME_100US	0x6B3	// 0x4305
+#define	TIME_20us 	0x16A	// 0xE29
+#define	TIME_2us 	0x024	// 0x170
+
+static int nxp_tmu_start(int channel)
+{
+	u32 mode = 7;
+	int time = 1000;
+
+	NX_TMU_SetBaseAddress(channel, IO_ADDRESS(NX_TMU_GetPhysicalAddress(channel)));
+	NX_TMU_ClearInterruptPendingAll(channel);
+	NX_TMU_SetInterruptEnableAll(channel, CFALSE);
+
+	// Set CounterValue0, CounterValue1
+	NX_TMU_SetCounterValue0(channel, ((TIME_20us<<16) | TIME_100US));
+	NX_TMU_SetCounterValue1(channel, ((TIME_100US<<16) | TIME_2us));
+	NX_TMU_SetSamplingInterval(channel, 0x1);
+
+	// Emulstion mode enable
+	NX_TMU_SetTmuEmulEn(channel, CFALSE);
+
+	// Interrupt Enable
+	NX_TMU_SetP0IntEn(channel, 0x0);
+
+	// Thermal tripping mode selection
+	NX_TMU_SetTmuTripMode(channel, mode);
+
+	// Thermal tripping enable
+	NX_TMU_SetTmuTripEn(channel, 0x0);
+
+	// Check sensing operation is idle
+	while (time-- > 0 && NX_TMU_IsBusy(channel)) { msleep(1); }
+
+	NX_TMU_SetTmuStart(channel, CTRUE);
+	return 0;
+}
+
+static void nxp_tmu_stop(int channel)
+{
+	NX_TMU_SetTmuStart(channel, CFALSE);
+}
+
+static inline int nxp_tmu_temp(int channel)
+{
+	return NX_TMU_GetCurrentTemp0(channel);	// can't use temp1
+}
+
+static irqreturn_t nxp_tmu_interrupt(int irq, void *desc)
+{
+	struct tmu_info *info = desc;
+	struct tmu_trigger *trig = info->triggers;
+	int channel = info->channel;
+	u32 mask = NX_TMU_GetP0IntEn(channel);
+	int i = 0;
+
+	pr_debug("tmu[%d] irq temp %d\n", channel, nxp_tmu_temp(channel));
+
+	/* disable triggered irq */
+	for (i = 0; TMU_IRQ_MAX > i; i++) {
+		if ((1<<(i*4)) & NX_TMU_GetP0IntStat(channel)) {
+			NX_TMU_SetP0IntClear(channel, 1<<(i*4));
+			NX_TMU_SetP0IntEn(channel, mask & ~(1<<(i*4)));
+			trig[i].triggered = true;
+		}
+	}
+	schedule_work(&info->mon_work.work);
+
+	return IRQ_HANDLED;
+}
+
+static int nxp_tmu_triggers(struct nxp_tmu_platdata *plat, struct tmu_info *info)
+{
+	struct tmu_trigger *trig = NULL;
+	struct nxp_tmu_trigger *data = plat->triggers;
+	int channel = info->channel;
+	u32 temp_rise = 0, temp_intr = 0;
+	int err = 0, i = 0;
+
+	nxp_tmu_start(channel);
+
+	if (!plat->triggers || !plat->trigger_size)
+		return 0;
+
+	if (plat->trigger_size > 3) {
+		printk("tmu.%d max trigger count %d\n", channel, TMU_IRQ_MAX);
+		return -EINVAL;
+	}
+
+	trig = kzalloc(sizeof(*trig)*plat->trigger_size, GFP_KERNEL);
+	if (!trig) {
+		pr_err("%s: Out of memory\n", __func__);
+		return -ENOMEM;
+	}
+
+	info->triggers = trig;
+	info->trigger_size = plat->trigger_size;
+
+	err = request_irq(IRQ_PHY_TMU0, &nxp_tmu_interrupt, IRQF_DISABLED, DRVNAME, info);
+	if (err) {
+		pr_err("Fail, tmu.%d request interrupt %d ...\n", channel, IRQ_PHY_TMU0);
+		return -EINVAL;
+	}
+
+	for (i = 0; plat->trigger_size > i; i++) {
+		trig[i].trig_degree = data[i].trig_degree & 0xFF;
+		trig[i].trig_duration = data[i].trig_duration;
+		trig[i].trig_cpufreq = data[i].trig_cpufreq ?
+				data[i].trig_cpufreq : info->max_cpufreq-TMU_CPU_FREQ_STEP;
+		trig[i].new_cpufreq = trig[i].trig_cpufreq;
+		trig[i].expire_time = 0;
+
+		/*
+		 * Calibrated threshold	temperature is written
+		 * into THRES_TEMP_RISE and THRES_TEMP_FALL
+		 */
+		if (TMU_IRQ_MAX > i) {
+			temp_rise |= trig[i].trig_degree << (i*8);
+			temp_intr |= 1<<(i*4);
+		}
+		pr_debug("tmu[%d] = %3d (%6ldms) -> %8ld kzh (0x%08x)\n",
+			i, trig[i].trig_degree, trig[i].trig_duration,
+			trig[i].trig_cpufreq, temp_rise);
+	}
+
+	NX_TMU_SetThresholdTempRise(channel, temp_rise);
+	NX_TMU_ClearInterruptPendingAll(channel);
+	NX_TMU_SetP0IntEn(channel, temp_intr);
+
+	return 0;
+}
+
 static void nxp_tmu_monitor(struct work_struct *work)
 {
 	struct tmu_info *info = container_of(work, struct tmu_info, mon_work.work);
 	struct tmu_trigger *trig = info->triggers;
 	int size = info->trigger_size;
 	int channel = info->channel;
-	int i = 0;
+	int temp, i = 0;
+	u32 need_reschedule = (1<<size)-1;
+	u32 is_limited = 0;
+	ulong current_time = 0;
+
+	mutex_lock(&info->mlock);
 
 	if (test_bit(STATE_SUSPEND_ENTER, &info->state)) {
-		if (trig->is_trigger) {
-			nxp_tmu_max_freq(info->max_cpufreq);	/* restore */
-			trig->is_trigger = false;
-		}
-		goto exit_mon;
+		mutex_unlock(&info->mlock);
+		return;
 	}
 
-	info->temperature = nxp_tmu_temp(channel);
+	current_time = ktime_to_ms(ktime_get());
+	temp = nxp_tmu_temp(channel);
+	info->temperature = temp;
+
+	for (i = 0; size > i; i++)
+		is_limited |= trig[i].limited ? (1<<i): 0;
 
 	for (i = 0; size > i; i++, trig++) {
-		pr_debug("TMU[%d] = %3d : %3d ~ %6ldms (trigger %s)\n",
-			i, info->temperature, trig->trig_degree, trig->process_time,
-			trig->is_trigger?"O":"X");
 
-		if (info->temperature >= trig->trig_degree
-			&& 0 == trig->is_trigger)
-		{
-			trig->process_time += info->poll_duration;
-			/* limit cpu max frequency */
-			if (trig->process_time > trig->trig_duration) {
-				if (0 > nxp_tmu_max_freq(trig->trig_cpufreq))
-					goto exit_mon;
-				trig->is_trigger = true;
-				trig->process_time = 0;
+		if (false == trig->triggered) {
+			need_reschedule &= ~(1<<i);
+			continue;
+		}
+
+		if (0 == trig->expire_time)
+			trig->expire_time = current_time + trig->trig_duration;
+
+		pr_debug("tmu[%d] = %3d:%3d~%6ldms (%s:0x%x)\n", i, temp, trig->trig_degree,
+			trig->trig_duration-(trig->expire_time-current_time),
+			trig->limited?"O":"X", is_limited);
+
+		if (temp >= trig->trig_degree) {
+			if (current_time >= trig->expire_time) {
+
+				if (TMU_CPU_FREQ_MIN > trig->new_cpufreq)
+					continue;
+
+				if (0 > nxp_tmu_frequency(trig->new_cpufreq))
+					continue;
+
+				/*
+				 * disable irq to check polling
+				 */
+				NX_TMU_SetP0IntClear(channel, 1<<(i*4));
+				NX_TMU_SetP0IntEn(channel, NX_TMU_GetP0IntEn(channel) & ~(1<<(i*4)));
+
+				trig->new_cpufreq -= TMU_CPU_FREQ_STEP;
+				trig->limited = true;
 			}
 		} else {
-			/* relax cpu max frequency */
-			if (trig->trig_degree > info->temperature &&
-				trig->is_trigger) {
-				if (0 > nxp_tmu_max_freq(info->max_cpufreq))
-					goto exit_mon;
-				trig->is_trigger = false;
-				trig->process_time = 0;
+
+			is_limited &= ~(1<<i);
+			if ((0 == is_limited) && trig->limited) {
+				if (0 > nxp_tmu_frequency(info->max_cpufreq))
+					continue;
 			}
+
+			/*
+			 * enable irq to detect over temp
+			 */
+			NX_TMU_SetP0IntClear(channel, 1<<(i*4));
+			NX_TMU_SetP0IntEn(channel, NX_TMU_GetP0IntEn(channel) | 1<<(i*4));
+
+			trig->new_cpufreq = trig->trig_cpufreq;
+			trig->expire_time = 0;
+			trig->triggered = false;
+			trig->limited = false;
+			need_reschedule &= ~(1<<i);
 		}
 	}
-	pr_debug("\n");
 
-exit_mon:
-	schedule_delayed_work(&info->mon_work,
-			msecs_to_jiffies(info->poll_duration));
+	if (need_reschedule)
+		schedule_delayed_work(&info->mon_work,
+				msecs_to_jiffies(info->poll_duration));
 
+	mutex_unlock(&info->mlock);
 	return;
 }
 
@@ -270,23 +328,89 @@ exit_mon:
 static int nxp_tmu_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	struct tmu_info *info = platform_get_drvdata(pdev);
+	struct tmu_trigger *trig = info->triggers;
+	int channel = info->channel;
+	int i = 0;
+
+	mutex_lock(&info->mlock);
 	set_bit(STATE_SUSPEND_ENTER, &info->state);
+
+	for (i = 0; info->trigger_size > i; i++) {
+		trig->new_cpufreq = trig->trig_cpufreq;
+		trig->expire_time = 0;
+		trig->limited = false;
+		trig->triggered = false;
+	}
+
+	nxp_tmu_stop(channel);
+	nxp_tmu_frequency(info->max_cpufreq);
+	NX_TMU_ClearInterruptPendingAll(channel);
+	NX_TMU_SetP0IntEn(channel, 0x0);
+
+	mutex_unlock(&info->mlock);
 	return 0;
 }
 
 static int nxp_tmu_resume(struct platform_device *pdev)
 {
 	struct tmu_info *info = platform_get_drvdata(pdev);
+	struct tmu_trigger *trig = info->triggers;
+	int channel = info->channel;
+	u32 temp_rise = 0, temp_intr = 0;
+	int i = 0;
 
-	nxp_tmu_start(info->channel);
 	clear_bit(STATE_SUSPEND_ENTER, &info->state);
 
+	for (i = 0; info->trigger_size > i; i++) {
+		if (TMU_IRQ_MAX > i) {
+			temp_rise |= trig[i].trig_degree << (i*8);
+			temp_intr |= 1<<(i*4);
+		}
+	}
+
+	nxp_tmu_start(info->channel);
+	NX_TMU_SetThresholdTempRise(channel, temp_rise);
+	NX_TMU_ClearInterruptPendingAll(channel);
+	NX_TMU_SetP0IntEn(channel, temp_intr);
 	return 0;
 }
 #else
 #define nxp_tmu_suspend NULL
 #define nxp_tmu_resume NULL
 #endif
+
+/*
+ * Sysfs
+ */
+enum { SHOW_TEMP, SHOW_LABEL, SHOW_NAME };
+
+static ssize_t tmu_show_temp(struct device *dev,
+			 struct device_attribute *devattr, char *buf)
+{
+	struct tmu_info *info = dev_get_drvdata(dev);
+	int channel = info->channel;
+	char *s = buf;
+
+	mutex_lock(&info->mlock);
+	s += sprintf(s, "%4d\n", nxp_tmu_temp(channel));
+	mutex_unlock(&info->mlock);
+
+	if (s != buf)
+		*(s-1) = '\n';
+
+	return (s - buf);
+}
+
+static SENSOR_DEVICE_ATTR(temp_label, 0666, tmu_show_temp , NULL, SHOW_LABEL);
+
+static struct attribute *adc_temp_attr[] = {
+	&sensor_dev_attr_temp_label.dev_attr.attr,
+	NULL
+};
+
+static const struct attribute_group tmu_attr_group = {
+	.attrs = adc_temp_attr,
+};
 
 static int __devinit nxp_tmu_probe(struct platform_device *pdev)
 {
@@ -315,7 +439,9 @@ static int __devinit nxp_tmu_probe(struct platform_device *pdev)
 	info->callback = plat->callback;
 	info->max_cpufreq = cpufreq_quick_get_max(raw_smp_processor_id());
 	clear_bit(STATE_SUSPEND_ENTER, &info->state);
+
 	mutex_init(&info->mlock);
+	INIT_DELAYED_WORK(&info->mon_work, nxp_tmu_monitor);
 
 	if (0 > nxp_tmu_triggers(plat, info))
 		goto exit_free;
@@ -332,12 +458,8 @@ static int __devinit nxp_tmu_probe(struct platform_device *pdev)
 		pr_err("%s: Class registration failed (%d)\n", __func__, err);
 		goto exit_remove;
 	}
-	nxp_tmu_start(info->channel);
 
-	INIT_DELAYED_WORK(&info->mon_work, nxp_tmu_monitor);
-	schedule_delayed_work(&info->mon_work, msecs_to_jiffies(500));
 	printk("TMU: register %s to hwmon (max %ldkhz)\n", name, info->max_cpufreq);
-
 	return 0;
 
 exit_remove:
@@ -347,6 +469,7 @@ exit_free:
 	platform_set_drvdata(pdev, NULL);
 	if (info->triggers)
 		kfree(info->triggers);
+
 	kfree(info);
 
 	return err;
