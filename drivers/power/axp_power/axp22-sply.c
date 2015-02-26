@@ -746,7 +746,7 @@ static int axp_usb_get_property(struct power_supply *psy,
 
 static void axp_usb_limit_set(struct axp_charger *charger)
 {
-	uint8_t val,tmp;
+	uint8_t val;
 	int var;
 	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 
@@ -780,8 +780,8 @@ static void axp_usb_limit_set(struct axp_charger *charger)
 
 static void axp_change(struct axp_charger *charger)
 {
-	uint8_t val,tmp;
-	int var;
+	//uint8_t val,tmp;
+	//int var;
 
 	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 	axp_charger_update_state(charger);
@@ -1676,8 +1676,8 @@ static void axp_charging_monitor(struct work_struct *work)
 
 static void axp_usb(struct work_struct *work)
 {
-	int var;
-	uint8_t tmp,val;
+	//int var;
+	//uint8_t tmp,val;
 	struct axp_charger *charger;
 
 	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
@@ -1781,7 +1781,7 @@ static int axp_battery_probe(struct platform_device *pdev)
 {
 	struct axp_charger *charger;
 	struct axp_supply_init_data *pdata = pdev->dev.platform_data;
-	int ret,var,tmp;
+	int ret,/*var,*/tmp;
 	uint8_t val2,val;
 	uint8_t ocv_cap[63];
 	int Cur_CoulombCounter,rdc;
@@ -1895,6 +1895,9 @@ static int axp_battery_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, charger);
 
+#if 1
+	axp_usb_limit_set(charger);
+#else
 	/* USB voltage limit */
 	if((USBVOLLIM) && (USBVOLLIMEN))
 	{
@@ -1932,6 +1935,7 @@ static int axp_battery_probe(struct platform_device *pdev)
 	{
 		axp_set_bits(charger->master, AXP22_CHARGE_VBUS, 0x03);
 	}
+#endif
 
 	/* AC current limit */
 	val = (AC_LIMIT_CURRENT -200001)/150000;
