@@ -476,6 +476,7 @@ int miosys_print_readretrytable(void)
 
 int miosys_print_elapsed_t(void)
 {
+#if defined (__COMPILE_MODE_ELAPSE_T__)
     unsigned char sz[32];
 
     unsigned long long * sum = Exchange.debug.elapse_t.sum;
@@ -558,6 +559,8 @@ int miosys_print_elapsed_t(void)
     Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_FTL_MAP_SEARCH_W  ]);    __PRINT(KERN_INFO " | - Ftl Map Search  WR  | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_FTL_MAP_SEARCH_W  ], avg[ELAPSE_T_IO_FTL_MAP_SEARCH_W  ], min[ELAPSE_T_IO_FTL_MAP_SEARCH_W  ], max[ELAPSE_T_IO_FTL_MAP_SEARCH_W  ], sz);
                                                                                                             __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
                                                                                                             __PRINT(KERN_INFO "\n");
+#endif
+
     return 0;
 }
 

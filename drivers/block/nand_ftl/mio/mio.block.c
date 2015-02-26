@@ -568,15 +568,6 @@ static void mio_mutext_unlock(void)
     mutex_unlock(&mio_dev.io_state->transaction.lock.m);
 }
 
-static void mio_elapse_t_init(void)
-{
-    memset(Exchange.debug.elapse_t.sum, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
-    memset(Exchange.debug.elapse_t.avg, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
-    memset(Exchange.debug.elapse_t.cnt, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
-    memset(Exchange.debug.elapse_t.min, 0xFF, sizeof(unsigned long long) * ELAPSE_T_MAX);
-    memset(Exchange.debug.elapse_t.max, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
-}
-
 /******************************************************************************
  * Elapse Time
  ******************************************************************************/
@@ -660,6 +651,15 @@ static unsigned char mio_elapse_t_condition(int _i)
     }
 
     return measure_condition;
+}
+
+static void mio_elapse_t_init(void)
+{
+    memset(Exchange.debug.elapse_t.sum, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
+    memset(Exchange.debug.elapse_t.avg, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
+    memset(Exchange.debug.elapse_t.cnt, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
+    memset(Exchange.debug.elapse_t.min, 0xFF, sizeof(unsigned long long) * ELAPSE_T_MAX);
+    memset(Exchange.debug.elapse_t.max, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
 }
 
 static void mio_elapse_t_start(int _i)
