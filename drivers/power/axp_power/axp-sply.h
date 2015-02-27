@@ -124,6 +124,7 @@ struct axp_charger {
 	/*monitor*/
 	struct delayed_work work;
 	unsigned int interval;
+	int usbwork_count;
 
 	/*battery info*/
 	struct power_supply_info *battery_info;
