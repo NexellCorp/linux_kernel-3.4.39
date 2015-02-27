@@ -179,7 +179,7 @@ static struct nxp_fb_plat_data fb0_plat_data = {
 	.y_resol		= CFG_DISP_PRI_RESOL_HEIGHT,
 	#ifdef CONFIG_ANDROID
 	.buffers		= 3,
-	.skip_pan_vsync	= 1,
+	.skip_pan_vsync	= 0,
 	#else
 	.buffers		= 2,
 	#endif
