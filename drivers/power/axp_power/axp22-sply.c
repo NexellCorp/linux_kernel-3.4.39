@@ -2254,9 +2254,9 @@ static int axp_battery_probe(struct platform_device *pdev)
 
 	/* set usb cur-vol limit*/
 	INIT_DELAYED_WORK(&usbwork, axp_usb);
-	charger->usbwork_count = 3;
+	charger->usbwork_count = 0;
 	//dwc_otg_pcd_clear_ep0_state();
-	schedule_delayed_work(&usbwork, msecs_to_jiffies(5 * 1000));
+	schedule_delayed_work(&usbwork, msecs_to_jiffies(10 * 1000));
 
 	/*给局部变量赋值*/
 	axp_charger = charger;
