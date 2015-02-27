@@ -59,7 +59,8 @@ struct tmu_info {
 	struct tmu_trigger *triggers;
 	int trigger_size;
 	int poll_duration;
-	int temperature;
+	int temp_label;
+	int temp_max;
 	struct mutex mlock;
 	long max_cpufreq;
 	void (*callback)(int ch, int temp, bool run);
@@ -257,7 +258,9 @@ static void nxp_tmu_monitor(struct work_struct *work)
 
 	current_time = ktime_to_ms(ktime_get());
 	temp = nxp_tmu_temp(channel);
-	info->temperature = temp;
+	info->temp_label = temp;
+	if (temp > info->temp_max)
+		info->temp_max = temp;
 
 	for (i = 0; size > i; i++)
 		is_limited |= trig[i].limited ? (1<<i): 0;
@@ -401,10 +404,38 @@ static ssize_t tmu_show_temp(struct device *dev,
 	return (s - buf);
 }
 
+static ssize_t tmu_show_max(struct device *dev,
+			 struct device_attribute *devattr, char *buf)
+{
+	struct tmu_info *info = dev_get_drvdata(dev);
+	int channel = info->channel;
+	char *s = buf;
+	int temp;
+
+	mutex_lock(&info->mlock);
+
+	temp = nxp_tmu_temp(channel);
+	if (temp > info->temp_max)
+		info->temp_max = temp;
+	else
+		temp = info->temp_max;
+
+	s += sprintf(s, "%4d\n", temp);
+
+	mutex_unlock(&info->mlock);
+
+	if (s != buf)
+		*(s-1) = '\n';
+
+	return (s - buf);
+}
+
 static SENSOR_DEVICE_ATTR(temp_label, 0666, tmu_show_temp , NULL, SHOW_LABEL);
+static SENSOR_DEVICE_ATTR(temp_max  , 0666, tmu_show_max  , NULL, SHOW_LABEL);
 
 static struct attribute *adc_temp_attr[] = {
 	&sensor_dev_attr_temp_label.dev_attr.attr,
+	&sensor_dev_attr_temp_max.dev_attr.attr,
 	NULL
 };
 
