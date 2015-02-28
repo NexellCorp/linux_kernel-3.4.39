@@ -433,14 +433,14 @@ static ssize_t tmu_show_max(struct device *dev,
 static SENSOR_DEVICE_ATTR(temp_label, 0666, tmu_show_temp , NULL, SHOW_LABEL);
 static SENSOR_DEVICE_ATTR(temp_max  , 0666, tmu_show_max  , NULL, SHOW_LABEL);
 
-static struct attribute *adc_temp_attr[] = {
+static struct attribute *temp_attr[] = {
 	&sensor_dev_attr_temp_label.dev_attr.attr,
 	&sensor_dev_attr_temp_max.dev_attr.attr,
 	NULL
 };
 
 static const struct attribute_group tmu_attr_group = {
-	.attrs = adc_temp_attr,
+	.attrs = temp_attr,
 };
 
 static int __devinit nxp_tmu_probe(struct platform_device *pdev)
