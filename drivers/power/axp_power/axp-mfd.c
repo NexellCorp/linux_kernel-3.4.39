@@ -226,9 +226,9 @@ static void axp_power_off(void)
 	}
     axp_write(&axp->dev, AXP22_BUFFERC, 0x00);
     mdelay(20);
-    axp_set_bits(&axp->dev, AXP22_OFF_CTL, 0x80);
-    mdelay(20);
-    printk("[axp] warning!!! axp can't power-off, maybe some error happend!\n");
+    axp_set_bits(&axp->dev, AXP22_OFF_CTL, 0x83);
+    //mdelay(20);
+    //printk("[axp] warning!!! axp can't power-off, maybe some error happend!\n");
 #endif
 }
 

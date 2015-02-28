@@ -299,13 +299,13 @@
 #define OCVREG5		0
 #define OCVREG6		0
 #define OCVREG7		0
-#define OCVREG8		1
+#define OCVREG8		0
 #define OCVREG9		1
-#define OCVREGA		2
+#define OCVREGA		1
 #define OCVREGB		2
 #define OCVREGC		3 
-#define OCVREGD		11
-#define OCVREGE		16
+#define OCVREGD		8
+#define OCVREGE		15
 #define OCVREGF		23
 #define OCVREG10	29
 #define OCVREG11	37
@@ -395,7 +395,9 @@
 static const uint64_t AXP22_NOTIFIER_ON = (AXP_IRQ_USBIN |AXP_IRQ_USBRE |
 				       		                            AXP_IRQ_ACIN |AXP_IRQ_ACRE |
 				       		                            AXP_IRQ_BATIN |AXP_IRQ_BATRE |
-				       		                            AXP_IRQ_CHAST |AXP_IRQ_CHAOV);
+				       		                            AXP_IRQ_CHAST |AXP_IRQ_CHAOV |
+														AXP_IRQ_EXTLOWARN2 |
+														AXP_IRQ_EXTLOWARN1);
 
 /* 需要做插入火牛、usb关机重启进boot时power_start设置为1，否则为0*/
 #define POWER_START 0
