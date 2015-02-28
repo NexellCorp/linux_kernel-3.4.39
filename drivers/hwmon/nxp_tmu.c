@@ -143,8 +143,8 @@ static void check_charger_state(struct work_struct *work)
 	else
 		info->new_cpufreq = info->max_cpufreq;
 
-	pr_debug("tmu limited:%s, %ld, %ld\n", info->is_limited?"O":"X",
-		info->old_cpufreq, info->new_cpufreq);
+	pr_debug("tmu limited:%s, %ld, %ld chg %s\n", info->is_limited?"O":"X",
+		info->old_cpufreq, info->new_cpufreq, is_charging()?"O":"X");
 
 	if (!info->is_limited &&
 		(info->new_cpufreq != info->old_cpufreq)) {
