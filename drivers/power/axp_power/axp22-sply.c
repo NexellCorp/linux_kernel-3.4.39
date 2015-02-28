@@ -1729,12 +1729,6 @@ static void axp_charging_monitor(struct work_struct *work)
 	temp = (val*150)+300;
 	printk(KERN_ERR "## charge limit(0x%02x)   : %dmA \n", AXP22_CHARGE_CONTROL3, temp);
 	printk(KERN_ERR "##################################################\n");
-
-axp_get_charging_state();
-
-axp_get_charging_type();
-
-
 	}
 #endif
 
