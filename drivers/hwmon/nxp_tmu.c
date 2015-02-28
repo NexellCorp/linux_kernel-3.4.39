@@ -288,9 +288,11 @@ static int nxp_tmu_triggers(struct nxp_tmu_platdata *plat, struct tmu_info *info
 	}
 
 #if (CHECK_CHARGE_STATE)
-	INIT_DELAYED_WORK(&info->chg_work, check_charger_state);
-	schedule_delayed_work(&info->chg_work,
-		msecs_to_jiffies(CHECK_CHARGE_DURATION));
+	if (info->limit_cpufreq) {
+		INIT_DELAYED_WORK(&info->chg_work, check_charger_state);
+		schedule_delayed_work(&info->chg_work,
+			msecs_to_jiffies(CHECK_CHARGE_DURATION));
+	}
 #endif
 
 	NX_TMU_SetThresholdTempRise(channel, temp_rise);
