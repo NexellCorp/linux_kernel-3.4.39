@@ -217,7 +217,7 @@ static irqreturn_t nxp_tmu_interrupt(int irq, void *desc)
 	u32 mask = NX_TMU_GetP0IntEn(channel);
 	int i = 0;
 
-	printk("tmu[%d] irq temp %d stat 0x%x\n",
+	pr_debug("tmu[%d] irq temp %d stat 0x%x\n",
 		channel, nxp_tmu_temp(channel), NX_TMU_GetP0IntStat(channel));
 
 	/* disable triggered irq */
