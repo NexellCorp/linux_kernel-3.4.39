@@ -223,8 +223,6 @@ int axp_get_charging_state(void)
 	if (charger->bat_det && charger->ext_valid && charger->charge_on) 
 		ret = 1;
 
-	DBG_MSG("## [\e[31m%s\e[0m():%d] ret:%d\n", __func__, __LINE__, ret);
-
 	return ret;
 }
 EXPORT_SYMBOL_GPL(axp_get_charging_state);
@@ -244,7 +242,6 @@ int axp_get_charging_type(void)
 	if(charger->ac_det)
 		ret = 3; 
 
-	DBG_MSG("## [\e[31m%s\e[0m():%d] ret:%d\n", __func__, __LINE__, ret);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(axp_get_charging_type);
@@ -981,7 +978,8 @@ static int axp_battery_event(struct notifier_block *nb, unsigned long event,
 		}
 
 		if(event & (AXP22_IRQ_ACIN|AXP22_IRQ_ACOV|AXP22_IRQ_CHAOV
-			|AXP22_IRQ_CHAST|AXP22_IRQ_TEMOV|AXP22_IRQ_TEMLO|AXP22_IRQ_ACRE)) 
+			|AXP22_IRQ_CHAST|AXP22_IRQ_TEMOV|AXP22_IRQ_TEMLO|AXP22_IRQ_ACRE
+			|AXP22_IRQ_EXTLOWARN2|AXP22_IRQ_EXTLOWARN1)) 
 		{
 			axp_change(charger);
 		}
@@ -1968,7 +1966,8 @@ static int axp_battery_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, charger);
 
-	//axp_update(charger->master, AXP22_VOFF_SET, 0x01, 0x7);
+	/* REG 31H: Wakeup Control and Voff Voltage Set */
+	// axp_update(charger->master, AXP22_VOFF_SET, 0x01, 0x7);
 
 	/* REG 84H:ADC Sample rate Set ,TS Pin Control */
 	axp_set_bits(charger->master, AXP22_ADC_CONTROL3,0x04);
