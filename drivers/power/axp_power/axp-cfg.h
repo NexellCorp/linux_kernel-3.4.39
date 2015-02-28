@@ -81,7 +81,7 @@
 测试出来的确定，方法是打开打印信息，不接电池烧好固件后，
 上电池，不接充电器，开机，开机1分钟后，接上充电器，充
 1~2分钟，看打印信息中的rdc值，填入这里*/
-#define BATRDC				100
+#define BATRDC				137 //100 
 
 /*开路电压方法中的电池电压的缓存*/
 #define AXP_VOL_MAX			1
@@ -289,6 +289,41 @@
 	容量开始校准剩余容量百分比BATCAPCORRATE这两级的准确性
 	AXP22适用
 */
+
+#if 1
+#define OCVREG0		0
+#define OCVREG1		0
+#define OCVREG2		0
+#define OCVREG3		0
+#define OCVREG4		0
+#define OCVREG5		0
+#define OCVREG6		0
+#define OCVREG7		0
+#define OCVREG8		1
+#define OCVREG9		1
+#define OCVREGA		2
+#define OCVREGB		2
+#define OCVREGC		3 
+#define OCVREGD		11
+#define OCVREGE		16
+#define OCVREGF		23
+#define OCVREG10	29
+#define OCVREG11	37
+#define OCVREG12	42
+#define OCVREG13	48
+#define OCVREG14	51
+#define OCVREG15	55
+#define OCVREG16	62
+#define OCVREG17	68
+#define OCVREG18	73
+#define OCVREG19	78
+#define OCVREG1A	82
+#define OCVREG1B	86
+#define OCVREG1C	89
+#define OCVREG1D	93
+#define OCVREG1E	96
+#define OCVREG1F	100
+#else
 #define OCVREG0				0		 //3.13V
 #define OCVREG1				0		 //3.27V
 #define OCVREG2				0		 //3.34V
@@ -321,6 +356,7 @@
 #define OCVREG1D		 	94                //4.12V
 #define OCVREG1E		 	95                //4.14V
 #define OCVREG1F		 	100                //4.15V
+#endif
 
 /*  AXP中断*/
 #define AXP_IRQ_USBLO		AXP22_IRQ_USBLO	//usb 低电
