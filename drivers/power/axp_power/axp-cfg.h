@@ -91,9 +91,9 @@
 
 /*	充电电流设置，uA，0为关闭：		AXP22:300~2550,100/step*/
 /*开机充电电流，uA*/
-#define STACHGCUR			900*1000
+#define STACHGCUR			1500*1000
 /*关屏充电电流，uA*/
-#define EARCHGCUR			900*1000
+#define EARCHGCUR			1500*1000
 /*休眠充电电流，uA*/
 #define SUSCHGCUR			1500*1000
 /*关机充电电流，uA*/

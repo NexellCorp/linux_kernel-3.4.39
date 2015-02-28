@@ -25,11 +25,19 @@
 //#include "axp-cfg.h"
 #include "axp22-mfd.h"
 
+#ifdef ENABLE_DEBUG
+#define DBG_MSG(format,args...)   printk(KERN_ERR format,##args)
+#else
+#define DBG_MSG(format,args...)   do {} while (0)
+#endif
+
 static void axp_mfd_irq_work(struct work_struct *work)
 {
 	struct axp_mfd_chip *chip = container_of(work, struct axp_mfd_chip, irq_work);
 	uint64_t irqs = 0;
-	
+
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+
 	while (1) {
 		if (chip->ops->read_irqs(chip, &irqs)){
 			printk("read irq fail\n");
@@ -53,6 +61,9 @@ static void axp_mfd_irq_work(struct work_struct *work)
 static irqreturn_t axp_mfd_irq_handler(int irq, void *data)
 {
 	struct axp_mfd_chip *chip = data;
+
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+
 	//disable_irq_nosync(irq);
 	(void)schedule_work(&chip->irq_work);
 
