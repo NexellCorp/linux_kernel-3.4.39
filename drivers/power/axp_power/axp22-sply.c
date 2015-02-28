@@ -737,6 +737,7 @@ static int axp_usb_get_property(struct power_supply *psy,
 	return ret;
 }
 
+#if defined(CONFIG_USB_DWCOTG)
 static int axp_usb_limit_set(struct axp_charger *charger)
 {
 	uint8_t val;
@@ -770,6 +771,7 @@ static int axp_usb_limit_set(struct axp_charger *charger)
 
 	return var;
 }
+#endif
 
 static void axp_usb_change(struct axp_charger *charger, unsigned long event)
 {
@@ -1629,6 +1631,9 @@ static void axp_charging_monitor(struct work_struct *work)
 	axp_read(charger->master, AXP22_INTSTS5,&val);
 	printk(KERN_ERR "## Reg:0x%02x, 0x%02x, (AXP22_INTSTS5)  \n", AXP22_INTSTS5,val);
 
+	axp_read(charger->master, AXP22_ADC_CONTROL3,&val);
+	printk(KERN_ERR "## Reg:0x%02x, 0x%02x, (AXP22_ADC_CONTROL3)  \n", AXP22_ADC_CONTROL3,val);
+
 	axp_read(charger->master, AXP22_HOTOVER_CTL,&val);
 	printk(KERN_ERR "## Reg:0x%02x, 0x%02x, (AXP22_HOTOVER_CTL)  \n", AXP22_HOTOVER_CTL,val);
 
@@ -1690,15 +1695,16 @@ static void axp_charging_monitor(struct work_struct *work)
 
 static void axp_usb(struct work_struct *work)
 {
-	//static int ret = 0;
-	//int var;
-	//uint8_t tmp,val;
+#if !defined(CONFIG_USB_DWCOTG)
+	int var;
+	uint8_t tmp,val;
+#endif
 	struct axp_charger *charger;
 
 	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 	
 	charger = axp_charger;
-#if 1
+#if defined(CONFIG_USB_DWCOTG)
 	if(charger->usbwork_count > 0)
 	{
 		charger->usbwork_count--;
@@ -1805,7 +1811,7 @@ static int axp_battery_probe(struct platform_device *pdev)
 {
 	struct axp_charger *charger;
 	struct axp_supply_init_data *pdata = pdev->dev.platform_data;
-	int ret,/*var,*/tmp;
+	int ret,var,tmp;
 	uint8_t val2,val;
 	uint8_t ocv_cap[63];
 	int Cur_CoulombCounter,rdc;
@@ -1919,7 +1925,9 @@ static int axp_battery_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, charger);
 
-#if 0
+	/* REG 84H:ADC Sample rate Set ,TS Pin Control */
+	axp_set_bits(charger->master, AXP22_ADC_CONTROL3,0x04);
+
 	/* USB voltage limit */
 	if((USBVOLLIM) && (USBVOLLIMEN))
 	{
@@ -1938,7 +1946,7 @@ static int axp_battery_probe(struct platform_device *pdev)
 	{
 		axp_clr_bits(charger->master, AXP22_CHARGE_VBUS, 0x40);
 	}
-
+#if 0
 	/* USB current limit */
 	if((USBCURLIM) && (USBCURLIMEN))
 	{
