@@ -122,10 +122,10 @@ void i2c_cfg_gpio0(struct platform_device *dev)
 }
 struct s3c2410_platform_i2c i2c_data_ch0 = {
 	.bus_num	= 0,
-    .flags      = 0, 
+    .flags      = 0,
     .slave_addr = 0x10,
-    .frequency  = 100*1000,
-    .sda_delay  = 100, 
+    .frequency  = CFG_I2C0_CLK,
+    .sda_delay  = 100,
 	.cfg_gpio	= i2c_cfg_gpio0,
 };
 
@@ -176,10 +176,10 @@ void i2c_cfg_gpio1(struct platform_device *dev)
 }
 struct s3c2410_platform_i2c i2c_data_ch1 = {
 	.bus_num	= 1,
-    .flags      = 0, 
+    .flags      = 0,
     .slave_addr = 0x10,
-    .frequency  = 100*1000,
-    .sda_delay  = 100, 
+    .frequency  = CFG_I2C1_CLK,
+    .sda_delay  = 100,
 	.cfg_gpio	= i2c_cfg_gpio1,
 };
 
@@ -225,10 +225,10 @@ void i2c_cfg_gpio2(struct platform_device *dev)
 }
 struct s3c2410_platform_i2c i2c_data_ch2 = {
 	.bus_num	= 2,
-    .flags      = 0, 
+    .flags      = 0,
     .slave_addr = 0x10,
-    .frequency  = 100*1000,
-    .sda_delay  = 100, 
+    .frequency  = CFG_I2C2_CLK,
+    .sda_delay  = 100,
 	.cfg_gpio	= i2c_cfg_gpio2,
 };
 
