@@ -1967,7 +1967,7 @@ static int axp_battery_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, charger);
 
 	/* REG 31H: Wakeup Control and Voff Voltage Set */
-	axp_update(charger->master, AXP22_VOFF_SET, 0x01, 0x7);
+	axp_update(charger->master, AXP22_VOFF_SET, 0x00, 0x7);
 
 	/* REG 84H:ADC Sample rate Set ,TS Pin Control */
 	axp_set_bits(charger->master, AXP22_ADC_CONTROL3,0x04);

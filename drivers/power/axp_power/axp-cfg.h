@@ -300,7 +300,7 @@
 #define OCVREG6		0
 #define OCVREG7		0
 #define OCVREG8		0
-#define OCVREG9		1
+#define OCVREG9		0
 #define OCVREGA		1
 #define OCVREGB		2
 #define OCVREGC		3 
