@@ -88,6 +88,8 @@ extern int  dwc_otg_pcd_get_ep0_state(void);
 extern void dwc_otg_pcd_clear_ep0_state(void);
 #endif
 
+extern void axp_run_irq_handler(void);
+
 #ifdef ENABLE_REGISTER_DEUMP
 static void axp228_register_dump(struct axp_charger *charger)
 {
@@ -828,7 +830,7 @@ static void axp_usb_change(struct axp_charger *charger, unsigned long event)
 	power_supply_changed(&charger->batt);
 }
 
-static void axp_change(struct axp_charger *charger)
+static void axp_change(struct axp_charger *charger, unsigned long event)
 {
 	//uint8_t val,tmp;
 	//int var;
@@ -837,6 +839,10 @@ static void axp_change(struct axp_charger *charger)
 	axp_charger_update_state(charger);
 	axp_charger_update(charger);
 	DBG_PSY_MSG("charger->usb_valid = %d\n",charger->usb_valid);
+
+	if(event & AXP22_IRQ_EXTLOWARN2)
+		charger->rest_vol = 0;
+
 #if 0
 	if(!charger->usb_valid){
 		DBG_PSY_MSG("set usb vol-lim to %d mV, cur-lim to %d mA\n",USBVOLLIM,USBCURLIM);
@@ -981,7 +987,7 @@ static int axp_battery_event(struct notifier_block *nb, unsigned long event,
 			|AXP22_IRQ_CHAST|AXP22_IRQ_TEMOV|AXP22_IRQ_TEMLO|AXP22_IRQ_ACRE
 			|AXP22_IRQ_EXTLOWARN2|AXP22_IRQ_EXTLOWARN1)) 
 		{
-			axp_change(charger);
+			axp_change(charger, event);
 		}
 
 #ifdef ENABEL_PWRKEY
@@ -2426,6 +2432,7 @@ static int axp22_resume(struct platform_device *dev)
 #ifdef ENABLE_REGISTER_DEUMP
 	axp228_register_dump(charger);
 #endif
+	axp_run_irq_handler();
 
 	axp_charger_update_state(charger);
 
