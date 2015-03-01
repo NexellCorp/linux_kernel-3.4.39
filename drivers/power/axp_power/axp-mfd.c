@@ -31,6 +31,16 @@
 #define DBG_MSG(format,args...)   do {} while (0)
 #endif
 
+struct axp_mfd_chip *g_chip;
+
+void axp_run_irq_handler(void)
+{
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+	(void)schedule_work(&g_chip->irq_work);
+	return;
+}
+EXPORT_SYMBOL_GPL(axp_run_irq_handler);
+
 static void axp_mfd_irq_work(struct work_struct *work)
 {
 	struct axp_mfd_chip *chip = container_of(work, struct axp_mfd_chip, irq_work);
@@ -258,6 +268,8 @@ static int __devinit axp_mfd_probe(struct i2c_client *client,
 	ret = chip->ops->init_chip(chip);
 	if (ret)
 		goto out_free_chip;
+
+	g_chip = chip;
 
 #if 1
 	ret = request_threaded_irq(gpio_to_irq(client->irq), NULL, 
