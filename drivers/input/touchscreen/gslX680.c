@@ -133,10 +133,7 @@ struct gsl_ts {
 	u8 *touch_data;
 	u8 device_id;
 	int irq;
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-	struct early_suspend early_suspend;
-#endif
-    struct work_struct	resume_work;
+	struct work_struct	resume_work;
 };
 
 #ifdef GSL_DEBUG
@@ -734,19 +731,6 @@ i2c_lock_schedule:
 
 }
 
-static void gs_ts_work_resume(struct work_struct *work)
-{
-    struct gsl_ts *ts = container_of(work, struct gsl_ts,resume_work);
-	init_chip(ts->client);
-
-#ifdef GSL_MONITOR
-	printk( "gsl_ts_resume () : queue gsl_monitor_work\n");
-	queue_work(gsl_monitor_workqueue, &gsl_monitor_work.work);
-#endif
-	enable_irq(ts->irq);
-}
-
-
 #ifdef GSL_MONITOR
 static void gsl_monitor_worker(void)
 {
@@ -962,29 +946,24 @@ static int gsl_ts_suspend(struct i2c_client *client, pm_message_t mesg)
 	return 0;
 }
 
+static void gs_ts_work_resume(struct work_struct *work)
+{
+    struct gsl_ts *ts = container_of(work, struct gsl_ts,resume_work);
+	init_chip(ts->client);
+
+#ifdef GSL_MONITOR
+	printk( "gsl_ts_resume () : queue gsl_monitor_work\n");
+	queue_work(gsl_monitor_workqueue, &gsl_monitor_work.work);
+#endif
+	enable_irq(ts->irq);
+}
+
 static int gsl_ts_resume(struct i2c_client *client)
 {
-	struct gsl_ts *ts = i2c_get_clientdata(client);
+    struct gsl_ts *ts = i2c_get_clientdata(client);
 	schedule_work(&ts->resume_work);
-
 	return 0;
 }
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void gsl_ts_early_suspend(struct early_suspend *h)
-{
-	struct gsl_ts *ts = container_of(h, struct gsl_ts, early_suspend);
-	printk("[GSLX680] Enter %s\n", __func__);
-	gsl_ts_suspend(&ts->client,NULL);
-}
-
-static void gsl_ts_late_resume(struct early_suspend *h)
-{
-	struct gsl_ts *ts = container_of(h, struct gsl_ts, early_suspend);
-	printk("[GSLX680] Enter %s\n", __func__);
-	gsl_ts_resume(&ts->client);
-}
-#endif
 
 static int __devinit gsl_ts_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
@@ -1028,16 +1007,6 @@ static int __devinit gsl_ts_probe(struct i2c_client *client,
 
 	/* create debug attribute */
 	//rc = device_create_file(&ts->input->dev, &dev_attr_debug_enable);
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	ts->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
-	//ts->early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 1;
-	ts->early_suspend.suspend = gsl_ts_early_suspend;
-	ts->early_suspend.resume = gsl_ts_late_resume;
-	register_early_suspend(&ts->early_suspend);
-#endif
-
-
 #ifdef GSL_MONITOR
 	printk( "gsl_ts_probe () : queue gsl_monitor_workqueue\n");
 
@@ -1045,7 +1014,9 @@ static int __devinit gsl_ts_probe(struct i2c_client *client,
 	gsl_monitor_workqueue = create_singlethread_workqueue("gsl_monitor_workqueue");
 	queue_delayed_work(gsl_monitor_workqueue, &gsl_monitor_work, 1000);
 #endif
-    INIT_WORK(&ts->resume_work, gs_ts_work_resume);
+	device_enable_async_suspend(&client->dev);
+	INIT_WORK(&ts->resume_work, gs_ts_work_resume);
+
 	printk("[GSLX680] End %s\n", __func__);
 
 	return 0;
@@ -1064,10 +1035,6 @@ static int __devexit gsl_ts_remove(struct i2c_client *client)
 {
 	struct gsl_ts *ts = i2c_get_clientdata(client);
 	printk("==gsl_ts_remove=\n");
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	unregister_early_suspend(&ts->early_suspend);
-#endif
 
 #ifdef GSL_MONITOR
 	cancel_delayed_work_sync(&gsl_monitor_work);
@@ -1098,10 +1065,8 @@ static struct i2c_driver gsl_ts_driver = {
 		.name = GSLX680_I2C_NAME,
 		.owner = THIS_MODULE,
 	},
-#ifndef CONFIG_HAS_EARLYSUSPEND
 	.suspend	= gsl_ts_suspend,
 	.resume	= gsl_ts_resume,
-#endif
 	.probe		= gsl_ts_probe,
 	.remove		= __devexit_p(gsl_ts_remove),
 	.id_table	= gsl_ts_id,
