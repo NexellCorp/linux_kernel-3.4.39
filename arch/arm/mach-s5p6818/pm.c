@@ -226,7 +226,23 @@ static void suspend_cores(suspend_state_t stat)
 	#if (0)
 	{
 		volatile int temp;
-		int cpu, num = NR_CPUS - 1;
+		int cpu, num = NR_CPUS;
+		unsigned int lv
+
+		flush_cache_all();
+		asm volatile(
+		"	mcr	p15, 0, %1, c7, c5, 0\n"
+		"	mcr	p15, 0, %1, c7, c10, 4\n"
+		/*
+		 * Turn off coherency(dcache off)
+		 */
+		"	mrc	p15, 0, %0, c1, c0, 0\n"
+		"	bic	%0, %0, %2\n"
+		"	mcr	p15, 0, %0, c1, c0, 0\n"
+		  : "=&r" (lv)
+		  : "r" (0), "Ir" (CR_C)
+		  : "cc");
+
 		dmb();
 		for (cpu = 1; num > cpu; cpu++) {
 			NX_CLKPWR_SetCPUPowerOff(cpu);
