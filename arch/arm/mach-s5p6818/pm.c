@@ -41,6 +41,7 @@
 static unsigned int  sramsave[SRAM_SAVE_SIZE/4];
 static unsigned int *sramptr;
 static unsigned int  sram_length = SRAM_SAVE_SIZE;
+bool pm_suspend_enter = false;
 
 #define	FLUSH_CACHE()	do { flush_cache_all();outer_flush_all(); } while(0);
 
@@ -495,8 +496,10 @@ static int suspend_prepare(void)
 	if (board_pm && board_pm->prepare)
 		ret = board_pm->prepare();
 
-	if (0 == ret)
+	if (0 == ret) {
 		__power_prepare();
+		pm_suspend_enter = true;
+	}
 
 	PM_DBGOUT("%s %s\n", __func__, ret ? "WAKE":"DONE");
 	return ret;
@@ -562,6 +565,7 @@ static void suspend_finish(void)
 	PM_DBGOUT("%s\n", __func__);
 	if (board_pm && board_pm->finish)
 		board_pm->finish();
+	pm_suspend_enter = false;
 }
 
 static void suspend_end(void)

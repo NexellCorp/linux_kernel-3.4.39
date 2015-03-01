@@ -39,6 +39,7 @@
 */
 
 extern volatile int pen_release;
+
 static void __cpuinit write_pen_release(int val)
 {
 	pen_release = val;
@@ -47,7 +48,6 @@ static void __cpuinit write_pen_release(int val)
 	outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
 }
 
-#if defined (CONFIG_S5P6818_PM_IDLE)
 static inline void cpu_enter_lowpower(void)
 {
 	unsigned int lv, mv;
@@ -128,7 +128,6 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
 		(*spurious)++;
 	}
 }
-#endif
 
 int platform_cpu_kill(unsigned int cpu)
 {
@@ -141,12 +140,25 @@ int platform_cpu_kill(unsigned int cpu)
  * Called with IRQs disabled
  */
 static void *do_suspend[NR_CPUS-1] = { 0 };
+extern bool pm_suspend_enter;
 
-void platform_cpu_die(unsigned int cpu)
+static inline void __power_suspend(int cpu)
 {
-#if !defined (CONFIG_S5P6818_PM_IDLE)
 	void (*power_down)(ulong, ulong) = NULL;
+	int spurious = 0;
 
+	/*
+	 * enter WFI when poweroff or restart
+	 */
+	if (false == pm_suspend_enter) {
+		cpu_enter_lowpower();
+		platform_do_lowpower(cpu, &spurious);
+		while (1) {}
+	}
+
+	/*
+	 * enter SRAM text when suspend
+	 */
 	if (NULL == do_suspend[cpu-1]) {
 		do_suspend[cpu-1] = __arm_ioremap_exec(0xffff0000, 0x10000, 0);
 		if (NULL == do_suspend[cpu-1])
@@ -158,8 +170,15 @@ void platform_cpu_die(unsigned int cpu)
 	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
 	nop(); nop(); nop();
 	dmb();
+}
+
+void platform_cpu_die(unsigned int cpu)
+{
+#if !defined (CONFIG_S5P6818_PM_IDLE)
+	__power_suspend(cpu);
 #else
-	volatile int spurious = 0;
+	int spurious = 0;
+
 	/*
 	 * we're ready for shutdown now, so do it
 	 */
