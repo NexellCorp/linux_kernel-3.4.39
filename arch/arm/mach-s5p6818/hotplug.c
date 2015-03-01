@@ -134,15 +134,10 @@ int platform_cpu_kill(unsigned int cpu)
 	return 1;
 }
 
-/*
- * platform-specific code to shutdown a CPU
- *
- * Called with IRQs disabled
- */
 static void *do_suspend[NR_CPUS-1] = { 0 };
 extern bool pm_suspend_enter;
 
-static inline void __power_suspend(int cpu)
+static inline void platform_cpu_lowpower(int cpu)
 {
 	void (*power_down)(ulong, ulong) = NULL;
 	int spurious = 0;
@@ -172,10 +167,15 @@ static inline void __power_suspend(int cpu)
 	dmb();
 }
 
+/*
+ * platform-specific code to shutdown a CPU
+ *
+ * Called with IRQs disabled
+ */
 void platform_cpu_die(unsigned int cpu)
 {
 #if !defined (CONFIG_S5P6818_PM_IDLE)
-	__power_suspend(cpu);
+	platform_cpu_lowpower(cpu);
 #else
 	int spurious = 0;
 
