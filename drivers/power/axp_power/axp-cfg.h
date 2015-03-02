@@ -244,7 +244,7 @@
 /*
 	AXP22:0-关闭，1-打开
 */
-#define BATCAPCORRENT		0
+#define BATCAPCORRENT		1
 /* 充电完成后，充电输出使能*/
 /*
 	AXP22:0-关闭，1-打开
@@ -396,14 +396,16 @@ static const uint64_t AXP22_NOTIFIER_ON = (AXP_IRQ_USBIN |AXP_IRQ_USBRE |
 				       		                            AXP_IRQ_ACIN |AXP_IRQ_ACRE |
 				       		                            AXP_IRQ_BATIN |AXP_IRQ_BATRE |
 				       		                            AXP_IRQ_CHAST |AXP_IRQ_CHAOV |
-														AXP_IRQ_EXTLOWARN2 |
-														AXP_IRQ_EXTLOWARN1);
+														AXP_IRQ_PEKLO |AXP_IRQ_PEKSH |
+														(uint64_t)AXP_IRQ_PEKFE |
+														(uint64_t)AXP_IRQ_PEKRE |
+														(uint64_t)AXP_IRQ_EXTLOWARN2 |
+														(uint64_t)AXP_IRQ_EXTLOWARN1);
 
 /* 需要做插入火牛、usb关机重启进boot时power_start设置为1，否则为0*/
 #define POWER_START 0
 
 
-//#define ENABLE_REGISTER_DEUMP
 //#define ENABLE_DEBUG
 //#define DBG_AXP_PSY
 

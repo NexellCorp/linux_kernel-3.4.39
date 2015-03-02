@@ -33,6 +33,39 @@
 
 struct axp_mfd_chip *g_chip;
 
+#ifdef ENABLE_DEBUG
+static void axp_mfd_register_dump(void)
+{
+	s32 ret=0;
+	u16 i=0;
+	u8 value[0xff]={0};
+
+	printk("##########################################################\n");
+	printk("##\e[31m %s()\e[0m                               #\n", __func__);
+	printk("##########################################################\n");
+	printk("##      0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F\n");
+
+	for(i=0; i<=0xff; i++)
+	{
+		if(i%16 == 0)
+			printk("## %02X:", i);
+
+		if(i%4 == 0)
+			printk(" ");
+
+		ret = axp_read(&axp->dev, i, &value[i]);
+		if(!ret)
+			printk("%02x ", value[i]);
+		else
+			printk("\e[31mxx\e[0m ");
+
+		if((i+1)%16 == 0)
+			printk("\n");
+	}
+	printk("##########################################################\n");
+}
+#endif
+
 void axp_run_irq_handler(void)
 {
 	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
@@ -180,6 +213,7 @@ failed:
 static void axp_power_off(void)
 {
 	uint8_t val;
+	int ret = 0;
 
 #if defined (CONFIG_KP_AXP22)
 	if(SHUTDOWNVOL >= 2600 && SHUTDOWNVOL <= 3300)
@@ -236,7 +270,11 @@ static void axp_power_off(void)
 	}
     axp_write(&axp->dev, AXP22_BUFFERC, 0x00);
     mdelay(20);
-    axp_set_bits(&axp->dev, AXP22_OFF_CTL, 0x83);
+    ret = axp_set_bits(&axp->dev, AXP22_OFF_CTL, 0x80);
+    if(ret < 0){
+        printk("[axp] power-off cmd error!, retry!");
+        ret = axp_set_bits(&axp->dev, AXP22_OFF_CTL, 0x80);
+    }
     //mdelay(20);
     //printk("[axp] warning!!! axp can't power-off, maybe some error happend!\n");
 #endif
@@ -248,6 +286,8 @@ static int __devinit axp_mfd_probe(struct i2c_client *client,
 	struct axp_platform_data *pdata = client->dev.platform_data;
 	struct axp_mfd_chip *chip;
 	int ret;
+
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 
 	chip = kzalloc(sizeof(struct axp_mfd_chip), GFP_KERNEL);
 	if (chip == NULL)
@@ -264,6 +304,10 @@ static int __devinit axp_mfd_probe(struct i2c_client *client,
 	BLOCKING_INIT_NOTIFIER_HEAD(&chip->notifier_list);
 
 	i2c_set_clientdata(client, chip);
+
+#ifdef ENABLE_DEBUG
+	axp_mfd_register_dump();
+#endif
 
 	ret = chip->ops->init_chip(chip);
 	if (ret)
