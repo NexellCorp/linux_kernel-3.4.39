@@ -106,7 +106,7 @@ static void axp_sply_register_dump(struct axp_charger *charger, int type)
 		printk("##########################################################\n");
 		printk("##\e[31m %s()\e[0m                              #\n", __func__);
 		printk("##########################################################\n");
-		printk("       0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F\n");
+		printk("##      0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F\n");
 
 		for(i=0; i<=0xff; i++)
 		{
@@ -130,9 +130,9 @@ static void axp_sply_register_dump(struct axp_charger *charger, int type)
 	else
 	{
 		PM_DBGOUT("##########################################################\n");
-		PM_DBGOUT("##\e[31m %s()\e[0m                               #\n", __func__);
+		PM_DBGOUT("##\e[31m %s()\e[0m                              #\n", __func__);
 		PM_DBGOUT("##########################################################\n");
-		PM_DBGOUT("       0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F\n");
+		PM_DBGOUT("##      0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F\n");
 
 		for(i=0; i<=0xff; i++)
 		{
