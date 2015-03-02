@@ -19,7 +19,7 @@
 
 #include "usb.h"
 
-#if defined(CONFIG_ARCH_CPU_SLSI)
+#if defined (CONFIG_HIGHMEM) && defined(CONFIG_ARCH_CPU_SLSI) 
 #include <linux/highmem.h>
 #endif
 
@@ -365,9 +365,6 @@ int usb_sg_init(struct usb_sg_request *io, struct usb_device *dev,
 	int i;
 	int urb_flags;
 	int use_sg;
-#if defined(CONFIG_ARCH_CPU_SLSI)
-	void *vaddr;
-#endif
 
 	if (!io || !dev || !sg
 			|| usb_pipecontrol(pipe)
@@ -437,9 +434,9 @@ int usb_sg_init(struct usb_sg_request *io, struct usb_device *dev,
 			 */
 			if (!PageHighMem(sg_page(sg)))
 				urb->transfer_buffer = sg_virt(sg);
-#if defined(CONFIG_ARCH_CPU_SLSI)
+#if defined (CONFIG_HIGHMEM) && defined(CONFIG_ARCH_CPU_SLSI) 
 			else {
-				vaddr = kmap_high_get(sg_page(sg));	
+				void *vaddr = kmap_high_get(sg_page(sg));	
 				if (vaddr) {
 					vaddr += sg->offset;
 					kunmap_high(sg_page(sg));
