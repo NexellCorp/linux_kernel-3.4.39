@@ -43,6 +43,16 @@ static int (*cpu_resume_fn)(struct snd_soc_dai *dai) = NULL;
 static struct snd_soc_codec *es8316 = NULL;
 static int codec_bias_level = 0;
 
+static int es8316_jack_status_check(void);
+/* Headphones jack detection GPIO */
+static struct snd_soc_jack_gpio jack_gpio = {
+	.invert		= false,			// High detect : invert = false
+	.name		= "hp-gpio",
+	.report		= SND_JACK_HEADPHONE,
+	.debounce_time	= 200,
+	.jack_status_check = es8316_jack_status_check,
+};
+
 static int es8316_hw_params(struct snd_pcm_substream *substream,
 				struct snd_pcm_hw_params *params)
 {
@@ -61,6 +71,15 @@ static int es8316_hw_params(struct snd_pcm_substream *substream,
 	if (0 > ret)
 		return ret;
 	return ret;
+}
+
+static int es8316_suspend_pre(struct snd_soc_card *card)
+{
+     struct snd_soc_codec *codec = es8316;
+ 
+     gpio_direction_output(AUDIO_AMP_POWER, 0);
+
+     return 0;
 }
 
 static int es8316_resume_pre(struct snd_soc_card *card)
@@ -91,10 +110,28 @@ static int es8316_resume_pre(struct snd_soc_card *card)
 static int es8316_resume_post(struct snd_soc_card *card)
 {
     struct snd_soc_codec *codec = es8316;
-    PM_DBGOUT("%s BAIAS=%d, PRE=%d\n", __func__, codec->dapm.bias_level, codec_bias_level);
+   	int jack = jack_gpio.gpio;
+	int invert = jack_gpio.invert;
+	int level = gpio_get_value_cansleep(jack);
+
+	PM_DBGOUT("%s BAIAS=%d, PRE=%d\n", __func__, codec->dapm.bias_level, codec_bias_level);
+
+	if (!codec)
+		return -1;
 
     if (SND_SOC_BIAS_OFF != codec_bias_level)
         codec->driver->resume(codec);
+
+	if (invert)
+		level = !level;
+
+	pr_debug("%s: hp jack %s\n", __func__, level?"IN":"OUT");
+
+	if (!level) {
+       gpio_direction_output(AUDIO_AMP_POWER, 1);
+	} else {
+       gpio_direction_output(AUDIO_AMP_POWER, 0);
+	}
 
     return 0;
 }
@@ -147,16 +184,6 @@ static struct snd_soc_jack_pin jack_pins[] = {
 	},
 };
 #endif
-
-static int es8316_jack_status_check(void);
-/* Headphones jack detection GPIO */
-static struct snd_soc_jack_gpio jack_gpio = {
-	.invert		= false,			// High detect : invert = false
-	.name		= "hp-gpio",
-	.report		= SND_JACK_HEADPHONE,
-	.debounce_time	= 200,
-	.jack_status_check = es8316_jack_status_check,
-};
 
 static struct snd_soc_jack hp_jack;
 
@@ -240,6 +267,7 @@ static struct snd_soc_card es8316_card = {
 	.owner 				= THIS_MODULE,
 	.dai_link 			= &es8316_dai_link,
 	.num_links 			= 1,
+	.suspend_pre		= &es8316_suspend_pre,
 	.resume_pre			= &es8316_resume_pre,
 	.resume_post		= &es8316_resume_post,
 	.dapm_widgets 		= es8316_dapm_widgets,
