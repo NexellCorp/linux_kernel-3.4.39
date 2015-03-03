@@ -148,7 +148,7 @@ static inline void platform_cpu_lowpower(int cpu)
 	if (false == pm_suspend_enter) {
 		cpu_enter_lowpower();
 		platform_do_lowpower(cpu, &spurious);
-		while (1) {}
+		halt();
 	}
 
 	/*
@@ -174,10 +174,11 @@ static inline void platform_cpu_lowpower(int cpu)
  */
 void platform_cpu_die(unsigned int cpu)
 {
+	int spurious = 0;
+
 #if !defined (CONFIG_S5P6818_PM_IDLE)
 	platform_cpu_lowpower(cpu);
-#else
-	int spurious = 0;
+#endif
 
 	/*
 	 * we're ready for shutdown now, so do it
@@ -190,7 +191,6 @@ void platform_cpu_die(unsigned int cpu)
 	 * coherency, and then restore interrupts
 	 */
 	cpu_leave_lowpower();
-#endif
 
 	/* wakeup form idle */
 	write_pen_release(-1);
