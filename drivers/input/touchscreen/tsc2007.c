@@ -148,7 +148,6 @@ static u32 tsc2007_calculate_pressure(struct tsc2007 *tsc, struct ts_event *tc)
 		rt /= tc->z1;
 		rt = (rt + 2047) >> 12;
 #else
-
 		rt = (float)(tsc->x_plate_ohms) * (float)((float)tc->x/4096) * ((float)((float)tc->z2/(float)tc->z1) - 1);
 #endif
 	}
@@ -182,7 +181,7 @@ static bool tsc2007_is_pen_down(struct tsc2007 *ts)
 			val = nxp_soc_gpio_get_in_value(CFG_IO_TOUCH_PENDOWN_DETECT);	
 			if (prev_val != val)
 				break;
-			mdelay(10);
+			mdelay(4);
 		}	
 	} while (i < DEBOUNCE_COUNT);
 
@@ -307,6 +306,7 @@ static irqreturn_t tsc2007_soft_irq(int irq, void *handle)
 			dev_dbg(&ts->client->dev,
 				"DOWN point(%4d,%4d), pressure (%4u)\n",
 				tc.x, tc.y, rt);
+			//printk(" %d  %d  %d  %d  %d \n", tc.x, tc.y, val, rt, ts->max_rt);
 			
 			x = tc.x-ADCVAL_X_MIN;
 			if( x < 0 ) x = 1;
@@ -347,6 +347,7 @@ static irqreturn_t tsc2007_soft_irq(int irq, void *handle)
 	}
 
 	dev_dbg(&ts->client->dev, "UP\n");
+	//printk("UP\n");
 
 	input_report_key(input, BTN_TOUCH, 0);
 	input_report_abs(input, ABS_PRESSURE, 0);
@@ -566,6 +567,7 @@ static int __devinit tsc2007_probe(struct i2c_client *client,
 	struct input_dev *input_dev;
 	int err = 0;
 	
+
 	if (!pdata) {
 		dev_err(&client->dev, "platform data is required!\n");
 		return -EINVAL;
@@ -606,7 +608,6 @@ static int __devinit tsc2007_probe(struct i2c_client *client,
 		goto err_free_mem;
 	}
 
-	
 	snprintf(ts->phys, sizeof(ts->phys),
 		 "%s/input0", dev_name(&client->dev));
 
@@ -649,7 +650,6 @@ static int __devinit tsc2007_probe(struct i2c_client *client,
 		dev_err(&client->dev, "irq %d busy?\n", ts->irq);
 		goto err_free_mem;
 	}
-
 	
 	tsc2007_stop(ts);
 
@@ -660,7 +660,6 @@ static int __devinit tsc2007_probe(struct i2c_client *client,
 
 	i2c_set_clientdata(client, ts);
 
-	
 	return 0;
 
  err_free_irq:
