@@ -5187,12 +5187,13 @@ void dwc_otg_core_reset(dwc_otg_core_if_t * core_if)
 	}
 	while (greset.b.csftrst == 1);
 
+	/* Wait for 3 PHY Clocks */
+	dwc_mdelay(100);
+	count = 0;
+
     gotgctl.d32 = DWC_READ_REG32(&global_regs->gotgctl);
 
 	if (core_if->host_flag && !gotgctl.b.conidsts) {
-		/* Wait for 3 PHY Clocks */
-		dwc_mdelay(100);
-		count = 0;
 		do {    
 			gintsts.d32 = DWC_READ_REG32(&global_regs->gintsts);
 			if (++count > 100) 
