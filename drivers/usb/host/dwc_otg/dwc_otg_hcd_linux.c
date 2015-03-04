@@ -275,7 +275,6 @@ static int dwc_otg_hcd_resume(struct usb_hcd *hcd)
 //    hprt0_data_t hprt0;
 //    pcgcctl_data_t pcgcctl;
 //    gintmsk_data_t gintmsk;
-    uint32_t count = 0;
     gotgctl_data_t gotgctl = {.d32 = 0 };
 
     if(core_if->op_state == B_PERIPHERAL) {
@@ -342,24 +341,13 @@ static int dwc_otg_hcd_resume(struct usb_hcd *hcd)
     DWC_WRITE_REG32(&core_if->core_global_regs->gintmsk, gintmsk.d32);
 */
 
-    /* Clear any pending interrupts and enable interrupts */
-    DWC_WRITE_REG32(&core_if->core_global_regs->gintsts, 0xeFFFFFFF);
-    dwc_otg_enable_global_interrupts(core_if);
-
+	dwc_otg_core_init(core_if);
+	dwc_otg_enable_global_interrupts(core_if);
 
     gotgctl.d32 = DWC_READ_REG32(&core_if->core_global_regs->gotgctl);
 
     /* B-Device connector (Device Mode) */
     if (gotgctl.b.conidsts) {
-        /* Wait for switch to device mode. */
-        while (!dwc_otg_is_device_mode(core_if)) {
-            DWC_PRINTF("Waiting for Peripheral Mode, Mode=%s\n",
-                   (dwc_otg_is_host_mode(core_if) ? "Host" :
-                    "Peripheral"));
-            dwc_mdelay(100);
-            if (++count > 10000)
-            break;
-        }
 		core_if->op_state = B_PERIPHERAL;
 #if defined(CONFIG_BATTERY_NXE2000)
         otgid_power_control_by_dwc(0);
@@ -368,10 +356,13 @@ static int dwc_otg_hcd_resume(struct usb_hcd *hcd)
 #endif
         dwc_otg_set_prtpower(core_if, 0);
 		core_if->host_flag = 0;
-		dwc_otg_core_init(core_if);
-	    DWC_WRITE_REG32(&core_if->core_global_regs->gintsts, 0xeFFFFFFF);
-		dwc_otg_enable_global_interrupts(core_if);
 		cil_pcd_start(core_if);
+	} else {
+		core_if->op_state = A_HOST;
+		core_if->host_flag = 1;
+		cil_hcd_start(core_if);
+		// wait until device is stable.
+	    dwc_mdelay(100);
 	}
 
 	return 0;
