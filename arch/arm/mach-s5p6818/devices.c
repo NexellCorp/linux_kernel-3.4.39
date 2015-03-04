@@ -776,8 +776,8 @@ struct s3c64xx_spi_info s3c64xx_spi1_pdata = {
 	  .bus_id = 1,
 	  .enable_dma     = 1,
       .dma_filter     = pl08x_filter_id,
-      .dma_rx_param   = (void *)DMA_PERIPHERAL_NAME_SSP0_RX,
-      .dma_tx_param   = (void *)DMA_PERIPHERAL_NAME_SSP0_TX,
+      .dma_rx_param   = (void *)DMA_PERIPHERAL_NAME_SSP1_RX,
+      .dma_tx_param   = (void *)DMA_PERIPHERAL_NAME_SSP1_TX,
       //.autosuspend_delay  = 10,
 /* end */
 //	.hierarchy = SSP_SLAVE,
@@ -819,11 +819,11 @@ struct s3c64xx_spi_info s3c64xx_spi2_pdata = {
 	.cfg_gpio = s3c64xx_spi2_cfg_gpio,
 	.spi_init = spi_init,
 /* bok add */
-	  .bus_id = 2,
-	  .enable_dma     = 1,
-      .dma_filter     = pl08x_filter_id,
-      .dma_rx_param   = (void *)DMA_PERIPHERAL_NAME_SSP2_RX,
-      .dma_tx_param   = (void *)DMA_PERIPHERAL_NAME_SSP2_TX,
+	.bus_id = 2,
+	.enable_dma     = 1,
+    .dma_filter     = pl08x_filter_id,
+    .dma_rx_param   = (void *)DMA_PERIPHERAL_NAME_SSP2_RX,
+    .dma_tx_param   = (void *)DMA_PERIPHERAL_NAME_SSP2_TX,
       //.autosuspend_delay  = 10,
 /* end */
 //	.hierarchy = SSP_MASTER,
