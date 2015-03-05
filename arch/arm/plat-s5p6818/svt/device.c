@@ -1814,6 +1814,47 @@ struct spi_board_info spi0_board_info[] __initdata = {
         .controller_data    = &spi0_csi[0],
     }
 };
+static struct s3c64xx_spi_csinfo spi1_csi[] = {
+    [0] = {
+        .line       = CFG_SPI1_CS,
+        .set_level  = gpio_set_value,
+        .fb_delay   = 0x2,
+		.hierarchy = SSP_SLAVE,
+	//	.hierarchy = SSP_MASTER,
+    },
+};
+struct spi_board_info spi1_board_info[] __initdata = {
+    {
+        .modalias       = "spidev",
+        .platform_data  = NULL,
+        .max_speed_hz   = 10 * 1000 * 1000,
+        .bus_num        = 1,
+        .chip_select    = 0,
+        .mode           = SPI_MODE_0,
+        .controller_data    = &spi1_csi[0],
+    }
+};
+static struct s3c64xx_spi_csinfo spi2_csi[] = {
+    [0] = {
+        .line       = CFG_SPI2_CS,
+        .set_level  = gpio_set_value,
+        .fb_delay   = 0x2,
+		//.hierarchy = SSP_SLAVE,
+		.hierarchy = SSP_MASTER,
+    },
+};
+struct spi_board_info spi2_board_info[] __initdata = {
+    {
+        .modalias       = "spidev",
+        .platform_data  = NULL,
+        .max_speed_hz   = 10 * 1000 * 1000,
+        .bus_num        = 2,
+        .chip_select    = 0,
+        .mode           = SPI_MODE_0,
+        .controller_data    = &spi2_csi[0],
+    }
+};
+
 #endif
 /*------------------------------------------------------------------------------
  * DW MMC board config
@@ -1893,6 +1934,21 @@ static struct dw_mci_board _dwmci1_data = {
 
 #ifdef CONFIG_MMC_NXP_CH2
 static struct dw_mci_board _dwmci2_data = {
+    .quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
+				  	  DW_MCI_QUIRK_HIGHSPEED |
+				  	  DW_MMC_QUIRK_HW_RESET_PW |
+				      DW_MCI_QUIRK_NO_DETECT_EBIT,
+	.bus_hz			= 50 * 1000 * 1000,
+	.caps			=  MMC_CAP_NONREMOVABLE |
+			 	  	   MMC_CAP_CMD23,
+				  	  
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+
+	.desc_sz		= 4,
+	.detect_delay_ms= 200,
+};
+/*
+static struct dw_mci_board _dwmci2_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 					  DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 50 * 1000 * 1000,
@@ -1903,6 +1959,7 @@ static struct dw_mci_board _dwmci2_data = {
 	.get_ro			= _dwmci_get_ro,
 	.get_cd			= _dwmci_get_cd,
 };
+*/
 #endif
 
 
@@ -2092,6 +2149,8 @@ void __init nxp_board_devs_register(void)
 
 #if defined(CONFIG_SPI_SPIDEV) || defined(CONFIG_SPI_SPIDEV_MODULE)
     spi_register_board_info(spi0_board_info, ARRAY_SIZE(spi0_board_info));
+    spi_register_board_info(spi1_board_info, ARRAY_SIZE(spi1_board_info));
+    spi_register_board_info(spi2_board_info, ARRAY_SIZE(spi2_board_info));
     printk("plat: register spidev\n");
 #endif
 

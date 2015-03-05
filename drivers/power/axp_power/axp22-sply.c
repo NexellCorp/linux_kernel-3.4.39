@@ -97,9 +97,9 @@ extern void axp_run_irq_handler(void);
 #ifdef ENABLE_DEBUG
 static void axp_sply_register_dump(struct axp_charger *charger, int type)
 {
-	s32 ret=0;
-	u16 i=0;
-	u8 value[0xff]={0};
+	int ret = 0;
+	u8 i = 0;
+	u8 value =0;
 
 	if(type)
 	{
@@ -108,7 +108,7 @@ static void axp_sply_register_dump(struct axp_charger *charger, int type)
 		printk("##########################################################\n");
 		printk("##      0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F\n");
 
-		for(i=0; i<=0xff; i++)
+		for(i=0; i<0xf0; i++)
 		{
 			if(i%16 == 0)
 				printk("## %02X:", i);
@@ -116,9 +116,9 @@ static void axp_sply_register_dump(struct axp_charger *charger, int type)
 			if(i%4 == 0)
 				printk(" ");
 
-			ret = axp_read(charger->master, i, &value[i]);
+			ret = axp_read(charger->master, i, &value);
 			if(!ret)
-				printk("%02x ", value[i]);
+				printk("%02x ", value);
 			else
 				printk("\e[31mxx\e[0m ");
 
@@ -134,7 +134,7 @@ static void axp_sply_register_dump(struct axp_charger *charger, int type)
 		PM_DBGOUT("##########################################################\n");
 		PM_DBGOUT("##      0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F\n");
 
-		for(i=0; i<=0xff; i++)
+		for(i=0; i<0xf0; i++)
 		{
 			if(i%16 == 0)
 				PM_DBGOUT("## %02X:", i);
@@ -142,9 +142,9 @@ static void axp_sply_register_dump(struct axp_charger *charger, int type)
 			if(i%4 == 0)
 				PM_DBGOUT(" ");
 
-			ret = axp_read(charger->master, i, &value[i]);
+			ret = axp_read(charger->master, i, &value);
 			if(!ret)
-				PM_DBGOUT("%02x ", value[i]);
+				PM_DBGOUT("%02x ", value);
 			else
 				PM_DBGOUT("\e[31mxx\e[0m ");
 
@@ -1674,7 +1674,7 @@ static void axp_charging_monitor(struct work_struct *work)
 		pre_rest_vol = charger->rest_vol;
 		
 	}
-	power_supply_changed(&charger->batt);
+
 #ifdef ENABLE_DEBUG
 	{
 	int temp=0, temp1=0;
@@ -1719,6 +1719,8 @@ static void axp_charging_monitor(struct work_struct *work)
 	printk(KERN_ERR "##########################################################\n");
 	}
 #endif
+
+	power_supply_changed(&charger->batt);
 
 	/* reschedule for the next time */
 	schedule_delayed_work(&charger->work, charger->interval);
@@ -1980,8 +1982,9 @@ static int axp_battery_probe(struct platform_device *pdev)
 	{
 		axp_clr_bits(charger->master, AXP22_CHARGE_VBUS, 0x40);
 	}
-#if 0
+
 	/* USB current limit */
+#if 0
 	if((USBCURLIM) && (USBCURLIMEN))
 	{
 		axp_clr_bits(charger->master, AXP22_CHARGE_VBUS, 0x02);
@@ -2263,14 +2266,14 @@ static int axp_battery_probe(struct platform_device *pdev)
 
 	/* RDC initial */
 	axp_read(charger->master, AXP22_RDC0,&val2);
-	if((BATRDC) && (!(val2 & 0x40)))		//如果配置电池内阻，则手动配置
+	if((BATRDC) && (!(val2 & 0x40)))
 	{
 		rdc = (BATRDC * 10000 + 5371) / 10742;
 		axp_write(charger->master, AXP22_RDC0, ((rdc >> 8) & 0x1F)|0x80);
 		axp_write(charger->master,AXP22_RDC1,rdc & 0x00FF);
 	}
 
-	//probe 时初始化RDC，使其提前计算正确的OCV，然后在此处启动计量系统
+	//probe RDC, OCV
 	axp_read(charger->master,AXP22_BATCAP0,&val2);
 	if((BATCAP) && (!(val2 & 0x80)))
 	{
@@ -2466,13 +2469,17 @@ static void axp22_shutdown(struct platform_device *dev)
 	cancel_delayed_work_sync(&charger->work);
 
 #if defined (CONFIG_AXP_CHGCHANGE)
-	printk("pmu_shutdown_chgcur = %d\n", AC_LIMIT_PWROFF);
+	if(CLSCHGCUR == 0)
+		axp_clr_bits(charger->master,AXP22_CHARGE_CONTROL1,0x80);
+	else
+		axp_set_bits(charger->master,AXP22_CHARGE_CONTROL1,0x80);
 
-	if(AC_LIMIT_PWROFF >= 300000 && AC_LIMIT_PWROFF <= 2550000)
-	{
-		tmp = (AC_LIMIT_PWROFF -200001)/150000;
+	printk("pmu_shutdown_chgcur = %d\n", CLSCHGCUR);
+
+	if(CLSCHGCUR >= 300000 && CLSCHGCUR <= 2550000){
+		tmp = (CLSCHGCUR -200001)/150000;
 		charger->chgcur = tmp *150000 + 300000;
-		axp_update(charger->master, AXP22_CHARGE_CONTROL3, tmp, 0x0F);
+		axp_update(charger->master, AXP22_CHARGE_CONTROL1, tmp, 0x0F);
 	}
 #endif
 }
