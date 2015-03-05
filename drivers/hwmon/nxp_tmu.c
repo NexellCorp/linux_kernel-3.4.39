@@ -41,7 +41,7 @@
 */
 
 #define DRVNAME	"nxp-tmu"
-#define	CHECK_CHARGE_STATE			1
+#define	CHECK_CHARGE_STATE			0
 #define	CHECK_CHARGE_DURATION		(500)
 
 struct tmu_trigger {
