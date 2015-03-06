@@ -515,8 +515,21 @@ err_alloc_tx_sg:
 err_alloc_rx_sg:
 	return -ENOMEM;
 }
+static void stop_dma(struct s3c64xx_spi_driver_data *sdd)
+{
+	struct dma_chan *rxchan = sdd->dma_rx_channel;
+	struct dma_chan *txchan = sdd->dma_tx_channel;
 	
-
+	dmaengine_terminate_all(txchan);
+	dmaengine_terminate_all(rxchan);
+	dma_unmap_sg(txchan->device->dev, sdd->sgt_tx.sgl,
+		sdd->sgt_tx.nents, DMA_TO_DEVICE);
+	dma_unmap_sg(rxchan->device->dev, sdd->sgt_rx.sgl,
+		sdd->sgt_tx.nents, DMA_FROM_DEVICE);
+	sg_free_table(&sdd->sgt_tx);
+	sg_free_table(&sdd->sgt_rx);
+			
+}
 static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
 {
 	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
@@ -668,7 +681,6 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 	/* millisecs to xfer 'len' bytes @ 'cur_speed' */
 	ms = xfer->len * 8 * 1000 / sdd->cur_speed;
 
-	printk("\e[32m ms = %ld , mode %d  \e[0m\n",ms, dma_mode);
 	if (dma_mode) {
 		ms += 1000; /* some tolerance */
 		val = msecs_to_jiffies(ms) + 10;
@@ -1195,16 +1207,7 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
 				xfer->len);
 
 			if(use_dma) {
-				struct dma_chan *rxchan = sdd->dma_rx_channel;
-				struct dma_chan *txchan = sdd->dma_tx_channel;
-				dmaengine_terminate_all(txchan);
-				dmaengine_terminate_all(rxchan);
-				dma_unmap_sg(txchan->device->dev, sdd->sgt_tx.sgl,
-		    		sdd->sgt_tx.nents, DMA_TO_DEVICE);
-				dma_unmap_sg(rxchan->device->dev, sdd->sgt_rx.sgl,
-		    		sdd->sgt_tx.nents, DMA_FROM_DEVICE);
-				sg_free_table(&sdd->sgt_tx);
-				sg_free_table(&sdd->sgt_rx);
+				stop_dma(sdd);
 			}
 			goto out;
 		}
@@ -1358,7 +1361,7 @@ static irqreturn_t s3c64xx_spi_irq(int irq, void *data)
 {
 	struct s3c64xx_spi_driver_data *sdd = data;
 	struct spi_master *spi = sdd->master;
-	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
+	//struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
 	unsigned int val, status;
 
 	val = readl(sdd->regs + S3C64XX_SPI_PENDING_CLR);
