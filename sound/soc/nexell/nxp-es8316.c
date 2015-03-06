@@ -125,7 +125,7 @@ static int es8316_resume_post(struct snd_soc_card *card)
 	if (invert)
 		level = !level;
 
-	DBG("%s: hp jack %s\n", __func__, level?"IN":"OUT");
+	pr_debug("%s: hp jack %s\n", __func__, level?"IN":"OUT");
 
 	if (!level) {
 		es8316_jack_insert = 0;
@@ -135,7 +135,7 @@ static int es8316_resume_post(struct snd_soc_card *card)
 		gpio_direction_output(AUDIO_AMP_POWER, 0);
 	}
 
-	DBG("%s: jack_insert %d\n", __func__, es8316_jack_insert);
+	pr_debug("%s: jack_insert %d\n", __func__, es8316_jack_insert);
 
     return 0;
 }
@@ -204,7 +204,7 @@ static int es8316_jack_status_check(void)
 	if (invert)
 		level = !level;
 
-	DBG("%s: hp jack %s\n", __func__, level?"IN":"OUT");
+	pr_debug("%s: hp jack %s\n", __func__, level?"IN":"OUT");
 
 	if (!level) {
 		es8316_jack_insert = 0;
@@ -216,7 +216,7 @@ static int es8316_jack_status_check(void)
 		gpio_direction_output(AUDIO_AMP_POWER, 0);
 	}
 
-	DBG("%s: jack_insert %d\n", __func__, es8316_jack_insert);
+	pr_debug("%s: jack_insert %d\n", __func__, es8316_jack_insert);
 
 	return level;
 }
