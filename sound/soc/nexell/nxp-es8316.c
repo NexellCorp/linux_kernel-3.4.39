@@ -55,6 +55,38 @@ static struct snd_soc_jack_gpio jack_gpio = {
 	.jack_status_check = es8316_jack_status_check,
 };
 
+static struct snd_soc_jack hp_jack;
+
+static int es8316_jack_status_check(void)
+{
+	struct snd_soc_codec *codec = es8316;
+	int jack = jack_gpio.gpio;
+	int invert = jack_gpio.invert;
+	int level = gpio_get_value_cansleep(jack);
+
+	if (!codec)
+		return -1;
+
+	if (invert)
+		level = !level;
+
+	pr_debug("%s: hp jack %s\n", __func__, level?"IN":"OUT");
+
+	if (!level) {
+		es8316_jack_insert = 0;
+		es8316_mono_en(1);
+		gpio_set_value(AUDIO_AMP_POWER, 1);
+	} else {
+		es8316_jack_insert = 1;
+		es8316_mono_en(0);
+		gpio_set_value(AUDIO_AMP_POWER, 0);
+	}
+
+	pr_debug("%s: jack_insert %d\n", __func__, es8316_jack_insert);
+
+	return level;
+}
+
 static int es8316_hw_params(struct snd_pcm_substream *substream,
 				struct snd_pcm_hw_params *params)
 {
@@ -77,9 +109,11 @@ static int es8316_hw_params(struct snd_pcm_substream *substream,
 
 static int es8316_suspend_pre(struct snd_soc_card *card)
 {
-     gpio_direction_output(AUDIO_AMP_POWER, 0);
+    PM_DBGOUT("+%s\n", __func__);
 
-     return 0;
+	gpio_set_value(AUDIO_AMP_POWER, 0);
+
+    return 0;
 }
 
 static int es8316_resume_pre(struct snd_soc_card *card)
@@ -129,13 +163,15 @@ static int es8316_resume_post(struct snd_soc_card *card)
 
 	if (!level) {
 		es8316_jack_insert = 0;
-		gpio_direction_output(AUDIO_AMP_POWER, 1);
+		gpio_set_value(AUDIO_AMP_POWER, 1);
 	} else {
 		es8316_jack_insert = 1;
-		gpio_direction_output(AUDIO_AMP_POWER, 0);
+		gpio_set_value(AUDIO_AMP_POWER, 0);
 	}
 
 	pr_debug("%s: jack_insert %d\n", __func__, es8316_jack_insert);
+
+	snd_soc_jack_report(&hp_jack, level, jack_gpio.report);
 
     return 0;
 }
@@ -188,39 +224,6 @@ static struct snd_soc_jack_pin jack_pins[] = {
 	},
 };
 #endif
-
-static struct snd_soc_jack hp_jack;
-
-static int es8316_jack_status_check(void)
-{
-	struct snd_soc_codec *codec = es8316;
-	int jack = jack_gpio.gpio;
-	int invert = jack_gpio.invert;
-	int level = gpio_get_value_cansleep(jack);
-
-	if (!codec)
-		return -1;
-
-	if (invert)
-		level = !level;
-
-	pr_debug("%s: hp jack %s\n", __func__, level?"IN":"OUT");
-
-	if (!level) {
-		es8316_jack_insert = 0;
-		es8316_mono_en(1);
-		gpio_direction_output(AUDIO_AMP_POWER, 1);
-	} else {
-		es8316_jack_insert = 1;
-		es8316_mono_en(0);
-		gpio_direction_output(AUDIO_AMP_POWER, 0);
-	}
-
-	pr_debug("%s: jack_insert %d\n", __func__, es8316_jack_insert);
-
-	return level;
-}
-
 
 static int es8316_dai_init(struct snd_soc_pcm_runtime *rtd)
 {

@@ -1005,8 +1005,8 @@ static int es8316_init_regs(struct snd_soc_codec *codec)
 	snd_soc_write(codec, ES8316_ADC_VOLUME_REG27,0x00);//ADC VOL=0DB, MIN=0XC0(-96DB),STEP=0.5DB
 	snd_soc_write(codec, ES8316_DAC_SET2_REG31,0x00);  //DAC double speed,auto mute disable
 	snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x00);  //VPP SET AND ZERO L/R, STEREO SET
-	snd_soc_write(codec, ES8316_DAC_VOLL_REG33, 0X09); //LDAC VOL=0DB, MIN=0XC0(-96DB),STEP=0.5DB
-	snd_soc_write(codec, ES8316_DAC_VOLR_REG34, 0X09); //RDAC VOL=0DB, MIN=0XC0(-96DB),STEP=0.5DB
+	snd_soc_write(codec, ES8316_DAC_VOLL_REG33, 0x09); //LDAC VOL=0DB, MIN=0XC0(-96DB),STEP=0.5DB
+	snd_soc_write(codec, ES8316_DAC_VOLR_REG34, 0x09); //RDAC VOL=0DB, MIN=0XC0(-96DB),STEP=0.5DB
 	snd_soc_write(codec, ES8316_SDP_ADCFMT_REG0A, 0x0C);//ADC FORMAT
 	snd_soc_write(codec, ES8316_SDP_DACFMT_REG0B, 0x0C);//DAC FORMAT
 	snd_soc_write(codec, ES8316_SDP_MS_BCKDIV_REG09,0x04);  //CODEC IN SLAVE,
