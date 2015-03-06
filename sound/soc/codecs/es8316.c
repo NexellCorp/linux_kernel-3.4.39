@@ -53,7 +53,26 @@ int es8316_hp_det_gpio = INVALID_GPIO;
 #define es8316_DEF_VOL			0x1e
 #endif
 
+int es8316_jack_insert;
+
 struct snd_soc_codec *es8316_codec;
+
+void es8316_mono_en(int enable)
+{
+    struct snd_soc_codec *codec;
+	codec = es8316_codec;
+
+	DBG("%s: enable %d\n", __func__, enable);
+
+	if (enable) {
+		snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x06); // R OUTEN
+		snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x08);  //VPP SET AND ZERO L/R,MONO SET
+	} else {
+		snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x00);  //VPP SET AND ZERO L/R,STEREO SET
+		snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66); // L/R OUTEN
+	}
+}
+EXPORT_SYMBOL(es8316_mono_en);
 
 static void es8316_off_amp(bool on)
 {
@@ -845,6 +864,11 @@ static int es8316_set_bias_level(struct snd_soc_codec *codec,
 		snd_soc_write(codec, ES8316_CLKMGR_CLKSW_REG01, 0x7F);
 		snd_soc_write(codec, ES8316_SYS_PDN_REG0D, 0x00);
 		snd_soc_write(codec, ES8316_ADC_PDN_LINSEL_REG22, 0x20);
+	if (es8316_jack_insert) {
+		snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x00);  //VPP SET AND ZERO L/R,STEREO SET
+	} else {
+		snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x08);  //VPP SET AND ZERO L/R,MONO SET
+	}
 		snd_soc_write(codec, ES8316_DAC_PDN_REG2F, 0x00);
 		snd_soc_write(codec, ES8316_HPMIX_SWITCH_REG14, 0x88);
 		snd_soc_write(codec, ES8316_HPMIX_PDN_REG15, 0x88);
@@ -854,8 +878,12 @@ static int es8316_set_bias_level(struct snd_soc_codec *codec,
 		snd_soc_write(codec, ES8316_CPHP_PDN1_REG19, 0x03);
 		snd_soc_write(codec, ES8316_CPHP_ICAL_VOL_REG18, 0x00);
 		snd_soc_write(codec, ES8316_RESET_REG00, 0xC0);
-		snd_soc_write(codec, ES8316_DAC_SET1_REG30, 0x11);
-		snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66);
+		if (es8316_jack_insert) {
+			snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66); // L/R OUTEN
+		} else {
+			snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x06); // R OUTEN
+		}
+		DBG("%s: jack_insert %d\n", __func__, es8316_jack_insert);
 		break;
 	case SND_SOC_BIAS_STANDBY:
 		dev_dbg(codec->dev, "%s standby\n", __func__);
@@ -886,6 +914,11 @@ static int es8316_set_bias_level(struct snd_soc_codec *codec,
 		snd_soc_write(codec, ES8316_CLKMGR_CLKSW_REG01, 0x7F);
 		snd_soc_write(codec, ES8316_SYS_PDN_REG0D, 0x00);
 		snd_soc_write(codec, ES8316_ADC_PDN_LINSEL_REG22, 0x20);
+	if (es8316_jack_insert) {
+		snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x00);  //VPP SET AND ZERO L/R,STEREO SET
+	} else {
+		snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x08);  //VPP SET AND ZERO L/R,MONO SET
+	}
 		snd_soc_write(codec, ES8316_DAC_PDN_REG2F, 0x00);
 		snd_soc_write(codec, ES8316_HPMIX_SWITCH_REG14, 0x88);
 		snd_soc_write(codec, ES8316_HPMIX_PDN_REG15, 0x88);
@@ -895,9 +928,13 @@ static int es8316_set_bias_level(struct snd_soc_codec *codec,
 		snd_soc_write(codec, ES8316_CPHP_PDN1_REG19, 0x03);
 		snd_soc_write(codec, ES8316_CPHP_ICAL_VOL_REG18, 0x00);
 		snd_soc_write(codec, ES8316_RESET_REG00, 0xC0);
-		snd_soc_write(codec, ES8316_DAC_SET1_REG30, 0x11);
-		snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66);
-			#endif
+		if (es8316_jack_insert) {
+			snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66); // L/R OUTEN
+		} else {
+			snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x06); // R OUTEN
+		}
+		DBG("%s: jack_insert %d\n", __func__, es8316_jack_insert);
+		#endif
 		break;
 	case SND_SOC_BIAS_OFF:
 		dev_dbg(codec->dev, "%s off\n", __func__);
@@ -964,12 +1001,12 @@ static int es8316_init_regs(struct snd_soc_codec *codec)
 	msleep(50);
 	snd_soc_write(codec, ES8316_RESET_REG00, 0x00);
 	snd_soc_write(codec, ES8316_ADC_PDN_LINSEL_REG22, 0x20); //INPUT SELECT INPUT1:0X20,INPUT2:0X30
-	snd_soc_write(codec, ES8316_ADC_D2SEPGA_REG24, 0x01); //DC MEASURE DISABLE, 10db disable
+	snd_soc_write(codec, ES8316_ADC_D2SEPGA_REG24, 0x00); //DC MEASURE DISABLE, 10db disable
 	snd_soc_write(codec, ES8316_ADC_VOLUME_REG27,0x00);//ADC VOL=0DB, MIN=0XC0(-96DB),STEP=0.5DB
 	snd_soc_write(codec, ES8316_DAC_SET2_REG31,0x00);  //DAC double speed,auto mute disable
-	snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x00);  //VPP SET AND ZERO L/R,MONO SET
-	snd_soc_write(codec, ES8316_DAC_VOLL_REG33, 0X18); //LDAC VOL=0DB, MIN=0XC0(-96DB),STEP=0.5DB
-	snd_soc_write(codec, ES8316_DAC_VOLR_REG34, 0X18); //RDAC VOL=0DB, MIN=0XC0(-96DB),STEP=0.5DB
+	snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x00);  //VPP SET AND ZERO L/R, STEREO SET
+	snd_soc_write(codec, ES8316_DAC_VOLL_REG33, 0X09); //LDAC VOL=0DB, MIN=0XC0(-96DB),STEP=0.5DB
+	snd_soc_write(codec, ES8316_DAC_VOLR_REG34, 0X09); //RDAC VOL=0DB, MIN=0XC0(-96DB),STEP=0.5DB
 	snd_soc_write(codec, ES8316_SDP_ADCFMT_REG0A, 0x0C);//ADC FORMAT
 	snd_soc_write(codec, ES8316_SDP_DACFMT_REG0B, 0x0C);//DAC FORMAT
 	snd_soc_write(codec, ES8316_SDP_MS_BCKDIV_REG09,0x04);  //CODEC IN SLAVE,
@@ -998,16 +1035,15 @@ static int es8316_init_regs(struct snd_soc_codec *codec)
 	snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x33); //CHARGE PUMP
 	snd_soc_write(codec, ES8316_RESET_REG00,0xC0);  //CSM POWER UP
 	msleep(50);
-	snd_soc_write(codec, ES8316_DAC_SET1_REG30, 0x11);
-	snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17,0x66);  //HPOUT SET
+	snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66); // HPOUT L/R OUTEN
 	snd_soc_write(codec, ES8316_GPIO_SEL_REG4D, 0x00);
 	snd_soc_write(codec, ES8316_GPIO_DEBUNCE_INT_REG4E, 0x02);
 	snd_soc_write(codec, ES8316_TESTMODE_REG50, 0xA0);
 	snd_soc_write(codec, ES8316_TEST2_REG52, 0x03);
 	snd_soc_write(codec, ES8316_SYS_PDN_REG0D,0x00);      //ADC,DAC VREF SET
 	/*alc set*/
-	snd_soc_write(codec, ES8316_ADC_PGAGAIN_REG23, 0x80);
-	snd_soc_write(codec, ES8316_ADC_D2SEPGA_REG24, 0x01);
+	snd_soc_write(codec, ES8316_ADC_PGAGAIN_REG23, 0xa0);
+	snd_soc_write(codec, ES8316_ADC_D2SEPGA_REG24, 0x00);
 	snd_soc_write(codec, ES8316_ADC_ALC1_REG29, 0xD4); //ALC ON
 	snd_soc_write(codec, ES8316_ADC_ALC2_REG2A, 0x08);
 	snd_soc_write(codec, ES8316_ADC_ALC3_REG2B, 0x90);
@@ -1090,6 +1126,7 @@ static int es8316_i2c_write(const struct i2c_client *client, const char *buf, in
 static int es8316_probe(struct snd_soc_codec *codec)
 {
 	int ret = 0;
+	es8316_jack_insert = 0;
  	DBG("---%s--start--\n",__FUNCTION__);
 	codec->read  = es8316_read_reg_cache;
 	codec->write = es8316_write;

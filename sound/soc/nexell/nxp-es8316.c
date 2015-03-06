@@ -42,6 +42,8 @@ static char str_dai_name[16] = DEV_NAME_I2S;
 static int (*cpu_resume_fn)(struct snd_soc_dai *dai) = NULL;
 static struct snd_soc_codec *es8316 = NULL;
 static int codec_bias_level = 0;
+extern int es8316_jack_insert;
+extern void es8316_mono_en(int enable);
 
 static int es8316_jack_status_check(void);
 /* Headphones jack detection GPIO */
@@ -75,8 +77,6 @@ static int es8316_hw_params(struct snd_pcm_substream *substream,
 
 static int es8316_suspend_pre(struct snd_soc_card *card)
 {
-     struct snd_soc_codec *codec = es8316;
- 
      gpio_direction_output(AUDIO_AMP_POWER, 0);
 
      return 0;
@@ -125,13 +125,17 @@ static int es8316_resume_post(struct snd_soc_card *card)
 	if (invert)
 		level = !level;
 
-	pr_debug("%s: hp jack %s\n", __func__, level?"IN":"OUT");
+	DBG("%s: hp jack %s\n", __func__, level?"IN":"OUT");
 
 	if (!level) {
-       gpio_direction_output(AUDIO_AMP_POWER, 1);
+		es8316_jack_insert = 0;
+		gpio_direction_output(AUDIO_AMP_POWER, 1);
 	} else {
-       gpio_direction_output(AUDIO_AMP_POWER, 0);
+		es8316_jack_insert = 1;
+		gpio_direction_output(AUDIO_AMP_POWER, 0);
 	}
+
+	DBG("%s: jack_insert %d\n", __func__, es8316_jack_insert);
 
     return 0;
 }
@@ -200,15 +204,21 @@ static int es8316_jack_status_check(void)
 	if (invert)
 		level = !level;
 
-	pr_debug("%s: hp jack %s\n", __func__, level?"IN":"OUT");
+	DBG("%s: hp jack %s\n", __func__, level?"IN":"OUT");
 
 	if (!level) {
-       gpio_direction_output(AUDIO_AMP_POWER, 1);
+		es8316_jack_insert = 0;
+		es8316_mono_en(1);
+		gpio_direction_output(AUDIO_AMP_POWER, 1);
 	} else {
-       gpio_direction_output(AUDIO_AMP_POWER, 0);
+		es8316_jack_insert = 1;
+		es8316_mono_en(0);
+		gpio_direction_output(AUDIO_AMP_POWER, 0);
 	}
 
-	return !level;
+	DBG("%s: jack_insert %d\n", __func__, es8316_jack_insert);
+
+	return level;
 }
 
 
