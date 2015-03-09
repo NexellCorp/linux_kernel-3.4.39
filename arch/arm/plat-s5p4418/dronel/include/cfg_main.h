@@ -205,22 +205,24 @@
 
 
 /*------------------------------------------------------------------------------
- * 	NXE2000 PMIC
+ * 	PMIC
  */
-#define CFG_SW_UBC_ENABLE						(1)
-
-/**
- * 0 : GPIO interrupt (CFG_GPIO_PMIC_VUSB_DET)
- * 1 : PMIC interrupt (FVUSBDETSINT)
- */
-#define CFG_USB_DET_FROM_PMIC_INT				(0)
-
-#define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)
-#define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_D + 21)
-#define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)		/* Choice for SW_UBC or Wake-up*/
-#define CFG_GPIO_PMIC_LOWBAT_DET				(-1)//(PAD_GPIO_ALV + 3)		/* Critical low battery detect */
-#define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)
+/* NXE2000 PMIC	*/
+#define CFG_SW_UBC_ENABLE						(1)					/* S/W UBC Check */
+#define CFG_USB_DET_FROM_PMIC_INT				(0)					/* 0 : GPIO interrupt (CFG_GPIO_PMIC_VUSB_DET)		1 : PMIC interrupt (FVUSBDETSINT) */
+#define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)	/* USB ID Deteict */
+#define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_D + 21)	/* USB OTG Power Enable */
+#define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)	/* Choice for SW_UBC or Wake-up*/
+#define CFG_GPIO_PMIC_LOWBAT_DET				(-1)//(PAD_GPIO_ALV + 3)	/* Critical low battery detect */
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
+
+/* AXP228 PMIC	*/
+#define	CFG_PMIC_I2_CBUS						3					/* i2c channel */
+#define CFG_BATTERY_CAP							3000					/* Battery Capacity */
+
+/* PMIC Common*/
+#define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)	/* PMIC Interrupt */
+
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode

@@ -2,69 +2,11 @@
 #define __LINUX_AXP_CFG_H_
 
 #include <mach/platform.h>
+#include <axp22-cfg.h>
 #include "axp-mfd.h"
 
 /* i2c slave address */
-#define	AXP_DEVICES_ADDR		(0x68 >> 1)
-
-/*i2c channel */
-#define	AXP_I2CBUS				3
-
-/* interrupt */
-#define AXP_IRQNO				CFG_GPIO_PMIC_INTR // 164
-
-#define AXP_ALDO1_VALUE			3300		/* VCC3P3_ALIVE		ALDO1	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_ALDO2_VALUE			1800		/* VCC1P8_ALIVE		ALDO2	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_ALDO3_VALUE			1000		/* VCC1P0_ALIVE		ALDO3	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_DLDO1_VALUE			3300		/* VCC_WIDE			DLDO1	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_DLDO2_VALUE			1800		/* VCC1P8_CAM			DLDO2	£º 	AXP22 : 700~3300, 100/step*/
-#define AXP_DLDO3_VALUE			700		/* NC					DLDO3	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_DLDO4_VALUE			700		/* NC					DLDO4	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_ELDO1_VALUE			1800		/* VCC1P8_SYS			ELDO1	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_ELDO2_VALUE			3300		/* VCC3P3_WIFI			ELDO2	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_ELDO3_VALUE			700		/* NC					ELDO3	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_DC5LDO_VALUE		1200		/* VCC1P2_CVBS		DC5LDO	£º 	AXP22:  700~1400, 100/step*/
-#define AXP_DCDC1_VALUE			3300		/* VCC3P3_SYS			DCDC1	 : 	AXP22:1600~3400, 100/setp*/
-#define AXP_DCDC2_VALUE			1100		/* VCC1P1_ARM			DCDC2	£º 	AXP22:  600~1540,   20/step*/
-#define AXP_DCDC3_VALUE			1100		/* VCC1P1_ARM(CORE)	DCDC3	£º 	AXP22:  600~1860,   20/step*/
-#define AXP_DCDC4_VALUE			1500		/* VCC1P5_SYS			DCDC4	£º 	AXP22:  600~1540,   20/step*/
-#define AXP_DCDC5_VALUE			1500		/* VCC1P5_DDR			DCDC5	£º 	AXP22:1000~2550,   50/step*/
-
-
-#define AXP_ALDO1_ENABLE		1		/* VCC3P3_ALIVE		ALDO1	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_ALDO2_ENABLE		1		/* VCC1P8_ALIVE		ALDO2	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_ALDO3_ENABLE		1		/* VCC1P0_ALIVE		ALDO3	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_DLDO1_ENABLE		1		/* VCC_WIDE			DLDO1	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_DLDO2_ENABLE		1		/* VCC1P8_CAM			DLDO2	£º 	AXP22 : 700~3300, 100/step*/
-#define AXP_DLDO3_ENABLE		0		/* NC					DLDO3	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_DLDO4_ENABLE		0		/* NC					DLDO4	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_ELDO1_ENABLE		1		/* VCC1P8_SYS			ELDO1	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_ELDO2_ENABLE		1		/* VCC3P3_WIFI			ELDO2	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_ELDO3_ENABLE		0		/* NC					ELDO3	£º 	AXP22:  700~3300, 100/step*/
-#define AXP_DC5LDO_ENABLE		0		/* VCC1P2_CVBS		DC5LDO	£º 	AXP22:  700~1400, 100/step*/
-#define AXP_DCDC1_ENABLE		1		/* VCC3P3_SYS			DCDC1	 : 	AXP22:1600~3400, 100/setp*/
-#define AXP_DCDC2_ENABLE		1		/* VCC1P1_ARM			DCDC2	£º 	AXP22:  600~1540,   20/step*/
-#define AXP_DCDC3_ENABLE		1		/* VCC1P1_ARM(CORE)	DCDC3	£º 	AXP22:  600~1860,   20/step*/
-#define AXP_DCDC4_ENABLE		1		/* VCC1P5_SYS			DCDC4	£º 	AXP22:  600~1540,   20/step*/
-#define AXP_DCDC5_ENABLE		1		/* VCC1P5_DDR			DCDC5	£º 	AXP22:1000~2550,   50/step*/
-
-
-#define AXP_DLDO1_SLEEP_OFF		(1)		/* VCC_WIDE			0 : sleep on, 1 : sleep off */
-#define AXP_DLDO2_SLEEP_OFF		(1)		/* VCC1P8_CAM			0 : sleep on, 1 : sleep off */
-#define AXP_DLDO3_SLEEP_OFF		(1)		/* NC					0 : sleep on, 1 : sleep off */
-#define AXP_DLDO4_SLEEP_OFF		(1)		/* NC					0 : sleep on, 1 : sleep off */
-#define AXP_ELDO1_SLEEP_OFF		(1)		/* VCC1P8_SYS			0 : sleep on, 1 : sleep off */
-#define AXP_ELDO2_SLEEP_OFF		(1)		/* VCC3P3_WIFI			0 : sleep on, 1 : sleep off */
-#define AXP_ELDO3_SLEEP_OFF		(1)		/* NC					0 : sleep on, 1 : sleep off */
-#define AXP_DC5LDO_SLEEP_OFF	(1)		/* VCC1P2_CVBS		0 : sleep on, 1 : sleep off */
-#define AXP_DCDC1_SLEEP_OFF		(1)		/* VCC3P3_SYS			0 : sleep on, 1 : sleep off */
-#define AXP_DCDC2_SLEEP_OFF		(1)		/* VCC1P1_ARM			0 : sleep on, 1 : sleep off */
-#define AXP_DCDC3_SLEEP_OFF		(1)		/* VCC1P1_ARM(CORE)	0 : sleep on, 1 : sleep off */
-#define AXP_DCDC4_SLEEP_OFF		(1)		/* VCC1P5_SYS			0 : sleep on, 1 : sleep off */
-#define AXP_DCDC5_SLEEP_OFF		(0)		/* VCC1P5_DDR			0 : sleep on, 1 : sleep off */
-#define AXP_ALDO1_SLEEP_OFF		(0)		/* VCC3P3_ALIVE		0 : sleep on, 1 : sleep off */
-#define AXP_ALDO2_SLEEP_OFF		(0)		/* VCC1P8_ALIVE		0 : sleep on, 1 : sleep off */
-#define AXP_ALDO3_SLEEP_OFF		(0)		/* VCC1P0_ALIVE		0 : sleep on, 1 : sleep off */
+#define	AXP_DEVICES_ADDR	(0x68 >> 1)
 
 #define BATCAP				CFG_BATTERY_CAP
 
@@ -89,7 +31,7 @@
 
 #define ENDCHGRATE			10		/* AXP22:10\15 */ 
 
-#define SHUTDOWNVOL			3300
+#define SHUTDOWNVOL			2600
 
 #define ADCFREQ				100		/* AXP22:100\200\400\800 */
 
@@ -172,74 +114,6 @@
 /*AXP GPIO NUM, LCD power VBUS driver pin*/
 #define AXP22_NR 			5
 
-/* OCV Table */
-#if 1
-#define OCVREG0				0		//3.13V
-#define OCVREG1				0		//3.27V
-#define OCVREG2				0		//3.34V
-#define OCVREG3				0		//3.41V
-#define OCVREG4				0		//3.48V
-#define OCVREG5				0		//3.52V
-#define OCVREG6				0		//3.55V
-#define OCVREG7				0		//3.57V
-#define OCVREG8				0		//3.59V
-#define OCVREG9				0		//3.61V
-#define OCVREGA				1		//3.63V
-#define OCVREGB				2		//3.64V
-#define OCVREGC				3		//3.66V
-#define OCVREGD				8		//3.70V
-#define OCVREGE				15		//3.73V 
-#define OCVREGF				23		//3.77V
-#define OCVREG10			29		//3.78V
-#define OCVREG11			37		//3.80V
-#define OCVREG12			42		//3.82V 
-#define OCVREG13			48		//3.84V
-#define OCVREG14			51		//3.85V
-#define OCVREG15			55		//3.87V
-#define OCVREG16			62		//3.91V
-#define OCVREG17			68		//3.94V
-#define OCVREG18			73		//3.98V
-#define OCVREG19			78		//4.01V
-#define OCVREG1A			82		//4.05V
-#define OCVREG1B			86		//4.08V
-#define OCVREG1C			89		//4.10V 
-#define OCVREG1D			93		//4.12V
-#define OCVREG1E			96		//4.14V
-#define OCVREG1F			100		//4.15V
-#else
-#define OCVREG0				0		 //3.13V
-#define OCVREG1				0		 //3.27V
-#define OCVREG2				0		 //3.34V
-#define OCVREG3				0		 //3.41V
-#define OCVREG4				0		 //3.48V
-#define OCVREG5				0		 //3.52V
-#define OCVREG6				0		 //3.55V
-#define OCVREG7				0		 //3.57V
-#define OCVREG8				5		 //3.59V
-#define OCVREG9				8		 //3.61V
-#define OCVREGA				9		 //3.63V
-#define OCVREGB				10		 //3.64V
-#define OCVREGC				13		 //3.66V
-#define OCVREGD				16		 //3.7V
-#define OCVREGE				20		 //3.73V 
-#define OCVREGF				33		 //3.77V
-#define OCVREG10		 	41                //3.78V
-#define OCVREG11		 	46                //3.8V
-#define OCVREG12		 	50                //3.82V 
-#define OCVREG13		 	53                //3.84V
-#define OCVREG14		 	57                //3.85V
-#define OCVREG15		 	61                //3.87V
-#define OCVREG16		 	67                //3.91V
-#define OCVREG17		 	73                //3.94V
-#define OCVREG18		 	78                //3.98V
-#define OCVREG19		 	84                //4.01V
-#define OCVREG1A		 	88                //4.05V
-#define OCVREG1B		 	92                //4.08V
-#define OCVREG1C		 	93                //4.1V 
-#define OCVREG1D		 	94                //4.12V
-#define OCVREG1E		 	95                //4.14V
-#define OCVREG1F		 	100                //4.15V
-#endif
 
 /*  AXP IRQ */
 #define AXP_IRQ_USBLO		AXP22_IRQ_USBLO	//usb µÍµç

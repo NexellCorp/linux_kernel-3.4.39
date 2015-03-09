@@ -215,23 +215,21 @@
 /*------------------------------------------------------------------------------
  * 	PMIC
  */
-#define CFG_SW_UBC_ENABLE						(1)
-
-/**
- * 0 : GPIO interrupt (CFG_GPIO_PMIC_VUSB_DET)
- * 1 : PMIC interrupt (FVUSBDETSINT)
- */
-#define CFG_USB_DET_FROM_PMIC_INT				(0)
-
-#define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)
-#define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_D + 21)
-#define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)		/* Choice for SW_UBC or Wake-up*/
-#define CFG_GPIO_PMIC_LOWBAT_DET				(PAD_GPIO_ALV + 3)		/* Critical low battery detect */
-#define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)
+/* NXE2000 PMIC	*/
+#define CFG_SW_UBC_ENABLE						(1)					/* S/W UBC Check */
+#define CFG_USB_DET_FROM_PMIC_INT				(0)					/* 0 : GPIO interrupt (CFG_GPIO_PMIC_VUSB_DET)		1 : PMIC interrupt (FVUSBDETSINT) */
+#define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)	/* USB ID Deteict */
+#define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_D + 21)	/* USB OTG Power Enable */
+#define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)	/* Choice for SW_UBC or Wake-up*/
+#define CFG_GPIO_PMIC_LOWBAT_DET				(-1)					/* Critical low battery detect */
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
 
-#define CFG_POLY_PHASE_FUNCTION					(1) /* DC-DC 2&3 Poly-phase function enable/disable,   0: disable   1: enable */
-#define CFG_BATTERY_CAP							3000
+/* AXP228 PMIC	*/
+#define	CFG_PMIC_I2_CBUS						3					/* i2c channel */
+#define CFG_BATTERY_CAP							3000					/* Battery Capacity */
+
+/* PMIC Common*/
+#define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)	/* PMIC Interrupt */
 
 
 /*------------------------------------------------------------------------------
@@ -247,7 +245,7 @@
 #define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE3				CFALSE					/* PMIC - CRITICAL LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_ASYNC_LOWLEVEL
-#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR - LOW BATTERY */
+#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR */
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE

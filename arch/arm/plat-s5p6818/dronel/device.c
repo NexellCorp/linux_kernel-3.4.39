@@ -110,7 +110,7 @@ static unsigned long dfs_freq_table[][2] = {
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
-	.supply_name	= "axp22_dcdc2",
+	.supply_name	= "vdd_arm_1.3V",
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),

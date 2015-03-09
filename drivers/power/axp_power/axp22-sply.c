@@ -1844,10 +1844,10 @@ static int axp_battery_probe(struct platform_device *pdev)
 {
 	struct axp_charger *charger;
 	struct axp_supply_init_data *pdata = pdev->dev.platform_data;
-	int ret,var,tmp;
+	int ret;//,var,tmp;
 	uint8_t val2,val;
-	uint8_t ocv_cap[63];
-	int Cur_CoulombCounter,rdc;
+	//uint8_t ocv_cap[63];
+	//int Cur_CoulombCounter,rdc;
 
 	dev_info(&pdev->dev, " %s\n", AXP228_BATTERY_VERSION);
 
@@ -1958,6 +1958,7 @@ static int axp_battery_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, charger);
 
+#if 0 
 	/* REG 31H: Wakeup Control and Voff Voltage Set */
 	axp_update(charger->master, AXP22_VOFF_SET, 0x00, 0x7);
 
@@ -2286,6 +2287,7 @@ static int axp_battery_probe(struct platform_device *pdev)
 		axp_write(charger->master, AXP22_BATCAP0, 0x00);
 		axp_write(charger->master,AXP22_BATCAP1,0x00);
 	}
+#endif
   
 	axp_charger_update_state((struct axp_charger *)charger);
 
