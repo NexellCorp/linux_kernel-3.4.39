@@ -1161,11 +1161,11 @@ static struct i2c_board_info __initdata nxe2000_i2c_boardinfo[] = {
 }
 
 static struct regulator_consumer_supply mp8845c_vout_0[] = {
-	REGULATOR_SUPPLY("mp8845c_arm", NULL),
+	REGULATOR_SUPPLY("vdd_arm_1.3V", NULL),
 };
 
 static struct regulator_consumer_supply mp8845c_vout_1[] = {
-	REGULATOR_SUPPLY("mp8845c_core", NULL),
+	REGULATOR_SUPPLY("vdd_core_1.2V", NULL),
 };
 
 MP8845C_PDATA_INIT(vout, 0, 600000, 1500000, 1, 1, 1100000, 1, -1);	/* ARM */
