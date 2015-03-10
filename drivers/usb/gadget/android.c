@@ -1561,7 +1561,11 @@ static int __init init(void)
 
 	return usb_composite_probe(&android_usb_driver, android_bind);
 }
+#ifdef CONFIG_DEFERRED_INIT_CALL
+deferred_module_init(init);
+#else
 module_init(init);
+#endif
 
 static void __exit cleanup(void)
 {
