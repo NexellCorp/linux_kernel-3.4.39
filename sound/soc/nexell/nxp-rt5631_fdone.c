@@ -342,7 +342,21 @@ static struct platform_driver rt5631_driver = {
 	.probe		= rt5631_probe,
 	.remove		= __devexit_p(rt5631_remove),
 };
+#if 1
 module_platform_driver(rt5631_driver);
+#else
+static int __init rt5631_driver_init(void)
+{
+     return platform_driver_register(&rt5631_driver);
+}
+late_initcall(rt5631_driver_init);
+static void __exit rt5631_driver_exit(void)
+{
+    platform_driver_unregister(&rt5631_driver);
+}
+module_exit(rt5631_driver_exit);
+#endif
+
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
 MODULE_DESCRIPTION("Sound codec-rt5631 driver for the SLSI");

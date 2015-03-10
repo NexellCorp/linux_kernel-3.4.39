@@ -2844,8 +2844,10 @@ static void __exit dw_mci_exit(void)
 {
 }
 
+#ifndef CONFIG_PLAT_S5P6818_FDONE
 module_init(dw_mci_init);
 module_exit(dw_mci_exit);
+#endif
 
 MODULE_DESCRIPTION("DW Multimedia Card Interface driver");
 MODULE_AUTHOR("NXP Semiconductor VietNam");

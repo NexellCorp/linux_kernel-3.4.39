@@ -1763,11 +1763,11 @@ void __init nxp_board_devs_register(void)
 #endif
 
 #if defined(CONFIG_MMC_DW)
-	#ifdef CONFIG_MMC_NXP_CH0
-	nxp_mmc_add_device(0, &_dwmci0_data);
-	#endif
     #ifdef CONFIG_MMC_NXP_CH2
 	nxp_mmc_add_device(2, &_dwmci2_data);
+	#endif
+	#ifdef CONFIG_MMC_NXP_CH0
+	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
     //#ifdef CONFIG_MMC_NXP_CH1
 	//nxp_mmc_add_device(1, &_dwmci1_data);
