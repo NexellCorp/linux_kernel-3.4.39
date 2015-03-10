@@ -112,12 +112,12 @@ static int rt5623_spk_event(struct snd_soc_dapm_widget *w,
 #if defined (AUDIO_AMP_EN)
 	if (SND_SOC_DAPM_EVENT_ON(event)) {
 		pr_debug("AMP_ON\n");
-		gpio_set_value(AUDIO_AMP_PWR_EN, 1);		
+		gpio_set_value(AUDIO_AMP_PWR_EN, 1);
 		gpio_set_value(AUDIO_AMP_EN, 1);
 	} else {
 		pr_debug("AMP_OFF\n");
 		gpio_set_value(AUDIO_AMP_EN, 0);
-		gpio_set_value(AUDIO_AMP_PWR_EN, 0);		
+		gpio_set_value(AUDIO_AMP_PWR_EN, 0);
 	}
 #endif
 	return 0;
@@ -335,7 +335,20 @@ static struct platform_driver rt5623_driver = {
 	.probe		= rt5623_probe,
 	.remove		= __devexit_p(rt5623_remove),
 };
+#ifdef CONFIG_DEFERRED_INIT_CALL
+static int __init rt5623_driver_init(void)
+{
+     return platform_driver_register(&rt5623_driver);
+}
+deferred_module_init(rt5623_driver_init);
+static void __exit rt5623_driver_exit(void)
+{
+    platform_driver_unregister(&rt5623_driver);
+}
+module_exit(rt5623_driver_exit);
+#else
 module_platform_driver(rt5623_driver);
+#endif
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
 MODULE_DESCRIPTION("Sound codec-rt5623 driver for the SLSI");
