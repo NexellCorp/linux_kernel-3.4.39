@@ -1500,7 +1500,8 @@ static struct dw_mci_board _dwmci0_data = {
 	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 60 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
-	.detect_delay_ms= 200,
+	/*.detect_delay_ms= 200,*/
+	.detect_delay_ms= 0,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(1),
 	.init			= _dwmci0_init,
@@ -1526,7 +1527,8 @@ static struct dw_mci_board _dwmci2_data = {
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0x0) | DW_MMC_SAMPLE_DELAY(0x0) | DW_MMC_DRIVE_PHASE(3) | DW_MMC_SAMPLE_PHASE(2),
 
 	.desc_sz		= 4,
-	.detect_delay_ms= 200,
+	/*.detect_delay_ms= 200,*/
+	.detect_delay_ms= 0,
 	.sdr_timing		= 0x01010001,
 	.ddr_timing		= 0x03030002,
 };
