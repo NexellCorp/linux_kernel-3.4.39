@@ -33,12 +33,11 @@
 
 struct axp_mfd_chip *g_chip;
 
-#ifdef ENABLE_DEBUG
-static void axp_mfd_register_dump(void)
+static void axp_mfd_register_dump(struct device *dev)
 {
-	s32 ret=0;
+	int ret=0;
 	u16 i=0;
-	u8 value[0xff]={0};
+	u8 value=0;
 
 	printk("##########################################################\n");
 	printk("##\e[31m %s()\e[0m                               #\n", __func__);
@@ -53,9 +52,9 @@ static void axp_mfd_register_dump(void)
 		if(i%4 == 0)
 			printk(" ");
 
-		ret = axp_read(&axp->dev, i, &value[i]);
+		ret = axp_read(dev, i, &value);
 		if(!ret)
-			printk("%02x ", value[i]);
+			printk("%02x ", value);
 		else
 			printk("\e[31mxx\e[0m ");
 
@@ -64,7 +63,47 @@ static void axp_mfd_register_dump(void)
 	}
 	printk("##########################################################\n");
 }
+
+#ifdef CONFIG_DEBUG_FS
+#include <linux/debugfs.h>
+#include <linux/seq_file.h>
+
+static int axp_dbg_show(struct seq_file *s, void *unused)
+{
+	struct axp_mfd_chip *chip = s->private;
+	struct device *dev = chip->dev;
+
+	axp_mfd_register_dump(dev);
+
+	return 0;
+}
+
+static int axp_dbg_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, axp_dbg_show, inode->i_private);
+}
+
+static const struct file_operations debug_fops = {
+	.open		= axp_dbg_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+static void axp_debuginit(struct axp_mfd_chip *chip)
+{
+	(void)debugfs_create_file("axp228", S_IRUGO, NULL,
+			chip, &debug_fops);
+}
+#else
+static void axp_debuginit(struct axp_mfd_chip *chip)
+{
+	struct device *dev = chip->dev;
+
+	axp_mfd_register_dump(dev);
+	return 0;
+}
 #endif
+
 
 void axp_run_irq_handler(void)
 {
@@ -306,8 +345,10 @@ static int __devinit axp_mfd_probe(struct i2c_client *client,
 	i2c_set_clientdata(client, chip);
 
 #ifdef ENABLE_DEBUG
-	axp_mfd_register_dump();
+	axp_mfd_register_dump(chip->dev);
 #endif
+
+	axp_debuginit(chip);
 
 	ret = chip->ops->init_chip(chip);
 	if (ret)

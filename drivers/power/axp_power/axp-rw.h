@@ -141,25 +141,53 @@ EXPORT_SYMBOL_GPL(axp_unregister_notifier);
 
 int axp_write(struct device *dev, int reg, uint8_t val)
 {
-	return __axp_write(to_i2c_client(dev), reg, val);
+	struct axp_mfd_chip *chip = dev_get_drvdata(dev);
+	int ret=0;
+
+	mutex_lock(&chip->lock);
+	ret = __axp_write(to_i2c_client(dev), reg, val);
+	mutex_unlock(&chip->lock);
+
+	return ret;
 }
 EXPORT_SYMBOL_GPL(axp_write);
 
 int axp_writes(struct device *dev, int reg, int len, uint8_t *val)
 {
-	return  __axp_writes(to_i2c_client(dev), reg, len, val);
+	struct axp_mfd_chip *chip = dev_get_drvdata(dev);
+	int ret=0;
+
+	mutex_lock(&chip->lock);
+	ret = __axp_writes(to_i2c_client(dev), reg, len, val);
+	mutex_unlock(&chip->lock);
+
+	return ret;
 }
 EXPORT_SYMBOL_GPL(axp_writes);
 
 int axp_read(struct device *dev, int reg, uint8_t *val)
 {
-	return __axp_read(to_i2c_client(dev), reg, val);
+	struct axp_mfd_chip *chip = dev_get_drvdata(dev);
+	int ret=0;
+
+	mutex_lock(&chip->lock);
+	ret = __axp_read(to_i2c_client(dev), reg, val);
+	mutex_unlock(&chip->lock);
+
+	return ret;
 }
 EXPORT_SYMBOL_GPL(axp_read);
 
 int axp_reads(struct device *dev, int reg, int len, uint8_t *val)
 {
-	return __axp_reads(to_i2c_client(dev), reg, len, val);
+	struct axp_mfd_chip *chip = dev_get_drvdata(dev);
+	int ret=0;
+
+	mutex_lock(&chip->lock);
+	ret = __axp_reads(to_i2c_client(dev), reg, len, val);
+	mutex_unlock(&chip->lock);
+
+	return ret;
 }
 EXPORT_SYMBOL_GPL(axp_reads);
 

@@ -98,7 +98,7 @@ extern void axp_run_irq_handler(void);
 static void axp_sply_register_dump(struct axp_charger *charger, int type)
 {
 	int ret = 0;
-	u8 i = 0;
+	u16 i = 0;
 	u8 value =0;
 
 	if(type)
@@ -108,7 +108,7 @@ static void axp_sply_register_dump(struct axp_charger *charger, int type)
 		printk("##########################################################\n");
 		printk("##      0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F\n");
 
-		for(i=0; i<0xf0; i++)
+		for(i=0; i<=0xff; i++)
 		{
 			if(i%16 == 0)
 				printk("## %02X:", i);
@@ -134,7 +134,7 @@ static void axp_sply_register_dump(struct axp_charger *charger, int type)
 		PM_DBGOUT("##########################################################\n");
 		PM_DBGOUT("##      0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F\n");
 
-		for(i=0; i<0xf0; i++)
+		for(i=0; i<=0xff; i++)
 		{
 			if(i%16 == 0)
 				PM_DBGOUT("## %02X:", i);
