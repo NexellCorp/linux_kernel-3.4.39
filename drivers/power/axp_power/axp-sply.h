@@ -95,6 +95,13 @@ static 	struct input_dev * powerkeydev;
 	.store = _name##_store, \
 }
 
+enum {
+	POWER_SUPPLY_PROP_DISCHARGE = 0,
+	POWER_SUPPLY_PROP_AC_USB,
+	POWER_SUPPLY_PROP_USB,
+	POWER_SUPPLY_PROP_AC,
+};
+
 struct axp_adc_res {//struct change
 	uint16_t vbat_res;
 	uint16_t ocvbat_res;
@@ -161,6 +168,7 @@ struct axp_charger {
 	bool int_over_temp;
 	uint8_t fault;
 	int charge_on;
+	int usb_charge_type;
 
 	int vbat;
 	int ibat;
