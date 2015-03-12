@@ -473,7 +473,7 @@ CONFIG_ARM_FLUSH_CONSOLE_ON_RESTART=y
 # CONFIG_USE_OF is not set
 CONFIG_ZBOOT_ROM_TEXT=0
 CONFIG_ZBOOT_ROM_BSS=0
-CONFIG_CMDLINE="console=ttySAC0,115200n8 androidboot.hardware=FDONE androidboot.console=ttySAC0 androidboot.serialno=0123456789abcdef root=/dev/mmcblk0p2 rw rootfstype=ext4 rootwait init=/init lpj=1191936"
+CONFIG_CMDLINE="console=ttySAC0,115200n8 androidboot.hardware=FDONE androidboot.console=ttySAC0 androidboot.serialno=0123456789abcdef root=/dev/mmcblk0p2 rw rootfstype=ext4 rootwait init=/init lpj=1191936 quiet"
 CONFIG_CMDLINE_FROM_BOOTLOADER=y
 # CONFIG_CMDLINE_EXTEND is not set
 # CONFIG_CMDLINE_FORCE is not set
@@ -772,7 +772,7 @@ CONFIG_EEPROM_93CX6=y
 # SLSIAP CODA960
 #
 CONFIG_SLSIAP_CODA960=y
-CONFIG_SLSIAP_BACKWARD_CAMERA=y
+# CONFIG_SLSIAP_BACKWARD_CAMERA is not set
 
 #
 # SCSI device support
@@ -1620,7 +1620,7 @@ CONFIG_LOGO=y
 # CONFIG_LOGO_LINUX_MONO is not set
 # CONFIG_LOGO_LINUX_VGA16 is not set
 # CONFIG_LOGO_LINUX_CLUT224 is not set
-CONFIG_LOGO_NXP_COPY=y
+# CONFIG_LOGO_NXP_COPY is not set
 CONFIG_SOUND=y
 # CONFIG_SOUND_OSS_CORE is not set
 CONFIG_SND=y
