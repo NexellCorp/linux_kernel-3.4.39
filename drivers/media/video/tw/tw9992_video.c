@@ -313,8 +313,8 @@ struct tw9992_regs {
 	struct tw9992_regset_table dtp_stop;
 	struct tw9992_regset_table init_reg_1;
 	struct tw9992_regset_table init_reg_2;
-	struct tw9992_regset_table init_reg_3; 
-	struct tw9992_regset_table init_reg_4; 
+	struct tw9992_regset_table init_reg_3;
+	struct tw9992_regset_table init_reg_4;
 	struct tw9992_regset_table flash_init;
 	struct tw9992_regset_table reset_crop;
 	struct tw9992_regset_table get_ae_stable_status;
@@ -410,7 +410,7 @@ static int tw9992_i2c_read_byte(struct i2c_client *client, u8 addr, u8 *data)
 		//dev_err(&client->dev, "\e[31mtw9992_i2c_write_byte failed reg:0x%02x retry:%d\e[0m\n", addr, i);
 	}
 
-	if (unlikely(ret != 2)) 
+	if (unlikely(ret != 2))
 	{
 		dev_err(&client->dev, "\e[31mtw9992_i2c_read_byte failed reg:0x%02x \e[0m\n", addr);
 		return -EIO;
@@ -445,7 +445,7 @@ static int tw9992_i2c_write_byte(struct i2c_client *client, u8 addr, u8 val)
 		//dev_err(&client->dev, "\e[31mtw9992_i2c_write_byte failed reg:0x%02x write:0x%04x, retry:%d\e[0m\n", addr, val, i);
 	}
 
-	if (ret != 1) 
+	if (ret != 1)
 	{
 		tw9992_i2c_read_byte(client, addr, &read_val);
 		dev_err(&client->dev, "\e[31mtw9992_i2c_write_byte failed reg:0x%02x write:0x%04x, read:0x%04x, retry:%d\e[0m\n", addr, val, read_val, i);
@@ -475,7 +475,7 @@ static int tw9992_i2c_write_block(struct v4l2_subdev *sd, u8 *buf, int size)
 		msleep(POLL_TIME_MS);
 	}
 
-	if (ret != 1) 
+	if (ret != 1)
 	{
 		dev_err(&client->dev, "\e[31mtw9992_i2c_write_block failed size:%d \e[0m\n", size);
 		return -EIO;
@@ -643,7 +643,7 @@ static int tw9992_write_init_reg2_burst(struct v4l2_subdev *sd)
 
 static unsigned int tw9992_get_width(void)
 {
-#if defined(RESOLUTION_HD)	
+#if defined(RESOLUTION_HD)
 	return 1280;
 #else
 	return 1920;
@@ -1517,7 +1517,7 @@ static void tw9992_set_framesize(struct v4l2_subdev *sd,
 
 
 
-#if 1 
+#if 1
 static void tw9992_enable_torch(struct v4l2_subdev *sd)
 {
 	/* struct i2c_client *client = v4l2_get_subdevdata(sd); */
@@ -1979,13 +1979,13 @@ static int tw9992_s_power(struct v4l2_subdev *sd, int on)
 
 	dev_err(&client->dev, "%s() on:%d \n", __func__, on);
 
-    if (on) 
+    if (on)
 	{
 		//ret = tw9992_power(TW9992_HW_POWER_ON);
 		tw9992_init_parameters(sd);
 		state->power_on = TW9992_HW_POWER_ON;
 	}
-	else 
+	else
 	{
 		//ret = tw9992_power(TW9992_HW_POWER_OFF);
 		state->power_on = TW9992_HW_POWER_OFF;
@@ -2004,7 +2004,7 @@ u8 tw9992_get_color_system(struct i2c_client *client)
 	if((reg_val & 0x70) != 0x00)
 		return 1;	// PAL
 	else
-		return 0;	// NTSC		
+		return 0;	// NTSC
 }
 
 int tw9992_decoder_lock(struct i2c_client *client)
@@ -2033,13 +2033,13 @@ int tw9992_decoder_lock(struct i2c_client *client)
 		if ( Status1C & 0x80 ) 	continue;			// chwck end of detect
 		if ( Status03 & 0x80 )	continue;			// VDLOSS
 		if (( Status03 & 0x68 ) != 0x68) 	continue;		// VLOCK, SLOCK, HLOCK check
-			
+
 		if ( Status03 & 0x10 )		continue;		// if ODD field wait until it goes to EVEN field
 		//if (( Status03 & 0x10 ) == 0)		continue;		// if EVEN field wait until it goes to ODD field
 		else {
 			mdelay(5);										// give some delay
 			tw9992_i2c_write_byte(client, 0x70, 0x01);		//			// MIPI out
-			break;			// 
+			break;			//
 		}
 	}
 
@@ -2121,7 +2121,7 @@ static int tw9992_init(struct v4l2_subdev *sd, u32 val)
 		printk("===== Input:NTSC =====\n");
 	}
 	else
-	{	
+	{
 		ret = tw9992_reg_set_write(client, TW9992_PAL_Int);
 		printk("===== Input:PAL =====\n");
 	}
@@ -2915,7 +2915,7 @@ static int tw9992_s_stream(struct v4l2_subdev *sd, int enable)
 	{
 		tw9992_init(sd, enable);
 		state->runmode = TW9992_RUNMODE_RUNNING;
-	} 
+	}
 	return ret;
 }
 
@@ -3238,7 +3238,7 @@ static int tw9992_probe(struct i2c_client *client,
 	//tw9992_i2c_read_byte(client, 0x00, &val);
 	//tw9992_init(sd, 0);
 
-	dev_err(&client->dev, "%s: loaded\n", __func__);
+	/*dev_err(&client->dev, "%s: loaded\n", __func__);*/
     return 0;
 }
 

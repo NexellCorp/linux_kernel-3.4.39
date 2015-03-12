@@ -1011,6 +1011,7 @@ static struct i2c_board_info __initdata nxe2000_i2c_boardinfo[] = {
 #include <mach/nxp-v4l2-platformdata.h>
 #include <mach/soc.h>
 
+#ifdef CONFIG_VIDEO_TW9992
 static int camera_common_set_clock(ulong clk_rate)
 {
     PM_DBGOUT("%s: %d\n", __func__, (int)clk_rate);
@@ -1316,6 +1317,8 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 #endif /* CONFIG_VIDEO_TW9992 */
     { 0, NULL, 0, },
 };
+#endif
+
 /* out platformdata */
 static struct i2c_board_info hdmi_edid_i2c_boardinfo = {
     I2C_BOARD_INFO("nxp_edid", 0xA0>>1),
