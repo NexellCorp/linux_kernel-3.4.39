@@ -403,6 +403,7 @@ static struct regulator_ops nxe2000_ops = {
 *  DCDC5 = 400us/1.5V
 */
 static struct nxe2000_regulator nxe2000_regulator[] = {
+#ifndef CONFIG_REGULATOR_MP8845C
 	NXE2000_REG(DC1, 0x2C, 0, 0x2C, 1, 0x36, 0xFF, 0x3B, 0x16,
 			600, 3500, 12500, 0xE8, nxe2000_dcdc1_ops, 2, 300,
 			0x00, 0, 0x00, 0),
@@ -410,7 +411,7 @@ static struct nxe2000_regulator nxe2000_regulator[] = {
 	NXE2000_REG(DC2, 0x2E, 0, 0x2E, 1, 0x37, 0xFF, 0x3C, 0x17,
 			600, 3500, 12500, 0xE8, nxe2000_ops, 2, 300,
 			0x00, 0, 0x00, 0),
-
+#endif
 	NXE2000_REG(DC3, 0x30, 0, 0x30, 1, 0x38, 0xFF, 0x3D, 0x18,
 			600, 3500, 12500, 0xE8, nxe2000_ops, 2, 700,
 			0x00, 0, 0x00, 0),
