@@ -1696,50 +1696,49 @@ static void axp_charging_monitor(struct work_struct *work)
 		
 	}
 
-#ifdef ENABLE_DEBUG
+	if(axp_debug)
 	{
-	int temp=0, temp1=0;
+		int temp=0, temp1=0;
 
-	//axp_sply_register_dump(charger, 1);
+		//axp_sply_register_dump(charger, 1);
 
-	printk(KERN_ERR "## bat_det:%d, ac_det:%d, usb_det:%d \n", charger->bat_det, charger->ac_det, charger->usb_det);
-	printk(KERN_ERR "## ac_valid:%d, usb_valid:%d \n", charger->ac_valid, charger->usb_valid);
+		printk(KERN_ERR "## bat_det:%d, ac_det:%d, usb_det:%d \n", charger->bat_det, charger->ac_det, charger->usb_det);
+		printk(KERN_ERR "## ac_valid:%d, usb_valid:%d \n", charger->ac_valid, charger->usb_valid);
 
 #if defined(CONFIG_USB_DWCOTG)
-	temp = dwc_otg_pcd_get_ep0_state();
-	printk(KERN_ERR "## USB otg status : %d \n", temp);
+		temp = dwc_otg_pcd_get_ep0_state();
+		printk(KERN_ERR "## USB otg status : %d \n", temp);
 #endif
 
-	axp_read(charger->master, AXP22_CHARGE_VBUS,&val);
-	temp = (((val>>3)&0x7)*100)+4000;
-	temp1 = ((val>>6)&0x1);
-	printk(KERN_ERR "## VBUS voltage limit(0x%02x) : %dmV, %d \n", AXP22_CHARGE_VBUS, temp, temp1);
+		axp_read(charger->master, AXP22_CHARGE_VBUS,&val);
+		temp = (((val>>3)&0x7)*100)+4000;
+		temp1 = ((val>>6)&0x1);
+		printk(KERN_ERR "## VBUS voltage limit(0x%02x) : %dmV, %d \n", AXP22_CHARGE_VBUS, temp, temp1);
 
-	axp_read(charger->master, AXP22_CHARGE_VBUS,&val);
-	val = (val&0x3);
-	if(val == 0x01)
-		temp = 500;
-	else if(val == 0x00)
-		temp = 900;
-	else
-		temp = 0xff;
-	if(temp == 0xff)
-		printk(KERN_ERR "## VBUS current limit(0x%02x) : No current limit \n", AXP22_CHARGE_VBUS);
-	else
-		printk(KERN_ERR "## VBUS current limit(0x%02x) : %dmA \n", AXP22_CHARGE_VBUS, temp);
+		axp_read(charger->master, AXP22_CHARGE_VBUS,&val);
+		val = (val&0x3);
+		if(val == 0x01)
+			temp = 500;
+		else if(val == 0x00)
+			temp = 900;
+		else
+			temp = 0xff;
+		if(temp == 0xff)
+			printk(KERN_ERR "## VBUS current limit(0x%02x) : No current limit \n", AXP22_CHARGE_VBUS);
+		else
+			printk(KERN_ERR "## VBUS current limit(0x%02x) : %dmA \n", AXP22_CHARGE_VBUS, temp);
 
-	axp_read(charger->master, AXP22_CHARGE_CONTROL1,&val);
-	val = (val&0xF);
-	temp = (val*150)+300;
-	printk(KERN_ERR "## Charge current(0x%02x) : %dmA \n", AXP22_CHARGE_CONTROL1, temp);
+		axp_read(charger->master, AXP22_CHARGE_CONTROL1,&val);
+		val = (val&0xF);
+		temp = (val*150)+300;
+		printk(KERN_ERR "## Charge current(0x%02x) : %dmA \n", AXP22_CHARGE_CONTROL1, temp);
 
-	axp_read(charger->master, AXP22_CHARGE_CONTROL3,&val);
-	val = (val&0xF);
-	temp = (val*150)+300;
-	printk(KERN_ERR "## Charge limit(0x%02x)   : %dmA \n", AXP22_CHARGE_CONTROL3, temp);
-	printk(KERN_ERR "##########################################################\n");
+		axp_read(charger->master, AXP22_CHARGE_CONTROL3,&val);
+		val = (val&0xF);
+		temp = (val*150)+300;
+		printk(KERN_ERR "## Charge limit(0x%02x)   : %dmA \n", AXP22_CHARGE_CONTROL3, temp);
+		printk(KERN_ERR "##########################################################\n");
 	}
-#endif
 
 	power_supply_changed(&charger->batt);
 
