@@ -73,12 +73,8 @@ struct s3c64xx_spi_info {
 	int rx_lvl_offset;
 	int high_speed;
 	int tx_st_done;
-	int hierarchy;
 };
 
-struct s3c64xx_spi_control {
-	int hierarchy;
-};
 /**
  * s3c64xx_spi_set_platdata - SPI Controller configure callback by the board
  *				initialization code.
