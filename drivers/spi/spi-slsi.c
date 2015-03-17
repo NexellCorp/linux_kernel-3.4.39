@@ -275,7 +275,6 @@ static void *next_transfer(struct s3c64xx_spi_driver_data *sdd)
 static void unmap_free_dma_scatter(struct s3c64xx_spi_driver_data *sdd)
 {
 	/* Unmap and free the SG tables */
-	printk("Unmap addr %p , %p\n", sdd->sgt_tx.sgl, sdd->sgt_rx.sgl);
    	dma_unmap_sg(sdd->dma_tx_channel->device->dev, sdd->sgt_tx.sgl,
 		     sdd->sgt_tx.nents, DMA_TO_DEVICE);
 	dma_unmap_sg(sdd->dma_rx_channel->device->dev, sdd->sgt_rx.sgl,
@@ -726,7 +725,6 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 		{
 
 				status = readl(regs + S3C64XX_SPI_STATUS);
-				printk(" done : %x %x \n",status, RX_FIFO_LVL(status, sci));
 		}
 	} else {
 		/* If it was only Tx */
@@ -1032,7 +1030,6 @@ static void pump_transfers(unsigned long data)
 	//flush_fifo(sdd);
 
 	if (sdd->cntrlr_info->enable_dma) {
-		printk("%s \n",__func__);
 		if (configure_dma(sdd, transfer)) {
 			dev_dbg(&sdd->pdev->dev,
 				"configuration of DMA failed, fall back to interrupt mode\n");
