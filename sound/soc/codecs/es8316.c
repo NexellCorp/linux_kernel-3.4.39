@@ -54,7 +54,6 @@ int es8316_hp_det_gpio = INVALID_GPIO;
 #endif
 
 int es8316_jack_insert;
-extern int es8316_spk_on(int enable);
 
 struct snd_soc_codec *es8316_codec;
 
@@ -883,7 +882,6 @@ static int es8316_set_bias_level(struct snd_soc_codec *codec,
 			snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66); // L/R OUTEN
 		} else {
 			snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x06); // R OUTEN
-			es8316_spk_on(1);
 		}
 		DBG("%s: jack_insert %d\n", __func__, es8316_jack_insert);
 		break;
@@ -933,7 +931,6 @@ static int es8316_set_bias_level(struct snd_soc_codec *codec,
 		if (es8316_jack_insert) {
 			snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66); // L/R OUTEN
 		} else {
-			es8316_spk_on(0);
 			snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x06); // R OUTEN
 		}
 		DBG("%s: jack_insert %d\n", __func__, es8316_jack_insert);
@@ -1255,7 +1252,6 @@ static void es8316_i2c_shutdown(struct i2c_client *i2c)
 		if (!es8316_codec)
 		goto err;
 		es8316_off_amp(true);
-		es8316_spk_on(0);
 		codec = es8316_codec;
 		snd_soc_write(codec, ES8316_CPHP_ICAL_VOL_REG18, 0x33);
 		snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x00);
