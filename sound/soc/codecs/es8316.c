@@ -54,7 +54,6 @@ int es8316_hp_det_gpio = INVALID_GPIO;
 #endif
 
 int es8316_jack_insert;
-extern int es8316_spk_on(int enable);
 
 struct snd_soc_codec *es8316_codec;
 
@@ -865,11 +864,11 @@ static int es8316_set_bias_level(struct snd_soc_codec *codec,
 		snd_soc_write(codec, ES8316_CLKMGR_CLKSW_REG01, 0x7F);
 		snd_soc_write(codec, ES8316_SYS_PDN_REG0D, 0x00);
 		snd_soc_write(codec, ES8316_ADC_PDN_LINSEL_REG22, 0x20);
-		if (es8316_jack_insert) {
-			snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x00);  //VPP SET AND ZERO L/R,STEREO SET
-		} else {
-			snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x08);  //VPP SET AND ZERO L/R,MONO SET
-		}
+	if (es8316_jack_insert) {
+		snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x00);  //VPP SET AND ZERO L/R,STEREO SET
+	} else {
+		snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x08);  //VPP SET AND ZERO L/R,MONO SET
+	}
 		snd_soc_write(codec, ES8316_DAC_PDN_REG2F, 0x00);
 		snd_soc_write(codec, ES8316_HPMIX_SWITCH_REG14, 0x88);
 		snd_soc_write(codec, ES8316_HPMIX_PDN_REG15, 0x88);
@@ -883,7 +882,6 @@ static int es8316_set_bias_level(struct snd_soc_codec *codec,
 			snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66); // L/R OUTEN
 		} else {
 			snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x06); // R OUTEN
-			es8316_spk_on(1);
 		}
 		DBG("%s: jack_insert %d\n", __func__, es8316_jack_insert);
 		break;
@@ -916,11 +914,11 @@ static int es8316_set_bias_level(struct snd_soc_codec *codec,
 		snd_soc_write(codec, ES8316_CLKMGR_CLKSW_REG01, 0x7F);
 		snd_soc_write(codec, ES8316_SYS_PDN_REG0D, 0x00);
 		snd_soc_write(codec, ES8316_ADC_PDN_LINSEL_REG22, 0x20);
-		if (es8316_jack_insert) {
-			snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x00);  //VPP SET AND ZERO L/R,STEREO SET
-		} else {
-			snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x08);  //VPP SET AND ZERO L/R,MONO SET
-		}
+	if (es8316_jack_insert) {
+		snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x00);  //VPP SET AND ZERO L/R,STEREO SET
+	} else {
+		snd_soc_write(codec, ES8316_DAC_SET3_REG32,0x08);  //VPP SET AND ZERO L/R,MONO SET
+	}
 		snd_soc_write(codec, ES8316_DAC_PDN_REG2F, 0x00);
 		snd_soc_write(codec, ES8316_HPMIX_SWITCH_REG14, 0x88);
 		snd_soc_write(codec, ES8316_HPMIX_PDN_REG15, 0x88);
@@ -933,7 +931,6 @@ static int es8316_set_bias_level(struct snd_soc_codec *codec,
 		if (es8316_jack_insert) {
 			snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x66); // L/R OUTEN
 		} else {
-			es8316_spk_on(0);
 			snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x06); // R OUTEN
 		}
 		DBG("%s: jack_insert %d\n", __func__, es8316_jack_insert);
@@ -1059,28 +1056,26 @@ static int es8316_init_regs(struct snd_soc_codec *codec)
 #ifdef CONFIG_PM
 static int es8316_suspend(struct snd_soc_codec *codec)
 {
-	DBG("###########%s %d ", __func__, __LINE__);
+  DBG("###########%s %d ", __func__, __LINE__);
 	es8316_off_amp(true);
-	snd_soc_write(codec, ES8316_CPHP_ICAL_VOL_REG18, 0x33);
-	snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x00);
-	snd_soc_write(codec, ES8316_CPHP_LDOCTL_REG1B, 0x03);
-	snd_soc_write(codec, ES8316_CPHP_PDN2_REG1A, 0x22);
-	snd_soc_write(codec, ES8316_CPHP_PDN1_REG19, 0x06);
-	snd_soc_write(codec, ES8316_HPMIX_SWITCH_REG14, 0x00);
-	snd_soc_write(codec, ES8316_HPMIX_PDN_REG15, 0x33);
-	snd_soc_write(codec, ES8316_HPMIX_VOL_REG16, 0x00);
-	snd_soc_write(codec, ES8316_ADC_PDN_LINSEL_REG22, 0xC0);
-	snd_soc_write(codec, ES8316_CLKMGR_CLKSW_REG01, 0x03);
-	es8316_set_bias_level(codec, SND_SOC_BIAS_OFF);
+		snd_soc_write(codec, ES8316_CPHP_ICAL_VOL_REG18, 0x33);
+		snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x00);
+		snd_soc_write(codec, ES8316_CPHP_LDOCTL_REG1B, 0x03);
+		snd_soc_write(codec, ES8316_CPHP_PDN2_REG1A, 0x22);
+		snd_soc_write(codec, ES8316_CPHP_PDN1_REG19, 0x06);
+		snd_soc_write(codec, ES8316_HPMIX_SWITCH_REG14, 0x00);
+		snd_soc_write(codec, ES8316_HPMIX_PDN_REG15, 0x33);
+		snd_soc_write(codec, ES8316_HPMIX_VOL_REG16, 0x00);
+		snd_soc_write(codec, ES8316_ADC_PDN_LINSEL_REG22, 0xC0);
+		snd_soc_write(codec, ES8316_CLKMGR_CLKSW_REG01, 0x03);
 	return 0;
 }
 
 static int es8316_resume(struct snd_soc_codec *codec)
 {
-	DBG("###########%s %d ", __func__, __LINE__);
+  DBG("###########%s %d ", __func__, __LINE__);
 #if 1
-	es8316_init_regs(codec);
-	es8316_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+  es8316_init_regs(codec);
 #else
 	snd_soc_write(codec, ES8316_CPHP_ICAL_VOL_REG18, 0x00);
 	snd_soc_write(codec, ES8316_CPHP_LDOCTL_REG1B, 0x30);
@@ -1257,7 +1252,6 @@ static void es8316_i2c_shutdown(struct i2c_client *i2c)
 		if (!es8316_codec)
 		goto err;
 		es8316_off_amp(true);
-		es8316_spk_on(0);
 		codec = es8316_codec;
 		snd_soc_write(codec, ES8316_CPHP_ICAL_VOL_REG18, 0x33);
 		snd_soc_write(codec, ES8316_CPHP_OUTEN_REG17, 0x00);
