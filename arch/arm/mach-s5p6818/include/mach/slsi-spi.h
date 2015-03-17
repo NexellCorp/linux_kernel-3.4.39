@@ -12,6 +12,13 @@
 #define __S3C64XX_PLAT_SPI_H
 
 #include <linux/dmaengine.h>
+
+
+#define	SSP_MASTER	0
+#define	SSP_SLAVE	1
+    
+
+
 struct platform_device;
 
 /**
@@ -26,6 +33,7 @@ struct platform_device;
  * spi_board_info.controller_data point to it.
  */
 struct s3c64xx_spi_csinfo {
+	int hierarchy;
 	u8 fb_delay;
 	unsigned line;
 	void (*set_level)(unsigned line_id, int lvl);
