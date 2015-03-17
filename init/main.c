@@ -820,8 +820,10 @@ static void __init do_pre_smp_initcalls(void)
 		do_one_initcall(*fn);
 }
 
+extern void start_fine_animation(void);
 static void run_init_process(const char *init_filename)
 {
+    start_fine_animation();
 	argv_init[0] = init_filename;
 	kernel_execve(init_filename, argv_init, envp_init);
 }

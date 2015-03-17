@@ -501,6 +501,9 @@ void __init mount_root(void)
 /*
  * Prepare the namespace - decide what/where to mount, load ramdisks, etc.
  */
+// psw0523 fine-boot
+extern void start_fine_boot(void);
+extern void start_fine_load(void);
 void __init prepare_namespace(void)
 {
 	int is_floppy;
@@ -553,6 +556,9 @@ void __init prepare_namespace(void)
 		ROOT_DEV = Root_RAM0;
 
 	mount_root();
+
+    // psw0523 fine-boot
+    start_fine_load();
     /*printk("%s: %d\n", __func__, __LINE__);*/
 out:
 	devtmpfs_mount("dev");
