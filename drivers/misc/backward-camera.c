@@ -6,6 +6,12 @@
 #include <linux/workqueue.h>
 #include <linux/i2c.h>
 
+#include <linux/dma-buf.h>
+#include <linux/nxp_ion.h>
+#include <linux/ion.h>
+#include <linux/cma.h>
+#include <../drivers/gpu/ion/ion_priv.h>
+
 #include <mach/platform.h>
 #include <mach/soc.h>
 #include <mach/nxp-backward-camera.h>
@@ -24,6 +30,22 @@ static struct nxp_backward_camera_context {
     struct i2c_client *client;
     struct delayed_work resume_work;
 #endif
+
+    /* ion allocation */
+    struct ion_client *ion_client;
+    /* video */
+    struct ion_handle *ion_handle_video;
+    struct dma_buf    *dma_buf_video;
+    void              *virt_video;
+    /* rgb */
+    struct ion_handle *ion_handle_rgb;
+    struct dma_buf    *dma_buf_rgb;
+    void              *virt_rgb;
+
+    bool is_first;
+
+    /* for remove */
+    struct platform_device *my_device;
 } _context;
 
 static void _vip_dump_register(int module)
@@ -158,24 +180,25 @@ static void _vip_hw_set_clock(int module, struct nxp_backward_camera_platform_da
 static void _vip_hw_set_sensor_param(int module, struct nxp_backward_camera_platform_data *param);
 #endif
 
-static void vip_run(int module)
+static void _vip_run(int module)
 {
 #if defined(CONFIG_ARCH_S5P6818)
     struct nxp_backward_camera_context *me = &_context;
-    u32 lu_addr = me->plat_data->lu_addr;
-    u32 cb_addr = me->plat_data->cb_addr;
-    u32 cr_addr = me->plat_data->cr_addr;
     _vip_hw_set_clock(module, me->plat_data, true);
     _vip_hw_set_sensor_param(module, me->plat_data);
-    _vip_hw_set_addr(module, me->plat_data, lu_addr, cb_addr, cr_addr);
+    _vip_hw_set_addr(module,
+            me->plat_data,
+            me->plat_data->lu_addr,
+            me->plat_data->cb_addr,
+            me->plat_data->cr_addr);
 #endif
     NX_VIP_SetVIPEnable(module, CTRUE, CTRUE, CTRUE, CFALSE);
     _vip_dump_register(module);
 }
 
-static void vip_stop(int module)
+static void _vip_stop(int module)
 {
-#if defined(CONFIG_ARCH_S5p6818)
+#if defined(CONFIG_ARCH_S5P6818)
     {
         int intnum = 0;
         /*int intnum = 2; ODINT*/
@@ -185,90 +208,150 @@ static void vip_stop(int module)
     }
 #endif
     NX_VIP_SetVIPEnable(module, CFALSE, CFALSE, CFALSE, CFALSE);
-#if defined(CONFIG_ARCH_S5p6818)
+#if defined(CONFIG_ARCH_S5P6818)
     NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_ASSERT);
     NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_NEGATE);
 #endif
 }
 
-static void mlc_run(int module)
+static void _mlc_video_run(int module)
 {
-#if defined(CONFIG_ARCH_S5P4418)
     NX_MLC_SetTopDirtyFlag(module);
-#endif
-
-#if 1
     NX_MLC_SetVideoLayerLineBufferPowerMode(module, CTRUE);
     NX_MLC_SetVideoLayerLineBufferSleepMode(module, CFALSE);
-#endif
-
     NX_MLC_SetLayerEnable(module, MLC_LAYER_VIDEO, CTRUE);
     NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
 }
 
-static void mlc_stop(int module)
+static void _mlc_video_stop(int module)
 {
-#if defined(CONFIG_ARCH_S5P4418)
     NX_MLC_SetTopDirtyFlag(module);
-#endif
-    NX_MLC_SetLayerEnable(module, MLC_LAYER_VIDEO, CFALSE);
-    NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
-
-#if 1
     NX_MLC_SetVideoLayerLineBufferPowerMode(module, CFALSE);
     NX_MLC_SetVideoLayerLineBufferSleepMode(module, CTRUE);
+    NX_MLC_SetLayerEnable(module, MLC_LAYER_VIDEO, CFALSE);
     NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
-#endif
 }
 
-static void mlc_overlay_run(int module)
+static void _mlc_overlay_run(int module)
 {
     u32 layer = MLC_LAYER_RGB_OVERLAY;
     NX_MLC_SetLayerEnable(module, layer, CTRUE);
     NX_MLC_SetDirtyFlag(module, layer);
 }
 
-static void mlc_overlay_stop(int module)
+static void _mlc_overlay_stop(int module)
 {
     u32 layer = MLC_LAYER_RGB_OVERLAY;
     NX_MLC_SetLayerEnable(module, layer, CFALSE);
     NX_MLC_SetDirtyFlag(module, layer);
 }
 
-#if 1
+static inline u32 _get_pixel_byte(u32 nxp_rgb_format)
+{
+    switch (nxp_rgb_format) {
+        case NX_MLC_RGBFMT_R5G6B5:
+        case NX_MLC_RGBFMT_B5G6R5:
+        case NX_MLC_RGBFMT_X1R5G5B5:
+        case NX_MLC_RGBFMT_X1B5G5R5:
+        case NX_MLC_RGBFMT_X4R4G4B4:
+        case NX_MLC_RGBFMT_X4B4G4R4:
+        case NX_MLC_RGBFMT_X8R3G3B2:
+        case NX_MLC_RGBFMT_X8B3G3R2:
+        case NX_MLC_RGBFMT_A1R5G5B5:
+        case NX_MLC_RGBFMT_A1B5G5R5:
+        case NX_MLC_RGBFMT_A4R4G4B4:
+        case NX_MLC_RGBFMT_A4B4G4R4:
+        case NX_MLC_RGBFMT_A8R3G3B2:
+        case NX_MLC_RGBFMT_A8B3G3R2:
+            return 2;
+
+        case NX_MLC_RGBFMT_R8G8B8:
+        case NX_MLC_RGBFMT_B8G8R8:
+            return 3;
+
+        case NX_MLC_RGBFMT_A8R8G8B8:
+        case NX_MLC_RGBFMT_A8B8G8R8:
+            return 4;
+
+        default:
+            pr_err("%s: invalid nxp_rgb_format(0x%x)\n", __func__, nxp_rgb_format);
+            return 0;
+    }
+}
+
+static void _mlc_rgb_overlay_set_param(int module, struct nxp_backward_camera_platform_data *param)
+{
+    u32 format = param->rgb_format;
+    u32 pixelbyte = _get_pixel_byte(format);
+    u32 stride = param->width * pixelbyte;
+    u32 layer = MLC_LAYER_RGB_OVERLAY;
+    CBOOL EnAlpha = CFALSE;
+
+    if (format == MLC_RGBFMT_A1R5G5B5 ||
+        format == MLC_RGBFMT_A1B5G5R5 ||
+        format == MLC_RGBFMT_A4R4G4B4 ||
+        format == MLC_RGBFMT_A4B4G4R4 ||
+        format == MLC_RGBFMT_A8R3G3B2 ||
+        format == MLC_RGBFMT_A8B3G3R2 ||
+        format == MLC_RGBFMT_A8R8G8B8 ||
+        format == MLC_RGBFMT_A8B8G8R8)
+        EnAlpha = CTRUE;
+
+    NX_MLC_SetColorInversion(module, layer, CFALSE, 0);
+    NX_MLC_SetAlphaBlending(module, layer, EnAlpha, 0);
+    NX_MLC_SetFormatRGB(module, layer, (NX_MLC_RGBFMT)format);
+    NX_MLC_SetRGBLayerInvalidPosition(module, layer, 0, 0, 0, 0, 0, CFALSE);
+    NX_MLC_SetRGBLayerInvalidPosition(module, layer, 1, 0, 0, 0, 0, CFALSE);
+    NX_MLC_SetPosition(module, layer, 0, 0, param->width-1, param->height-1);
+
+    NX_MLC_SetRGBLayerStride (module, layer, pixelbyte, stride);
+    NX_MLC_SetRGBLayerAddress(module, layer, param->rgb_addr);
+    NX_MLC_SetDirtyFlag(module, layer);
+}
+
+static void _mlc_rgb_overlay_draw(int module, struct nxp_backward_camera_platform_data *param, void *mem)
+{
+    if (param->draw_rgb_overlay)
+        param->draw_rgb_overlay(param, mem);
+}
+
+
+
 static void _mlc_video_set_param(int module, struct nxp_backward_camera_platform_data *param);
 static void _mlc_video_set_addr(int module, u32 lu_a, u32 cb_a, u32 cr_a, u32 lu_s, u32 cb_s, u32 cr_s);
-#endif
-static bool _s_first = true;
 static void _turn_on(struct nxp_backward_camera_context *me)
 {
     printk("%s\n", __func__);
-    if (_s_first == true) {
-        vip_run(me->plat_data->vip_module_num);
-        _s_first = false;
+    if (me->is_first) {
+        _vip_run(me->plat_data->vip_module_num);
+        _mlc_video_set_param(me->plat_data->mlc_module_num, me->plat_data);
+        _mlc_video_set_addr(me->plat_data->mlc_module_num,
+                me->plat_data->lu_addr,
+                me->plat_data->cb_addr,
+                me->plat_data->cr_addr,
+                me->plat_data->lu_stride,
+                me->plat_data->cb_stride,
+                me->plat_data->cr_stride);
+
+        _mlc_video_run(me->plat_data->mlc_module_num);
+
+        _mlc_rgb_overlay_set_param(me->plat_data->mlc_module_num, me->plat_data);
+        _mlc_rgb_overlay_draw(me->plat_data->mlc_module_num, me->plat_data, me->virt_rgb);
+        _mlc_overlay_run(me->plat_data->mlc_module_num);
+
+        me->is_first = false;
+    } else {
+        _mlc_video_run(me->plat_data->mlc_module_num);
+        _mlc_overlay_run(me->plat_data->mlc_module_num);
     }
-    /*mlc_overlay_run(me->plat_data->mlc_module_num);*/
-#if 0
-    _mlc_video_set_param(me->plat_data->mlc_module_num, me->plat_data);
-    {
-        u32 lu_addr = me->plat_data->lu_addr;
-        u32 cb_addr = me->plat_data->cb_addr;
-        u32 cr_addr = me->plat_data->cr_addr;
-        u32 lu_stride = me->plat_data->lu_stride;
-        u32 cb_stride = me->plat_data->cb_stride;
-        u32 cr_stride = me->plat_data->cr_stride;
-        _mlc_video_set_addr(me->plat_data->mlc_module_num, lu_addr, cb_addr, cr_addr, lu_stride, cb_stride, cr_stride);
-    }
-#endif
-    mlc_run(me->plat_data->mlc_module_num);
 }
 
 static void _turn_off(struct nxp_backward_camera_context *me)
 {
     printk("%s\n", __func__);
-    /*mlc_overlay_stop(me->plat_data->mlc_module_num);*/
-    mlc_stop(me->plat_data->mlc_module_num);
-    /*vip_stop(me->plat_data->vip_module_num);*/
+    _mlc_overlay_stop(me->plat_data->mlc_module_num);
+    _mlc_video_stop(me->plat_data->mlc_module_num);
+    /*_vip_stop(me->plat_data->vip_module_num);*/
 }
 
 static inline bool _is_backgear_on(struct nxp_backward_camera_platform_data *pdata)
@@ -282,6 +365,7 @@ static inline bool _is_backgear_on(struct nxp_backward_camera_platform_data *pda
 
 static inline bool _is_running(struct nxp_backward_camera_context *me)
 {
+#if 0
     CBOOL vipenb, sepenb, clipenb, decenb;
     bool mlcenb;
 
@@ -289,11 +373,13 @@ static inline bool _is_running(struct nxp_backward_camera_context *me)
     mlcenb = NX_MLC_GetLayerEnable(me->plat_data->mlc_module_num, 3);
 
     return mlcenb && vipenb && sepenb && clipenb;
+#else
+    return NX_MLC_GetLayerEnable(me->plat_data->mlc_module_num, 3);
+#endif
 }
 
 static void _decide(struct nxp_backward_camera_context *me)
 {
-    /*me->running = NX_MLC_GetLayerEnable(me->plat_data->mlc_module_num, 3); // video layer*/
     me->running = _is_running(me);
     me->backgear_on = _is_backgear_on(me->plat_data);
     printk("%s: running %d, backgear on %d\n", __func__, me->running, me->backgear_on);
@@ -320,45 +406,6 @@ static void _work_handler(struct work_struct *work)
 #ifdef CONFIG_PM
 static void _resume_work(struct work_struct *work);
 #endif
-
-static int nxp_backward_camera_probe(struct platform_device *pdev)
-{
-    int ret;
-    struct nxp_backward_camera_platform_data *pdata = pdev->dev.platform_data;
-    struct nxp_backward_camera_context *me = &_context;
-
-    printk("%s\n", __func__);
-    me->plat_data = pdata;
-    me->irq = IRQ_GPIO_START + pdata->backgear_gpio_num;
-
-    NX_MLC_SetBaseAddress(pdata->mlc_module_num, IO_ADDRESS(NX_MLC_GetPhysicalAddress(pdata->mlc_module_num)));
-    NX_VIP_SetBaseAddress(pdata->vip_module_num, IO_ADDRESS(NX_VIP_GetPhysicalAddress(pdata->vip_module_num)));
-
-    INIT_WORK(&me->work, _work_handler);
-    ret = request_irq(me->irq, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "backward-camera", me);
-    if (ret) {
-        pr_err("%s: failed to request_irq (irqnum %d)\n", __func__, me->irq);
-        return -1;
-    }
-
-    _decide(me);
-    /*INIT_WORK(&me->work, _work_handler);*/
-
-#ifdef CONFIG_PM
-    INIT_DELAYED_WORK(&me->resume_work, _resume_work);
-#endif
-
-    return 0;
-}
-
-static int nxp_backward_camera_remove(struct platform_device *pdev)
-{
-    printk("%s\n", __func__);
-    free_irq(_context.irq, &_context);
-    return 0;
-}
-
-#ifdef CONFIG_PM
 
 #define RESUME_CAMERA_ON_DELAY_MS   300
 
@@ -414,19 +461,15 @@ static void _vip_hw_set_clock(int module, struct nxp_backward_camera_platform_da
         NX_CLKGEN_SetBaseAddress(NX_VIP_GetClockNumber(module), (U32)clkgen_base);
         NX_CLKGEN_SetClockDivisorEnable(NX_VIP_GetClockNumber(module), CTRUE);
         NX_CLKGEN_SetClockBClkMode(NX_VIP_GetClockNumber(module), NX_BCLKMODE_DYNAMIC);
-        /* printk("RSTCON Base: 0x%x\n", NX_RSTCON_GetBaseAddress()); */
-        /* printk("RSTCON VIP %d Reset Number %d, REG Number %d\n", module, NX_VIP_GetResetNumber(module), NX_VIP_GetResetNumber(module)>>5); */
-        /* printk("CLKGEN Base: 0x%x\n", clkgen_base); */
 #if defined(CONFIG_ARCH_S5P4418)
         NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nDISABLE);
         NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nENABLE);
-#elif defined(CONFIG_ARCH_S5p6818)
+#elif defined(CONFIG_ARCH_S5P6818)
         NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_ASSERT);
         NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_NEGATE);
 #endif
 
         if (param->is_mipi) {
-            printk("%s: apply mipi csi clock!!!\n", __func__);
             NX_CLKGEN_SetClockSource(NX_VIP_GetClockNumber(module), 0, 2); /* external PCLK */
             NX_CLKGEN_SetClockDivisor(NX_VIP_GetClockNumber(module), 0, 2);
             NX_CLKGEN_SetClockDivisorEnable(NX_VIP_GetClockNumber(module), CTRUE);
@@ -436,7 +479,6 @@ static void _vip_hw_set_clock(int module, struct nxp_backward_camera_platform_da
             NX_CLKGEN_SetClockDivisorEnable(NX_VIP_GetClockNumber(module), CTRUE);
         }
 
-        printk("VIP CLK GEN VAL: 0x%x\n", *clkgen_base);
         NX_VIP_SetBaseAddress(module, IO_ADDRESS(NX_VIP_GetPhysicalAddress(module)));
     }
 }
@@ -513,11 +555,6 @@ static void _vip_hw_set_addr(int module, struct nxp_backward_camera_platform_dat
             param->interlace ? ALIGN(param->h_active/2, 64) : param->h_active/2);
 }
 
-/*static void _vip_hw_run(int module)*/
-/*{*/
-    /*NX_VIP_SetVIPEnable(module, CTRUE, CTRUE, CTRUE, CFALSE);*/
-/*}*/
-
 #ifndef MLC_LAYER_VIDEO
 #define MLC_LAYER_VIDEO     3
 #endif
@@ -556,75 +593,6 @@ static void _mlc_video_set_addr(int module, u32 lu_a, u32 cb_a, u32 cr_a, u32 lu
     printk("%s exit\n", __func__);
 }
 
-static inline u32 _get_pixel_byte(u32 nxp_rgb_format)
-{
-    switch (nxp_rgb_format) {
-        case NX_MLC_RGBFMT_R5G6B5:
-        case NX_MLC_RGBFMT_B5G6R5:
-        case NX_MLC_RGBFMT_X1R5G5B5:
-        case NX_MLC_RGBFMT_X1B5G5R5:
-        case NX_MLC_RGBFMT_X4R4G4B4:
-        case NX_MLC_RGBFMT_X4B4G4R4:
-        case NX_MLC_RGBFMT_X8R3G3B2:
-        case NX_MLC_RGBFMT_X8B3G3R2:
-        case NX_MLC_RGBFMT_A1R5G5B5:
-        case NX_MLC_RGBFMT_A1B5G5R5:
-        case NX_MLC_RGBFMT_A4R4G4B4:
-        case NX_MLC_RGBFMT_A4B4G4R4:
-        case NX_MLC_RGBFMT_A8R3G3B2:
-        case NX_MLC_RGBFMT_A8B3G3R2:
-            return 2;
-
-        case NX_MLC_RGBFMT_R8G8B8:
-        case NX_MLC_RGBFMT_B8G8R8:
-            return 3;
-
-        case NX_MLC_RGBFMT_A8R8G8B8:
-        case NX_MLC_RGBFMT_A8B8G8R8:
-            return 4;
-
-        default:
-            pr_err("%s: invalid nxp_rgb_format(0x%x)\n", __func__, nxp_rgb_format);
-            return 0;
-    }
-}
-
-static void _mlc_rgb_overlay_set_param(int module, struct nxp_backward_camera_platform_data *param)
-{
-    u32 format = param->rgb_format;
-    u32 pixelbyte = _get_pixel_byte(format);
-    u32 stride = param->width * pixelbyte;
-    u32 layer = MLC_LAYER_RGB_OVERLAY;
-    CBOOL EnAlpha = CFALSE;
-
-    if (format == MLC_RGBFMT_A1R5G5B5 ||
-        format == MLC_RGBFMT_A1B5G5R5 ||
-        format == MLC_RGBFMT_A4R4G4B4 ||
-        format == MLC_RGBFMT_A4B4G4R4 ||
-        format == MLC_RGBFMT_A8R3G3B2 ||
-        format == MLC_RGBFMT_A8B3G3R2 ||
-        format == MLC_RGBFMT_A8R8G8B8 ||
-        format == MLC_RGBFMT_A8B8G8R8)
-        EnAlpha = CTRUE;
-
-    NX_MLC_SetColorInversion(module, layer, CFALSE, 0);
-    NX_MLC_SetAlphaBlending(module, layer, EnAlpha, 0);
-    NX_MLC_SetFormatRGB(module, layer, (NX_MLC_RGBFMT)format);
-    NX_MLC_SetRGBLayerInvalidPosition(module, layer, 0, 0, 0, 0, 0, CFALSE);
-    NX_MLC_SetRGBLayerInvalidPosition(module, layer, 1, 0, 0, 0, 0, CFALSE);
-    NX_MLC_SetPosition(module, layer, 0, 0, param->width-1, param->height-1);
-
-    NX_MLC_SetRGBLayerStride (module, layer, pixelbyte, stride);
-    NX_MLC_SetRGBLayerAddress(module, layer, param->rgb_addr);
-    NX_MLC_SetDirtyFlag(module, layer);
-}
-
-static void _mlc_rgb_overlay_draw(int module, struct nxp_backward_camera_platform_data *param)
-{
-    if (param->draw_rgb_overlay)
-        param->draw_rgb_overlay(param);
-}
-
 static void _resume_work(struct work_struct *work)
 {
     struct nxp_backward_camera_context *me = &_context;
@@ -646,7 +614,7 @@ static void _resume_work(struct work_struct *work)
     _mlc_video_set_addr(mlc_module_num, lu_addr, cb_addr, cr_addr, lu_stride, cb_stride, cr_stride);
 
     _mlc_rgb_overlay_set_param(mlc_module_num, me->plat_data);
-    _mlc_rgb_overlay_draw(mlc_module_num, me->plat_data);
+    _mlc_rgb_overlay_draw(mlc_module_num, me->plat_data, me->virt_rgb);
 
     _decide(me);
     printk("%s: exit\n", __func__);
@@ -673,7 +641,6 @@ static int nxp_backward_camera_resume(struct device *dev)
     PM_DBGOUT("-%s\n", __func__);
     return 0;
 }
-#endif
 
 #ifdef CONFIG_PM
 static const struct dev_pm_ops nxp_backward_camera_pm_ops = {
@@ -683,6 +650,190 @@ static const struct dev_pm_ops nxp_backward_camera_pm_ops = {
 #else
 #define NXP_BACKWARD_CAMERA_PMOPS       NULL
 #endif
+
+extern struct ion_device *get_global_ion_device(void);
+static int _allocate_memory(struct nxp_backward_camera_context *me)
+{
+    struct ion_device *ion_dev = get_global_ion_device();
+    if (me->plat_data->lu_addr && me->plat_data->rgb_addr)
+        return 0;
+
+    me->ion_client = ion_client_create(ion_dev, "backward-camera");
+    if (IS_ERR(me->ion_client)) {
+        pr_err("%s: failed to ion_client_create()\n", __func__);
+        return -EINVAL;
+    }
+
+    if (!me->plat_data->lu_addr) {
+        int size = me->plat_data->lu_stride * me->plat_data->v_active
+            + me->plat_data->cb_stride * (me->plat_data->v_active / 2)
+            + me->plat_data->cr_stride * (me->plat_data->v_active / 2);
+        struct ion_buffer *ion_buffer;
+        size = PAGE_ALIGN(size);
+
+        me->ion_handle_video = ion_alloc(me->ion_client, size, 0, ION_HEAP_NXP_CONTIG_MASK, 0);
+        if (IS_ERR(me->ion_handle_video)) {
+             pr_err("%s: failed to ion_alloc() for video, size %d\n", __func__, size);
+             return -ENOMEM;
+        }
+        me->dma_buf_video = ion_share_dma_buf(me->ion_client, me->ion_handle_video);
+        if (IS_ERR_OR_NULL(me->dma_buf_video)) {
+            pr_err("%s: failed to ion_share_dma_buf() for video\n", __func__);
+            return -EINVAL;
+        }
+        ion_buffer = me->dma_buf_video->priv;
+        me->plat_data->lu_addr = ion_buffer->priv_phys;
+        me->plat_data->cb_addr = me->plat_data->lu_addr + me->plat_data->lu_stride * me->plat_data->v_active;
+        me->plat_data->cr_addr = me->plat_data->cb_addr + me->plat_data->cb_stride * (me->plat_data->v_active / 2);
+        me->virt_video = cma_get_virt(me->plat_data->lu_addr, size, 1);
+
+        printk("%s: lu 0x%x, cb 0x%x, cr 0x%x, virt %p\n",
+                __func__,
+                me->plat_data->lu_addr,
+                me->plat_data->cb_addr,
+                me->plat_data->cr_addr,
+                me->virt_video);
+    }
+
+    if (!me->plat_data->rgb_addr) {
+        u32 format = me->plat_data->rgb_format;
+        u32 pixelbyte = _get_pixel_byte(format);
+        int size = me->plat_data->width * me->plat_data->height * pixelbyte;
+        struct ion_buffer *ion_buffer;
+        size = PAGE_ALIGN(size);
+
+        me->ion_handle_rgb = ion_alloc(me->ion_client, size, 0, ION_HEAP_NXP_CONTIG_MASK, 0);
+        if (IS_ERR(me->ion_handle_rgb)) {
+             pr_err("%s: failed to ion_alloc() for rgb, size %d\n", __func__, size);
+             return -ENOMEM;
+        }
+        me->dma_buf_rgb = ion_share_dma_buf(me->ion_client, me->ion_handle_rgb);
+        if (IS_ERR_OR_NULL(me->dma_buf_rgb)) {
+            pr_err("%s: failed to ion_share_dma_buf() for rgb\n", __func__);
+            return -EINVAL;
+        }
+        ion_buffer = me->dma_buf_rgb->priv;
+        me->plat_data->rgb_addr = ion_buffer->priv_phys;
+        me->virt_rgb = cma_get_virt(me->plat_data->rgb_addr, size, 1);
+
+        printk("%s: rgb 0x%x, virt %p\n",
+                __func__,
+                me->plat_data->rgb_addr,
+                me->virt_rgb);
+    }
+
+    return 0;
+}
+
+static void _free_buffer(struct nxp_backward_camera_context *me)
+{
+    if (me->dma_buf_video != NULL) {
+        dma_buf_put(me->dma_buf_video);
+        me->dma_buf_video = NULL;
+        ion_free(me->ion_client, me->ion_handle_video);
+        me->ion_handle_video = NULL;
+    }
+
+    if (me->dma_buf_rgb != NULL) {
+        dma_buf_put(me->dma_buf_rgb);
+        me->dma_buf_rgb = NULL;
+        ion_free(me->ion_client, me->ion_handle_rgb);
+        me->ion_handle_rgb = NULL;
+    }
+}
+
+static int nxp_backward_camera_remove(struct platform_device *pdev);
+static ssize_t _stop_backward_camera(struct device *pdev,
+        struct device_attribute *attr, const char *buf, size_t n)
+{
+    struct nxp_backward_camera_context *me = &_context;
+    nxp_backward_camera_remove(me->my_device);
+    return n;
+}
+
+static struct device_attribute backward_camera_attr = __ATTR(stop, 0664, NULL, _stop_backward_camera);
+static struct attribute *attrs[] = {
+    &backward_camera_attr.attr,
+    NULL,
+};
+
+static struct attribute_group attr_group = {
+    .attrs = (struct attribute **)attrs,
+};
+
+static int _create_sysfs(void)
+{
+    struct kobject *kobj = NULL;
+    int ret = 0;
+
+    kobj = kobject_create_and_add("backward_camera", &platform_bus.kobj);
+    if (! kobj) {
+        printk(KERN_ERR "Fail, create kobject for backward camera\n");
+        return -ret;
+    }
+
+    ret = sysfs_create_group(kobj, &attr_group);
+    if (ret) {
+        printk(KERN_ERR "Fail, create sysfs group for backward camera\n");
+        kobject_del(kobj);
+        return -ret;
+    }
+
+    return 0;
+}
+
+static int nxp_backward_camera_probe(struct platform_device *pdev)
+{
+    int ret;
+    struct nxp_backward_camera_platform_data *pdata = pdev->dev.platform_data;
+    struct nxp_backward_camera_context *me = &_context;
+
+    printk("%s\n", __func__);
+    me->plat_data = pdata;
+    me->irq = pdata->backgear_irq_num;
+
+    _get_i2c_client(me);
+
+    _camera_sensor_run(me);
+
+    _allocate_memory(me);
+
+    INIT_WORK(&me->work, _work_handler);
+    ret = request_irq(me->irq, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "backward-camera", me);
+    if (ret) {
+        pr_err("%s: failed to request_irq (irqnum %d)\n", __func__, me->irq);
+        return -1;
+    }
+
+    me->is_first = true;
+
+    me->my_device = pdev;
+
+    _decide(me);
+
+    if (_create_sysfs()) {
+        printk(KERN_ERR "failed to create sysfs for backward camera\n");
+        return -1;
+    }
+
+#ifdef CONFIG_PM
+    INIT_DELAYED_WORK(&me->resume_work, _resume_work);
+#endif
+
+    return 0;
+}
+
+static int nxp_backward_camera_remove(struct platform_device *pdev)
+{
+    struct nxp_backward_camera_context *me = &_context;
+    printk(KERN_ERR "%s\n", __func__);
+    _mlc_overlay_stop(me->plat_data->mlc_module_num);
+    _mlc_video_stop(me->plat_data->mlc_module_num);
+    _vip_stop(me->plat_data->vip_module_num);
+    _free_buffer(me);
+    free_irq(_context.irq, &_context);
+    return 0;
+}
 
 static struct platform_driver backward_camera_driver = {
     .probe  = nxp_backward_camera_probe,

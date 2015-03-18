@@ -16,14 +16,17 @@
 #include <linux/nxp_ion.h>
 #include <linux/ion.h>
 #include <linux/cma.h>
+#include <../drivers/gpu/ion/ion_priv.h>
+
 #include <linux/delay.h>
 #include <linux/kthread.h>
+#include <linux/platform_device.h>
 
-#include <../drivers/gpu/ion/ion_priv.h>
 
 #include <mach/platform.h>
 #include <mach/devices.h>
 #include <mach/soc.h>
+#include <mach/nxp-backward-camera.h>
 
 extern struct ion_device *get_global_ion_device(void);
 
@@ -81,6 +84,9 @@ static struct fine_boot_context {
     struct task_struct *load_task;
 
     bool is_valid;
+
+    /* backward camera */
+    struct platform_device *camera;
 } _context;
 
 
@@ -96,9 +102,7 @@ static int _alloc_ion_buffer(struct fine_boot_context *me, bool include_header)
         return -EINVAL;
     }
 
-    // TODO
-    /*size = me->img_width * me->img_height * me->img_count * 4;*/
-    size = 1024 * 600 * 4 * 20;
+    size = me->img_width * me->img_height * me->img_count * 4;
     if (include_header)
         size += HEADER_SIZE;
     me->alloc_size = PAGE_ALIGN(size);
@@ -278,17 +282,17 @@ static int _anim_thread(void *arg)
     schedule_timeout_interruptible(HZ/5);
 
     printk("%s: %dx%d, buffer 0x%x\n", __func__, me->img_width, me->img_height, me->dma_addr);
-    nxp_soc_disp_rgb_set_format(0, 0, NX_MLC_RGBFMT_X8R8G8B8, me->img_width, me->img_height, 4);
+    nxp_soc_disp_rgb_set_format(0, CFG_DISP_PRI_SCREEN_LAYER, NX_MLC_RGBFMT_X8R8G8B8, me->img_width, me->img_height, 4);
     while(1) {
         splash = &me->splash_info[count++%me->img_count];
         address = me->dma_addr + splash->ulImageAddr;
-        nxp_soc_disp_rgb_set_address(0, 0, address, 4, me->img_width * 4, 1);
+        nxp_soc_disp_rgb_set_address(0, CFG_DISP_PRI_SCREEN_LAYER, address, 4, me->img_width * 4, 1);
         schedule_timeout_interruptible(HZ/100);
         if (kthread_should_stop()) {
             break;
         }
     }
-    nxp_soc_disp_rgb_set_format(0, 0, NX_MLC_RGBFMT_A8R8G8B8, me->img_width, me->img_height, 4);
+    nxp_soc_disp_rgb_set_format(0, CFG_DISP_PRI_SCREEN_LAYER, NX_MLC_RGBFMT_A8R8G8B8, me->img_width, me->img_height, 4);
 
     _free_ion_buffer(me);
     return 0;
@@ -309,7 +313,10 @@ static int _start_load(void *arg)
 void start_fine_load(void)
 {
      /*kthread_run(_start_load, &_context, "fine-boot-load");*/
+    struct fine_boot_context *me = &_context;
     _start_load(&_context);
+    if (me->camera)
+        platform_device_register(me->camera);
 }
 
 void start_fine_animation(void)
@@ -322,7 +329,7 @@ void start_fine_animation(void)
 void stop_fine_boot(void)
 {
     struct fine_boot_context *me = &_context;
-    printk(KERN_ERR "stop fine boot\n");
+    printk("stop fine boot\n");
     if (me->anim_task) {
         printk(KERN_ERR "stop fine boot animation\n");
         kthread_stop(me->anim_task);
@@ -335,9 +342,16 @@ void stop_fine_boot(void)
     }
 }
 
+void register_backward_camera(struct platform_device *device)
+{
+    struct fine_boot_context *me = &_context;
+    me->camera = device;
+}
+
 EXPORT_SYMBOL(start_fine_load);
 EXPORT_SYMBOL(start_fine_animation);
 EXPORT_SYMBOL(stop_fine_boot);
+EXPORT_SYMBOL(register_backward_camera);
 
 static ssize_t _stop_boot_animation(struct device *pdev,
         struct device_attribute *attr, const char *buf, size_t n)
