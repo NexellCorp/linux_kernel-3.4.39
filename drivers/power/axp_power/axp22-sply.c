@@ -1625,6 +1625,7 @@ static void axp_charging_monitor(struct work_struct *work)
 	struct axp_charger *charger;
 	uint8_t	val,temp_val[4];
 	int	pre_rest_vol,pre_bat_curr_dir;
+	u16 temp=0, temp1=0;
 
 	charger = container_of(work, struct axp_charger, work.work);
 	pre_rest_vol = charger->rest_vol;
@@ -1698,7 +1699,6 @@ static void axp_charging_monitor(struct work_struct *work)
 
 	if(axp_debug)
 	{
-		int temp=0, temp1=0;
 
 		//axp_sply_register_dump(charger, 1);
 
@@ -1737,6 +1737,40 @@ static void axp_charging_monitor(struct work_struct *work)
 		val = (val&0xF);
 		temp = (val*150)+300;
 		printk(KERN_ERR "## Charge limit(0x%02x)   : %dmA \n", AXP22_CHARGE_CONTROL3, temp);
+
+		axp_read(charger->master,AXP22_INTERTEMPH_RES, &val);
+		temp = (val<< 4);
+		axp_read(charger->master,AXP22_INTERTEMPL_RES, &val);
+		temp |= (val & 0x0F);
+		printk(KERN_ERR "## Internal temp(0x%02x)  : %d'C\n", AXP22_INTTEMP, (temp*1063/10000-2667/10));
+
+		axp_read(charger->master,AXP22_BATTEMPH_RES, &val);
+		temp = (val<< 4);
+		axp_read(charger->master,AXP22_BATTEMPL_RES, &val);
+		temp |= (val & 0x0F);
+		printk(KERN_ERR "## Battery temp(0x%02x)   : %d'C \n", AXP22_INTTEMP, (temp*1063/10000-2667/10));
+
+		axp_read(charger->master,AXP22_VBATH_RES, &val);
+		temp = (val<< 8);
+		axp_read(charger->master,AXP22_VBATL_RES, &val);
+		temp |= val;
+		printk(KERN_ERR "## Battery vol(0x%02x)    : %dmV \n", AXP22_VBATH_RES, axp22_vbat_to_mV(temp));
+
+		axp_read(charger->master, AXP22_CAP, &val);
+		printk(KERN_ERR "## Battery gauge(0x%02x)  : %d%%, %s \n", AXP22_CAP, (val & 0x7F), (val >> 7)?"be calculated yet":"calculating now");
+
+		axp_read(charger->master,AXP22_CHGCURRH_RES, &val);
+		temp = (val<< 5);
+		axp_read(charger->master,AXP22_CHGCURRL_RES, &val);
+		temp |= (val&0x1F);
+		printk(KERN_ERR "## Charging cur(0x%02x)   : %dmA \n", AXP22_CHGCURRH_RES, temp);
+
+		axp_read(charger->master,AXP22_DISCHGCURRH_RES, &val);
+		temp = (val<< 5);
+		axp_read(charger->master,AXP22_DISCHGCURRL_RES, &val);
+		temp |= (val&0x1F);
+		printk(KERN_ERR "## System cur(0x%02x)     : %dmA \n", AXP22_DISCHGCURRH_RES, temp);
+
 		printk(KERN_ERR "##########################################################\n");
 	}
 

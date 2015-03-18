@@ -66,12 +66,25 @@ static 	struct input_dev * powerkeydev;
 
 #define AXP22_ADC_CONTROL3					(0x84)
 
+
+#define AXP22_INTERTEMPH_RES				(0x56)
+#define AXP22_INTERTEMPL_RES				(0x57)
+
+#define AXP22_BATTEMPH_RES					(0x58)
+#define AXP22_BATTEMPL_RES					(0x59)
+
 #define AXP22_VBATH_RES						(0x78)
 #define AXP22_VBATL_RES						(0x79)
 
+#define AXP22_CHGCURRH_RES					(0x7A)
+#define AXP22_CHGCURRL_RES					(0x7B)
+
+#define AXP22_DISCHGCURRH_RES				(0x7C)
+#define AXP22_DISCHGCURRL_RES				(0x7D)
+
+
 #define AXP22_OCVBATH_RES					(0xBC)
 #define AXP22_OCVBATL_RES					(0xBD)
-
 
 #define AXP22_INTTEMP						(0x56)
 #define AXP22_DATA_BUFFER0					AXP22_BUFFER1
