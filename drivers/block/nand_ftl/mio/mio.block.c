@@ -1096,7 +1096,7 @@ static int nand_suspend(struct device * dev)
             case 2:  { if (dt >=  2*1000*1000) { step += 1; /*3 */ } } break;
             case 4:  { if (dt >=  3*1000*1000) { step += 1; /*5 */ } } break;
             case 6:  { if (dt >=  4*1000*1000) { step += 1; /*7 */ } } break;
-            case 8:  { if (dt >=  5*1000*1000) { step += 1; /*9;*/ } } break;
+            case 8:  { if (dt >=  5*1000*1000) { step += 1; /*9 */ } } break;
             case 10: { if (dt >=  6*1000*1000) { step += 1; /*11*/ } } break;
             case 12: { if (dt >=  7*1000*1000) { step += 1; /*13*/ } } break;
             case 14: { if (dt >=  8*1000*1000) { step += 1; /*15*/ } } break;
