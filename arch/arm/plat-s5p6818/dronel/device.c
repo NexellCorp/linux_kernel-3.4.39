@@ -587,9 +587,9 @@ static void camera_power_control(int enable)
     if (!enable && !camera_power_enabled)
         return;
 
-    cam_core_18V = regulator_get(NULL, "axp22_dldo2");
+    cam_core_18V = regulator_get(NULL, "vcam1_1.8V");
     if (IS_ERR(cam_core_18V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for axp22_dldo2", __func__);
+        printk(KERN_ERR "%s: failed to regulator_get() for vcam1_1.8V", __func__);
         return;
     }
     printk("%s: %d\n", __func__, enable);
