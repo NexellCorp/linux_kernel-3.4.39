@@ -123,11 +123,11 @@ struct s3c2410_platform_i2c i2c_data_ch0 = {
     .sda_delay  = 100,
 	.cfg_gpio	= i2c_cfg_gpio0,
 };
+
 static struct resource s3c_i2c0_resource[] = {
 	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C0, SZ_256),
 	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C0),
 };
-
 
 static struct platform_device i2c_device_ch0 = {
 	.name = "s3c2440-i2c",
@@ -145,7 +145,6 @@ static struct platform_device i2c_device_ch0 = {
 
 #if	defined(CONFIG_I2C_NXP_PORT1)
 #if  defined(CONFIG_I2C_NXP_PORT1_GPIO_MODE)
-;
 
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port1 = {
 	.sda_pin	= I2C1_SDA,
@@ -153,7 +152,6 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port1 = {
 	.udelay		= I2CUDELAY(CFG_I2C1_CLK),				/* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
 	.timeout	= 10,
 };
-
 
 static struct platform_device i2c_device_ch1 = {
 	.name	= "i2c-gpio",
@@ -180,7 +178,7 @@ struct s3c2410_platform_i2c i2c_data_ch1 = {
 static struct resource s3c_i2c1_resource[] = {
 	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C1, SZ_4K),
 	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C1),
-}
+};
 static struct platform_device i2c_device_ch1 = {
 	.name = "s3c2440-i2c",
 	.id		= 1,
