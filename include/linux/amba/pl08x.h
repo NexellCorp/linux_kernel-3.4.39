@@ -150,6 +150,9 @@ struct pl08x_txd {
 	/* for cyclic, by jhkim */
 	bool cyclic;
 	int  period_len; /* for interrupt period */
+#if defined(CONFIG_ARCH_CPU_SLSI)
+	int  lli_num;
+#endif
 };
 
 /**

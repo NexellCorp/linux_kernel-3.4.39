@@ -174,6 +174,17 @@ static void nxp_pcm_dma_complete(void *arg)
 	int over_samples = div64_s64((new - ts), period_us);
 	int i;
 
+	if ((prtd->dma_chan->chan_id >= DMA_PERIPHERAL_ID_I2S0_TX) 
+			&& (prtd->dma_chan->chan_id <= DMA_PERIPHERAL_ID_I2S2_RX)) {
+		struct snd_pcm_runtime *runtime = substream->runtime;
+		unsigned offset = prtd->offset;
+		int length = snd_pcm_lib_period_bytes(substream);
+		void *src_addr = NULL;
+		src_addr = (void*)(runtime->dma_area + offset);
+	
+		memset(src_addr, 0, length);
+	}
+
 	/* i2s master mode */
 	if(prtd->dma_param->real_clock != 0) {
 		if (2 > over_samples){
@@ -255,22 +266,8 @@ static int nxp_pcm_dma_slave_config(void *runtime_data, int stream)
 	struct dma_slave_config slave_config = { 0, };
 	dma_addr_t	peri_addr = dma_param->peri_addr;
 	int	bus_width = dma_param->bus_width_byte;
-	int	max_burst = dma_param->max_burst_byte;
+	int	max_burst = dma_param->max_burst_byte/bus_width; 
 	int ret;
-
-	switch (max_burst) {
-	case   1: max_burst =   PL080_BSIZE_1; break; 	// PL080_BSIZE_1	: 0x0
-	case   4: max_burst =   PL080_BSIZE_4; break; 	// PL080_BSIZE_4    : 0x1
-	case   8: max_burst =   PL080_BSIZE_8; break; 	// PL080_BSIZE_8    : 0x2
-	case  16: max_burst =  PL080_BSIZE_16; break; 	// PL080_BSIZE_16   : 0x3
-	case  32: max_burst =  PL080_BSIZE_32; break; 	// PL080_BSIZE_32   : 0x4
-	case  64: max_burst =  PL080_BSIZE_64; break; 	// PL080_BSIZE_64   : 0x5
-	case 128: max_burst = PL080_BSIZE_128; break; 	// PL080_BSIZE_128  : 0x6
-	case 256: max_burst = PL080_BSIZE_256; break; 	// PL080_BSIZE_256  : 0x7
-	default:
-		printk(KERN_ERR "Fail, pcm dma invalid burst size %d byte\n", max_burst);
-		return -EINVAL;
-	}
 
 	if (SNDRV_PCM_STREAM_PLAYBACK == stream) {
 		slave_config.direction 		= DMA_MEM_TO_DEV;
