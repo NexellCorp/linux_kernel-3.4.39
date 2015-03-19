@@ -24,6 +24,12 @@
 #include "axp-cfg.h"
 #include "axp-mfd.h"
 
+#ifdef ENABLE_DEBUG
+#define DBG_MSG(format,args...)   printk(KERN_ERR format,##args)
+#else
+#define DBG_MSG(format,args...)   do {} while (0)
+#endif
+
 #define GPIO_AXP22(n)		(AXP22_NR_BASE + (n))
 
 struct virtual_gpio_data {
@@ -35,6 +41,7 @@ struct virtual_gpio_data {
 
 int axp_gpio_set_io(int gpio, int io_mode)
 {
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 	if(io_mode == 1){//output
 		switch(gpio)
 		{
@@ -73,6 +80,8 @@ EXPORT_SYMBOL_GPL(axp_gpio_set_io);
 int axp_gpio_get_io(int gpio, int *io_mode)
 {
 	uint8_t val;
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+
 	switch(gpio)
 	{
 		case 0: axp_read(&axp->dev,AXP22_GPIO0_CFG,&val);val &= 0x07;
@@ -117,6 +126,8 @@ EXPORT_SYMBOL_GPL(axp_gpio_get_io);
 int axp_gpio_set_value(int gpio, int value)
 {
 	int io_mode,ret;
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+
 	ret = axp_gpio_get_io(gpio,&io_mode);
 	if(ret)
 		return ret;
@@ -174,6 +185,8 @@ int axp_gpio_get_value(int gpio, int *value)
 	int io_mode;
 	int ret;
 	uint8_t val;
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+
 	ret = axp_gpio_get_io(gpio,&io_mode);
 //	printk("%s: line %d,%d,0x%x\n", __func__, __LINE__,gpio,(int)value);
 	if(ret)
@@ -260,7 +273,7 @@ EXPORT_SYMBOL_GPL(axp_gpio_get_value);
 static int __axp_gpio_input(struct gpio_chip *chip, unsigned offset)
 {
 	u32  index = chip->base + offset;
-//	printk("%s: line %d,%d,\n", __func__, __LINE__,offset);
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 
 	if(GPIO_AXP22(0) == index)
 		return axp_gpio_set_io(0, 0);
@@ -279,7 +292,8 @@ static int __axp_gpio_output(struct gpio_chip *chip, unsigned offset, int value)
 	u32  index = chip->base + (int)offset;
 	int  ret = 0;
 	int  id = index - GPIO_AXP22(0);
-	
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+
 //	printk("%s: line %d,%d,%d\n", __func__, __LINE__,offset,value);
 	switch(id) {
 		case 0: 
@@ -314,6 +328,7 @@ static void __axp_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
 {
 	u32  index = chip->base + offset;
 	int id = index - GPIO_AXP22(0);
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 //	printk("%s: line %d,%d,%d\n", __func__, __LINE__,offset,value);
 
 	switch (id) {
@@ -329,6 +344,7 @@ static int __axp_gpio_get(struct gpio_chip *chip, unsigned offset)
 {
 	u32  index = chip->base + offset;
 	int  value = 0;
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 //	printk("%s: line %d,%d,\n", __func__, __LINE__,offset);
 
 	if(GPIO_AXP22(0) == index) {
@@ -481,6 +497,7 @@ static int __devinit axp_gpio_probe(struct platform_device *pdev)
 	//struct axp_mfd_chip *axp_chip = dev_get_drvdata(pdev->dev.parent);
 	struct virtual_gpio_data *drvdata;
 	int ret, i;
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 
 	drvdata = kzalloc(sizeof(struct virtual_gpio_data), GFP_KERNEL);
 	if (drvdata == NULL) {
@@ -524,6 +541,8 @@ static struct platform_driver axp_gpio_driver = {
 static int __init axp_gpio_init(void)
 {
 	/* register axp gpio chip */
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+
 	if(0 != gpiochip_add(&axp_gpio_chip))
 		printk("%s err, line %d\n", __func__, __LINE__);
 	return platform_driver_register(&axp_gpio_driver);

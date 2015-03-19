@@ -25,11 +25,101 @@
 //#include "axp-cfg.h"
 #include "axp22-mfd.h"
 
+#ifdef ENABLE_DEBUG
+#define DBG_MSG(format,args...)   printk(KERN_ERR format,##args)
+#else
+#define DBG_MSG(format,args...)   do {} while (0)
+#endif
+
+struct axp_mfd_chip *g_chip;
+
+static void axp_mfd_register_dump(struct device *dev)
+{
+	int ret=0;
+	u16 i=0;
+	u8 value=0;
+
+	printk("##########################################################\n");
+	printk("##\e[31m %s()\e[0m                               #\n", __func__);
+	printk("##########################################################\n");
+	printk("##      0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F\n");
+
+	for(i=0; i<=0xff; i++)
+	{
+		if(i%16 == 0)
+			printk("## %02X:", i);
+
+		if(i%4 == 0)
+			printk(" ");
+
+		ret = axp_read(dev, i, &value);
+		if(!ret)
+			printk("%02x ", value);
+		else
+			printk("\e[31mxx\e[0m ");
+
+		if((i+1)%16 == 0)
+			printk("\n");
+	}
+	printk("##########################################################\n");
+}
+
+#ifdef CONFIG_DEBUG_FS
+#include <linux/debugfs.h>
+#include <linux/seq_file.h>
+
+static int axp_dbg_show(struct seq_file *s, void *unused)
+{
+	struct axp_mfd_chip *chip = s->private;
+	struct device *dev = chip->dev;
+
+	axp_mfd_register_dump(dev);
+
+	return 0;
+}
+
+static int axp_dbg_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, axp_dbg_show, inode->i_private);
+}
+
+static const struct file_operations debug_fops = {
+	.open		= axp_dbg_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+static void axp_debuginit(struct axp_mfd_chip *chip)
+{
+	(void)debugfs_create_file("axp228", S_IRUGO, NULL,
+			chip, &debug_fops);
+}
+#else
+static void axp_debuginit(struct axp_mfd_chip *chip)
+{
+	struct device *dev = chip->dev;
+
+	axp_mfd_register_dump(dev);
+	return 0;
+}
+#endif
+
+
+void axp_run_irq_handler(void)
+{
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+	(void)schedule_work(&g_chip->irq_work);
+	return;
+}
+EXPORT_SYMBOL_GPL(axp_run_irq_handler);
+
 static void axp_mfd_irq_work(struct work_struct *work)
 {
 	struct axp_mfd_chip *chip = container_of(work, struct axp_mfd_chip, irq_work);
 	uint64_t irqs = 0;
-	
+
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+
 	while (1) {
 		if (chip->ops->read_irqs(chip, &irqs)){
 			printk("read irq fail\n");
@@ -53,6 +143,9 @@ static void axp_mfd_irq_work(struct work_struct *work)
 static irqreturn_t axp_mfd_irq_handler(int irq, void *data)
 {
 	struct axp_mfd_chip *chip = data;
+
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+
 	//disable_irq_nosync(irq);
 	(void)schedule_work(&chip->irq_work);
 
@@ -159,6 +252,7 @@ failed:
 static void axp_power_off(void)
 {
 	uint8_t val;
+	int ret = 0;
 
 #if defined (CONFIG_KP_AXP22)
 	if(SHUTDOWNVOL >= 2600 && SHUTDOWNVOL <= 3300)
@@ -215,9 +309,13 @@ static void axp_power_off(void)
 	}
     axp_write(&axp->dev, AXP22_BUFFERC, 0x00);
     mdelay(20);
-    axp_set_bits(&axp->dev, AXP22_OFF_CTL, 0x87);
-    mdelay(20);
-    printk("[axp] warning!!! axp can't power-off, maybe some error happend!\n");
+    ret = axp_set_bits(&axp->dev, AXP22_OFF_CTL, 0x80);
+    if(ret < 0){
+        printk("[axp] power-off cmd error!, retry!");
+        ret = axp_set_bits(&axp->dev, AXP22_OFF_CTL, 0x80);
+    }
+    //mdelay(20);
+    //printk("[axp] warning!!! axp can't power-off, maybe some error happend!\n");
 #endif
 }
 
@@ -227,6 +325,8 @@ static int __devinit axp_mfd_probe(struct i2c_client *client,
 	struct axp_platform_data *pdata = client->dev.platform_data;
 	struct axp_mfd_chip *chip;
 	int ret;
+
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 
 	chip = kzalloc(sizeof(struct axp_mfd_chip), GFP_KERNEL);
 	if (chip == NULL)
@@ -244,9 +344,17 @@ static int __devinit axp_mfd_probe(struct i2c_client *client,
 
 	i2c_set_clientdata(client, chip);
 
+#ifdef ENABLE_DEBUG
+	axp_mfd_register_dump(chip->dev);
+#endif
+
+	axp_debuginit(chip);
+
 	ret = chip->ops->init_chip(chip);
 	if (ret)
 		goto out_free_chip;
+
+	g_chip = chip;
 
 #if 1
 	ret = request_threaded_irq(gpio_to_irq(client->irq), NULL, 

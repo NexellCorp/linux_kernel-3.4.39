@@ -41,6 +41,8 @@
 */
 
 #define DRVNAME	"nxp-tmu"
+#define	CHECK_CHARGE_STATE			0
+#define	CHECK_CHARGE_DURATION		(500)
 
 struct tmu_trigger {
 	int	  trig_degree;
@@ -59,13 +61,21 @@ struct tmu_info {
 	struct tmu_trigger *triggers;
 	int trigger_size;
 	int poll_duration;
-	int temperature;
-	struct mutex mlock;
+	int temp_label;
+	int temp_max;
 	long max_cpufreq;
-	void (*callback)(int ch, int temp, bool run);
+	long old_cpufreq;
+	long new_cpufreq;
+	long limit_cpufreq;
+	int  is_limited;
+	struct mutex mlock;
 	/* TMU func */
 	struct delayed_work mon_work;
+#if (CHECK_CHARGE_STATE)
+	struct delayed_work chg_work;
+#endif
 	unsigned long state;
+	void (*callback)(int ch, int temp, bool run);
 };
 
 #define	STATE_SUSPEND_ENTER		(0)		/* bit position */
@@ -84,10 +94,10 @@ static int nxp_tmu_frequency(long new)
 	long max = 0;
 
 	int fd = sys_open(file, O_RDWR, 0);
-   	old_fs = get_fs();
 	if (0 > fd)
 		return -EINVAL;
 
+   	old_fs = get_fs();
 	set_fs(KERNEL_DS);
 	sys_read(fd, (void*)buf, sizeof(buf));
 
@@ -102,6 +112,52 @@ static int nxp_tmu_frequency(long new)
 	sys_close(fd);
 	return 0;
 }
+
+#if (CHECK_CHARGE_STATE)
+extern int axp_get_charging_type(void);
+static bool is_charging(void)
+{
+	int chg_type = axp_get_charging_type();
+
+	/*
+	 * 0 = no charging
+	 * 1 = AC USB Charger
+	 * 2 = PC USB Charger
+	 * 3 = AC Charger
+	 */
+	if (1 == chg_type || 3 == chg_type)
+		return true;
+	return false;
+}
+
+#define	ms_to_ktime(m)	 ns_to_ktime((u64)m * 1000 * 1000)
+static void check_charger_state(struct work_struct *work)
+{
+	struct tmu_info *info = container_of(work, struct tmu_info, chg_work.work);
+
+	mutex_lock(&info->mlock);
+
+	/* get charge status */
+	if (info->limit_cpufreq && false == is_charging())
+		info->new_cpufreq = info->limit_cpufreq;
+	else
+		info->new_cpufreq = info->max_cpufreq;
+
+	pr_debug("tmu limited:%s, %ld, %ld chg %s\n", info->is_limited?"O":"X",
+		info->old_cpufreq, info->new_cpufreq, is_charging()?"O":"X");
+
+	if (!info->is_limited &&
+		(info->new_cpufreq != info->old_cpufreq)) {
+		if (0 == nxp_tmu_frequency(info->new_cpufreq))
+			info->old_cpufreq = info->new_cpufreq;
+	}
+
+	mutex_unlock(&info->mlock);
+
+	schedule_delayed_work(&info->chg_work,
+		msecs_to_jiffies(CHECK_CHARGE_DURATION));
+}
+#endif
 
 /*
  * TMU operation
@@ -161,7 +217,8 @@ static irqreturn_t nxp_tmu_interrupt(int irq, void *desc)
 	u32 mask = NX_TMU_GetP0IntEn(channel);
 	int i = 0;
 
-	pr_debug("tmu[%d] irq temp %d\n", channel, nxp_tmu_temp(channel));
+	pr_debug("tmu[%d] irq temp %d stat 0x%x\n",
+		channel, nxp_tmu_temp(channel), NX_TMU_GetP0IntStat(channel));
 
 	/* disable triggered irq */
 	for (i = 0; TMU_IRQ_MAX > i; i++) {
@@ -230,6 +287,14 @@ static int nxp_tmu_triggers(struct nxp_tmu_platdata *plat, struct tmu_info *info
 			trig[i].trig_cpufreq, temp_rise);
 	}
 
+#if (CHECK_CHARGE_STATE)
+	if (info->limit_cpufreq) {
+		INIT_DELAYED_WORK(&info->chg_work, check_charger_state);
+		schedule_delayed_work(&info->chg_work,
+			msecs_to_jiffies(CHECK_CHARGE_DURATION));
+	}
+#endif
+
 	NX_TMU_SetThresholdTempRise(channel, temp_rise);
 	NX_TMU_ClearInterruptPendingAll(channel);
 	NX_TMU_SetP0IntEn(channel, temp_intr);
@@ -245,7 +310,6 @@ static void nxp_tmu_monitor(struct work_struct *work)
 	int channel = info->channel;
 	int temp, i = 0;
 	u32 need_reschedule = (1<<size)-1;
-	u32 is_limited = 0;
 	ulong current_time = 0;
 
 	mutex_lock(&info->mlock);
@@ -257,10 +321,12 @@ static void nxp_tmu_monitor(struct work_struct *work)
 
 	current_time = ktime_to_ms(ktime_get());
 	temp = nxp_tmu_temp(channel);
-	info->temperature = temp;
+	info->temp_label = temp;
+	if (temp > info->temp_max)
+		info->temp_max = temp;
 
 	for (i = 0; size > i; i++)
-		is_limited |= trig[i].limited ? (1<<i): 0;
+		info->is_limited |= trig[i].limited ? (1<<i): 0;
 
 	for (i = 0; size > i; i++, trig++) {
 
@@ -274,7 +340,7 @@ static void nxp_tmu_monitor(struct work_struct *work)
 
 		pr_debug("tmu[%d] = %3d:%3d~%6ldms (%s:0x%x)\n", i, temp, trig->trig_degree,
 			trig->trig_duration-(trig->expire_time-current_time),
-			trig->limited?"O":"X", is_limited);
+			trig->limited?"O":"X", info->is_limited);
 
 		if (temp >= trig->trig_degree) {
 			if (current_time >= trig->expire_time) {
@@ -293,12 +359,13 @@ static void nxp_tmu_monitor(struct work_struct *work)
 
 				trig->new_cpufreq -= TMU_CPU_FREQ_STEP;
 				trig->limited = true;
+				info->is_limited |= (1<<i);
 			}
 		} else {
 
-			is_limited &= ~(1<<i);
-			if ((0 == is_limited) && trig->limited) {
-				if (0 > nxp_tmu_frequency(info->max_cpufreq))
+			info->is_limited &= ~(1<<i);
+			if ((0 == info->is_limited) && trig->limited) {
+				if (0 > nxp_tmu_frequency(info->new_cpufreq))
 					continue;
 			}
 
@@ -343,7 +410,8 @@ static int nxp_tmu_suspend(struct platform_device *pdev, pm_message_t state)
 	}
 
 	nxp_tmu_stop(channel);
-	nxp_tmu_frequency(info->max_cpufreq);
+	nxp_tmu_frequency(info->new_cpufreq);
+
 	NX_TMU_ClearInterruptPendingAll(channel);
 	NX_TMU_SetP0IntEn(channel, 0x0);
 
@@ -401,15 +469,43 @@ static ssize_t tmu_show_temp(struct device *dev,
 	return (s - buf);
 }
 
-static SENSOR_DEVICE_ATTR(temp_label, 0666, tmu_show_temp , NULL, SHOW_LABEL);
+static ssize_t tmu_show_max(struct device *dev,
+			 struct device_attribute *devattr, char *buf)
+{
+	struct tmu_info *info = dev_get_drvdata(dev);
+	int channel = info->channel;
+	char *s = buf;
+	int temp;
 
-static struct attribute *adc_temp_attr[] = {
+	mutex_lock(&info->mlock);
+
+	temp = nxp_tmu_temp(channel);
+	if (temp > info->temp_max)
+		info->temp_max = temp;
+	else
+		temp = info->temp_max;
+
+	s += sprintf(s, "%4d\n", temp);
+
+	mutex_unlock(&info->mlock);
+
+	if (s != buf)
+		*(s-1) = '\n';
+
+	return (s - buf);
+}
+
+static SENSOR_DEVICE_ATTR(temp_label, 0666, tmu_show_temp , NULL, SHOW_LABEL);
+static SENSOR_DEVICE_ATTR(temp_max  , 0666, tmu_show_max  , NULL, SHOW_LABEL);
+
+static struct attribute *temp_attr[] = {
 	&sensor_dev_attr_temp_label.dev_attr.attr,
+	&sensor_dev_attr_temp_max.dev_attr.attr,
 	NULL
 };
 
 static const struct attribute_group tmu_attr_group = {
-	.attrs = adc_temp_attr,
+	.attrs = temp_attr,
 };
 
 static int __devinit nxp_tmu_probe(struct platform_device *pdev)
@@ -437,7 +533,11 @@ static int __devinit nxp_tmu_probe(struct platform_device *pdev)
 	info->channel = plat->channel;
 	info->poll_duration = plat->poll_duration ? plat->poll_duration : TMU_POLL_TIME;
 	info->callback = plat->callback;
+	info->limit_cpufreq = plat->limit_cpufreq;
 	info->max_cpufreq = cpufreq_quick_get_max(raw_smp_processor_id());
+	info->new_cpufreq = info->max_cpufreq;
+	info->old_cpufreq = info->max_cpufreq;
+
 	clear_bit(STATE_SUSPEND_ENTER, &info->state);
 
 	mutex_init(&info->mlock);

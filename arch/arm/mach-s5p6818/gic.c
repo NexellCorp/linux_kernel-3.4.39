@@ -239,12 +239,14 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
 	unsigned int shift = (gic_irq(d) % 4) * 8;
 	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
-	u32 val, mask, bit;
+	u32 val, mask = 0, bit;
 
 	if (cpu >= 8 || cpu >= nr_cpu_ids)
 		return -EINVAL;
 
+#ifndef CONFIG_ARCH_S5P6818_REV
 	mask = 0xff << shift;
+#endif
 	bit = 1 << (cpu_logical_map(cpu) + shift);
 
 	raw_spin_lock(&irq_controller_lock);

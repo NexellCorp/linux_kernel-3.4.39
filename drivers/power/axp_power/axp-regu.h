@@ -93,7 +93,7 @@
 
 #endif
 
-#define AXP_LDO(_pmic, _id, min, max, step, vreg, shift, nbits, ereg, ebit)	\
+#define AXP_LDO(_pmic, _id, min, max, step, vreg, shift, nbits, ereg, ebit, vrc_ramp)	\
 {											\
 	.desc	= {								\
 		.name	= #_pmic"_LDO" #_id,		\
@@ -110,9 +110,10 @@
 	.vol_nbits	= (nbits),					\
 	.enable_reg	= _pmic##_##ereg,			\
 	.enable_bit	= (ebit),					\
+	.vrc_ramp_delay	= (vrc_ramp),			\
 }
 
-#define AXP_BUCK(_pmic, _id, min, max, step, vreg, shift, nbits, ereg, ebit)	\
+#define AXP_BUCK(_pmic, _id, min, max, step, vreg, shift, nbits, ereg, ebit, vrc_ramp)	\
 {											\
 	.desc	= {								\
 		.name	= #_pmic"_BUCK" #_id,		\
@@ -129,9 +130,10 @@
 	.vol_nbits	= (nbits),					\
 	.enable_reg	= _pmic##_##ereg,			\
 	.enable_bit	= (ebit),					\
+	.vrc_ramp_delay	= (vrc_ramp),			\
 }
 
-#define AXP_DCDC(_pmic, _id, min, max, step, vreg, shift, nbits, ereg, ebit)	\
+#define AXP_DCDC(_pmic, _id, min, max, step, vreg, shift, nbits, ereg, ebit, vrc_ramp)	\
 {											\
 	.desc	= {								\
 		.name	= #_pmic"_DCDC" #_id,		\
@@ -148,9 +150,10 @@
 	.vol_nbits	= (nbits),					\
 	.enable_reg	= _pmic##_##ereg,			\
 	.enable_bit	= (ebit),					\
+	.vrc_ramp_delay	= (vrc_ramp),			\
 }
 
-#define AXP_SW(_pmic, _id, min, max, step, vreg, shift, nbits, ereg, ebit)	\
+#define AXP_SW(_pmic, _id, min, max, step, vreg, shift, nbits, ereg, ebit, vrc_ramp)	\
 {											\
 	.desc	= {								\
 		.name	= #_pmic"_SW" #_id,			\
@@ -167,6 +170,7 @@
 	.vol_nbits	= (nbits),					\
 	.enable_reg	= _pmic##_##ereg,			\
 	.enable_bit	= (ebit),					\
+	.vrc_ramp_delay	= (vrc_ramp),			\
 }
 
 #define AXP_REGU_ATTR(_name)					\
@@ -187,6 +191,8 @@ struct axp_regulator_info {
 	int	vol_nbits;
 	int	enable_reg;
 	int	enable_bit;
+	u16	vrc_ramp_delay;
+	u8 vout_reg_cache;
 };
 
 #endif

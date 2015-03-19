@@ -23,6 +23,7 @@
 #include <linux/delay.h>
 #include <linux/io.h>
 #include <linux/interrupt.h>
+#include <asm/cp15.h>
 #include <asm/cacheflush.h>
 #include <asm/suspend.h>
 #include <asm/memory.h>
@@ -40,10 +41,12 @@
 static unsigned int  sramsave[SRAM_SAVE_SIZE/4];
 static unsigned int *sramptr;
 static unsigned int  sram_length = SRAM_SAVE_SIZE;
+bool pm_suspend_enter = false;
+
+#define	FLUSH_CACHE()	do { flush_cache_all();outer_flush_all(); } while(0);
 
 void (*nxp_board_pm_mark)(struct suspend_mark_up *mark, int suspend) = NULL;
-void (*do_suspend)(ulong, ulong) = NULL;
-EXPORT_SYMBOL_GPL(do_suspend);
+static void (*do_suspend)(ulong, ulong) = NULL;
 
 struct save_gpio {
 	unsigned long data;			/* 0x00 */
@@ -216,29 +219,41 @@ static void print_wake_event(void)
 
 static void suspend_cores(suspend_state_t stat)
 {
-	int cpu = 1, num = nr_cpu_ids;
-
 #ifndef CONFIG_S5P6818_PM_IDLE
 	if (SUSPEND_SUSPEND == stat) {
 		NX_CLKPWR_SetBaseAddress(IO_ADDRESS(NX_CLKPWR_GetPhysicalAddress()));
 		NX_CLKPWR_SetCPUResetMode(NX_CLKPWR_CPU_RESETMODE_SAFE);
 		NX_CLKPWR_SetCPUPowerOn32(0x00);
+	#if (0)
+	{
+		volatile int temp;
+		int cpu, num = NR_CPUS;
+		unsigned int lv
 
-    	/* CCI400 BUS */
-		#define CCI_REG __PB_IO_MAP_CCI4_VIRT   // 0xe0090000
-    	writel(0x8, (CCI_REG + 0x0000));        // CCI
-    	writel(0x0, (CCI_REG + 0x1000));        // S0: coresight
-    	writel(0x0, (CCI_REG + 0x2000));        // S1: bottom bus
-    	writel(0x0, (CCI_REG + 0x3000));        // S2: top bus
-    	writel(0x0, (CCI_REG + 0x4000));        // S3: cpu cluster 1
-    	writel(0x0, (CCI_REG + 0x5000));        // S4: cpu cluster 0
+		flush_cache_all();
+		asm volatile(
+		"	mcr	p15, 0, %1, c7, c5, 0\n"
+		"	mcr	p15, 0, %1, c7, c10, 4\n"
+		/*
+		 * Turn off coherency(dcache off)
+		 */
+		"	mrc	p15, 0, %0, c1, c0, 0\n"
+		"	bic	%0, %0, %2\n"
+		"	mcr	p15, 0, %0, c1, c0, 0\n"
+		  : "=&r" (lv)
+		  : "r" (0), "Ir" (CR_C)
+		  : "cc");
 
-		num = 7;
-		for (; num > cpu; cpu++) {
+		dmb();
+		for (cpu = 1; num > cpu; cpu++) {
 			NX_CLKPWR_SetCPUPowerOff(cpu);
-			while(NX_CLKPWR_GetCPUPowerOnStatus(cpu));
+			do {
+				temp = NX_CLKPWR_GetCPUPowerOnStatus(cpu);
+			} while (temp);
 			PM_DBGOUT("Power off cpu.%d\n", cpu);
 		}
+	}
+	#endif
 	}
 #endif
 }
@@ -395,23 +410,9 @@ static void suspend_clock(suspend_state_t stat)
 		nxp_cpu_clock_resume();
 }
 
-static void suspend_intc(suspend_state_t stat)
+static void __power_prepare(void)
 {
-}
-
-static void pm_suspend_data_save(void *mem)
-{
-	unsigned int *src = sramptr;
-	unsigned int *dst = mem ? mem : sramsave;
-	int i = 0;
-
-	for(; ARRAY_SIZE(sramsave) > i; i++)
-		dst[i] = src[i];
-}
-
-static void pm_suspend_data_restore(void *mem)
-{
-	unsigned int *src = mem ? mem : sramsave;
+	unsigned int *src = sramsave;
 	unsigned int *dst = sramptr;
 	int i = 0;
 
@@ -419,17 +420,13 @@ static void pm_suspend_data_restore(void *mem)
 		dst[i] = src[i];
 }
 
-#define	FLUSH_CACHE()	do { flush_cache_all();outer_flush_all(); } while(0);
-
-static int __powerdown(unsigned long arg)
+static int __power_down(unsigned long arg)
 {
 	int ret = suspend_machine();
 #ifndef CONFIG_S5P6818_PM_IDLE
-	void (*power_down)(ulong, ulong) = NULL;
+	void (*power_down)(ulong, ulong) =
+		(void (*)(ulong, ulong))((ulong)do_suspend + 0x220);;
 #endif
-
-	if (0 == ret)
-		pm_suspend_data_restore(NULL);
 
 #ifdef CONFIG_S5P6818_PM_IDLE
 	lldebugout("Go to IDLE...\n");
@@ -446,13 +443,13 @@ static int __powerdown(unsigned long arg)
 		lldebugout("Fail, inavalid suspend callee\n");
 		return 0;
 	}
-
 	lldebugout("suspend machine\n", __func__);
-	power_down = (void (*)(ulong, ulong))((ulong)do_suspend + 0x220);
-	FLUSH_CACHE();
-	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
 
-	while (1) { ; }
+	dmb();
+	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
+	nop(); nop(); nop();
+	dmb();
+
 #endif
 	return 0;
 }
@@ -499,6 +496,11 @@ static int suspend_prepare(void)
 	if (board_pm && board_pm->prepare)
 		ret = board_pm->prepare();
 
+	if (0 == ret) {
+		__power_prepare();
+		pm_suspend_enter = true;
+	}
+
 	PM_DBGOUT("%s %s\n", __func__, ret ? "WAKE":"DONE");
 	return ret;
 }
@@ -532,7 +534,7 @@ static int suspend_enter(suspend_state_t state)
 	/*
 	 * goto sleep
 	 */
-	cpu_suspend(0, __powerdown);
+	cpu_suspend(0, __power_down);
 
 	lldebugout("resume machine\n");
 
@@ -546,7 +548,6 @@ static int suspend_enter(suspend_state_t state)
 
 	resume_machine();
 
-	suspend_intc(SUSPEND_RESUME);
 	suspend_alive(SUSPEND_RESUME);
 	suspend_gpio(SUSPEND_RESUME);
 	suspend_clock(SUSPEND_RESUME);
@@ -556,9 +557,6 @@ static int suspend_enter(suspend_state_t state)
 	/* print wakeup evnet */
 	print_wake_event();
 
-#if !defined (CONFIG_ARCH_S5P6818_REV)
-	clear_fault_bad(0);
-#endif
 	return 0;
 }
 
@@ -567,6 +565,7 @@ static void suspend_finish(void)
 	PM_DBGOUT("%s\n", __func__);
 	if (board_pm && board_pm->finish)
 		board_pm->finish();
+	pm_suspend_enter = false;
 }
 
 static void suspend_end(void)
@@ -587,10 +586,17 @@ static struct platform_suspend_ops suspend_ops = {
 
 static int __init suspend_ops_init(void)
 {
-	sramptr = (unsigned int*)ioremap(0xFFFF0000, sram_length);
+	unsigned int *src, *dst;
+	int i = 0;
 
-	pr_debug("%s sram save\r\n", __func__);
-	pm_suspend_data_save(NULL);
+	sramptr = (unsigned int*)ioremap(0xFFFF0000, sram_length);
+	src = sramptr;
+	dst = sramsave;
+
+	/* save sram data */
+	for(i = 0; ARRAY_SIZE(sramsave) > i; i++)
+		dst[i] = src[i];
+
 	suspend_set_ops(&suspend_ops);
 
 #ifndef CONFIG_S5P6818_PM_IDLE

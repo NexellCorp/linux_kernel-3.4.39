@@ -31,8 +31,6 @@
 #include <mach/slsi-spi.h>
 #include <linux/dmaengine.h>
 
-
-
 /*
  * The type of reading going on on this chip
  */
@@ -125,6 +123,7 @@ enum ssp_tx_level_trig {
 #define S3C64XX_SPI_SLAVE_AUTO			(1<<1)
 #define S3C64XX_SPI_SLAVE_SIG_INACT		(1<<0)
 
+#define S3C64XX_SPI_AUTO(c) writel(S3C64XX_SPI_SLAVE_AUTO, (c)->regs + S3C64XX_SPI_SLAVE_SEL)
 #define S3C64XX_SPI_ACT(c) writel(0, (c)->regs + S3C64XX_SPI_SLAVE_SEL)
 
 #define S3C64XX_SPI_DEACT(c) writel(S3C64XX_SPI_SLAVE_SIG_INACT, \
@@ -290,7 +289,6 @@ static void dma_callback(void *data)
 	struct spi_message *msg = sdd->cur_msg;
 
 	BUG_ON(!sdd->sgt_rx.sgl);
-//	printk("%s%d\n",__func__,__LINE__);
 
 	complete(&sdd->xfer_completion);
 #ifdef VERBOSE_DEBUG
@@ -340,7 +338,7 @@ static void dma_callback(void *data)
 
 	/* Move to next transfer */
 	msg->state = next_transfer(sdd);
-	tasklet_schedule(&sdd->pump_transfers);
+
 }
 
 static void setup_dma_scatter(struct s3c64xx_spi_driver_data *sdd,
@@ -496,7 +494,7 @@ static int configure_dma(struct s3c64xx_spi_driver_data *sdd, struct spi_transfe
 	sdd->dma_running = true;
 
 	writel(S3C64XX_SPI_INT_RX_OVERRUN_EN | S3C64XX_SPI_INT_RX_UNDERRUN_EN |
-	      	S3C64XX_SPI_INT_TX_OVERRUN_EN | S3C64XX_SPI_INT_TX_UNDERRUN_EN,
+	      	S3C64XX_SPI_INT_TX_OVERRUN_EN,// | S3C64XX_SPI_INT_TX_UNDERRUN_EN,
 		  	sdd->regs + S3C64XX_SPI_INT_EN);
 	return 0;
 
@@ -516,8 +514,21 @@ err_alloc_tx_sg:
 err_alloc_rx_sg:
 	return -ENOMEM;
 }
+static void stop_dma(struct s3c64xx_spi_driver_data *sdd)
+{
+	struct dma_chan *rxchan = sdd->dma_rx_channel;
+	struct dma_chan *txchan = sdd->dma_tx_channel;
 	
-
+	dmaengine_terminate_all(txchan);
+	dmaengine_terminate_all(rxchan);
+	dma_unmap_sg(txchan->device->dev, sdd->sgt_tx.sgl,
+		sdd->sgt_tx.nents, DMA_TO_DEVICE);
+	dma_unmap_sg(rxchan->device->dev, sdd->sgt_rx.sgl,
+		sdd->sgt_tx.nents, DMA_FROM_DEVICE);
+	sg_free_table(&sdd->sgt_tx);
+	sg_free_table(&sdd->sgt_rx);
+			
+}
 static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
 {
 	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
@@ -668,13 +679,14 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 
 	/* millisecs to xfer 'len' bytes @ 'cur_speed' */
 	ms = xfer->len * 8 * 1000 / sdd->cur_speed;
-	ms += 10; /* some tolerance */
 
 	if (dma_mode) {
+		ms += 1000; /* some tolerance */
 		val = msecs_to_jiffies(ms) + 10;
 		val = wait_for_completion_timeout(&sdd->xfer_completion, val);
 	} else {
 		u32 status;
+		ms += 10000; /* some tolerance */
 		val = msecs_to_loops(ms);
 		do {
 			status = readl(regs + S3C64XX_SPI_STATUS);
@@ -713,7 +725,6 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 		{
 
 				status = readl(regs + S3C64XX_SPI_STATUS);
-				printk(" done : %x %x \n",status, RX_FIFO_LVL(status, sci));
 		}
 	} else {
 		/* If it was only Tx */
@@ -753,7 +764,7 @@ static inline void disable_cs(struct s3c64xx_spi_driver_data *sdd,
 	cs->set_level(cs->line, spi->mode & SPI_CS_HIGH ? 0 : 1);
 }
 
-static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
+static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd,struct s3c64xx_spi_csinfo *cs )
 {
 	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
 	void __iomem *regs = sdd->regs;
@@ -773,6 +784,9 @@ static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
 	val &= ~(S3C64XX_SPI_CH_SLAVE |
 			S3C64XX_SPI_CPOL_L |
 			S3C64XX_SPI_CPHA_B);
+
+	if(cs->hierarchy == SSP_SLAVE)
+		val |= S3C64XX_SPI_CH_SLAVE;
 
 	if (sdd->cur_mode & SPI_CPOL)
 		val |= S3C64XX_SPI_CPOL_L;
@@ -1064,8 +1078,8 @@ static int dma_probe(struct s3c64xx_spi_driver_data *sdd)
 	
 	sdd->dummypage = kmalloc(PAGE_SIZE, GFP_KERNEL);
     if (!sdd->dummypage) {
-	    dev_dbg(&sdd->pdev->dev, "no DMA dummypage!\n");
-	    goto err_no_dummypage;
+	 	dev_dbg(&sdd->pdev->dev, "no DMA dummypage!\n");
+	   	 goto err_no_dummypage;
 	}    
 
 	return 0;
@@ -1107,10 +1121,10 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
 		
 			    /* Setup the SPI using the per chip configuration */
 
-		s3c64xx_spi_config(sdd);
+		s3c64xx_spi_config(sdd, cs);
 	}
 
-	if(0!=dma_probe(sdd)){
+	if(0 != dma_probe(sdd)){
 		printk(	"DMA : DMA CH set err!\n");
 	}
 	/* Map all the transfers if needed */
@@ -1146,7 +1160,7 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
 		if (bpw != sdd->cur_bpw || speed != sdd->cur_speed) {
 			sdd->cur_bpw = bpw;
 			sdd->cur_speed = speed;
-			s3c64xx_spi_config(sdd);
+			s3c64xx_spi_config(sdd,cs);
 		}
 
 		/* Polling method for xfers not bigger than FIFO capacity */
@@ -1165,18 +1179,22 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
 
 		enable_datapath(sdd, spi, xfer, use_dma);
 		/* Slave Select */
+		//if(cs->hierarchy == SSP_MASTER)
 		enable_cs(sdd, spi);
-		
+
 		/* Start the signals */
+		if(cs->hierarchy == SSP_MASTER)
 		S3C64XX_SPI_ACT(sdd);
+		else
+		S3C64XX_SPI_AUTO(sdd);
 
 		spin_unlock_irqrestore(&sdd->lock, flags);
-
+		
 		status = wait_for_xfer(sdd, xfer, use_dma);
 
 		/* Quiese the signals */
 		S3C64XX_SPI_DEACT(sdd);
-
+		
 		if (status) {
 			dev_err(&spi->dev, "I/O Error: "
 				"rx-%d tx-%d res:rx-%c tx-%c len-%d\n",
@@ -1184,6 +1202,10 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
 				(sdd->state & RXBUSY) ? 'f' : 'p',
 				(sdd->state & TXBUSY) ? 'f' : 'p',
 				xfer->len);
+
+			if(use_dma) {
+				stop_dma(sdd);
+			}
 			goto out;
 		}
 		if (xfer->delay_usecs)
@@ -1199,10 +1221,10 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
 
 		msg->actual_length += xfer->len;
 
-		flush_fifo(sdd);
 	}
 
 out:
+	flush_fifo(sdd);
 	if (!cs_toggle || status)
 		disable_cs(sdd, spi);
 	else
@@ -1211,7 +1233,6 @@ out:
 		/* Pending only which is to be done */
 		sdd->state &= ~RXBUSY;
 		sdd->state &= ~TXBUSY;
-
 
 	msg->status = status;
 
@@ -1257,7 +1278,7 @@ static int s3c64xx_spi_setup(struct spi_device *spi)
 	struct spi_message *msg;
 	unsigned long flags;
 	int err = 0;
-
+	
 	if (cs == NULL || cs->set_level == NULL) {
 		dev_err(&spi->dev, "No CS for SPI(%d)\n", spi->chip_select);
 		return -ENODEV;
@@ -1337,14 +1358,25 @@ static irqreturn_t s3c64xx_spi_irq(int irq, void *data)
 {
 	struct s3c64xx_spi_driver_data *sdd = data;
 	struct spi_master *spi = sdd->master;
-	unsigned int val;
+	//struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
+	unsigned int val, status;
 
 	val = readl(sdd->regs + S3C64XX_SPI_PENDING_CLR);
+	status = readl(sdd->regs + S3C64XX_SPI_STATUS);
 
 	val &= S3C64XX_SPI_PND_RX_OVERRUN_CLR |
 		S3C64XX_SPI_PND_RX_UNDERRUN_CLR |
 		S3C64XX_SPI_PND_TX_OVERRUN_CLR |
 		S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
+
+	if(status &  S3C64XX_SPI_ST_RX_OVERRUN_ERR) 
+		val |= S3C64XX_SPI_PND_RX_OVERRUN_CLR;
+	if(status &  S3C64XX_SPI_ST_RX_UNDERRUN_ERR) 
+		val |= S3C64XX_SPI_PND_RX_UNDERRUN_CLR;
+	if(status &  S3C64XX_SPI_ST_TX_OVERRUN_ERR) 
+		val |= S3C64XX_SPI_PND_TX_OVERRUN_CLR;
+	if(status &  S3C64XX_SPI_ST_TX_UNDERRUN_ERR) 
+		val |= S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
 
 	writel(val, sdd->regs + S3C64XX_SPI_PENDING_CLR);
 
@@ -1541,7 +1573,7 @@ static int __init s3c64xx_spi_probe(struct platform_device *pdev)
 	}
 
 	writel(S3C64XX_SPI_INT_RX_OVERRUN_EN | S3C64XX_SPI_INT_RX_UNDERRUN_EN |
-	       S3C64XX_SPI_INT_TX_OVERRUN_EN | S3C64XX_SPI_INT_TX_UNDERRUN_EN,
+	       S3C64XX_SPI_INT_TX_OVERRUN_EN ,//| S3C64XX_SPI_INT_TX_UNDERRUN_EN,
 	       sdd->regs + S3C64XX_SPI_INT_EN);
 
 	if (spi_register_master(master)) {

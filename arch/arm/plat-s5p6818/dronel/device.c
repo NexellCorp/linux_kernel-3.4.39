@@ -110,7 +110,7 @@ static unsigned long dfs_freq_table[][2] = {
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
-	.supply_name	= "axp22_dcdc2",
+	.supply_name	= "vdd_arm_1.3V",
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
@@ -179,7 +179,7 @@ static struct nxp_fb_plat_data fb0_plat_data = {
 	.y_resol		= CFG_DISP_PRI_RESOL_HEIGHT,
 	#ifdef CONFIG_ANDROID
 	.buffers		= 3,
-	.skip_pan_vsync	= 1,
+	.skip_pan_vsync	= 0,
 	#else
 	.buffers		= 2,
 	#endif
@@ -212,8 +212,8 @@ static struct platform_device *fb_devices[] = {
 
 static struct platform_pwm_backlight_data bl_plat_data = {
 	.pwm_id			= CFG_LCD_PRI_PWM_CH,
-	.max_brightness = 255,//	/* 255 is 100%, set over 100% */
-	.dft_brightness = 100,//	/* 99% */
+	.max_brightness = 400,	/* 255 is 100%, set over 100% */
+	.dft_brightness = 128,	/* 50% */
 	.pwm_period_ns	= 1000000000/CFG_LCD_PRI_PWM_FREQ,
 };
 
@@ -598,9 +598,9 @@ static void camera_power_control(int enable)
     if (!enable && !camera_power_enabled)
         return;
 
-    cam_core_18V = regulator_get(NULL, "axp22_dldo2");
+    cam_core_18V = regulator_get(NULL, "vcam1_1.8V");
     if (IS_ERR(cam_core_18V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for axp22_dldo2", __func__);
+        printk(KERN_ERR "%s: failed to regulator_get() for vcam1_1.8V", __func__);
         return;
     }
     printk("%s: %d\n", __func__, enable);
@@ -1100,9 +1100,9 @@ static struct platform_device hdmi_cec_device = {
 
 struct nxp_tmu_trigger tmu_triggers[] = {
 	{
-		.trig_degree	= 130,	// 160
-		.trig_duration	= 500,
-		.trig_cpufreq	= 800*1000,	/* Khz */	// 800
+		.trig_degree	=  130,	// 160
+		.trig_duration	=  100,
+		.trig_cpufreq	=  800*1000,	/* Khz */
 	},
 };
 
@@ -1110,7 +1110,8 @@ static struct nxp_tmu_platdata tmu_data = {
 	.channel  = 0,
 	.triggers = tmu_triggers,
 	.trigger_size = ARRAY_SIZE(tmu_triggers),
-	.poll_duration = 300,
+	.poll_duration = 100,
+	.limit_cpufreq  = 1400*1000,	/* Khz */
 };
 
 static struct platform_device tmu_device = {

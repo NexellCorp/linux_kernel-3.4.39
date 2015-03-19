@@ -320,6 +320,7 @@ struct nxp_tmu_platdata {
 	int poll_duration;					/* default 500ms */
 	struct nxp_tmu_trigger *triggers;
 	int trigger_size;
+	long  limit_cpufreq;
 	void (*callback)(int ch, int temp, bool run);
 };
 

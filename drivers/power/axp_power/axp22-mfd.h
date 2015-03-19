@@ -6,13 +6,13 @@
 static int __devinit axp22_init_chip(struct axp_mfd_chip *chip)
 {
 	uint8_t chip_id = 0;
-	uint8_t val = 0;
+	//uint8_t val = 0;
 
-	uint8_t v[19] = {0xd8,AXP22_INTEN2, 0xff,AXP22_INTEN3,0x03,
-						  AXP22_INTEN4, 0x01,AXP22_INTEN5, 0x00,
-						  AXP22_INTSTS1,0xff,AXP22_INTSTS2, 0xff,
-						  AXP22_INTSTS3,0xff,AXP22_INTSTS4, 0xff,
-						  AXP22_INTSTS5,0xff};
+	uint8_t v[19] = {0xd8,AXP22_INTEN2,  0xff, AXP22_INTEN3, 0x00,
+						  AXP22_INTEN4,  0x01, AXP22_INTEN5, 0x00,
+						  AXP22_INTSTS1, 0xff, AXP22_INTSTS2, 0xff,
+						  AXP22_INTSTS3, 0xff, AXP22_INTSTS4, 0xff,
+						  AXP22_INTSTS5, 0xff };
 	int err;
 	
 	/*read chip id*/	//???which int should enable must check with SD4
@@ -33,35 +33,8 @@ static int __devinit axp22_init_chip(struct axp_mfd_chip *chip)
 	chip->type = AXP22;
 
 	/* mask and clear all IRQs */
-	chip->irqs_enabled = 0xffffffff | (uint64_t)0xff << 32;
+	chip->irqs_enabled = 0xffffffff | (uint64_t)0xff<< 32;
 	chip->ops->disable_irqs(chip, chip->irqs_enabled);
-
-#if (CFG_POLY_PHASE_FUNCTION == 1)
-	/* Enable DC-DC 2&3 Poly-phase Function*/
-	axp_set_bits(chip->dev, AXP22_BUCKFREQ, 0x10);
-#endif
-
-	/* PWREN Control1 */
-	val = (AXP_DCDC1_SLEEP_OFF << AXP_DCDC1_BIT)
-			|(AXP_DCDC2_SLEEP_OFF << AXP_DCDC2_BIT)
-			|(AXP_DCDC3_SLEEP_OFF << AXP_DCDC3_BIT)
-			|(AXP_DCDC4_SLEEP_OFF << AXP_DCDC4_BIT)
-			|(AXP_DCDC5_SLEEP_OFF << AXP_DCDC5_BIT)
-			|(AXP_ALDO1_SLEEP_OFF << AXP_ALDO1_BIT)
-			|(AXP_ALDO2_SLEEP_OFF << AXP_ALDO2_BIT)
-			|(AXP_ALDO3_SLEEP_OFF << AXP_ALDO3_BIT);
-	axp_write(chip->dev, AXP22_PWREN_CONTROL1, val);
-
-	/* PWREN Control2 */
-	val = (AXP_DLDO1_SLEEP_OFF << AXP_DLDO1_BIT)
-			|(AXP_DLDO1_SLEEP_OFF << AXP_DLDO2_BIT)
-			|(AXP_DLDO1_SLEEP_OFF << AXP_DLDO3_BIT)
-			|(AXP_DLDO1_SLEEP_OFF << AXP_DLDO4_BIT)
-			|(AXP_ELDO1_SLEEP_OFF << AXP_ELDO1_BIT)
-			|(AXP_ELDO1_SLEEP_OFF << AXP_ELDO2_BIT)
-			|(AXP_ELDO1_SLEEP_OFF << AXP_ELDO3_BIT)
-			|(AXP_DC5LDO_SLEEP_OFF << AXP_DC5LDO_BIT);
-	axp_write(chip->dev, AXP22_PWREN_CONTROL2, val);
 
 	return 0;
 }

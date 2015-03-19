@@ -34,4 +34,8 @@ config AXP_CHGCHANGE
 	bool "AXP charging current set when suspend\resume\shutdown"
 	default y
 
+config AXP_GPIO
+	bool "AXP gpio driver"
+	default n
+
 endif # !KP_AXP

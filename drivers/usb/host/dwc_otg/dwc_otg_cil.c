@@ -2278,7 +2278,7 @@ void dwc_otg_core_host_init(dwc_otg_core_if_t * core_if)
 #endif
 		for(i = 0; i < 10; i++){
 			hprt0.d32 = dwc_otg_read_hprt0(core_if);
-			DWC_PRINTF("Init: Power Port (%d) i=(%d)\n", hprt0.b.prtpwr, i);
+			DWC_DEBUGPL(DBG_HCDV, "Init: Power Port (%d) i=(%d)\n", hprt0.b.prtpwr, i);
 			if (hprt0.b.prtpwr == 0) {
 				hprt0.b.prtpwr = 1;
 				DWC_WRITE_REG32(host_if->hprt0, hprt0.d32);
@@ -5154,6 +5154,7 @@ void dwc_otg_core_reset(dwc_otg_core_if_t * core_if)
 	dwc_otg_core_global_regs_t *global_regs = core_if->core_global_regs;
 	volatile grstctl_t greset = {.d32 = 0 };
 	volatile gintsts_data_t gintsts =  { .d32 = 0 };
+	volatile gotgctl_data_t gotgctl = {.d32 = 0 };
 	int count = 0;
 
 	DWC_DEBUGPL(DBG_CILV, "%s\n", __func__);
@@ -5189,7 +5190,10 @@ void dwc_otg_core_reset(dwc_otg_core_if_t * core_if)
 	/* Wait for 3 PHY Clocks */
 	dwc_mdelay(100);
 	count = 0;
-	if (core_if->host_flag) {
+
+    gotgctl.d32 = DWC_READ_REG32(&global_regs->gotgctl);
+
+	if (core_if->host_flag && !gotgctl.b.conidsts) {
 		do {    
 			gintsts.d32 = DWC_READ_REG32(&global_regs->gintsts);
 			if (++count > 100) 

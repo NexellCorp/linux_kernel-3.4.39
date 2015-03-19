@@ -21,6 +21,8 @@
 #include "axp-regu.h"
 #include "axp-cfg.h"
 
+static unsigned int axp_suspend_status;
+
 static inline struct device *to_axp_dev(struct regulator_dev *rdev)
 {
 	return rdev_get_dev(rdev)->parent->parent;
@@ -43,7 +45,10 @@ static int axp_set_voltage(struct regulator_dev *rdev,
 	struct axp_regulator_info *info = rdev_get_drvdata(rdev);
 	struct device *axp_dev = to_axp_dev(rdev);
 	uint8_t val, mask;
-	
+	int ret = 0;
+
+	if (axp_suspend_status)
+		return -EBUSY;	
 
 	if (check_range(info, min_uV, max_uV)) {
 		pr_err("invalid voltage range (%d, %d) uV\n", min_uV, max_uV);
@@ -55,8 +60,21 @@ static int axp_set_voltage(struct regulator_dev *rdev,
 	val <<= info->vol_shift;
 	mask = ((1 << info->vol_nbits) - 1)  << info->vol_shift;
 
-	return axp_update(axp_dev, info->vol_reg, val, mask);
+	info->vout_reg_cache = val;
+
+	ret = axp_update(axp_dev, info->vol_reg, val, mask);
+
+#ifdef CONFIG_PM_DBGOUT
+	{
+		uint8_t reg_val = 0;
+		ret = axp_read(axp_dev, info->vol_reg, &reg_val);
+		if((info->vout_reg_cache != reg_val) || ret)
+			printk(KERN_ERR "## \e[31m%s() Data is different!\e[0m set:0x%02x, read:0x%02x, ret:%d \n", __func__, val, reg_val, ret);
+		}
+#endif
+	return ret;
 }
+
 
 static int axp_get_voltage(struct regulator_dev *rdev)
 {
@@ -74,6 +92,45 @@ static int axp_get_voltage(struct regulator_dev *rdev)
 
 	return info->min_uV + info->step_uV * val;
 	
+}
+
+static int axp_set_voltage_time_sel(struct regulator_dev *rdev,
+					     unsigned int old_sel,
+					     unsigned int new_sel)
+{
+	struct axp_regulator_info *info = rdev_get_drvdata(rdev);
+
+	if (old_sel < new_sel)
+		return ((new_sel - old_sel) * info->vrc_ramp_delay);
+
+	return 0;
+}
+
+static int axp_set_voltage_sel(struct regulator_dev *rdev,
+				       unsigned selector)
+{
+	struct axp_regulator_info *info = rdev_get_drvdata(rdev);
+	int uV;
+
+	if (axp_suspend_status)
+		return -EBUSY;
+
+	uV = info->min_uV + (info->step_uV * selector);
+
+	return axp_set_voltage(rdev, uV, uV, NULL);
+}
+static int axp_get_voltage_sel(struct regulator_dev *rdev)
+{
+	struct axp_regulator_info *info = rdev_get_drvdata(rdev);
+	struct device *axp_dev = to_axp_dev(rdev);
+	uint8_t val, vsel;
+	int ret;
+
+	ret = axp_read(axp_dev, info->vol_reg, &val);
+
+	vsel = val & info->vol_nbits;
+
+	return vsel ;
 }
 
 static int axp_enable(struct regulator_dev *rdev)
@@ -113,6 +170,7 @@ static int axp_list_voltage(struct regulator_dev *rdev, unsigned selector)
 	struct axp_regulator_info *info = rdev_get_drvdata(rdev);
 	int ret;
 	ret = info->min_uV + info->step_uV * selector;
+
 	if (ret > info->max_uV)
 		return -EINVAL;
 	return ret;
@@ -122,6 +180,20 @@ static int axp_set_suspend_voltage(struct regulator_dev *rdev, int uV)
 {
 	return axp_set_voltage(rdev, uV, uV,NULL);
 }
+
+
+static struct regulator_ops axp22_dcdc_ops = {
+	.set_voltage_sel	= axp_set_voltage_sel,
+	.set_voltage_time_sel = axp_set_voltage_time_sel,
+	.get_voltage_sel	= axp_get_voltage_sel,
+	.list_voltage	= axp_list_voltage,
+	.enable		= axp_enable,
+	.disable	= axp_disable,
+	.is_enabled	= axp_is_enabled,
+	.set_suspend_enable		= axp_enable,
+	.set_suspend_disable	= axp_disable,
+	.set_suspend_voltage	= axp_set_suspend_voltage,
+};
 
 
 static struct regulator_ops axp22_ops = {
@@ -181,32 +253,32 @@ static struct regulator_ops axp22_ldoio01_ops = {
 };
 
 
-#define AXP22_LDO(_id, min, max, step, vreg, shift, nbits, ereg, ebit)	\
-	AXP_LDO(AXP22, _id, min, max, step, vreg, shift, nbits, ereg, ebit)
+#define AXP22_LDO(_id, min, max, step, vreg, shift, nbits, ereg, ebit, vrc_ramp)	\
+	AXP_LDO(AXP22, _id, min, max, step, vreg, shift, nbits, ereg, ebit, vrc_ramp)
 
-#define AXP22_DCDC(_id, min, max, step, vreg, shift, nbits, ereg, ebit)	\
-	AXP_DCDC(AXP22, _id, min, max, step, vreg, shift, nbits, ereg, ebit)
+#define AXP22_DCDC(_id, min, max, step, vreg, shift, nbits, ereg, ebit, vrc_ramp)	\
+	AXP_DCDC(AXP22, _id, min, max, step, vreg, shift, nbits, ereg, ebit, vrc_ramp)
 
 static struct axp_regulator_info axp_regulator_info[] = {
-	AXP22_LDO(  1, 3000,	3000,   0, LDO1,   0, 0,	LDO1EN,   0),//ldo1 for rtc
-	AXP22_LDO(  2,  700,	3300, 100, LDO2,   0,	 5,	LDO2EN,   6),//ldo2 for aldo1 
-	AXP22_LDO(  3,  700,	3300, 100, LDO3,   0,	 5,	LDO3EN,   7),//ldo3 for aldo2
-	AXP22_LDO(  4,  700,	3300, 100, LDO4,   0,	 5,	LDO4EN,   7),//ldo3 for aldo3
-	AXP22_LDO(  5,  700,	3300, 100, LDO5,   0,	 5,	LDO5EN,   3),//ldo5 for dldo1
-	AXP22_LDO(  6,  700,	3300, 100, LDO6,   0,	 5,	LDO6EN,   4),//ldo6 for dldo2
-	AXP22_LDO(  7,  700,	3300, 100, LDO7,   0,	 5,	LDO7EN,   5),//ldo7 for dldo3
-	AXP22_LDO(  8,  700,	3300, 100, LDO8,   0,	 5,	LDO8EN,   6),//ldo8 for dldo4
-	AXP22_LDO(  9,  700,	3300, 100, LDO9,   0,	 5,	LDO9EN,   0),//ldo9 for eldo1
-	AXP22_LDO( 10,  700,	3300, 100, LDO10,  0,	 5,	LDO10EN,  1),//ldo10 for eldo2 
-	AXP22_LDO( 11,  700,	3300, 100, LDO11,  0,	 5,	LDO11EN,  2),//ldo11 for eldo3
-	AXP22_LDO( 12,  700,	3300, 100, LDO12,  0,	 3,	LDO12EN,  0),//ldo12 for dc5ldo
-	AXP22_DCDC( 1, 1600,	3400, 100, DCDC1,  0,	 5,	DCDC1EN,  1),//buck1 for io
-	AXP22_DCDC( 2,  600,	1540,  20, DCDC2,  0, 6,	DCDC2EN,  2),//buck2 for cpu
-	AXP22_DCDC( 3,  600,	1860,  20, DCDC3,  0, 6,	DCDC3EN,  3),//buck3 for gpu
-	AXP22_DCDC( 4,  600,	1540,  20, DCDC4,  0, 6,	DCDC4EN,  4),//buck4 for core
-	AXP22_DCDC( 5, 1000,	2550,  50, DCDC5,  0, 5,	DCDC5EN,  5),//buck5 for ddr
-	AXP22_LDO(IO0,  700,	3300, 100, LDOIO0, 0,	 5,	LDOIO0EN, 0),//ldoio0 
-	AXP22_LDO(IO1,  700,	3300, 100, LDOIO1, 0,	 5,	LDOIO1EN, 0),//ldoio1
+	AXP22_LDO(  1, 3000,	3000,   0, LDO1,   0, 0,	LDO1EN,   0, 0),//ldo1 for rtc
+	AXP22_LDO(  2,  700,	3300, 100, LDO2,   0,	 5,	LDO2EN,   6, 0),//ldo2 for aldo1 
+	AXP22_LDO(  3,  700,	3300, 100, LDO3,   0,	 5,	LDO3EN,   7, 0),//ldo3 for aldo2
+	AXP22_LDO(  4,  700,	3300, 100, LDO4,   0,	 5,	LDO4EN,   7, 0),//ldo3 for aldo3
+	AXP22_LDO(  5,  700,	3300, 100, LDO5,   0,	 5,	LDO5EN,   3, 0),//ldo5 for dldo1
+	AXP22_LDO(  6,  700,	3300, 100, LDO6,   0,	 5,	LDO6EN,   4, 0),//ldo6 for dldo2
+	AXP22_LDO(  7,  700,	3300, 100, LDO7,   0,	 5,	LDO7EN,   5, 0),//ldo7 for dldo3
+	AXP22_LDO(  8,  700,	3300, 100, LDO8,   0,	 5,	LDO8EN,   6, 0),//ldo8 for dldo4
+	AXP22_LDO(  9,  700,	3300, 100, LDO9,   0,	 5,	LDO9EN,   0, 0),//ldo9 for eldo1
+	AXP22_LDO( 10,  700,	3300, 100, LDO10,  0,	 5,	LDO10EN,  1, 0),//ldo10 for eldo2 
+	AXP22_LDO( 11,  700,	3300, 100, LDO11,  0,	 5,	LDO11EN,  2, 0),//ldo11 for eldo3
+	AXP22_LDO( 12,  700,	3300, 100, LDO12,  0,	 3,	LDO12EN,  0, 0),//ldo12 for dc5ldo
+	AXP22_DCDC( 1, 1600,	3400, 100, DCDC1,  0,	 5,	DCDC1EN,  1, 0),//buck1 for io
+	AXP22_DCDC( 2,  600,	1540,  20, DCDC2,  0, 6,	DCDC2EN,  2, 16),//buck2 for cpu
+	AXP22_DCDC( 3,  600,	1860,  20, DCDC3,  0, 6,	DCDC3EN,  3, 16),//buck3 for gpu
+	AXP22_DCDC( 4,  600,	1540,  20, DCDC4,  0, 6,	DCDC4EN,  4, 0),//buck4 for core
+	AXP22_DCDC( 5, 1000,	2550,  50, DCDC5,  0, 5,	DCDC5EN,  5, 0),//buck5 for ddr
+	AXP22_LDO(IO0,  700,	3300, 100, LDOIO0, 0,	 5,	LDOIO0EN, 0, 0),//ldoio0 
+	AXP22_LDO(IO1,  700,	3300, 100, LDOIO1, 0,	 5,	LDOIO1EN, 0, 0),//ldoio1
 };
 
 static ssize_t workmode_show(struct device *dev,
@@ -422,20 +494,22 @@ static int __devinit axp_regulator_probe(struct platform_device *pdev)
 		|| ri->desc.id == AXP22_ID_LDO7 || ri->desc.id == AXP22_ID_LDO8 \
 		|| ri->desc.id == AXP22_ID_LDO9 || ri->desc.id == AXP22_ID_LDO10 \
 		|| ri->desc.id == AXP22_ID_LDO11 || ri->desc.id == AXP22_ID_LDO12 \
-		|| ri->desc.id == AXP22_ID_DCDC1 ||ri->desc.id == AXP22_ID_DCDC2 \
-		|| ri->desc.id == AXP22_ID_DCDC3 ||ri->desc.id == AXP22_ID_DCDC4 \
+		|| ri->desc.id == AXP22_ID_DCDC1 ||ri->desc.id == AXP22_ID_DCDC4 \
 		|| ri->desc.id == AXP22_ID_DCDC5)
 		ri->desc.ops = &axp22_ops;
+
 	if (ri->desc.id == AXP22_ID_LDOIO0|| ri->desc.id == AXP22_ID_LDOIO1 )
 		ri->desc.ops = &axp22_ldoio01_ops;
 
-//	ri->desc.irq = 32;
+	if (ri->desc.id == AXP22_ID_DCDC2|| ri->desc.id == AXP22_ID_DCDC3 )
+		ri->desc.ops = &axp22_dcdc_ops;
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,3,0)
         rdev = regulator_register(&ri->desc, &pdev->dev, pdev->dev.platform_data, ri);
 #else
 	rdev = regulator_register(&ri->desc, &pdev->dev, pdev->dev.platform_data, ri, NULL);
 #endif
-//	ri->desc.irq = 32;
+
 	if (IS_ERR(rdev)) {
 		dev_err(&pdev->dev, "failed to register regulator %s\n",
 				ri->desc.name);
@@ -465,10 +539,33 @@ static int __devexit axp_regulator_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int axp_regulator_suspend(struct device *dev)
+{
+	axp_suspend_status = 1;
+	return 0;
+}
+
+static int axp_regulator_resume(struct device *dev)
+{
+	axp_suspend_status = 0;
+
+	return 0;
+}
+
+static const struct dev_pm_ops axp_regulator_pm_ops = {
+	.suspend	= axp_regulator_suspend,
+	.resume		= axp_regulator_resume,
+};
+#endif
+
 static struct platform_driver axp_regulator_driver = {
 	.driver	= {
 		.name	= "axp22-regulator",
 		.owner	= THIS_MODULE,
+#ifdef CONFIG_PM
+		.pm	= &axp_regulator_pm_ops,
+#endif
 	},
 	.probe		= axp_regulator_probe,
 	.remove		= axp_regulator_remove,

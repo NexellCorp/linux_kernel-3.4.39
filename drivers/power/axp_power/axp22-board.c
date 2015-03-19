@@ -67,69 +67,69 @@ static struct regulator_consumer_supply ldo1_data[] = {
 
 static struct regulator_consumer_supply ldo2_data[] = {
 		{
-			.supply = "axp22_aldo1",
+			.supply = AXP_ALDO1_NAME,//"axp22_aldo1",
 		},
 	};
 
 static struct regulator_consumer_supply ldo3_data[] = {
 		{
-			.supply = "axp22_aldo2",
+			.supply = AXP_ALDO2_NAME,//"axp22_aldo2",
 		},
 	};
 
 static struct regulator_consumer_supply ldo4_data[] = {
 		{
-			.supply = "axp22_aldo3",
+			.supply = AXP_ALDO3_NAME,//"axp22_aldo3",
 		},
 	};
 
 static struct regulator_consumer_supply ldo5_data[] = {
 		{
-			.supply = "axp22_dldo1",
+			.supply = AXP_DLDO1_NAME,//"axp22_dldo1",
 		},
 	};
 
 
 static struct regulator_consumer_supply ldo6_data[] = {
 		{
-			.supply = "axp22_dldo2",
+			.supply = AXP_DLDO2_NAME,//"axp22_dldo2",
 		},
 	};
 
 static struct regulator_consumer_supply ldo7_data[] = {
 		{
-			.supply = "axp22_dldo3",
+			.supply = AXP_DLDO3_NAME,//"axp22_dldo3",
 		},
 	};
 
 static struct regulator_consumer_supply ldo8_data[] = {
 		{
-			.supply = "axp22_dldo4",
+			.supply = AXP_DLDO4_NAME,//"axp22_dldo4",
 		},
 	};
 
 static struct regulator_consumer_supply ldo9_data[] = {
 		{
-			.supply = "axp22_eldo1",
+			.supply = AXP_ELDO1_NAME,//"axp22_eldo1",
 		},
 	};
 
 
 static struct regulator_consumer_supply ldo10_data[] = {
 		{
-			.supply = "axp22_eldo2",
+			.supply = AXP_ELDO2_NAME,//"axp22_eldo2",
 		},
 	};
 
 static struct regulator_consumer_supply ldo11_data[] = {
 		{
-			.supply = "axp22_eldo3",
+			.supply = AXP_ELDO3_NAME,//"axp22_eldo3",
 		},
 	};
 
 static struct regulator_consumer_supply ldo12_data[] = {
 		{
-			.supply = "axp22_dc5ldo",
+			.supply = AXP_DC5LDO_NAME,//"axp22_dc5ldo",
 		},
 	};
 	
@@ -147,31 +147,31 @@ static struct regulator_consumer_supply ldoio1_data[] = {
 
 static struct regulator_consumer_supply DCDC1_data[] = {
 		{
-			.supply = "axp22_dcdc1",
+			.supply = AXP_DCDC1_NAME,//"axp22_dcdc1",
 		},
 	};
 
 static struct regulator_consumer_supply DCDC2_data[] = {
 		{
-			.supply = "axp22_dcdc2",
+			.supply = AXP_DCDC2_NAME,//"axp22_dcdc2",
 		},
 	};
 
 static struct regulator_consumer_supply DCDC3_data[] = {
 		{
-			.supply = "axp22_dcdc3",
+			.supply = AXP_DCDC3_NAME,//"axp22_dcdc3",
 		},
 	};
 
 static struct regulator_consumer_supply DCDC4_data[] = {
 		{
-			.supply = "axp22_dcdc4",
+			.supply = AXP_DCDC4_NAME,//"axp22_dcdc4",
 		},
 	};
 
 static struct regulator_consumer_supply DCDC5_data[] = {
 		{
-			.supply = "axp22_dcdc5",
+			.supply = AXP_DCDC5_NAME,//"axp22_dcdc5",
 		},
 	};
 
@@ -188,14 +188,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_ldo2] = {
 		.constraints = { 
-			.name = "axp22_ldo2",
+			.name = "axp22_aldo1",
 			.min_uV = AXP22_LDO2_MIN,
 			.max_uV = AXP22_LDO2_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_ALDO1_VALUE * 1000,
+				.uV = AXP_ALDO1_VALUE,
 				.enabled = AXP_ALDO1_ENABLE,
 			}
 #endif
@@ -205,14 +205,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_ldo3] = {
 		.constraints = {
-			.name = "axp22_ldo3",
+			.name = "axp22_aldo2",
 			.min_uV =  AXP22_LDO3_MIN,
 			.max_uV =  AXP22_LDO3_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_ALDO2_VALUE * 1000,
+				.uV = AXP_ALDO2_VALUE,
 				.enabled = AXP_ALDO2_ENABLE,
 			}
 #endif
@@ -222,14 +222,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_ldo4] = {
 		.constraints = {
-			.name = "axp22_ldo4",
+			.name = "axp22_aldo3",
 			.min_uV = AXP22_LDO4_MIN,
 			.max_uV = AXP22_LDO4_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_ALDO3_VALUE * 1000,
+				.uV = AXP_ALDO3_VALUE,
 				.enabled = AXP_ALDO3_ENABLE,
 			}
 #endif
@@ -239,14 +239,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_ldo5] = {
 		.constraints = { 
-			.name = "axp22_ldo5",
+			.name = "axp22_dldo1",
 			.min_uV = AXP22_LDO5_MIN,
 			.max_uV = AXP22_LDO5_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_DLDO1_VALUE * 1000,
+				.uV = AXP_DLDO1_VALUE,
 				.enabled = AXP_DLDO1_ENABLE,
 			}
 #endif
@@ -256,14 +256,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_ldo6] = {
 		.constraints = { 
-			.name = "axp22_ldo6",
+			.name = "axp22_dldo2",
 			.min_uV = AXP22_LDO6_MIN,
 			.max_uV = AXP22_LDO6_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_DLDO2_VALUE * 1000,
+				.uV = AXP_DLDO2_VALUE,
 				.enabled = AXP_DLDO2_ENABLE,
 			}
 #endif
@@ -273,14 +273,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_ldo7] = {
 		.constraints = {
-			.name = "axp22_ldo7",
+			.name = "axp22_dldo3",
 			.min_uV =  AXP22_LDO7_MIN,
 			.max_uV =  AXP22_LDO7_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_DLDO3_VALUE * 1000,
+				.uV = AXP_DLDO3_VALUE,
 				.enabled = AXP_DLDO3_ENABLE,
 			}
 #endif
@@ -290,14 +290,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_ldo8] = {
 		.constraints = {
-			.name = "axp22_ldo8",
+			.name = "axp22_dldo4",
 			.min_uV = AXP22_LDO8_MIN,
 			.max_uV = AXP22_LDO8_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_DLDO4_VALUE * 1000,
+				.uV = AXP_DLDO4_VALUE,
 				.enabled = AXP_DLDO4_ENABLE,
 			}
 #endif
@@ -307,14 +307,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_ldo9] = {
 		.constraints = { 
-			.name = "axp22_ldo9",
+			.name = "axp22_eldo1",
 			.min_uV = AXP22_LDO9_MIN,
 			.max_uV = AXP22_LDO9_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_ELDO1_VALUE * 1000,
+				.uV = AXP_ELDO1_VALUE,
 				.enabled = AXP_ELDO1_ENABLE,
 			}
 #endif
@@ -324,14 +324,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_ldo10] = {
 		.constraints = {
-			.name = "axp22_ldo10",
+			.name = "axp22_eldo2",
 			.min_uV = AXP22_LDO10_MIN,
 			.max_uV = AXP22_LDO10_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_ELDO2_VALUE * 1000,
+				.uV = AXP_ELDO2_VALUE,
 				.enabled = AXP_ELDO2_ENABLE,
 			}
 #endif
@@ -341,14 +341,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_ldo11] = {
 		.constraints = {
-			.name = "axp22_ldo11",
+			.name = "axp22_eldo3",
 			.min_uV =  AXP22_LDO11_MIN,
 			.max_uV =  AXP22_LDO11_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_ELDO3_VALUE * 1000,
+				.uV = AXP_ELDO3_VALUE,
 				.enabled = AXP_ELDO3_ENABLE,
 			}
 #endif
@@ -358,14 +358,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_ldo12] = {
 		.constraints = {
-			.name = "axp22_ldo12",
+			.name = "axp22_dc5ldo",
 			.min_uV = AXP22_LDO12_MIN,
 			.max_uV = AXP22_LDO12_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_DC5LDO_VALUE * 1000,
+				.uV = AXP_DC5LDO_VALUE,
 				.enabled = AXP_DC5LDO_ENABLE,
 			}
 #endif
@@ -375,14 +375,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_DCDC1] = {
 		.constraints = {
-			.name = "axp22_DCDC1",
+			.name = "axp22_dcdc1",
 			.min_uV = AXP22_DCDC1_MIN,
 			.max_uV = AXP22_DCDC1_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_DCDC1_VALUE * 1000,
+				.uV = AXP_DCDC1_VALUE,
 				.enabled = AXP_DCDC1_ENABLE,
 			}
 #endif
@@ -392,14 +392,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_DCDC2] = {
 		.constraints = {
-			.name = "axp22_DCDC2",
+			.name = "axp22_dcdc2",
 			.min_uV = AXP22_DCDC2_MIN,
 			.max_uV = AXP22_DCDC2_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_DCDC2_VALUE * 1000,
+				.uV = AXP_DCDC2_VALUE,
 				.enabled = AXP_DCDC2_ENABLE,
 			}
 #endif
@@ -409,14 +409,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_DCDC3] = {
 		.constraints = { 
-			.name = "axp22_DCDC3",
+			.name = "axp22_dcdc3",
 			.min_uV = AXP22_DCDC3_MIN,
 			.max_uV = AXP22_DCDC3_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_DCDC3_VALUE * 1000,
+				.uV = AXP_DCDC3_VALUE,
 				.enabled = AXP_DCDC3_ENABLE,
 			}
 #endif
@@ -426,14 +426,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_DCDC4] = {
 		.constraints = { 
-			.name = "axp22_DCDC4",
+			.name = "axp22_dcdc4",
 			.min_uV = AXP22_DCDC4_MIN,
 			.max_uV = AXP22_DCDC4_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_DCDC4_VALUE * 1000,
+				.uV = AXP_DCDC4_VALUE,
 				.enabled = AXP_DCDC4_ENABLE,
 			}
 #endif
@@ -443,14 +443,14 @@ static struct regulator_init_data axp_regl_init_data[] = {
 	},
 	[vcc_DCDC5] = {
 		.constraints = { 
-			.name = "axp22_DCDC5",
+			.name = "axp22_dcdc5",
 			.min_uV = AXP22_DCDC5_MIN,
 			.max_uV = AXP22_DCDC5_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 #if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
-				.uV = AXP_DCDC5_VALUE * 1000,
+				.uV = AXP_DCDC5_VALUE,
 				.enabled = AXP_DCDC5_ENABLE,
 			}
 #endif
