@@ -29,7 +29,7 @@
  * 	System Name
  */
 #define	CFG_SYS_CPU_NAME						"s5p4418"
-#define	CFG_SYS_BOARD_NAME						"s5p4418-drone2nd"
+#define	CFG_SYS_BOARD_NAME						"s5p4418-dronel"
 
 /*------------------------------------------------------------------------------
  * 	BUS config
@@ -161,7 +161,8 @@
  */
 #define CFG_I2C0_CLK							100000
 #define CFG_I2C1_CLK							400000	/* TOUCH */
-#define CFG_I2C2_CLK							100000
+#define CFG_I2C2_CLK							200000
+#define CFG_I2C3_CLK							100000
 
 /*------------------------------------------------------------------------------
  * 	SPI
@@ -194,8 +195,9 @@
 /*------------------------------------------------------------------------------
  * 	Keypad
  */
-#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_B + 31, PAD_GPIO_B + 30, PAD_GPIO_ALV + 0 }
-#define CFG_KEYPAD_KEY_CODE						{ KEY_VOLUMEDOWN, KEY_VOLUMEUP, KEY_POWER }
+
+#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0 }
+#define CFG_KEYPAD_KEY_CODE						{ KEY_POWER }
 #define CFG_KEYPAD_REPEAT						CFALSE /* 0: Repeat Off 1 : Repeat On */
 
 /*------------------------------------------------------------------------------
@@ -213,7 +215,7 @@
 #define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)	/* USB ID Deteict */
 #define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_D + 21)	/* USB OTG Power Enable */
 #define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)	/* Choice for SW_UBC or Wake-up*/
-#define CFG_GPIO_PMIC_LOWBAT_DET				(-1)//(PAD_GPIO_ALV + 3)	/* Critical low battery detect */
+#define CFG_GPIO_PMIC_LOWBAT_DET				(-1)					/* Critical low battery detect */
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
 
 /* AXP228 PMIC	*/
