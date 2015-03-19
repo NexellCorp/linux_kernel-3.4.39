@@ -93,12 +93,6 @@
 
 
 #if	defined(CONFIG_I2C_NXP_PORT0)
-static struct resource s3c_i2c0_resource[] = {
-	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C0, SZ_256),
-	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C0),
-};
-
-
 #if  defined(CONFIG_I2C_NXP_PORT0_GPIO_MODE)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port0 = {
 	.sda_pin	= I2C0_SDA,
@@ -128,6 +122,10 @@ struct s3c2410_platform_i2c i2c_data_ch0 = {
     .sda_delay  = 100,
 	.cfg_gpio	= i2c_cfg_gpio0,
 };
+static struct resource s3c_i2c0_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C0, SZ_256),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C0),
+};
 
 static struct platform_device i2c_device_ch0 = {
 	//.name	= DEV_NAME_I2C,
@@ -145,11 +143,6 @@ static struct platform_device i2c_device_ch0 = {
 #endif
 
 #if	defined(CONFIG_I2C_NXP_PORT1)
-
-static struct resource s3c_i2c1_resource[] = {
-	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C1, SZ_4K),
-	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C1),
-};
 
 #if  defined(CONFIG_I2C_NXP_PORT1_GPIO_MODE)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port1 = {
@@ -182,6 +175,10 @@ struct s3c2410_platform_i2c i2c_data_ch1 = {
     .sda_delay  = 100,
 	.cfg_gpio	= i2c_cfg_gpio1,
 };
+static struct resource s3c_i2c1_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C1, SZ_4K),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C1),
+};
 
 static struct platform_device i2c_device_ch1 = {
 	//.name	= DEV_NAME_I2C,
@@ -197,11 +194,6 @@ static struct platform_device i2c_device_ch1 = {
 #endif
 
 #if	defined(CONFIG_I2C_NXP_PORT2)
-static struct resource s3c_i2c2_resource[] = {
-	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C2, SZ_4K),
-	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C2),
-};
-
 #if  defined(CONFIG_I2C_NXP_PORT2_GPIO_MODE)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port2 = {
 	.sda_pin	= I2C2_SDA,
@@ -231,6 +223,11 @@ struct s3c2410_platform_i2c i2c_data_ch2 = {
     .sda_delay  = 100,
 	.cfg_gpio	= i2c_cfg_gpio2,
 };
+static struct resource s3c_i2c2_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C2, SZ_4K),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C2),
+};
+
 
 static struct platform_device i2c_device_ch2 = {
 	.name	="s3c2440-i2c",
@@ -690,8 +687,8 @@ static void spi_init(int ch)
     char name[10] = {0};
     int req_clk = 0;
     struct clk *clk ;
-	printk("%s %d\n",__func__,ch);
-    if(0 == ch)
+    
+	if(0 == ch)
     	req_clk = CFG_SPI0_CLK;
 	else if(1 == ch)
 	    req_clk = CFG_SPI1_CLK;
@@ -702,7 +699,7 @@ static void spi_init(int ch)
 
 	clk = clk_get(NULL,name);
 	clk_set_rate(clk,req_clk);
-	printk("%s : %d \n", name,clk_get_rate(clk) );
+	
 	nxp_soc_peri_reset_enter(reset[ch][0]);
 	nxp_soc_peri_reset_enter(reset[ch][1]);
 	nxp_soc_peri_reset_exit(reset[ch][0]);
