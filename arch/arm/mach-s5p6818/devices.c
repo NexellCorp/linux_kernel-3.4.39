@@ -93,11 +93,6 @@
 
 
 #if	defined(CONFIG_I2C_NXP_PORT0)
-static struct resource s3c_i2c0_resource[] = {
-	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C0, SZ_256),
-	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C0),
-};
-
 
 #if  defined(CONFIG_I2C_NXP_PORT0_GPIO_MODE)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port0 = {
@@ -115,16 +110,26 @@ static struct platform_device i2c_device_ch0 = {
 	},
 };
 #else
+void i2c_cfg_gpio0(struct platform_device *dev)
+{
+	nxp_soc_gpio_set_io_func( I2C0_SCL & 0xff, 1);
+	nxp_soc_gpio_set_io_func( I2C0_SDA & 0xff, 1);
+}
 struct s3c2410_platform_i2c i2c_data_ch0 = {
 	.bus_num	= 0,
-    .flags      = 0, 
+    .flags      = 0,
     .slave_addr = 0x10,
-    .frequency  = 100*1000,
-    .sda_delay  = 100, 
+    .frequency  = CFG_I2C0_CLK,
+    .sda_delay  = 100,
+	.cfg_gpio	= i2c_cfg_gpio0,
+};
+static struct resource s3c_i2c0_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C0, SZ_256),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C0),
 };
 
+
 static struct platform_device i2c_device_ch0 = {
-	//.name	= DEV_NAME_I2C,
 	.name = "s3c2440-i2c",
 	.id		= 0,
 	.num_resources  = ARRAY_SIZE(s3c_i2c0_resource),
@@ -139,12 +144,9 @@ static struct platform_device i2c_device_ch0 = {
 #endif
 
 #if	defined(CONFIG_I2C_NXP_PORT1)
-static struct resource s3c_i2c1_resource[] = {
-	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C1, SZ_4K),
-	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C1),
-};
-
 #if  defined(CONFIG_I2C_NXP_PORT1_GPIO_MODE)
+;
+
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port1 = {
 	.sda_pin	= I2C1_SDA,
 	.scl_pin	= I2C1_SCL,
@@ -161,16 +163,25 @@ static struct platform_device i2c_device_ch1 = {
 	},
 };
 #else
+void i2c_cfg_gpio1(struct platform_device *dev)
+{
+	nxp_soc_gpio_set_io_func( I2C1_SCL & 0xff, 1);
+	nxp_soc_gpio_set_io_func( I2C1_SDA & 0xff, 1);
+
+}
 struct s3c2410_platform_i2c i2c_data_ch1 = {
 	.bus_num	= 1,
-    .flags      = 0, 
+    .flags      = 0,
     .slave_addr = 0x10,
-    .frequency  = 100*1000,
-    .sda_delay  = 100, 
+    .frequency  = CFG_I2C1_CLK,
+    .sda_delay  = 100,
+	.cfg_gpio	= i2c_cfg_gpio1,
 };
-
+static struct resource s3c_i2c1_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C1, SZ_4K),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C1),
+}
 static struct platform_device i2c_device_ch1 = {
-	//.name	= DEV_NAME_I2C,
 	.name = "s3c2440-i2c",
 	.id		= 1,
 	.num_resources  = ARRAY_SIZE(s3c_i2c1_resource),
@@ -183,12 +194,8 @@ static struct platform_device i2c_device_ch1 = {
 #endif
 
 #if	defined(CONFIG_I2C_NXP_PORT2)
-static struct resource s3c_i2c2_resource[] = {
-	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C2, SZ_4K),
-	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C2),
-};
-
 #if  defined(CONFIG_I2C_NXP_PORT2_GPIO_MODE)
+
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port2 = {
 	.sda_pin	= I2C2_SDA,
 	.scl_pin	= I2C2_SCL,
@@ -204,12 +211,22 @@ static struct platform_device i2c_device_ch2 = {
 	},
 };
 #else
+void i2c_cfg_gpio2(struct platform_device *dev)
+{
+	nxp_soc_gpio_set_io_func( I2C2_SCL & 0xff, 1);
+	nxp_soc_gpio_set_io_func( I2C2_SDA & 0xff, 1);
+}
 struct s3c2410_platform_i2c i2c_data_ch2 = {
 	.bus_num	= 2,
-    .flags      = 0, 
+    .flags      = 0,
     .slave_addr = 0x10,
-    .frequency  = 100*1000,
-    .sda_delay  = 100, 
+    .frequency  = CFG_I2C2_CLK,
+    .sda_delay  = 100,
+	.cfg_gpio	= i2c_cfg_gpio2,
+};
+static struct resource s3c_i2c2_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C2, SZ_4K),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C2),
 };
 
 static struct platform_device i2c_device_ch2 = {
@@ -675,8 +692,8 @@ static void spi_init(int ch)
     char name[10] = {0};
     int req_clk = 0;
     struct clk *clk ;
-	printk("%s %d\n",__func__,ch);
-    if(0 == ch)
+    
+	if(0 == ch)
     	req_clk = CFG_SPI0_CLK;
 	else if(1 == ch)
 	    req_clk = CFG_SPI1_CLK;
@@ -687,7 +704,7 @@ static void spi_init(int ch)
 
 	clk = clk_get(NULL,name);
 	clk_set_rate(clk,req_clk);
-	printk("%s : %d \n", name,clk_get_rate(clk) );
+	
 	nxp_soc_peri_reset_enter(reset[ch][0]);
 	nxp_soc_peri_reset_enter(reset[ch][1]);
 	nxp_soc_peri_reset_exit(reset[ch][0]);
@@ -758,10 +775,11 @@ struct s3c64xx_spi_info s3c64xx_spi1_pdata = {
 	.cfg_gpio = s3c64xx_spi0_cfg_gpio,
 	.spi_init = spi_init,
 /* bok add */
+	  .bus_id = 1,
 	  .enable_dma     = 1,
       .dma_filter     = pl08x_filter_id,
-      .dma_rx_param   = (void *)DMA_PERIPHERAL_NAME_SSP0_RX,
-      .dma_tx_param   = (void *)DMA_PERIPHERAL_NAME_SSP0_TX,
+      .dma_rx_param   = (void *)DMA_PERIPHERAL_NAME_SSP1_RX,
+      .dma_tx_param   = (void *)DMA_PERIPHERAL_NAME_SSP1_TX,
       //.autosuspend_delay  = 10,
 /* end */
 //	.hierarchy = SSP_SLAVE,
@@ -786,7 +804,6 @@ struct platform_device s3c64xx_device_spi1 = {
 
 #endif
 #ifdef CONFIG_SPI_SLSI_PORT2
-int s3c64xx_spi1_cfg_gpio(struct platform_device *dev)
 int s3c64xx_spi2_cfg_gpio(struct platform_device *dev)
 {
 	return 0;
@@ -801,18 +818,37 @@ struct s3c64xx_spi_info s3c64xx_spi2_pdata = {
 	.tx_st_done = 25,
 	.num_cs = 1,
 	.src_clk_nr = 0,
-	.cfg_gpio = s3c64xx_spi0_cfg_gpio,
+	.cfg_gpio = s3c64xx_spi2_cfg_gpio,
 	.spi_init = spi_init,
 /* bok add */
-	  .enable_dma     = 1,
-      .dma_filter     = pl08x_filter_id,
-      .dma_rx_param   = (void *)DMA_PERIPHERAL_NAME_SSP0_RX,
-      .dma_tx_param   = (void *)DMA_PERIPHERAL_NAME_SSP0_TX,
+	.bus_id = 2,
+	.enable_dma     = 1,
+    .dma_filter     = pl08x_filter_id,
+    .dma_rx_param   = (void *)DMA_PERIPHERAL_NAME_SSP2_RX,
+    .dma_tx_param   = (void *)DMA_PERIPHERAL_NAME_SSP2_TX,
       //.autosuspend_delay  = 10,
 /* end */
 //	.hierarchy = SSP_MASTER,
 
-}
+};
+static struct resource s3c64xx_spi2_resource[] = {
+    [0] = DEFINE_RES_MEM(PHY_BASEADDR_SSP2, SZ_256),
+    [1] = DEFINE_RES_DMA(DMA_PERIPHERAL_ID_SSP2_TX),
+    [2] = DEFINE_RES_DMA(DMA_PERIPHERAL_ID_SSP2_TX),
+    [3] = DEFINE_RES_IRQ(IRQ_PHY_SSP2),
+};
+
+struct platform_device s3c64xx_device_spi2 = {
+    .name       = "s3c64xx-spi",
+    .id     = 2,
+    .num_resources  = ARRAY_SIZE(s3c64xx_spi2_resource),
+    .resource   = s3c64xx_spi2_resource,
+    .dev = {
+		.platform_data      = &s3c64xx_spi2_pdata,
+    },
+};
+
+
 #endif
 
 /*------------------------------------------------------------------------------
