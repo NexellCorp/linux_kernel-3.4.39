@@ -176,13 +176,14 @@ static void nxp_pcm_dma_complete(void *arg)
 
 	if ((prtd->dma_chan->chan_id >= DMA_PERIPHERAL_ID_I2S0_TX) 
 			&& (prtd->dma_chan->chan_id <= DMA_PERIPHERAL_ID_I2S2_RX)) {
-		struct snd_pcm_runtime *runtime = substream->runtime;
-		unsigned offset = prtd->offset;
-		int length = snd_pcm_lib_period_bytes(substream);
-		void *src_addr = NULL;
-		src_addr = (void*)(runtime->dma_area + offset);
-	
-		memset(src_addr, 0, length);
+    	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+			struct snd_pcm_runtime *runtime = substream->runtime;
+			unsigned offset = prtd->offset;
+			int length = snd_pcm_lib_period_bytes(substream);
+			void *src_addr = NULL;
+			src_addr = (void*)(runtime->dma_area + offset);
+			memset(src_addr, 0, length);
+		}
 	}
 
 	/* i2s master mode */
