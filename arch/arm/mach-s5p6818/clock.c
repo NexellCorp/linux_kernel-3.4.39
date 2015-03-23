@@ -1056,7 +1056,7 @@ void __init nxp_cpu_clock_init(void)
 		}
 
 		/* prevent uart clock disable for low level debug message */
-#ifndef	CONFIG_PLAT_S5P6818_FDONE
+#if !defined (CONFIG_PLAT_S5P6818_FDONE) && !defined (CONFIG_PLAT_S5P6818_BF700)
 		#ifndef CONFIG_DEBUG_NXP_UART
 		if (peri->dev_name) {
 			#ifdef CONFIG_BACKLIGHT_PWM
