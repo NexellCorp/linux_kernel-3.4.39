@@ -120,7 +120,7 @@ struct nxp_i2s_plat_data {
     int     LR_pol_inv;
     int     pre_supply_mclk;            /* codec require mclk out, before codec initialize */
 	bool	(*ext_is_en)(void);
-	unsigned long (*set_ext_mclk)(unsigned long clk);
+	unsigned long (*set_ext_mclk)(unsigned long clk, int ch);
     bool    (*dma_filter)(struct dma_chan *chan, void *filter_param);
     const char *dma_play_ch;
     const char *dma_capt_ch;
