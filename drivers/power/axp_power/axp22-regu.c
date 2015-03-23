@@ -123,14 +123,17 @@ static int axp_get_voltage_sel(struct regulator_dev *rdev)
 {
 	struct axp_regulator_info *info = rdev_get_drvdata(rdev);
 	struct device *axp_dev = to_axp_dev(rdev);
-	uint8_t val, vsel;
+	uint8_t val, vsel, mask;
 	int ret;
 
 	ret = axp_read(axp_dev, info->vol_reg, &val);
+	if (ret)
+		return ret;
 
-	vsel = val & info->vol_nbits;
+	mask = ((1 << info->vol_nbits) - 1)  << info->vol_shift;
+	vsel = (val & mask) >> info->vol_shift;
 
-	return vsel ;
+	return vsel;
 }
 
 static int axp_enable(struct regulator_dev *rdev)
