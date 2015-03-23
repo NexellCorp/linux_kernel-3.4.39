@@ -281,6 +281,7 @@ typedef struct __WARN__
 #define __SUPPORT_MIO_CHIP_S5P6818__
 #endif
 
+
 #elif defined (__BUILD_MODE_ARM_UBOOT_DEVICE_DRIVER__)
 
 #if   defined (__SUPPORT_MIO_UBOOT_CHIP_NXP4330__)
