@@ -495,28 +495,27 @@ static bool i2s_ext_is_en(void)
 }
 
 unsigned long i2s_ext_clk_value;
-static unsigned long i2s_ext_mclk_set_clock(unsigned long clk)
+static unsigned long i2s_ext_mclk_set_clock(unsigned long clk, int ch)
 {
-	int ch = 0;
 	unsigned long ret_clk = 0;
 
     PM_DBGOUT("%s: %ld\n", __func__, clk);
 
     if (clk > 1) {
 		// set input & gpio_mode of I2S MCLK pin
-#if defined(CONFIG_SND_NXP_I2S_CH0)
-		nxp_soc_gpio_set_io_func(PAD_GPIO_D + 13, NX_GPIO_PADFUNC_0);
-		nxp_soc_gpio_set_io_dir(PAD_GPIO_D + 13, 0);
-		ch = 0;
-#elif defined(CONFIG_SND_NXP_I2S_CH1) || defined(CONFIG_SND_NXP_I2S_CH2)
-		nxp_soc_gpio_set_io_func(PAD_GPIO_A + 28, NX_GPIO_PADFUNC_0);
-		nxp_soc_gpio_set_io_dir(PAD_GPIO_A + 28, 0);
-#if defined(CONFIG_SND_NXP_I2S_CH1)
-			ch = 1;
-#elif defined(CONFIG_SND_NXP_I2S_CH2)
-			ch = 2;
-#endif
-#endif
+		switch (ch) {
+			case 0:
+				nxp_soc_gpio_set_io_func(PAD_GPIO_D + 13, NX_GPIO_PADFUNC_0);
+				nxp_soc_gpio_set_io_dir(PAD_GPIO_D + 13, 0);
+				break;
+			case 1:
+			case 2:
+				nxp_soc_gpio_set_io_func(PAD_GPIO_A + 28, NX_GPIO_PADFUNC_0);
+				nxp_soc_gpio_set_io_dir(PAD_GPIO_A + 28, 0);
+				break;
+			default:
+				break;
+		}
 #if defined(CFG_EXT_MCLK_PWM_CH)
 		nxp_cpu_periph_clock_register(CLK_ID_I2S_0 + ch, clk, 0);
 		i2s_ext_clk_value = clk;
@@ -530,6 +529,10 @@ static unsigned long i2s_ext_mclk_set_clock(unsigned long clk)
     msleep(1);
 #else
 		printk("err!!! must have other ext_clk++\n");
+		nxp_cpu_periph_clock_register(CLK_ID_I2S_0 + ch, clk, 0);
+		i2s_ext_clk_value = clk;
+	} else {
+		ret_clk = i2s_ext_clk_value;
 	}
 #endif
     return ret_clk;

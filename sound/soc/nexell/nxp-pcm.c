@@ -161,6 +161,23 @@ static void nxp_pcm_file_mem_write(struct snd_pcm_substream *substream)
 #define	nxp_pcm_file_mem_write(s)
 #endif
 
+static void nxp_pcm_dma_clear(struct snd_pcm_substream *substream)
+{
+	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	int length = snd_pcm_lib_period_bytes(substream);
+	unsigned offset = prtd->offset - length;
+	void *src_addr = NULL;
+	src_addr = (void*)(runtime->dma_area + offset);
+
+	if ((prtd->dma_chan->chan_id >= DMA_PERIPHERAL_ID_I2S0_TX) 
+		&& (prtd->dma_chan->chan_id <= DMA_PERIPHERAL_ID_I2S2_RX)) {
+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+			memset(src_addr, 0, length);
+		}
+	}
+}
+
 /*
  * PCM INTERFACE
  */
@@ -174,17 +191,6 @@ static void nxp_pcm_dma_complete(void *arg)
 	int over_samples = div64_s64((new - ts), period_us);
 	int i;
 
-	if ((prtd->dma_chan->chan_id >= DMA_PERIPHERAL_ID_I2S0_TX) 
-			&& (prtd->dma_chan->chan_id <= DMA_PERIPHERAL_ID_I2S2_RX)) {
-    	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-			struct snd_pcm_runtime *runtime = substream->runtime;
-			unsigned offset = prtd->offset;
-			int length = snd_pcm_lib_period_bytes(substream);
-			void *src_addr = NULL;
-			src_addr = (void*)(runtime->dma_area + offset);
-			memset(src_addr, 0, length);
-		}
-	}
 
 	/* i2s master mode */
 	if(prtd->dma_param->real_clock != 0) {
@@ -213,6 +219,7 @@ static void nxp_pcm_dma_complete(void *arg)
 				prtd->offset = 0;
 
 			nxp_pcm_file_mem_write(substream);
+			nxp_pcm_dma_clear(substream);
 			snd_pcm_period_elapsed(substream);
 		}
 	} else { /* -> i2s slave mode */
@@ -221,6 +228,7 @@ static void nxp_pcm_dma_complete(void *arg)
 			prtd->offset = 0;
 
 		nxp_pcm_file_mem_write(substream);
+		nxp_pcm_dma_clear(substream);
 		snd_pcm_period_elapsed(substream);
 	}
 }
