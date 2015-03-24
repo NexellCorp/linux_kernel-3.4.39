@@ -110,7 +110,7 @@ static unsigned long dfs_freq_table[][2] = {
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
-	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
+	.supply_name	= "vdd_arm_1.3V",
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
@@ -336,6 +336,29 @@ static struct platform_device key_plat_device = {
 	},
 };
 #endif	/* CONFIG_KEYBOARD_NXP_KEY || CONFIG_KEYBOARD_NXP_KEY_MODULE */
+
+/*------------------------------------------------------------------------------
+ * ASoC Codec platform device
+ */
+#if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)
+static struct platform_device spdif_transciever = {
+	.name	= "spdif-dit",
+	.id		= -1,
+};
+
+struct nxp_snd_dai_plat_data spdif_trans_dai_data = {
+	.sample_rate = 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
+};
+
+static struct platform_device spdif_trans_dai = {
+	.name	= "spdif-transciever",
+	.id		= -1,
+	.dev	= {
+		.platform_data	= &spdif_trans_dai_data,
+	}
+};
+#endif
 
 #if defined(CONFIG_SND_CODEC_RT5631) || defined(CONFIG_SND_CODEC_RT5631_MODULE)
 #include <linux/i2c.h>
@@ -1278,16 +1301,81 @@ int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on)
 }
 EXPORT_SYMBOL(nxp_hsic_phy_pwr_on);
 
-#ifdef CONFIG_BATTERY_NXE2000
-/*------------------------------------------------------------------------------
- * USB OTGVBUS power control.
- */
-void nxp_otgvbus_pwr_set(int enable)
-{
-	nxp_soc_gpio_set_out_value(CFG_GPIO_OTG_VBUS_DET, enable);
+#if defined(CONFIG_REGULATOR_MP8845C)
+#include <linux/i2c.h>
+#include <linux/regulator/machine.h>
+#include <linux/gpio.h>
+#include <linux/io.h>
+#include <linux/regulator/fixed.h>
+#include <linux/regulator/mp8845c-regulator.h>
+
+#define MP8845C_PDATA_INIT(_name, _sname, _minuv, _maxuv, _always_on, _boot_on, _init_uv, _init_enable, _slp_slots) \
+	static struct mp8845c_regulator_platform_data pdata_##_name##_##_sname = \
+	{									\
+		.regulator = {					\
+			.constraints = {			\
+				.min_uV		= _minuv,	\
+				.max_uV		= _maxuv,	\
+				.valid_modes_mask	= (REGULATOR_MODE_NORMAL |	\
+									REGULATOR_MODE_STANDBY),	\
+				.valid_ops_mask		= (REGULATOR_CHANGE_MODE |	\
+									REGULATOR_CHANGE_STATUS |	\
+									REGULATOR_CHANGE_VOLTAGE),	\
+				.always_on	= _always_on,	\
+				.boot_on	= _boot_on,		\
+				.apply_uV	= 1,				\
+			},								\
+			.num_consumer_supplies =		\
+				ARRAY_SIZE(mp8845c_##_name##_##_sname),			\
+			.consumer_supplies	= mp8845c_##_name##_##_sname, 	\
+			.supply_regulator	= 0,			\
+		},									\
+		.init_uV		= _init_uv,			\
+		.init_enable	= _init_enable,		\
+		.sleep_slots	= _slp_slots,		\
+	}
+
+#define MP8845C_REGULATOR(_dev_id, _name, _sname)	\
+{												\
+	.id		= MP8845C_##_dev_id##_VOUT,				\
+	.name	= "mp8845c-regulator",				\
+	.platform_data	= &pdata_##_name##_##_sname,\
 }
-EXPORT_SYMBOL(nxp_otgvbus_pwr_set);
-#endif
+
+#define I2C_FLATFORM_INFO(dev_type, dev_addr, dev_data)\
+{										\
+	.type = dev_type, 					\
+	.addr = (dev_addr),					\
+	.platform_data = dev_data,			\
+}
+
+static struct regulator_consumer_supply mp8845c_vout_0[] = {
+	REGULATOR_SUPPLY("vdd_arm_1.3V", NULL),
+};
+
+static struct regulator_consumer_supply mp8845c_vout_1[] = {
+	REGULATOR_SUPPLY("vdd_core_1.2V", NULL),
+};
+
+MP8845C_PDATA_INIT(vout, 0, 600000, 1500000, 1, 1, 1100000, 1, -1);	/* ARM */
+MP8845C_PDATA_INIT(vout, 1, 600000, 1500000, 1, 1, 1100000, 1, -1);	/* CORE */
+
+static struct mp8845c_platform_data __initdata mp8845c_platform[] = {
+	MP8845C_REGULATOR(0, vout, 0),
+	MP8845C_REGULATOR(1, vout, 1),
+};
+
+#define MP8845C_I2C_BUS0		(8)
+#define MP8845C_I2C_BUS1		(7)
+#define MP8845C_I2C_ADDR		(0x1c)
+
+static struct i2c_board_info __initdata mp8845c_regulators[] = {
+	I2C_FLATFORM_INFO("mp8845c", MP8845C_I2C_ADDR, &mp8845c_platform[0]),
+	I2C_FLATFORM_INFO("mp8845c", MP8845C_I2C_ADDR, &mp8845c_platform[1]),
+};
+#endif  /* CONFIG_REGULATOR_MP8845C */
+
+
 /*------------------------------------------------------------------------------
  * HDMI CEC driver
  */
@@ -1502,6 +1590,14 @@ void __init nxp_board_devs_register(void)
 
 #if defined(CONFIG_I2C_NXP)
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
+#endif
+
+#if defined(CONFIG_REGULATOR_MP8845C)
+	printk("plat: add device mp8845c ARM\n");
+	i2c_register_board_info(MP8845C_I2C_BUS0, &mp8845c_regulators[0], 1);
+
+	printk("plat: add device mp8845c CORE\n");
+	i2c_register_board_info(MP8845C_I2C_BUS1, &mp8845c_regulators[1], 1);
 #endif
 
 #if defined(CONFIG_SND_CODEC_RT5631) || defined(CONFIG_SND_CODEC_RT5631_MODULE)
