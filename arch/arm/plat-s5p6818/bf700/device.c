@@ -93,8 +93,8 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-//	{ 1600000, 1340000, },
-//	{ 1500000, 1340000, },
+	{ 1600000, 1340000, },
+	{ 1500000, 1280000, },
 	{ 1400000, 1240000, },
 	{ 1300000, 1180000, },
 	{ 1200000, 1140000, },
@@ -1522,7 +1522,7 @@ extern void register_backward_camera(struct platform_device *device);
 
 struct nxp_tmu_trigger tmu_triggers[] = {
 	{
-		.trig_degree	=  130,	// 160
+		.trig_degree	=  120,	// 160
 		.trig_duration	=  100,
 		.trig_cpufreq	=  800*1000,	/* Khz */
 	},
