@@ -167,4 +167,6 @@ static int __init otg_wakelock_init(void)
 	return ret;
 }
 
+#ifndef CONFIG_PLAT_S5P6818_FDONE
 late_initcall(otg_wakelock_init);
+#endif

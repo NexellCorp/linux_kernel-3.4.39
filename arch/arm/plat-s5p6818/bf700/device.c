@@ -1370,6 +1370,7 @@ static struct platform_device hdmi_cec_device = {
 
 static struct reg_val _sensor_init_data[] =
 {
+    {0x02, 0x44},
     {0x03, 0xa6},
     {0x07, 0x02},
     {0x08, 0x12},
@@ -1382,22 +1383,17 @@ static struct reg_val _sensor_init_data[] =
     {0x11, 0x42},
     {0x2f, 0xe6},
     {0x55, 0x00},
+    {0xb1, 0xa0},
+    {0xae, 0x80},
     END_MARKER
 };
 
-#define CAMERA_RESET        ((PAD_GPIO_C + 15) | PAD_FUNC_ALT1)
-#define CAMERA_POWER_DOWN   ((PAD_GPIO_C + 16) | PAD_FUNC_ALT1)
+#define CAMERA_RESET        ((PAD_GPIO_D + 23) | PAD_FUNC_ALT1)
 static int _sensor_power_enable(bool enable)
 {
-    u32 io = CAMERA_POWER_DOWN;
     u32 reset_io = CAMERA_RESET;
 
     if (enable) {
-        // disable power down
-        nxp_soc_gpio_set_out_value(io & 0xff, 0);
-        nxp_soc_gpio_set_io_dir(io & 0xff, 1);
-        nxp_soc_gpio_set_io_func(io & 0xff, nxp_soc_gpio_get_altnum(io));
-
         // reset to high
         nxp_soc_gpio_set_out_value(reset_io & 0xff, 1);
         nxp_soc_gpio_set_io_dir(reset_io & 0xff, 1);
@@ -1447,15 +1443,29 @@ static void _sensor_setup_io(void)
 }
 
 // This is callback function for rgb overlay drawing
-static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data)
+static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data, void *mem)
 {
-    printk("%s\n", __func__);
+    printk("%s entered\n", __func__);
+    memset(mem, 0, plat_data->width*plat_data->height*4);
+    /* draw redbox at (0, 0) -- (50, 50) */
+    {
+        u32 color = 0xFFFF0000; // red
+        int i, j;
+        u32 *pbuffer = (u32 *)mem;
+        for (i = 0; i < 50; i++) {
+            for (j = 0; j < 50; j++) {
+                pbuffer[i * 1024 + j] = color;
+            }
+        }
+    }
+    printk("%s exit\n", __func__);
 }
 
 #define BACKWARD_CAM_WIDTH  704
 #define BACKWARD_CAM_HEIGHT 480
 
 static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
+    .backgear_irq_num   = IRQ_ALIVE_4,
     .backgear_gpio_num  = CFG_BACKWARD_GEAR,
     .active_high        = false,
     .vip_module_num     = 0,
@@ -1463,7 +1473,7 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
 
     // sensor
     .i2c_bus            = 1,
-    .chip_addr          = 0x88 >> 1,
+    .chip_addr          = 0x8a >> 1,
     .reg_val            = _sensor_init_data,
     .power_enable       = _sensor_power_enable,
     .set_clock          = NULL,
@@ -1484,29 +1494,18 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .data_order         = 0,
     .interlace          = true,
 
+    .lu_addr            = 0,
+    .cb_addr            = 0,
+    .cr_addr            = 0,
 
-    // u-boot define
-/*#define CONFIG_VIP_LU_ADDR          0x7FD28000*/
-/*#define CONFIG_VIP_CB_ADDR          0x7FD98800*/
-/*#define CONFIG_VIP_CR_ADDR          0x7FDAF000*/
-
-    .lu_addr            = 0x7FD28000,
-#if 0
-    .cb_addr            = 0x7FD7A800,
-    .cr_addr            = 0x7FD91000,
-#else
-    .cb_addr            = 0x7FD98800,
-    .cr_addr            = 0x7FDAF000,
-#endif
-
-    .lu_stride          = 704,
+    .lu_stride          = BACKWARD_CAM_WIDTH,
     .cb_stride          = 384,
     .cr_stride          = 384,
 
     .rgb_format         = MLC_RGBFMT_A8R8G8B8,
     .width              = 1024,
     .height             = 600,
-    .rgb_addr           = 0x7FDA8000,
+    .rgb_addr           = 0,
     .draw_rgb_overlay   = _draw_rgb_overlay,
 };
 
@@ -1516,6 +1515,8 @@ static struct platform_device backward_camera_device = {
         .platform_data	= &backward_camera_plat_data,
     }
 };
+
+extern void register_backward_camera(struct platform_device *device);
 #endif
 /*------------------------------------------------------------------------------
  * register board platform devices
@@ -1535,11 +1536,11 @@ void __init nxp_board_devs_register(void)
 #endif
 
 #if defined(CONFIG_MMC_DW)
+	#ifdef CONFIG_MMC_NXP_CH2
+	nxp_mmc_add_device(2, &_dwmci2_data);
+	#endif
 	#ifdef CONFIG_MMC_NXP_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
-	#endif
-    #ifdef CONFIG_MMC_NXP_CH2
-	nxp_mmc_add_device(2, &_dwmci2_data);
 	#endif
     //#ifdef CONFIG_MMC_NXP_CH1
 	//nxp_mmc_add_device(1, &_dwmci1_data);
@@ -1649,8 +1650,9 @@ void __init nxp_board_devs_register(void)
 #endif
 
 #if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
-    printk("plat: add device backward-camera\n");
-    platform_device_register(&backward_camera_device);
+    printk("plat: register device backward-camera platform device to fine-boot\n");
+    /*platform_device_register(&backward_camera_device);*/
+    register_backward_camera(&backward_camera_device);
 #endif
 
 #if defined(CONFIG_USB_HUB_USB2514)

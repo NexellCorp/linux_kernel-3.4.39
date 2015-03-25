@@ -564,6 +564,7 @@ source "drivers/misc/ti-st/Kconfig"
 source "drivers/misc/lis3lv02d/Kconfig"
 source "drivers/misc/carma/Kconfig"
 source "drivers/misc/altera-stapl/Kconfig"
+source "drivers/misc/coda960/Kconfig"
 
 config SLSIAP_BACKWARD_CAMERA
     bool "SLSIAP Fast Preview of Backward Camera"
