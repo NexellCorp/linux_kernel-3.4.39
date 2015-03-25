@@ -144,7 +144,6 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
  * Initialise the CPU possible map early - this describes the CPUs
  * which may be present or become present in the system.
  */
-
 void  __init smp_init_cpus(void)
 {
 	unsigned int i, ncores = NR_CPUS;

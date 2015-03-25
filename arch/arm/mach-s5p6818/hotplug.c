@@ -40,71 +40,58 @@
 
 extern volatile int pen_release;
 
-static inline void cpu_enter_lowpower(void)
-{
-    unsigned int v;
-
-    flush_cache_all();
-    asm volatile(
-    "   mcr p15, 0, %1, c7, c5, 0\n"
-    "   mcr p15, 0, %1, c7, c10, 4\n"
-    /*
-     * Turn off coherency
-     */
-    "   mrc p15, 0, %0, c1, c0, 1\n"
-    "   bic %0, %0, #0x20\n"
-    "   mcr p15, 0, %0, c1, c0, 1\n"
-    "   mrc p15, 0, %0, c1, c0, 0\n"
-    "   bic %0, %0, %2\n"
-    "   mcr p15, 0, %0, c1, c0, 0\n"
-      : "=&r" (v)
-      : "r" (0), "Ir" (CR_C)
-      : "cc");
-}
-
-static inline void cpu_enter_lowpower_a9(void)
-{
-	unsigned int v;
-
-	flush_cache_all();
-	asm volatile(
-	"	mcr	p15, 0, %1, c7, c5, 0\n"
-	"	mcr	p15, 0, %1, c7, c10, 4\n"
-	/*
-	 * Turn off coherency
-	 */
-	"	mrc	p15, 0, %0, c1, c0, 1\n"
-	"	bic	%0, %0, %3\n"
-	"	mcr	p15, 0, %0, c1, c0, 1\n"
-	"	mrc	p15, 0, %0, c1, c0, 0\n"
-	"	bic	%0, %0, %2\n"
-	"	mcr	p15, 0, %0, c1, c0, 0\n"
-	  : "=&r" (v)
-	  : "r" (0), "Ir" (CR_C), "Ir" (0x40)
-	  : "cc");
-}
-
-static inline void cpu_leave_lowpower(void)
-{
-    unsigned int v;
-
-    asm volatile(   "mrc    p15, 0, %0, c1, c0, 0\n"
-    "   orr %0, %0, %1\n"
-    "   mcr p15, 0, %0, c1, c0, 0\n"
-    "   mrc p15, 0, %0, c1, c0, 1\n"
-    "   orr %0, %0, #0x20\n"
-    "   mcr p15, 0, %0, c1, c0, 1\n"
-      : "=&r" (v)
-      : "Ir" (CR_C)
-      : "cc");
-}
-
 static void __cpuinit write_pen_release(int val)
 {
 	pen_release = val;
 	smp_wmb();
 	__cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
 	outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
+}
+
+static inline void cpu_enter_lowpower(void)
+{
+	unsigned int lv, mv;
+	flush_cache_all();
+
+	asm volatile(
+	"	mcr	p15, 0, %1, c7, c5, 0\n"
+	"	mcr	p15, 0, %1, c7, c10, 4\n"
+	/*
+	 * Turn off coherency(dcache off)
+	 */
+	"	mrc	p15, 0, %0, c1, c0, 0\n"
+	"	bic	%0, %0, %2\n"
+	"	mcr	p15, 0, %0, c1, c0, 0\n"
+	  : "=&r" (lv)
+	  : "r" (0), "Ir" (CR_C)
+	  : "cc");
+
+	asm volatile(
+	/*
+	 * Turn off smp
+	 */
+	"	mrrc	p15, 0, %0, %1, c15\n"
+	"	bic	%0, %0, #0x40\n"
+	"	mcrr	p15, 0, %0, %1, c15\n"
+	  : "=&r" (lv), "=&r" (mv)
+	  : "r" (0)
+	  : "cc");
+}
+
+static inline void cpu_leave_lowpower(void)
+{
+	unsigned int v;
+
+	asm volatile(
+	"	mrc	p15, 0, %0, c1, c0, 0\n"
+	"	orr	%0, %0, %1\n"
+	"	mcr	p15, 0, %0, c1, c0, 0\n"
+	"	mrc	p15, 0, %0, c1, c0, 1\n"
+	"	orr	%0, %0, #0x20\n"
+	"	mcr	p15, 0, %0, c1, c0, 1\n"
+	  : "=&r" (v)
+	  : "Ir" (CR_C)
+	  : "cc");
 }
 
 static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
@@ -118,10 +105,11 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
 		/*
 		 * here's the WFI
 		 */
-		asm(".word	0xe320f003\n"
-		    :
-		    :
-		    : "memory", "cc");
+		__asm__ __volatile(
+		"    wfi\n"
+		  :
+		  :
+		  : "memory", "cc");
 
 		if (pen_release == cpu_logical_map(cpu)) {
 			/*
@@ -146,6 +134,39 @@ int platform_cpu_kill(unsigned int cpu)
 	return 1;
 }
 
+static void *do_suspend[NR_CPUS-1] = { 0 };
+extern bool pm_suspend_enter;
+
+static inline void platform_cpu_lowpower(int cpu)
+{
+	void (*power_down)(ulong, ulong) = NULL;
+	int spurious = 0;
+
+	/*
+	 * enter WFI when poweroff or restart
+	 */
+	if (false == pm_suspend_enter) {
+		cpu_enter_lowpower();
+		platform_do_lowpower(cpu, &spurious);
+		halt();
+	}
+
+	/*
+	 * enter SRAM text when suspend
+	 */
+	if (NULL == do_suspend[cpu-1]) {
+		do_suspend[cpu-1] = __arm_ioremap_exec(0xffff0000, 0x10000, 0);
+		if (NULL == do_suspend[cpu-1])
+			printk("SMP: Fail, cpu.%d ioremap for suspend callee\n", cpu);
+	}
+	power_down = (void (*)(ulong, ulong))((ulong)do_suspend[cpu-1] + 0x220);
+
+	dmb();
+	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
+	nop(); nop(); nop();
+	dmb();
+}
+
 /*
  * platform-specific code to shutdown a CPU
  *
@@ -154,7 +175,10 @@ int platform_cpu_kill(unsigned int cpu)
 void platform_cpu_die(unsigned int cpu)
 {
 	int spurious = 0;
-	pr_debug("%s\n", __func__);
+
+#if !defined (CONFIG_S5P6818_PM_IDLE)
+	platform_cpu_lowpower(cpu);
+#endif
 
 	/*
 	 * we're ready for shutdown now, so do it
@@ -170,11 +194,6 @@ void platform_cpu_die(unsigned int cpu)
 
 	/* wakeup form idle */
 	write_pen_release(-1);
-
-	#if 0
-	if (spurious)
-		pr_warn("CPU%u: %u spurious wakeup calls\n", cpu, spurious);
-	#endif		
 }
 
 int platform_cpu_disable(unsigned int cpu)
