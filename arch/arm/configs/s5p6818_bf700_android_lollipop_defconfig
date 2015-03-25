@@ -475,7 +475,7 @@ CONFIG_ARM_FLUSH_CONSOLE_ON_RESTART=y
 # CONFIG_USE_OF is not set
 CONFIG_ZBOOT_ROM_TEXT=0
 CONFIG_ZBOOT_ROM_BSS=0
-CONFIG_CMDLINE="console=ttySAC0,115200n8 androidboot.hardware=bf700 androidboot.console=ttySAC0 androidboot.serialno=0123456789abcdef root=/dev/mmcblk0p4 rw rootfstype=ext4 rootwait init=/init quiet"
+CONFIG_CMDLINE="console=ttySAC0,115200n8 androidboot.hardware=bf700 androidboot.console=ttySAC0 androidboot.serialno=0123456789abcdef root=/dev/mmcblk0p4 rw rootfstype=ext4 rootwait init=/init lpj=1191936 quiet"
 CONFIG_CMDLINE_FROM_BOOTLOADER=y
 # CONFIG_CMDLINE_EXTEND is not set
 # CONFIG_CMDLINE_FORCE is not set
@@ -1564,8 +1564,6 @@ CONFIG_USE_SCALER_COMMAND_BUFFER=y
 CONFIG_VIDEO_NXP_OUT=y
 # CONFIG_NXP_OUT_RESOLUTION_CONVERTER is not set
 # CONFIG_NXP_OUT_HDMI is not set
-# CONFIG_NXP_HDMI_AUDIO_SPDIF is not set
-# CONFIG_NXP_HDMI_AUDIO_I2S is not set
 CONFIG_VIDEO_CAPTURE_DRIVERS=y
 # CONFIG_VIDEO_ADV_DEBUG is not set
 # CONFIG_VIDEO_FIXED_MINOR_RANGES is not set
@@ -1757,8 +1755,6 @@ CONFIG_NXP_DISPLAY_LVDS=y
 CONFIG_NXP_DISPLAY_LVDS_IN=0
 # CONFIG_NXP_DISPLAY_MIPI is not set
 # CONFIG_NXP_DISPLAY_HDMI is not set
-# CONFIG_NXP_DISPLAY_HDMI_AUDIO_SPDIF is not set
-# CONFIG_NXP_DISPLAY_HDMI_AUDIO_I2S is not set
 CONFIG_LOGO=y
 # CONFIG_LOGO_LINUX_MONO is not set
 # CONFIG_LOGO_LINUX_VGA16 is not set
