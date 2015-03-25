@@ -93,19 +93,19 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-//	{ 1400000, 1300000 },
-//	{ 1300000, 1300000 },
-	{ 1200000, 1200000, },
-	{ 1100000, 1200000, },
-	{ 1000000, 1100000, },
-	{  900000, 1100000, },
-	{  800000, 1100000, },
-	{  700000, 1000000, },
-	{  666000, 1000000, },
-	{  600000, 1000000, },
-	{  533000, 1000000, },
-	{  500000, 1000000, },
-	{  400000, 1000000, },
+//	{ 1600000, 1340000, },
+//	{ 1500000, 1340000, },
+	{ 1400000, 1240000, },
+	{ 1300000, 1180000, },
+	{ 1200000, 1140000, },
+	{ 1100000, 1100000, },
+	{ 1000000, 1060000, },
+	{  900000, 1040000, },
+	{  800000, 1000000, },
+	{  700000,  940000, },
+	{  600000,  940000, },
+	{  500000,  940000, },
+	{  400000,  940000, },
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
@@ -114,10 +114,6 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1200*1000,
-	.max_retention  =   20*1000,
-	.rest_cpufreq   =  400*1000,
-	.rest_retention =    1*1000,
 };
 
 static struct platform_device dfs_plat_device = {
@@ -1211,7 +1207,7 @@ static struct dw_mci_board _dwmci0_data = {
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(1),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
 	.init			= _dwmci0_init,
 	.get_ro         = _dwmci_get_ro,
 	.get_cd			= _dwmci0_get_cd,
@@ -1232,7 +1228,7 @@ static struct dw_mci_board _dwmci2_data = {
 			 	  	  MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23 |
 				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
 	//.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0x0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0x0) | DW_MMC_SAMPLE_DELAY(0x0) | DW_MMC_DRIVE_PHASE(3) | DW_MMC_SAMPLE_PHASE(2),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0x0) | DW_MMC_SAMPLE_DELAY(0x0) | DW_MMC_DRIVE_PHASE(3) | DW_MMC_SAMPLE_PHASE(1),
 
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
@@ -1518,6 +1514,36 @@ static struct platform_device backward_camera_device = {
 
 extern void register_backward_camera(struct platform_device *device);
 #endif
+
+/*------------------------------------------------------------------------------
+ * SLsiAP Thermal Unit
+ */
+#if defined(CONFIG_SENSORS_NXP_TMU)
+
+struct nxp_tmu_trigger tmu_triggers[] = {
+	{
+		.trig_degree	=  130,	// 160
+		.trig_duration	=  100,
+		.trig_cpufreq	=  800*1000,	/* Khz */
+	},
+};
+
+static struct nxp_tmu_platdata tmu_data = {
+	.channel  = 0,
+	.triggers = tmu_triggers,
+	.trigger_size = ARRAY_SIZE(tmu_triggers),
+	.poll_duration = 100,
+//	.limit_cpufreq  = 1400*1000,	/* Khz */
+};
+
+static struct platform_device tmu_device = {
+	.name			= "nxp-tmu",
+	.dev			= {
+		.platform_data	= &tmu_data,
+	}
+};
+#endif
+
 /*------------------------------------------------------------------------------
  * register board platform devices
  */
@@ -1528,6 +1554,11 @@ void __init nxp_board_devs_register(void)
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 	printk("plat: add dynamic frequency (pll.%d)\n", dfs_plat_data.pll_dev);
 	platform_device_register(&dfs_plat_device);
+#endif
+
+#if defined(CONFIG_SENSORS_NXP_TMU)
+	printk("plat: add device TMU\n");
+	platform_device_register(&tmu_device);
 #endif
 
 #if defined (CONFIG_FB_NXP)
