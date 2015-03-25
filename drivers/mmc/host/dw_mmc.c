@@ -39,6 +39,8 @@
 #include "dw_mmc.h"
 #include "dw_mmc_dbg.h"
 
+#include <mach/platform.h>
+
 //#define	MMC_RESUME_WORK_QUEUE
 
 /* Common flag combinations */
@@ -55,6 +57,10 @@
 #define DW_MCI_HW_TIMEOUT		500	// ms
 #define DW_MCI_DATA_OVER_WAIT		1000	// us
 
+#define DW_MCI_FIFO_STATUS_MASK 0x3ffe0000	
+
+#define DW_MCI_FIFO_CHECK_WARN(host) if(mci_readl(host,STATUS) & DW_MCI_FIFO_STATUS_MASK) \
+								dev_warn(&host->dev,"fifo is not empty");
 #ifdef CONFIG_MMC_DW_IDMAC
 struct idmac_desc {
 	u32		des0;	/* Control Descriptor */
@@ -352,22 +358,6 @@ static void dw_mci_start_command(struct dw_mci *host,
 
 static void send_stop_cmd(struct dw_mci *host, struct mmc_data *data)
 {
-#if 0
-	/* wait for end of data over */
-	if (host->data_status & SDMMC_INT_DATA_OVER) {
-		int cnt = DW_MCI_DATA_OVER_WAIT;
-		u32 status = mci_readl(host, RINTSTS);
-		while (cnt-- > 0) {
-			status = (mci_readl(host, RINTSTS) & SDMMC_INT_DATA_OVER);
-			if (!status)
-				break;
-			udelay(1);
-		}
-
-		if (status)
-			dev_warn(&host->dev, "data data over (status=0x%08x)\n", status);
-	}
-#endif
 	dw_mci_start_command(host, data->stop, host->stop_cmdr);
 }
 
@@ -843,6 +833,12 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, int force)
 	}
 
 	/* Set the current slot bus width */
+#ifdef CONFIG_ARCH_S5P6818	
+	if(slot->ctype == SDMMC_CTYPE_8BIT)
+	{
+		NX_TIEOFF_Set(TIEOFFINDEX_OF_MMC_8BIT , 1 );
+	}
+#endif
 	mci_writel(host, CTYPE, (slot->ctype << slot->id));
 }
 
@@ -1543,14 +1539,17 @@ static void dw_mci_tasklet_func(unsigned long priv)
 			}
 
 			if (host->mrq->sbc && !data->error) {
+				DW_MCI_FIFO_CHECK_WARN(host);
 				data->stop->error = 0;
 				dw_mci_request_end(host, host->mrq);
 				goto unlock;
 			}
 
 			prev_state = state = STATE_SENDING_STOP;
-			if (!data->error)
+			if (!data->error) {
+				DW_MCI_FIFO_CHECK_WARN(host);
 				send_stop_cmd(host, data);
+			}
 			/* fall through */
 
 		case STATE_SENDING_STOP:
@@ -2067,9 +2066,7 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 				if (host->sg != NULL)
 					dw_mci_read_data_pio(host);
 			}
-#if !defined (CONFIG_MMC_DW_IDMAC)
 			set_bit(EVENT_DATA_COMPLETE, &host->pending_events);
-#endif
 			tasklet_schedule(&host->tasklet);
 		}
 
@@ -2125,7 +2122,6 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 	if (pending & (SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI)) {
 		mci_writel(host, IDSTS, SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI);
 		mci_writel(host, IDSTS, SDMMC_IDMAC_INT_NI);
-		set_bit(EVENT_DATA_COMPLETE, &host->pending_events);
 		host->dma_ops->complete(host);
 	}
 #endif
