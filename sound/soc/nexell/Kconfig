@@ -61,7 +61,7 @@ config SND_CODEC_RT5631
 
 config SND_CODEC_RT5631_FDONE
 	tristate "rt5631 I2S audio codec for FDONE."
-	depends on SND_NXP_I2S && PLAT_S5P6818_FDONE
+	depends on SND_NXP_I2S
 	select SND_SOC_RT5631_FDONE
 
 config SND_CODEC_ALC5623
@@ -71,7 +71,7 @@ config SND_CODEC_ALC5623
 
 config SND_CODEC_RT5623_FDONE
 	tristate "RT5623 I2S audio codec for FDONE."
-	depends on SND_NXP_I2S && PLAT_S5P6818_FDONE
+	depends on SND_NXP_I2S
 	select SND_SOC_RT5623_FDONE
 
 config SND_CODEC_ALC5633
