@@ -38,6 +38,6 @@ static int __init alsa_sound_last_init(void)
 	return 0;
 }
 
-#ifndef CONFIG_PLAT_S5P6818_FDONE
+#if !defined(CONFIG_PLAT_S5P6818_FDONE) && !defined(CONFIG_PLAT_S5P6818_BF700)
 late_initcall_sync(alsa_sound_last_init);
 #endif

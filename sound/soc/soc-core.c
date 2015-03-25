@@ -1619,7 +1619,7 @@ card_probe_error:
 }
 
 // psw0523 test
-#ifdef CONFIG_PLAT_S5P6818_FDONE
+#if defined(CONFIG_PLAT_S5P6818_FDONE) || defined(CONFIG_PLAT_S5P6818_BF700)
 #include <linux/kthread.h>
 static int _card_instantiate(void *data)
 {
@@ -1638,7 +1638,7 @@ static int _card_instantiate(void *data)
 static void snd_soc_instantiate_cards(void)
 {
     // psw0523 fix
-#ifndef CONFIG_PLAT_S5P6818_FDONE
+#if !defined(CONFIG_PLAT_S5P6818_FDONE) && !defined(CONFIG_PLAT_S5P6818_BF700)
 	struct snd_soc_card *card;
 	list_for_each_entry(card, &card_list, list)
 		snd_soc_instantiate_card(card);

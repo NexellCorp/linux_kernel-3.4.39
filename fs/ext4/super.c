@@ -3579,7 +3579,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
 
 	sb->s_root = NULL;
 
-#ifdef CONFIG_PLAT_S5P6818_FDONE
+#if defined(CONFIG_PLAT_S5P6818_FDONE) || defined(CONFIG_PLAT_S5P6818_BF700)
     needs_recovery = es->s_last_orphan != 0;
 #else
 	needs_recovery = (es->s_last_orphan != 0 ||
