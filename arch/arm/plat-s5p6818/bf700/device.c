@@ -337,29 +337,6 @@ static struct platform_device key_plat_device = {
 };
 #endif	/* CONFIG_KEYBOARD_NXP_KEY || CONFIG_KEYBOARD_NXP_KEY_MODULE */
 
-/*------------------------------------------------------------------------------
- * ASoC Codec platform device
- */
-#if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)
-static struct platform_device spdif_transciever = {
-	.name	= "spdif-dit",
-	.id		= -1,
-};
-
-struct nxp_snd_dai_plat_data spdif_trans_dai_data = {
-	.sample_rate = 48000,
-	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
-};
-
-static struct platform_device spdif_trans_dai = {
-	.name	= "spdif-transciever",
-	.id		= -1,
-	.dev	= {
-		.platform_data	= &spdif_trans_dai_data,
-	}
-};
-#endif
-
 #if defined(CONFIG_SND_CODEC_RT5631) || defined(CONFIG_SND_CODEC_RT5631_MODULE)
 #include <linux/i2c.h>
 
