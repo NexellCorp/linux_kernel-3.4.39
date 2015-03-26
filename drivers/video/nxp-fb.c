@@ -1167,6 +1167,9 @@ static int nxp_fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *inf
 #define NXPFB_GET_FB_FD _IOWR('N', 101, __u32)
 #define NXPFB_SET_FB_FD _IOW('N', 102, __u32)
 #define NXPFB_GET_ACTIVE _IOR('N', 103, __u32)
+#if defined(CONFIG_SLSIAP_FINEBOOT)
+extern bool is_fine_boot_animation_run(void);
+#endif
 #endif
 
 static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
@@ -1267,6 +1270,9 @@ static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
             } else {
                 if (dev->fb_pan_phys != d->context[i].dma_addr) {
                     dev->fb_pan_phys = d->context[i].dma_addr;
+#if defined(CONFIG_SLSIAP_FINEBOOT)
+                    if (!is_fine_boot_animation_run())
+#endif
                     nxp_fb_update_buffer(info, 1);
                 }
             }
