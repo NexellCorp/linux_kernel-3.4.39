@@ -21,7 +21,13 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-#define	USB_HUB_RESET_PIN				(PAD_GPIO_B+30)
+#if defined (CONFIG_PLAT_S5P6818_FDONE)
+#define	USB_HUB_RESET_PIN			(PAD_GPIO_B+30)
+#elif defined (CONFIG_PLAT_S5P6818_BF700)
+#define	USB_HUB_RESET_PIN			(PAD_GPIO_C+27)
+#else
+#define	USB_HUB_RESET_PIN			(PAD_GPIO_C+27)
+#endif
 #define	USB_HUB_PORT1_PWR_EN		(PAD_GPIO_A+16)
 #define	USB_HUB_PORT2_PWR_EN		(PAD_GPIO_A+15)
 #define	USB_HUB_PORT3_PWR_EN		(PAD_GPIO_A+17)
