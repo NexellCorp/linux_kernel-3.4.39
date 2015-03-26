@@ -271,6 +271,7 @@ OUT:
     return 0;
 }
 
+#define DISP_MODULE 0
 static int _anim_thread(void *arg)
 {
     struct fine_boot_context *me = (struct fine_boot_context *)arg;
@@ -282,17 +283,17 @@ static int _anim_thread(void *arg)
     schedule_timeout_interruptible(HZ/5);
 
     printk("%s: %dx%d, buffer 0x%x\n", __func__, me->img_width, me->img_height, me->dma_addr);
-    nxp_soc_disp_rgb_set_format(0, CFG_DISP_PRI_SCREEN_LAYER, NX_MLC_RGBFMT_X8R8G8B8, me->img_width, me->img_height, 4);
+    nxp_soc_disp_rgb_set_format(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, NX_MLC_RGBFMT_X8R8G8B8, me->img_width, me->img_height, 4);
     while(1) {
         splash = &me->splash_info[count++%me->img_count];
         address = me->dma_addr + splash->ulImageAddr;
-        nxp_soc_disp_rgb_set_address(0, CFG_DISP_PRI_SCREEN_LAYER, address, 4, me->img_width * 4, 1);
+        nxp_soc_disp_rgb_set_address(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, address, 4, me->img_width * 4, 1);
         schedule_timeout_interruptible(HZ/100);
         if (kthread_should_stop()) {
             break;
         }
     }
-    nxp_soc_disp_rgb_set_format(0, CFG_DISP_PRI_SCREEN_LAYER, NX_MLC_RGBFMT_A8R8G8B8, me->img_width, me->img_height, 4);
+    nxp_soc_disp_rgb_set_format(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, NX_MLC_RGBFMT_A8R8G8B8, me->img_width, me->img_height, 4);
 
     _free_ion_buffer(me);
     return 0;
