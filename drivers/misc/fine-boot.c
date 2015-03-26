@@ -278,6 +278,7 @@ static int _anim_thread(void *arg)
     int count = 0;
     dma_addr_t address;
     SPLASH_IMAGE_INFO *splash;
+    bool first = true;
 
     // wait 200ms
     schedule_timeout_interruptible(HZ/5);
@@ -288,6 +289,10 @@ static int _anim_thread(void *arg)
         splash = &me->splash_info[count++%me->img_count];
         address = me->dma_addr + splash->ulImageAddr;
         nxp_soc_disp_rgb_set_address(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, address, 4, me->img_width * 4, 1);
+        if (first) {
+            nxp_soc_disp_device_enable_all(DISP_MODULE, 1);
+            first = false;
+        }
         schedule_timeout_interruptible(HZ/100);
         if (kthread_should_stop()) {
             break;

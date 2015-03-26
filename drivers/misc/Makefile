@@ -59,4 +59,4 @@ obj-$(CONFIG_STMPE811_ADC)	+= stmpe811-adc.o
 obj-$(CONFIG_AUDIENCE_ES305)	+= es305.o
 obj-$(CONFIG_SLSIAP_BACKWARD_CAMERA) += backward-camera.o
 obj-y				+= coda960/
-obj-y				+= fine-boot.o
+obj-$(CONFIG_SLSIAP_FINEBOOT)   += fine-boot.o
