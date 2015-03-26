@@ -416,7 +416,11 @@ static void _mlc_set(void)
 
 static int tvout_enable(struct disp_process_dev *pdev, int enable)
 {
-    printk("%s entered\n", __func__);
+    printk("%s entered, enable %d\n", __func__, enable);
+
+    if (!enable)
+        return 0;
+
     _release_reset();
     _set_hdmi_clk_27MHz();
     _dpc_clk_enable();
