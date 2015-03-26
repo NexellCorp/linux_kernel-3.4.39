@@ -1512,7 +1512,9 @@ static struct platform_device backward_camera_device = {
     }
 };
 
+#ifdef CONFIG_SLSIAP_FINEBOOT
 extern void register_backward_camera(struct platform_device *device);
+#endif
 #endif
 
 /*------------------------------------------------------------------------------
@@ -1682,8 +1684,11 @@ void __init nxp_board_devs_register(void)
 
 #if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
     printk("plat: register device backward-camera platform device to fine-boot\n");
-    /*platform_device_register(&backward_camera_device);*/
+#ifdef CONFIG_SLSIAP_FINEBOOT
     register_backward_camera(&backward_camera_device);
+#else
+    platform_device_register(&backward_camera_device);
+#endif
 #endif
 
 #if defined(CONFIG_USB_HUB_USB2514)
