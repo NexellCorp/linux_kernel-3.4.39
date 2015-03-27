@@ -1464,7 +1464,7 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .backgear_irq_num   = IRQ_ALIVE_4,
     .backgear_gpio_num  = CFG_BACKWARD_GEAR,
     .active_high        = false,
-    .vip_module_num     = 0,
+    .vip_module_num     = 2,
     .mlc_module_num     = 0,
 
     // sensor
