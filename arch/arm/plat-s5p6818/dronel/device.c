@@ -93,8 +93,8 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-	{ 1600000, 1340000, },
-	{ 1500000, 1280000, },
+	//{ 1600000, 1340000, },
+	//{ 1500000, 1280000, },
 	{ 1400000, 1240000, },
 	{ 1300000, 1180000, },
 	{ 1200000, 1140000, },
@@ -999,6 +999,11 @@ static struct dw_mci_board _dwmci0_data = {
 	.get_cd			= _dwmci0_get_cd,
 	.ext_cd_init	= _dwmci_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH0_USE_DMA)
+	.mode			= DMA_MODE,
+#else	
+	.mode 			= PIO_MODE,
+#endif
 };
 #endif
 
@@ -1011,6 +1016,11 @@ static struct dw_mci_board _dwmci1_data = {
 	.cd_type 		= DW_MCI_CD_NONE,
 	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(0),
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
+	.mode			= DMA_MODE,
+#else	
+	.mode 			= PIO_MODE,
+#endif
 };
 #endif
 
@@ -1031,6 +1041,11 @@ static struct dw_mci_board _dwmci2_data = {
 	.detect_delay_ms= 200,
 	.sdr_timing		= 0x01010001,
 	.ddr_timing		= 0x03030002,
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
+	.mode			= DMA_MODE, 
+#else	
+	.mode 			= PIO_MODE,
+#endif
 };
 #endif
 
