@@ -193,7 +193,7 @@ static void _vip_run(int module)
             me->plat_data->cr_addr);
 #endif
     NX_VIP_SetVIPEnable(module, CTRUE, CTRUE, CTRUE, CFALSE);
-    _vip_dump_register(module);
+    /*_vip_dump_register(module);*/
 }
 
 static void _vip_stop(int module)
