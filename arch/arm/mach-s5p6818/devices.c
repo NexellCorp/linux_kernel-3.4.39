@@ -1301,6 +1301,11 @@ void __init nxp_cpu_devs_register(void)
 	platform_device_register(&resc_device);
 #endif
 
+#if defined(CONFIG_NXP_DISPLAY_TVOUT)
+	printk("mach: add device tvout \n");
+	platform_device_register(&tvout_device);
+#endif
+
 #if defined(CONFIG_SERIAL_NXP)
     printk("mach: add device serial (array:%d)\n", ARRAY_SIZE(uart_devices));
     platform_add_devices(uart_devices, ARRAY_SIZE(uart_devices));

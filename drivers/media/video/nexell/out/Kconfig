@@ -24,4 +24,12 @@ config NXP_HDMI_CEC
     ---help---
       Say y here to enable hdmi cec module
 
+config NXP_OUT_TVOUT
+    bool "Enable tvout"
+    select NXP_DISPLAY_TVOUT
+    depends on ARCH_S5P6818
+    default n
+    ---help---
+      Say y here to enable v4l2 tvout
+
 endif

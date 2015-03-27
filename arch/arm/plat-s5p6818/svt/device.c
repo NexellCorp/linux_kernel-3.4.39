@@ -93,22 +93,24 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-//	{ 1400000, },
-//	{ 1300000, },
-	{ 1200000, },
-	{ 1100000, },
-	{ 1000000, },
-	{  900000, },
-	{  800000, },
-	{  700000, },
-	{  600000, },
-	{  500000, },
-	{  400000, },
+//     { 1600000, 1340000, },
+//     { 1500000, 1280000, },
+       { 1400000, 1240000, },
+       { 1300000, 1180000, },
+       { 1200000, 1140000, },
+       { 1100000, 1100000, },
+       { 1000000, 1060000, },
+       {  900000, 1040000, },
+       {  800000, 1000000, },
+       {  700000,  940000, },
+       {  600000,  940000, },
+       {  500000,  940000, },
+       {  400000,  940000, },
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
-//	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
+	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
@@ -128,88 +130,31 @@ static struct platform_device dfs_plat_device = {
 #endif
 
 /*------------------------------------------------------------------------------
- * ADC TMU
+ * SLsiAP Thermal Unit
  */
-#if defined(CONFIG_SENSORS_NXP_ADC_TEMP)
-#if defined (CONFIG_ARM_NXP_CPUFREQ)
-#define	SYS_DVFS_SCALING_PATH 	"/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq"
 
-static int set_max_scale(const char *file, long new)
-{
-	mm_segment_t old_fs;
-	char buf[32];
-	long max = 0;
-
-	int fd = sys_open(file, O_RDWR, 0);
-   	old_fs = get_fs();
-	if (0 > fd)
-		return -EINVAL;
-
-	set_fs(KERNEL_DS);
-	sys_read(fd, (void*)buf, sizeof(buf));
-
-	max = simple_strtoul(buf, NULL, 10);
-	if (max != new) {
-		sprintf(buf, "%ld", new);
-		sys_write(fd, (void*)buf, sizeof(buf));
-        printk("********************** [%s] ***************************\n", buf);
-	}
-
-	set_fs(old_fs);
-	sys_close(fd);
-	return 0;
-}
-
-#define	FREQ_TEMP_OVER			45	// 85: 45, 70: 43, 40
-#define	FREQ_TEMP_RELAX			43	//	70, 39
-#define	FREQ_MAX_DN_KHZ			400000
-#define	FREQ_MAX_UP_KHZ			1400000
-
-static long relax_time = 0;
-static long scale_down = 0, scale_up   = 1;
-
-static void adc_tmp_cb(int ch, int value, int temp, bool run)
-{
-    int ret = 0;
-	if (temp >= FREQ_TEMP_OVER && scale_up) {
-		printk("<FRQ DN: temp %d, %d>\n", temp, FREQ_MAX_DN_KHZ);
-	    ret = set_max_scale(SYS_DVFS_SCALING_PATH, FREQ_MAX_DN_KHZ);
-	    if (0 > ret)
-            return;
-		relax_time = ktime_to_ms(ktime_get());
-		scale_down = 1; scale_up = 0;
-    }
-
-	if (FREQ_TEMP_RELAX >= temp && scale_down) {
-		if (2000 > (ktime_to_ms(ktime_get()) - relax_time))
-			return;
-		printk("<FRQ UP: temp %d, %d>\n", temp, FREQ_MAX_UP_KHZ);
-		ret = set_max_scale(SYS_DVFS_SCALING_PATH, FREQ_MAX_UP_KHZ);
-	    if (0 > ret)
-            return;
-		relax_time = 0; scale_down = 0; scale_up = 1;
-    }
-
-	if (false == run) {
-		printk("<FRQ Restore: %d>\n");
-		set_max_scale(SYS_DVFS_SCALING_PATH, FREQ_MAX_UP_KHZ);
-	}
-}
-#endif
-
-static struct nxp_adc_tmp_platdata adc_tmp_data = {
-	.channel = 0,
-	.tmp_offset = 13,
-#if defined (CONFIG_ARM_NXP_CPUFREQ)
-	.callback = adc_tmp_cb,
-#endif
+#if defined(CONFIG_SENSORS_NXP_TMU)
+struct nxp_tmu_trigger tmu_triggers[] = {
+       {
+               .trig_degree    =  130, // 160
+               .trig_duration  =  100,
+               .trig_cpufreq   =  800*1000,    /* Khz */
+       },
 };
 
-static struct platform_device tmu_plat_device = {
-	.name			= "nxp-adc-tmp",
-	.dev			= {
-		.platform_data	= &adc_tmp_data,
-	}
+static struct nxp_tmu_platdata tmu_data = {
+       .channel  = 0,
+       .triggers = tmu_triggers,
+       .trigger_size = ARRAY_SIZE(tmu_triggers),
+       .poll_duration = 100,
+       .limit_cpufreq  = 1400*1000,    /* Khz */
+};
+
+static struct platform_device tmu_device = {
+       .name                   = "nxp-tmu",
+			 .dev			= {
+					.platform_data  = &tmu_data,
+				}
 };
 #endif
 
@@ -2054,9 +1999,9 @@ void __init nxp_board_devs_register(void)
 	platform_device_register(&dfs_plat_device);
 #endif
 
-#if defined(CONFIG_SENSORS_NXP_ADC_TEMP)
-	printk("plat: add device ADC TMU\n");
-	platform_device_register(&tmu_plat_device);
+#if defined(CONFIG_SENSORS_NXP_TMU)
+	printk("plat: add device TMU\n");
+	platform_device_register(&tmu_device);
 #endif
 
 #if defined (CONFIG_FB_NXP)
