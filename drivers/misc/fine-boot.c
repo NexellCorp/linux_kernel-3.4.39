@@ -271,6 +271,11 @@ OUT:
     return 0;
 }
 
+#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+extern bool is_backward_camera_on(void);
+extern void backward_camera_external_on(void);
+#endif
+
 #define DISP_MODULE 0
 #define SECOND_STAGE_START_FRAME    8
 #define SECOND_STAGE_FRAME_COUNT    12
@@ -295,6 +300,12 @@ static int _anim_thread(void *arg)
         nxp_soc_disp_rgb_set_address(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, address, 4, me->img_width * 4, 1);
         if (first) {
             nxp_soc_disp_device_enable_all(DISP_MODULE, 1);
+#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+            if (is_backward_camera_on()) {
+                printk("%s: call backward_camera_external_on()\n", __func__);
+                backward_camera_external_on();
+            }
+#endif
             nxp_soc_gpio_set_out_value(PAD_GPIO_D + 1, 1);
             first = false;
         }
