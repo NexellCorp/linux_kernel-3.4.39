@@ -53,7 +53,9 @@
 #include "u_serial.c"
 #include "f_acm.c"
 #include "f_adb.c"
+#ifndef CONFIG_PLAT_S5P6818_BF700
 #include "f_mtp.c"
+#endif
 #include "f_accessory.c"
 #define USB_ETH_RNDIS y
 #include "f_rndis.c"
@@ -552,6 +554,7 @@ static struct android_usb_function acm_function = {
 };
 
 
+#ifndef CONFIG_PLAT_S5P6818_BF700
 static int
 mtp_function_init(struct android_usb_function *f,
 		struct usb_composite_dev *cdev)
@@ -613,6 +616,7 @@ static struct android_usb_function ptp_function = {
 	.cleanup	= ptp_function_cleanup,
 	.bind_config	= ptp_function_bind_config,
 };
+#endif
 
 
 struct rndis_function_config {
@@ -992,8 +996,10 @@ static struct android_usb_function *supported_functions[] = {
 #endif
 	&adb_function,
 	&acm_function,
+#ifndef CONFIG_PLAT_S5P6818_BF700
 	&mtp_function,
 	&ptp_function,
+#endif
 	&rndis_function,
 	&mass_storage_function,
 	&accessory_function,
