@@ -400,7 +400,7 @@ static int gpio_set_type_irq(struct irq_data *d, unsigned int type)
 	/* gpio alt : gpio mode for irq */
 	reg  = (unsigned int)(base + GPIO_ALT_MODE + (bit/16) * 4);
 	val  = readl(reg) & ~(3<<((bit&0xf) * 2));
-	alt  = gpio_alt_no[(d->irq-64)/32][bit];
+	alt  = gpio_alt_no[(d->irq-VIO_IRQ_BASE)/32][bit];
 	val |= alt << ((bit&0xf) * 2);
 	pr_debug("reg=0x%08x, val=0x%08x\n", reg, val);
 	writel(val, reg);
