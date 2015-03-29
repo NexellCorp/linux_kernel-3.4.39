@@ -501,9 +501,9 @@ void __init mount_root(void)
 /*
  * Prepare the namespace - decide what/where to mount, load ramdisks, etc.
  */
-// psw0523 fine-boot
-extern void start_fine_boot(void);
+#ifdef CONFIG_SLSIAP_FINEBOOT
 extern void start_fine_load(void);
+#endif
 void __init prepare_namespace(void)
 {
 	int is_floppy;
@@ -557,8 +557,9 @@ void __init prepare_namespace(void)
 
 	mount_root();
 
-    // psw0523 fine-boot
+#ifdef CONFIG_SLSIAP_FINEBOOT
     start_fine_load();
+#endif
     /*printk("%s: %d\n", __func__, __LINE__);*/
 out:
 	devtmpfs_mount("dev");

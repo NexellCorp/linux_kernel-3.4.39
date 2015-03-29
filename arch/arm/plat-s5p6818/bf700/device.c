@@ -93,8 +93,8 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-//	{ 1600000, 1340000, },
-//	{ 1500000, 1340000, },
+	{ 1600000, 1340000, },
+	{ 1500000, 1280000, },
 	{ 1400000, 1240000, },
 	{ 1300000, 1180000, },
 	{ 1200000, 1140000, },
@@ -1207,7 +1207,7 @@ static struct dw_mci_board _dwmci0_data = {
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 	.init			= _dwmci0_init,
 	.get_ro         = _dwmci_get_ro,
 	.get_cd			= _dwmci0_get_cd,
@@ -1464,7 +1464,7 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .backgear_irq_num   = IRQ_ALIVE_4,
     .backgear_gpio_num  = CFG_BACKWARD_GEAR,
     .active_high        = false,
-    .vip_module_num     = 0,
+    .vip_module_num     = 2,
     .mlc_module_num     = 0,
 
     // sensor
@@ -1512,7 +1512,9 @@ static struct platform_device backward_camera_device = {
     }
 };
 
+#ifdef CONFIG_SLSIAP_FINEBOOT
 extern void register_backward_camera(struct platform_device *device);
+#endif
 #endif
 
 /*------------------------------------------------------------------------------
@@ -1522,7 +1524,7 @@ extern void register_backward_camera(struct platform_device *device);
 
 struct nxp_tmu_trigger tmu_triggers[] = {
 	{
-		.trig_degree	=  130,	// 160
+		.trig_degree	=  120,	// 160
 		.trig_duration	=  100,
 		.trig_cpufreq	=  800*1000,	/* Khz */
 	},
@@ -1682,8 +1684,11 @@ void __init nxp_board_devs_register(void)
 
 #if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
     printk("plat: register device backward-camera platform device to fine-boot\n");
-    /*platform_device_register(&backward_camera_device);*/
+#ifdef CONFIG_SLSIAP_FINEBOOT
     register_backward_camera(&backward_camera_device);
+#else
+    platform_device_register(&backward_camera_device);
+#endif
 #endif
 
 #if defined(CONFIG_USB_HUB_USB2514)

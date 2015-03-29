@@ -110,8 +110,10 @@ _vr_osk_errcode_t _vr_osk_device_data_get(struct _vr_osk_device_data *data)
 						{
 							is_fb_used[fb_num] = 1;
 							temp_fb_start[fb_num] = info->fix.smem_start;
-							temp_fb_size[fb_num] = (info->var.yres_virtual/info->var.yres) * info->fix.smem_len;
-						}	
+                            // psw0523 fix
+							/*temp_fb_size[fb_num] = (info->var.yres_virtual/info->var.yres) * info->fix.smem_len;*/
+							temp_fb_size[fb_num] = ALIGN(info->fix.smem_len, PAGE_SIZE);
+						}
 					}
 				}
 				if(is_fb_used[0] && !is_fb_used[1])

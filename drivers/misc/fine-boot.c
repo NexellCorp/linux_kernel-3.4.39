@@ -271,28 +271,67 @@ OUT:
     return 0;
 }
 
+#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+extern bool is_backward_camera_on(void);
+extern void backward_camera_external_on(void);
+#endif
+
+#define DISP_MODULE 0
+#define SECOND_STAGE_START_FRAME    8
+#define SECOND_STAGE_FRAME_COUNT    12
 static int _anim_thread(void *arg)
 {
     struct fine_boot_context *me = (struct fine_boot_context *)arg;
     int count = 0;
     dma_addr_t address;
     SPLASH_IMAGE_INFO *splash;
+    bool first = true;
+    int loop_count = 0;
 
     // wait 200ms
     schedule_timeout_interruptible(HZ/5);
 
     printk("%s: %dx%d, buffer 0x%x\n", __func__, me->img_width, me->img_height, me->dma_addr);
-    nxp_soc_disp_rgb_set_format(0, CFG_DISP_PRI_SCREEN_LAYER, NX_MLC_RGBFMT_X8R8G8B8, me->img_width, me->img_height, 4);
-    while(1) {
+    nxp_soc_disp_rgb_set_format(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, NX_MLC_RGBFMT_X8R8G8B8, me->img_width, me->img_height, 4);
+    while(loop_count < me->img_count) {
+    /*while(1) {*/
         splash = &me->splash_info[count++%me->img_count];
         address = me->dma_addr + splash->ulImageAddr;
-        nxp_soc_disp_rgb_set_address(0, CFG_DISP_PRI_SCREEN_LAYER, address, 4, me->img_width * 4, 1);
-        schedule_timeout_interruptible(HZ/100);
+        nxp_soc_disp_rgb_set_address(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, address, 4, me->img_width * 4, 1);
+        if (first) {
+            nxp_soc_disp_device_enable_all(DISP_MODULE, 1);
+#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+            if (is_backward_camera_on()) {
+                printk("%s: call backward_camera_external_on()\n", __func__);
+                backward_camera_external_on();
+            }
+#endif
+            nxp_soc_gpio_set_out_value(PAD_GPIO_D + 1, 1);
+            first = false;
+        }
+        schedule_timeout_interruptible(HZ/30);
+        if (kthread_should_stop()) {
+            goto OUT_ANIM;
+        }
+        loop_count++;
+    }
+
+#if 1
+    count = 0;
+    while (1) {
+        loop_count = me->img_count - SECOND_STAGE_START_FRAME;
+        splash = &me->splash_info[SECOND_STAGE_START_FRAME + (count++%loop_count)];
+        address = me->dma_addr + splash->ulImageAddr;
+        nxp_soc_disp_rgb_set_address(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, address, 4, me->img_width * 4, 1);
+        schedule_timeout_interruptible(HZ/30);
         if (kthread_should_stop()) {
             break;
         }
     }
-    nxp_soc_disp_rgb_set_format(0, CFG_DISP_PRI_SCREEN_LAYER, NX_MLC_RGBFMT_A8R8G8B8, me->img_width, me->img_height, 4);
+#endif
+
+OUT_ANIM:
+    nxp_soc_disp_rgb_set_format(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, NX_MLC_RGBFMT_A8R8G8B8, me->img_width, me->img_height, 4);
 
     _free_ion_buffer(me);
     return 0;
@@ -348,10 +387,19 @@ void register_backward_camera(struct platform_device *device)
     me->camera = device;
 }
 
+bool is_fine_boot_animation_run(void)
+{
+    struct fine_boot_context *me = &_context;
+    if (me->anim_task)
+        return true;
+    return false;
+}
+
 EXPORT_SYMBOL(start_fine_load);
 EXPORT_SYMBOL(start_fine_animation);
 EXPORT_SYMBOL(stop_fine_boot);
 EXPORT_SYMBOL(register_backward_camera);
+EXPORT_SYMBOL(is_fine_boot_animation_run);
 
 static ssize_t _stop_boot_animation(struct device *pdev,
         struct device_attribute *attr, const char *buf, size_t n)

@@ -46,6 +46,8 @@ static struct nxp_backward_camera_context {
 
     /* for remove */
     struct platform_device *my_device;
+
+    bool is_on;
 } _context;
 
 static void _vip_dump_register(int module)
@@ -193,7 +195,7 @@ static void _vip_run(int module)
             me->plat_data->cr_addr);
 #endif
     NX_VIP_SetVIPEnable(module, CTRUE, CTRUE, CTRUE, CFALSE);
-    _vip_dump_register(module);
+    /*_vip_dump_register(module);*/
 }
 
 static void _vip_stop(int module)
@@ -344,6 +346,7 @@ static void _turn_on(struct nxp_backward_camera_context *me)
         _mlc_video_run(me->plat_data->mlc_module_num);
         _mlc_overlay_run(me->plat_data->mlc_module_num);
     }
+    me->is_on = true;
 }
 
 static void _turn_off(struct nxp_backward_camera_context *me)
@@ -352,6 +355,7 @@ static void _turn_off(struct nxp_backward_camera_context *me)
     _mlc_overlay_stop(me->plat_data->mlc_module_num);
     _mlc_video_stop(me->plat_data->mlc_module_num);
     /*_vip_stop(me->plat_data->vip_module_num);*/
+    me->is_on = false;
 }
 
 static inline bool _is_backgear_on(struct nxp_backward_camera_platform_data *pdata)
@@ -844,6 +848,22 @@ static struct platform_driver backward_camera_driver = {
         .pm    = NXP_BACKWARD_CAMERA_PMOPS,
     },
 };
+
+bool is_backward_camera_on(void)
+{
+    struct nxp_backward_camera_context *me = &_context;
+    return me->is_on;
+}
+
+void backward_camera_external_on(void)
+{
+    struct nxp_backward_camera_context *me = &_context;
+    me->is_first = true;
+    _turn_on(me);
+}
+
+EXPORT_SYMBOL(is_backward_camera_on);
+EXPORT_SYMBOL(backward_camera_external_on);
 
 static int __init backward_camera_init(void)
 {
