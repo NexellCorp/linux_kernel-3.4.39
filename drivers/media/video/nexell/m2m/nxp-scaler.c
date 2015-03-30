@@ -193,7 +193,7 @@ static int _hw_init(struct nxp_scaler *me)
 
     #if defined(CONFIG_ARCH_S5P4418)
     NX_RSTCON_SetnRST(NX_SCALER_GetResetNumber(0), RSTCON_nENABLE);
-    #elif defined(CONFIG_ARCH_S5p6818)
+    #elif defined(CONFIG_ARCH_S5P6818)
     NX_RSTCON_SetRST(NX_SCALER_GetResetNumber(0), RSTCON_NEGATE);
     #endif
 

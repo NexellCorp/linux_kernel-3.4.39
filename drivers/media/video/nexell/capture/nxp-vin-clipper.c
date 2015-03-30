@@ -188,15 +188,22 @@ static int _hw_set_clock(struct nxp_vin_clipper *me, bool on)
 #if defined(CONFIG_ARCH_S5P4418)
         NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nDISABLE);
         NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nENABLE);
-#elif defined(CONFIG_ARCH_S5p6818)
+#elif defined(CONFIG_ARCH_S5P6818)
         NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_ASSERT);
         NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_NEGATE);
 #endif
 
         if (me->platdata->is_mipi) {
+#if defined(CONFIG_ARCH_S5P4418)
+            U32 ClkSrc = 2;
+            U32 Divisor = 2;
+#elif defined(CONFIG_ARCH_S5P6818)
+            U32 ClkSrc = 0;
+            U32 Divisor = 8;
+#endif
             vmsg("%s: apply mipi csi clock!!!\n", __func__);
-            NX_CLKGEN_SetClockSource(NX_VIP_GetClockNumber(module), 0, 2); /* external PCLK */
-            NX_CLKGEN_SetClockDivisor(NX_VIP_GetClockNumber(module), 0, 2);
+            NX_CLKGEN_SetClockSource(NX_VIP_GetClockNumber(module), 0, ClkSrc); /* external PCLK */
+            NX_CLKGEN_SetClockDivisor(NX_VIP_GetClockNumber(module), 0, Divisor);
             NX_CLKGEN_SetClockDivisorEnable(NX_VIP_GetClockNumber(module), CTRUE);
         } else {
             NX_CLKGEN_SetClockSource(NX_VIP_GetClockNumber(module), 0, 4 + me->platdata->port); /* external PCLK */

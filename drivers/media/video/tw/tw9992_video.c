@@ -169,10 +169,10 @@ enum tw9992_capture_frame_size {
 /* make look-up table */
 static const struct tw9992_resolution tw9992_resolutions[] = {
 	{TW9992_PREVIEW_VGA 	, TW9992_OPRMODE_VIDEO, 640,  480  },
-	{TW9992_PREVIEW_D1  	, TW9992_OPRMODE_VIDEO, 704,  480  },
+	{TW9992_PREVIEW_D1  	, TW9992_OPRMODE_VIDEO, 720,  480  },
 
 	{TW9992_CAPTURE_VGA  , TW9992_OPRMODE_IMAGE, 640, 480   },
-	{TW9992_CAPTURE_D1  , TW9992_OPRMODE_IMAGE, 704, 480   },
+	{TW9992_CAPTURE_D1  , TW9992_OPRMODE_IMAGE, 720, 480   },
 };
 
 struct tw9992_framesize {
@@ -183,12 +183,12 @@ struct tw9992_framesize {
 
 static const struct tw9992_framesize tw9992_preview_framesize_list[] = {
 	{TW9992_PREVIEW_VGA,	640,		480},
-	{TW9992_PREVIEW_D1, 	704,		480}
+	{TW9992_PREVIEW_D1, 	720,		480}
 };
 
 static const struct tw9992_framesize tw9992_capture_framesize_list[] = {
 	{TW9992_CAPTURE_VGA,	640,		480},
-	{TW9992_CAPTURE_D1,		704,		480},
+	{TW9992_CAPTURE_D1,		720,		480},
 };
 
 struct tw9992_version {
@@ -2099,6 +2099,7 @@ static int tw9992_init(struct v4l2_subdev *sd, u32 val)
 		return ret;
 	}
 
+#if 0
 	ret = tw9992_decoder_lock(client);
 	if(ret < 0) {
 		dev_err(&client->dev, "\e[31mtw9992_decoder_lock() error!!! \e[0m, ret = %d\n", ret);
@@ -2125,12 +2126,52 @@ static int tw9992_init(struct v4l2_subdev *sd, u32 val)
 		ret = tw9992_reg_set_write(client, TW9992_PAL_Int);
 		printk("===== Input:PAL =====\n");
 	}
+#endif
 
 	if(ret < 0) {
 		dev_err(&client->dev, "\e[31mcolor_system() error\e[0m, ret = %d\n", ret);
 		return ret;
 	}
 
+	printk("==============================================\n");
+
+	tw9992_i2c_read_byte(client, 0x00, &reg_val);
+	printk("===== Product ID code : 0x%x \n", reg_val);
+
+	tw9992_i2c_read_byte(client, 0x03, &reg_val);
+	printk("===== Reg 0x03 : 0x%x.\n", reg_val);
+
+	if(reg_val & 0x80)	printk("===== Video not present.\n");
+	else				printk("===== Video Detected.\n");
+
+	if(reg_val & 0x40)	printk("===== Horizontal sync PLL is locked to the incoming video source.\n");
+	else				printk("===== Horizontal sync PLL is not locked.\n");
+
+	if(reg_val & 0x20)	printk("===== Sub-carrier PLL is locked to the incoming video source.\n");
+	else				printk("===== Sub-carrier PLL is not locked.\n");
+
+	if(reg_val & 0x10)	printk("===== Odd field is being decoded.\n");
+	else				printk("===== Even field is being decoded.\n");
+
+	if(reg_val & 0x8)	printk("===== Vertical logic is locked to the incoming video source.\n");
+	else				printk("===== Vertical logic is not locked.\n");
+
+	if(reg_val & 0x2)	printk("===== No color burst signal detected.\n");
+	else				printk("===== Color burst signal detected.\n");
+
+	if(reg_val & 0x1)	printk("===== 50Hz source detected.\n");
+	else				printk("===== 60Hz source detected.\n");
+
+	tw9992_i2c_read_byte(client, 0x1c, &reg_val);
+		printk("===== Reg 0x1C : 0x%x.\n", reg_val);
+
+	if(reg_val & 0x80)	printk("===== Detection in progress.\n");
+	else				printk("===== Idle.\n");
+
+	//tw9992_i2c_read_byte(client, 0x7F, 1, &reg_val, 1);
+	//printk("===== Reg 0x7F : 0x%x.\n", reg_val);
+
+	printk("==============================================\n");
 	return ret;
 }
 
@@ -2960,6 +3001,7 @@ static int __find_resolution(struct v4l2_subdev *sd,
 			     enum tw9992_oprmode *type,
 			     u32 *resolution)
 {
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	const struct tw9992_resolution *fsize = &tw9992_resolutions[0];
 	const struct tw9992_resolution *match = NULL;
 	enum tw9992_oprmode stype = __find_oprmode(mf->code);
@@ -2980,9 +3022,9 @@ static int __find_resolution(struct v4l2_subdev *sd,
 		}
 		fsize++;
 	}
-	printk("LINE(%d): mf width: %d, mf height: %d, mf code: %d\n", __LINE__,
+	dev_err(&client->dev, "LINE(%d): mf width: %d, mf height: %d, mf code: %d\n", __LINE__,
 		mf->width, mf->height, stype);
-	printk("LINE(%d): match width: %d, match height: %d, match code: %d\n", __LINE__,
+	dev_err(&client->dev, "LINE(%d): match width: %d, match height: %d, match code: %d\n", __LINE__,
 		match->width, match->height, stype);
 	if (match) {
 		mf->width  = match->width;
@@ -2991,7 +3033,7 @@ static int __find_resolution(struct v4l2_subdev *sd,
 		*type = stype;
 		return 0;
 	}
-	printk("LINE(%d): mf width: %d, mf height: %d, mf code: %d\n", __LINE__,
+	dev_err(&client->dev, "LINE(%d): mf width: %d, mf height: %d, mf code: %d\n", __LINE__,
 		mf->width, mf->height, stype);
 
 	return -EINVAL;

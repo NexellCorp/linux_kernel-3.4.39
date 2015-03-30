@@ -949,7 +949,7 @@ static bool front_camera_power_state_changed(void)
 }
 
 #ifdef CONFIG_VIDEO_TW9992
-#define FRONT_CAM_WIDTH  640
+#define FRONT_CAM_WIDTH  720
 #define FRONT_CAM_HEIGHT 480
 
 static struct i2c_board_info front_camera_i2c_boardinfo[] = {
@@ -987,7 +987,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
         /* front_camera 601 interface */
         // for 5430
         /*.module = 1,*/
-        .module = 1,
+        .module = 0,
         .sensor = &sensor[0],
         .type = NXP_CAPTURE_INF_CSI,
         .parallel = {
@@ -1004,7 +1004,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .clock_invert   = false,
             .port           = NX_VIP_INPUTPORT_B,
             .data_order     = NXP_VIN_CBY0CRY1,
-            .interlace      = false,
+            .interlace      = true,
             .clk_rate       = 24000000,
             .late_power_down = true,
             .power_enable   = front_camera_power_enable,
