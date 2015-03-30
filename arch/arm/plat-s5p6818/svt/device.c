@@ -136,7 +136,7 @@ static struct platform_device dfs_plat_device = {
 #if defined(CONFIG_SENSORS_NXP_TMU)
 struct nxp_tmu_trigger tmu_triggers[] = {
        {
-               .trig_degree    =  130, // 160
+               .trig_degree    =  85,
                .trig_duration  =  100,
                .trig_cpufreq   =  800*1000,    /* Khz */
        },
@@ -147,7 +147,6 @@ static struct nxp_tmu_platdata tmu_data = {
        .triggers = tmu_triggers,
        .trigger_size = ARRAY_SIZE(tmu_triggers),
        .poll_duration = 100,
-       .limit_cpufreq  = 1400*1000,    /* Khz */
 };
 
 static struct platform_device tmu_device = {

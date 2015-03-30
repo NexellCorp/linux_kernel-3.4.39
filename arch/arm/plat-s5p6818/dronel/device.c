@@ -1001,7 +1001,7 @@ static struct dw_mci_board _dwmci0_data = {
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH0_USE_DMA)
 	.mode			= DMA_MODE,
-#else	
+#else
 	.mode 			= PIO_MODE,
 #endif
 };
@@ -1018,7 +1018,7 @@ static struct dw_mci_board _dwmci1_data = {
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(0),
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
 	.mode			= DMA_MODE,
-#else	
+#else
 	.mode 			= PIO_MODE,
 #endif
 };
@@ -1042,8 +1042,8 @@ static struct dw_mci_board _dwmci2_data = {
 	.sdr_timing		= 0x01010001,
 	.ddr_timing		= 0x03030002,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
-	.mode			= DMA_MODE, 
-#else	
+	.mode			= DMA_MODE,
+#else
 	.mode 			= PIO_MODE,
 #endif
 };
@@ -1104,7 +1104,7 @@ static struct platform_device hdmi_cec_device = {
 
 struct nxp_tmu_trigger tmu_triggers[] = {
 	{
-		.trig_degree	=  130,	// 160
+		.trig_degree	=  85,	// 160
 		.trig_duration	=  100,
 		.trig_cpufreq	=  800*1000,	/* Khz */
 	},
@@ -1115,7 +1115,6 @@ static struct nxp_tmu_platdata tmu_data = {
 	.triggers = tmu_triggers,
 	.trigger_size = ARRAY_SIZE(tmu_triggers),
 	.poll_duration = 100,
-	.limit_cpufreq  = 1400*1000,	/* Khz */
 };
 
 static struct platform_device tmu_device = {
