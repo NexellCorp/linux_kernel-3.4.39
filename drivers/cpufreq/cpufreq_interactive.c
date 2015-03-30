@@ -87,7 +87,7 @@ static unsigned long min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
  * The sample rate of the timer used to increase frequency
  */
 #ifdef CONFIG_ARCH_S5P6818
-#define DEFAULT_TIMER_RATE (100 * USEC_PER_MSEC)
+#define DEFAULT_TIMER_RATE (40 * USEC_PER_MSEC)
 #else
 #define DEFAULT_TIMER_RATE (20 * USEC_PER_MSEC)
 #endif
