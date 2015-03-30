@@ -1524,9 +1524,9 @@ extern void register_backward_camera(struct platform_device *device);
 
 struct nxp_tmu_trigger tmu_triggers[] = {
 	{
-		.trig_degree	=  120,	// 160
+		.trig_degree	=  85,
 		.trig_duration	=  100,
-		.trig_cpufreq	=  800*1000,	/* Khz */
+		.trig_cpufreq	=  1400*1000,	/* Khz */
 	},
 };
 
@@ -1535,7 +1535,6 @@ static struct nxp_tmu_platdata tmu_data = {
 	.triggers = tmu_triggers,
 	.trigger_size = ARRAY_SIZE(tmu_triggers),
 	.poll_duration = 100,
-//	.limit_cpufreq  = 1400*1000,	/* Khz */
 };
 
 static struct platform_device tmu_device = {
