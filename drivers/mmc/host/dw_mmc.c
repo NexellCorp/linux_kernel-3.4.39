@@ -595,6 +595,9 @@ static int dw_mci_pre_dma_transfer(struct dw_mci *host,
 	struct scatterlist *sg;
 	unsigned int i, sg_len;
 
+	if(!host->pdata->mode == PIO_MODE )
+		return -ENOSYS;
+
 	if (!next && data->host_cookie)
 		return data->host_cookie;
 
@@ -1261,6 +1264,17 @@ static void dw_mci_hw_reset(struct mmc_host *host)
 	if (brd->hw_reset)
 		brd->hw_reset(slot->id);
 }
+static const struct mmc_host_ops dw_mci_nodma_ops = {
+	.request		= dw_mci_request,
+	.pre_req		= NULL,
+	.post_req		= NULL,
+	.set_ios		= dw_mci_set_ios,
+	.get_ro			= dw_mci_get_ro,
+	.get_cd			= dw_mci_get_cd,
+	.enable_sdio_irq	= dw_mci_enable_sdio_irq,
+	.execute_tuning		= dw_mci_execute_tuning,
+	.hw_reset		= dw_mci_hw_reset,
+};
 
 static const struct mmc_host_ops dw_mci_ops = {
 	.request		= dw_mci_request,
@@ -2118,11 +2132,13 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 
 #ifdef CONFIG_MMC_DW_IDMAC
 	/* Handle DMA interrupts */
-	pending = mci_readl(host, IDSTS);
-	if (pending & (SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI)) {
-		mci_writel(host, IDSTS, SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI);
-		mci_writel(host, IDSTS, SDMMC_IDMAC_INT_NI);
-		host->dma_ops->complete(host);
+	if(host->use_dma) {
+		pending = mci_readl(host, IDSTS);
+		if (pending & (SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI)) {
+			mci_writel(host, IDSTS, SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI);
+			mci_writel(host, IDSTS, SDMMC_IDMAC_INT_NI);
+			host->dma_ops->complete(host);
+		}
 	}
 #endif
 
@@ -2309,7 +2325,12 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 #if defined(CONFIG_ESP8089)
 	mci_slot[mci_id++] = slot;
 #endif
-	mmc->ops = &dw_mci_ops;
+	if(host->pdata->mode == DMA_MODE)	
+		mmc->ops = &dw_mci_ops;
+	else 
+		mmc->ops = &dw_mci_nodma_ops;
+	
+
 	mmc->f_min = DIV_ROUND_UP(host->bus_hz, 510);
 	mmc->f_max = host->bus_hz;
 
@@ -2357,17 +2378,26 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 	} else {
 		/* Useful defaults if platform data is unset. */
 #ifdef CONFIG_MMC_DW_IDMAC
-		mmc->max_segs = host->ring_size;
-		mmc->max_blk_size = 65536;
-		mmc->max_blk_count = host->ring_size;
-		mmc->max_seg_size = 0x1000;
-		mmc->max_req_size = mmc->max_seg_size * mmc->max_blk_count;
-#else
+		if( host->pdata->mode == DMA_MODE) {
+			mmc->max_segs = host->ring_size;
+			mmc->max_blk_size = 65536;
+			mmc->max_blk_count = host->ring_size;
+			mmc->max_seg_size = 0x1000;
+			mmc->max_req_size = mmc->max_seg_size * mmc->max_blk_count;
+		} else {
+			mmc->max_segs = 64;
+			mmc->max_blk_size = 65536; /* BLKSIZ is 16 bits */
+			mmc->max_blk_count = 512;
+			mmc->max_req_size = mmc->max_blk_size * mmc->max_blk_count;
+			mmc->max_seg_size = mmc->max_req_size;
+		}
+#else 
 		mmc->max_segs = 64;
 		mmc->max_blk_size = 65536; /* BLKSIZ is 16 bits */
 		mmc->max_blk_count = 512;
 		mmc->max_req_size = mmc->max_blk_size * mmc->max_blk_count;
 		mmc->max_seg_size = mmc->max_req_size;
+
 #endif /* CONFIG_MMC_DW_IDMAC */
 	}
 
@@ -2428,8 +2458,12 @@ static void dw_mci_init_dma(struct dw_mci *host)
 
 	/* Determine which DMA interface to use */
 #ifdef CONFIG_MMC_DW_IDMAC
+	if(host->pdata->mode == PIO_MODE)
+		goto no_dma;
+
 	host->dma_ops = &dw_mci_idmac_ops;
 	dev_info(&host->dev, "Using internal DMA controller.\n");
+
 #endif
 
 	if (!host->dma_ops)
@@ -2774,7 +2808,7 @@ int dw_mci_resume(struct dw_mci *host)
 		return ret;
 	}
 
-	if (host->dma_ops->init)
+	if (host->use_dma && host->dma_ops->init)
 		host->dma_ops->init(host);
 
 	/* Restore the old value at FIFOTH register */
