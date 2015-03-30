@@ -106,6 +106,24 @@ static const struct nxp_csi_pix_format supported_formats[] = {
 /* one shot setting */
 static void _hw_run(struct nxp_csi *me)
 {
+#if defined(CONFIG_ARCH_S5P4418)
+    U32 ClkSrc = 2;
+    U32 Divisor = 2;
+#elif defined(CONFIG_ARCH_S5P6818)
+    U32 ClkSrc = 0;
+    U32 Divisor = 8;
+#endif
+    struct nxp_mipi_csi_platformdata *pdata = me->platdata;
+    CBOOL EnableDataLane0 = CFALSE;
+    CBOOL EnableDataLane1 = CFALSE;
+    CBOOL EnableDataLane2 = CFALSE;
+    CBOOL EnableDataLane3 = CFALSE;
+    U32   NumberOfDataLanes = (pdata->lanes-1);
+    if(NumberOfDataLanes >= 0) EnableDataLane0=CTRUE;
+    if(NumberOfDataLanes >= 1) EnableDataLane1=CTRUE;
+    if(NumberOfDataLanes >= 2) EnableDataLane2=CTRUE;
+    if(NumberOfDataLanes >= 3) EnableDataLane3=CTRUE;
+
     NX_MIPI_Initialize();
     NX_TIEOFF_Set(TIEOFFINDEX_OF_MIPI0_NX_DPSRAM_1R1W_EMAA, 3);
     NX_TIEOFF_Set(TIEOFFINDEX_OF_MIPI0_NX_DPSRAM_1R1W_EMAA, 3);
@@ -127,8 +145,8 @@ static void _hw_run(struct nxp_csi *me)
 
     NX_CLKGEN_SetClockDivisorEnable(NX_MIPI_GetClockNumber(me->module), CFALSE);
     /* TODO : use clk_get(), clk_get_rate() for dynamic clk binding */
-    NX_CLKGEN_SetClockSource(NX_MIPI_GetClockNumber(me->module), 0, 2); // use pll2 -> current 295MHz
-    NX_CLKGEN_SetClockDivisor(NX_MIPI_GetClockNumber(me->module), 0, 2);
+    NX_CLKGEN_SetClockSource(NX_MIPI_GetClockNumber(me->module), 0, ClkSrc); // use pll2 -> current 295MHz
+    NX_CLKGEN_SetClockDivisor(NX_MIPI_GetClockNumber(me->module), 0, Divisor);
     /* NX_CLKGEN_SetClockDivisor(NX_MIPI_GetClockNumber(me->module), 0, 6); */
     NX_CLKGEN_SetClockDivisorEnable(NX_MIPI_GetClockNumber(me->module), CTRUE);
 
@@ -140,19 +158,21 @@ static void _hw_run(struct nxp_csi *me)
     NX_MIPI_CSI_SetTimingControl(me->module, 1, 32, 16, 368);
     NX_MIPI_CSI_SetInterleaveChannel(me->module, 0, 1);
     NX_MIPI_CSI_SetInterleaveChannel(me->module, 1, 0);
-    vmsg("%s: width %d, height %d\n", __func__, me->format.width, me->format.height);
+    vmsg("%s: width %d, height %d, lane:%d(%d,%d,%d,%d)\n", __func__, 
+				me->format.width, me->format.height, 
+				pdata->lanes, EnableDataLane0, EnableDataLane1, EnableDataLane2, EnableDataLane3);
     NX_MIPI_CSI_SetSize(me->module, 1, me->format.width, me->format.height);
     NX_MIPI_CSI_SetVCLK(me->module, 1, NX_MIPI_CSI_VCLKSRC_EXTCLK);
     /* HACK!!! -> this is variation : confirm to camera sensor */
     NX_MIPI_CSI_SetPhy(me->module,
-            1,  // U32   NumberOfDataLanes (0~3)
-            1,  // CBOOL EnableClockLane
-            1,  // CBOOL EnableDataLane0
-            1,  // CBOOL EnableDataLane1
-            0,  // CBOOL EnableDataLane2
-            0,  // CBOOL EnableDataLane3
-            0,  // CBOOL SwapClockLane
-            0   // CBOOL SwapDataLane
+            NumberOfDataLanes,  // U32   NumberOfDataLanes (0~3)
+            1,  					// CBOOL EnableClockLane
+            EnableDataLane0,  	// CBOOL EnableDataLane0
+            EnableDataLane1,  	// CBOOL EnableDataLane1
+            EnableDataLane2,  	// CBOOL EnableDataLane2
+            EnableDataLane3,  	// CBOOL EnableDataLane3
+            0,  					// CBOOL SwapClockLane
+            0   					// CBOOL SwapDataLane
             );
     NX_MIPI_CSI_SetEnable(me->module, CTRUE);
 
