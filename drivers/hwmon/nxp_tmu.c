@@ -43,6 +43,10 @@
 #define DRVNAME	"nxp-tmu"
 #define	CHECK_CHARGE_STATE			0
 #define	ADJUST_EFUSE_TRIM			1
+/*
+ * if efuse is zero, assume limit 85 ~= 115 : C = R - efuse + 25
+ */
+#define	EFUSE_ZERO_TRIM				55
 
 #define	CHECK_CHARGE_DURATION		(500)
 
@@ -239,11 +243,8 @@ static inline void nxp_tmu_trim_ready(struct tmu_info *info)
 	trimv85 = NX_TMU_GetTriminfo85(channel);
 #endif
 
-	/*
-	 * if not exist efuse, assume limit 85 ~= 130
-	 */
 	if (0 == trimv || !done)
-		trimv = 70;
+		trimv = EFUSE_ZERO_TRIM;
 
 	info->tmu_trimv = trimv;
 	info->tmu_trimv85 = trimv85;
