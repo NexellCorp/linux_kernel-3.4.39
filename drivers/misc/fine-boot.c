@@ -306,6 +306,7 @@ static int _anim_thread(void *arg)
                 backward_camera_external_on();
             }
 #endif
+            nxp_soc_gpio_set_out_value(PAD_GPIO_A + 25, 1);
             nxp_soc_gpio_set_out_value(PAD_GPIO_D + 1, 1);
             first = false;
         }
