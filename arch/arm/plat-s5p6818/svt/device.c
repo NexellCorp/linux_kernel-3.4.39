@@ -1198,12 +1198,16 @@ static int front_camera_set_clock(ulong clk_rate)
 
 static int back_camera_set_clock(ulong clk_rate)
 {
+
+#if 0 //KEUN when OSC, doesn't stop front camera 
   	printk(KERN_INFO "%s: %d\n", __func__, (int)clk_rate);
     if (clk_rate > 0)
         nxp_soc_pwm_set_frequency(3, clk_rate, 50);
     else
         nxp_soc_pwm_set_frequency(3, 0, 0);
     msleep(1);
+#endif
+
     return 0;
 }
 
@@ -1227,7 +1231,7 @@ static void front_camera_vin_setup_io(int module, bool force)
 
         /* VIP0:0 = VCLK, VID0 ~ 7 */
         const u_int port[][2] = {
-#if 0 //vid 0
+#if 1 //vid 0
             /* VCLK, HSYNC, VSYNC */
             { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
@@ -1251,7 +1255,7 @@ static void front_camera_vin_setup_io(int module, bool force)
             { PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
 #endif
 
-#if 1 //vid 2
+#if 0 //vid 2
             /* VCLK, HSYNC, VSYNC */
             { PAD_GPIO_C + 14, NX_GPIO_PADFUNC_3 },
             { PAD_GPIO_C + 15, NX_GPIO_PADFUNC_3 },
@@ -1360,6 +1364,12 @@ static int back_camera_power_enable(bool on)
             nxp_soc_gpio_set_out_value(reset_io, 1);
             mdelay(1);
 
+            nxp_soc_gpio_set_out_value(reset_io, 0);
+            mdelay(1);
+
+            nxp_soc_gpio_set_out_value(reset_io, 1);
+            mdelay(10);
+
             is_back_camera_enabled = true;
           	//is_back_camera_enabled = false;
             is_back_camera_power_state_changed = true;
@@ -1391,7 +1401,7 @@ static bool back_camera_power_state_changed(void)
 
 static struct i2c_board_info back_camera_i2c_boardinfo[] = {
     {
-				I2C_BOARD_INFO("S5K4ECGX", 0x5A>>1),
+				I2C_BOARD_INFO("THP7212NX", 0xC0>>1),
     },
 };
 
@@ -1400,14 +1410,14 @@ static int mipi_phy_enable(bool en)
     return 0;
 }
 
-struct nxp_mipi_csi_platformdata s5k4ecgx_plat_data = {
+struct nxp_mipi_csi_platformdata thp7212_plat_data = {
     .module     = 0,
     .clk_rate   = 27000000, // 27MHz
     .lanes      = 4,
     .alignment = 0,
     .hs_settle  = 0,
-    .width      = 640,
-    .height     = 480,
+    .width      = 1920,
+    .height     = 1080,
     .fixed_phy_vdd = false,
     .irq        = 0, /* not used */
     .base       = 0, /* not used */
@@ -1416,7 +1426,7 @@ struct nxp_mipi_csi_platformdata s5k4ecgx_plat_data = {
 
 static int front_camera_power_enable(bool on)
 {
-  	unsigned int io = CFG_IO_CAMERA_FRONT_POWER_DOWN;
+  	//unsigned int io = CFG_IO_CAMERA_FRONT_POWER_DOWN;
     unsigned int reset_io = CFG_IO_CAMERA_FRONT_RESET;
 
    printk(KERN_INFO "%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
@@ -1471,7 +1481,7 @@ static bool front_camera_power_state_changed(void)
 
 static struct i2c_board_info front_camera_i2c_boardinfo[] = {
     {
-				I2C_BOARD_INFO("S5K5CAGX", 0x78>>1),
+				I2C_BOARD_INFO("MT9D111", 0xBA>>1),			
     },
 };
 
@@ -1486,76 +1496,8 @@ static struct nxp_v4l2_i2c_board_info sensor[] = {
     },
 };
 
-#if 0
 static struct nxp_capture_platformdata capture_plat_data[] = {
-    {
-        /* back_camera 656 interface */
-        .module = 1,
-        .sensor = &sensor[0],
-				.type = NXP_CAPTURE_INF_CSI,
-				.parallel = {
-            .is_mipi        = true,
-            .external_sync  = true,
-            .h_active       = 640,
-            .h_frontporch   = 100,
-            .h_syncwidth    = 10,
-            .h_backporch    = 100,
-            .v_active       = 480,
-            .v_frontporch   = 1,
-            .v_syncwidth    = 1,
-            .v_backporch    = 1,
-            .clock_invert   = false,
-            .port           = NX_VIP_INPUTPORT_B,
-            .data_order     = NXP_VIN_CBY0CRY1,
-            .interlace      = false,
-            .clk_rate       = 27000000,
-            .late_power_down = false,
-            .power_enable   = back_camera_power_enable,
-            .set_clock      = back_camera_set_clock,
-            .setup_io       = back_vin_setup_io,
-        },
-        .deci = {
-            .start_delay_ms = 0,
-            .stop_delay_ms  = 0,
-        },
-        .csi = &s5k4ecgx_plat_data,
-    },
-    {
-        /* front_camera 601 interface */
-        .module = 0,
-        .sensor = &sensor[1],
-        .type = NXP_CAPTURE_INF_PARALLEL,
-				.parallel = {
-            .is_mipi        = false,
-            .external_sync  = false,
-            .h_active       = 640,
-            .h_frontporch   = 7,
-            .h_syncwidth    = 1,
-            /* .h_backporch    = 0, */
-            .h_backporch    = 10,
-            .v_active       = 480,
-            .v_frontporch   = 0,
-            .v_syncwidth    = 1,
-            .v_backporch    = 0,
-            .clock_invert   = true,
-            .port           = 1,
-            .data_order     = NXP_VIN_CBY0CRY1,
-            .interlace      = false,
-            .clk_rate       = 24000000,
-            .late_power_down = false,
-            .power_enable   = front_camera_power_enable,
-            .set_clock      = front_camera_set_clock,
-            .setup_io       = front_camera_vin_setup_io,
-        },
-				.deci = {
-            .start_delay_ms = 0,
-            .stop_delay_ms  = 0,
-        },
-    },
-    { 0, NULL, 0, },
-};
-#else
-static struct nxp_capture_platformdata capture_plat_data[] = {
+#if defined(CONFIG_VIDEO_MT9D111_CAM)
 	{
         /* front_camera 601 interface */
         .module = 0,
@@ -1564,23 +1506,26 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 				.parallel = {
             .is_mipi        = false,
             .external_sync  = false,
-            .h_active       = 640,
+            .h_active       = 1280,
             .h_frontporch   = 7,
             .h_syncwidth    = 1,
             /* .h_backporch    = 0, */
             .h_backporch    = 10,
-            .v_active       = 480,
+            .v_active       = 720,
             .v_frontporch   = 0,
             .v_syncwidth    = 1,
             .v_backporch    = 0,
             .clock_invert   = true,
-            .port           = 1,
+            //.port           = NX_VIP_INPUTPORT_B,
+            .port           = 0,
             .data_order     = NXP_VIN_CBY0CRY1,
             .interlace      = false,
             .clk_rate       = 24000000,
             .late_power_down = false,
-            .power_enable   = front_camera_power_enable,
-            .set_clock      = front_camera_set_clock,
+            //.power_enable   = front_camera_power_enable,
+            .power_enable   = NULL,
+            //.set_clock      = front_camera_set_clock,
+            .set_clock      = NULL,
             .setup_io       = front_camera_vin_setup_io,
         },
 				.deci = {
@@ -1588,6 +1533,9 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .stop_delay_ms  = 0,
         },
 	},
+#endif
+#if defined(CONFIG_NXP_CAPTURE_MIPI_CSI)
+#if defined(CONFIG_VIDEO_THP7212_CAM)
   {
         /* back_camera 656 interface */
         .module = 1,
@@ -1596,11 +1544,11 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 				.parallel = {
             .is_mipi        = true,
             .external_sync  = true,
-            .h_active       = 640,
-            .h_frontporch   = 100,
-            .h_syncwidth    = 10,
-            .h_backporch    = 100,
-            .v_active       = 480,
+            .h_active       = 1920,
+            .h_frontporch   = 4,
+            .h_syncwidth    = 4,
+            .h_backporch    = 4,
+            .v_active       = 1080,
             .v_frontporch   = 1,
             .v_syncwidth    = 1,
             .v_backporch    = 1,
@@ -1618,13 +1566,13 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .start_delay_ms = 0,
             .stop_delay_ms  = 0,
         },
-        .csi = &s5k4ecgx_plat_data,
+        .csi = &thp7212_plat_data,
 	},
-
+#endif
+#endif
 	{ 0, NULL, 0, },
 };
 
-#endif
 
 /* out platformdata */
 static struct i2c_board_info hdmi_edid_i2c_boardinfo = {

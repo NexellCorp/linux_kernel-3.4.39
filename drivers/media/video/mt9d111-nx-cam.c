@@ -23,7 +23,7 @@
 #include <media/v4l2-ctrls.h>
 // psw0523 for debugging sleep
 #include <mach/platform.h>
-#include <mach/s5p4418.h>
+#include <mach/s5p6818.h>
 #include "mt9d111-nx-preset.h"
 
 
@@ -973,11 +973,13 @@ static void mt9d111_set_power(struct v4l2_subdev *sd, int on)
     switch (i2c_id) {
 		case 1:
 			pwm_ch = 0;
-			reset_en = CFG_IO_CAM0_RESET;
+			//reset_en = CFG_IO_CAM0_RESET;
+			reset_en = CFG_IO_CAMERA_FRONT_RESET;
 			break;
 		case 2:
 			pwm_ch = 1;
-			reset_en = CFG_IO_CAM1_RESET;
+			//reset_en = CFG_IO_CAM1_RESET;
+			reset_en = CFG_IO_CAMERA_FRONT_RESET;
 			break;
 		default:
 			v4l_info(client,"%s() id:%d, unkown id!!!\n", __func__, i2c_id);
@@ -986,17 +988,23 @@ static void mt9d111_set_power(struct v4l2_subdev *sd, int on)
 
 	if (on)
 	{
-		nxp_soc_gpio_set_io_dir(reset_en, 1);
+		//nxp_soc_gpio_set_io_dir(reset_en, 1);
+		nxp_soc_gpio_set_io_dir(reset_en, 0);
 		nxp_soc_gpio_set_io_func(reset_en, nxp_soc_gpio_get_altnum(reset_en));
+
+		nxp_soc_gpio_set_out_value(reset_en, 1);
+		mdelay(10);
+
 		nxp_soc_gpio_set_out_value(reset_en, 0);
 		mdelay(10);
+
 		nxp_soc_gpio_set_out_value(reset_en, 1);
 		mdelay(1);
-		nxp_soc_pwm_set_frequency(pwm_ch, 24000000, 50);
+		//nxp_soc_pwm_set_frequency(pwm_ch, 24000000, 50);
 	}
 	else
 	{
-		nxp_soc_pwm_set_frequency(pwm_ch, 0, 0);
+	//	nxp_soc_pwm_set_frequency(pwm_ch, 0, 0);
 		mdelay(1);
 		nxp_soc_gpio_set_out_value(reset_en, 0);
 		state->inited = false;

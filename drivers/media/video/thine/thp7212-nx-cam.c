@@ -646,6 +646,46 @@ static const struct v4l2_fmtdesc capture_fmts[] = {
 static int thp7212_s_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *fmt);
 
 
+int thp7212_i2c_read_data(struct i2c_client *client, unsigned int _addr, unsigned char *_data, unsigned int _size)
+{
+	struct i2c_adapter *adap = client->adapter;
+	int	cnt;
+	unsigned char _reg[2]={0};
+
+	struct i2c_msg msgs[] ={
+	{
+		.addr = client->addr,
+		.flags = 0,
+		.len = 2,
+		.buf = _reg,
+	},
+	{
+		.addr = client->addr,
+		.flags = I2C_M_RD,
+		.len = _size,
+		.buf = _data,
+	}};
+
+	_reg[0] = (unsigned char)(_addr>>8);
+	_reg[1] = (unsigned char)_addr;
+
+	for (cnt = 0; cnt < 10; cnt++) 
+	{
+		if (i2c_transfer(adap, msgs, 2) == 2)
+			break;
+
+		mdelay(10);
+	}
+
+	if (cnt == 10) 
+	{
+		printk(KERN_ERR "soc_i2c_read retry\n");
+		return -1;
+	}
+
+	return	0;
+}
+
 static int thp7212_i2c_read_byte(struct i2c_client *client, u8 addr, u8 *data)
 {
 	s8 i = 0;
@@ -2347,6 +2387,10 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 	struct sec_cam_parm *stored_parms = (struct sec_cam_parm *)&state->stored_parm.parm.raw_data;
 	int ret = 0;
 
+#if 1
+	u8 read_value = 0;
+#endif
+
 	dev_err(&client->dev, "%s: start\n", __func__);
 
 	// Start C0 00 00 ram_7210.elf.s19.1 Stop 
@@ -2431,6 +2475,36 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 				return ret;
 			}
 		}
+#endif
+#if 1
+
+	if(thp7212_i2c_read_data(client, 0xF001, &read_value, 1) != 0)
+		pr_info("[%s] :  Keun Revision Error!!!!\n", __func__);
+	else
+		pr_info("%s : Keun Revision : 0x %02X\n", __func__, read_value);
+
+	if(thp7212_i2c_read_data(client, 0xF011, &read_value, 1) != 0)
+		pr_info("[%s] :  Keun Auto Enable Error!!!!\n", __func__);
+	else
+		pr_info("%s : Keun Auto Enable : 0x %02X\n", __func__, read_value);
+
+	read_value = 0;
+
+	if(thp7212_i2c_read_data(client, 0xF016, &read_value, 1) != 0)
+		pr_info("[%s] :  Keun Frame Size Error!!!!\n", __func__);
+	else
+		pr_info("%s : Keun Frame Size : 0x %02X\n", __func__, read_value);
+
+	if(thp7212_i2c_read_data(client, 0xF01C, &read_value, 1) != 0)
+		pr_info("[%s] :  Keun Frame Rate  Error!!!!\n", __func__);
+	else
+		pr_info("%s : Keun Frame Rate : 0x %02X\n", __func__, read_value);
+
+
+	//thp7212_i2c_write_word(client, 0x002E, 0x01A6);
+	//thp7212_i2c_read_word(client, 0x0F16, &read_value);
+	//thp7212_i2c_read_addr16_byte(client, 0xF001, &read_value);
+//	pr_info("%s : Keun Revision : 0x %02X\n", __func__, read_value);
 #endif
 
 	return 0;

@@ -265,7 +265,7 @@
 /*------------------------------------------------------------------------------
  *  CAMERA Front Reset
  */
-#define CFG_IO_CAMERA_FRONT_RESET                 ((PAD_GPIO_C + 29) | PAD_FUNC_ALT0)   /* GPIO */
+#define CFG_IO_CAMERA_FRONT_RESET                 ((PAD_GPIO_C + 30) | PAD_FUNC_ALT0)   /* GPIO */
 
 /*------------------------------------------------------------------------------
  *  CAMERA Back Reset
