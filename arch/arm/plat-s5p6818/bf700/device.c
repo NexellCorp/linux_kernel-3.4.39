@@ -918,7 +918,6 @@ static int front_camera_power_enable(bool on)
 		{
 	        nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
 	        nxp_soc_gpio_set_io_dir(reset_io, 1);
-	        nxp_soc_gpio_set_out_value(reset_io, 1);
 	        mdelay(1);
 	        nxp_soc_gpio_set_out_value(reset_io, 0);
 	        mdelay(10);
@@ -994,9 +993,9 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .is_mipi        = true,
             .external_sync  = true,
             .h_active       = FRONT_CAM_WIDTH,
-            .h_frontporch   = 1,
-            .h_syncwidth    = 1,
-            .h_backporch    = 1,
+            .h_frontporch   = 4,
+            .h_syncwidth    = 4,
+            .h_backporch    = 4,
             .v_active       = FRONT_CAM_HEIGHT,
             .v_frontporch   = 1,
             .v_syncwidth    = 1,

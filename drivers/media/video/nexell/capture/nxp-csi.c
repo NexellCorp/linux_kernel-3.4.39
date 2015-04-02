@@ -140,6 +140,13 @@ static void _hw_run(struct nxp_csi *me)
     nxp_soc_peri_reset_exit(RESET_ID_MIPI_CSI);
 
     NX_MIPI_OpenModule(me->module);
+#if defined(CONFIG_ARCH_S5P6818)
+    {
+        volatile NX_MIPI_RegisterSet* pmipi;
+        pmipi = (volatile NX_MIPI_RegisterSet*)IO_ADDRESS(NX_MIPI_GetPhysicalAddress(me->module));
+        pmipi->CSIS_DPHYCTRL= (5 <<24);
+    }
+#endif
     NX_MIPI_SetInterruptEnableAll(me->module, CFALSE);
     NX_MIPI_ClearInterruptPendingAll(me->module);
 
@@ -195,8 +202,13 @@ static void _hw_run(struct nxp_csi *me)
     NX_MIPI_DSI_SetPLL( me->module,
                         CTRUE,       // CBOOL Enable      ,
                         0xFFFFFFFF,  // U32 PLLStableTimer,
+#if defined(CONFIG_ARCH_S5P4418)
                         0x43E8,      // 19'h033E8: 1Ghz  19'h043E8: 750Mhz // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
                         0xC,         // 4'hF: 1Ghz  4'hC: 750Mhz           // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
+#elif defined(CONFIG_ARCH_S5P6818)
+                        0x33E8,      // 19'h033E8: 1Ghz  19'h043E8: 750Mhz // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
+                        0xF,         // 4'hF: 1Ghz  4'hC: 750Mhz           // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
+#endif
                         0,           // U32 M_PLLCTL      ,
                                      // Refer to 10.2.2 M_PLLCTL of MIPI_D_PHY_USER_GUIDE.pdf  Default value is all "0".
                                      // If you want to change register values, it need to confirm from IP Design Team
@@ -438,9 +450,16 @@ static int nxp_csi_s_stream(struct v4l2_subdev *sd, int enable)
 
     vmsg("%s: %d\n", __func__, enable);
     if (enable) {
+#if defined(CONFIG_ARCH_S5P4418)
         ret = v4l2_subdev_call(remote_source, video, s_stream, enable);
         /* _hw_start_stream(me); */
         _hw_run(me);
+#elif defined(CONFIG_ARCH_S5P6818)
+        /* _hw_start_stream(me); */
+        _hw_run(me);
+
+        ret = v4l2_subdev_call(remote_source, video, s_stream, enable);
+#endif
         NXP_ATOMIC_SET(&me->state, NXP_CSI_STATE_RUNNING);
     } else {
         _hw_stop_stream(me);
