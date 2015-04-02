@@ -10,7 +10,7 @@
 #include <mach/platform.h>
 #include <mach/soc.h>
 
-#define DEBUG_TW9900
+/*#define DEBUG_TW9900*/
 #ifdef DEBUG_TW9900
 #define vmsg(a...)  printk(a)
 #else
