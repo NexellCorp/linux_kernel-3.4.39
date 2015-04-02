@@ -72,6 +72,11 @@ enum nxp_vin_clipper_state {
 #define nxp_vin_to_parent(me)       \
     container_of(me, struct nxp_capture, vin_clipper)
 
+#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+extern bool is_backward_camera_on(void);
+extern void backward_camera_remove(void);
+#endif
+
 /* DEBUG SYNC */
 #ifdef DEBUG_SYNC
 static void debug_sync(unsigned long priv)
@@ -944,7 +949,16 @@ static int nxp_vin_clipper_s_power(struct v4l2_subdev *sd, int on)
     if (on) {
         if (me->platdata->setup_io)
             me->platdata->setup_io(module, false);
+#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+        if (module != 2)
+            _hw_set_clock(me, true);
+        else  {
+            if (!is_backward_camera_on())
+                _hw_set_clock(me, true);
+        }
+#else
         _hw_set_clock(me, true);
+#endif
         ret = v4l2_subdev_call(remote_source, core, s_power, 1);
     } else {
         _disable_all(me);
@@ -997,6 +1011,16 @@ static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
                 }
             }
         }
+#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+        if (module == 2) {
+            while (is_backward_camera_on()) {
+                printk("wait backward camera stopping...\n");
+                schedule_timeout_interruptible(HZ/5);
+            }
+            backward_camera_remove();
+            printk("end of backward_camera_remove()\n");
+        }
+#endif
         _configure(me, enable);
         if (is_host_video) {
             ret = _register_irq_handler(me);
