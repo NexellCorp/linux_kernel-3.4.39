@@ -716,177 +716,11 @@ static struct i2c_board_info __initdata usb2514_i2c_bdi = {
 #include <mach/nxp-v4l2-platformdata.h>
 #include <mach/soc.h>
 
-static int camera_common_set_clock(ulong clk_rate)
-{
-    PM_DBGOUT("%s: %d\n", __func__, (int)clk_rate);
-    if (clk_rate > 0)
-        nxp_soc_pwm_set_frequency(1, clk_rate, 50);
-    else
-        nxp_soc_pwm_set_frequency(1, 0, 0);
-    msleep(1);
-    return 0;
-}
-
-static bool is_camera_port_configured = false;
-static void camera_common_vin_setup_io(int module, bool force)
-{
-    if (!force && is_camera_port_configured)
-        return;
-    else {
-        u_int *pad;
-        int i, len;
-        u_int io, fn;
-
-
-        /* VIP0:0 = VCLK, VID0 ~ 7 */
-        const u_int port[][2] = {
-            /* VCLK, HSYNC, VSYNC */
-            { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  6, NX_GPIO_PADFUNC_1 },
-            /* DATA */
-            { PAD_GPIO_D + 28, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 29, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
-        };
-
-        printk("%s\n", __func__);
-
-        pad = (u_int *)port;
-        len = sizeof(port)/sizeof(port[0]);
-
-        for (i = 0; i < len; i++) {
-            io = *pad++;
-            fn = *pad++;
-            nxp_soc_gpio_set_io_dir(io, 0);
-            nxp_soc_gpio_set_io_func(io, fn);
-        }
-
-        is_camera_port_configured = true;
-    }
-}
-
-static bool camera_power_enabled = false;
-static void camera_power_control(int enable)
-{
-    struct regulator *cam_io_28V = NULL;
-    struct regulator *cam_core_18V = NULL;
-    struct regulator *cam_io_33V = NULL;
-
-    if (enable && camera_power_enabled)
-        return;
-    if (!enable && !camera_power_enabled)
-        return;
-
-    cam_core_18V = regulator_get(NULL, "vcam1_1.8V");
-    if (IS_ERR(cam_core_18V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for vcam1_1.8V", __func__);
-        return;
-    }
-
-    cam_io_28V = regulator_get(NULL, "vcam_2.8V");
-    if (IS_ERR(cam_io_28V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for vcam_2.8V", __func__);
-        return;
-    }
-
-    cam_io_33V = regulator_get(NULL, "vcam_3.3V");
-    if (IS_ERR(cam_io_33V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for vcam_3.3V", __func__);
-        return;
-    }
-
-    printk("%s: %d\n", __func__, enable);
-    if (enable) {
-        regulator_enable(cam_core_18V);
-        regulator_enable(cam_io_28V);
-        regulator_enable(cam_io_33V);
-    } else {
-        regulator_disable(cam_io_33V);
-        regulator_disable(cam_io_28V);
-        regulator_disable(cam_core_18V);
-    }
-
-    regulator_put(cam_io_28V);
-    regulator_put(cam_core_18V);
-    regulator_put(cam_io_33V);
-
-    camera_power_enabled = enable ? true : false;
-}
-
-static bool is_back_camera_enabled = false;
-static bool is_back_camera_power_state_changed = false;
+#ifdef CONFIG_VIDEO_TW9992
 static bool is_front_camera_enabled = false;
 static bool is_front_camera_power_state_changed = false;
 
 static int front_camera_power_enable(bool on);
-static int back_camera_power_enable(bool on)
-{
-    unsigned int io = CFG_IO_CAMERA_BACK_POWER_DOWN;
-    unsigned int reset_io = CFG_IO_CAMERA_RESET;
-    PM_DBGOUT("%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
-    if (on) {
-        front_camera_power_enable(0);
-        if (!is_back_camera_enabled) {
-            camera_power_control(1);
-            /* PD signal */
-            nxp_soc_gpio_set_out_value(io, 0);
-            nxp_soc_gpio_set_io_dir(io, 1);
-            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-            nxp_soc_gpio_set_out_value(io, 1);
-            camera_common_set_clock(24000000);
-            /* mdelay(10); */
-            mdelay(1);
-            nxp_soc_gpio_set_out_value(io, 0);
-            /* RST signal */
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-            nxp_soc_gpio_set_io_dir(reset_io, 1);
-            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(io));
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            /* mdelay(100); */
-            mdelay(1);
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-            /* mdelay(100); */
-            mdelay(1);
-            is_back_camera_enabled = true;
-            is_back_camera_power_state_changed = true;
-        } else {
-            is_back_camera_power_state_changed = false;
-        }
-    } else {
-        if (is_back_camera_enabled) {
-            nxp_soc_gpio_set_out_value(io, 1);
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            is_back_camera_enabled = false;
-            is_back_camera_power_state_changed = true;
-        } else {
-            nxp_soc_gpio_set_out_value(io, 1);
-            nxp_soc_gpio_set_io_dir(io, 1);
-            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-            nxp_soc_gpio_set_out_value(io, 1);
-            is_back_camera_power_state_changed = false;
-        }
-
-        if (!(is_back_camera_enabled || is_front_camera_enabled)) {
-            camera_power_control(0);
-        }
-    }
-
-    return 0;
-}
-
-static bool back_camera_power_state_changed(void)
-{
-    return is_back_camera_power_state_changed;
-}
-
-static struct i2c_board_info back_camera_i2c_boardinfo[] = {
-    {
-        I2C_BOARD_INFO("SP2518", 0x60>>1),
-    },
-};
-
 
 static void front_vin_setup_io(int module, bool force)
 {
@@ -907,7 +741,6 @@ static int front_camera_set_clock(ulong clk_rate)
 
 static int front_camera_power_enable(bool on)
 {
-#ifdef CONFIG_VIDEO_TW9992
     unsigned int reset_io = (PAD_GPIO_ALV + 0);
 
     printk("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
@@ -938,7 +771,6 @@ static int front_camera_power_enable(bool on)
             is_front_camera_power_state_changed = true;
         }
     }
-#endif /* CONFIG_VIDEO_TW9992 */
 
     return 0;
 }
@@ -948,15 +780,8 @@ static bool front_camera_power_state_changed(void)
     return is_front_camera_power_state_changed;
 }
 
-#ifdef CONFIG_VIDEO_TW9992
 #define FRONT_CAM_WIDTH  720
 #define FRONT_CAM_HEIGHT 480
-
-static struct i2c_board_info front_camera_i2c_boardinfo[] = {
-    {
-        I2C_BOARD_INFO("tw9992", 0x7a>>1),
-    },
-};
 
 struct nxp_mipi_csi_platformdata front_plat_data = {
     .module     = 0,
@@ -971,24 +796,61 @@ struct nxp_mipi_csi_platformdata front_plat_data = {
     .base       = 0, /* not used */
     .phy_enable = front_phy_enable,
 };
+#endif /* CONFIG_VIDEO_TW9992 */
 
+static struct i2c_board_info back_camera_i2c_boardinfo[] = {
+    {
+        I2C_BOARD_INFO("tw9900", 0x8a>>1),
+    },
+};
+
+static struct i2c_board_info front_camera_i2c_boardinfo[] = {
+    {
+        I2C_BOARD_INFO("tw9992", 0x7a>>1),
+    },
+};
 
 static struct nxp_v4l2_i2c_board_info sensor[] = {
+    {
+        .board_info = &back_camera_i2c_boardinfo[0],
+        .i2c_adapter_id = 1,
+    },
     {
         .board_info = &front_camera_i2c_boardinfo[0],
         .i2c_adapter_id = 4,
     },
 };
-#endif /* CONFIG_VIDEO_TW9992 */
 
 static struct nxp_capture_platformdata capture_plat_data[] = {
+#ifdef CONFIG_VIDEO_TW9900
+    {
+        .module = 2,
+        .sensor = &sensor[0],
+        .type = NXP_CAPTURE_INF_PARALLEL,
+        .parallel = {
+            .is_mipi        = false,
+            .external_sync  = false,
+            .h_active       = 720,
+            .h_frontporch   = 7,
+            .h_syncwidth    = 1,
+            .h_backporch    = 10,
+            .v_active       = 480,
+            .v_frontporch   = 0,
+            .v_syncwidth    = 2,
+            .v_backporch    = 3,
+            .clock_invert   = false,
+            .port           = 0,
+            .data_order     = 0,
+            .interlace      = true,
+            .clk_rate       = 24000000,
+            .late_power_down = false,
+        },
+    },
+#endif
 #ifdef CONFIG_VIDEO_TW9992
     {
-        /* front_camera 601 interface */
-        // for 5430
-        /*.module = 1,*/
         .module = 0,
-        .sensor = &sensor[0],
+        .sensor = &sensor[1],
         .type = NXP_CAPTURE_INF_CSI,
         .parallel = {
             .is_mipi        = true,
@@ -1021,6 +883,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 #endif /* CONFIG_VIDEO_TW9992 */
     { 0, NULL, 0, },
 };
+
 /* out platformdata */
 static struct i2c_board_info hdmi_edid_i2c_boardinfo = {
     I2C_BOARD_INFO("nxp_edid", 0xA0>>1),
@@ -1075,9 +938,7 @@ static struct nxp_out_platformdata out_plat_data = {
 };
 
 static struct nxp_v4l2_platformdata v4l2_plat_data = {
-#ifdef CONFIG_VIDEO_TW9992
     .captures = &capture_plat_data[0],
-#endif
     .out = &out_plat_data,
 };
 
@@ -1673,12 +1534,6 @@ void __init nxp_board_devs_register(void)
 #if defined(CONFIG_NXP_HDMI_CEC)
     printk("plat: add device hdmi-cec\n");
     platform_device_register(&hdmi_cec_device);
-#endif
-
-#if 0//defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-	back_camera_power_enable(0);
-	front_camera_power_enable(0);
-	camera_power_control(0);
 #endif
 
 #if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
