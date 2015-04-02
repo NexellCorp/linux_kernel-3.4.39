@@ -83,7 +83,7 @@ obj-$(CONFIG_VIDEO_M5MOLS)	+= m5mols/
 obj-$(CONFIG_VIDEO_S5K6AA)	+= s5k6aa.o
 obj-$(CONFIG_VIDEO_ADP1653)	+= adp1653.o
 obj-$(CONFIG_VIDEO_AS3645A)	+= as3645a.o
-obj-$(CONFIG_VIDEO_TW9992)	+= tw/
+obj-y	+= tw/
 
 obj-$(CONFIG_VIDEO_S5K5CAGX)    += s5k5cagx.o
 obj-$(CONFIG_VIDEO_S5K4ECGX)	+= s5k4ecgx.o
