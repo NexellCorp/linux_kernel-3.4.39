@@ -154,6 +154,7 @@ static int _check_header(struct fine_boot_context *me)
     if (IS_ERR(filp)) {
         printk(KERN_ERR "%s: open failed %s\n", __func__, filename);
         ret = -1;
+        filp = NULL;
         goto OUT;
     }
 
