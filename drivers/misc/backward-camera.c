@@ -831,9 +831,11 @@ static int nxp_backward_camera_remove(struct platform_device *pdev)
 {
     struct nxp_backward_camera_context *me = &_context;
     printk(KERN_ERR "%s\n", __func__);
-    _mlc_overlay_stop(me->plat_data->mlc_module_num);
-    _mlc_video_stop(me->plat_data->mlc_module_num);
-    _vip_stop(me->plat_data->vip_module_num);
+    if (me->is_on) {
+        _mlc_overlay_stop(me->plat_data->mlc_module_num);
+        _mlc_video_stop(me->plat_data->mlc_module_num);
+        _vip_stop(me->plat_data->vip_module_num);
+    }
     _free_buffer(me);
     free_irq(_context.irq, &_context);
     return 0;
@@ -862,8 +864,15 @@ void backward_camera_external_on(void)
     _turn_on(me);
 }
 
+void backward_camera_remove(void)
+{
+    struct nxp_backward_camera_context *me = &_context;
+    nxp_backward_camera_remove(me->my_device);
+}
+
 EXPORT_SYMBOL(is_backward_camera_on);
 EXPORT_SYMBOL(backward_camera_external_on);
+EXPORT_SYMBOL(backward_camera_remove);
 
 static int __init backward_camera_init(void)
 {
