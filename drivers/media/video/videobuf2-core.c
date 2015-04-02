@@ -1460,8 +1460,10 @@ static int __vb2_wait_for_done_vb(struct vb2_queue *q, int nonblocking)
 		ret = wait_event_interruptible_timeout(q->done_wq,
 				!list_empty(&q->done_list) || !q->streaming,
                 HZ);
-        if (ret == 0)
+        if (ret == 0) {
+            printk("TIMEOUT DQ!!!\n");
             ret = -ETIME;
+        }
         else
             ret = 0;
 #endif
