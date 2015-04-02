@@ -2093,13 +2093,14 @@ static int tw9992_init(struct v4l2_subdev *sd, u32 val)
 
 	dev_err(&client->dev, "%s: start\n", __func__);
 
+	mdelay(500);
+
 	ret = tw9992_reg_set_write(client, TW9992_DataSet);
 	if(ret < 0) {
 		dev_err(&client->dev, "\e[31mTW9992_DataSet0 error\e[0m, ret = %d\n", ret);
 		return ret;
 	}
 
-#if 0
 	ret = tw9992_decoder_lock(client);
 	if(ret < 0) {
 		dev_err(&client->dev, "\e[31mtw9992_decoder_lock() error!!! \e[0m, ret = %d\n", ret);
@@ -2111,6 +2112,8 @@ static int tw9992_init(struct v4l2_subdev *sd, u32 val)
 		dev_err(&client->dev, "\e[31mTW9992_DataSet1 error\e[0m, ret = %d\n", ret);
 		return ret;
 	}
+
+#if 0
 
 	ret = tw9992_i2c_read_byte(client, 0x02, &reg_val);
 	reg_val &= 0xf0;
@@ -2133,45 +2136,7 @@ static int tw9992_init(struct v4l2_subdev *sd, u32 val)
 		return ret;
 	}
 
-	printk("==============================================\n");
 
-	tw9992_i2c_read_byte(client, 0x00, &reg_val);
-	printk("===== Product ID code : 0x%x \n", reg_val);
-
-	tw9992_i2c_read_byte(client, 0x03, &reg_val);
-	printk("===== Reg 0x03 : 0x%x.\n", reg_val);
-
-	if(reg_val & 0x80)	printk("===== Video not present.\n");
-	else				printk("===== Video Detected.\n");
-
-	if(reg_val & 0x40)	printk("===== Horizontal sync PLL is locked to the incoming video source.\n");
-	else				printk("===== Horizontal sync PLL is not locked.\n");
-
-	if(reg_val & 0x20)	printk("===== Sub-carrier PLL is locked to the incoming video source.\n");
-	else				printk("===== Sub-carrier PLL is not locked.\n");
-
-	if(reg_val & 0x10)	printk("===== Odd field is being decoded.\n");
-	else				printk("===== Even field is being decoded.\n");
-
-	if(reg_val & 0x8)	printk("===== Vertical logic is locked to the incoming video source.\n");
-	else				printk("===== Vertical logic is not locked.\n");
-
-	if(reg_val & 0x2)	printk("===== No color burst signal detected.\n");
-	else				printk("===== Color burst signal detected.\n");
-
-	if(reg_val & 0x1)	printk("===== 50Hz source detected.\n");
-	else				printk("===== 60Hz source detected.\n");
-
-	tw9992_i2c_read_byte(client, 0x1c, &reg_val);
-		printk("===== Reg 0x1C : 0x%x.\n", reg_val);
-
-	if(reg_val & 0x80)	printk("===== Detection in progress.\n");
-	else				printk("===== Idle.\n");
-
-	//tw9992_i2c_read_byte(client, 0x7F, 1, &reg_val, 1);
-	//printk("===== Reg 0x7F : 0x%x.\n", reg_val);
-
-	printk("==============================================\n");
 	return ret;
 }
 
