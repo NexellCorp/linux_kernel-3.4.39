@@ -479,6 +479,7 @@ int miosys_print_elapsed_t(void)
 #if defined (__COMPILE_MODE_ELAPSE_T__)
     unsigned char sz[32];
 
+    unsigned int sum_roundup = Exchange.debug.elapse_t.sum_roundup;
     unsigned long long * sum = Exchange.debug.elapse_t.sum;
     unsigned long long * avg = Exchange.debug.elapse_t.avg;
     unsigned long long * min = Exchange.debug.elapse_t.min;
@@ -513,7 +514,7 @@ int miosys_print_elapsed_t(void)
                                                                                                             __PRINT(KERN_INFO "\n");
                                                                                                             __PRINT(KERN_INFO " Measured On Transaction Thread (Measured Unit is nano second)");
                                                                                                             __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
-                                                                                                            __PRINT(KERN_INFO " |                       |                  Sum |             Avg |             Min |             Max |     Ratio |");
+                                                                                                            __PRINT(KERN_INFO " |                       |     %10d x Sum |             Avg |             Min |             Max |     Ratio |", sum_roundup);
                                                                                                             __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
     Exchange.sys.fn.ratio(sz, gt_sum, sum[ELAPSE_T_TRANSACTION_THREAD_BACKGROUND]);                         __PRINT(KERN_INFO " | BackGround            | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_TRANSACTION_THREAD_BACKGROUND], avg[ELAPSE_T_TRANSACTION_THREAD_BACKGROUND], min[ELAPSE_T_TRANSACTION_THREAD_BACKGROUND], max[ELAPSE_T_TRANSACTION_THREAD_BACKGROUND], sz);
     Exchange.sys.fn.ratio(sz, gt_sum, sum[ELAPSE_T_TRANSACTION_THREAD_SCHEDULED ]);                         __PRINT(KERN_INFO " | Scheduled             | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_TRANSACTION_THREAD_SCHEDULED ], avg[ELAPSE_T_TRANSACTION_THREAD_SCHEDULED ], min[ELAPSE_T_TRANSACTION_THREAD_SCHEDULED ], max[ELAPSE_T_TRANSACTION_THREAD_SCHEDULED ], sz);
@@ -522,7 +523,7 @@ int miosys_print_elapsed_t(void)
                                                                                                             __PRINT(KERN_INFO "\n");
                                                                                                             __PRINT(KERN_INFO " Measured On Transaction (Measured Unit is nano second)");
                                                                                                             __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
-                                                                                                            __PRINT(KERN_INFO " |                       |                  Sum |             Avg |             Min |             Max |     Ratio |");
+                                                                                                            __PRINT(KERN_INFO " |                       |     %10d x Sum |             Avg |             Min |             Max |     Ratio |", sum_roundup);
                                                                                                             __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
     Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_TRANSACTION_THREAD_IO], sum[ELAPSE_T_TRANSACTION_THREAD_IO]);    __PRINT(KERN_INFO " | Transaction           | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_TRANSACTION_THREAD_IO], avg[ELAPSE_T_TRANSACTION_THREAD_IO], min[ELAPSE_T_TRANSACTION_THREAD_IO], max[ELAPSE_T_TRANSACTION_THREAD_IO], sz);
     Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_TRANSACTION_THREAD_IO], sum[ELAPSE_T_IO_MEDIA_DISCARD     ]);    __PRINT(KERN_INFO " | - Media Discard       | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_MEDIA_DISCARD     ], avg[ELAPSE_T_IO_MEDIA_DISCARD     ], min[ELAPSE_T_IO_MEDIA_DISCARD     ], max[ELAPSE_T_IO_MEDIA_DISCARD     ], sz);
@@ -532,7 +533,7 @@ int miosys_print_elapsed_t(void)
                                                                                                             __PRINT(KERN_INFO "\n");
                                                                                                             __PRINT(KERN_INFO " Measured On Media I/O (Measured Unit is nano second)");
                                                                                                             __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
-                                                                                                            __PRINT(KERN_INFO " |                       |                  Sum |             Avg |             Min |             Max |     Ratio |");
+                                                                                                            __PRINT(KERN_INFO " |                       |     %10d x Sum |             Avg |             Min |             Max |     Ratio |", sum_roundup);
                                                                                                             __PRINT(KERN_INFO " +-----------------------+----------------------+-----------------+-----------------+-----------------+-----------+");
     Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_MEDIA_RW          ]);    __PRINT(KERN_INFO " | Media I/O         R/W | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_MEDIA_RW          ], avg[ELAPSE_T_IO_MEDIA_RW          ], min[ELAPSE_T_IO_MEDIA_RW          ], max[ELAPSE_T_IO_MEDIA_RW          ], sz);
     Exchange.sys.fn.ratio(sz, sum[ELAPSE_T_IO_MEDIA_RW          ], sum[ELAPSE_T_IO_FTL_RW            ]);    __PRINT(KERN_INFO " | - FTL             R/W | %20lld | %15lld | %15lld | %15lld | %s |", sum[ELAPSE_T_IO_FTL_RW            ], avg[ELAPSE_T_IO_FTL_RW            ], min[ELAPSE_T_IO_FTL_RW            ], max[ELAPSE_T_IO_FTL_RW            ], sz);

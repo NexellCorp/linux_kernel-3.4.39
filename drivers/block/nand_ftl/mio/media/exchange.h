@@ -281,7 +281,6 @@ typedef struct __WARN__
 #define __SUPPORT_MIO_CHIP_S5P6818__
 #endif
 
-
 #elif defined (__BUILD_MODE_ARM_UBOOT_DEVICE_DRIVER__)
 
 #if   defined (__SUPPORT_MIO_UBOOT_CHIP_NXP4330__)
@@ -749,12 +748,13 @@ typedef struct __ExDEBUG__
 
     struct
     {
+        unsigned int sum_roundup;
+
         unsigned long long sum[ELAPSE_T_MAX];
         unsigned long long avg[ELAPSE_T_MAX];
         unsigned long long min[ELAPSE_T_MAX];
         unsigned long long max[ELAPSE_T_MAX];
-
-        unsigned int  cnt[ELAPSE_T_MAX];
+        unsigned long long cnt[ELAPSE_T_MAX];
 
         struct
         {

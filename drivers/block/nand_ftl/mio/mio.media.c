@@ -44,7 +44,7 @@ static u8 * media_on_ram;
  * Optimize Option
  ******************************************************************************/
 #if defined (__COMPILE_MODE_BEST_DEBUGGING__)
-#pragma GCC push_options
+//#pragma GCC push_options
 #pragma GCC optimize("O0")
 #endif
 
@@ -315,7 +315,7 @@ void media_write(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_s
     sector_t lba = _lba;
     unsigned int seccnt = _seccnt;
     u8 * buffer = _buffer;
-    struct mio_state * io_state = _io_state;
+  //struct mio_state * io_state = _io_state;
 
 #if defined (__MEDIA_ON_RAM__)
     memcpy(media_on_ram + lba * __SECTOR_SIZEOF(1), buffer, seccnt * __SECTOR_SIZEOF(1));
@@ -778,5 +778,5 @@ void media_gpio_c01_low(void)
  * Optimize Restore
  ******************************************************************************/
 #if defined (__COMPILE_MODE_BEST_DEBUGGING__)
-#pragma GCC pop_options
+//#pragma GCC pop_options
 #endif
