@@ -48,6 +48,8 @@ static struct nxp_backward_camera_context {
     struct platform_device *my_device;
 
     bool is_on;
+
+    bool removed;
 } _context;
 
 static void _vip_dump_register(int module)
@@ -811,6 +813,8 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
 
     me->is_first = true;
 
+    me->removed = false;
+
     me->my_device = pdev;
 
     _decide(me);
@@ -830,14 +834,17 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
 static int nxp_backward_camera_remove(struct platform_device *pdev)
 {
     struct nxp_backward_camera_context *me = &_context;
-    printk(KERN_ERR "%s\n", __func__);
-    if (me->is_on) {
-        _mlc_overlay_stop(me->plat_data->mlc_module_num);
-        _mlc_video_stop(me->plat_data->mlc_module_num);
-        _vip_stop(me->plat_data->vip_module_num);
+    if (me->removed == false) {
+        printk(KERN_ERR "%s\n", __func__);
+        if (me->is_on) {
+            _mlc_overlay_stop(me->plat_data->mlc_module_num);
+            _mlc_video_stop(me->plat_data->mlc_module_num);
+            _vip_stop(me->plat_data->vip_module_num);
+        }
+        _free_buffer(me);
+        free_irq(_context.irq, &_context);
+        me->removed = true;
     }
-    _free_buffer(me);
-    free_irq(_context.irq, &_context);
     return 0;
 }
 
