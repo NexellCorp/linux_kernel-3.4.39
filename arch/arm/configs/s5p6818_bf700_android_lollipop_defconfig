@@ -1034,7 +1034,7 @@ CONFIG_INPUT_KEYBOARD=y
 # CONFIG_KEYBOARD_SUNKBD is not set
 # CONFIG_KEYBOARD_OMAP4 is not set
 # CONFIG_KEYBOARD_XTKBD is not set
-CONFIG_KEYBOARD_NXP_KEY=y
+# CONFIG_KEYBOARD_NXP_KEY is not set
 # CONFIG_INPUT_MOUSE is not set
 # CONFIG_INPUT_JOYSTICK is not set
 # CONFIG_INPUT_TABLET is not set
@@ -1563,7 +1563,10 @@ CONFIG_VIDEOBUF2_MEMOPS=y
 CONFIG_VIDEOBUF2_CMA_PHYS=y
 CONFIG_VIDEOBUF2_ION_NXP=y
 CONFIG_V4L2_NXP=y
-# CONFIG_VIDEO_NXP_CAPTURE is not set
+CONFIG_VIDEO_NXP_CAPTURE=y
+# CONFIG_NXP_CAPTURE_DECIMATOR is not set
+CONFIG_NXP_CAPTURE_MIPI_CSI=y
+# CONFIG_TURNAROUND_VIP_RESET is not set
 CONFIG_VIDEO_NXP_M2M=y
 CONFIG_NXP_M2M_SCALER=y
 CONFIG_ENABLE_SCALER_MISC_DEVICE=y
@@ -1573,7 +1576,121 @@ CONFIG_VIDEO_NXP_OUT=y
 # CONFIG_NXP_OUT_RESOLUTION_CONVERTER is not set
 # CONFIG_NXP_OUT_HDMI is not set
 CONFIG_NXP_OUT_TVOUT=y
-# CONFIG_VIDEO_CAPTURE_DRIVERS is not set
+CONFIG_VIDEO_CAPTURE_DRIVERS=y
+# CONFIG_VIDEO_ADV_DEBUG is not set
+# CONFIG_VIDEO_FIXED_MINOR_RANGES is not set
+# CONFIG_VIDEO_HELPER_CHIPS_AUTO is not set
+
+#
+# Encoders, decoders, sensors and other helper chips
+#
+
+#
+# Audio decoders, processors and mixers
+#
+# CONFIG_VIDEO_TVAUDIO is not set
+# CONFIG_VIDEO_TDA7432 is not set
+# CONFIG_VIDEO_TDA9840 is not set
+# CONFIG_VIDEO_TEA6415C is not set
+# CONFIG_VIDEO_TEA6420 is not set
+# CONFIG_VIDEO_MSP3400 is not set
+# CONFIG_VIDEO_CS5345 is not set
+# CONFIG_VIDEO_CS53L32A is not set
+# CONFIG_VIDEO_TLV320AIC23B is not set
+# CONFIG_VIDEO_WM8775 is not set
+# CONFIG_VIDEO_WM8739 is not set
+# CONFIG_VIDEO_VP27SMPX is not set
+
+#
+# RDS decoders
+#
+# CONFIG_VIDEO_SAA6588 is not set
+
+#
+# Video decoders
+#
+CONFIG_VIDEO_TW9992=y
+CONFIG_VIDEO_TW9900=y
+# CONFIG_VIDEO_ADV7180 is not set
+# CONFIG_VIDEO_ADV7183 is not set
+# CONFIG_VIDEO_BT819 is not set
+# CONFIG_VIDEO_BT856 is not set
+# CONFIG_VIDEO_BT866 is not set
+# CONFIG_VIDEO_KS0127 is not set
+# CONFIG_VIDEO_SAA7110 is not set
+# CONFIG_VIDEO_SAA711X is not set
+# CONFIG_VIDEO_SAA7191 is not set
+# CONFIG_VIDEO_TVP514X is not set
+# CONFIG_VIDEO_TVP5150 is not set
+# CONFIG_VIDEO_TVP7002 is not set
+# CONFIG_VIDEO_VPX3220 is not set
+
+#
+# Video and audio decoders
+#
+# CONFIG_VIDEO_SAA717X is not set
+# CONFIG_VIDEO_CX25840 is not set
+
+#
+# MPEG video encoders
+#
+# CONFIG_VIDEO_CX2341X is not set
+
+#
+# Video encoders
+#
+# CONFIG_VIDEO_SAA7127 is not set
+# CONFIG_VIDEO_SAA7185 is not set
+# CONFIG_VIDEO_ADV7170 is not set
+# CONFIG_VIDEO_ADV7175 is not set
+# CONFIG_VIDEO_ADV7343 is not set
+# CONFIG_VIDEO_AK881X is not set
+
+#
+# Camera sensor devices
+#
+# CONFIG_VIDEO_OV7670 is not set
+# CONFIG_VIDEO_VS6624 is not set
+# CONFIG_VIDEO_MT9M032 is not set
+# CONFIG_VIDEO_MT9P031 is not set
+# CONFIG_VIDEO_MT9T001 is not set
+# CONFIG_VIDEO_MT9V011 is not set
+# CONFIG_VIDEO_MT9V032 is not set
+# CONFIG_VIDEO_MT9D111_CAM is not set
+# CONFIG_VIDEO_THP7212_CAM is not set
+# CONFIG_VIDEO_TCM825X is not set
+# CONFIG_VIDEO_SR030PC30 is not set
+# CONFIG_VIDEO_NOON010PC30 is not set
+# CONFIG_VIDEO_S5K4ECGX is not set
+# CONFIG_VIDEO_S5K5CAGX is not set
+# CONFIG_VIDEO_SP2518 is not set
+# CONFIG_VIDEO_GC2035 is not set
+# CONFIG_VIDEO_GC0308 is not set
+# CONFIG_VIDEO_HM2057 is not set
+# CONFIG_VIDEO_SP0A19 is not set
+# CONFIG_VIDEO_SP0838 is not set
+# CONFIG_VIDEO_OV5645 is not set
+# CONFIG_VIDEO_S5K6AA is not set
+
+#
+# Flash devices
+#
+# CONFIG_VIDEO_ADP1653 is not set
+# CONFIG_VIDEO_AS3645A is not set
+
+#
+# Video improvement chips
+#
+# CONFIG_VIDEO_UPD64031A is not set
+# CONFIG_VIDEO_UPD64083 is not set
+
+#
+# Miscelaneous helper chips
+#
+# CONFIG_VIDEO_THS7303 is not set
+# CONFIG_VIDEO_M52790 is not set
+# CONFIG_V4L_USB_DRIVERS is not set
+# CONFIG_V4L_PLATFORM_DRIVERS is not set
 # CONFIG_V4L_MEM2MEM_DRIVERS is not set
 # CONFIG_RADIO_ADAPTERS is not set
 
