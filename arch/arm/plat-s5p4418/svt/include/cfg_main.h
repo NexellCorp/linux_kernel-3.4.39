@@ -194,12 +194,17 @@
  * 	Audio SPDIF (TX/RX)
  */
 #if defined (CONFIG_ANDROID)
-#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT					CTRUE
+#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT				CTRUE
 #else
-#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT					CFALSE
+#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT				CFALSE
 #endif
-#define	CFG_AUDIO_SPDIF_TX_SAMPLE_RATE				48000
-#define	CFG_AUDIO_SPDIF_RX_SAMPLE_RATE				48000
+#define	CFG_AUDIO_SPDIF_TX_SAMPLE_RATE			48000
+#define	CFG_AUDIO_SPDIF_RX_SAMPLE_RATE			48000
+
+/*------------------------------------------------------------------------------
+ * 	Audio PDM
+ */
+#define CFG_AUDIO_PDM_SAMPLE_RATE				48000
 
 /*------------------------------------------------------------------------------
  * 	I2C

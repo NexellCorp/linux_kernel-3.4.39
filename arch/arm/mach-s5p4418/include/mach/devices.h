@@ -134,6 +134,13 @@ struct nxp_spdif_plat_data {
     const char *dma_ch;
 };
 
+/* PDM */
+struct nxp_pdm_plat_data {
+    int sample_rate;
+    bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
+    const char *dma_ch;
+};
+
 /* sound DAI (I2S/SPDIF and codec interface) */
 struct nxp_snd_jack_pin {
     int    support;
