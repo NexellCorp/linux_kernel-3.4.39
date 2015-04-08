@@ -1623,6 +1623,10 @@ static int _onetime_test_3plane_direction(frame_data_info *frame)
 
 	int ret=-1;
 
+	int dst_idx = 0;
+
+	if(frame->dst_idx > 0) dst_idx = frame->dst_idx;
+
 	ret = check_work_duplicating(&_deinterlace->wq_start, &_deinterlace->status, PROCESSING_START, PROCESSING_STOP, HZ/10);
 	if( ret<0 ) return ret;
 
@@ -1642,13 +1646,14 @@ static int _onetime_test_3plane_direction(frame_data_info *frame)
 	src_curr_cb_data_phy	=	frame->src_bufs[1].plane3.phys[1];
 	src_curr_cr_data_phy	=	frame->src_bufs[1].plane3.phys[2];
 
-	dst_y_data_phy	=	frame->dst_bufs[0].plane3.phys[0];
-	dst_cb_data_phy	=	frame->dst_bufs[0].plane3.phys[1];
-	dst_cr_data_phy	=	frame->dst_bufs[0].plane3.phys[2];
+	dst_y_data_phy	=	frame->dst_bufs[dst_idx].plane3.phys[0];
+	dst_cb_data_phy	=	frame->dst_bufs[dst_idx].plane3.phys[1];
+	dst_cr_data_phy	=	frame->dst_bufs[dst_idx].plane3.phys[2];
 
-	dst_y_data_size = frame->dst_bufs[0].plane3.sizes[0];
-	dst_cb_data_size = frame->dst_bufs[0].plane3.sizes[1];
-	dst_cr_data_size = frame->dst_bufs[0].plane3.sizes[2];
+	dst_y_data_size = frame->dst_bufs[dst_idx].plane3.sizes[0];
+	dst_cb_data_size = frame->dst_bufs[dst_idx].plane3.sizes[1];
+	dst_cr_data_size = frame->dst_bufs[dst_idx].plane3.sizes[2];
+
 
 #if 1	
 	SetDeInterlace(height, width,
@@ -1672,9 +1677,90 @@ static int _onetime_test_3plane_direction(frame_data_info *frame)
 	ret = wait_for_end_of_work(&_deinterlace->wq_end, &_deinterlace->status, PROCESSING_START, PROCESSING_STOP, HZ/10);
 	if( ret<0 ) return ret;	
 
-	//write_file("/mnt/mmc/dst_y_data.bin", frame->dst_bufs[0].virt[0], frame->dst_bufs[0].sizes[0]);
-	//write_file("/mnt/mmc/dst_y_data.bin", frame->dst_bufs[0].virt[1], frame->dst_bufs[0].sizes[1]);
-	//write_file("/mnt/mmc/dst_y_data.bin", frame->dst_bufs[0].virt[2], frame->dst_bufs[0].sizes[2]);
+#if 0
+	printk(KERN_INFO "RESOLUTION - WIDTH : %d, HEIGHT : %d\n", width, height);
+
+	printk(KERN_INFO "STRIDE - SRC Y : %d, SRC C : %d, DST Y : %d, DST C : %d\n",
+                            src_y_stride, src_c_stride, dst_y_stride, dst_c_stride);
+
+	printk(KERN_INFO "SIZES - PREV SRC Y  : %ld\n", frame->src_bufs[0].plane3.sizes[0]);
+	printk(KERN_INFO "SIZES - PREV SRC CB : %ld\n", frame->src_bufs[0].plane3.sizes[1]);
+	printk(KERN_INFO "SIZES - PREV SRC CR : %ld\n", frame->src_bufs[0].plane3.sizes[2]);
+
+	printk(KERN_INFO "SIZES - CURR SRC Y  : %ld\n", frame->src_bufs[1].plane3.sizes[0]);
+	printk(KERN_INFO "SIZES - CURR SRC CB : %ld\n", frame->src_bufs[1].plane3.sizes[1]);
+	printk(KERN_INFO "SIZES - CURR SRC CR : %ld\n", frame->src_bufs[1].plane3.sizes[2]);
+
+	printk(KERN_INFO "SIZES - NEXT SRC Y  : %ld\n", frame->src_bufs[2].plane3.sizes[0]);
+	printk(KERN_INFO "SIZES - NEXT SRC CB : %ld\n", frame->src_bufs[2].plane3.sizes[1]);
+	printk(KERN_INFO "SIZES - NEXT SRC CR : %ld\n", frame->src_bufs[2].plane3.sizes[2]);
+
+	printk(KERN_INFO "SIZES - NEXT DST Y  : %d\n", dst_y_data_size);
+	printk(KERN_INFO "SIZES - NEXT DST CB : %d\n", dst_cb_data_size);
+	printk(KERN_INFO "SIZES - NEXT DST CR : %d\n", dst_cr_data_size);
+
+	printk(KERN_INFO "[%s]PHY - SRC PREV Y  : 0x%lX\n", __func__, src_prev_y_data_phy);
+	printk(KERN_INFO "[%s]PHY - SRC CURR Y  : 0x%lX\n", __func__, src_curr_y_data_phy);
+	printk(KERN_INFO "[%s]PHY - SRC NEXT Y  : 0x%lX\n", __func__, src_next_y_data_phy);
+	printk(KERN_INFO "[%s]PHY - SRC CURR CB : 0x%lX\n", __func__, src_curr_cb_data_phy);
+	printk(KERN_INFO "[%s]PHY - SRC CURR CR : 0x%lX\n", __func__, src_curr_cr_data_phy);
+	
+
+	printk(KERN_INFO "\n[%s]PHY - DST Y  : 0x%lX\n", __func__, dst_y_data_phy);
+	printk(KERN_INFO "[%s]PHY - DST CB  : 0x%lX\n", __func__, dst_cb_data_phy);
+	printk(KERN_INFO "[%s]PHY - DST CR  : 0x%lX\n\n", __func__, dst_cr_data_phy);
+	
+	write_file("src_prev_y_data.bin", frame->src_bufs[0].plane3.virt[0], frame->src_bufs[0].plane3.sizes[0]);
+	write_file("src_prev_cb_data.bin", frame->src_bufs[0].plane3.virt[1], frame->src_bufs[0].plane3.sizes[1]);
+	write_file("src_prev_cr_data.bin", frame->src_bufs[0].plane3.virt[2], frame->src_bufs[0].plane3.sizes[2]);
+
+	write_file("src_curr_y_data.bin", frame->src_bufs[1].plane3.virt[0], frame->src_bufs[1].plane3.sizes[0]);
+	write_file("src_curr_cb_data.bin", frame->src_bufs[1].plane3.virt[1], frame->src_bufs[1].plane3.sizes[1]);
+	write_file("src_curr_cr_data.bin", frame->src_bufs[1].plane3.virt[2], frame->src_bufs[1].plane3.sizes[2]);
+
+	write_file("src_next_y_data.bin", frame->src_bufs[2].plane3.virt[0], frame->src_bufs[2].plane3.sizes[0]);
+	write_file("src_next_cb_data.bin", frame->src_bufs[2].plane3.virt[1], frame->src_bufs[2].plane3.sizes[1]);
+	write_file("src_next_cr_data.bin", frame->src_bufs[2].plane3.virt[2], frame->src_bufs[2].plane3.sizes[2]);
+
+	//printk(KERN_INFO "DST END - Y Virt : 0x%p, Y Phys : 0x%lX, dst_y_data_size : %ld\n", dst_y_data, (unsigned long)dst_y_data_phy, frame->dst_bufs[0].plane3.sizes[0]);
+
+	write_file("dst_y_data.bin", frame->dst_bufs[0].plane3.virt[0], frame->dst_bufs[0].plane3.sizes[0]);
+	write_file("dst_cb_data.bin", frame->dst_bufs[0].plane3.virt[1], frame->dst_bufs[0].plane3.sizes[1]);
+	write_file("dst_cr_data.bin", frame->dst_bufs[0].plane3.virt[2], frame->dst_bufs[0].plane3.sizes[2]);
+#endif
+
+
+#if 0
+  alloc_dst_data(&dst_y_real_data, &dst_y_data, frame->dst_bufs[0].plane3.sizes[0]);
+  alloc_dst_data(&dst_cb_real_data, &dst_cb_data, frame->dst_bufs[0].plane3.sizes[1]);
+  alloc_dst_data(&dst_cr_real_data, &dst_cr_data, frame->dst_bufs[0].plane3.sizes[2]);
+
+  err = copy_to_user(frame->dst_bufs[0].plane3.virt[0], dst_y_data, frame->dst_bufs[0].plane3.sizes[0]);
+  if(err < 0) 
+  {
+    printk(KERN_ERR "dst Y data copy to user error!\n");
+    return -EACCES;
+  }
+
+  err = copy_to_user(frame->dst_bufs[0].plane3.virt[1], dst_cb_data, frame->dst_bufs[0].plane3.sizes[1]);
+  if(err < 0) 
+  {
+    printk(KERN_ERR "dst cb data copy to user error!\n");
+    return -EACCES;
+  }
+
+  err = copy_to_user(frame->dst_bufs[0].plane3.virt[2], dst_cr_data, frame->dst_bufs[0].plane3.sizes[2]);
+  if(err < 0) 
+  {
+    printk(KERN_ERR "dst cr data copy to user error!\n");
+    return -EACCES;
+  }
+ 
+  dealloc_dst_data(&dst_y_real_data);
+  dealloc_dst_data(&dst_cb_real_data);
+  dealloc_dst_data(&dst_cr_real_data);
+#endif
+
 
 	return 0;
 }
@@ -2095,7 +2181,6 @@ static irqreturn_t _irq_handler_deinterlace(int irq, void *param)
 	nxp_deinterlace *me = (nxp_deinterlace *)param;
 
 	tag_msg(KERN_INFO "%s++\n", __func__);
-	printk(KERN_INFO "%s++\n", __func__);
 
 	spin_lock_irqsave(&me->irq_lock, flags);
 	NX_DEINTERLACE_ClearInterruptPendingAll();
@@ -2108,8 +2193,6 @@ static irqreturn_t _irq_handler_deinterlace(int irq, void *param)
 		case ACT_DIRECT_FD:
 			atomic_set(&me->status, PROCESSING_STOP);
 			wake_up_interruptible(&me->wq_end);
-
-			printk(KERN_INFO "ACT MODE : %d\n", mode);
 			break;		
 		case ACT_THREAD:
 			set_hw_status(DEINTERLACING_STOP);
@@ -2128,7 +2211,6 @@ static irqreturn_t _irq_handler_deinterlace(int irq, void *param)
 
 	spin_unlock_irqrestore(&me->irq_lock, flags);
 
-	printk(KERN_INFO "%s--\n", __func__);
 	tag_msg(KERN_INFO "%s--\n", __func__);
 
 	return IRQ_HANDLED;
@@ -2147,8 +2229,6 @@ static long deinterlace_ioctl(struct file *file, unsigned int cmd, unsigned long
 	DQ_BUF	dqbuf;
 	DQ_BUF	dqbuf_t;
 
-	printk(KERN_INFO "ioctl : %s\n", __func__);
-
 	switch(cmd)
 	{
 		case IOCTL_DEINTERLACE_SET_AND_RUN:
@@ -2163,8 +2243,6 @@ static long deinterlace_ioctl(struct file *file, unsigned int cmd, unsigned long
 				return -EFAULT;
 			}
 
-			printk(KERN_INFO "command : %d\n", frame_info->command);
-			
 			enable_irq(_deinterlace->irq);
 			switch( frame_info->command )
 			{
