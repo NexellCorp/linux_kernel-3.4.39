@@ -228,6 +228,11 @@ int nxp_cpu_vic_table(void)
 EXPORT_SYMBOL(nxp_cpu_vic_table);
 
 #ifdef CONFIG_ARM_GIC
+#define DEBUG_TIMESTAMP		(0)
+
+#if defined (CONFIG_CPU_S5P4418_SMP_ISR)
+static DEFINE_RAW_SPINLOCK(smp_irq_lock);
+#endif
 
 static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 {
@@ -236,6 +241,14 @@ static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 	int i = 0, gic = irq;
 	int cpu, n;
 	static u32 vic_nr[4] = { 0, 1, 0, 1};
+#if defined (CONFIG_CPU_S5P4418_SMP_ISR)
+	static u32 vic_mask[2] = { 0, } ;
+#endif
+
+#if (DEBUG_TIMESTAMP)
+	long long ts = ktime_to_us(ktime_get());
+	static long long max = 0;
+#endif
 
 	stat[0] = readl_relaxed(VIC0_INT_BASE+VIC_IRQ_STATUS);
 	stat[1] = readl_relaxed(VIC1_INT_BASE+VIC_IRQ_STATUS);
@@ -271,19 +284,46 @@ static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 			break;
 		}
 	}
-
-	pr_debug("%s: cpu.%d vic[%s] gic irq=%d, vic=%d, stat=0x%02x \n",
-		__func__, cpu, i?"1":"0", gic, irq, pend);
+#if defined (CONFIG_CPU_S5P4418_SMP_ISR)
+	pr_debug("%s: cpu.%d vic[%s] gic irq=%d, vic=%d, stat=0x%02x [0x%08x:0x%08x]\n",
+		__func__, cpu, i?"1":"0", gic, irq, pend, vic_mask[0], vic_mask[1]);
+#endif
 
 	if (0 == pend)
 		goto irq_eoi;
 
 irq_hnd:
-	desc = irq_desc + irq;	/* vic descriptor */
+#if defined (CONFIG_CPU_S5P4418_SMP_ISR)
+	raw_spin_lock(&smp_irq_lock);
+	if (vic_mask[irq>>8] & (1<<(irq&0x1f))) {
+		writel_relaxed(31, GIC_CPUI_BASE + GIC_CPU_EOI);
+		raw_spin_unlock(&smp_irq_lock);
+		return;
+	}
+	vic_mask[irq>>8] |= (1<<(irq&0x1f));
+	raw_spin_unlock(&smp_irq_lock);
+#endif
+
+	/* vic descriptor */
+	desc = irq_desc + irq;
 	if (desc)
 		generic_handle_irq_desc(irq, desc);
 	else
 		printk(KERN_ERR "Error, not registered vic irq=%d !!!\n", irq);
+
+#if defined (CONFIG_CPU_S5P4418_SMP_ISR)
+	raw_spin_lock(&smp_irq_lock);
+	vic_mask[irq>>8] &= ~(1<<(irq&0x1f));
+	raw_spin_unlock(&smp_irq_lock);
+#endif
+
+#if (DEBUG_TIMESTAMP)
+	ts = ktime_to_us(ktime_get()) - ts;
+	if (ts > 2000) {
+		max = ts;
+		printk("[cpu.%d irq.%d, %03lldms]\n", cpu, irq, div64_s64(ts, 1000));
+	}
+#endif
 
 irq_eoi:
 	writel_relaxed(31, GIC_CPUI_BASE + GIC_CPU_EOI);
