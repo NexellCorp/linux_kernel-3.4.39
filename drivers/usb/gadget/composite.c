@@ -580,7 +580,6 @@ void nxp_wake_lock_timeout(void)
 {
 	if (usb_config_wake_lock_held == true) {
 		wake_lock_timeout(&usb_config_wake_lock, 1*HZ);
-		usb_config_wake_lock_held = false;
 	}
 }
 EXPORT_SYMBOL(nxp_wake_lock_timeout);
@@ -1185,9 +1184,8 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		value = set_config(cdev, ctrl, w_value);
 		spin_unlock(&cdev->lock);
 #if defined(CONFIG_ARCH_CPU_SLSI)
-		if (usb_config_wake_lock_held == false) {
+		if (usb_config_wake_lock_held == true) {
 			wake_lock(&usb_config_wake_lock);
-			usb_config_wake_lock_held = true;
 		}
 #endif
 		break;
@@ -1372,7 +1370,6 @@ static void composite_disconnect(struct usb_gadget *gadget)
 #if defined(CONFIG_ARCH_CPU_SLSI)
 	if (usb_config_wake_lock_held == true) {
 		wake_lock_timeout(&usb_config_wake_lock, 1*HZ);
-		usb_config_wake_lock_held = false;
 	}
 #endif
 	spin_lock_irqsave(&cdev->lock, flags);
