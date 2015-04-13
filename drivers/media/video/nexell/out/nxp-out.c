@@ -18,9 +18,6 @@
 #if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
 #include "nxp-resc.h"
 #endif
-#if defined(CONFIG_NXP_OUT_TVOUT)
-#include "nxp-tvout.h"
-#endif
 
 #include "nxp-out.h"
 
@@ -65,14 +62,6 @@ struct nxp_out *create_nxp_out(struct nxp_out_platformdata *pdata)
     }
 #endif
 
-#if defined(CONFIG_NXP_OUT_TVOUT)
-    me->tvout = create_nxp_tvout();
-    if (!me->tvout) {
-        pr_err("%s: failed to create_nxp_tvout()\n", __func__);
-        goto error_out;
-    }
-#endif
-
     return me;
 
 error_out:
@@ -80,10 +69,6 @@ error_out:
         kfree(me->mlcs[0]);
     if (me->mlcs[1])
         kfree(me->mlcs[1]);
-#if defined(CONFIG_NXP_OUT_TVOUT)
-    if (me->tvout)
-        kfree(me->tvout);
-#endif
 #if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
     if (me->resc)
         kfree(me->resc);
@@ -100,11 +85,6 @@ error_out:
 void release_nxp_out(struct nxp_out *me)
 {
     pr_debug("%s\n", __func__);
-
-#if defined(CONFIG_NXP_OUT_TVOUT)
-    if (me->tvout)
-        release_nxp_tvout(me->tvout);
-#endif
 
 #if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
     if (me->resc)
@@ -210,33 +190,9 @@ int register_nxp_out(struct nxp_out *me)
 
 #endif
 
-#if defined(CONFIG_NXP_OUT_TVOUT)
-    ret = register_nxp_tvout(me->tvout);
-    if (ret < 0) {
-        pr_err("%s: failed to register_nxp_tvout()\n", __func__);
-        goto error_out;
-    }
-
-    /* create link */
-    /* link mlc1 pad source to tvout pad sink */
-    ret = media_entity_create_link(
-            &me->mlcs[1]->subdev.entity, NXP_MLC_PAD_SOURCE,
-            &me->tvout->sd.entity, 0,
-            0);
-    if (ret < 0) {
-        pr_err("%s: failed to link mlc1 to tvout\n", __func__);
-        goto error_out;
-    }
-#endif
-
-
     return 0;
 
 error_out:
-#if defined(CONFIG_NXP_OUT_TVOUT)
-    unregister_nxp_tvout(me->tvout);
-#endif
-
 #if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
     unregister_nxp_resc(me->resc);
 #endif
@@ -251,9 +207,6 @@ error_out:
 void unregister_nxp_out(struct nxp_out *me)
 {
     pr_debug("%s\n", __func__);
-#if defined(CONFIG_NXP_OUT_TVOUT)
-    unregister_nxp_tvout(me->tvout);
-#endif
 #if defined(CONFIG_NXP_OUT_HDMI)
     unregister_nxp_hdmi(me->hdmi);
 #endif
@@ -266,14 +219,6 @@ int suspend_nxp_out(struct nxp_out *me)
 {
     int ret;
     PM_DBGOUT("+%s\n", __func__);
-
-#if defined(CONFIG_NXP_OUT_TVOUT)
-    ret = suspend_nxp_tvout(me->tvout);
-    if (ret) {
-        PM_DBGOUT("%s: failed to suspend_nxp_tvout, ret %d\n", __func__, ret);
-        return ret;
-    }
-#endif
 
 #if defined(CONFIG_NXP_OUT_HDMI)
     ret = suspend_nxp_hdmi(me->hdmi);
@@ -318,9 +263,6 @@ int resume_nxp_out(struct nxp_out *me)
 #endif
 #if defined(CONFIG_NXP_OUT_HDMI)
     resume_nxp_hdmi(me->hdmi);
-#endif
-#if defined(CONFIG_NXP_OUT_TVOUT)
-    resume_nxp_tvout(me->tvout);
 #endif
 
     PM_DBGOUT("-%s\n", __func__);

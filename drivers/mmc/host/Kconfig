@@ -629,29 +629,14 @@ config MMC_NXP_CH0
 	select MMC_NXP
 		default y
 
-config MMC_NXP_CH0_USE_DMA
-	bool "Use SD/MMC CH 0 DMA MODE"
-	depends on MMC_NXP_CH0 && MMC_DW_IDMAC
-		default y
-
 config MMC_NXP_CH1
 	bool "Support SD/MMC CH 1"
 	depends on MMC_DW
 	select MMC_NXP
 		default n
 
-config MMC_NXP_CH1_USE_DMA
-	bool "Use SD/MMC CH 1 DMA MODE"
-	depends on MMC_NXP_CH1 && MMC_DW_IDMAC
-		default y
-
 config MMC_NXP_CH2
 	bool "Support SD/MMC CH 2"
 	depends on MMC_DW
 	select MMC_NXP
 		default n
-config MMC_NXP_CH2_USE_DMA
-	bool "Use SD/MMC CH 2 DMA MODE"
-	depends on MMC_NXP_CH2 && MMC_DW_IDMAC
-		default y
-

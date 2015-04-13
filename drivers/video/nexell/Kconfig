@@ -58,10 +58,6 @@ config NXP_DISPLAY_MIPI
 		depends on NXP_DISPLAY_MIPI
 		default 0
 
-config NXP_DISPLAY_TVOUT
-	bool "TVOUT"
-	default n
-
 config NXP_DISPLAY_HDMI
 	bool "HDMI"
 

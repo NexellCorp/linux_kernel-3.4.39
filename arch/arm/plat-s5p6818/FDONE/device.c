@@ -1350,7 +1350,7 @@ struct spi_board_info spi2_board_info[] __initdata = {
  */
 
 
-#if (1)
+#if 1
 
 static int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
 {
@@ -1401,12 +1401,6 @@ static struct dw_mci_board _dwmci0_data = {
 	.get_cd			= _dwmci0_get_cd,
 	.ext_cd_init	= _dwmci_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
-#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH0_USE_DMA)
-    .mode       = DMA_MODE,
-#else
-	.mode       = PIO_MODE,
-#endif
-
 };
 #endif
 
@@ -1427,12 +1421,6 @@ static struct dw_mci_board _dwmci2_data = {
 	.detect_delay_ms= 200,
 	.sdr_timing		= 0x01010001,
 	.ddr_timing		= 0x03030002,
-#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
-    .mode       = DMA_MODE,
-#else
-	.mode       = PIO_MODE,
-#endif
-
 };
 #endif
 

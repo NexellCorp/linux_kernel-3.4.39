@@ -321,10 +321,7 @@ struct dw_mci_board {
 	void (*late_resume)(struct dw_mci *host);
 	u32		hs_over_clk;
 	u32		hw_timeout;	/* add by jhkim */
-	u32		mode;	/* add by bok	*/
 };
-#define DMA_MODE	1
-#define PIO_MODE	2
 
 #define	DW_MMC_DRIVE_DELAY(n)		((n & 0xFF) << 0)	// write
 #define	DW_MMC_DRIVE_PHASE(n)		((n & 0x03) <<16)	// write

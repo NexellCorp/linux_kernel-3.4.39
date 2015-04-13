@@ -1590,6 +1590,10 @@ void NFC_PHY_SetFeatures(unsigned int _max_channel, unsigned int _max_way, void 
             tOCH = (tOCH + 15) & 0xF;
             tCAH = (tCAH + 15) & 0xF;
 
+            if (Exchange.debug.nfc.phy.info_feature)
+            {
+                Exchange.sys.fn.print(" tACS: %u, tCOS: %u, tACC: %u, tOCH: %u, tCAH: %u\n", tACS, tCOS, tACC, tOCH, tCAH);
+            }
 
             for (way = 0; way < max_way; way++)
             {
@@ -1627,14 +1631,9 @@ void NFC_PHY_SetFeatures(unsigned int _max_channel, unsigned int _max_way, void 
                 }
             }
 
-            if (Exchange.debug.nfc.phy.info_feature)
             {
-                Exchange.sys.fn.print(" tACS: %u, tCOS: %u, tACC: %u, tOCH: %u, tCAH: %u\n", tACS, tCOS, tACC, tOCH, tCAH);
-            }
-
-			{
-				NF_TIME_REGS _t1 = { 0xf, 0x0, 0x7, 0x0, 0xf };
-				NF_TIME_REGS _t2 = { tACS, tCOS, tACC, tOCH, tCAH };
+                NF_TIME_REGS _t1 = {  0xf,  0x0,  0x7,  0x0,  0xf };
+                NF_TIME_REGS _t2 = { tACS, tCOS, tACC, tOCH, tCAH };
 
                 NFC_PHY_Boost_time_regval(_t1);
                 NFC_PHY_Origin_time_regval(_t2);

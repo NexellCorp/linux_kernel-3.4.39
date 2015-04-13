@@ -485,15 +485,4 @@ void nxp_platform_disp_device_data(enum disp_dev_type device, struct disp_vsync_
 	}
 	return;
 }
-
-/*------------------------------------------------------------------------------
- * TVOUT platform device
- */
-#if defined (CONFIG_NXP_DISPLAY_TVOUT)
-static struct platform_device tvout_device = {
-	.name	= DEV_NAME_TVOUT,
-	.id		= -1,
-};
-#endif
-
 #endif /* CONFIG_NXP_DISPLAY */

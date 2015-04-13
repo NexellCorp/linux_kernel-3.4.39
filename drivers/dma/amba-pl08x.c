@@ -84,9 +84,6 @@
 #include <linux/seq_file.h>
 #include <linux/slab.h>
 #include <asm/hardware/pl080.h>
-#if defined(CONFIG_ARCH_CPU_SLSI)
-#include <mach/devices.h>
-#endif
 
 #include "dmaengine.h"
 
@@ -1047,9 +1044,7 @@ static int pl08x_fill_llis_for_desc_cyclic(struct pl08x_driver_data *pl08x,
 	 * llis_va[0].lli == txd->llis_bus | bd.lli_bus;
 	 */
 	llis_va[num_llis - 1].lli = txd->llis_bus | bd.lli_bus;
-#if defined(CONFIG_ARCH_CPU_SLSI)
-	txd->lli_num = num_llis;
-#endif
+
 #ifdef VERBOSE_DEBUG
 	{
 		int i;
@@ -1862,29 +1857,6 @@ static int pl08x_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
 		plchan->state = PL08X_CHAN_IDLE;
 
 		if (plchan->phychan) {
-#if defined(CONFIG_ARCH_CPU_SLSI)
-			if ((plchan->chan.chan_id >= DMA_PERIPHERAL_ID_I2S0_TX) && (plchan->chan.chan_id <= DMA_PERIPHERAL_ID_I2S2_RX)) {
-				int i = 0;
-				int timeout;
-				struct pl08x_txd *txd = plchan->at;
-				struct pl08x_lli *llis_va = txd->llis_va; 
-
-				for (i = 0; i < txd->lli_num; i++) {
-					llis_va[i].lli = 0;
-				}
-				/* Wait for channel inactive */
-				for (timeout = 1000; timeout; timeout--) {
-					if (!pl08x_phy_channel_busy(plchan->phychan)) {
-						dev_vdbg(&pl08x->adev->dev, "%d\n", timeout);
-						mdelay(1);
-						break;
-					}
-					mdelay(1);
-				}
-				if (pl08x_phy_channel_busy(plchan->phychan))
-					pr_err("pl08x: channel%u timeout waiting for pause\n", plchan->phychan->id);
-			}
-#endif
 			pl08x_terminate_phy_chan(pl08x, plchan->phychan);
 
 			/*

@@ -68,8 +68,7 @@
 #define DEV_NAME_CPUFREQ        "nxp-cpufreq"
 #define DEV_NAME_USBOTG         "nxp-otg"
 #define DEV_NAME_RFKILL         "nxp-rfkill"
-#define DEV_NAME_WDT            "nxp-wdt"
-#define DEV_NAME_TVOUT          "nxp-tvout"
+#define DEV_NAME_WDT    	"nxp-wdt"
 
 /*
  *  Frame buffer platform data and display controller
@@ -121,7 +120,7 @@ struct nxp_i2s_plat_data {
     int     LR_pol_inv;
     int     pre_supply_mclk;            /* codec require mclk out, before codec initialize */
 	bool	(*ext_is_en)(void);
-	unsigned long (*set_ext_mclk)(unsigned long clk, int ch);
+	unsigned long (*set_ext_mclk)(unsigned long clk);
     bool    (*dma_filter)(struct dma_chan *chan, void *filter_param);
     const char *dma_play_ch;
     const char *dma_capt_ch;

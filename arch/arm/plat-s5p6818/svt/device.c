@@ -92,32 +92,29 @@ const u8 g_DispBusSI[3] = {
  */
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
+// test
 static unsigned long dfs_freq_table[][2] = {
-//     { 1600000, 1340000, },
-//     { 1500000, 1280000, },
-       { 1400000, 1240000, },
-       { 1300000, 1180000, },
-       { 1200000, 1140000, },
-       { 1100000, 1100000, },
-       { 1000000, 1060000, },
-       {  900000, 1040000, },
-       {  800000, 1000000, },
-       {  700000,  940000, },
-       {  600000,  940000, },
-       {  500000,  940000, },
-       {  400000,  940000, },
+//	{ 1600000, 1340000, },
+//	{ 1500000, 1280000, },
+	{ 1400000, 1240000, },
+	{ 1300000, 1180000, },
+	{ 1200000, 1140000, },
+	{ 1100000, 1100000, },
+	{ 1000000, 1060000, },
+	{  900000, 1040000, },
+	{  800000, 1000000, },
+	{  700000,  940000, },
+	{  600000,  940000, },
+	{  500000,  940000, },
+	{  400000,  940000, },
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
-	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
+	.supply_name	= "vdd_arm_1.3V",
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-//	.max_cpufreq    = 1200*1000,
-//	.max_retention  =   20*1000,
-//	.rest_cpufreq   =  400*1000,
-//	.rest_retention =    1*1000,
 };
 
 static struct platform_device dfs_plat_device = {
@@ -126,35 +123,34 @@ static struct platform_device dfs_plat_device = {
 		.platform_data	= &dfs_plat_data,
 	}
 };
-
 #endif
 
 /*------------------------------------------------------------------------------
  * SLsiAP Thermal Unit
  */
-
 #if defined(CONFIG_SENSORS_NXP_TMU)
+
 struct nxp_tmu_trigger tmu_triggers[] = {
-       {
-               .trig_degree    =  130, // 160
-               .trig_duration  =  100,
-               .trig_cpufreq   =  800*1000,    /* Khz */
-       },
+	{
+		.trig_degree	=  130,	// 160
+		.trig_duration	=  100,
+		.trig_cpufreq	=  800*1000,	/* Khz */
+	},
 };
 
 static struct nxp_tmu_platdata tmu_data = {
-       .channel  = 0,
-       .triggers = tmu_triggers,
-       .trigger_size = ARRAY_SIZE(tmu_triggers),
-       .poll_duration = 100,
-       .limit_cpufreq  = 1400*1000,    /* Khz */
+	.channel  = 0,
+	.triggers = tmu_triggers,
+	.trigger_size = ARRAY_SIZE(tmu_triggers),
+	.poll_duration = 100,
+	.limit_cpufreq  = 1400*1000,	/* Khz */
 };
 
 static struct platform_device tmu_device = {
-       .name                   = "nxp-tmu",
-			 .dev			= {
-					.platform_data  = &tmu_data,
-				}
+	.name			= "nxp-tmu",
+	.dev			= {
+		.platform_data	= &tmu_data,
+	}
 };
 #endif
 
@@ -823,27 +819,27 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
 #ifndef CONFIG_REGULATOR_MP8845C
-NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1100000, 1,  4);	/* 1.1V ARM */
-NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1100000, 1,  4);	/* 1.0V CORE */
+NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1100000, 1,  2);	/* 1.1V ARM */
+NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1100000, 1,  2);	/* 1.0V CORE */
 #endif
-NXE2000_PDATA_INIT(dc3,      0, 1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
+NXE2000_PDATA_INIT(dc3,      0, 1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0, 1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
-NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V SYS */
+NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  2);	/* 1.5V SYS */
 
-NXE2000_PDATA_INIT(ldo1,     0, 1000000, 3500000, 1, 0, 3300000, 1,  0);	/* 3.3V GPS */
-NXE2000_PDATA_INIT(ldo2,     0, 1000000, 3500000, 0, 0, 1800000, 0,  0);	/* 1.8V CAM1 */
+NXE2000_PDATA_INIT(ldo1,     0, 1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V GPS */
+NXE2000_PDATA_INIT(ldo2,     0, 1000000, 3500000, 0, 0, 1800000, 0,  2);	/* 1.8V CAM1 */
 NXE2000_PDATA_INIT(ldo3,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS1 */
 NXE2000_PDATA_INIT(ldo4,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS */
-NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  0);	/* 2.8V VCAM */
+NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  2);	/* 2.8V VCAM */
 NXE2000_PDATA_INIT(ldo6,     0, 1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
-NXE2000_PDATA_INIT(ldo7,     0, 1000000, 3500000, 1, 0, 2800000, 1,  1);	/* 2.8V VID */
+NXE2000_PDATA_INIT(ldo7,     0, 1000000, 3500000, 1, 0, 2800000, 1,  2);	/* 2.8V VID */
 #if defined(CONFIG_NXP_RFKILL)
-NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V WIFI */
+NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 0,  2);	/* 3.3V WIFI */
 #else
-NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 1,  0);	/* 3.3V WIFI */
+NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 1,  2);	/* 3.3V WIFI */
 #endif
-NXE2000_PDATA_INIT(ldo9,     0, 1000000, 3500000, 1, 0, 3300000, 1,  0);	/* 3.3V HUB */
-NXE2000_PDATA_INIT(ldo10,    0, 1000000, 3500000, 1, 0, 1200000, 0,  0);	/* 1.2V HSIC */
+NXE2000_PDATA_INIT(ldo9,     0, 1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V HUB */
+NXE2000_PDATA_INIT(ldo10,    0, 1000000, 3500000, 1, 0, 1200000, 0,  2);	/* 1.2V HSIC */
 NXE2000_PDATA_INIT(ldortc1,  0, 1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
 NXE2000_PDATA_INIT(ldortc2,  0, 1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
 
@@ -1870,11 +1866,6 @@ static struct dw_mci_board _dwmci0_data = {
 	.get_cd			= _dwmci0_get_cd,
 	.ext_cd_init	= _dwmci_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
-#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH0_USE_DMA)
-    .mode       	= DMA_MODE,
-#else   
-    .mode      		= PIO_MODE,
-#endif
 };
 #endif
 
@@ -1889,11 +1880,7 @@ static struct dw_mci_board _dwmci1_data = {
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
 	.get_ro         = _dwmci_get_ro,
 	.get_cd			= _dwmci_get_cd,
-#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
-    .mode       	= DMA_MODE,
-#else   
-    .mode       	= PIO_MODE,
-#endif
+
 };
 #endif
 
@@ -1911,12 +1898,6 @@ static struct dw_mci_board _dwmci2_data = {
 
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
-    .mode       	= DMA_MODE,
-#else   
-    .mode       	= PIO_MODE,
-#endif
-
 };
 /*
 static struct dw_mci_board _dwmci2_data = {
