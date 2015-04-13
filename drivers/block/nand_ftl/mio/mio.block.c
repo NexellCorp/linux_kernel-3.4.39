@@ -1097,7 +1097,9 @@ static int nand_suspend(struct device * dev)
 
     while (1)
     {
-        if ((MIO_SCHEDULED == mio_dev.io_state->transaction.status) && (MIO_BG_SCHEDULED == mio_dev.io_state->background.status))
+		if ((MIO_SCHEDULED == mio_dev.io_state->transaction.status) &&
+				((MIO_BG_SCHEDULED == mio_dev.io_state->background.status) ||
+				 (MIO_BG_SLEEP     == mio_dev.io_state->background.status)) )
         {
             break;
         }
