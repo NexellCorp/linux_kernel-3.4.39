@@ -924,8 +924,7 @@ void NFC_PHY_Origin_time_regval(NF_TIME_REGS _t)
 
 void NFC_PHY_BoostOn(void)
 {
-	if (NFC_PHY_is_Boost_time_Init)
-		NFC_PHY_ForceSet_Nftime(BoostOn_BoostTime);
+	NFC_PHY_ForceSet_Nftime(BoostOn_BoostTime);
 }
 
 void NFC_PHY_BoostOff(void)
