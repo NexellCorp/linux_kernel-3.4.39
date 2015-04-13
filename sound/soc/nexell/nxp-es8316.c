@@ -75,7 +75,8 @@ static int es8316_jack_status_check(void)
 	if (!level) {
 		es8316_jack_insert = 0;
 		es8316_mono_en(1);
-		gpio_set_value(AUDIO_AMP_POWER, 1);
+		if (codec->dapm.bias_level >= SND_SOC_BIAS_PREPARE)
+			gpio_set_value(AUDIO_AMP_POWER, 1);
 	} else {
 		es8316_jack_insert = 1;
 		es8316_mono_en(0);
@@ -163,10 +164,8 @@ static int es8316_resume_post(struct snd_soc_card *card)
 
 	if (!level) {
 		es8316_jack_insert = 0;
-		gpio_set_value(AUDIO_AMP_POWER, 1);
 	} else {
 		es8316_jack_insert = 1;
-		gpio_set_value(AUDIO_AMP_POWER, 0);
 	}
 
 	pr_debug("%s: jack_insert %d\n", __func__, es8316_jack_insert);
@@ -179,6 +178,19 @@ static int es8316_resume_post(struct snd_soc_card *card)
 static struct snd_soc_ops es8316_ops = {
 	.hw_params 		= es8316_hw_params,
 };
+
+int es8316_spk_on(int enable)
+{
+	pr_debug("%s (enable:%d)\n", __func__, enable);
+#if defined (CFG_IO_AUDIO_AMP_POWER)
+	if (enable)
+		gpio_set_value(AUDIO_AMP_POWER, 1);
+	else
+		gpio_set_value(AUDIO_AMP_POWER, 0);
+#endif
+	return 0;
+}
+EXPORT_SYMBOL(es8316_spk_on);
 
 static int es8316_spk_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *k, int event)
@@ -370,6 +382,7 @@ static int es8316_remove(struct platform_device *pdev)
 	struct snd_soc_card *card = platform_get_drvdata(pdev);
 	snd_soc_unregister_card(card);
 #if defined (CFG_IO_AUDIO_AMP_POWER)
+	gpio_set_value(AUDIO_AMP_POWER, 0);
 	gpio_free(AUDIO_AMP_POWER);
 #endif
 	return 0;

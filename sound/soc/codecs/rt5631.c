@@ -1635,7 +1635,9 @@ struct coeff_clk_div coeff_div[] = {
 	{22579200,  88200 * 64,  88200,  0x0000},
 	{24576000,  96000 * 32,  96000,  0x1000},
 	{24576000,  96000 * 64,  96000,  0x0000},
-	/* sysclk is 512fs */
+	{49152000,  192000 * 32,  192000,  0x1000},
+	{49152000,  192000 * 64,  192000,  0x0000},
+/* sysclk is 512fs */
 	{4096000,  8000 * 32,  8000, 0x3000},
 	{4096000,  8000 * 64,  8000, 0x2000},
 	{5644800,  11025 * 32,  11025, 0x3000},
@@ -1871,8 +1873,7 @@ static int rt5631_hifi_codec_set_dai_sysclk(struct snd_soc_dai *dai,
 
 	if (clk_id != RT5631_SCLK1 && clk_id != RT5631_SCLK2)
 		return -EINVAL;
-
-	if ((freq >= (256 * 8000)) && (freq <= (512 * 96000))) {
+	if ((freq >= (256 * 8000)) && (freq <= (384 * 192000))) {
 		rt5631->sysclk[clk_id] = freq;
 		return 0;
 	}
@@ -2242,7 +2243,7 @@ static int rt5631_resume(struct snd_soc_codec *codec)
 #define rt5631_resume NULL
 #endif
 
-#define RT5631_STEREO_RATES SNDRV_PCM_RATE_8000_96000
+#define RT5631_STEREO_RATES SNDRV_PCM_RATE_8000_192000
 #define RT5631_VOICE_RATES (SNDRV_PCM_RATE_16000 | SNDRV_PCM_RATE_8000)
 #define RT5631_FORMAT	(SNDRV_PCM_FMTBIT_S16_LE | \
 			SNDRV_PCM_FMTBIT_S20_3LE | \
