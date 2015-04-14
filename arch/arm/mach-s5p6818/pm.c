@@ -123,6 +123,7 @@ static int suspend_machine(void)
 
 	NX_ALIVE_SetWriteEnable(CTRUE);
 	NX_ALIVE_ClearWakeUpStatus();
+	NX_ALIVE_ClearInterruptPendingAll();
 
 	/*
 	 * set wakeup device

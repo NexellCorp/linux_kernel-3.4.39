@@ -31,7 +31,7 @@
  * Optimize Option
  ******************************************************************************/
 #if defined (__COMPILE_MODE_BEST_DEBUGGING__)
-#pragma GCC push_options
+//#pragma GCC push_options
 #pragma GCC optimize("O0")
 #endif
 
@@ -655,6 +655,8 @@ static unsigned char mio_elapse_t_condition(int _i)
 
 static void mio_elapse_t_init(void)
 {
+    Exchange.debug.elapse_t.sum_roundup = 1;
+
     memset(Exchange.debug.elapse_t.sum, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
     memset(Exchange.debug.elapse_t.avg, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
     memset(Exchange.debug.elapse_t.cnt, 0x00, sizeof(unsigned long long) * ELAPSE_T_MAX);
@@ -676,6 +678,20 @@ static void mio_elapse_t_end(int _i)
     {
         measure_t.t2[_i] = ktime_get();
         measure_t.dt[_i].tv64 = ktime_to_ns(ktime_sub(measure_t.t2[_i], measure_t.t1[_i]));
+
+        // Roll Over cnt or sum
+        if (((Exchange.debug.elapse_t.cnt[_i] + 1) < Exchange.debug.elapse_t.cnt[_i]) || ((Exchange.debug.elapse_t.sum[_i] + measure_t.dt[_i].tv64) < Exchange.debug.elapse_t.sum[_i]))
+        {
+            int i = 0;
+
+            for (i = 0; i < ELAPSE_T_MAX; i++)
+            {
+                Exchange.sys.fn.div64(Exchange.debug.elapse_t.cnt[_i], 10);
+                Exchange.sys.fn.div64(Exchange.debug.elapse_t.sum[_i], 10);
+            }
+
+            Exchange.debug.elapse_t.sum_roundup *= 10;
+        }
 
         Exchange.debug.elapse_t.cnt[_i] += 1;
         Exchange.debug.elapse_t.sum[_i] += measure_t.dt[_i].tv64;
@@ -1034,10 +1050,12 @@ static int nand_suspend(struct device * dev)
 
     while (1)
     {
-        if ((MIO_SCHEDULED == mio_dev.io_state->transaction.status) && (MIO_BG_SCHEDULED == mio_dev.io_state->background.status))
-        {
-            break;
-        }
+		if ((MIO_SCHEDULED == mio_dev.io_state->transaction.status) &&
+				((MIO_BG_SCHEDULED == mio_dev.io_state->background.status) ||
+				 (MIO_BG_SLEEP     == mio_dev.io_state->background.status)) )
+		{
+			break;
+		}
 
         usleep_range(1,1);
     }
@@ -1079,7 +1097,9 @@ static int nand_suspend(struct device * dev)
 
     while (1)
     {
-        if ((MIO_SCHEDULED == mio_dev.io_state->transaction.status) && (MIO_BG_SCHEDULED == mio_dev.io_state->background.status))
+		if ((MIO_SCHEDULED == mio_dev.io_state->transaction.status) &&
+				((MIO_BG_SCHEDULED == mio_dev.io_state->background.status) ||
+				 (MIO_BG_SLEEP     == mio_dev.io_state->background.status)) )
         {
             break;
         }
@@ -1192,5 +1212,5 @@ MODULE_ALIAS_BLOCKDEV_MAJOR(mio_major);
  * Optimize Restore
  ******************************************************************************/
 #if defined (__COMPILE_MODE_BEST_DEBUGGING__)
-#pragma GCC pop_options
+//#pragma GCC pop_options
 #endif

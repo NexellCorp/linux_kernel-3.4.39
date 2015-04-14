@@ -769,6 +769,7 @@ static void _hdmi_hpd_changed(struct nxp_hdmi_context *me, int state)
         return;
 
     if (state) {
+#ifndef CONFIG_PLAT_S5P6818_DRONEL
         /* connected */
         ret = me->edid.update(&me->edid);
         if (ret < 0) {
@@ -786,6 +787,11 @@ static void _hdmi_hpd_changed(struct nxp_hdmi_context *me, int state)
             if (me->cur_preset == V4L2_DV_INVALID)
                 me->cur_preset = preset;
         }
+#else
+        me->is_dvi = false;
+        if (me->cur_preset == V4L2_DV_INVALID)
+            me->cur_preset = HDMI_DEFAULT_PRESET;
+#endif
         me->cur_conf = (struct hdmi_preset_conf *)_hdmi_preset2conf(me->cur_preset);
     }
 
