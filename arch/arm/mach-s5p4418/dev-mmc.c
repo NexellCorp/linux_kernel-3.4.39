@@ -120,6 +120,7 @@ static struct dw_mci_board dwmci##_ch##_data = {		\
 	.suspend		= __dwmci_suspend,						\
 	.resume			= __dwmci_resume,						\
 	.clk_dly		= 0,									\
+	.mode           = DMA_MODE,                             \
 }
 
 #define DW_MCI_PLAT_DEV(_ch)	\
@@ -225,6 +226,7 @@ void __init nxp_mmc_add_device(int ch, struct dw_mci_board *mci)
 	DW_MCI_ITEM_CHECK(mci, dst, late_resume);
 	DW_MCI_ITEM_CHECK(mci, dst, hs_over_clk);
 	DW_MCI_ITEM_CHECK(mci, dst, hw_timeout);
+	DW_MCI_ITEM_CHECK(mci, dst,mode);//bok add
 
 	printk("plat: add device sdmmc [%d]\n", ch);
     platform_device_register(dwmci_devices[id]);

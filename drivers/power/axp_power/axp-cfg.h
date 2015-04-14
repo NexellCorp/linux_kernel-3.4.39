@@ -16,16 +16,15 @@
 
 #define CHGEN				1
 
-#define STACHGCUR			1500*1000		/* AXP22:300~2550,100/step */
-#define EARCHGCUR			1500*1000		/* AXP22:300~2550,100/step */
-#define SUSCHGCUR			1500*1000		/* AXP22:300~2550,100/step */
-#define CLSCHGCUR			1500*1000		/* AXP22:300~2550,100/step */
+#define STACHGCUR			1050*1000		/* AXP22:300~2550,100/step */ // running charge current
+#define EARCHGCUR			1050*1000		/* AXP22:300~2550,100/step */ // suspend charge current
+#define SUSCHGCUR			1500*1000		/* AXP22:300~2550,100/step */ // suspend charge current
+#define CLSCHGCUR			1500*1000		/* AXP22:300~2550,100/step */ // shut down charge current
 
 /* AC current charge */
-#define AC_CHARGE_CURRENT	1500*1000
-
+//#define AC_CHARGE_CURRENT	1500*1000
 /* AC current limit */
-#define AC_LIMIT_CURRENT	1500*1000
+//#define AC_LIMIT_CURRENT	1500*1000
 
 #define CHGVOL				4200*1000		/* AXP22:4100/4220/4200/4240 */
 

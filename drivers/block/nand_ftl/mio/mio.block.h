@@ -71,8 +71,8 @@
  *
  ******************************************************************************/
 #define MIO_TIME_DIFF_MAX(J64)  (0xFFFFFFFFFFFFFFFF - (J64))
-#define MIO_TIME_MSEC(MS)       (((MS)*(HZ))/1000)
-#define MIO_TIME_SEC(S)         (( (S)*(HZ))/1)
+#define MIO_TIME_MSEC(MS)       msecs_to_jiffies(MS)
+#define MIO_TIME_SEC(S)         msecs_to_jiffies(S * 1000)
 
 /******************************************************************************
  *

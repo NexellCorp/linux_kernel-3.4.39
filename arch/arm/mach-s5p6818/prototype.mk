@@ -63,3 +63,5 @@ obj-$(CONFIG_RTC_DRV_NXP)				+=  $(PROTOTYPE)/$(MODULES)/nx_rtc.o
 
 obj-$(CONFIG_PPM_NXP) 					+=  $(PROTOTYPE)/$(MODULES)/nx_ppm.o
 obj-$(CONFIG_SENSORS_NXP_TMU) 			+=  $(PROTOTYPE)/$(MODULES)/nx_tmu.o
+obj-$(CONFIG_NXP_DISPLAY_TVOUT)			+= 	$(PROTOTYPE)/$(MODULES)/nx_hdmi.o
+obj-$(CONFIG_NXP_M2M_DEINTERLACER) +=  $(PROTOTYPE)/$(MODULES)/nx_deinterlace.o

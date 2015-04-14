@@ -68,7 +68,8 @@
 #define DEV_NAME_CPUFREQ        "nxp-cpufreq"
 #define DEV_NAME_USBOTG         "nxp-otg"
 #define DEV_NAME_RFKILL         "nxp-rfkill"
-#define DEV_NAME_WDT    	"nxp-wdt"
+#define DEV_NAME_WDT            "nxp-wdt"
+#define DEV_NAME_TVOUT          "nxp-tvout"
 
 /*
  *  Frame buffer platform data and display controller
@@ -320,7 +321,6 @@ struct nxp_tmu_platdata {
 	int poll_duration;					/* default 500ms */
 	struct nxp_tmu_trigger *triggers;
 	int trigger_size;
-	long  limit_cpufreq;
 	void (*callback)(int ch, int temp, bool run);
 };
 

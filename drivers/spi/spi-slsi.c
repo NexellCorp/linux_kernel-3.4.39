@@ -528,6 +528,7 @@ static void stop_dma(struct s3c64xx_spi_driver_data *sdd)
 	sg_free_table(&sdd->sgt_tx);
 	sg_free_table(&sdd->sgt_rx);
 			
+	kfree(sdd->dummypage);
 }
 static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
 {
@@ -1240,7 +1241,8 @@ out:
 
 	dma_release_channel(sdd->dma_tx_channel);
 	dma_release_channel(sdd->dma_rx_channel);	
-	
+	kfree(sdd->dummypage);
+
 	spi_finalize_current_message(master);
 
 	return 0;

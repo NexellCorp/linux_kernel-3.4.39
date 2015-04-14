@@ -213,7 +213,9 @@ static void nxp_pcm_dma_complete(void *arg)
 	*/
 	if(prtd->dma_param->real_clock != 0) {
 		/* i2s master mode */
+#if !defined (CONFIG_CPU_S5P4418_SMP_ISR)
 		for (i = 0; over_samples > i; i++) {
+#endif
 			prtd->offset += snd_pcm_lib_period_bytes(substream);
 			if (prtd->offset >= snd_pcm_lib_buffer_bytes(substream))
 				prtd->offset = 0;
@@ -221,7 +223,9 @@ static void nxp_pcm_dma_complete(void *arg)
 			nxp_pcm_file_mem_write(substream);
 			nxp_pcm_dma_clear(substream);
 			snd_pcm_period_elapsed(substream);
+#if !defined (CONFIG_CPU_S5P4418_SMP_ISR)
 		}
+#endif
 	} else { /* -> i2s slave mode */
 		prtd->offset += snd_pcm_lib_period_bytes(substream);
 		if (prtd->offset >= snd_pcm_lib_buffer_bytes(substream))

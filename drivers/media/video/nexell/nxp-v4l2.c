@@ -257,8 +257,8 @@ static int __devexit nxp_v4l2_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int nxp_v4l2_suspend(struct device *dev)
 {
-    int i;
     int ret;
+    int i;
 
     PM_DBGOUT("+%s\n", __func__);
 
@@ -305,8 +305,8 @@ static int nxp_v4l2_suspend(struct device *dev)
 
 static int nxp_v4l2_resume(struct device *dev)
 {
-    int i;
     int ret;
+    int i;
 
     PM_DBGOUT("+%s\n", __func__);
 #ifdef CONFIG_VIDEO_NXP_CAPTURE

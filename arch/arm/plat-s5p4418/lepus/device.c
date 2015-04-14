@@ -311,7 +311,18 @@ static struct platform_device nand_plat_device = {
 		.platform_data	= &nand_plat_data,
 	},
 };
-#endif	/* CONFIG_MTD_NAND_NXP */
+#elif defined(CONFIG_NXP_FTL)
+static struct resource nand_resource =
+{
+};
+
+static struct platform_device nand_plat_device = {
+	.name	= DEV_NAME_NAND,
+	.id		= -1,
+	.dev	= {
+	},
+};
+#endif	/* CONFIG_NXP_FTL */
 
 #if defined(CONFIG_TOUCHSCREEN_GSLX680)
 #include <linux/i2c.h>
@@ -1340,6 +1351,12 @@ static struct dw_mci_board _dwmci0_data = {
 	.detect_delay_ms= 200,
 	.sdr_timing		= 0x01010001,
 	.ddr_timing		= 0x03030002,
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH0_USE_DMA)
+    .mode       	= DMA_MODE,
+#else
+    .mode       	= PIO_MODE,
+#endif
+
 };
 #endif
 
@@ -1352,6 +1369,12 @@ static struct dw_mci_board _dwmci1_data = {
 	.cd_type = DW_MCI_CD_NONE,
 	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(0),
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
+    .mode       	= DMA_MODE,
+#else
+    .mode       	= PIO_MODE,
+#endif
+
 };
 #endif
 
@@ -1405,6 +1428,12 @@ static struct dw_mci_board _dwmci2_data = {
 	.get_cd			= _dwmci2_get_cd,
 	.ext_cd_init	= _dwmci_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
+    .mode       	= DMA_MODE,
+#else
+    .mode       	= PIO_MODE,
+#endif
+
 };
 #endif
 
@@ -1508,7 +1537,7 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&bl_plat_device);
 #endif
 
-#if defined(CONFIG_MTD_NAND_NXP)
+#if defined(CONFIG_MTD_NAND_NXP) || defined(CONFIG_NXP_FTL)
 	platform_device_register(&nand_plat_device);
 #endif
 
