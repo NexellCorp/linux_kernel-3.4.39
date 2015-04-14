@@ -104,6 +104,7 @@ int media_open(void)
     Exchange.debug.ftl.memory_usage = 1;
     Exchange.debug.ftl.boot = 1;
     Exchange.debug.ftl.block_summary = 1;
+    Exchange.debug.ftl.license_detail = 0;
     Exchange.debug.ftl.warn = 1;
     Exchange.debug.ftl.error = 1;
 
@@ -384,12 +385,6 @@ void media_write(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_s
     // Put Command to FTL
     Exchange.ftl.fnPutCommand(IO_CMD_WRITE, 0, lba, seccnt);
 
-    // IO Summary
-    Exchange.statistics.ios.cur.write += (seccnt << 9);
-    Exchange.statistics.ios.cur.write_seccnt += seccnt;
-    Exchange.statistics.ios.accumulate.write += (seccnt << 9);
-    Exchange.statistics.ios.accumulate.write_seccnt += seccnt;
-
     media_super();
 
 #if defined (__COMPILE_MODE_ELAPSE_T__)
@@ -441,12 +436,6 @@ void media_read(sector_t _lba, unsigned int _seccnt, u8 * _buffer, void * _io_st
 
     // Put Command to FTL
     Exchange.ftl.fnPutCommand(IO_CMD_READ, 0, lba, seccnt);
-
-    // IO Summary
-    Exchange.statistics.ios.cur.read += (seccnt << 9);
-    Exchange.statistics.ios.cur.read_seccnt += seccnt;
-    Exchange.statistics.ios.accumulate.read += (seccnt << 9);
-    Exchange.statistics.ios.accumulate.read_seccnt += seccnt;
 
     // Copy DATA From "FTL Read Buffer" to "BIO Read Buffer"
     while (1)
