@@ -631,7 +631,7 @@ static struct platform_device snd_null_dai_1 = {
 //-------------------------------------
 static struct platform_device snd_null_2 = {
 	.name = "snd-null",
-	.id = 1,
+	.id = 2,
 };
 
 struct nxp_snd_dai_plat_data snd_null_dai_data_2 = {
@@ -1909,7 +1909,7 @@ static int _dwmci1_get_cd(u32 slot_id)
 }
 
 static struct dw_mci_board _dwmci1_data = {
-	.quirks			=  DW_MCI_QUIRK_HIGHSPEED,
+	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 50 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.desc_sz		= 4,
