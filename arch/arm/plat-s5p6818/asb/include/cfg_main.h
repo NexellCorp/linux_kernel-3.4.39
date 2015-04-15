@@ -189,6 +189,11 @@
 #define	CFG_AUDIO_SPDIF_RX_SAMPLE_RATE				48000
 
 /*------------------------------------------------------------------------------
+ * 	Audio PDM
+ */
+#define CFG_AUDIO_PDM_SAMPLE_RATE				48000
+
+/*------------------------------------------------------------------------------
  * 	I2C
  */
 #define CFG_I2C0_CLK							100000
@@ -268,6 +273,11 @@
  */
 #define CFG_USB_EHCI_LATE_LOAD					1
 #define CFG_USB_EHCI_LATE_LOADTIME				500
+
+/*------------------------------------------------------------------------------
+ * 	usb hsic
+ */
+#define CFG_GPIO_HSIC_EXTHUB_RESET				(PAD_GPIO_E + 31)
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode
