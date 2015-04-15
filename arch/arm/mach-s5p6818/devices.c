@@ -673,6 +673,25 @@ static struct platform_device spdif_device_rx = {
 #endif	/* CONFIG_SND_NXP_SPDIF_RX || CONFIG_SND_NXP_SPDIF_RX_MODULE */
 
 /*------------------------------------------------------------------------------
+ * Alsa sound platform device (PDM)
+ */
+#if defined(CONFIG_SND_NXP_PDM) || defined(CONFIG_SND_NXP_PDM_MODULE)
+static struct nxp_pdm_plat_data pdm_data = {
+	.sample_rate	= CFG_AUDIO_PDM_SAMPLE_RATE,
+	.dma_filter		= pl08x_filter_id,
+	.dma_ch			= DMA_PERIPHERAL_NAME_PDM,
+};
+
+static struct platform_device pdm_device = {
+	.name	= DEV_NAME_PDM,
+	.id		= -1,
+	.dev    = {
+		.platform_data	= &pdm_data
+	},
+};
+#endif	/* CONFIG_SND_NXP_PDM || CONFIG_SND_NXP_PDM_MODULE */
+
+/*------------------------------------------------------------------------------
  * SSP/SPI
  */
 #ifdef CONFIG_SPI_SLSI_PORT0
@@ -1343,6 +1362,11 @@ void __init nxp_cpu_devs_register(void)
 #if defined(CONFIG_SND_NXP_SPDIF_RX) || defined(CONFIG_SND_NXP_SPDIF_RX_MODULE)
     printk("mach: add device spdif rx\n");
     platform_device_register(&spdif_device_rx);
+#endif
+
+#if defined(CONFIG_SND_NXP_PDM) || defined(CONFIG_SND_NXP_PDM_MODULE)
+    printk("mach: add device pdm\n");
+    platform_device_register(&pdm_device);
 #endif
 
 #if defined(CONFIG_USB_EHCI_SYNOPSYS)
