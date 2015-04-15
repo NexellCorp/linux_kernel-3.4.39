@@ -72,8 +72,6 @@
 #pragma GCC optimize("O0")
 #endif
 
-
-
 /******************************************************************************
  *
  ******************************************************************************/
@@ -1592,6 +1590,10 @@ void NFC_PHY_SetFeatures(unsigned int _max_channel, unsigned int _max_way, void 
             tOCH = (tOCH + 15) & 0xF;
             tCAH = (tCAH + 15) & 0xF;
 
+            if (Exchange.debug.nfc.phy.info_feature)
+            {
+                Exchange.sys.fn.print(" tACS: %u, tCOS: %u, tACC: %u, tOCH: %u, tCAH: %u\n", tACS, tCOS, tACC, tOCH, tCAH);
+            }
 
             for (way = 0; way < max_way; way++)
             {
@@ -1600,7 +1602,6 @@ void NFC_PHY_SetFeatures(unsigned int _max_channel, unsigned int _max_way, void 
                     regval = nfcI->nftacs;
                     regval &= ~__POW(0xF,way*4);
                     regval |= __POW(tACS,way*4);
-					//if (tACS == 0xf) { tACS = 0; }
                     nfcI->nftacs = regval;
 
                     regval = nfcI->nftcos;
@@ -1621,7 +1622,6 @@ void NFC_PHY_SetFeatures(unsigned int _max_channel, unsigned int _max_way, void 
                     regval = nfcI->nftcah;
                     regval &= ~__POW(0xF,way*4);
                     regval |= __POW(tCAH,way*4);
-					//if (tACS == 0xf) { tCAH = 0; }
                     nfcI->nftcah = regval;
 
                     if (NAND_INTERFACE_ONFI_ASYNC == phy_features.nand_config._f.interfacetype)
