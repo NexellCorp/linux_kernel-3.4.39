@@ -1239,8 +1239,13 @@ static struct reg_val _sensor_init_data[] =
     {0x11, 0x64},//{0x11, 0x42},
     {0x2f, 0xe6},
     {0x55, 0x00},
+#if 1
     {0xb1, 0xa0},
-    {0xae, 0x80},
+#else
+    {0xb0, 0xff},
+    {0xb1, 0xff},
+#endif
+    {0xae, 0x00},
     END_MARKER
 };
 
@@ -1321,8 +1326,8 @@ static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_dat
 #define BACKWARD_CAM_HEIGHT 480
 
 static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
-    .backgear_irq_num   = IRQ_ALIVE_4,
-    .backgear_gpio_num  = CFG_BACKWARD_GEAR,
+    .backgear_irq_num   = CFG_BACKGEAR_IRQ_NUM,
+    .backgear_gpio_num  = CFG_BACKGEAR_GPIO_NUM,
     .active_high        = false,
     .vip_module_num     = 2,
     .mlc_module_num     = 0,

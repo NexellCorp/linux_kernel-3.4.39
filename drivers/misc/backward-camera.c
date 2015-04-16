@@ -826,6 +826,11 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
     _allocate_memory(me);
 
     INIT_WORK(&me->work, _work_handler);
+
+#if 0
+    nxp_soc_gpio_set_int_mode(pdata->backgear_gpio_num, 4);
+    nxp_soc_gpio_set_int_enable(pdata->backgear_gpio_num, 1);
+#endif
     ret = request_irq(me->irq, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "backward-camera", me);
     if (ret) {
         pr_err("%s: failed to request_irq (irqnum %d)\n", __func__, me->irq);
