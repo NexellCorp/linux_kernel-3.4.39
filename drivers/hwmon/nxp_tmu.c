@@ -39,7 +39,6 @@
 /*
 #define	pr_debug	printk
 */
-#define	pr_debug	printk
 
 #define DRVNAME	"nxp-tmu"
 #define	CHECK_CHARGE_STATE			0
