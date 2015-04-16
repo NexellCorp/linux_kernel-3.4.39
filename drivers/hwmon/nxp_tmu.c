@@ -511,14 +511,14 @@ static ssize_t tmu_show_temp(struct device *dev,
 {
 	struct tmu_info *info = dev_get_drvdata(dev);
 	char *s = buf;
-printk("==== [%s:%d] =====\n", __func__, __LINE__);
+	
 	mutex_lock(&info->mlock);
 	s += sprintf(s, "%4d\n", nxp_tmu_temp(info));
 	mutex_unlock(&info->mlock);
 
 	if (s != buf)
 		*(s-1) = '\n';
-printk("==== [%s:%d] =====\n", __func__, __LINE__);
+	
 	return (s - buf);
 }
 
@@ -528,7 +528,7 @@ static ssize_t tmu_show_max(struct device *dev,
 	struct tmu_info *info = dev_get_drvdata(dev);
 	char *s = buf;
 	int temp;
-printk("==== [%s:%d] =====\n", __func__, __LINE__);
+	
 	mutex_lock(&info->mlock);
 
 	temp = nxp_tmu_temp(info);
@@ -544,7 +544,7 @@ printk("==== [%s:%d] =====\n", __func__, __LINE__);
 
 	if (s != buf)
 		*(s-1) = '\n';
-printk("==== [%s:%d] =====\n", __func__, __LINE__);
+	
 	return (s - buf);
 }
 
