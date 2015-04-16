@@ -363,7 +363,8 @@ static void _turn_off(struct nxp_backward_camera_context *me)
 static inline bool _is_backgear_on(struct nxp_backward_camera_platform_data *pdata)
 {
     bool is_on = nxp_soc_gpio_get_in_value(pdata->backgear_gpio_num);
-    /*printk("%s: is_on %d\n", __func__, is_on);*/
+    printk("%s: gpio in/out %d\n", __func__, nxp_soc_gpio_get_io_dir(pdata->backgear_gpio_num));
+    printk("%s: is_on %d\n", __func__, is_on);
     if (!pdata->active_high)
         is_on ^= 1;
     return is_on;
@@ -403,6 +404,45 @@ static bool _wait_700ms_and_check_backgear(struct nxp_backward_camera_context *m
     return false;
 }
 
+
+#define THINE_I2C_RETRY_CNT				3
+static int _i2c_read_byte(struct i2c_client *client, u8 addr, u8 *data)
+{
+	s8 i = 0;
+	s8 ret = 0;
+	u8 buf = 0;
+	struct i2c_msg msg[2];
+
+	msg[0].addr = client->addr;
+	msg[0].flags = 0;
+	msg[0].len = 1;
+	msg[0].buf = &addr;
+
+	msg[1].addr = client->addr;
+	msg[1].flags = I2C_M_RD;
+	msg[1].len = 1;
+	msg[1].buf = &buf;
+
+	for(i=0; i<THINE_I2C_RETRY_CNT; i++)
+	{
+		ret = i2c_transfer(client->adapter, msg, 2);
+		if (likely(ret == 2))
+			break;
+		//mdelay(POLL_TIME_MS);
+		//dev_err(&client->dev, "\e[31mtw9992_i2c_write_byte failed reg:0x%02x retry:%d\e[0m\n", addr, i);
+	}
+
+	if (unlikely(ret != 2))
+	{
+		dev_err(&client->dev, "\e[31mtw9992_i2c_read_byte failed reg:0x%02x \e[0m\n", addr);
+		return -EIO;
+	}
+
+	*data = buf;
+	return 0;
+}
+
+#include <linux/delay.h>
 static void _decide(struct nxp_backward_camera_context *me)
 {
     me->running = _is_running(me);
@@ -413,6 +453,13 @@ static void _decide(struct nxp_backward_camera_context *me)
             _turn_on(me);
     } else if (me->running && !me->backgear_on) {
         _turn_off(me);
+    }
+
+    mdelay(300);
+    {
+         u8 data = 0;
+         _i2c_read_byte(me->client, 0x01, &data);
+         printk("========> TW9900 0x00 : 0x%x\n", data);
     }
 }
 
@@ -827,15 +874,15 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
 
     INIT_WORK(&me->work, _work_handler);
 
-#if 0
+#if 1
     nxp_soc_gpio_set_int_mode(pdata->backgear_gpio_num, 4);
     nxp_soc_gpio_set_int_enable(pdata->backgear_gpio_num, 1);
-#endif
     ret = request_irq(me->irq, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "backward-camera", me);
     if (ret) {
         pr_err("%s: failed to request_irq (irqnum %d)\n", __func__, me->irq);
         return -1;
     }
+#endif
 
     me->is_first = true;
 

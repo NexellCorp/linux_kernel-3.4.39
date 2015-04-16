@@ -304,7 +304,7 @@
 #define CFG_BACKGEAR_IRQ_NUM                IRQ_ALIVE_4
 #else
 // INTREQ pin
-#define	CFG_BACKGEAR_GPIO_NUM				(PAD_GPIO_A + 6)
+#define	CFG_BACKGEAR_GPIO_NUM				((PAD_GPIO_A + 6) | PAD_FUNC_ALT0)
 #define CFG_BACKGEAR_IRQ_NUM                (IRQ_GPIO_A_START + 6)
 #endif
 
