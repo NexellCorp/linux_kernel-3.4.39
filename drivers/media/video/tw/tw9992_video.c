@@ -46,7 +46,7 @@
 #endif
 
 
-#define DEFAULT_SENSOR_WIDTH			640
+#define DEFAULT_SENSOR_WIDTH			720
 #define DEFAULT_SENSOR_HEIGHT			480
 #define DEFAULT_SENSOR_CODE				(V4L2_MBUS_FMT_YUYV8_2X8)
 
@@ -168,11 +168,9 @@ enum tw9992_capture_frame_size {
 
 /* make look-up table */
 static const struct tw9992_resolution tw9992_resolutions[] = {
-	{TW9992_PREVIEW_VGA 	, TW9992_OPRMODE_VIDEO, 640,  480  },
-	{TW9992_PREVIEW_D1  	, TW9992_OPRMODE_VIDEO, 720,  480  },
+	{TW9992_PREVIEW_D1  	, TW9992_OPRMODE_VIDEO, DEFAULT_SENSOR_WIDTH,  DEFAULT_SENSOR_HEIGHT  },
 
-	{TW9992_CAPTURE_VGA  , TW9992_OPRMODE_IMAGE, 640, 480   },
-	{TW9992_CAPTURE_D1  , TW9992_OPRMODE_IMAGE, 720, 480   },
+	{TW9992_CAPTURE_D1  , TW9992_OPRMODE_IMAGE, DEFAULT_SENSOR_WIDTH, DEFAULT_SENSOR_HEIGHT   },
 };
 
 struct tw9992_framesize {
@@ -182,13 +180,11 @@ struct tw9992_framesize {
 };
 
 static const struct tw9992_framesize tw9992_preview_framesize_list[] = {
-	{TW9992_PREVIEW_VGA,	640,		480},
-	{TW9992_PREVIEW_D1, 	720,		480}
+	{TW9992_PREVIEW_D1, 	DEFAULT_SENSOR_WIDTH,		DEFAULT_SENSOR_HEIGHT}
 };
 
 static const struct tw9992_framesize tw9992_capture_framesize_list[] = {
-	{TW9992_CAPTURE_VGA,	640,		480},
-	{TW9992_CAPTURE_D1,		720,		480},
+	{TW9992_CAPTURE_D1,		DEFAULT_SENSOR_WIDTH,		DEFAULT_SENSOR_HEIGHT},
 };
 
 struct tw9992_version {
@@ -491,10 +487,6 @@ static int tw9992_reg_set_write(struct i2c_client *client, u8 *RegSet)
 	int	cnt = 0;
 	int ret = 0;
 
-	addr = *RegSet;
-	cnt = *(RegSet+1);
-	RegSet+=2;
-
 	while (( RegSet[0] != 0xFF ) || ( RegSet[1]!= 0xFF )) {			// 0xff, 0xff is end of data
 		index = *RegSet;
 		val = *(RegSet+1);
@@ -505,10 +497,6 @@ static int tw9992_reg_set_write(struct i2c_client *client, u8 *RegSet)
 
 		RegSet+=2;
 	}
-
-	ret = tw9992_i2c_write_byte(client, 0xff, 0x00);// set page 0
-	if(ret < 0)
-		return ret;
 
 	return 0;
 }
@@ -1981,9 +1969,19 @@ static int tw9992_s_power(struct v4l2_subdev *sd, int on)
 
     if (on)
 	{
-		//ret = tw9992_power(TW9992_HW_POWER_ON);
 		tw9992_init_parameters(sd);
-		state->power_on = TW9992_HW_POWER_ON;
+
+		if(state->power_on == TW9992_HW_POWER_OFF)
+		{
+			//ret = tw9992_power(TW9992_HW_POWER_ON);
+
+			//ret = tw9992_reg_set_write(client, TW9992_DataSet);
+			if(ret < 0) {
+				dev_err(&client->dev, "\e[31mTW9992_DataSet0 error\e[0m, ret = %d\n", ret);
+				return ret;
+			}
+			state->power_on = TW9992_HW_POWER_ON;
+		}
 	}
 	else
 	{
@@ -2090,17 +2088,16 @@ static int tw9992_init(struct v4l2_subdev *sd, u32 val)
 
 	u8 reg_val;
 	int ret = 0;
-
 	dev_err(&client->dev, "%s: start\n", __func__);
 
 	mdelay(500);
-
 	ret = tw9992_reg_set_write(client, TW9992_DataSet);
 	if(ret < 0) {
 		dev_err(&client->dev, "\e[31mTW9992_DataSet0 error\e[0m, ret = %d\n", ret);
 		return ret;
 	}
 
+#if 0
 	ret = tw9992_decoder_lock(client);
 	if(ret < 0) {
 		dev_err(&client->dev, "\e[31mtw9992_decoder_lock() error!!! \e[0m, ret = %d\n", ret);
@@ -2112,8 +2109,6 @@ static int tw9992_init(struct v4l2_subdev *sd, u32 val)
 		dev_err(&client->dev, "\e[31mTW9992_DataSet1 error\e[0m, ret = %d\n", ret);
 		return ret;
 	}
-
-#if 0
 
 	ret = tw9992_i2c_read_byte(client, 0x02, &reg_val);
 	reg_val &= 0xf0;
@@ -3211,6 +3206,8 @@ static int tw9992_probe(struct i2c_client *client,
 
 	mutex_init(&state->ctrl_lock);
 	init_completion(&state->af_complete);
+
+	state->power_on = TW9992_HW_POWER_OFF;
 
 	state->runmode = TW9992_RUNMODE_NOTREADY;
 	sd = &state->sd;
