@@ -384,15 +384,36 @@ static inline bool _is_running(struct nxp_backward_camera_context *me)
 #endif
 }
 
+static bool _wait_700ms_and_check_backgear(struct nxp_backward_camera_context *me)
+{
+    int wait_100ms_count = 7;
+    printk("%s: wait\n", __func__);
+    while (wait_100ms_count--) {
+        schedule_timeout_interruptible(HZ/10);
+        me->backgear_on = _is_backgear_on(me->plat_data);
+        if (!me->backgear_on) {
+            printk("%s: backgear off\n", __func__);
+            return false;
+        }
+    }
+    me->backgear_on = _is_backgear_on(me->plat_data);
+    printk("%s: wait end --> backgear_on %d\n", __func__, me->backgear_on);
+    if (me->backgear_on)
+        return true;
+    return false;
+}
+
 static void _decide(struct nxp_backward_camera_context *me)
 {
     me->running = _is_running(me);
     me->backgear_on = _is_backgear_on(me->plat_data);
     printk("%s: running %d, backgear on %d\n", __func__, me->running, me->backgear_on);
-    if (me->backgear_on && !me->running)
-        _turn_on(me);
-    else if (me->running && !me->backgear_on)
+    if (me->backgear_on && !me->running) {
+        if(_wait_700ms_and_check_backgear(me))
+            _turn_on(me);
+    } else if (me->running && !me->backgear_on) {
         _turn_off(me);
+    }
 }
 
 static irqreturn_t _irq_handler(int irq, void *devdata)
