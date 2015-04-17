@@ -477,15 +477,17 @@ static int nxp_tmu_resume(struct platform_device *pdev)
 	struct tmu_info *info = platform_get_drvdata(pdev);
 	struct tmu_trigger *trig = info->triggers;
 	int channel = info->channel;
-	u32 temp_rise = 0, temp_intr = 0;
+	u32 temp_rise = 0, temp_intr = 0, trim_rise = 0;
 	int i = 0;
 
 	clear_bit(STATE_SUSPEND_ENTER, &info->state);
 
 	for (i = 0; info->trigger_size > i; i++) {
 		if (TMU_IRQ_MAX > i) {
-			temp_rise |= trig[i].trig_degree << (i*8);
+			trim_rise = trig[i].trig_degree - 25 + info->tmu_trimv;
+			temp_rise |= trim_rise << (i*8);
 			temp_intr |= 1<<(i*4);
+
 		}
 	}
 
@@ -511,14 +513,14 @@ static ssize_t tmu_show_temp(struct device *dev,
 {
 	struct tmu_info *info = dev_get_drvdata(dev);
 	char *s = buf;
-printk("==== [%s:%d] =====\n", __func__, __LINE__);
+	
 	mutex_lock(&info->mlock);
 	s += sprintf(s, "%4d\n", nxp_tmu_temp(info));
 	mutex_unlock(&info->mlock);
 
 	if (s != buf)
 		*(s-1) = '\n';
-printk("==== [%s:%d] =====\n", __func__, __LINE__);
+	
 	return (s - buf);
 }
 
@@ -528,7 +530,7 @@ static ssize_t tmu_show_max(struct device *dev,
 	struct tmu_info *info = dev_get_drvdata(dev);
 	char *s = buf;
 	int temp;
-printk("==== [%s:%d] =====\n", __func__, __LINE__);
+	
 	mutex_lock(&info->mlock);
 
 	temp = nxp_tmu_temp(info);
@@ -544,7 +546,7 @@ printk("==== [%s:%d] =====\n", __func__, __LINE__);
 
 	if (s != buf)
 		*(s-1) = '\n';
-printk("==== [%s:%d] =====\n", __func__, __LINE__);
+	
 	return (s - buf);
 }
 
