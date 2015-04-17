@@ -360,14 +360,88 @@ static void _turn_off(struct nxp_backward_camera_context *me)
     me->is_on = false;
 }
 
-static inline bool _is_backgear_on(struct nxp_backward_camera_platform_data *pdata)
+#define THINE_I2C_RETRY_CNT				3
+static int _i2c_read_byte(struct i2c_client *client, u8 addr, u8 *data)
 {
+	s8 i = 0;
+	s8 ret = 0;
+	u8 buf = 0;
+	struct i2c_msg msg[2];
+
+	msg[0].addr = client->addr;
+	msg[0].flags = 0;
+	msg[0].len = 1;
+	msg[0].buf = &addr;
+
+	msg[1].addr = client->addr;
+	msg[1].flags = I2C_M_RD;
+	msg[1].len = 1;
+	msg[1].buf = &buf;
+
+	for(i=0; i<THINE_I2C_RETRY_CNT; i++) {
+		ret = i2c_transfer(client->adapter, msg, 2);
+		if (likely(ret == 2))
+			break;
+	}
+
+	if (unlikely(ret != 2)) {
+		dev_err(&client->dev, "_i2c_read_byte failed reg:0x%02x\n", addr);
+		return -EIO;
+	}
+
+	*data = buf;
+	return 0;
+}
+
+static int _i2c_write_byte(struct i2c_client *client, u8 addr, u8 val)
+{
+	s8 i = 0;
+	s8 ret = 0;
+	u8 buf[2];
+	u8 read_val = 0;
+	struct i2c_msg msg;
+
+	msg.addr = client->addr;
+	msg.flags = 0;
+	msg.len = 2;
+	msg.buf = buf;
+
+	buf[0] = addr;
+	buf[1] = val ;
+
+	for(i=0; i<THINE_I2C_RETRY_CNT; i++) {
+		ret = i2c_transfer(client->adapter, &msg, 1);
+		if (likely(ret == 1))
+			break;
+	}
+
+	if (ret != 1) {
+        printk(KERN_ERR "%s: failed to write addr 0x%x, val 0x%x\n", __func__, addr, val);
+		return -EIO;
+	}
+
+	return 0;
+}
+
+/*static inline bool _is_backgear_on(struct nxp_backward_camera_platform_data *pdata)*/
+static inline bool _is_backgear_on(struct nxp_backward_camera_context *me)
+{
+#if 0
     bool is_on = nxp_soc_gpio_get_in_value(pdata->backgear_gpio_num);
+    struct nxp_backward_camera_platform_data *pdata = me->plat_data;
     printk("%s: gpio in/out %d\n", __func__, nxp_soc_gpio_get_io_dir(pdata->backgear_gpio_num));
     printk("%s: is_on %d\n", __func__, is_on);
     if (!pdata->active_high)
         is_on ^= 1;
     return is_on;
+#else
+    // read status
+    u8 data;
+    _i2c_read_byte(me->client, 0x01, &data);
+    if (data & 0x80)
+         return 0;
+    return 1;
+#endif
 }
 
 static inline bool _is_running(struct nxp_backward_camera_context *me)
@@ -391,62 +465,23 @@ static bool _wait_700ms_and_check_backgear(struct nxp_backward_camera_context *m
     printk("%s: wait\n", __func__);
     while (wait_100ms_count--) {
         schedule_timeout_interruptible(HZ/10);
-        me->backgear_on = _is_backgear_on(me->plat_data);
+        me->backgear_on = _is_backgear_on(me);
         if (!me->backgear_on) {
             printk("%s: backgear off\n", __func__);
             return false;
         }
     }
-    me->backgear_on = _is_backgear_on(me->plat_data);
+    me->backgear_on = _is_backgear_on(me);
     printk("%s: wait end --> backgear_on %d\n", __func__, me->backgear_on);
     if (me->backgear_on)
         return true;
     return false;
 }
 
-
-#define THINE_I2C_RETRY_CNT				3
-static int _i2c_read_byte(struct i2c_client *client, u8 addr, u8 *data)
-{
-	s8 i = 0;
-	s8 ret = 0;
-	u8 buf = 0;
-	struct i2c_msg msg[2];
-
-	msg[0].addr = client->addr;
-	msg[0].flags = 0;
-	msg[0].len = 1;
-	msg[0].buf = &addr;
-
-	msg[1].addr = client->addr;
-	msg[1].flags = I2C_M_RD;
-	msg[1].len = 1;
-	msg[1].buf = &buf;
-
-	for(i=0; i<THINE_I2C_RETRY_CNT; i++)
-	{
-		ret = i2c_transfer(client->adapter, msg, 2);
-		if (likely(ret == 2))
-			break;
-		//mdelay(POLL_TIME_MS);
-		//dev_err(&client->dev, "\e[31mtw9992_i2c_write_byte failed reg:0x%02x retry:%d\e[0m\n", addr, i);
-	}
-
-	if (unlikely(ret != 2))
-	{
-		dev_err(&client->dev, "\e[31mtw9992_i2c_read_byte failed reg:0x%02x \e[0m\n", addr);
-		return -EIO;
-	}
-
-	*data = buf;
-	return 0;
-}
-
-#include <linux/delay.h>
 static void _decide(struct nxp_backward_camera_context *me)
 {
     me->running = _is_running(me);
-    me->backgear_on = _is_backgear_on(me->plat_data);
+    me->backgear_on = _is_backgear_on(me);
     printk("%s: running %d, backgear on %d\n", __func__, me->running, me->backgear_on);
     if (me->backgear_on && !me->running) {
         if(_wait_700ms_and_check_backgear(me))
@@ -454,26 +489,20 @@ static void _decide(struct nxp_backward_camera_context *me)
     } else if (me->running && !me->backgear_on) {
         _turn_off(me);
     }
-
-    mdelay(300);
-    {
-         u8 data = 0;
-         _i2c_read_byte(me->client, 0x01, &data);
-         printk("========> TW9900 0x00 : 0x%x\n", data);
-    }
 }
 
 static irqreturn_t _irq_handler(int irq, void *devdata)
 {
     struct nxp_backward_camera_context *me = devdata;
-    printk("%s\n", __func__);
+    // clear interrupt flag
+    _i2c_write_byte(me->client, 0xb4, 0x20);
     schedule_work(&me->work);
     return IRQ_HANDLED;
 }
 
 static void _work_handler(struct work_struct *work)
 {
-    printk("%s\n", __func__);
+    /*printk("%s\n", __func__);*/
     _decide(&_context);
 }
 
@@ -874,15 +903,11 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
 
     INIT_WORK(&me->work, _work_handler);
 
-#if 1
-    nxp_soc_gpio_set_int_mode(pdata->backgear_gpio_num, 4);
-    nxp_soc_gpio_set_int_enable(pdata->backgear_gpio_num, 1);
     ret = request_irq(me->irq, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "backward-camera", me);
     if (ret) {
         pr_err("%s: failed to request_irq (irqnum %d)\n", __func__, me->irq);
         return -1;
     }
-#endif
 
     me->is_first = true;
 
