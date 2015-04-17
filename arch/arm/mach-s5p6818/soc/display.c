@@ -187,8 +187,9 @@ static struct disp_process_dev device_dev[] = {
 	[2] = { .dev_id = DISP_DEVICE_HDMI    ,	.name = "HDMI"    , .list = LIST_INIT(2), .lock = LOCK_INIT(2)},
 	[3] = { .dev_id = DISP_DEVICE_MIPI    ,	.name = "MiPi"    , .list = LIST_INIT(3), .lock = LOCK_INIT(3)},
 	[4] = { .dev_id = DISP_DEVICE_LVDS    ,	.name = "LVDS"    , .list = LIST_INIT(4), .lock = LOCK_INIT(4)},
-	[5] = { .dev_id = DISP_DEVICE_SYNCGEN0, .name = "SYNCGEN0", .list = LIST_INIT(5), .lock = LOCK_INIT(5)},
-	[6] = { .dev_id = DISP_DEVICE_SYNCGEN1, .name = "SYNCGEN1", .list = LIST_INIT(6), .lock = LOCK_INIT(6)},
+	[5] = { .dev_id = DISP_DEVICE_TVOUT   ,	.name = "TVOUT"   , .list = LIST_INIT(5), .lock = LOCK_INIT(5)},
+	[6] = { .dev_id = DISP_DEVICE_SYNCGEN0, .name = "SYNCGEN0", .list = LIST_INIT(6), .lock = LOCK_INIT(6)},
+	[7] = { .dev_id = DISP_DEVICE_SYNCGEN1, .name = "SYNCGEN1", .list = LIST_INIT(7), .lock = LOCK_INIT(7)},
 };
 #define DEVICE_SIZE	 ARRAY_SIZE(device_dev)
 
@@ -751,6 +752,12 @@ static int  disp_syncgen_enable(struct disp_process_dev *pdev, int enable)
 	} else {
 		/* set irq wait time */
 		if (!(PROC_STATUS_READY & pdev->status)) {
+            if (pdev->dev_id == DISP_DEVICE_TVOUT) {
+                disp_multily_enable(info, enable);
+                pdev->status |=  PROC_STATUS_ENABLE;
+                disp_syncgen_irqenable(info->module, 1);
+                return 0;
+            }
 			printk(KERN_ERR "Fail, %s not set sync ...\n", dev_to_str(pdev->dev_id));
 			return -EINVAL;
 		}

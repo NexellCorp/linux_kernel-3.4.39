@@ -9,6 +9,9 @@ struct nxp_hdmi;
 #if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
 struct nxp_resc;
 #endif
+#if defined(CONFIG_NXP_OUT_TVOUT)
+struct nxp_tvout;
+#endif
 struct nxp_mlc;
 struct nxp_out_platformdata;
 
@@ -22,6 +25,10 @@ struct nxp_out {
 
 #if defined(CONFIG_NXP_OUT_RESOLUTION_CONVERTER)
     struct nxp_resc *resc;
+#endif
+
+#if defined(CONFIG_NXP_OUT_TVOUT)
+    struct nxp_tvout *tvout;
 #endif
 };
 

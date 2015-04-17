@@ -35,6 +35,12 @@ choice
 		help
    	 		Support for the SVT board.
 
+   	config PLAT_S5P6818_ASB
+		bool "ASB: Android ASB board"
+		help
+   	 		Support for the ASB board.
+
+
 endchoice
 
 #

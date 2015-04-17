@@ -62,6 +62,8 @@
 #define DBG_PSY_MSG(format,args...)   do {} while (0)
 #endif
 
+#define FEATURE_USBWORK_CNT 1
+
 #ifdef ENABLE_DEBUG
 static int axp_debug = 1;
 #else
@@ -265,17 +267,24 @@ EXPORT_SYMBOL_GPL(axp_get_charging_state);
 int axp_get_charging_type(void)
 {
 	struct axp_charger *charger = axp_charger;
-	int ret = 0;
+	int ret = POWER_SUPPLY_PROP_DISCHARGE;
 
+#if 1
+	ret = charger->usb_charge_type;
+#else
 	if(charger->usb_det)
-		ret = 1;
+		ret = POWER_SUPPLY_PROP_AC_USB;
 
+	if(charger->usb_det 
 #if defined(CONFIG_USB_DWCOTG)
-	if(charger->usb_det && dwc_otg_pcd_get_ep0_state())	
-		ret = 2;
+		&& dwc_otg_pcd_get_ep0_state()
 #endif
+		)	
+		ret = POWER_SUPPLY_PROP_USB;
+#endif
+
 	if(charger->ac_det)
-		ret = 3; 
+		ret = POWER_SUPPLY_PROP_AC; 
 
 	return ret;
 }
@@ -611,16 +620,16 @@ static enum power_supply_property axp_battery_props[] = {
 
 static enum power_supply_property axp_ac_props[] = {
 	POWER_SUPPLY_PROP_MODEL_NAME,
-	POWER_SUPPLY_PROP_PRESENT,
 	POWER_SUPPLY_PROP_ONLINE,
+	//POWER_SUPPLY_PROP_PRESENT,
 	//POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	//POWER_SUPPLY_PROP_CURRENT_NOW,
 };
 
 static enum power_supply_property axp_usb_props[] = {
 	POWER_SUPPLY_PROP_MODEL_NAME,
-	POWER_SUPPLY_PROP_PRESENT,
 	POWER_SUPPLY_PROP_ONLINE,
+	//POWER_SUPPLY_PROP_PRESENT,
 	//POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	//POWER_SUPPLY_PROP_CURRENT_NOW,
 };
@@ -773,7 +782,12 @@ static int axp_ac_get_property(struct power_supply *psy,
 			break;
 
 		case POWER_SUPPLY_PROP_ONLINE:
-			val->intval = charger->ac_valid;
+			if(charger->ac_valid 
+				|| (axp_get_charging_type() == POWER_SUPPLY_PROP_AC_USB)
+				)
+				val->intval = 1;
+			else
+				val->intval = 0;
 			break;
 
 		case POWER_SUPPLY_PROP_VOLTAGE_NOW:
@@ -809,7 +823,10 @@ static int axp_usb_get_property(struct power_supply *psy,
 			break;
 
 		case POWER_SUPPLY_PROP_ONLINE:
-			val->intval = charger->usb_valid;
+			if(axp_get_charging_type() == POWER_SUPPLY_PROP_USB)
+				val->intval = 1;
+			else
+				val->intval = 0;
 			break;
 
 		case POWER_SUPPLY_PROP_VOLTAGE_NOW:
@@ -842,19 +859,23 @@ static int axp_usb_limit_set(struct axp_charger *charger)
 		if(var == 1)
 		{
 			val |= 0x01;
+			charger->usb_charge_type = POWER_SUPPLY_PROP_USB;
 		}
 		else if(var == 2)
 		{
 			val |= 0x00;
+			charger->usb_charge_type = POWER_SUPPLY_PROP_USB;
 		}
 		else
 		{
 			val |= 0x03;
+			charger->usb_charge_type = POWER_SUPPLY_PROP_AC_USB;
 		}
 	}
 	else
 	{
 		val |= 0x01;
+		charger->usb_charge_type = POWER_SUPPLY_PROP_DISCHARGE;
 	}
 	DBG_PSY_MSG("write reg : 0x%02x, 0x%02x, var:%d\n", AXP22_CHARGE_VBUS, val, var);
 	axp_write(charger->master, AXP22_CHARGE_VBUS,val);
@@ -872,7 +893,7 @@ static void axp_usb_change(struct axp_charger *charger, unsigned long event)
 
 	if(event & (AXP22_IRQ_USBIN))
 	{
-		charger->usbwork_count = 3;
+		charger->usbwork_count = FEATURE_USBWORK_CNT;
 		//dwc_otg_pcd_clear_ep0_state();
 		schedule_delayed_work(&usbwork, msecs_to_jiffies(1* 1000));
 	}
@@ -1604,6 +1625,7 @@ static void axp_charging_monitor(struct work_struct *work)
 	struct axp_charger *charger;
 	uint8_t	val,temp_val[4];
 	int	pre_rest_vol,pre_bat_curr_dir;
+	u16 temp=0, temp1=0;
 
 	charger = container_of(work, struct axp_charger, work.work);
 	pre_rest_vol = charger->rest_vol;
@@ -1675,50 +1697,82 @@ static void axp_charging_monitor(struct work_struct *work)
 		
 	}
 
-#ifdef ENABLE_DEBUG
+	if(axp_debug)
 	{
-	int temp=0, temp1=0;
 
-	axp_sply_register_dump(charger, 1);
+		//axp_sply_register_dump(charger, 1);
 
-	printk(KERN_ERR "## bat_det:%d, ac_det:%d, usb_det:%d \n", charger->bat_det, charger->ac_det, charger->usb_det);
-	printk(KERN_ERR "## ac_valid:%d, usb_valid:%d \n", charger->ac_valid, charger->usb_valid);
+		printk(KERN_ERR "## bat_det:%d, ac_det:%d, usb_det:%d \n", charger->bat_det, charger->ac_det, charger->usb_det);
+		printk(KERN_ERR "## ac_valid:%d, usb_valid:%d \n", charger->ac_valid, charger->usb_valid);
 
 #if defined(CONFIG_USB_DWCOTG)
-	temp = dwc_otg_pcd_get_ep0_state();
-	printk(KERN_ERR "## USB otg status : %d \n", temp);
+		temp = dwc_otg_pcd_get_ep0_state();
+		printk(KERN_ERR "## USB otg status : %d \n", temp);
 #endif
 
-	axp_read(charger->master, AXP22_CHARGE_VBUS,&val);
-	temp = (((val>>3)&0x7)*100)+4000;
-	temp1 = ((val>>6)&0x1);
-	printk(KERN_ERR "## VBUS voltage limit(0x%02x) : %dmV, %d \n", AXP22_CHARGE_VBUS, temp, temp1);
+		axp_read(charger->master, AXP22_CHARGE_VBUS,&val);
+		temp = (((val>>3)&0x7)*100)+4000;
+		temp1 = ((val>>6)&0x1);
+		printk(KERN_ERR "## VBUS voltage limit(0x%02x) : %dmV, %d \n", AXP22_CHARGE_VBUS, temp, temp1);
 
-	axp_read(charger->master, AXP22_CHARGE_VBUS,&val);
-	val = (val&0x3);
-	if(val == 0x01)
-		temp = 500;
-	else if(val == 0x00)
-		temp = 900;
-	else
-		temp = 0xff;
-	if(temp == 0xff)
-		printk(KERN_ERR "## VBUS current limit(0x%02x) : No current limit \n", AXP22_CHARGE_VBUS);
-	else
-		printk(KERN_ERR "## VBUS current limit(0x%02x) : %dmA \n", AXP22_CHARGE_VBUS, temp);
+		axp_read(charger->master, AXP22_CHARGE_VBUS,&val);
+		val = (val&0x3);
+		if(val == 0x01)
+			temp = 500;
+		else if(val == 0x00)
+			temp = 900;
+		else
+			temp = 0xff;
+		if(temp == 0xff)
+			printk(KERN_ERR "## VBUS current limit(0x%02x) : No current limit \n", AXP22_CHARGE_VBUS);
+		else
+			printk(KERN_ERR "## VBUS current limit(0x%02x) : %dmA \n", AXP22_CHARGE_VBUS, temp);
 
-	axp_read(charger->master, AXP22_CHARGE_CONTROL1,&val);
-	val = (val&0xF);
-	temp = (val*150)+300;
-	printk(KERN_ERR "## Charge current(0x%02x) : %dmA \n", AXP22_CHARGE_CONTROL1, temp);
+		axp_read(charger->master, AXP22_CHARGE_CONTROL1,&val);
+		val = (val&0xF);
+		temp = (val*150)+300;
+		printk(KERN_ERR "## Charge current(0x%02x) : %dmA \n", AXP22_CHARGE_CONTROL1, temp);
 
-	axp_read(charger->master, AXP22_CHARGE_CONTROL3,&val);
-	val = (val&0xF);
-	temp = (val*150)+300;
-	printk(KERN_ERR "## Charge limit(0x%02x)   : %dmA \n", AXP22_CHARGE_CONTROL3, temp);
-	printk(KERN_ERR "##########################################################\n");
+		axp_read(charger->master, AXP22_CHARGE_CONTROL3,&val);
+		val = (val&0xF);
+		temp = (val*150)+300;
+		printk(KERN_ERR "## Charge limit(0x%02x)   : %dmA \n", AXP22_CHARGE_CONTROL3, temp);
+
+		axp_read(charger->master,AXP22_INTERTEMPH_RES, &val);
+		temp = (val<< 4);
+		axp_read(charger->master,AXP22_INTERTEMPL_RES, &val);
+		temp |= (val & 0x0F);
+		printk(KERN_ERR "## Internal temp(0x%02x)  : %d'C\n", AXP22_INTTEMP, (temp*1063/10000-2667/10));
+
+		axp_read(charger->master,AXP22_BATTEMPH_RES, &val);
+		temp = (val<< 4);
+		axp_read(charger->master,AXP22_BATTEMPL_RES, &val);
+		temp |= (val & 0x0F);
+		printk(KERN_ERR "## Battery temp(0x%02x)   : %d'C \n", AXP22_INTTEMP, (temp*1063/10000-2667/10));
+
+		axp_read(charger->master,AXP22_VBATH_RES, &val);
+		temp = (val<< 8);
+		axp_read(charger->master,AXP22_VBATL_RES, &val);
+		temp |= val;
+		printk(KERN_ERR "## Battery vol(0x%02x)    : %dmV \n", AXP22_VBATH_RES, axp22_vbat_to_mV(temp));
+
+		axp_read(charger->master, AXP22_CAP, &val);
+		printk(KERN_ERR "## Battery gauge(0x%02x)  : %d%%, %s \n", AXP22_CAP, (val & 0x7F), (val >> 7)?"be calculated yet":"calculating now");
+
+		axp_read(charger->master,AXP22_CHGCURRH_RES, &val);
+		temp = (val<< 5);
+		axp_read(charger->master,AXP22_CHGCURRL_RES, &val);
+		temp |= (val&0x1F);
+		printk(KERN_ERR "## Charging cur(0x%02x)   : %dmA \n", AXP22_CHGCURRH_RES, temp);
+
+		axp_read(charger->master,AXP22_DISCHGCURRH_RES, &val);
+		temp = (val<< 5);
+		axp_read(charger->master,AXP22_DISCHGCURRL_RES, &val);
+		temp |= (val&0x1F);
+		printk(KERN_ERR "## System cur(0x%02x)     : %dmA \n", AXP22_DISCHGCURRH_RES, temp);
+
+		printk(KERN_ERR "##########################################################\n");
 	}
-#endif
 
 	power_supply_changed(&charger->batt);
 
@@ -1916,6 +1970,9 @@ static int axp_battery_probe(struct platform_device *pdev)
 	charger->battery_info	= pdata->battery_info;
 	charger->disvbat		= 0;
 	charger->disibat		= 0;
+	charger->usb_charge_type = POWER_SUPPLY_PROP_DISCHARGE;
+
+	axp_charger = charger;
 
 	ret = axp_battery_first_init(charger);
 	if (ret)
@@ -2305,8 +2362,6 @@ static int axp_battery_probe(struct platform_device *pdev)
 	//dwc_otg_pcd_clear_ep0_state();
 	schedule_delayed_work(&usbwork, msecs_to_jiffies(10 * 1000));
 
-	/*给局部变量赋值*/
-	axp_charger = charger;
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	axp_early_suspend.suspend = axp_earlysuspend;
 	axp_early_suspend.resume = axp_lateresume;
@@ -2456,7 +2511,7 @@ static int axp22_resume(struct platform_device *dev)
 	charger->disvbat = 0;
 	charger->disibat = 0;
 	schedule_delayed_work(&charger->work, charger->interval);
-	charger->usbwork_count = 3;
+	charger->usbwork_count = FEATURE_USBWORK_CNT;
 	//dwc_otg_pcd_clear_ep0_state();
 	schedule_delayed_work(&usbwork, msecs_to_jiffies(1 * 1000));
 

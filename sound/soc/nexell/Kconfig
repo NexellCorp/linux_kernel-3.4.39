@@ -50,6 +50,15 @@ config SND_SPDIF_RECEIVER
 	select SND_NXP_SPDIF_RX
 	select SND_SOC_SPDIF
 
+config SND_NXP_PDM
+	tristate
+
+config SND_PDM_REC
+	tristate "PDM record (PCM)"
+	depends on SND_NXP_SOC
+	select SND_NXP_PDM
+	default n
+
 config SND_CODEC_NULL
 	tristate "I2S audio null codec."
 	depends on SND_NXP_I2S

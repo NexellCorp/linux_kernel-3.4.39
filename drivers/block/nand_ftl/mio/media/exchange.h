@@ -266,6 +266,59 @@ typedef struct __WARN__
 #pragma pack()
 
 /******************************************************************************
+ * Parameter Of Exchange.ftl.fnFormat & Exchange.ftl.fnOpen
+ ******************************************************************************/
+
+#if defined (__BUILD_MODE_ARM_LINUX_DEVICE_DRIVER__)
+
+#if   defined (CONFIG_ARCH_NXP4330)
+#define __SUPPORT_MIO_CHIP_NXP4330__
+#elif defined (CONFIG_ARCH_S5P4418)
+#define __SUPPORT_MIO_CHIP_S5P4418__
+#elif defined (CONFIG_ARCH_NXP5430)
+#define __SUPPORT_MIO_CHIP_NXP5430__
+#elif defined (CONFIG_ARCH_S5P6818)
+#define __SUPPORT_MIO_CHIP_S5P6818__
+#endif
+
+#elif defined (__BUILD_MODE_ARM_UBOOT_DEVICE_DRIVER__)
+
+#if   defined (__SUPPORT_MIO_UBOOT_CHIP_NXP4330__)
+#define __SUPPORT_MIO_CHIP_NXP4330__
+#elif defined (__SUPPORT_MIO_UBOOT_CHIP_S5P4418__)
+#define __SUPPORT_MIO_CHIP_S5P4418__
+#elif defined (__SUPPORT_MIO_UBOOT_CHIP_NXP5430__)
+#define __SUPPORT_MIO_CHIP_NXP5430__
+#elif defined (__SUPPORT_MIO_UBOOT_CHIP_S5P6818__)
+#define __SUPPORT_MIO_CHIP_S5P6818__
+#endif
+
+#endif
+
+#if   defined (__SUPPORT_MIO_CHIP_NXP4330__)
+#define CHIP_NAME           "NXP4330"
+#define CHIP_ID_BASE        0xF0067000
+#define CHIP_ID_PHY_BASE    0xC0067000
+#elif defined (__SUPPORT_MIO_CHIP_S5P4418__)
+#define CHIP_NAME           "S5P4418"
+#define CHIP_ID_BASE        0xF0067000
+#define CHIP_ID_PHY_BASE    0xC0067000
+#elif defined (__SUPPORT_MIO_CHIP_NXP5430__)
+#define CHIP_NAME           "NXP5430"
+#define CHIP_ID_BASE        0xF0067000
+#define CHIP_ID_PHY_BASE    0xC0067000
+#elif defined (__SUPPORT_MIO_CHIP_S5P6818__)
+#define CHIP_NAME           "S5P6818"
+#define CHIP_ID_BASE        0xF0067000
+#define CHIP_ID_PHY_BASE    0xC0067000
+#else
+#define CHIP_NAME           "UNKNOWN"
+#define CHIP_ID_BASE        0x00000000
+#define CHIP_ID_PHY_BASE    0x00000000
+#error "EWS.FTL Warn : Can't Find Proper CPU"
+#endif
+
+/******************************************************************************
  *
  ******************************************************************************/
 
@@ -402,6 +455,7 @@ typedef struct __ExBUFFER__
 #pragma pack(1)
 typedef struct __ExSTATISTICS__
 {
+#if 0
     struct
     {
         unsigned int  day;
@@ -411,30 +465,7 @@ typedef struct __ExSTATISTICS__
         unsigned char msecond;
 
     } por_time;
-
-    struct
-    {
-        struct
-        {
-            unsigned long long read;
-            unsigned long long write;
-
-            unsigned long long read_seccnt;
-            unsigned long long write_seccnt;
-
-        } accumulate;
-
-        struct
-        {
-            unsigned long long read;
-            unsigned long long write;
-
-            unsigned long long read_seccnt;
-            unsigned long long write_seccnt;
-
-        } cur;
-
-    } ios;
+#endif
 
     DEVICE_SUMMARY **device_summary; // [FTL_WAYS][FTL_CHANNELS];
 
@@ -511,7 +542,7 @@ typedef struct __ExNFC__
         unsigned char output_drive_strength0;
         unsigned char output_drive_strength1;
         unsigned char rb_pull_down_strength;
-        unsigned char read_retry;
+        unsigned char _obsolete; // 2015.02.02 TW.KIM  // read_retry;
         unsigned char array_operation_mode;
 
     } onfi_feature_address;
@@ -607,8 +638,9 @@ typedef struct __ExSYS__
         unsigned int (*get_crc32)(unsigned int _initial, void * _buffer, unsigned int _length);
 
         int (*print)(const char *, ...);
-        int (*sprintf)(char *, const char *, ...);
+        int (*sprint)(char *, const char *, ...);
         unsigned int (*strlen)(const char *);
+
         void * (*_memset)(void *, int, unsigned int);
         void * (*_memcpy)(void *, const void *, unsigned int);
         int (*_memcmp)(const void *, const void *, unsigned int);
@@ -694,12 +726,13 @@ typedef struct __ExDEBUG__
 
     struct
     {
+        unsigned int sum_roundup;
+
         unsigned long long sum[ELAPSE_T_MAX];
         unsigned long long avg[ELAPSE_T_MAX];
         unsigned long long min[ELAPSE_T_MAX];
         unsigned long long max[ELAPSE_T_MAX];
-
-        unsigned int  cnt[ELAPSE_T_MAX];
+        unsigned long long cnt[ELAPSE_T_MAX];
 
         struct
         {
@@ -745,7 +778,8 @@ typedef struct __ExDEBUG__
         unsigned int memory_usage    : 1;
         unsigned int boot            : 1;
         unsigned int block_summary   : 1;
-        unsigned int _rsvd0          : (16-7);
+        unsigned int license_detail  : 1;
+        unsigned int _rsvd0          : (16-8);
 
         // Error, Warnning
         unsigned int warn   : 1;

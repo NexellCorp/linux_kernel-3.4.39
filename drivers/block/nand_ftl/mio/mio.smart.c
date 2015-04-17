@@ -18,6 +18,7 @@
 #include "media/exchange.h"
 #include "mio.block.h"
 #include "media/nfc/phy/nfc.phy.h"
+#include "media/nfc/phy/nfc.phy.scan.h"
 #include "mio.media.h"
 
 /******************************************************************************

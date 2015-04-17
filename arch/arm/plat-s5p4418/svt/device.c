@@ -714,6 +714,26 @@ static struct platform_device rt5631_dai = {
 };
 #endif
 
+#if defined(CONFIG_SND_PDM_REC) || defined(CONFIG_SND_PDM_REC_MODULE)
+static struct platform_device pdm_recorder = {
+	.name	= "pdm-dit-recorder",
+	.id		= -1,
+};
+
+struct nxp_snd_dai_plat_data pdm_rec_dai_data = {
+	.sample_rate = 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
+};
+
+static struct platform_device pdm_rec_dai = {
+	.name	= "pdm-recorder",
+	.id		= -1,
+	.dev	= {
+		.platform_data	= &pdm_rec_dai_data,
+	}
+};
+#endif
+
 /*------------------------------------------------------------------------------
  *  * reserve mem
  *   */
@@ -860,28 +880,28 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1100000, 1,  2);	/* 1.1V ARM */
-NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1100000, 1,  2);	/* 1.0V CORE */
-NXE2000_PDATA_INIT(dc3,      0, 1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
-NXE2000_PDATA_INIT(dc4,      0, 1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
-NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  2);	/* 1.5V SYS */
-
-NXE2000_PDATA_INIT(ldo1,     0, 1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V GPS */
-NXE2000_PDATA_INIT(ldo2,     0, 1000000, 3500000, 0, 0, 1800000, 0,  2);	/* 1.8V CAM1 */
-NXE2000_PDATA_INIT(ldo3,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS1 */
-NXE2000_PDATA_INIT(ldo4,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS */
-NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  2);	/* 2.8V VCAM */
-NXE2000_PDATA_INIT(ldo6,     0, 1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
-NXE2000_PDATA_INIT(ldo7,     0, 1000000, 3500000, 1, 0, 2800000, 1,  2);	/* 2.8V VID */
+NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1100000, 1,  4); /* 1.1V ARM */
+NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1100000, 1,  4); /* 1.0V CORE */
+NXE2000_PDATA_INIT(dc3,      0, 1000000, 3500000, 1, 1, 3300000, 1,  0); /* 3.3V SYS */
+NXE2000_PDATA_INIT(dc4,      0, 1000000, 2000000, 1, 1, 1500000, 1, -1); /* 1.5V DDR */
+NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  4); /* 1.5V SYS */
+ 
+NXE2000_PDATA_INIT(ldo1,     0, 1000000, 3500000, 1, 0, 3300000, 1,  0); /* 3.3V GPS */
+NXE2000_PDATA_INIT(ldo2,     0, 1000000, 3500000, 0, 0, 1800000, 0,  0); /* 1.8V CAM1 */
+NXE2000_PDATA_INIT(ldo3,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2); /* 1.8V SYS1 */
+NXE2000_PDATA_INIT(ldo4,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2); /* 1.8V SYS */
+NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  0); /* 2.8V VCAM */
+NXE2000_PDATA_INIT(ldo6,     0, 1000000, 3500000, 1, 0, 3300000, 1, -1); /* 3.3V ALIVE */
+NXE2000_PDATA_INIT(ldo7,     0, 1000000, 3500000, 1, 0, 2800000, 1,  1); /* 2.8V VID */
 #if defined(CONFIG_RFKILL_NXP)
-NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 0,  2);	/* 3.3V WIFI */
+NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 0,  0); /* 3.3V WIFI */
 #else
-NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 1,  2);	/* 3.3V WIFI */
+NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 1,  0); /* 3.3V WIFI */
 #endif
-NXE2000_PDATA_INIT(ldo9,     0, 1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V HUB */
-NXE2000_PDATA_INIT(ldo10,    0, 1000000, 3500000, 1, 0, 1200000, 0,  2);	/* 1.2V HSIC */
-NXE2000_PDATA_INIT(ldortc1,  0, 1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
-NXE2000_PDATA_INIT(ldortc2,  0, 1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
+NXE2000_PDATA_INIT(ldo9,     0, 1000000, 3500000, 1, 0, 3300000, 1,  0); /* 3.3V HUB */
+NXE2000_PDATA_INIT(ldo10,    0, 1000000, 3500000, 1, 0, 1200000, 0,  0); /* 1.2V HSIC */
+NXE2000_PDATA_INIT(ldortc1,  0, 1700000, 3500000, 1, 0, 1800000, 1, -1); /* 1.8V ALIVE */
+NXE2000_PDATA_INIT(ldortc2,  0, 1000000, 3500000, 1, 0, 1000000, 1, -1); /* 1.0V ALIVE */
 
 
 /*-------- if nxe2000 RTC exists -----------*/
@@ -1798,6 +1818,12 @@ static struct dw_mci_board _dwmci0_data = {
 	.get_cd			= _dwmci0_get_cd,
 	.ext_cd_init	= _dwmci_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH0_USE_DMA)
+    .mode       	= DMA_MODE,
+#else
+    .mode       	= PIO_MODE,
+#endif
+
 };
 #endif
 
@@ -1812,7 +1838,11 @@ static struct dw_mci_board _dwmci1_data = {
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
 	.get_ro         = _dwmci_get_ro,
 	.get_cd			= _dwmci_get_cd,
-
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
+    .mode       	= DMA_MODE,
+#else
+    .mode       	= PIO_MODE,
+#endif
 };
 #endif
 
@@ -1827,6 +1857,12 @@ static struct dw_mci_board _dwmci2_data = {
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
 	.get_ro			= _dwmci_get_ro,
 	.get_cd			= _dwmci_get_cd,
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
+    .mode			= DMA_MODE,
+#else
+	.mode			= PIO_MODE,
+#endif
+
 };
 #endif
 
@@ -1987,6 +2023,12 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device asoc-rt5631\n");
 	i2c_register_board_info(RT5631_I2C_BUS, &rt5631_i2c_bdi, 1);
 	platform_device_register(&rt5631_dai);
+#endif
+
+#if defined(CONFIG_SND_PDM_REC) || defined(CONFIG_SND_PDM_REC_MODULE)
+	printk("plat: add device pdm capture\n");
+	platform_device_register(&pdm_recorder);
+	platform_device_register(&pdm_rec_dai);
 #endif
 
 #if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)
