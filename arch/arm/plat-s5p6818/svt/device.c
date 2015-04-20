@@ -1375,12 +1375,15 @@ static int back_camera_power_enable(bool on)
 #endif
             mdelay(1);
 
+  					printk(KERN_INFO "%s: back_camera_reset_high\n", __func__);
             nxp_soc_gpio_set_out_value(reset_io, 1);
             mdelay(1);
 
+  					printk(KERN_INFO "%s: back_camera_reset_low\n", __func__);
             nxp_soc_gpio_set_out_value(reset_io, 0);
             mdelay(1);
 
+  					printk(KERN_INFO "%s: back_camera_reset_high\n", __func__);
             nxp_soc_gpio_set_out_value(reset_io, 1);
             mdelay(10);
 
