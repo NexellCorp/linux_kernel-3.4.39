@@ -89,6 +89,7 @@ struct tmu_info {
 
 #define	STATE_SUSPEND_ENTER		(0)		/* bit position */
 #define	STATE_STOP_ENTER		(1)		/* bit position */
+#define	STATE_MON_RUNNING		(1<<1)	/* bit position */
 #define TMU_POLL_TIME			(500)	/* ms */
 
 #define TMU_IRQ_MAX				3	/* ms */
@@ -435,10 +436,13 @@ static void nxp_tmu_monitor(struct work_struct *work)
 			need_reschedule &= ~(1<<i);
 		}
 	}
+	clear_bit(STATE_MON_RUNNING, &info->state);
 
-	if (need_reschedule)
+	if (need_reschedule) {
+		set_bit(STATE_MON_RUNNING, &info->state);
 		schedule_delayed_work(&info->mon_work,
 				msecs_to_jiffies(info->poll_duration));
+	}
 
 	mutex_unlock(&info->mlock);
 	return;
@@ -496,6 +500,10 @@ static int nxp_tmu_resume(struct platform_device *pdev)
 	NX_TMU_SetThresholdTempRise(channel, temp_rise);
 	NX_TMU_ClearInterruptPendingAll(channel);
 	NX_TMU_SetP0IntEn(channel, temp_intr);
+
+	if (test_bit(STATE_MON_RUNNING, &info->state))
+		schedule_delayed_work(&info->mon_work,
+				msecs_to_jiffies(info->poll_duration));
 	return 0;
 }
 #else
@@ -513,14 +521,14 @@ static ssize_t tmu_show_temp(struct device *dev,
 {
 	struct tmu_info *info = dev_get_drvdata(dev);
 	char *s = buf;
-	
+
 	mutex_lock(&info->mlock);
 	s += sprintf(s, "%4d\n", nxp_tmu_temp(info));
 	mutex_unlock(&info->mlock);
 
 	if (s != buf)
 		*(s-1) = '\n';
-	
+
 	return (s - buf);
 }
 
@@ -530,7 +538,7 @@ static ssize_t tmu_show_max(struct device *dev,
 	struct tmu_info *info = dev_get_drvdata(dev);
 	char *s = buf;
 	int temp;
-	
+
 	mutex_lock(&info->mlock);
 
 	temp = nxp_tmu_temp(info);
@@ -546,7 +554,7 @@ static ssize_t tmu_show_max(struct device *dev,
 
 	if (s != buf)
 		*(s-1) = '\n';
-	
+
 	return (s - buf);
 }
 
@@ -613,6 +621,8 @@ static int __devinit nxp_tmu_probe(struct platform_device *pdev)
 	info->limit_cpufreq = plat->limit_cpufreq;
 #endif
 	clear_bit(STATE_SUSPEND_ENTER, &info->state);
+	clear_bit(STATE_MON_RUNNING, &info->state);
+
 	mutex_init(&info->mlock);
 
 	INIT_DELAYED_WORK(&info->mon_work, nxp_tmu_monitor);
