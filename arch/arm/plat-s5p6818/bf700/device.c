@@ -762,14 +762,16 @@ static int front_camera_power_enable(bool on)
             is_front_camera_power_state_changed = false;
         }
     }
-	else
-	{
+#if 0
+    else
+    {
         if (is_front_camera_enabled) {
             nxp_soc_gpio_set_out_value(reset_io, 0);
             is_front_camera_enabled = false;
             is_front_camera_power_state_changed = true;
         }
     }
+#endif
 
     return 0;
 }

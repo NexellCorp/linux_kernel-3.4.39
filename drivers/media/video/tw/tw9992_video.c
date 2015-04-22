@@ -31,6 +31,7 @@
 #include <linux/moduleparam.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
+#include <media/v4l2-ctrls.h>
 #include <linux/videodev2_exynos_camera.h>
 
 #include <mach/platform.h>
@@ -368,6 +369,11 @@ struct tw9992_state {
     struct workqueue_struct *init_wq;
     struct work_struct init_work;
 #endif
+
+    struct i2c_client *i2c_client;
+    struct v4l2_ctrl_handler handler;
+    struct v4l2_ctrl *ctrl_mux;
+    struct v4l2_ctrl *ctrl_status;
 };
 
 static const struct v4l2_fmtdesc capture_fmts[] = {
@@ -379,6 +385,11 @@ static const struct v4l2_fmtdesc capture_fmts[] = {
 		.pixelformat	= V4L2_PIX_FMT_JPEG,
 	},
 };
+
+static inline struct tw9992_state *ctrl_to_me(struct v4l2_ctrl *ctrl)
+{
+    return container_of(ctrl->handler, struct tw9992_state, handler);
+}
 
 static int tw9992_i2c_read_byte(struct i2c_client *client, u8 addr, u8 *data)
 {
@@ -500,6 +511,152 @@ static int tw9992_reg_set_write(struct i2c_client *client, u8 *RegSet)
 
 	return 0;
 }
+
+/**
+ * psw0523 add private controls
+ */
+#define V4L2_CID_MUX        (V4L2_CTRL_CLASS_USER | 0x1001)
+#define V4L2_CID_STATUS     (V4L2_CTRL_CLASS_USER | 0x1002)
+
+static int tw9992_set_mux(struct v4l2_ctrl *ctrl)
+{
+    struct tw9992_state *me = ctrl_to_me(ctrl);
+    /*printk("%s: val %d\n", __func__, ctrl->val);*/
+    if (ctrl->val == 0) {
+        // MUX 0 : Black Box
+        tw9992_i2c_write_byte(me->i2c_client, 0x02, 0x44);
+        tw9992_i2c_write_byte(me->i2c_client, 0x3b, 0x30);
+    } else {
+        // MUX 1 : Front Camera
+        tw9992_i2c_write_byte(me->i2c_client, 0x02, 0x46);
+        tw9992_i2c_write_byte(me->i2c_client, 0x3b, 0x0c);
+    }
+
+
+    return 0;
+}
+
+static int tw9992_get_status(struct v4l2_ctrl *ctrl)
+{
+    struct tw9992_state *me = ctrl_to_me(ctrl);
+    u8 data = 0;
+    u8 mux;
+    u8 val = 0;
+
+    tw9992_i2c_read_byte(me->i2c_client, 0x02, &data);
+    data = data & 0x0f;
+    if (data == 0x4)
+        mux = 0;
+    else
+        mux = 1;
+
+    if (mux == 0) {
+        // black box
+        /*printk("mux ==> blackbox\n");*/
+        tw9992_i2c_read_byte(me->i2c_client, 0x03, &data);
+        if (!(data & 0x80))
+            val |= 1 << 0;
+
+        tw9992_i2c_write_byte(me->i2c_client, 0x52, 0x03);
+        tw9992_i2c_read_byte(me->i2c_client, 0x52, &data);
+        if (data == 0x03)
+            val |= 1 << 1;
+    } else {
+        // front camera
+        /*printk("mux ==> frontcamera\n");*/
+        tw9992_i2c_read_byte(me->i2c_client, 0x03, &data);
+        if (!(data & 0x80))
+            val |= 1 << 1;
+
+        tw9992_i2c_write_byte(me->i2c_client, 0x52, 0x03);
+        tw9992_i2c_read_byte(me->i2c_client, 0x52, &data);
+        if (data == 0x03)
+            val |= 1 << 0;
+    }
+
+    /*printk("status: 0x%x\n", val);*/
+    ctrl->val = val;
+    return 0;
+}
+
+static int tw9992_s_ctrl(struct v4l2_ctrl *ctrl)
+{
+    switch (ctrl->id) {
+    case V4L2_CID_MUX:
+        return tw9992_set_mux(ctrl);
+    default:
+        printk(KERN_ERR "%s: invalid control id 0x%x\n", __func__, ctrl->id);
+        return -EINVAL;
+    }
+}
+
+static int tw9992_g_volatile_ctrl(struct v4l2_ctrl *ctrl)
+{
+    switch (ctrl->id) {
+    case V4L2_CID_STATUS:
+        return tw9992_get_status(ctrl);
+    default:
+        printk(KERN_ERR "%s: invalid control id 0x%x\n", __func__, ctrl->id);
+        return -EINVAL;
+    }
+}
+
+static const struct v4l2_ctrl_ops tw9992_ctrl_ops = {
+     .s_ctrl = tw9992_s_ctrl,
+     .g_volatile_ctrl = tw9992_g_volatile_ctrl,
+};
+
+static const struct v4l2_ctrl_config tw9992_custom_ctrls[] = {
+    {
+        .ops  = &tw9992_ctrl_ops,
+        .id   = V4L2_CID_MUX,
+        .type = V4L2_CTRL_TYPE_INTEGER,
+        .name = "MuxControl",
+        .min  = 0,
+        .max  = 1,
+        .def  = 1,
+        .step = 1,
+    },
+    {
+        .ops  = &tw9992_ctrl_ops,
+        .id   = V4L2_CID_STATUS,
+        .type = V4L2_CTRL_TYPE_INTEGER,
+        .name = "Status",
+        .min  = 0,
+        .max  = 1,
+        .def  = 1,
+        .step = 1,
+        .flags = V4L2_CTRL_FLAG_VOLATILE,
+    }
+};
+
+#define NUM_CTRLS 2
+static int tw9992_initialize_ctrls(struct tw9992_state *me)
+{
+    v4l2_ctrl_handler_init(&me->handler, NUM_CTRLS);
+
+    me->ctrl_mux = v4l2_ctrl_new_custom(&me->handler, &tw9992_custom_ctrls[0], NULL);
+    if (!me->ctrl_mux) {
+         printk(KERN_ERR "%s: failed to v4l2_ctrl_new_custom for mux\n", __func__);
+         return -ENOENT;
+    }
+
+    me->ctrl_status = v4l2_ctrl_new_custom(&me->handler, &tw9992_custom_ctrls[1], NULL);
+    if (!me->ctrl_status) {
+         printk(KERN_ERR "%s: failed to v4l2_ctrl_new_custom for status\n", __func__);
+         return -ENOENT;
+    }
+
+    me->sd.ctrl_handler = &me->handler;
+    if (me->handler.error) {
+        printk(KERN_ERR "%s: ctrl handler error(%d)\n", __func__, me->handler.error);
+        v4l2_ctrl_handler_free(&me->handler);
+        return -EINVAL;
+    }
+
+    return 0;
+}
+
 
 /*
  * Parse the init_reg2 array into a number of register sets that
@@ -2171,6 +2328,7 @@ static int tw9992_s_config(struct v4l2_subdev *sd,
 	return 0;
 }
 
+#if 0
 static int tw9992_g_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -2606,6 +2764,7 @@ static int tw9992_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 
 	return err;
 }
+#endif
 
 static int tw9992_s_ext_ctrl(struct v4l2_subdev *sd,
 			      struct v4l2_ext_control *ctrl)
@@ -2688,9 +2847,9 @@ static const struct v4l2_subdev_core_ops tw9992_core_ops = {
 	.s_power		= tw9992_s_power,
 	.init 			= tw9992_init,/* initializing API */
 	///.s_config 		= tw9992_s_config,	/* Fetch platform data */
-	.g_ctrl 		= tw9992_g_ctrl,
-	.s_ctrl 		= tw9992_s_ctrl,
-	.s_ext_ctrls 		= tw9992_s_ext_ctrls,
+	/*.g_ctrl 		= tw9992_g_ctrl,*/
+	/*.s_ctrl 		= tw9992_s_ctrl,*/
+	/*.s_ext_ctrls 		= tw9992_s_ext_ctrls,*/
 };
 
 
@@ -3243,6 +3402,15 @@ static int tw9992_probe(struct i2c_client *client,
 	//tw9992_init(sd, 0);
 
 	/*dev_err(&client->dev, "%s: loaded\n", __func__);*/
+
+
+    // psw0523 add
+    ret = tw9992_initialize_ctrls(state);
+    if (ret < 0) {
+        printk(KERN_ERR "%s: failed to initialize controls\n", __func__);
+        return ret;
+    }
+    state->i2c_client = client;
     return 0;
 }
 
