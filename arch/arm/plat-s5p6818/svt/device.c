@@ -1201,7 +1201,6 @@ static int front_camera_set_clock(ulong clk_rate)
 {
   	printk(KERN_INFO "%s: %d\n", __func__, (int)clk_rate);
 
-
     if (clk_rate > 0)
         nxp_soc_pwm_set_frequency(1, clk_rate, 50);
     else
@@ -1503,11 +1502,11 @@ static struct i2c_board_info front_camera_i2c_boardinfo[] = {
 };
 
 static struct nxp_v4l2_i2c_board_info sensor[] = {
-    {
+ 		{
         .board_info = &back_camera_i2c_boardinfo[0],
         .i2c_adapter_id = 1,
     },
-    {
+		{
         .board_info = &front_camera_i2c_boardinfo[0],
         .i2c_adapter_id = 2,
     },
@@ -1516,13 +1515,13 @@ static struct nxp_v4l2_i2c_board_info sensor[] = {
 static struct nxp_capture_platformdata capture_plat_data[] = {
 #if defined(CONFIG_VIDEO_MT9D111_CAM)
 	{
-        /* front_camera 601 interface */
+        /* front_camera 656 interface */
         .module = 0,
         .sensor = &sensor[1],
         .type = NXP_CAPTURE_INF_PARALLEL,
 				.parallel = {
             .is_mipi        = false,
-            .external_sync  = false,
+            .external_sync  = false, //if external_sync is used(this means that value is true), 601 format else 656 format
             .h_active       = 1280,
             .h_frontporch   = 7,
             .h_syncwidth    = 1,
@@ -1539,8 +1538,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .interlace      = false,
             .clk_rate       = 24000000,
             .late_power_down = false,
-            //.power_enable   = front_camera_power_enable,
-            .power_enable   = NULL,
+            .power_enable   = front_camera_power_enable,
             //.set_clock      = front_camera_set_clock,
             .set_clock      = NULL,
             .setup_io       = front_camera_vin_setup_io,

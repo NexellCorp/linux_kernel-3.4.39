@@ -23,6 +23,8 @@
 #include "thp7212-nx.h"
 #include <linux/videodev2_exynos_camera.h>
 
+#define CONFIG_PRINTK 1
+
 /* psw0523 add for test patron preset table */
 #define USE_PRESET
 #ifdef USE_PRESET
@@ -35,7 +37,9 @@
 #include <linux/workqueue.h>
 #endif
 
+//#define CONFIG_VIDEO_THP7212_DEBUG 
 #define CONFIG_VIDEO_THP7212_V_1_1
+
 
 #define DEFAULT_SENSOR_WIDTH		640
 #define DEFAULT_SENSOR_HEIGHT		480
@@ -96,6 +100,7 @@ module_param_named(debug_mask, thp7212_debug_mask, uint, S_IWUSR | S_IRUGO);
 #endif
 
 #define THP7212_VERSION_1_1	0x11
+
 
 enum thp7212_hw_power {
 	THP7212_HW_POWER_OFF,
@@ -679,7 +684,7 @@ int thp7212_i2c_read_data(struct i2c_client *client, unsigned int _addr, unsigne
 
 	if (cnt == 10) 
 	{
-		printk(KERN_ERR "soc_i2c_read retry\n");
+		printk(KERN_INFO KERN_ERR "soc_i2c_read retry\n");
 		return -1;
 	}
 
@@ -916,6 +921,8 @@ static int thp7212_write_init_reg2_burst(struct v4l2_subdev *sd)
 
 static unsigned int thp7212_get_width(void)
 {
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 #if defined(RESOLUTION_HD)	
 	return 1280;
 #else
@@ -925,6 +932,7 @@ static unsigned int thp7212_get_width(void)
 
 static unsigned int thp7212_get_height(void)
 {
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 #if defined(RESOLUTION_HD)
 	return 720;
 #else
@@ -940,6 +948,8 @@ static int thp7212_set_from_table(struct v4l2_subdev *sd,
 				int table_size, int index)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	/* return if table is not initilized */
 	if ((unsigned int)table < (unsigned int)0xc0000000)
@@ -971,6 +981,8 @@ static int thp7212_set_parameter(struct v4l2_subdev *sd,
 		return 0;
 		*/
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	err = thp7212_set_from_table(sd, setting_name, table,
 				table_size, new_value);
 
@@ -981,6 +993,8 @@ static int thp7212_set_parameter(struct v4l2_subdev *sd,
 
 static int thp7212_set_preview_stop(struct v4l2_subdev *sd)
 {
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct thp7212_state *state =
 		container_of(sd, struct thp7212_state, sd);
@@ -1002,6 +1016,7 @@ static int thp7212_set_preview_start(struct v4l2_subdev *sd)
 	bool set_size = true;
 
 	dev_err(&client->dev, "%s: runmode = %d\n", __func__, state->runmode);
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	if (!state->pix.width || !state->pix.height ||
 		!state->strm.parm.capture.timeperframe.denominator)
@@ -1041,6 +1056,7 @@ static int thp7212_set_capture_size(struct v4l2_subdev *sd)
 	int err;
 
 	dev_err(&client->dev, "%s: index:%d\n", __func__, state->capture_framesize_index);
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	err = thp7212_set_from_table(sd, "capture_size",
 				state->regs->capture_size, ARRAY_SIZE(state->regs->capture_size), state->capture_framesize_index);
@@ -1060,6 +1076,8 @@ static int thp7212_set_jpeg_quality(struct v4l2_subdev *sd)
 		container_of(sd, struct thp7212_state, sd);
 
 	dev_err(&client->dev, "%s: jpeg.quality %d\n", __func__, state->jpeg.quality);
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	if (state->jpeg.quality < 0)
 		state->jpeg.quality = 0;
 	if (state->jpeg.quality > 100)
@@ -1087,6 +1105,8 @@ static u16 thp7212_get_light_level(struct v4l2_subdev *sd)
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct thp7212_state *state =
 		container_of(sd, struct thp7212_state, sd);
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	err = thp7212_set_from_table(sd, "get light level", &state->regs->get_light_level, 1, 0);
 	if (err) {
@@ -1118,6 +1138,8 @@ static int thp7212_set_zoom(struct v4l2_subdev *sd, int value)
 		(struct sec_cam_parm *)&state->stored_parm.parm.raw_data;
 	u16 zoom_ratio;
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	zoom_ratio = (unsigned int)(0x100 + value * 12);
 
 	//thp7212_i2c_write_word(client,  0x0028,  0x7000);
@@ -1148,6 +1170,9 @@ static int thp7212_start_capture(struct v4l2_subdev *sd)
 	 * otherwise the capture will be wrong because of the cropping
 	 */
 	dev_err(&client->dev, "%s:\n", __func__);
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	if (state->preview_framesize_index != THP7212_PREVIEW_VGA) {
 		int err = thp7212_set_from_table(sd, "reset crop", &state->regs->reset_crop, 1, 0);
 		if (err < 0) {
@@ -1272,6 +1297,8 @@ static int thp7212_set_wdr(struct v4l2_subdev *sd, int value)
 	struct thp7212_state *state =
 		container_of(sd, struct thp7212_state, sd);
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	if (value == WDR_ON)
 		return thp7212_set_from_table(sd, "wdr on",
 					&state->regs->wdr_on, 1, 0);
@@ -1281,6 +1308,8 @@ static int thp7212_set_wdr(struct v4l2_subdev *sd, int value)
 
 static int thp7212_set_face_detection(struct v4l2_subdev *sd, int value)
 {
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	struct thp7212_state *state =
 		container_of(sd, struct thp7212_state, sd);
 
@@ -1298,6 +1327,8 @@ static int thp7212_return_focus(struct v4l2_subdev *sd)
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct thp7212_state *state =
 			container_of(sd, struct thp7212_state, sd);
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	err = thp7212_set_from_table(sd,
 		"af normal mode 1",
@@ -1338,6 +1369,8 @@ static int thp7212_set_focus_mode(struct v4l2_subdev *sd, int value)
 		return 0;
 
 	dev_err(&client->dev, "%s value(%d)\n", __func__, value);
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	switch (value) {
 	case V4L2_FOCUS_MODE_MACRO:
@@ -1413,6 +1446,8 @@ static void thp7212_auto_focus_flash_start(struct v4l2_subdev *sd)
 	int count;
 	u16 read_value;
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	thp7212_set_from_table(sd, "AF assist flash start",
 				&state->regs->af_assist_flash_start, 1, 0);
 	state->flash_on = true;
@@ -1458,6 +1493,8 @@ static int thp7212_start_continuous_auto_focus(struct v4l2_subdev *sd)
 	struct thp7212_state *state =
 		container_of(sd, struct thp7212_state, sd);
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	thp7212_set_from_table(sd, "continuous af start",
 				&state->regs->continuous_af_on, 1, 0);
 
@@ -1468,6 +1505,8 @@ static int thp7212_stop_continuous_auto_focus(struct v4l2_subdev *sd)
 	/* struct i2c_client *client = v4l2_get_subdevdata(sd); */
 	struct thp7212_state *state =
 		container_of(sd, struct thp7212_state, sd);
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	thp7212_set_from_table(sd, "continuous af stop",
 				&state->regs->continuous_af_off, 1, 0);
@@ -1483,6 +1522,8 @@ static int thp7212_start_auto_focus(struct v4l2_subdev *sd)
 	struct sec_cam_parm *parms =
 		(struct sec_cam_parm *)&state->strm.parm.raw_data;
 	/* int err = 0; */
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	dev_err(&client->dev, "%s: start SINGLE AF operation, flash mode %d\n",
 		__func__, parms->flash_mode);
@@ -1568,6 +1609,8 @@ static int thp7212_stop_auto_focus(struct v4l2_subdev *sd)
 	/* int err = 0; */
 
 	dev_err(&client->dev, "%s: single AF Off command Setting\n", __func__);
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	/* always cancel ae_awb, in case AF already finished before
 	 * we got called.
@@ -1658,6 +1701,7 @@ static int thp7212_get_auto_focus_result(struct v4l2_subdev *sd,
 	u16 read_value = 0;
 
 	dev_err(&client->dev, "%s: Check AF Result\n", __func__);
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	if (state->af_status == AF_NONE) {
 		dev_dbg(&client->dev,
@@ -1795,6 +1839,8 @@ static void thp7212_init_parameters(struct v4l2_subdev *sd)
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 
 	dev_err(&client->dev, "%s: \n", __func__);
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	state->strm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	parms->capture.capturemode = 0;
 	parms->capture.timeperframe.numerator = 1;
@@ -1849,6 +1895,8 @@ static void thp7212_enable_torch(struct v4l2_subdev *sd)
 		container_of(sd, struct thp7212_state, sd);
 	/* struct thp7212_platform_data *pdata = client->dev.platform_data; */
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	thp7212_set_from_table(sd, "torch start",
 				&state->regs->flash_start, 1, 0);
 	state->torch_on = true;
@@ -1861,6 +1909,8 @@ static void thp7212_disable_torch(struct v4l2_subdev *sd)
 	struct thp7212_state *state =
 		container_of(sd, struct thp7212_state, sd);
 	/* struct thp7212_platform_data *pdata = client->dev.platform_data; */
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	if (state->torch_on) {
 		state->torch_on = false;
@@ -1876,6 +1926,8 @@ static int thp7212_set_flash_mode(struct v4l2_subdev *sd, int value)
 		container_of(sd, struct thp7212_state, sd);
 	struct sec_cam_parm *parms =
 		(struct sec_cam_parm *)&state->strm.parm.raw_data;
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	if (parms->flash_mode == value)
 		return 0;
@@ -1907,6 +1959,8 @@ static int thp7212_set_stored_parms(struct v4l2_subdev *sd)
 	struct sec_cam_parm *stored_parms =
 		(struct sec_cam_parm *)&state->stored_parm.parm.raw_data;
 	int err = 0;
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	if (parms->effects != stored_parms->effects)
 	err |= thp7212_set_parameter(sd, &parms->effects, stored_parms->effects,
@@ -1980,6 +2034,7 @@ static void thp7212_set_framesize(struct v4l2_subdev *sd,
 		&frmsize[frmsize_count - 1];
 	int err;
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 	dev_err(&client->dev, "%s: Requested Res: %dx%d\n", __func__,
 		state->pix.width, state->pix.height);
 
@@ -2059,6 +2114,7 @@ static int thp7212_check_dataline_stop(struct v4l2_subdev *sd)
 	int err;
 
 	dev_dbg(&client->dev, "%s\n", __func__);
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	err = thp7212_set_from_table(sd, "DTP stop",
 				&state->regs->dtp_stop, 1, 0);
@@ -2081,6 +2137,8 @@ static void thp7212_get_esd_int(struct v4l2_subdev *sd,
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	u16 read_value;
 	int err;
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	if ((THP7212_RUNMODE_RUNNING == state->runmode) &&
 		(state->af_status != AF_START)) {
@@ -2124,6 +2182,8 @@ static int thp7212_get_iso(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 	u16 read_value2 = 0;
 	int read_value;
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	err = thp7212_set_from_table(sd, "get iso",
 				&state->regs->get_iso, 1, 0);
 	//err |= thp7212_i2c_read_word(client, 0x0F12, &read_value1);
@@ -2160,7 +2220,7 @@ static int thp7212_get_shutterspeed(struct v4l2_subdev *sd,
 	u16 read_value_2 = 0;
 	u32 read_value;
 
-	printk("LINE:%d", __LINE__);
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	err = thp7212_set_from_table(sd, "get shutterspeed",
 				&state->regs->get_shutterspeed, 1, 0);
@@ -2188,7 +2248,7 @@ static int thp7212_get_frame_count(struct v4l2_subdev *sd,
 	u16 read_value_1 = 0;
 	u32 read_value;
 
-	printk("LINE:%d", __LINE__);
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	err = thp7212_set_from_table(sd, "get frame count",
 				&state->regs->get_frame_count, 1, 0);
@@ -2221,7 +2281,8 @@ static void thp7212_set_preset(struct v4l2_subdev *sd, struct reg_val *preset, i
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
     struct reg_val *regval = preset;
 
-    /* printk("%s: size %d\n", __func__, size); */
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+    /* printk(KERN_INFO "%s: size %d\n", __func__, size); */
     for (i = 0; i < size; i++) {
         if (regval->reg == 0xFFFF)
             mdelay(regval->val);
@@ -2229,7 +2290,7 @@ static void thp7212_set_preset(struct v4l2_subdev *sd, struct reg_val *preset, i
             //thp7212_i2c_write_word(client, regval->reg, regval->val);
         regval++;
     }
-    /* printk("preset end!!!\n"); */
+    /* printk(KERN_INFO "preset end!!!\n"); */
 }
 #endif
 
@@ -2280,6 +2341,8 @@ static int thp7212_init_regs(struct v4l2_subdev *sd)
 	//thp7212_i2c_write_word(client, 0x002E, 0x01A6);
 	//thp7212_i2c_read_word(client, 0x0F12, &read_value);
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	pr_info("%s : revision %08X\n", __func__, read_value);
 
 	/* restore write mode */
@@ -2320,7 +2383,7 @@ static int thp7212_s_config(struct v4l2_subdev *sd, int irq, void *platform_data
 
 static int thp7212_power(int flag)
 {
-	printk("%s: sensor is power %s\n", __func__, flag == 1 ?"on":"off");
+	printk(KERN_INFO "%s: sensor is power %s\n", __func__, flag == 1 ?"on":"off");
 	//Attention: Power On the all the camera module when system turn on
 	//Here only control the reset&&powerdown pin
    //xiebin.wang@20110530
@@ -2340,6 +2403,7 @@ static int thp7212_s_power(struct v4l2_subdev *sd, int on)
 		container_of(sd, struct thp7212_state, sd);
 	int ret = 0;
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
     PM_DBGOUT("%s: on %d\n", __func__, on);
 
     if (on) {
@@ -2350,12 +2414,12 @@ static int thp7212_s_power(struct v4l2_subdev *sd, int on)
 #if 0
 #ifdef USE_PRESET
         if (!state->initialized) {
-            printk("%s: init!\n", __func__);
+            printk(KERN_INFO "%s: init!\n", __func__);
 #ifndef USE_INITIAL_WORKER_THREAD
             state->initialized = true;
             thp7212_set_preset(sd, thp7212_reg_init, ARRAY_SIZE(thp7212_reg_init));
 #else
-            printk("queue_work ---> thp7212_init_work\n");
+            printk(KERN_INFO "queue_work ---> thp7212_init_work\n");
             queue_work(state->init_wq, &state->init_work);
 #endif
         }
@@ -2386,12 +2450,28 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 	/* struct sec_cam_parm *parms =	(struct sec_cam_parm *)&state->strm.parm.raw_data; */
 	struct sec_cam_parm *stored_parms = (struct sec_cam_parm *)&state->stored_parm.parm.raw_data;
 	int ret = 0;
+	unsigned int reset_en=0;
+
+	u8 crc_val[4];
+	int i=0;
 
 #if 1
 	u8 read_value = 0;
 #endif
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 	dev_err(&client->dev, "%s: start\n", __func__);
+
+#if 1
+	// device reset
+	reset_en = CFG_IO_CAMERA_BACK_RESET;
+	nxp_soc_gpio_set_io_dir(reset_en, 1);
+	nxp_soc_gpio_set_io_func(reset_en, nxp_soc_gpio_get_altnum(reset_en));
+	nxp_soc_gpio_set_out_value(reset_en, 0);
+	mdelay(10);
+	nxp_soc_gpio_set_out_value(reset_en, 1);
+	mdelay(5);	
+#endif
 
 	// Start C0 00 00 ram_7210.elf.s19.1 Stop 
 	ret = thp7212_i2c_write_block(sd, ram_7210_elf_s19_1, sizeof(ram_7210_elf_s19_1));
@@ -2431,6 +2511,40 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 		dev_err(&client->dev, "\e[31m%s(ram_7210_elf_s19_3) i2c error\e[0m, ret = %d\n", __func__, ret);
 		return ret;
 	}
+
+//CRC CHECK
+#if 1
+	// Start C0 FF 38 00 01 22 F4 Stop 
+	{
+		u8 buf[] = { 0xFF, 0x38, 0x00, 0x01, 0x22, 0xF4 };
+		ret = thp7212_i2c_write_block(sd, buf, sizeof(buf));
+		if(ret < 0) {
+			dev_err(&client->dev, "\e[31m%s(Start C0 FF 38 00 01 22 F4 Stop) i2c error\e[0m, ret = %d\n", __func__, ret);
+			return ret;
+		}
+	}
+
+	// Start C0 FF 3C 01 Stop 
+	{
+		u8 buf[] = { 0xFF, 0x3C, 0x01 };
+		ret = thp7212_i2c_write_block(sd, buf, sizeof(buf));
+		if(ret < 0) {
+			dev_err(&client->dev, "\e[31m%s(Start C0 FF 3C 01 Stop) i2c error\e[0m, ret = %d\n", __func__, ret);
+			return ret;
+		}
+	}
+
+	read_value = -1;
+	if(thp7212_i2c_read_data(client, 0xFF30, crc_val, 4) != 0)
+		pr_info("[%s] : Read CRC Error!!!!\n", __func__);
+	else
+	{
+		for(i=0; i<4; i++)		
+			pr_info("%s : Read CRC Value[%d]  : 0x %02X\n", __func__, i, crc_val[i] );
+	}
+
+#endif
+
 	// Start C0 FF 00 01 Stop 
 	{
 		u8 buf[] = { 0xFF, 0x00, 0x01 };
@@ -2483,11 +2597,6 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 	else
 		pr_info("%s : Keun Revision : 0x %02X\n", __func__, read_value);
 
-	if(thp7212_i2c_read_data(client, 0xF011, &read_value, 1) != 0)
-		pr_info("[%s] :  Keun Auto Enable Error!!!!\n", __func__);
-	else
-		pr_info("%s : Keun Auto Enable : 0x %02X\n", __func__, read_value);
-
 	read_value = 0;
 
 	if(thp7212_i2c_read_data(client, 0xF016, &read_value, 1) != 0)
@@ -2500,6 +2609,54 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 	else
 		pr_info("%s : Keun Frame Rate : 0x %02X\n", __func__, read_value);
 
+	//AWB
+	read_value = -1;
+	if(thp7212_i2c_read_data(client, 0xF011, &read_value, 1) != 0)
+		pr_info("[%s] :  AWB Auto Enable Error!!!!\n", __func__);
+	else
+		pr_info("%s : AWB Auto Enable : 0x %02X\n", __func__, read_value);
+
+	//AE
+	read_value = -1;
+	if(thp7212_i2c_read_data(client, 0xF00F, &read_value, 1) != 0)
+		pr_info("[%s] :  AE Auto Enable Error!!!!\n", __func__);
+	else
+		pr_info("%s : AE Auto Enable : 0x %02X\n", __func__, read_value);
+
+	//Lens Shading
+	read_value = -1;
+	if(thp7212_i2c_read_data(client, 0xF034, &read_value, 1) != 0)
+		pr_info("[%s] : Lens Shading  Auto Enable Error!!!!\n", __func__);
+	else
+		pr_info("%s : Lens Auto Enable : 0x %02X\n", __func__, read_value);
+
+	//Defect Pixel Corection
+	read_value = -1;
+	if(thp7212_i2c_read_data(client, 0xF00E, &read_value, 1) != 0)
+		pr_info("[%s] : Defect Pixel Corection Auto Enable Error!!!!\n", __func__);
+	else
+		pr_info("%s : Defect Pixel Corection Auto Enable : 0x %02X\n", __func__, read_value);
+
+	//Dark Area Compendation
+	read_value = -1;
+	if(thp7212_i2c_read_data(client, 0xF013, &read_value, 1) != 0)
+		pr_info("[%s] : Dark Area Compendation Auto Enable Error!!!!\n", __func__);
+	else
+		pr_info("%s : Dark Area Compendation Auto Enable : 0x %02X\n", __func__, read_value);
+
+	//Output
+	read_value = -1;
+	if(thp7212_i2c_read_data(client, 0xF00B, &read_value, 1) != 0)
+		pr_info("[%s] : Output Auto Enable Error!!!!\n", __func__);
+	else
+		pr_info("%s : Output Auto Enable : 0x %02X\n", __func__, read_value);
+
+	//Custom AE Program
+	read_value = -1;
+	if(thp7212_i2c_read_data(client, 0xF020, &read_value, 1) != 0)
+		pr_info("[%s] : Custom AE Program Auto Enable Error!!!!\n", __func__);
+	else
+		pr_info("%s : Custom AE Program Auto Enable : 0x %02X\n", __func__, read_value);
 
 	//thp7212_i2c_write_word(client, 0x002E, 0x01A6);
 	//thp7212_i2c_read_word(client, 0x0F16, &read_value);
@@ -2517,6 +2674,8 @@ static int thp7212_s_config(struct v4l2_subdev *sd,
 	struct thp7212_state *state =
 		container_of(sd, struct thp7212_state, sd);
 	/* struct thp7212_platform_data *pdata = client->dev.platform_data; */
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	/*
 	 * Assign default format and resolution
@@ -2554,6 +2713,8 @@ static int thp7212_g_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 	struct sec_cam_parm *parms =
 		(struct sec_cam_parm *)&state->strm.parm.raw_data;
 	int err = 0;
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	if (!state->initialized) {
 		dev_err(&client->dev,
@@ -2675,6 +2836,9 @@ static int thp7212_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 		(struct sec_cam_parm *)&state->stored_parm.parm.raw_data;
 	int err = 0;
 	int value = ctrl->value;
+
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	dev_err(&client->dev, "%s: V4l2 control ID = 0x%08x, val = %d\n",
 			__func__,
@@ -2991,6 +3155,8 @@ static int thp7212_s_ext_ctrl(struct v4l2_subdev *sd,
 	int err = 0;
 	struct gps_info_common *tempGPSType = NULL;
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
     /* for compile warning: array subscript is above array bounds */
     u32 *preserved = ctrl->reserved2;
     preserved++;
@@ -3047,6 +3213,8 @@ static int thp7212_s_ext_ctrls(struct v4l2_subdev *sd,
 	int ret = 0;
 	int i;
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	for (i = 0; i < ctrls->count; i++, ctrl++) {
 		ret = thp7212_s_ext_ctrl(sd, ctrl);
 
@@ -3076,6 +3244,7 @@ static int thp7212_s_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt 
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	dev_err(&client->dev, "%s: \n", __func__);
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 #if 0//many del
 	dev_err(&client->dev, "%s: pixelformat = 0x%x (%c%c%c%c),"
 		" colorspace = 0x%x, width = %d, height = %d\n",
@@ -3157,6 +3326,7 @@ static int thp7212_enum_framesizes(struct v4l2_subdev *sd,
 	 * this returns the default camera resolution (SVGA)
 	 */
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 	 dev_err(&client->dev, "%s: wid=%d\t height=%d\n", __func__,state->pix.width,state->pix.height);
 	fsize->type = V4L2_FRMSIZE_TYPE_DISCRETE;
 	fsize->discrete.width = state->pix.width;
@@ -3170,6 +3340,8 @@ static int thp7212_enum_fmt(struct v4l2_subdev *sd,
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	pr_debug("%s: index = %d\n", __func__, fmtdesc->index);
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	dev_err(&client->dev, "%s: \n", __func__);
 	if (fmtdesc->index >= ARRAY_SIZE(capture_fmts))
 		return -EINVAL;
@@ -3186,6 +3358,7 @@ static int thp7212_try_fmt(struct v4l2_subdev *sd, struct v4l2_format *fmt)
 
 	num_entries = ARRAY_SIZE(capture_fmts);
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 	pr_err("%s: pixelformat = 0x%x (%c%c%c%c), num_entries = %d\n",
 		__func__, fmt->fmt.pix.pixelformat,
 		fmt->fmt.pix.pixelformat,
@@ -3211,6 +3384,8 @@ static int thp7212_g_parm(struct v4l2_subdev *sd,
 	struct thp7212_state *state =
 		container_of(sd, struct thp7212_state, sd);
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	memcpy(param, &state->strm, sizeof(param));
 	return 0;
 }
@@ -3228,6 +3403,7 @@ static int thp7212_s_parm(struct v4l2_subdev *sd,
 		(struct sec_cam_parm *)&state->strm.parm.raw_data;
 
 	dev_err(&client->dev, "%s: start\n", __func__);
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	if (param->parm.capture.timeperframe.numerator !=
 		parms->capture.timeperframe.numerator ||
@@ -3323,6 +3499,8 @@ static int thp7212_s_stream(struct v4l2_subdev *sd, int enable)
 
 	PM_DBGOUT("%s: enable %d\n", __func__, enable);
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	if (enable)	/* stream on */
 	{
 #if 0//def USE_PRESET
@@ -3402,6 +3580,8 @@ static enum thp7212_oprmode __find_oprmode(enum v4l2_mbus_pixelcode code)
 {
 	enum thp7212_oprmode type = THP7212_OPRMODE_VIDEO;
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	do {
 		if (code == default_fmt[type].code)
 			return type;
@@ -3431,6 +3611,8 @@ static int __find_resolution(struct v4l2_subdev *sd,
 	unsigned int min_err = ~0;
 	int err;
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	while (i--) {
 		if (stype == fsize->type) {
 			err = abs(fsize->width - mf->width)
@@ -3444,9 +3626,9 @@ static int __find_resolution(struct v4l2_subdev *sd,
 		}
 		fsize++;
 	}
-	printk("LINE(%d): mf width: %d, mf height: %d, mf code: %d\n", __LINE__,
+	printk(KERN_INFO "LINE(%d): mf width: %d, mf height: %d, mf code: %d\n", __LINE__,
 		mf->width, mf->height, stype);
-	printk("LINE(%d): match width: %d, match height: %d, match code: %d\n", __LINE__,
+	printk(KERN_INFO "LINE(%d): match width: %d, match height: %d, match code: %d\n", __LINE__,
 		match->width, match->height, stype);
 	if (match) {
 		mf->width  = match->width;
@@ -3455,7 +3637,7 @@ static int __find_resolution(struct v4l2_subdev *sd,
 		*type = stype;
 		return 0;
 	}
-	printk("LINE(%d): mf width: %d, mf height: %d, mf code: %d\n", __LINE__,
+	printk(KERN_INFO "LINE(%d): mf width: %d, mf height: %d, mf code: %d\n", __LINE__,
 		mf->width, mf->height, stype);
 
 	return -EINVAL;
@@ -3466,6 +3648,8 @@ static struct v4l2_mbus_framefmt *__find_format(struct thp7212_state *state,
 				enum v4l2_subdev_format_whence which,
 				enum thp7212_oprmode type)
 {
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	if (which == V4L2_SUBDEV_FORMAT_TRY)
 		return fh ? v4l2_subdev_get_try_format(fh, 0) : NULL;
 
@@ -3477,6 +3661,8 @@ static int thp7212_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_fh *fh,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	if (!code || code->index >= SIZE_DEFAULT_FFMT)
 		return -EINVAL;
 
@@ -3492,6 +3678,8 @@ static int thp7212_get_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 	struct thp7212_state *state =
 		container_of(sd, struct thp7212_state, sd);
 	struct v4l2_mbus_framefmt *format;
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	if (fmt->pad != 0)
 		return -EINVAL;
@@ -3515,6 +3703,8 @@ static int thp7212_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 	enum thp7212_oprmode type;
 	u32 resolution = 0;
 	int ret;
+
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 
 	if (fmt->pad != 0)
 		return -EINVAL;
@@ -3578,7 +3768,7 @@ static int thp7212_link_setup(struct media_entity *entity,
 			    const struct media_pad *local,
 			    const struct media_pad *remote, u32 flags)
 {
-	printk("%s\n", __func__);
+	printk(KERN_INFO "%s\n", __func__);
 	return 0;
 }
 
@@ -3592,6 +3782,7 @@ static int thp7212_init_formats(struct v4l2_subdev *sd, struct v4l2_subdev_fh *f
 	struct v4l2_subdev_format format;
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 	dev_err(&client->dev, "%s: \n", __func__);
 	memset(&format, 0, sizeof(format));
 	format.pad = 0;
@@ -3611,18 +3802,21 @@ static int thp7212_subdev_close(struct v4l2_subdev *sd,
 			      struct v4l2_subdev_fh *fh)
 {
 	thp7212_debug(THP7212_DEBUG_I2C, "%s", __func__);
-	printk("%s", __func__);
+	printk(KERN_INFO "%s", __func__);
 	return 0;
 }
 
 static int thp7212_subdev_registered(struct v4l2_subdev *sd)
 {
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
+
 	thp7212_debug(THP7212_DEBUG_I2C, "%s", __func__);
 	return 0;
 }
 
 static void thp7212_subdev_unregistered(struct v4l2_subdev *sd)
 {
+	printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
 	thp7212_debug(THP7212_DEBUG_I2C, "%s", __func__);
 }
 
@@ -3639,7 +3833,8 @@ static void thp7212_init_work(struct work_struct *work)
 {
     struct thp7212_state *state = container_of(work, struct thp7212_state, init_work);
     //thp7212_set_preset(&state->sd, thp7212_reg_init, ARRAY_SIZE(thp7212_reg_init));
-    printk("%s\n", __func__);
+    printk(KERN_INFO "%s\n", __func__);
+		printk(KERN_INFO "[%s] LINE : %d\n", __func__, __LINE__);
     state->initialized = true;
 }
 #endif
@@ -3703,7 +3898,7 @@ static int thp7212_probe(struct i2c_client *client,
 #endif
 
 	/* dev_dbg(&client->dev, "5MP camera THP7212 loaded.\n"); */
-	printk("13MP camera THP7212 loaded.\n");
+	printk(KERN_INFO "13MP camera THP7212 loaded.\n");
 
     return 0;
 }
@@ -3742,13 +3937,13 @@ static struct i2c_driver thp7212_i2c_driver = {
 
 static int __init thp7212_mod_init(void)
 {
-	printk("many: %s\n",__func__);
+	printk(KERN_INFO "many: %s\n",__func__);
 	return i2c_add_driver(&thp7212_i2c_driver);
 }
 
 static void __exit thp7212_mod_exit(void)
 {
-	printk("many: %s\n",__func__);
+	printk(KERN_INFO "many: %s\n",__func__);
 	i2c_del_driver(&thp7212_i2c_driver);
 }
 
