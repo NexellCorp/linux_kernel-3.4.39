@@ -1023,12 +1023,13 @@ static int mt9d111_s_stream(struct v4l2_subdev *sd, int enable)
 		v4l_info(client,"%s: \e[31mi2c_id=%d, enable=%d +++++\e[0m\n", __func__, i2c_id, enable);
 	else
 		v4l_info(client,"%s: \e[32mi2c_id=%d, enable=%d +++++\e[0m\n", __func__, i2c_id, enable);
+
 	if (enable) {
-		mt9d111_set_power(sd, 1);
+		//mt9d111_set_power(sd, 1);
 		mt9d111_init(sd, enable);
 		mt9d111_set_frame_size(sd, state->mode, state->width, state->height);
 	} else {
-		mt9d111_set_power(sd, 0);
+		//mt9d111_set_power(sd, 0);
 		//mt9d111_write_regs(client, mt9d111_reg_disable, ARRAY_SIZE(mt9d111_reg_disable));
 	}
 
