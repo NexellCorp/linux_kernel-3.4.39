@@ -452,22 +452,13 @@ static void nxp_tmu_monitor(struct work_struct *work)
 static int nxp_tmu_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	struct tmu_info *info = platform_get_drvdata(pdev);
-	struct tmu_trigger *trig = info->triggers;
 	int channel = info->channel;
-	int i = 0;
 
 	mutex_lock(&info->mlock);
 	set_bit(STATE_SUSPEND_ENTER, &info->state);
-
-	for (i = 0; info->trigger_size > i; i++) {
-		trig->new_cpufreq = trig->trig_cpufreq;
-		trig->expire_time = 0;
-		trig->limited = false;
-		trig->triggered = false;
-	}
-
+	
 	nxp_tmu_stop(info);
-	nxp_tmu_frequency(info->new_cpufreq);
+	nxp_tmu_frequency(info->max_cpufreq);
 
 	NX_TMU_ClearInterruptPendingAll(channel);
 	NX_TMU_SetP0IntEn(channel, 0x0);
