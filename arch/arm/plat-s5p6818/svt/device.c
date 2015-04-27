@@ -1123,7 +1123,7 @@ static struct regulator_consumer_supply mp8845c_vout_1[] = {
 	REGULATOR_SUPPLY("vdd_core_1.2V", NULL),
 };
 
-MP8845C_PDATA_INIT(vout, 0, 600000, 1500000, 1, 1, 1100000, 1, -1);	/* ARM */
+MP8845C_PDATA_INIT(vout, 0, 600000, 1500000, 1, 1, 1200000, 1, -1);	/* ARM */
 MP8845C_PDATA_INIT(vout, 1, 600000, 1500000, 1, 1, 1100000, 1, -1);	/* CORE */
 
 static struct mp8845c_platform_data __initdata mp8845c_platform[] = {
@@ -1338,81 +1338,37 @@ static void camera_power_control(int enable)
     camera_power_enabled = enable ? true : false;
 }
 
-static bool is_back_camera_enabled = false;
-static bool is_back_camera_power_state_changed = false;
-static bool is_front_camera_enabled = false;
-static bool is_front_camera_power_state_changed = false;
-
 static int front_camera_power_enable(bool on);
 
 static int back_camera_power_enable(bool on)
 {
-#if 0
-    unsigned int io = CFG_IO_CAMERA_BACK_POWER_DOWN;
-#endif
-    unsigned int reset_io = CFG_IO_CAMERA_BACK_RESET;
-  	printk(KERN_INFO "%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
+  unsigned int reset_io = CFG_IO_CAMERA_BACK_RESET;
+  printk(KERN_INFO "%s: on %d\n", __func__, on);
 
-    if (on) {
-        front_camera_power_enable(0);
-        if (!is_back_camera_enabled) {
-            camera_power_control(1);
-						mdelay(100);
+	if(on)
+	{
+		/* RST signal */
+		nxp_soc_gpio_set_out_value(reset_io, 0);
+		nxp_soc_gpio_set_io_dir(reset_io, 1);
+		nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
+		mdelay(1);
 
-#if 0
-            /* power enalbe & clk generration */
-            nxp_soc_gpio_set_out_value(io, 1);
-            nxp_soc_gpio_set_io_dir(io, 1);
-            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-#endif
+		nxp_soc_gpio_set_out_value(reset_io, 1);
+		mdelay(1);
 
-            /* RST signal */
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            nxp_soc_gpio_set_io_dir(reset_io, 1);
-#if 1
-            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
-#endif
-            mdelay(1);
+		nxp_soc_gpio_set_out_value(reset_io, 0);
+		mdelay(1);
 
-  					printk(KERN_INFO "%s: back_camera_reset_high\n", __func__);
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-            mdelay(1);
-
-  					printk(KERN_INFO "%s: back_camera_reset_low\n", __func__);
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            mdelay(1);
-
-  					printk(KERN_INFO "%s: back_camera_reset_high\n", __func__);
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-            mdelay(10);
-
-            is_back_camera_enabled = true;
-          	//is_back_camera_enabled = false;
-            is_back_camera_power_state_changed = true;
-        } else {
-            is_back_camera_power_state_changed = false;
-        }
-    } else {
-        if (is_back_camera_enabled) {
-            is_back_camera_enabled = false;
-            is_back_camera_power_state_changed = true;
-        } else {
-            is_back_camera_power_state_changed = false;
-        }
-
-        if (!(is_back_camera_enabled || is_front_camera_enabled)) {
-            camera_power_control(0);
-        }
-    }
-
-    return 0;
-}
-
-static bool back_camera_power_state_changed(void)
-{
-  	printk(KERN_INFO "%s\n", __func__);
-
-    return is_back_camera_power_state_changed;
+		nxp_soc_gpio_set_out_value(reset_io, 1);
+		mdelay(10);
+	}
+	else
+	{
+		nxp_soc_gpio_set_out_value(reset_io, 0);
+		mdelay(1);
+	}
+	
+	return 0;
 }
 
 static struct i2c_board_info back_camera_i2c_boardinfo[] = {
@@ -1442,57 +1398,30 @@ struct nxp_mipi_csi_platformdata thp7212_plat_data = {
 
 static int front_camera_power_enable(bool on)
 {
-  	//unsigned int io = CFG_IO_CAMERA_FRONT_POWER_DOWN;
-    unsigned int reset_io = CFG_IO_CAMERA_FRONT_RESET;
+  unsigned int reset_io = CFG_IO_CAMERA_FRONT_RESET;
+  printk(KERN_INFO "%s: on %d\n", __func__, on);
 
-   printk(KERN_INFO "%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
+	if (on) 
+  {
+    nxp_soc_gpio_set_io_dir(reset_io, 0);
+    nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
 
-    if (on) {
-        back_camera_power_enable(0);
-        if (!is_front_camera_enabled) {
-            camera_power_control(1);
-						mdelay(100);
+    nxp_soc_gpio_set_out_value(reset_io, 1);
+    mdelay(10);
 
-            /* First RST signal to low */
-#if 1
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            nxp_soc_gpio_set_io_dir(reset_io, 1);
-            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
-            mdelay(1);
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-#else
-            nxp_soc_gpio_set_out_value(io, 0);
-            nxp_soc_gpio_set_io_dir(io, 1);
-            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-            mdelay(1);
-            nxp_soc_gpio_set_out_value(io, 1);
-#endif
+    nxp_soc_gpio_set_out_value(reset_io, 0);
+    mdelay(10);
 
-            is_front_camera_enabled = true;
-          	//is_front_camera_enabled = false;
-            is_front_camera_power_state_changed = true;
-        } else {
-            is_front_camera_power_state_changed = false;
-        }
-    } else {
-        if (is_front_camera_enabled) {
-            is_front_camera_enabled = false;
-            is_front_camera_power_state_changed = true;
-        } else {
-            is_front_camera_power_state_changed = false;
-        }
-        if (!(is_back_camera_enabled || is_front_camera_enabled)) {
-            camera_power_control(0);
-        }
-    }
+    nxp_soc_gpio_set_out_value(reset_io, 1);
+    mdelay(1);
+  }
+  else 
+  {
+    nxp_soc_gpio_set_out_value(reset_io, 0);
+    mdelay(1);
+  }
 
-    return 0;
-}
-
-static bool front_camera_power_state_changed(void)
-{
-  	printk(KERN_INFO "%s\n", __func__);
-    return is_front_camera_power_state_changed;
+	return 0;
 }
 
 static struct i2c_board_info front_camera_i2c_boardinfo[] = {
@@ -1516,7 +1445,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 #if defined(CONFIG_VIDEO_MT9D111_CAM)
 	{
         /* front_camera 656 interface */
-        .module = 0,
+        .module = 2,
         .sensor = &sensor[1],
         .type = NXP_CAPTURE_INF_PARALLEL,
 				.parallel = {
@@ -1525,14 +1454,12 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .h_active       = 1280,
             .h_frontporch   = 7,
             .h_syncwidth    = 1,
-            /* .h_backporch    = 0, */
             .h_backporch    = 10,
             .v_active       = 720,
             .v_frontporch   = 0,
             .v_syncwidth    = 1,
             .v_backporch    = 0,
             .clock_invert   = true,
-            //.port           = NX_VIP_INPUTPORT_B,
             .port           = 0,
             .data_order     = NXP_VIN_CBY0CRY1,
             .interlace      = false,
@@ -1553,7 +1480,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 #if defined(CONFIG_VIDEO_THP7212_CAM)
   {
         /* back_camera 656 interface */
-        .module = 1,
+        .module = 0,
         .sensor = &sensor[0],
 				.type = NXP_CAPTURE_INF_CSI,
 				.parallel = {
@@ -1568,7 +1495,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .v_syncwidth    = 1,
             .v_backporch    = 1,
             .clock_invert   = false,
-            .port           = NX_VIP_INPUTPORT_B,
+            .port           = 1,
             .data_order     = NXP_VIN_CBY0CRY1,
             .interlace      = false,
             .clk_rate       = 27000000,
