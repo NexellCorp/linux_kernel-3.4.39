@@ -6647,7 +6647,7 @@ static int __init nxe2000_battery_init(void)
 {
 	return platform_driver_register(&nxe2000_battery_driver);
 }
-module_init(nxe2000_battery_init);
+subsys_initcall(nxe2000_battery_init);
 
 static void __exit nxe2000_battery_exit(void)
 {
