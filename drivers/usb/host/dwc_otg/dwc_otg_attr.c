@@ -317,7 +317,7 @@
 #include "dwc_otg_hcd_if.h"
 
 // psw0523 add
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_ARCH_CPU_NEXELL)
 #include <mach/platform.h>
 #endif
 /*
@@ -1103,7 +1103,7 @@ DEVICE_ATTR(sleep_status, S_IRUGO | S_IWUSR, sleepstatus_show,
 #endif /* CONFIG_USB_DWC_OTG_LPM_ENABLE */
 
 // psw0523 add for host <-> device change
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_ARCH_CPU_NEXELL)
 #define CFG_OTG_MODE_HOST   1
 #define CFG_OTG_MODE_DEVICE 0
 extern unsigned int get_otg_mode(void); /* 1: host, 0: device */
@@ -1136,7 +1136,7 @@ static ssize_t otg_mode_store(struct device *_dev,
 }
 
 DEVICE_ATTR(otg_mode, S_IRUGO | S_IWUSR, otg_mode_show, otg_mode_store);
-#endif /* CONFIG_ARCH_NXP3200 && CFG_SWITCH_USB_HOST_DEVICE */
+#endif /* CONFIG_ARCH_CPU_NEXELL && CFG_SWITCH_USB_HOST_DEVICE */
 
 /**@}*/
 
@@ -1195,7 +1195,7 @@ void dwc_otg_attr_create(
 	error = device_create_file(&dev->dev, &dev_attr_sleep_status);
 #endif
     // psw0523 add
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_ARCH_CPU_NEXELL)
     error = device_create_file(&dev->dev, &dev_attr_otg_mode);
 #endif
 }
@@ -1253,7 +1253,7 @@ void dwc_otg_attr_remove(
 	device_remove_file(&dev->dev, &dev_attr_sleep_status);
 #endif
     // psw0523 add
-#if defined(CONFIG_ARCH_NXP3200) || defined(CONFIG_ARCH_NXP4330)
+#if defined(CONFIG_ARCH_CPU_NEXELL)
     device_remove_file(&dev->dev, &dev_attr_otg_mode);
 #endif
 }
