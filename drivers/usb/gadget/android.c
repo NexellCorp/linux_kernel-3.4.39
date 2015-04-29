@@ -1375,7 +1375,9 @@ static int android_bind(struct usb_composite_dev *cdev)
 	 * Start disconnected. Userspace will connect the gadget once
 	 * it is done configuring the functions.
 	 */
+#if !defined(CONFIG_ARCH_CPU_NEXELL)
 	usb_gadget_disconnect(gadget);
+#endif
 
 	ret = android_init_functions(dev->functions, cdev);
 	if (ret)
