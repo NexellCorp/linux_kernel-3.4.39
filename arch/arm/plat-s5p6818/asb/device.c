@@ -93,19 +93,19 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-//     { 1600000, 1340000, },
-//     { 1500000, 1280000, },
+     { 1600000, 1340000, },
+     { 1500000, 1280000, },
        { 1400000, 1240000, },
        { 1300000, 1180000, },
        { 1200000, 1140000, },
        { 1100000, 1100000, },
        { 1000000, 1060000, },
        {  900000, 1040000, },
-       {  800000, 1000000, },
-       {  700000,  940000, },
-       {  600000,  940000, },
-       {  500000,  940000, },
-       {  400000,  940000, },
+       {  800000, 1100000, },
+       {  700000, 1080000, },
+       {  600000, 1060000, },
+       {  500000, 1040000, },
+       {  400000, 1020000, },
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
@@ -135,25 +135,25 @@ static struct platform_device dfs_plat_device = {
 
 #if defined(CONFIG_SENSORS_NXP_TMU)
 struct nxp_tmu_trigger tmu_triggers[] = {
-       {
-               .trig_degree    =  85,
-               .trig_duration  =  100,
-               .trig_cpufreq   =  800*1000,    /* Khz */
-       },
+	{
+		.trig_degree    =  85,
+		.trig_duration  =  100,
+		.trig_cpufreq   =  800*1000,    /* Khz */
+	},
 };
 
 static struct nxp_tmu_platdata tmu_data = {
-       .channel  = 0,
-       .triggers = tmu_triggers,
-       .trigger_size = ARRAY_SIZE(tmu_triggers),
-       .poll_duration = 100,
+	.channel  = 0,
+	.triggers = tmu_triggers,
+	.trigger_size = ARRAY_SIZE(tmu_triggers),
+	.poll_duration = 100,
 };
 
 static struct platform_device tmu_device = {
-       .name                   = "nxp-tmu",
-			 .dev			= {
-					.platform_data  = &tmu_data,
-				}
+    .name           = "nxp-tmu",
+	.dev			= {
+		.platform_data  = &tmu_data,
+	}
 };
 #endif
 
