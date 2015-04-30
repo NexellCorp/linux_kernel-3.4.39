@@ -46,7 +46,7 @@ bool pm_suspend_enter = false;
 #define	FLUSH_CACHE()	do { flush_cache_all();outer_flush_all(); } while(0);
 
 void (*nxp_board_pm_mark)(struct suspend_mark_up *mark, int suspend) = NULL;
-static void (*do_suspend)(ulong, ulong) = NULL;
+void (*core_do_suspend)(ulong, ulong) = NULL;
 
 struct save_gpio {
 	unsigned long data;			/* 0x00 */
@@ -426,7 +426,7 @@ static int __power_down(unsigned long arg)
 	int ret = suspend_machine();
 #ifndef CONFIG_S5P6818_PM_IDLE
 	void (*power_down)(ulong, ulong) =
-		(void (*)(ulong, ulong))((ulong)do_suspend + 0x220);;
+		(void (*)(ulong, ulong))((ulong)core_do_suspend + 0x220);;
 #endif
 
 #ifdef CONFIG_S5P6818_PM_IDLE
@@ -440,7 +440,7 @@ static int __power_down(unsigned long arg)
 #ifdef CONFIG_S5P6818_PM_IDLE
 	cpu_do_idle();
 #else
-	if(do_suspend == NULL) {
+	if(core_do_suspend == NULL) {
 		lldebugout("Fail, inavalid suspend callee\n");
 		return 0;
 	}
@@ -601,8 +601,8 @@ static int __init suspend_ops_init(void)
 	suspend_set_ops(&suspend_ops);
 
 #ifndef CONFIG_S5P6818_PM_IDLE
-	do_suspend = __arm_ioremap_exec(0xffff0000, 0x10000, 0);
-	if (!do_suspend)
+	core_do_suspend = __arm_ioremap_exec(0xffff0000, 0x10000, 0);
+	if (!core_do_suspend)
 		printk("Fail, ioremap for suspend callee\n");
 #endif
 	return 0;
