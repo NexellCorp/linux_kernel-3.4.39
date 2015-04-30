@@ -230,7 +230,8 @@ static int tw9900_initialize_ctrls(struct tw9900_state *me)
 
 static irqreturn_t _irq_handler(int irq, void *devdata)
 {
-    int val = nxp_soc_gpio_get_in_value(PAD_GPIO_ALV + 4);
+    /*int val = nxp_soc_gpio_get_in_value(PAD_GPIO_ALV + 4);*/
+    int val = nxp_soc_gpio_get_in_value((PAD_GPIO_A + 3) | PAD_FUNC_ALT0);
     vmsg("%s val %d\n", __func__, val);
     if (!val)
         switch_set_state(&_state.switch_dev, 1);
@@ -243,7 +244,8 @@ static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 {
     if (enable) {
         if (_state.first) {
-            int ret = request_irq(IRQ_ALIVE_4, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);
+            /*int ret = request_irq(IRQ_ALIVE_4, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);*/
+            int ret = request_irq(IRQ_GPIO_A_START + 3, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);
             if (ret) {
                 pr_err("%s: failed to request_irq(irqnum %d)\n", __func__, IRQ_ALIVE_4);
                 return -1;
