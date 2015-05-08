@@ -100,7 +100,7 @@ const u8 g_DispBusSI[3] = {
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
-//		.supply_name 	= "vdd_arm_1.3V",
+	.supply_name 	= "vdd_arm_1.3V",
 };
 
 static struct platform_device dfs_plat_device = {
