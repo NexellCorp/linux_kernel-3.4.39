@@ -280,19 +280,25 @@
 #define CFG_GPIO_HSIC_EXTHUB_RESET				(PAD_GPIO_E + 31)
 
 /*------------------------------------------------------------------------------
+ *  usb otg
+ */
+// 7(+9%),  6(+6%), 5(+3%), 4(default), 3(-3%), 2(-6%), 1(-9%), 0(-12%) 
+#define CFG_OTG_OVC_VALUE                       0 
+
+/*------------------------------------------------------------------------------
  * 	Suspend mode
  */
 
 /* Wakeup Source : ALIVE [0~7] */
 #define CFG_PWR_WAKEUP_SRC_ALIVE0				CTRUE					/* KEY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE0				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE1				CTRUE					/* EXT SD */
+#define CFG_PWR_WAKEUP_SRC_ALIVE1				CFALSE					/* EXT SD */
 #define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_BOTHEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE2				CTRUE					/* PMIC - VUSB*/
+#define CFG_PWR_WAKEUP_SRC_ALIVE2				CFALSE					/* PMIC - VUSB*/
 #define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE3				CFALSE					/* PMIC - CRITICAL LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_ASYNC_LOWLEVEL
-#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR - LOW BATTERY */
+#define CFG_PWR_WAKEUP_SRC_ALIVE4				CFALSE					/* PMIC INTR - LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE

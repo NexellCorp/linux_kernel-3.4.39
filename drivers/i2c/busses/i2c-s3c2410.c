@@ -96,6 +96,7 @@ struct s3c24xx_i2c {
 #endif
 	unsigned int freq;
 	bool condition;
+	bool tr;
 };
 
 const static int i2c_reset[3] = {RESET_ID_I2C0, RESET_ID_I2C1, RESET_ID_I2C2};
@@ -153,6 +154,7 @@ static inline void s3c24xx_i2c_master_complete(struct s3c24xx_i2c *i2c, int ret)
 		i2c->msg_idx = ret;
 
 	i2c->condition = 1;
+	i2c->tr = 0;
 	wake_up(&i2c->wait);
 }
 
@@ -473,7 +475,7 @@ static irqreturn_t s3c24xx_i2c_irq(int irqno, void *dev_id)
 	unsigned long tmp;
 
 	spin_lock(&i2c->lock);
-
+	i2c->tr = 1;
 	status = readl(i2c->regs + S3C2410_IICSTAT);
 
 	if (status & S3C2410_IICSTAT_ARBITR) {
@@ -549,12 +551,13 @@ static int s3c24xx_i2c_doxfer(struct s3c24xx_i2c *i2c,
 
 	spin_lock_irq(&i2c->lock);
 
-	i2c->msg     = msgs;
-	i2c->msg_num = num;
-	i2c->msg_ptr = 0;
-	i2c->msg_idx = 0;
-	i2c->state   = STATE_START;
-	i2c->condition = 0;
+	i2c->msg     	= msgs;
+	i2c->msg_num 	= num;
+	i2c->msg_ptr 	= 0;
+	i2c->msg_idx 	= 0;
+	i2c->state   	= STATE_START;
+	i2c->condition 	= 0;
+	i2c->tr			= 0;
 
 	s3c24xx_i2c_enable_irq(i2c);
 	s3c24xx_i2c_message_start(i2c, msgs);
@@ -562,9 +565,15 @@ static int s3c24xx_i2c_doxfer(struct s3c24xx_i2c *i2c,
 	spin_unlock_irq(&i2c->lock);
 	
 	/* change set transfer timeout. modify by bok*/
+	do {
+	i2c->tr=0;
 	wait = num * msecs_to_jiffies(WAIT_ACK_TIME);
 	timeout = wait_event_interruptible_timeout(i2c->wait, i2c->condition, wait);
+	if(i2c->condition == 1)
+		break;
 
+	} while(i2c->tr);
+		
 	ret = i2c->msg_idx;
 	/* having these next two as dev_err() makes life very
 	 * noisy when doing an i2cdetect */
