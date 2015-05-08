@@ -120,7 +120,7 @@ void NFC_PHY_tDelay(unsigned int _tDelay)
         while (tDelay)
         {
             dummy = nfcI->nftacs;
-            nfcI->nftacs = dummy;
+            //nfcI->nftacs = dummy;
             tDelay -= 1;
         }
     }
@@ -292,6 +292,8 @@ void NFC_PHY_SetEccMode(unsigned int _mode)
     regval |= __POW(mode,NFECCCTRL_DECMODE_W);
 
     nfcI->nfeccctrl = regval;
+
+	dmb();
 }
 
 void NFC_PHY_RunEcc(void)
@@ -303,6 +305,8 @@ void NFC_PHY_RunEcc(void)
     regval |= __POW(0x1,NFECCCTRL_RUNECC_W);
 
     nfcI->nfeccctrl = regval;
+
+	dmb();
 }
 
 /******************************************************************************
@@ -323,6 +327,8 @@ void NFC_PHY_EccEncoderSetup(unsigned int _bytes_per_ecc, unsigned int _ecc_bits
     NFC_PHY_SetBytesPerEcc(k);
     NFC_PHY_SetBytesPerParity(r);
     NFC_PHY_SetElpNum(t);
+
+	dmb();
 }
 
 void NFC_PHY_EccEncoderEnable(void)
@@ -331,6 +337,8 @@ void NFC_PHY_EccEncoderEnable(void)
 
     NFC_PHY_SetEccMode(0);
     NFC_PHY_RunEcc();
+
+	dmb();
 }
 
 void NFC_PHY_EccEncoderReadParity(unsigned int * _parity, unsigned int _ecc_bits)
@@ -417,6 +425,8 @@ void NFC_PHY_EccDecoderEnable(unsigned int _bytes_per_ecc, unsigned int _ecc_bit
                       __POW(t & 0x7F,NFECCCTRL_ELPNUM) |
                       __POW(r & 0xFF,NFECCCTRL_PDATACNT) |
                       __POW((k-1) & 0x3FF,NFECCCTRL_DATACNT);
+
+	dmb();
 }
 
 void NFC_PHY_EccDecoderWaitDone(void)
@@ -848,8 +858,12 @@ void NFC_PHY_ChipSelect(unsigned int _channel, unsigned int _way, unsigned int _
     if (__TRUE == select) { if (Exchange.sys.fn.elapse_t_io_measure_start) { Exchange.sys.fn.elapse_t_io_measure_start(ELAPSE_T_IO_NFC_RW, ELAPSE_T_IO_NFC_R, ELAPSE_T_IO_NFC_W); } }
 #endif
 
+	dmb();
+
     NFC_PHY_SetNFBank(way);
     NFC_PHY_SetNFCSEnable(select);
+
+	dmb();
 
 #if defined (__COMPILE_MODE_ELAPSE_T__)
     if (__FALSE == select) { if (Exchange.sys.fn.elapse_t_io_measure_end) { Exchange.sys.fn.elapse_t_io_measure_end(ELAPSE_T_IO_NFC_RW, ELAPSE_T_IO_NFC_R, ELAPSE_T_IO_NFC_W); } }
