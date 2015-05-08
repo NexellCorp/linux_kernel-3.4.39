@@ -1298,48 +1298,6 @@ static void front_camera_vin_setup_io(int module, bool force)
     }
 }
 
-static bool camera_power_enabled = false;
-static void camera_power_control(int enable)
-{
-    struct regulator *cam_io_28V = NULL;
-    struct regulator *cam_core_18V = NULL;
-
-  	printk(KERN_INFO "%s: enable -> %d\n", __func__, enable);
-
-    if (enable && camera_power_enabled)
-        return;
-    if (!enable && !camera_power_enabled)
-        return;
-
-    cam_core_18V = regulator_get(NULL, "vcam1_1.8V");
-    if (IS_ERR(cam_core_18V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for vcam1_1.8V", __func__);
-        return;
-    }
-
-    cam_io_28V = regulator_get(NULL, "vcam_2.8V");
-    if (IS_ERR(cam_io_28V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for vcam_2.8V", __func__);
-        return;
-    }
-
-    printk("%s: %d\n", __func__, enable);
-    if (enable) {
-        regulator_enable(cam_core_18V);
-        regulator_enable(cam_io_28V);
-    } else {
-        regulator_disable(cam_core_18V);
-        regulator_disable(cam_io_28V);
-    }
-
-    regulator_put(cam_io_28V);
-    regulator_put(cam_core_18V);
-
-    camera_power_enabled = enable ? true : false;
-}
-
-static int front_camera_power_enable(bool on);
-
 static int back_camera_power_enable(bool on)
 {
   unsigned int reset_io = CFG_IO_CAMERA_BACK_RESET;
