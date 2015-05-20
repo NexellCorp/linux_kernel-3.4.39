@@ -27,10 +27,13 @@
 #include <linux/i2c.h>
 #include <linux/i2c/tsc2007.h>
 #include <linux/delay.h>
+#include <linux/gpio.h>
+#include <linux/irq.h>
 
 #include <mach/platform.h>
 #include <mach/devices.h>
 #include <mach/soc.h>
+
 
 #define TSC2007_MEASURE_TEMP0	(0x0 << 4)
 #define TSC2007_MEASURE_AUX		(0x2 << 4)
@@ -92,6 +95,228 @@ struct tsc2007 {
 	long	yp_old;
 	
 };
+
+
+//Nexell allan.park: 20150520
+int elements[20] = {24, 47, 991, 43, 977, 565, 39, 567, 511, 295, 
+					50, 50, 974, 50, 974, 550, 50, 550, 512, 300};
+
+//int elements[20] = {3677, 3294, 409, 3294, 398,665, 3677, 665, 2038, 1970,
+//					50, 50, 974, 50, 974, 550, 50, 550, 512, 300};
+
+typedef struct {
+    int x[5], xfb[5];
+    int y[5], yfb[5];
+    int a[7];
+} calibration;
+
+calibration cal; //initial the default value
+static struct kobject   * g_ts_kobj = NULL;
+
+// finedigital:jhhong:20150507
+bool gbFirst = true;
+bool gbLCD_updown = false;
+
+
+//Nexell allan.park: 20150520
+int perform_calibration(calibration *cal) {
+    int j;
+    float n, x, y, x2, y2, xy, z, zx, zy;
+    float det, a, b, c, e, f, i;
+    float scaling = 65536.0;
+
+// Get sums for matrix
+    n = x = y = x2 = y2 = xy = 0;
+    for(j=0;j<5;j++) {
+        n += 1.0;
+        x += (float)cal->x[j];
+        y += (float)cal->y[j];
+        x2 += (float)(cal->x[j]*cal->x[j]);
+        y2 += (float)(cal->y[j]*cal->y[j]);
+        xy += (float)(cal->x[j]*cal->y[j]);
+    }
+
+// Get determinant of matrix -- check if determinant is too small
+    det = n*(x2*y2 - xy*xy) + x*(xy*y - x*y2) + y*(x*xy - y*x2);
+    if(det < 0.1 && det > -0.1) {
+        printk("ts_calibrate: determinant is too small -- %f\n",det);
+        return 0;
+    }
+
+// Get elements of inverse matrix
+    a = (x2*y2 - xy*xy)/det;
+    b = (xy*y - x*y2)/det;
+    c = (x*xy - y*x2)/det;
+    e = (n*y2 - y*y)/det;
+    f = (x*y - n*xy)/det;
+    i = (n*x2 - x*x)/det;
+
+// Get sums for x calibration
+    z = zx = zy = 0;
+    for(j=0;j<5;j++) {
+        z += (float)cal->xfb[j];
+        zx += (float)(cal->xfb[j]*cal->x[j]);
+        zy += (float)(cal->xfb[j]*cal->y[j]);
+    }
+
+// Now multiply out to get the calibration for framebuffer x coord
+    cal->a[2] = (int)((a*z + b*zx + c*zy)*(scaling));
+    cal->a[0] = (int)((b*z + e*zx + f*zy)*(scaling));
+    cal->a[1] = (int)((c*z + f*zx + i*zy)*(scaling));
+
+    //printk("%lf %lf %lf \n",(a*z + b*zx + c*zy), (b*z + e*zx + f*zy), (c*z + f*zx + i*zy));
+
+// Get sums for y calibration
+    z = zx = zy = 0;
+    for(j=0;j<5;j++) {
+        z += (float)cal->yfb[j];
+        zx += (float)(cal->yfb[j]*cal->x[j]);
+        zy += (float)(cal->yfb[j]*cal->y[j]);
+    }
+// Now multiply out to get the calibration for framebuffer y coord
+    cal->a[5] = (int)((a*z + b*zx + c*zy)*(scaling));
+    cal->a[3] = (int)((b*z + e*zx + f*zy)*(scaling));
+    cal->a[4] = (int)((c*z + f*zx + i*zy)*(scaling));
+
+    //printk( "%lf %lf %lf\n",(a*z + b*zx + c*zy), (b*z + e*zx + f*zy), (c*z + f*zx + i*zy));
+
+// If we got here, we're OK, so assign scaling to a[6] and return
+    cal->a[6] = (int)scaling;
+
+	#if 1
+	printk("\n CAL Factor = %d %d %d %d %d %d %d \n\n",
+			cal->a[0], cal->a[1], cal->a[2],
+			cal->a[3], cal->a[4], cal->a[5], cal->a[6]
+			);
+	#endif
+    return 1;
+}
+
+static void set_sample(calibration *cal)
+{
+	int index=0, elements_index=0;
+	
+	for(index=0, elements_index=0; index < 5; index++, elements_index+=2) {
+		cal->x[index] = elements[elements_index];
+		cal->y[index] = elements[elements_index+1];
+		cal->xfb[index]	= elements[elements_index+10];
+		cal->yfb[index]	= elements[elements_index+11];
+	}
+	#if 1	
+	for(index=0; index < 5; index++, elements_index+=2) {
+		printk("x=%d, y=%d xfb=%d, yfb=%d \n",
+			cal->x[index], cal->y[index], cal->xfb[index], cal->yfb[index]);
+	}
+	#endif
+}
+static ssize_t ts_show_calibration(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+    char *s = buf;
+
+    printk("%s: Enter ++ \n", __FUNCTION__);
+
+    s += sprintf(s, "%d %d %d %d %d %d %d\n",
+        cal.a[0], cal.a[1],
+        cal.a[2], cal.a[3],
+        cal.a[4], cal.a[5],
+        cal.a[6]);
+
+    if (s != buf)
+        *(s-1) = '\n';
+
+    return (s - buf);
+}
+
+static ssize_t ts_store_calibration(struct kobject *kobj,
+             struct kobj_attribute *attr, const char *buf, size_t n)
+{
+	
+    printk("\n %s: Enter ++ \n", __FUNCTION__);
+
+    if (NULL == buf)
+        return n;
+
+    sscanf(buf,"%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+		        &elements[0], &elements[1],
+		        &elements[2], &elements[3],
+		        &elements[4], &elements[5],
+		        &elements[6], &elements[7],
+		        &elements[8], &elements[9],
+		        &elements[10], &elements[11],
+		        &elements[12], &elements[13],
+		        &elements[14], &elements[15],
+		        &elements[16], &elements[17],
+		        &elements[18], &elements[19]);
+
+	set_sample(&cal); //init the default value
+	perform_calibration(&cal);
+
+    return n;
+}
+
+
+static struct kobj_attribute attr_calibration = {
+    .attr   = {
+        .name = __stringify(calibration),
+        .mode = 0666,
+    },
+    .show   = ts_show_calibration,
+    .store  = ts_store_calibration,
+};
+
+
+static struct attribute *ts_attrs[] = {
+    &attr_calibration.attr,
+    NULL
+};
+
+static struct attribute_group ts_attr_group = {
+    .attrs = ts_attrs,
+};
+
+static irqreturn_t bf700_lcd_updown_irq(int irq, void *data)
+{
+	//printk("LCD_UPDOWN_STATE = 0x%x \n", nxp_soc_gpio_get_in_value(CFG_GPIO_LCD_UPDOWN));
+	gbLCD_updown = nxp_soc_gpio_get_in_value(CFG_GPIO_LCD_UPDOWN);
+	printk("LCD_UPDOWN_STATE = 0x%x \n", gbLCD_updown);
+
+    return IRQ_HANDLED;
+}
+
+
+static int bf700_lcd_updown_detect_init(void)
+{
+	int ret;
+	nxp_soc_gpio_set_int_enable(CFG_GPIO_LCD_UPDOWN, 0);
+
+	ret = request_irq(gpio_to_irq(CFG_GPIO_LCD_UPDOWN), bf700_lcd_updown_irq,
+            IRQ_TYPE_EDGE_BOTH, "lcd_ud", 0);
+
+    if (ret)
+    {
+        printk("request_irq ID failed: %d\n", ret);
+    }
+    else
+    {
+        nxp_soc_gpio_set_int_enable(CFG_GPIO_LCD_UPDOWN, 1);
+        nxp_soc_gpio_clr_int_pend(CFG_GPIO_LCD_UPDOWN);
+    }
+	
+}
+
+
+
+
+//finedigital:jhhong:20150507
+static void tsc2007_Reset()
+{
+	//finedigital:jhhong:20150507
+	printk("[TOUCH] tsc2007 Reset \n");
+	mdelay(100);
+	NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_LCD_PWR_ENB), PAD_GET_BITNO(CFG_IO_LCD_PWR_ENB), CFALSE);
+	mdelay(320);
+	NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_LCD_PWR_ENB), PAD_GET_BITNO(CFG_IO_LCD_PWR_ENB), CTRUE);
+}
 
 static inline int tsc2007_xfer(struct tsc2007 *tsc, u8 cmd)
 {
@@ -306,8 +531,9 @@ static irqreturn_t tsc2007_soft_irq(int irq, void *handle)
 			dev_dbg(&ts->client->dev,
 				"DOWN point(%4d,%4d), pressure (%4u)\n",
 				tc.x, tc.y, rt);
-			//printk(" %d  %d  %d  %d  %d \n", tc.x, tc.y, val, rt, ts->max_rt);
-			
+			//printk("1: %d  %d  %d  %d  %d \n", tc.x, tc.y, val, rt, ts->max_rt);
+			//printk("1: %X  %X  %X  %X  %X \n", tc.x, tc.y, val, rt, ts->max_rt);
+		//#if 0
 			x = tc.x-ADCVAL_X_MIN;
 			if( x < 0 ) x = 1;
 			y = tc.y-ADCVAL_Y_MIN;
@@ -318,6 +544,29 @@ static irqreturn_t tsc2007_soft_irq(int irq, void *handle)
 	 		tc.y = LCD_SCREEN_Y_PIXEL*(y)/(ADCVAL_Y_MAX-ADCVAL_Y_MIN);
 			tc.x = LCD_SCREEN_X_PIXEL - tc.x;
 			tc.y = LCD_SCREEN_Y_PIXEL - tc.y;
+
+			//printk("2: %d  %d  %d  %d  %d \n", tc.x, tc.y, val, rt, ts->max_rt);
+		//#else
+			/*
+			printk("\n CAL Factor = %d %d %d %d %d %d %d \n\n",
+			cal.a[0], cal.a[1], cal.a[2],
+			cal.a[3], cal.a[4], cal.a[5], cal.a[6]);
+			*/
+			//apply the ts calibrate data
+			x = tc.x;
+			y = tc.y;
+			tc.x = (cal.a[2] + cal.a[0]*(int) x + cal.a[1]*(int) y) / cal.a[6];
+			tc.y = (cal.a[5] + cal.a[3]*(int) x + cal.a[4]*(int) y) / cal.a[6];
+
+			if(gbLCD_updown) { //LCD DOWN
+				tc.x = LCD_SCREEN_X_PIXEL - tc.x;
+				tc.y = LCD_SCREEN_Y_PIXEL - tc.y;
+			}
+				
+		//#endif
+			
+			//printk("3: %d  %d  %d  %d  %d \n", tc.x, tc.y, val, rt, ts->max_rt);
+			//printk("3: %X  %X  %X  %X  %X \n", tc.x, tc.y, val, rt, ts->max_rt);
 
 			if(tc.x != ts->xp_old || tc.y != ts->yp_old) {
 				input_report_key(input, BTN_TOUCH, 1);
@@ -566,7 +815,13 @@ static int __devinit tsc2007_probe(struct i2c_client *client,
 	struct tsc2007_platform_data *pdata = client->dev.platform_data;
 	struct input_dev *input_dev;
 	int err = 0;
+	int ret = 0;
+	struct kobject   * kobj = NULL;
 	
+
+	// finedigital:jhhong:20150507
+	// tcs2007 chips reset
+	tsc2007_Reset();
 
 	if (!pdata) {
 		dev_err(&client->dev, "platform data is required!\n");
@@ -639,6 +894,28 @@ static int __devinit tsc2007_probe(struct i2c_client *client,
 	input_set_abs_params(input_dev, ABS_Y, 0, LCD_SCREEN_Y_PIXEL , 0, 0);
 	input_set_abs_params(input_dev, ABS_PRESSURE, 0, 1, 0, 0);
 
+	//Nexell allan.park add the tscalibrate routine	
+	set_sample(&cal); //init the default value
+	perform_calibration(&cal);
+	
+	bf700_lcd_updown_detect_init(); //to detect the LCD UP_DOWN
+	gbLCD_updown = nxp_soc_gpio_get_in_value(CFG_GPIO_LCD_UPDOWN); //set init state //0 : UP, 1: DOWN
+
+    /* create attribute interface */
+    kobj = kobject_create_and_add("touch", &platform_bus.kobj);
+    if (! kobj) {
+        printk(KERN_ERR "fail, create touch kobject ...\n");
+        goto __err;
+    }
+
+    ret = sysfs_create_group(kobj, &ts_attr_group);
+    if (ret) {
+        printk(KERN_ERR "fail, create touch sysfs group ...\n");
+        goto __err;
+    }
+    g_ts_kobj = kobj;
+
+
 	if (pdata->init_platform_hw)
 		pdata->init_platform_hw();
 
@@ -668,6 +945,7 @@ static int __devinit tsc2007_probe(struct i2c_client *client,
 		pdata->exit_platform_hw();
  err_free_mem:
 	input_free_device(input_dev);
+ __err:
 	kfree(ts);
 	return err;
 
@@ -685,6 +963,7 @@ static int __devexit tsc2007_remove(struct i2c_client *client)
 		pdata->exit_platform_hw();
 
 	input_unregister_device(ts->input);
+	kobject_del(g_ts_kobj);
 	kfree(ts);
 
 	return 0;

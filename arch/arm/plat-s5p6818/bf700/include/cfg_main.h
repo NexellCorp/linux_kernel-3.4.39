@@ -231,6 +231,7 @@
 #define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)		/* Choice for SW_UBC or Wake-up*/
 #define CFG_GPIO_PMIC_LOWBAT_DET				(PAD_GPIO_ALV + 3)		/* Critical low battery detect */
 #define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)
+#define CFG_GPIO_LCD_UPDOWN						(PAD_GPIO_ALV + 5)
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
 
 /*------------------------------------------------------------------------------
