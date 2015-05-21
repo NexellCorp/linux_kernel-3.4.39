@@ -33,6 +33,33 @@
 
 struct axp_mfd_chip *g_chip;
 
+int axp_otg_power_control(int enable)
+{
+	DBG_MSG("## [\e[31m%s\e[0m():%d] enable:%d\n", __func__, __LINE__, enable);
+
+	if (enable)
+	{
+		if (CFG_GPIO_OTG_VBUS_DET > -1)
+			gpio_set_value(CFG_GPIO_OTG_VBUS_DET, 1);
+	}
+	else
+	{
+		if (CFG_GPIO_OTG_VBUS_DET > -1)
+			gpio_set_value(CFG_GPIO_OTG_VBUS_DET, 0);
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(axp_otg_power_control);
+
+void axp_run_irq_handler(void)
+{
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+	(void)schedule_work(&g_chip->irq_work);
+	return;
+}
+EXPORT_SYMBOL_GPL(axp_run_irq_handler);
+
 static void axp_mfd_register_dump(struct device *dev)
 {
 	int ret=0;
@@ -103,15 +130,6 @@ static void axp_debuginit(struct axp_mfd_chip *chip)
 	return 0;
 }
 #endif
-
-
-void axp_run_irq_handler(void)
-{
-	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
-	(void)schedule_work(&g_chip->irq_work);
-	return;
-}
-EXPORT_SYMBOL_GPL(axp_run_irq_handler);
 
 static void axp_mfd_irq_work(struct work_struct *work)
 {
