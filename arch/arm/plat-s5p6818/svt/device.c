@@ -250,7 +250,7 @@ int  nxpmac_init(struct platform_device *pdev)
 	// Clock control
 	NX_CLKGEN_Initialize();
 	addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
-	NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (u32)IO_ADDRESS(addr) );
+	NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (void*)IO_ADDRESS(addr) );
 
 	NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 4);     // Sync mode for 100 & 10Base-T : External RX_clk
 	NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);    // Sync mode for 100 & 10Base-T
@@ -263,7 +263,7 @@ int  nxpmac_init(struct platform_device *pdev)
 	// Reset control
 	NX_RSTCON_Initialize();
 	addr = NX_RSTCON_GetPhysicalAddress();
-	NX_RSTCON_SetBaseAddress( (u32)IO_ADDRESS(addr) );
+	NX_RSTCON_SetBaseAddress( (void*)IO_ADDRESS(addr) );
 	NX_RSTCON_SetRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_NEGATE);
 	udelay(100);
 	NX_RSTCON_SetRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ASSERT);
@@ -1212,7 +1212,7 @@ static int front_camera_set_clock(ulong clk_rate)
 static int back_camera_set_clock(ulong clk_rate)
 {
 
-#if 0 //KEUN when OSC, doesn't stop front camera 
+#if 0 //KEUN when OSC, doesn't stop front camera
   	printk(KERN_INFO "%s: %d\n", __func__, (int)clk_rate);
     if (clk_rate > 0)
         nxp_soc_pwm_set_frequency(3, clk_rate, 50);
@@ -1325,7 +1325,7 @@ static int back_camera_power_enable(bool on)
 		nxp_soc_gpio_set_out_value(reset_io, 0);
 		mdelay(1);
 	}
-	
+
 	return 0;
 }
 
@@ -1359,7 +1359,7 @@ static int front_camera_power_enable(bool on)
   unsigned int reset_io = CFG_IO_CAMERA_FRONT_RESET;
   printk(KERN_INFO "%s: on %d\n", __func__, on);
 
-	if (on) 
+	if (on)
   {
     nxp_soc_gpio_set_io_dir(reset_io, 0);
     nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
@@ -1373,7 +1373,7 @@ static int front_camera_power_enable(bool on)
     nxp_soc_gpio_set_out_value(reset_io, 1);
     mdelay(1);
   }
-  else 
+  else
   {
     nxp_soc_gpio_set_out_value(reset_io, 0);
     mdelay(1);
@@ -1384,7 +1384,7 @@ static int front_camera_power_enable(bool on)
 
 static struct i2c_board_info front_camera_i2c_boardinfo[] = {
     {
-				I2C_BOARD_INFO("MT9D111", 0xBA>>1),			
+				I2C_BOARD_INFO("MT9D111", 0xBA>>1),
     },
 };
 
@@ -1705,7 +1705,7 @@ static struct dw_mci_board _dwmci0_data = {
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH0_USE_DMA)
     .mode       	= DMA_MODE,
-#else   
+#else
     .mode      		= PIO_MODE,
 #endif
 };
@@ -1724,7 +1724,7 @@ static struct dw_mci_board _dwmci1_data = {
 	.get_cd			= _dwmci_get_cd,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
     .mode       	= DMA_MODE,
-#else   
+#else
     .mode       	= PIO_MODE,
 #endif
 };
@@ -1739,14 +1739,14 @@ static struct dw_mci_board _dwmci2_data = {
 	.bus_hz			= 50 * 1000 * 1000,
 	.caps			=  MMC_CAP_NONREMOVABLE |
 			 	  	   MMC_CAP_CMD23,
-				  	  
+
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
     .mode       	= DMA_MODE,
-#else   
+#else
     .mode       	= PIO_MODE,
 #endif
 

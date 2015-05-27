@@ -222,7 +222,7 @@ static void suspend_cores(suspend_state_t stat)
 {
 #ifndef CONFIG_S5P6818_PM_IDLE
 	if (SUSPEND_SUSPEND == stat) {
-		NX_CLKPWR_SetBaseAddress(IO_ADDRESS(NX_CLKPWR_GetPhysicalAddress()));
+		NX_CLKPWR_SetBaseAddress((void*)IO_ADDRESS(NX_CLKPWR_GetPhysicalAddress()));
 		NX_CLKPWR_SetCPUResetMode(NX_CLKPWR_CPU_RESETMODE_SAFE);
 		NX_CLKPWR_SetCPUPowerOn32(0x00);
 	#if (0)

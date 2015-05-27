@@ -182,7 +182,7 @@ static int _hw_set_clock(struct nxp_vin_clipper *me, bool on)
 #else
     if (on) {
         volatile u32 *clkgen_base = (volatile u32 *)IO_ADDRESS(NX_CLKGEN_GetPhysicalAddress(NX_VIP_GetClockNumber(module)));
-        NX_CLKGEN_SetBaseAddress(NX_VIP_GetClockNumber(module), (U32)clkgen_base);
+        NX_CLKGEN_SetBaseAddress(NX_VIP_GetClockNumber(module), (void*)clkgen_base);
         NX_CLKGEN_SetClockDivisorEnable(NX_VIP_GetClockNumber(module), CTRUE);
         NX_CLKGEN_SetClockBClkMode(NX_VIP_GetClockNumber(module), NX_BCLKMODE_DYNAMIC);
 #if defined(CONFIG_ARCH_S5P4418)
@@ -206,7 +206,7 @@ static int _hw_set_clock(struct nxp_vin_clipper *me, bool on)
         }
 
         vmsg("VIP CLK GEN VAL: 0x%x\n", *clkgen_base);
-        NX_VIP_SetBaseAddress(module, IO_ADDRESS(NX_VIP_GetPhysicalAddress(module)));
+        NX_VIP_SetBaseAddress(module, (void*)IO_ADDRESS(NX_VIP_GetPhysicalAddress(module)));
     }
 #endif
 

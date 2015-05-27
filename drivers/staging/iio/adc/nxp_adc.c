@@ -277,7 +277,7 @@ static int nxp_adc_setup(struct nxp_adc_info *adc, struct platform_device *pdev)
 	ADC_HW_RESET();
 
 	NX_ADC_Initialize();
-	NX_ADC_SetBaseAddress(0, (U32)IO_ADDRESS(NX_ADC_GetPhysicalAddress(0)));
+	NX_ADC_SetBaseAddress(0, (void*)IO_ADDRESS(NX_ADC_GetPhysicalAddress(0)));
  	NX_ADC_OpenModule(0);
 
 	NX_ADC_SetInputChannel(0, 0);
@@ -434,7 +434,7 @@ static int nxp_adc_resume(struct platform_device *pdev)
 	struct nxp_adc_info *adc = iio_priv(indio_dev);
 
 #ifdef ADC_USING_PROTOTYPE
-	NX_ADC_SetBaseAddress(0, (U32)IO_ADDRESS(NX_ADC_GetPhysicalAddress(0)));
+	NX_ADC_SetBaseAddress(0, (void*)IO_ADDRESS(NX_ADC_GetPhysicalAddress(0)));
  	NX_ADC_OpenModule(0);
 
 	ADC_HW_RESET();

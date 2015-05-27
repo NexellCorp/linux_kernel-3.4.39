@@ -179,7 +179,7 @@ static int _hw_init(struct nxp_scaler *me)
     NX_SCALER_Initialize();
     vmsg("%s: SCALER REGISTER PHY 0x%x, VIR 0x%x\n", __func__, NX_SCALER_GetPhysicalAddress(0),
             (U32)IO_ADDRESS(NX_SCALER_GetPhysicalAddress(0)));
-    NX_SCALER_SetBaseAddress(0, IO_ADDRESS(NX_SCALER_GetPhysicalAddress(0)));
+    NX_SCALER_SetBaseAddress(0, (void*)IO_ADDRESS(NX_SCALER_GetPhysicalAddress(0)));
 
     /* NX_SCALER_OpenModule(0); */
 
@@ -188,7 +188,7 @@ static int _hw_init(struct nxp_scaler *me)
     me->irq += 32;
 #endif
 
-    NX_CLKGEN_SetBaseAddress(NX_SCALER_GetClockNumber(0), IO_ADDRESS(NX_CLKGEN_GetPhysicalAddress(NX_SCALER_GetClockNumber(0))));
+    NX_CLKGEN_SetBaseAddress(NX_SCALER_GetClockNumber(0), (void*)IO_ADDRESS(NX_CLKGEN_GetPhysicalAddress(NX_SCALER_GetClockNumber(0))));
     NX_CLKGEN_SetClockBClkMode(NX_SCALER_GetClockNumber(0), NX_BCLKMODE_ALWAYS);
 
     #if defined(CONFIG_ARCH_S5P4418)
