@@ -115,7 +115,9 @@ static struct kobject   * g_ts_kobj = NULL;
 
 // finedigital:jhhong:20150507
 bool gbFirst = true;
+#ifdef CFG_GPIO_LCD_UPDOWN
 bool gbLCD_updown = false;
+#endif
 
 
 //Nexell allan.park: 20150520
@@ -274,6 +276,7 @@ static struct attribute_group ts_attr_group = {
     .attrs = ts_attrs,
 };
 
+#ifdef CFG_GPIO_LCD_UPDOWN
 static irqreturn_t bf700_lcd_updown_irq(int irq, void *data)
 {
 	//printk("LCD_UPDOWN_STATE = 0x%x \n", nxp_soc_gpio_get_in_value(CFG_GPIO_LCD_UPDOWN));
@@ -303,19 +306,19 @@ static int bf700_lcd_updown_detect_init(void)
     }
 	
 }
-
+#endif
 
 
 
 //finedigital:jhhong:20150507
-static void tsc2007_Reset()
+static void tsc2007_Reset(void)
 {
 	//finedigital:jhhong:20150507
 	printk("[TOUCH] tsc2007 Reset \n");
 	mdelay(100);
-	NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_LCD_PWR_ENB), PAD_GET_BITNO(CFG_IO_LCD_PWR_ENB), CFALSE);
+	NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_TOUCH_PWR_EN), PAD_GET_BITNO(CFG_IO_TOUCH_PWR_EN), CFALSE);
 	mdelay(320);
-	NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_LCD_PWR_ENB), PAD_GET_BITNO(CFG_IO_LCD_PWR_ENB), CTRUE);
+	NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_TOUCH_PWR_EN), PAD_GET_BITNO(CFG_IO_TOUCH_PWR_EN), CTRUE);
 }
 
 static inline int tsc2007_xfer(struct tsc2007 *tsc, u8 cmd)
@@ -419,8 +422,8 @@ static bool tsc2007_is_pen_down(struct tsc2007 *ts)
  #define ADCVAL_Y_MIN		500 //280 
  #define ADCVAL_Y_MAX		3520 //3850 
 
- #define LCD_SCREEN_X_PIXEL	1024 //1024 
- #define LCD_SCREEN_Y_PIXEL	600 //600 
+ #define LCD_SCREEN_X_PIXEL	CFG_DISP_PRI_RESOL_WIDTH 
+ #define LCD_SCREEN_Y_PIXEL	CFG_DISP_PRI_RESOL_HEIGHT 
 // gylee end 
 
 static irqreturn_t tsc2007_soft_irq(int irq, void *handle)
@@ -517,7 +520,7 @@ static irqreturn_t tsc2007_soft_irq(int irq, void *handle)
 	struct ts_event tc;
 	u32 rt;
 	int x, y;
-	int val;
+	//int val;
 
 	while (tsc2007_is_pen_down(ts)) {
 
@@ -558,10 +561,12 @@ static irqreturn_t tsc2007_soft_irq(int irq, void *handle)
 			tc.x = (cal.a[2] + cal.a[0]*(int) x + cal.a[1]*(int) y) / cal.a[6];
 			tc.y = (cal.a[5] + cal.a[3]*(int) x + cal.a[4]*(int) y) / cal.a[6];
 
+#ifdef CFG_GPIO_LCD_UPDOWN
 			if(gbLCD_updown) { //LCD DOWN
 				tc.x = LCD_SCREEN_X_PIXEL - tc.x;
 				tc.y = LCD_SCREEN_Y_PIXEL - tc.y;
 			}
+#endif
 				
 		//#endif
 			
@@ -898,8 +903,10 @@ static int __devinit tsc2007_probe(struct i2c_client *client,
 	set_sample(&cal); //init the default value
 	perform_calibration(&cal);
 	
+#ifdef CFG_GPIO_LCD_UPDOWN
 	bf700_lcd_updown_detect_init(); //to detect the LCD UP_DOWN
 	gbLCD_updown = nxp_soc_gpio_get_in_value(CFG_GPIO_LCD_UPDOWN); //set init state //0 : UP, 1: DOWN
+#endif
 
     /* create attribute interface */
     kobj = kobject_create_and_add("touch", &platform_bus.kobj);

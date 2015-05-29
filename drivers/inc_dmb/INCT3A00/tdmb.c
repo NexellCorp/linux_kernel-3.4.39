@@ -1116,7 +1116,7 @@ int INC_drv_release (struct inode *inode, struct file *filp)
 }
 
 
-static int __init INC_drv_probe(struct spi_device *spi)
+static int INC_drv_probe(struct spi_device *spi)
 {
 	if(spi == NULL) {
 		INC_MSG_PRINTF(1, "[%s]   SPI Device is NULL !!! SPI Open Error...", __func__);

@@ -23,6 +23,10 @@ ifeq ($(CONFIG_PLAT_S5P6818_BF700),y)
 PLATBOARD :=bf700
 endif
 
+ifeq ($(CONFIG_PLAT_S5P6818_IQSFV),y)
+PLATBOARD :=iQSFv
+endif
+
 #
 # Build options
 #

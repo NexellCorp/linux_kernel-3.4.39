@@ -34,6 +34,12 @@ choice
 		bool "BF700: Android Fine-Digigal BF700 board"
 		help
    	 		Support for the BF700 board.
+
+	config PLAT_S5P6818_IQSFV
+		bool "IQSFV: Android Fine-Digigal iQSFv board"
+		help
+			Support for the iQSFv board.
+
 endchoice
 
 #
