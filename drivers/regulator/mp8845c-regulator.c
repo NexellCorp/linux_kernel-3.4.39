@@ -420,7 +420,7 @@ static void mp8845c_set_default_vol(char str, const char *cmd)
 		mp8845c_set_bits(mp8845c_i2c_client, MP8845C_REG_SYSCNTL2, (1 << MP8845C_POS_GO));
 		ret = mp8845c_write(mp8845c_i2c_client, MP8845C_REG_VSEL, 0xCB); // OTP 
 		printk(KERN_ERR "Set voltage: %d \n", ret);
-		mdelay(100);
+		mdelay(10);
 	}
 
 #if 0
