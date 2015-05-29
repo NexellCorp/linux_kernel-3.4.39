@@ -316,9 +316,9 @@ static void tsc2007_Reset(void)
 	//finedigital:jhhong:20150507
 	printk("[TOUCH] tsc2007 Reset \n");
 	mdelay(100);
-	NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_TOUCH_PWR_EN), PAD_GET_BITNO(CFG_IO_TOUCH_PWR_EN), CFALSE);
+	NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_LCD_PWR_ENB), PAD_GET_BITNO(CFG_IO_LCD_PWR_ENB), CFALSE);
 	mdelay(320);
-	NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_TOUCH_PWR_EN), PAD_GET_BITNO(CFG_IO_TOUCH_PWR_EN), CTRUE);
+	NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_LCD_PWR_ENB), PAD_GET_BITNO(CFG_IO_LCD_PWR_ENB), CTRUE);
 }
 
 static inline int tsc2007_xfer(struct tsc2007 *tsc, u8 cmd)
