@@ -1274,18 +1274,16 @@ struct platform_device nxp_device_ion = {
 #endif
 static unsigned long adc_sample_rate = CFG_ADC_SAMPLE_RATE;
 
-static struct resource adc_resource[] = {
-	[0] = {
-		.start	= IRQ_PHY_ADC,
-		.flags	= IORESOURCE_IRQ,
-	},
+static struct resource nxp_adc_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_ADC, SZ_1K),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_ADC),
 };
 
-static struct platform_device adc_device = {
+static struct platform_device nxp_adc_device = {
 	.name			= DEV_NAME_ADC,
 	.id				= -1,
-	.num_resources	= ARRAY_SIZE(adc_resource),
-	.resource		= adc_resource,
+	.num_resources	= ARRAY_SIZE(nxp_adc_resource),
+	.resource		= nxp_adc_resource,
 	.dev  			= {
 		.platform_data	= &adc_sample_rate,
 	},
@@ -1447,7 +1445,7 @@ void __init nxp_cpu_devices_register(void)
 
 #if defined(CONFIG_NXP_ADC)
     printk("mach: add device adc\n");
-    platform_device_register(&adc_device);
+    platform_device_register(&nxp_adc_device);
 #endif
     /* Register the platform devices */
     printk("mach: add graphic device opengl|es\n");
