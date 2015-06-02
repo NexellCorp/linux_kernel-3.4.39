@@ -785,56 +785,6 @@ static void stmmac_check_pcs_mode(struct stmmac_priv *priv)
 	}
 }
 
-#ifdef CFG_ETHER_LOOPBACK_MODE
-/**
- * @speed: 0: disable, 1: 10M, 2: 100M, 3: 1000M
- */
-static int
-nxpmac_set_phy_loopback(struct net_device *dev, int speed)
-{
-	struct stmmac_priv *priv = netdev_priv(dev);
-	//unsigned long flags;
-
-	struct phy_device *phydev = priv->phydev;
-
-	if (phydev == NULL)
-		return -1;
-
-	if (speed <= 0 || speed > 3)
-		return -1;
-
-	//spin_lock_irqsave(&priv->lock, flags);
-
-	/* disable PCS loopback */
-	phy_write(phydev, 31, 0);
-	phy_write(phydev, 0, 0x1140);
-
-	/* enable PCS loopback */
-	phy_write(phydev, 31, 0);
-	phy_write(phydev, 0, 0x8000);
-	mdelay(100);
-	switch (speed) {
-	case 1:	/* 10M */
-		phy_write(phydev, 0, 0x4100);
-		break;
-	case 2: /* 100M */
-		phy_write(phydev, 0, 0x6100);
-		break;
-	case 3: /* 1000M */
-		phy_write(phydev, 0, 0x4140);
-		break;
-	default:
-		break;
-	}
-	mdelay(100);
-
-	//spin_unlock_irqrestore(&priv->lock, flags);
-
-	return 0;
-}
-#endif /* CFG_ETHER_LOOPBACK_MODE */
-
-
 
 /**
  * stmmac_init_phy - PHY initialization
@@ -932,10 +882,6 @@ static int stmmac_init_phy(struct net_device *dev)
 		 " Link = %d\n", dev->name, phydev->phy_id, phydev->link);
 
 	priv->phydev = phydev;
-
-#ifdef CFG_ETHER_LOOPBACK_MODE
-	nxpmac_set_phy_loopback (dev, CFG_ETHER_LOOPBACK_MODE);
-#endif
 
 	return 0;
 }

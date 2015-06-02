@@ -38,6 +38,10 @@
 #include <asm/irq.h>
 #include <asm/uaccess.h>
 
+#include <mach/platform.h>
+#include <mach/devices.h>
+#include <mach/soc.h>
+
 /**
  * phy_print_status - Convenience function to print out the current phy status
  * @phydev: the phy_device struct
@@ -595,6 +599,7 @@ int phy_start_interrupts(struct phy_device *phydev)
 
 	atomic_set(&phydev->irq_disable, 0);
 	if (request_irq(phydev->irq, phy_interrupt,
+				//IRQF_TRIGGER_LOW | IRQF_SHARED,
 				IRQF_SHARED,
 				"phy_interrupt",
 				phydev) < 0) {
@@ -761,6 +766,67 @@ void phy_start(struct phy_device *phydev)
 EXPORT_SYMBOL(phy_stop);
 EXPORT_SYMBOL(phy_start);
 
+#ifdef CFG_ETHER_LOOPBACK_MODE
+static int
+nxpmac_set_phy_loopback(struct phy_device *phydev, int speed)
+{
+	//unsigned long flags;
+
+	if (phydev == NULL)
+		return -1;
+
+	if (speed <= 0 || speed > 3)
+		return -1;
+
+	//spin_lock_irqsave(&priv->lock, flags);
+
+	/* disable PCS loopback */
+	phy_write(phydev, 31, 0);
+	phy_write(phydev, 0, 0x1140);
+
+	mdelay(100);
+
+	/* enable PCS loopback */
+	phy_write(phydev, 31, 0);
+	phy_write(phydev, 0, 0x8000);
+	mdelay(100);
+	switch (speed) {
+	case 1:	/* 10M */
+		phy_write(phydev, 0, 0x4100);
+		break;
+	case 2: /* 100M */
+		phy_write(phydev, 0, 0x6100);
+		break;
+	case 3: /* 1000M */
+		phy_write(phydev, 0, 0x4140);
+		break;
+	default:
+		break;
+	}
+	mdelay(100);
+
+	switch (speed) {
+	case 1:	/* 10M */
+		phy_write(phydev, 0, 0x4100);
+		break;
+	case 2: /* 100M */
+		phy_write(phydev, 0, 0x6100);
+		break;
+	case 3: /* 1000M */
+		phy_write(phydev, 0, 0x4140);
+		break;
+	default:
+		break;
+	}
+	mdelay(100);
+
+
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	return 0;
+}
+#endif
+
 /**
  * phy_state_machine - Handle the state machine
  * @work: work_struct that describes the work to be done
@@ -791,6 +857,9 @@ void phy_state_machine(struct work_struct *work)
 
 			break;
 		case PHY_AN:
+#ifdef CFG_ETHER_LOOPBACK_MODE
+			nxpmac_set_phy_loopback(phydev, CFG_ETHER_LOOPBACK_MODE);
+#endif
 			err = phy_read_status(phydev);
 
 			if (err < 0)
@@ -816,6 +885,9 @@ void phy_state_machine(struct work_struct *work)
 				phydev->state = PHY_RUNNING;
 				netif_carrier_on(phydev->attached_dev);
 				phydev->adjust_link(phydev->attached_dev);
+#ifdef CFG_ETHER_LOOPBACK_MODE
+				return ;
+#endif
 
 			} else if (0 == phydev->link_timeout--) {
 				int idx;
