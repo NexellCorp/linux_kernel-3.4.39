@@ -250,7 +250,9 @@ static unsigned long nxp_cpufreq_change_frequency(struct cpufreq_dvfs_info *dvfs
 	if (freqs->new >= freqs->old)
 		nxp_cpufreq_change_voltage(dvfs, freqs->new, margin);
 
+#ifdef CONFIG_LOCAL_TIMERS
 	for_each_cpu(freqs->cpu, dvfs->cpus)
+#endif
 		cpufreq_notify_transition(freqs, CPUFREQ_PRECHANGE);
 
 	clk_set_rate(clk, freqs->new*1000);
@@ -268,7 +270,9 @@ static unsigned long nxp_cpufreq_change_frequency(struct cpufreq_dvfs_info *dvfs
 		dvfs->pre_freq_id = id;
 	}
 
+#ifdef CONFIG_LOCAL_TIMERS
 	for_each_cpu(freqs->cpu, dvfs->cpus)
+#endif
 		cpufreq_notify_transition(freqs, CPUFREQ_POSTCHANGE);
 
 	/* post voltage */
@@ -291,6 +295,7 @@ static int nxp_cpufreq_pm_notify(struct notifier_block *this,
     case PM_SUSPEND_PREPARE:	/* set initial frequecny */
 		mutex_lock(&dvfs->lock);
 
+		freqs.cpu = 0;
 		freqs.new = dvfs->boot_frequency;
 		if (freqs.new > max_freq) {
 			freqs.new = max_freq;
@@ -311,6 +316,7 @@ static int nxp_cpufreq_pm_notify(struct notifier_block *this,
 		mutex_lock(&dvfs->lock);
     	set_bit(FREQ_STATE_RESUME, &dvfs->resume_state);
 
+		freqs.cpu = 0;
 		freqs.new = dvfs->target_freq;
 		freqs.old = clk_get_rate(clk)/1000;
 		nxp_cpufreq_change_frequency(dvfs, &freqs, true);
@@ -716,6 +722,7 @@ static int __cpuinit nxp_cpufreq_init(struct cpufreq_policy *policy)
 	 * Each cpu is bound to the same speed.
 	 * So the affected cpu is all of the cpus.
 	 */
+#ifdef CONFIG_LOCAL_TIMERS
 	if (num_online_cpus() == 1) {
 		cpumask_copy(policy->related_cpus, cpu_possible_mask);
 		cpumask_copy(policy->cpus, cpu_online_mask);
@@ -724,6 +731,11 @@ static int __cpuinit nxp_cpufreq_init(struct cpufreq_policy *policy)
 		cpumask_setall(policy->cpus);
 		cpumask_setall(dvfs->cpus);
 	}
+#else
+	cpumask_copy(policy->related_cpus, cpu_possible_mask);
+	cpumask_copy(policy->cpus, cpu_online_mask);
+	cpumask_set_cpu(0, dvfs->cpus);
+#endif
 
 	return 0;
 }
