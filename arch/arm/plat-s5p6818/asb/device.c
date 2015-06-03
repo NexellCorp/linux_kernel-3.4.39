@@ -93,9 +93,6 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-
-	{ 1600000, 1340000, },
-	{ 1500000, 1280000, },
     { 1400000, 1240000, },
 	{ 1300000, 1180000, },
 	{ 1200000, 1140000, },
@@ -115,10 +112,6 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-//	.max_cpufreq    = 1200*1000,
-//	.max_retention  =   20*1000,
-//	.rest_cpufreq   =  400*1000,
-//	.rest_retention =    1*1000,
 };
 
 static struct platform_device dfs_plat_device = {
@@ -571,21 +564,21 @@ static struct platform_device snd_null_dai = {
 //-------------------------------------
 static struct platform_device snd_null_1 = {
     .name = "snd-null",
-    .id = 1, 
+    .id = 1,
 };
 
 struct nxp_snd_dai_plat_data snd_null_dai_data_1 = {
-    .i2s_ch = 1, 
+    .i2s_ch = 1,
     .sample_rate = 48000,
     .pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
 };
 
 static struct platform_device snd_null_dai_1 = {
     .name = "snd-null-card",
-    .id = 1, 
+    .id = 1,
     .dev = {
     .platform_data = &snd_null_dai_data_1 ,
-    }    
+    }
 };
 
 
@@ -1857,7 +1850,7 @@ static struct dw_mci_board _dwmci0_data = {
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH0_USE_DMA)
     .mode       	= DMA_MODE,
-#else   
+#else
     .mode      		= PIO_MODE,
 #endif
 };
@@ -1901,7 +1894,7 @@ static struct dw_mci_board _dwmci1_data = {
 	.detect_delay_ms= 200,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
     .mode       	= DMA_MODE,
-#else   
+#else
     .mode       	= PIO_MODE,
 #endif
 };
@@ -1929,7 +1922,7 @@ static int _dwmci2_get_cd(u32 slot_id)
 	return nxp_soc_gpio_get_in_value(io);
 }
 static struct dw_mci_board _dwmci2_data = {
-    .quirks			= DW_MCI_QUIRK_HIGHSPEED, 
+    .quirks			= DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 50 * 1000 * 1000,
 	.caps			=  MMC_CAP_CMD23,
 	.desc_sz		= 4,
@@ -1943,7 +1936,7 @@ static struct dw_mci_board _dwmci2_data = {
 	.detect_delay_ms= 200,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
     .mode       	= DMA_MODE,
-#else   
+#else
     .mode       	= PIO_MODE,
 #endif
 
