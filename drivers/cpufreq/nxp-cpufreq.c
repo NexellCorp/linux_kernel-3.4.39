@@ -90,7 +90,7 @@ struct cpufreq_dvfs_info {
 	struct cpufreq_policy *policy;
 	int cpu;
 	long target_freq;
-	int  freq_id;
+	int  freq_point;
 	struct mutex lock;
 	/* limited max frequency */
 	struct cpufreq_dvfs_limits limits;
@@ -104,7 +104,7 @@ struct cpufreq_dvfs_info {
     long boot_frequency;
     int  boot_voltage;
     /* check frequency duration */
-	int  pre_freq_id;
+	int  pre_freq_point;
     unsigned long check_state;
     struct cpufreq_dvfs_timestamp *time_stamp;
     /* ASV operation */
@@ -194,6 +194,26 @@ static enum hrtimer_restart nxp_cpufreq_rest_timer(struct hrtimer *hrtimer)
 	return HRTIMER_NORESTART;
 }
 
+static int nxp_cpufreq_set_freq_point(struct cpufreq_dvfs_info *dvfs,
+					unsigned long frequency)
+{
+	unsigned long (*dvfs_tables)[2] = (unsigned long(*)[2])dvfs->dvfs_table;
+	int len = dvfs->table_size;
+	int id = 0;
+
+	for (id = 0; len > id; id++)
+	if (frequency == dvfs_tables[id][0])
+		break;
+
+	if (id == len) {
+		printk("Fail : invalid frequency (%ld:%d) id !!!\n", frequency, len);
+		return -EINVAL;
+	}
+
+	dvfs->freq_point = id;
+	return 0;
+}
+
 static long nxp_cpufreq_change_voltage(struct cpufreq_dvfs_info *dvfs,
 						unsigned long frequency, bool margin)
 {
@@ -241,7 +261,8 @@ static unsigned long nxp_cpufreq_change_frequency(struct cpufreq_dvfs_info *dvfs
 {
 	struct clk *clk = dvfs->clk;
 	unsigned long rate_khz = 0;
-	int id = dvfs->freq_id;
+
+	nxp_cpufreq_set_freq_point(dvfs, freqs->new);
 
 	if (!test_bit(FREQ_STATE_RESUME, &dvfs->resume_state))
 		return freqs->old;
@@ -263,11 +284,12 @@ static unsigned long nxp_cpufreq_change_frequency(struct cpufreq_dvfs_info *dvfs
 #endif
 
 	if (test_bit(FREQ_STATE_TIME_RUN, &dvfs->check_state)) {
-		int prev = dvfs->pre_freq_id;
+		int id = dvfs->freq_point;
+		int prev = dvfs->pre_freq_point;
 		long ms = ktime_to_ms(ktime_get());
 		dvfs->time_stamp[prev].duration += (ms - dvfs->time_stamp[prev].start);
 		dvfs->time_stamp[id].start = ms;
-		dvfs->pre_freq_id = id;
+		dvfs->pre_freq_point = id;
 	}
 
 #ifdef CONFIG_LOCAL_TIMERS
@@ -401,7 +423,7 @@ static inline int nxp_cpufreq_setup(struct cpufreq_dvfs_info *dvfs)
 static ssize_t show_speed_duration(struct cpufreq_policy *policy, char *buf)
 {
 	struct cpufreq_dvfs_info *dvfs = get_dvfs_ptr();
-	int id = dvfs->freq_id;
+	int id = dvfs->freq_point;
 	ssize_t count = 0;
 	int i = 0;
 
@@ -410,7 +432,7 @@ static ssize_t show_speed_duration(struct cpufreq_policy *policy, char *buf)
 		if (dvfs->time_stamp[id].start)
 			dvfs->time_stamp[id].duration += (ms - dvfs->time_stamp[id].start);
 		dvfs->time_stamp[id].start = ms;
-		dvfs->pre_freq_id = id;
+		dvfs->pre_freq_point = id;
 	}
 
 	for (; dvfs->table_size > i; i++)
@@ -424,14 +446,14 @@ static ssize_t store_speed_duration(struct cpufreq_policy *policy,
 			const char *buf, size_t count)
 {
 	struct cpufreq_dvfs_info *dvfs = get_dvfs_ptr();
-	int id = dvfs->freq_id;
+	int id = dvfs->freq_point;
 	long ms = ktime_to_ms(ktime_get());
 	const char *s = buf;
 
 	mutex_lock(&dvfs->lock);
 
 	if (0 == strncmp(s, "run", strlen("run"))) {
-		dvfs->pre_freq_id = id;
+		dvfs->pre_freq_point = id;
 		dvfs->time_stamp[id].start = ms;
 		set_bit(FREQ_STATE_TIME_RUN, &dvfs->check_state);
 	}
@@ -442,7 +464,7 @@ static ssize_t store_speed_duration(struct cpufreq_policy *policy,
 		memset(dvfs->time_stamp, 0, sizeof(dvfs_timestamp));
 		if (test_bit(FREQ_STATE_TIME_RUN, &dvfs->check_state)) {
 			dvfs->time_stamp[id].start = ms;
-			dvfs->pre_freq_id = id;
+			dvfs->pre_freq_point = id;
 		}
 	} else {
 		count = -1;
@@ -683,6 +705,7 @@ static int nxp_cpufreq_target(struct cpufreq_policy *policy,
 			      HRTIMER_MODE_REL_PINNED);
 		pr_debug("run  monitor");
 	}
+	pr_debug("\n");
 
 freq_up:
 	dvfs->policy = policy;
@@ -821,12 +844,11 @@ static void *nxp_cpufreq_get_dt_data(struct platform_device *pdev)
 #define dvfs_dt_match NULL
 #endif
 
-static int nxp_cpufreq_make_table(struct platform_device *pdev,
-							struct cpufreq_frequency_table **freq_table,
-							unsigned long (*dvfs_tables)[2])
+static void *nxp_cpufreq_make_table(struct platform_device *pdev,
+							int *table_size, unsigned long (*dvfs_tables)[2])
 {
 	struct nxp_cpufreq_plat_data *pdata = pdev->dev.platform_data;
-	struct cpufreq_frequency_table *ptable;
+	struct cpufreq_frequency_table *freq_table;
 	struct cpufreq_asv_ops *ops = &asv_ops;
 	unsigned long (*plat_tbs)[2] = NULL;
  	int tb_size, asv_size = 0;
@@ -842,18 +864,17 @@ static int nxp_cpufreq_make_table(struct platform_device *pdev,
 
 	if (!pdata->table_size && !asv_size) {
 		dev_err(&pdev->dev, "failed no freq table !!!\n");
-		return -EINVAL;
+		return NULL;
 	}
 
 	tb_size = (pdata->table_size ? pdata->table_size : asv_size);
 
-	ptable = kzalloc((sizeof(*ptable)*tb_size), GFP_KERNEL);
-	if (!ptable) {
+	/* alloc with end table */
+	freq_table = kzalloc((sizeof(*freq_table)*tb_size + 1), GFP_KERNEL);
+	if (!freq_table) {
 		dev_err(&pdev->dev, "failed allocate freq table !!!\n");
-		return -ENOMEM;
+		return NULL;
 	}
-
-	*freq_table = ptable;
 
 	/* make frequency table with platform data */
 	if (asv_size > 0) {
@@ -872,26 +893,29 @@ static int nxp_cpufreq_make_table(struct platform_device *pdev,
 				dvfs_tables[id][0] = dvfs_tables[n][0];	/* frequency */
 				dvfs_tables[id][1] = dvfs_tables[n][1];	/* voltage */
 			}
-			ptable->index = id;
-			ptable->frequency = dvfs_tables[id][0];
+			freq_table[id].index = id;
+			freq_table[id].frequency = dvfs_tables[id][0];
 			printk("ASV %2d = %8ldkhz, %8ld uV \n", id, dvfs_tables[id][0], dvfs_tables[id][1]);
 			/* next */
-			id++, ptable++;
+			id++;
 		}
 	} else {
-		for (id = 0; tb_size > id; id++, ptable++) {
+		for (id = 0; tb_size > id; id++, freq_table++) {
 			dvfs_tables[id][0] = plat_tbs[id][0];	/* frequency */
 			dvfs_tables[id][1] = plat_tbs[id][1];	/* voltage */
-			ptable->index = id;
-			ptable->frequency = dvfs_tables[id][0];
+			freq_table[id].index = id;
+			freq_table[id].frequency = dvfs_tables[id][0];
 			printk("DTB %2d = %8ldkhz, %8ld uV \n", id, dvfs_tables[id][0], dvfs_tables[id][1]);
 		}
 	}
 
-	ptable->index = id;
-	ptable->frequency = CPUFREQ_TABLE_END;
+	/* End table */
+	freq_table[id].index = id;
+	freq_table[id].frequency = CPUFREQ_TABLE_END;
 
-	return id;
+	*table_size = id;
+
+	return (void*)freq_table;
 }
 
 static int nxp_cpufreq_set_supply(struct platform_device *pdev,
@@ -942,7 +966,7 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 	struct cpufreq_frequency_table *freq_table = NULL;
 	int cpu = raw_smp_processor_id();
 	char name[16];
-	int table_len = 0, ret = 0;
+	int table_size = 0, ret = 0;
 
 	dvfs = kzalloc(sizeof(*dvfs), GFP_KERNEL);
 	if (!dvfs) {
@@ -959,8 +983,8 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 	}
 #endif
 
-	table_len = nxp_cpufreq_make_table(pdev, &freq_table, dvfs_tables);
-	if (0 > table_len)
+	freq_table = nxp_cpufreq_make_table(pdev, &table_size, dvfs_tables);
+	if (!freq_table)
 		goto err_free_table;
 
 	sprintf(name, "pll%d", pdata->pll_dev);
@@ -974,11 +998,11 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 	dvfs->asv_ops = &asv_ops;
 	dvfs->freq_table = freq_table;
 	dvfs->dvfs_table = (unsigned long(*)[2])(dvfs_tables);
-	dvfs->table_size = table_len;
+	dvfs->table_size = table_size;
 	dvfs->supply_delay_us = pdata->supply_delay_us;
 	dvfs->boot_frequency = nxp_cpufreq_get_speed(cpu);
 	dvfs->target_freq = dvfs->boot_frequency;
-	dvfs->pre_freq_id = -1;
+	dvfs->pre_freq_point = -1;
 	dvfs->check_state = 0;
 	dvfs->time_stamp = dvfs_timestamp;
 	dvfs->limits.max_freq = pdata->max_cpufreq;
@@ -989,6 +1013,7 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 	dvfs->limits.run_monitor = 0;
 
 	set_bit(FREQ_STATE_RESUME, &dvfs->resume_state);
+	nxp_cpufreq_set_freq_point(dvfs, dvfs->target_freq);
 
 	if (pdata->supply_name) {
 		ret = nxp_cpufreq_set_supply(pdev, dvfs);
