@@ -495,6 +495,9 @@ static void suspend_gpio(suspend_state_t stat)
 			writel(gpio_alfn[i][1], (base+0x24));
 
 			writel(0, (base+0x04));	/* Input */
+
+			writel(0, (base+0x58));	/* GPIOx_PULLSEL - Down */
+			writel(0, (base+0x60)); /* GPIOx_PULLENB - Disable */
 		}
 
 	} else {
