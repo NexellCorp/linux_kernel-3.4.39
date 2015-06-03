@@ -1756,6 +1756,8 @@ static struct dw_mci_board _dwmci2_data = {
 
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 
+	.get_ro         = _dwmci_get_ro,
+	.get_cd			= _dwmci_get_cd,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
