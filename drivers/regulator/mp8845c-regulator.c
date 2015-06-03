@@ -30,7 +30,7 @@
 #include <linux/regulator/machine.h>
 #include <linux/regulator/mp8845c-regulator.h>
 
-#define FEATURE_ASV_CORE_TABLE
+//#define FEATURE_ASV_CORE_TABLE
 #ifdef FEATURE_ASV_CORE_TABLE
 #include <linux/clk.h>
 
