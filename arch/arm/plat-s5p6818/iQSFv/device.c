@@ -349,13 +349,11 @@ struct nxp_snd_dai_plat_data rt5631_i2s_dai_data = {
 	.i2s_ch	= 0,
 	.sample_rate	= 48000,
 	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
-#if 0
 	.hp_jack 		= {
 		.support    	= 1,
-		.detect_io		= PAD_GPIO_A + 0,
-		.detect_level	= 1,
+		.detect_io		= CFG_IO_HP_DET,
+		.detect_level	= 0,
 	},
-#endif
 };
 
 static struct platform_device rt5631_dai = {
@@ -1065,7 +1063,7 @@ static int _dwmci0_get_cd(u32 slot_id)
 #ifdef CONFIG_MMC_NXP_CH0
 static struct dw_mci_board _dwmci0_data = {
 	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 80 * 1000 * 1000,
+	.bus_hz			= 100 * 1000 * 1000,
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
@@ -1228,7 +1226,7 @@ static struct platform_device hdmi_cec_device = {
 
 static struct reg_val _sensor_init_data[] =
 {
-    {0x02, 0x44},
+    {0x02, 0x44},		// MUX0 :  0x40,		MUX1 :  0x44
     {0x03, 0xa2},
     {0x07, 0x02},
     {0x08, 0x12},

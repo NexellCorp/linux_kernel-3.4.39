@@ -298,6 +298,9 @@ static int _anim_thread(void *arg)
     /*while(1) {*/
         splash = &me->splash_info[count++%me->img_count];
         address = me->dma_addr + splash->ulImageAddr;
+#ifdef CONFIG_PLAT_S5P6818_IQSFV
+ 		address += 1024*60*4+112*4;
+#endif
         nxp_soc_disp_rgb_set_address(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, address, 4, me->img_width * 4, 1);
         if (first) {
             nxp_soc_disp_device_enable_all(DISP_MODULE, 1);
@@ -307,8 +310,14 @@ static int _anim_thread(void *arg)
                 backward_camera_external_on();
             }
 #endif
+#ifdef CONFIG_PLAT_S5P6818_IQSFV
+			//mdelay(100);
+			//nxp_soc_gpio_set_out_value(CFG_IO_LCD_BL_ENB, 1);
+			//nxp_soc_gpio_set_io_func(CFG_IO_LCD_BL_ENB, 1);
+#else
             nxp_soc_gpio_set_out_value(PAD_GPIO_A + 25, 1);
             nxp_soc_gpio_set_out_value(PAD_GPIO_D + 1, 1);
+#endif
             first = false;
         }
         schedule_timeout_interruptible(HZ/30);
@@ -324,6 +333,9 @@ static int _anim_thread(void *arg)
         loop_count = me->img_count - SECOND_STAGE_START_FRAME;
         splash = &me->splash_info[SECOND_STAGE_START_FRAME + (count++%loop_count)];
         address = me->dma_addr + splash->ulImageAddr;
+#ifdef CONFIG_PLAT_S5P6818_IQSFV
+ 		address += 1024*60*4+112*4;
+#endif
         nxp_soc_disp_rgb_set_address(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, address, 4, me->img_width * 4, 1);
         schedule_timeout_interruptible(HZ/30);
         if (kthread_should_stop()) {

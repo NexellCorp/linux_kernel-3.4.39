@@ -71,7 +71,7 @@
  * 	Display (DPC and MLC)
  */
 /* Primary */
-#define CFG_DISP_PRI_SCREEN_LAYER               0
+#define CFG_DISP_PRI_SCREEN_LAYER               1
 #define CFG_DISP_PRI_SCREEN_RGB_FORMAT          MLC_RGBFMT_A8R8G8B8
 #define CFG_DISP_PRI_SCREEN_PIXEL_BYTE	        4
 #define CFG_DISP_PRI_SCREEN_COLOR_KEY	        0x090909
@@ -97,7 +97,7 @@
 #define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CTRUE
 
 #define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL2
-#define CFG_DISP_PRI_CLKGEN0_DIV               12 
+#define CFG_DISP_PRI_CLKGEN0_DIV               15 			// 12:51MHz	->	15:40MHz
 #define CFG_DISP_PRI_CLKGEN0_DELAY              0
 #define CFG_DISP_PRI_CLKGEN0_INVERT				0
 #define CFG_DISP_PRI_CLKGEN1_SOURCE             DPC_VCLK_SRC_VCLK2
@@ -125,7 +125,7 @@
  * 	PWM
  */
 #define CFG_LCD_PRI_PWM_CH						0
-#define CFG_LCD_PRI_PWM_FREQ					30000
+#define CFG_LCD_PRI_PWM_FREQ					25000
 #define CFG_LCD_PRI_PWM_DUTYCYCLE				50		/* (%) */
 
 #define CFG_PWM0_CLK_SRC						1		// 0:pclk 1:tclk
