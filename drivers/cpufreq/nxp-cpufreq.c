@@ -35,9 +35,9 @@
 #include <mach/devices.h>
 #include <mach/tags.h>
 
-
+/*
 #define pr_debug     printk
-
+*/
 
 #define DEV_NAME_CPUFREQ	"nxp-cpufreq"
 
