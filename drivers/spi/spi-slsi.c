@@ -237,7 +237,6 @@ struct s3c64xx_spi_driver_data {
     char                			*dummypage;
     bool                			dma_running;
 #endif
-
 };
 struct chip_data {
     u32 cr0;
@@ -1668,6 +1667,8 @@ static int s3c64xx_spi_suspend(struct device *dev)
 	clk_disable(sdd->clk);
 #endif
 
+	clk_disable(sdd->src_clk);
+	clk_disable(sdd->clk);
 	sdd->cur_speed = 0; /* Output Clock is stopped */
 
 	return 0;
@@ -1689,7 +1690,7 @@ static int s3c64xx_spi_resume(struct device *dev)
 	clk_enable(sdd->src_clk);
 	clk_enable(sdd->clk);
 #endif
-
+	sci->spi_init(pdev->id);
 	s3c64xx_spi_hwinit(sdd, pdev->id);
 
 	spi_master_resume(master);
@@ -1727,7 +1728,7 @@ static int s3c64xx_spi_runtime_resume(struct device *dev)
 
 	if (sci->gpio_pull_up)
 		sci->gpio_pull_up(true);
-
+	
 	return 0;
 }
 #endif /* CONFIG_PM_RUNTIME */
