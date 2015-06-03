@@ -35,9 +35,9 @@
 #include <mach/devices.h>
 #include <mach/tags.h>
 
-/*
+
 #define pr_debug     printk
-*/
+
 
 #define DEV_NAME_CPUFREQ	"nxp-cpufreq"
 
@@ -250,9 +250,7 @@ static unsigned long nxp_cpufreq_change_frequency(struct cpufreq_dvfs_info *dvfs
 	if (freqs->new >= freqs->old)
 		nxp_cpufreq_change_voltage(dvfs, freqs->new, margin);
 
-#ifdef CONFIG_LOCAL_TIMERS
 	for_each_cpu(freqs->cpu, dvfs->cpus)
-#endif
 		cpufreq_notify_transition(freqs, CPUFREQ_PRECHANGE);
 
 	clk_set_rate(clk, freqs->new*1000);
@@ -270,9 +268,7 @@ static unsigned long nxp_cpufreq_change_frequency(struct cpufreq_dvfs_info *dvfs
 		dvfs->pre_freq_id = id;
 	}
 
-#ifdef CONFIG_LOCAL_TIMERS
 	for_each_cpu(freqs->cpu, dvfs->cpus)
-#endif
 		cpufreq_notify_transition(freqs, CPUFREQ_POSTCHANGE);
 
 	/* post voltage */
