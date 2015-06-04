@@ -1226,447 +1226,113 @@ static struct platform_device mpegts_plat_device = {
 #include <mach/nxp-v4l2-platformdata.h>
 #include <mach/soc.h>
 
-static int front_camera_set_clock(ulong clk_rate)
+static void loopback_camera_setup_io(int module, bool force)
 {
-  	printk(KERN_INFO "%s: %d\n", __func__, (int)clk_rate);
+    u_int *pad;
+    int i, len;
+    u_int io, fn;
+
+    const u_int port[][2] = {
+        /* VCLK, HSYNC, VSYNC */
+        { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_E +  6, NX_GPIO_PADFUNC_1 },
+        /* DATA */
+        { PAD_GPIO_D + 28, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 29, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
+				/* BT565 DATA */
+        { PAD_GPIO_A +  8, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_A +  9, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_A + 10, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_A + 11, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_A + 12, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_A + 13, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_A + 14, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_A + 15, NX_GPIO_PADFUNC_1 },
+    };
+
+    pad = (u_int *)port;
+    len = sizeof(port)/sizeof(port[0]);
 
 
-    if (clk_rate > 0)
-        nxp_soc_pwm_set_frequency(1, clk_rate, 50);
-    else
-        nxp_soc_pwm_set_frequency(1, 0, 0);
-    msleep(1);
-    return 0;
-}
-
-static int back_camera_set_clock(ulong clk_rate)
-{
-  	printk(KERN_INFO "%s: %d\n", __func__, (int)clk_rate);
-    if (clk_rate > 0)
-        nxp_soc_pwm_set_frequency(3, clk_rate, 50);
-    else
-        nxp_soc_pwm_set_frequency(3, 0, 0);
-    msleep(1);
-    return 0;
-}
-
-static void back_vin_setup_io(int module, bool force)
-{
-    /* do nothing */
-}
-
-static bool is_camera_port_configured = false;
-static void front_camera_vin_setup_io(int module, bool force)
-{
-  	printk(KERN_INFO "%s: module -> %d, force -> %d\n", __func__, module, ((force == true) ? 1 : 0));
-
-    if (!force && is_camera_port_configured)
-        return;
-    else {
-        u_int *pad;
-        int i, len;
-        u_int io, fn;
-
-
-        /* VIP0:0 = VCLK, VID0 ~ 7 */
-        const u_int port[][2] = {
-#if 0 //vid 0
-            /* VCLK, HSYNC, VSYNC */
-            { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  6, NX_GPIO_PADFUNC_1 },
-            /* DATA */
-            { PAD_GPIO_D + 28, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 29, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
-#endif
-
-#if 0 //vid1
-             /* VCLK, HSYNC, VSYNC */
-            { PAD_GPIO_A + 28, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E + 13, NX_GPIO_PADFUNC_2 },
-            { PAD_GPIO_E +  7, NX_GPIO_PADFUNC_2 },
-
-            { PAD_GPIO_A + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  0, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_B +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  4, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_B +  6, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  8, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
-#endif
-
-#if 1 //vid 2
-            /* VCLK, HSYNC, VSYNC */
-            { PAD_GPIO_C + 14, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 15, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 16, NX_GPIO_PADFUNC_3 },
-            /* DATA */
-            { PAD_GPIO_C + 17, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 18, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 19, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 20, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 21, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 22, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 23, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 24, NX_GPIO_PADFUNC_3 },
-#endif
-
-        };
-
-        printk("%s\n", __func__);
-
-        pad = (u_int *)port;
-        len = sizeof(port)/sizeof(port[0]);
-
-        for (i = 0; i < len; i++) {
-            io = *pad++;
-            fn = *pad++;
-            nxp_soc_gpio_set_io_dir(io, 0);
-            nxp_soc_gpio_set_io_func(io, fn);
-        }
-
-        is_camera_port_configured = true;
+    for (i = 0; i < len; i++) {
+        io = *pad++;
+        fn = *pad++;
+        nxp_soc_gpio_set_io_dir(io, 0);
+        nxp_soc_gpio_set_io_func(io, fn);
     }
 }
 
-static bool camera_power_enabled = false;
-static void camera_power_control(int enable)
+static int loopback_camera_power_enable(bool on)
 {
-    struct regulator *cam_io_28V = NULL;
-    struct regulator *cam_core_18V = NULL;
-
-  	printk(KERN_INFO "%s: enable -> %d\n", __func__, enable);
-
-    if (enable && camera_power_enabled)
-        return;
-    if (!enable && !camera_power_enabled)
-        return;
-
-    cam_core_18V = regulator_get(NULL, "vcam1_1.8V");
-    if (IS_ERR(cam_core_18V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for vcam1_1.8V", __func__);
-        return;
-    }
-
-    cam_io_28V = regulator_get(NULL, "vcam_2.8V");
-    if (IS_ERR(cam_io_28V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for vcam_2.8V", __func__);
-        return;
-    }
-
-    printk("%s: %d\n", __func__, enable);
-    if (enable) {
-        regulator_enable(cam_core_18V);
-        regulator_enable(cam_io_28V);
-    } else {
-        regulator_disable(cam_core_18V);
-        regulator_disable(cam_io_28V);
-    }
-
-    regulator_put(cam_io_28V);
-    regulator_put(cam_core_18V);
-
-    camera_power_enabled = enable ? true : false;
-}
-
-static bool is_back_camera_enabled = false;
-static bool is_back_camera_power_state_changed = false;
-static bool is_front_camera_enabled = false;
-static bool is_front_camera_power_state_changed = false;
-
-static int front_camera_power_enable(bool on);
-
-static int back_camera_power_enable(bool on)
-{
-#if 0
-    unsigned int io = CFG_IO_CAMERA_BACK_POWER_DOWN;
-#endif
-    unsigned int reset_io = CFG_IO_CAMERA_BACK_RESET;
-  	printk(KERN_INFO "%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
-
     if (on) {
-        front_camera_power_enable(0);
-        if (!is_back_camera_enabled) {
-            camera_power_control(1);
-						mdelay(100);
+        unsigned int nEnable = (PAD_GPIO_A + 21) | PAD_FUNC_ALT0;
+        unsigned int loop_sel = (PAD_GPIO_A + 22) | PAD_FUNC_ALT0;
 
-#if 0
-            /* power enalbe & clk generration */
-            nxp_soc_gpio_set_out_value(io, 1);
-            nxp_soc_gpio_set_io_dir(io, 1);
-            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-#endif
+        nxp_soc_gpio_set_out_value(nEnable, 0);
+        nxp_soc_gpio_set_io_dir(nEnable, 1);
+        nxp_soc_gpio_set_io_func(nEnable, nxp_soc_gpio_get_altnum(nEnable));
+        nxp_soc_gpio_set_out_value(nEnable, 0);
 
-            /* RST signal */
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            nxp_soc_gpio_set_io_dir(reset_io, 1);
-#if 1
-            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
-#endif
-            mdelay(1);
-
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-            mdelay(1);
-
-            is_back_camera_enabled = true;
-          	//is_back_camera_enabled = false;
-            is_back_camera_power_state_changed = true;
-        } else {
-            is_back_camera_power_state_changed = false;
-        }
-    } else {
-        if (is_back_camera_enabled) {
-            is_back_camera_enabled = false;
-            is_back_camera_power_state_changed = true;
-        } else {
-            is_back_camera_power_state_changed = false;
-        }
-
-        if (!(is_back_camera_enabled || is_front_camera_enabled)) {
-            camera_power_control(0);
-        }
+        nxp_soc_gpio_set_out_value(loop_sel, 0);
+        nxp_soc_gpio_set_io_dir(loop_sel, 1);
+        nxp_soc_gpio_set_io_func(loop_sel, nxp_soc_gpio_get_altnum(loop_sel));
+        nxp_soc_gpio_set_out_value(loop_sel, 0);
     }
 
     return 0;
 }
-
-static bool back_camera_power_state_changed(void)
-{
-  	printk(KERN_INFO "%s\n", __func__);
-
-    return is_back_camera_power_state_changed;
-}
-
-static struct i2c_board_info back_camera_i2c_boardinfo[] = {
-    {
-				I2C_BOARD_INFO("S5K4ECGX", 0x5A>>1),
-    },
-};
-
-static int mipi_phy_enable(bool en)
-{
-    return 0;
-}
-
-struct nxp_mipi_csi_platformdata s5k4ecgx_plat_data = {
-    .module     = 0,
-    .clk_rate   = 27000000, // 27MHz
-    .lanes      = 4,
-    .alignment = 0,
-    .hs_settle  = 0,
-    .width      = 640,
-    .height     = 480,
-    .fixed_phy_vdd = false,
-    .irq        = 0, /* not used */
-    .base       = 0, /* not used */
-    .phy_enable = mipi_phy_enable
-};
-
-static int front_camera_power_enable(bool on)
-{
-  	unsigned int io = CFG_IO_CAMERA_FRONT_POWER_DOWN;
-    unsigned int reset_io = CFG_IO_CAMERA_FRONT_RESET;
-
-   printk(KERN_INFO "%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
-
-    if (on) {
-        back_camera_power_enable(0);
-        if (!is_front_camera_enabled) {
-            camera_power_control(1);
-						mdelay(100);
-
-            /* First RST signal to low */
-#if 1
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            nxp_soc_gpio_set_io_dir(reset_io, 1);
-            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
-            mdelay(1);
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-#else
-            nxp_soc_gpio_set_out_value(io, 0);
-            nxp_soc_gpio_set_io_dir(io, 1);
-            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-            mdelay(1);
-            nxp_soc_gpio_set_out_value(io, 1);
-#endif
-
-            is_front_camera_enabled = true;
-          	//is_front_camera_enabled = false;
-            is_front_camera_power_state_changed = true;
-        } else {
-            is_front_camera_power_state_changed = false;
-        }
-    } else {
-        if (is_front_camera_enabled) {
-            is_front_camera_enabled = false;
-            is_front_camera_power_state_changed = true;
-        } else {
-            is_front_camera_power_state_changed = false;
-        }
-        if (!(is_back_camera_enabled || is_front_camera_enabled)) {
-            camera_power_control(0);
-        }
-    }
-
-    return 0;
-}
-
-static bool front_camera_power_state_changed(void)
-{
-  	printk(KERN_INFO "%s\n", __func__);
-    return is_front_camera_power_state_changed;
-}
-
-static struct i2c_board_info front_camera_i2c_boardinfo[] = {
-    {
-				I2C_BOARD_INFO("S5K5CAGX", 0x78>>1),
-    },
-};
 
 static struct nxp_v4l2_i2c_board_info sensor[] = {
-    {
-        .board_info = &back_camera_i2c_boardinfo[0],
-        .i2c_adapter_id = 1,
-    },
-    {
-        .board_info = &front_camera_i2c_boardinfo[0],
-        .i2c_adapter_id = 2,
-    },
-};
-
-#if 0
-static struct nxp_capture_platformdata capture_plat_data[] = {
-    {
-        /* back_camera 656 interface */
-        .module = 1,
-        .sensor = &sensor[0],
-				.type = NXP_CAPTURE_INF_CSI,
-				.parallel = {
-            .is_mipi        = true,
-            .external_sync  = true,
-            .h_active       = 640,
-            .h_frontporch   = 100,
-            .h_syncwidth    = 10,
-            .h_backporch    = 100,
-            .v_active       = 480,
-            .v_frontporch   = 1,
-            .v_syncwidth    = 1,
-            .v_backporch    = 1,
-            .clock_invert   = false,
-            .port           = NX_VIP_INPUTPORT_B,
-            .data_order     = NXP_VIN_CBY0CRY1,
-            .interlace      = false,
-            .clk_rate       = 27000000,
-            .late_power_down = false,
-            .power_enable   = back_camera_power_enable,
-            .set_clock      = back_camera_set_clock,
-            .setup_io       = back_vin_setup_io,
-        },
-        .deci = {
-            .start_delay_ms = 0,
-            .stop_delay_ms  = 0,
-        },
-        .csi = &s5k4ecgx_plat_data,
-    },
-    {
-        /* front_camera 601 interface */
-        .module = 0,
-        .sensor = &sensor[1],
-        .type = NXP_CAPTURE_INF_PARALLEL,
-				.parallel = {
-            .is_mipi        = false,
-            .external_sync  = false,
-            .h_active       = 640,
-            .h_frontporch   = 7,
-            .h_syncwidth    = 1,
-            /* .h_backporch    = 0, */
-            .h_backporch    = 10,
-            .v_active       = 480,
-            .v_frontporch   = 0,
-            .v_syncwidth    = 1,
-            .v_backporch    = 0,
-            .clock_invert   = true,
-            .port           = 1,
-            .data_order     = NXP_VIN_CBY0CRY1,
-            .interlace      = false,
-            .clk_rate       = 24000000,
-            .late_power_down = false,
-            .power_enable   = front_camera_power_enable,
-            .set_clock      = front_camera_set_clock,
-            .setup_io       = front_camera_vin_setup_io,
-        },
-				.deci = {
-            .start_delay_ms = 0,
-            .stop_delay_ms  = 0,
-        },
-    },
-    { 0, NULL, 0, },
-};
-#else
-static struct nxp_capture_platformdata capture_plat_data[] = {
 	{
-        /* front_camera 601 interface */
-        .module = 0,
-        .sensor = &sensor[1],
+		.board_info 		= NULL,
+	},
+};
+
+static struct nxp_capture_platformdata capture_plat_data[] = {
+#if defined(CONFIG_LOOPBACK_SENSOR_DRIVER)
+	{
+        .module = 2,
+				.sensor = &sensor[0],
         .type = NXP_CAPTURE_INF_PARALLEL,
-				.parallel = {
+        .parallel = {
             .is_mipi        = false,
             .external_sync  = false,
-            .h_active       = 640,
+            .h_active       = 720,
             .h_frontporch   = 7,
             .h_syncwidth    = 1,
-            /* .h_backporch    = 0, */
             .h_backporch    = 10,
             .v_active       = 480,
             .v_frontporch   = 0,
             .v_syncwidth    = 1,
             .v_backporch    = 0,
-            .clock_invert   = true,
-            .port           = 1,
+						.clock_invert		=	true,
+            .port           = 0,
             .data_order     = NXP_VIN_CBY0CRY1,
             .interlace      = false,
-            .clk_rate       = 24000000,
+						.clk_rate				=	24000000,
             .late_power_down = false,
-            .power_enable   = front_camera_power_enable,
-            .set_clock      = front_camera_set_clock,
-            .setup_io       = front_camera_vin_setup_io,
+            .power_enable   = loopback_camera_power_enable,
+						.set_clock			=	NULL,
+            .setup_io       = loopback_camera_setup_io,
         },
-				.deci = {
-            .start_delay_ms = 0,
-            .stop_delay_ms  = 0,
-        },
-	},
-  {
-        /* back_camera 656 interface */
-        .module = 1,
-        .sensor = &sensor[0],
-				.type = NXP_CAPTURE_INF_CSI,
-				.parallel = {
-            .is_mipi        = true,
-            .external_sync  = true,
-            .h_active       = 640,
-            .h_frontporch   = 100,
-            .h_syncwidth    = 10,
-            .h_backporch    = 100,
-            .v_active       = 480,
-            .v_frontporch   = 1,
-            .v_syncwidth    = 1,
-            .v_backporch    = 1,
-            .clock_invert   = false,
-            .port           = NX_VIP_INPUTPORT_B,
-            .data_order     = NXP_VIN_CBY0CRY1,
-            .interlace      = false,
-            .clk_rate       = 27000000,
-            .late_power_down = false,
-            .power_enable   = back_camera_power_enable,
-            .set_clock      = back_camera_set_clock,
-            .setup_io       = back_vin_setup_io,
-        },
-        .deci = {
-            .start_delay_ms = 0,
-            .stop_delay_ms  = 0,
-        },
-        .csi = &s5k4ecgx_plat_data,
-	},
-
+				.deci	=	{
+					.start_delay_ms	=	0,
+					.stop_delay_ms	=	0,
+				},
+    },
+#endif
 	{ 0, NULL, 0, },
 };
 
+#if defined(CONFIG_LOOPBACK_SENSOR_DRIVER)
+#if 0
+static struct platform_device loopback_camera_device = {
+    .name			= "loopback-sensor",
+};
+#endif
 #endif
 
 /* out platformdata */
@@ -2211,6 +1877,13 @@ void __init nxp_board_devs_register(void)
 #if defined(CONFIG_NXP_HDMI_CEC)
     printk("plat: add device hdmi-cec\n");
     platform_device_register(&hdmi_cec_device);
+#endif
+
+#if defined(CONFIG_LOOPBACK_SENSOR_DRIVER)
+#if 0
+    printk("plat: add device loopback-sensor\n");
+    platform_device_register(&loopback_camera_device);
+#endif
 #endif
 
 #if 0//defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)

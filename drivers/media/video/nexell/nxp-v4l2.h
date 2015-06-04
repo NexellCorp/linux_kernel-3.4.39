@@ -22,6 +22,7 @@ struct nxp_v4l2_platformdata;
 struct nxp_capture;
 struct nxp_scaler;
 struct nxp_out;
+struct nxp_loopback_sensor;
 
 struct nxp_v4l2 {
     struct media_device media_dev;
@@ -39,6 +40,9 @@ struct nxp_v4l2 {
 #endif
 #ifdef CONFIG_VIDEO_NXP_OUT
     struct nxp_out *out;
+#endif
+#ifdef CONFIG_LOOPBACK_SENSOR_DRIVER
+		struct nxp_loopback_sensor *loopback_sensor;
 #endif
 
     void *alloc_ctx;
