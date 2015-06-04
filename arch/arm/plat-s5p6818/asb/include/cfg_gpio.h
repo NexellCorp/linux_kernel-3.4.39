@@ -26,7 +26,7 @@
  *	| PAD_MODE_XXX  | PAD_FUNC_ALT(0,1,2,3) | PAD_LEVEL_XXX | PAD_PULL_UP,OFF | PAD_STRENGTH_0,1,2,3
  *
  -----------------------------------------------------------------------------*/
-#define PAD_GPIOA0      (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PVCLK               ,2:_                    ,3: TESTMODE[4]         =	DISD_CLK	, ITU656_CLK
+#define PAD_GPIOA0      (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: GPIO          ,1: PVCLK               ,2:_                    ,3: TESTMODE[4]         =	DISD_CLK	, ITU656_CLK
 #define PAD_GPIOA1      (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: GPIO          ,1: PDRGB24[0]          ,2:_                    ,3:_                    =	DISD_D
 #define PAD_GPIOA2      (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: GPIO          ,1: PDRGB24[1]          ,2:_                    ,3: TESTMODE[0]         =	DISD_D1
 #define PAD_GPIOA3      (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: GPIO          ,1: PDRGB24[2]          ,2:_                    ,3: TESTMODE[1]         =	DISD_D2
@@ -35,14 +35,14 @@
 #define PAD_GPIOA6      (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[5]          ,2:_                    ,3:_                    =	DISD_D5
 #define PAD_GPIOA7      (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[6]          ,2:_                    ,3:_                    =	DISD_D6
 #define PAD_GPIOA8      (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[7]          ,2:_                    ,3:_                    =	DISD_D7
-#define PAD_GPIOA9      (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[8]          ,2:_                    ,3:_                    =	DISD_D8 	, ITU656_D0		, GPIOA9_RTL_nINT
-#define PAD_GPIOA10     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[9]          ,2:_                    ,3:_                    =	DISD_D9 	, ITU656_D1		, GPIOA10_RTL_nRST
-#define PAD_GPIOA11     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[10]         ,2:_                    ,3:_                    =	DISD_D10	, ITU656_D2
-#define PAD_GPIOA12     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[11]         ,2:_                    ,3:_                    =	DISD_D11	, ITU656_D3
-#define PAD_GPIOA13     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[12]         ,2:_                    ,3:_                    =	DISD_D12	, ITU656_D4
-#define PAD_GPIOA14     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[13]         ,2:_                    ,3:_                    =	DISD_D13	, ITU656_D5
-#define PAD_GPIOA15     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[14]         ,2:_                    ,3:_                    =	DISD_D14	, ITU656_D6
-#define PAD_GPIOA16     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[15]         ,2:_                    ,3:-                    =	DISD_D15	, ITU656_D7
+#define PAD_GPIOA9      (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: GPIO          ,1: PDRGB24[8]          ,2:_                    ,3:_                    =	DISD_D8 	, ITU656_D0		, GPIOA9_RTL_nINT
+#define PAD_GPIOA10     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: GPIO          ,1: PDRGB24[9]          ,2:_                    ,3:_                    =	DISD_D9 	, ITU656_D1		, GPIOA10_RTL_nRST
+#define PAD_GPIOA11     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: GPIO          ,1: PDRGB24[10]         ,2:_                    ,3:_                    =	DISD_D10	, ITU656_D2
+#define PAD_GPIOA12     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: GPIO          ,1: PDRGB24[11]         ,2:_                    ,3:_                    =	DISD_D11	, ITU656_D3
+#define PAD_GPIOA13     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: GPIO          ,1: PDRGB24[12]         ,2:_                    ,3:_                    =	DISD_D12	, ITU656_D4
+#define PAD_GPIOA14     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: GPIO          ,1: PDRGB24[13]         ,2:_                    ,3:_                    =	DISD_D13	, ITU656_D5
+#define PAD_GPIOA15     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: GPIO          ,1: PDRGB24[14]         ,2:_                    ,3:_                    =	DISD_D14	, ITU656_D6
+#define PAD_GPIOA16     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: GPIO          ,1: PDRGB24[15]         ,2:_                    ,3:-                    =	DISD_D15	, ITU656_D7
 #define PAD_GPIOA17     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[16]         ,2:_                    ,3:_                    =	DISD_D16
 #define PAD_GPIOA18     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[17]         ,2:_                    ,3:_                    =	DISD_D17
 #define PAD_GPIOA19     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[18]         ,2:_                    ,3:_                    =	DISD_D18
