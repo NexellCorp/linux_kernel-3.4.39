@@ -170,7 +170,6 @@ static inline void pwm_start(int ch, int irqon)
 {
 	volatile U32 val;
 	int on = irqon ? 1 : 0;
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t]  \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
 
 	val  = readl(PWM_BASE + PWM_STAT);
 	val &= ~(TINT_CS_MASK<<5 | 0x1 << TINT_CH(ch));
@@ -191,7 +190,6 @@ static inline void pwm_stop(int ch, int irqon)
 {
 	volatile U32 val;
 	int on = irqon ? 1 : 0;
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t]  \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
 
 	val  = readl(PWM_BASE + PWM_STAT);
 	val &= ~(TINT_CS_MASK<<5 | 0x1 << TINT_CH(ch));
@@ -208,7 +206,6 @@ static void pwm_set_device(struct pwm_device *pwm)
 	int ch = pwm->ch;
 	unsigned int tmux = pwm->tmux, tscl = 1;
 
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t]  \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
 	pr_debug("%s (ch:%d, rate:%ld, pwm_hz:%ld, count:%u, cmp:%u, tmux:%u)\n",
 	 	__func__, ch, pwm->rate, pwm->pwm_hz, pwm->counter, pwm->compare, tmux);
 
@@ -259,7 +256,6 @@ unsigned long nxp_soc_pwm_set_frequency(int ch, unsigned int request, unsigned i
 	volatile unsigned int tmux = 0, smux = 0, tscl = 1, tcnt;
 	int i, n, end = 0;
 
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] request:%d, duty:%d \n", __func__, strrchr(__FILE__, '/')+1, __LINE__, request, duty);
 	RET_ASSERT_VAL(PWN_CHANNELS > ch, -EINVAL);
 	RET_ASSERT_VAL(ch >= 0, -EINVAL);
 	RET_ASSERT_VAL(100 >= duty && duty >= 0, -EINVAL);
@@ -277,8 +273,6 @@ unsigned long nxp_soc_pwm_set_frequency(int ch, unsigned int request, unsigned i
 	}
 
 	/* for suspend -> resume */
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] pwm->request:%d, pwm->duty:%d \n", __func__, strrchr(__FILE__, '/')+1, __LINE__, pwm->request, pwm->duty);
-
     if (pwm->request == request) {
         clock = pwm->rate;
         pwmhz = pwm->pwm_hz;
@@ -340,7 +334,6 @@ unsigned long nxp_soc_pwm_set_frequency(int ch, unsigned int request, unsigned i
 			}
 		}
 	}
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] clock:%d \n", __func__, strrchr(__FILE__, '/')+1, __LINE__, clock);
 
 	if (clock) {
 		pwm->request = request;
