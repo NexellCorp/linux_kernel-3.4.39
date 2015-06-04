@@ -277,6 +277,34 @@ extern bool is_backward_camera_on(void);
 extern void backward_camera_external_on(void);
 #endif
 
+#ifdef CONFIG_PLAT_S5P6818_IQSFV
+#include <linux/pwm.h>
+#include <linux/pwm_backlight.h>
+struct pwm_device {
+	struct list_head list;
+	struct device *dev;
+	const char *label;
+	unsigned int period_ns;
+	unsigned int duty_ns;
+	unsigned char use_count;
+	unsigned char pwm_id;
+};
+static void pwm_set_init(void)
+{
+	struct pwm_device pwm;
+	int brightness = 100;
+	int max = 255;
+
+	pwm.pwm_id = CFG_LCD_PRI_PWM_CH;
+	brightness = (brightness * (1000000000/CFG_LCD_PRI_PWM_FREQ) / max);
+
+	pwm_config(&pwm, brightness, (1000000000/CFG_LCD_PRI_PWM_FREQ));
+	pwm_enable(&pwm);
+
+	return;
+}
+#endif
+
 #define DISP_MODULE 0
 #define SECOND_STAGE_START_FRAME    8
 #define SECOND_STAGE_FRAME_COUNT    12
@@ -311,9 +339,10 @@ static int _anim_thread(void *arg)
             }
 #endif
 #ifdef CONFIG_PLAT_S5P6818_IQSFV
-			//mdelay(100);
+			mdelay(100);
 			//nxp_soc_gpio_set_out_value(CFG_IO_LCD_BL_ENB, 1);
 			//nxp_soc_gpio_set_io_func(CFG_IO_LCD_BL_ENB, 1);
+			pwm_set_init();
 #else
             nxp_soc_gpio_set_out_value(PAD_GPIO_A + 25, 1);
             nxp_soc_gpio_set_out_value(PAD_GPIO_D + 1, 1);
