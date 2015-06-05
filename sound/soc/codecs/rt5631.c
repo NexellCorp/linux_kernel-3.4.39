@@ -28,6 +28,12 @@
 #include <sound/initval.h>
 #include <sound/tlv.h>
 
+#include <linux/gpio.h>
+#include <linux/irq.h>
+#include <mach/platform.h>
+#include <mach/devices.h>
+#include <mach/soc.h>
+
 #include "rt5631.h"
 
 /*
@@ -99,7 +105,7 @@ static const u16 rt5631_reg[RT5631_VENDOR_ID1 + 1] = {
 	[RT5631_SPK_OUT_VOL] = 0x8888,
 	[RT5631_HP_OUT_VOL] = 0x8080,
 	[RT5631_MONO_AXO_1_2_VOL] = 0xa080,
-	[RT5631_AUX_IN_VOL] = 0x0808,
+	[RT5631_AUX_IN_VOL] = 0x0000,
 	[RT5631_ADC_REC_MIXER] = 0xf0f0,
 	//[RT5631_VDAC_DIG_VOL] = 0x0010,  //for ALC5631V
 	[RT5631_OUTMIXER_L_CTRL] = 0xffc0,
@@ -1988,8 +1994,8 @@ static void rt5631_setup(struct snd_soc_codec *codec)
 	snd_soc_write(codec, RT5631_MONO_AXO_1_2_VOL, 0xa080);
 	snd_soc_write(codec, RT5631_ADC_REC_MIXER, 0xb0b0);
 	snd_soc_write(codec, RT5631_MIC_CTRL_2, 0x1100);			// 22h: 5500, no boost
-	snd_soc_write(codec, RT5631_OUTMIXER_L_CTRL, 0xdfC0);
-	snd_soc_write(codec, RT5631_OUTMIXER_R_CTRL, 0xdfC0);
+	snd_soc_write(codec, RT5631_OUTMIXER_L_CTRL, 0xddC0);
+	snd_soc_write(codec, RT5631_OUTMIXER_R_CTRL, 0xdeC0);
 	snd_soc_write(codec, RT5631_SPK_MIXER_CTRL, 0xe8e8);		// 28h: 0xd8d8
 	snd_soc_write(codec, RT5631_SPK_MONO_OUT_CTRL, 0x6c00);
 	snd_soc_write(codec, RT5631_GEN_PUR_CTRL_REG, 0x4e00);		// 40h: HP volume
@@ -2124,6 +2130,31 @@ static ssize_t rt5631_index_show(struct device *dev,
 }
 static DEVICE_ATTR(index_reg, 0444, rt5631_index_show, NULL);
 
+static void mic_swap_control(struct snd_soc_codec *codec)
+{	
+	if(nxp_soc_gpio_get_in_value(CFG_IO_MIC_DET))
+	{
+		snd_soc_write(codec, RT5631_SDP_CTRL, 0x8020); 			// ADC Data L/R Swap Control 
+	}
+	else
+	{
+		snd_soc_write(codec, RT5631_SDP_CTRL, 0x8000); 			// ADC Data L/R Swap Control 
+	}
+	return;
+}
+
+static irqreturn_t rt5631_mic_det_irq(int irq, void *handle)
+{
+	struct device *dev = handle;
+	struct i2c_client *client = to_i2c_client(dev);
+	struct rt5631_priv *rt5631 = i2c_get_clientdata(client);
+	struct snd_soc_codec *codec = rt5631->codec;
+
+	mic_swap_control(codec);
+
+	return IRQ_HANDLED;
+}
+
 static int rt5631_probe(struct snd_soc_codec *codec)
 {
 	struct rt5631_priv *rt5631 = snd_soc_codec_get_drvdata(codec);
@@ -2187,6 +2218,20 @@ static int rt5631_probe(struct snd_soc_codec *codec)
 			"Failed to create index_reg sysfs files: %d\n", ret);
 		return ret;
 	}
+
+{
+	int err = 0;
+	int irq;
+	irq = PB_PIO_IRQ(CFG_IO_MIC_DET);
+
+	mic_swap_control(codec);
+
+	err = request_threaded_irq(irq, NULL, rt5631_mic_det_irq,
+				   IRQ_TYPE_EDGE_BOTH | IRQF_ONESHOT, "rt5631_mic_irq", codec->dev);
+	if (err < 0) {
+		dev_err(codec->dev, "irq %d busy?\n", irq);
+	}
+}
 
 	return 0;
 }
