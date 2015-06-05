@@ -131,8 +131,8 @@ static struct platform_device dfs_plat_device = {
 struct nxp_tmu_trigger tmu_triggers[] = {
        {
                .trig_degree    =  85,
-               .trig_duration  =  100,
-               .trig_cpufreq   =  800*1000,    /* Khz */
+               .trig_duration  =  10,
+               .trig_cpufreq   =  400*1000,    /* Khz */
        },
 };
 
