@@ -460,7 +460,7 @@ static int nxp_read_raw(struct iio_dev *indio_dev,
 #endif
 	}
 
-	usleep_range (1, 10);
+	//usleep_range (1, 10);
 	pr_debug("%s, ch=%d, val=0x%x\n", __func__, ch, *val);
 
 	return IIO_VAL_INT;

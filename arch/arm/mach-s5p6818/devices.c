@@ -737,7 +737,7 @@ int s3c64xx_spi0_cfg_gpio(struct platform_device *dev)
 }
 
 struct s3c64xx_spi_info s3c64xx_spi0_pdata = {
-	.fifo_lvl_mask  = 0x1ff,
+	.fifo_lvl_mask  = 0x1f,
 	.rx_lvl_offset  = 15,
 	//.rx_lvl_offset  = 0x1ff,
 	.high_speed = 1,

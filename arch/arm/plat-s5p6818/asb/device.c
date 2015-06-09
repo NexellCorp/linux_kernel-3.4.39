@@ -1443,8 +1443,8 @@ static struct s3c64xx_spi_csinfo spi2_csi[] = {
         .line       = CFG_SPI2_CS,
         .set_level  = gpio_set_value,
         .fb_delay   = 0x2,
-		//.hierarchy = SSP_SLAVE,
-		.hierarchy = SSP_MASTER,
+		.hierarchy = SSP_SLAVE,
+		//.hierarchy = SSP_MASTER,
     },
 };
 struct spi_board_info spi2_board_info[] __initdata = {
