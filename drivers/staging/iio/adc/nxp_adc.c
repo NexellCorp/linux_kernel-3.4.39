@@ -423,7 +423,7 @@ static int nxp_read_raw(struct iio_dev *indio_dev,
 		adcon  = __raw_readl(&reg->ADCCON) & ~(0x07 << ASEL_BITP) & ~(0x01 << ADEN_BITP);
 		adcon |= ch << ASEL_BITP;	// channel
 		__raw_writel(adcon, &reg->ADCCON);
-
+		dmb();
 		adcon |=  1 << ADEN_BITP;	// start
 		__raw_writel(adcon, &reg->ADCCON);
 		
@@ -437,7 +437,7 @@ static int nxp_read_raw(struct iio_dev *indio_dev,
 		//__raw_writel(0x80F9, &reg->ADCPRESCON);
 		//#endif
 		//__raw_writel(0x8180, &reg->ADCCON);
-
+		dmb();
 		while (wait > 0) {
 			if (__raw_readl(&reg->ADCINTCLR) & (1<<AICL_BITP)) {
 				__raw_writel(0x1, &reg->ADCINTCLR);	/* pending clear */
