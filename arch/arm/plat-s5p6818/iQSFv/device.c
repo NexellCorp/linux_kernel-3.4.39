@@ -617,15 +617,15 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port6 = {
 };
 
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port7 = {
-	.sda_pin	= I2C7_SDA,
-	.scl_pin	= I2C7_SCL,
+	.sda_pin	= I2C8_SDA,
+	.scl_pin	= I2C8_SCL,
 	.udelay		= I2CUDELAY(I2C7_CLK),				/* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
 	.timeout	= 10,
 };
 
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port8 = {
-	.sda_pin	= I2C8_SDA,
-	.scl_pin	= I2C8_SCL,
+	.sda_pin	= I2C7_SDA,
+	.scl_pin	= I2C7_SCL,
 	.udelay		= I2CUDELAY(I2C8_CLK),				/* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
 	.timeout	= 10,
 };
@@ -1191,15 +1191,15 @@ static struct regulator_consumer_supply mp8845c_vout_1[] = {
 };
 
 MP8845C_PDATA_INIT(vout, 0, 600000, 1500000, 1, 1, 1200000, 1, -1);	/* ARM */
-MP8845C_PDATA_INIT(vout, 1, 600000, 1500000, 1, 1, 1100000, 1, -1);	/* CORE */
+MP8845C_PDATA_INIT(vout, 1, 600000, 1500000, 1, 1, 1200000, 1, -1);	/* CORE */
 
 static struct mp8845c_platform_data __initdata mp8845c_platform[] = {
 	MP8845C_REGULATOR(0, vout, 0),
 	MP8845C_REGULATOR(1, vout, 1),
 };
 
-#define MP8845C_I2C_BUS0		(8)
-#define MP8845C_I2C_BUS1		(7)
+#define MP8845C_I2C_BUS0		(7)
+#define MP8845C_I2C_BUS1		(8)
 #define MP8845C_I2C_ADDR		(0x1c)
 
 static struct i2c_board_info __initdata mp8845c_regulators[] = {

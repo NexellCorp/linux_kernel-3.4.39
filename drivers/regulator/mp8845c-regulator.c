@@ -35,6 +35,104 @@ extern void (*nxp_board_reset)(char str, const char *cmd);
 static void (*backup_board_restart)(char str, const char *cmd) = NULL;
 static struct i2c_client *mp8845c_i2c_client = NULL;
 
+#if defined(CONFIG_PLAT_S5P6818_IQSFV)
+// #define FEATURE_ASV_CORE_TABLE
+#endif
+
+#ifdef FEATURE_ASV_CORE_TABLE
+#include <linux/clk.h>
+
+struct asv_core_tb_info {
+	int ids;
+	int ro;
+	int uV;
+};
+
+static struct asv_core_tb_info asv_core_tables[] = {
+#if 1 // REV0.3
+	[0] = {	.ids = 6,	.ro = 90,	.uV = 1200000, },
+	[1] = {	.ids = 15,	.ro = 130,	.uV = 1175000, },
+	[2] = {	.ids = 38,	.ro = 170,	.uV = 1150000, },
+	[3] = {	.ids = 78,	.ro = 200,	.uV = 1100000, },
+	[4] = {	.ids = 78,	.ro = 200,	.uV = 1050000, },
+#else // REV0.2
+	[0] = {	.ids = 6,	.ro = 80,	.uV = 1200000, },
+	[1] = {	.ids = 15,	.ro = 120,	.uV = 1175000, },
+	[2] = {	.ids = 38,	.ro = 160,	.uV = 1150000, },
+	[3] = {	.ids = 78,	.ro = 190,	.uV = 1100000, },
+	[4] = {	.ids = 78,	.ro = 190,	.uV = 1050000, },
+#endif
+};
+
+#define	ASV_CORE_ARRAY_SIZE	ARRAY_SIZE(asv_core_tables)
+
+
+extern void nxp_cpu_id_string(u32 string[12]);
+extern void nxp_cpu_id_ecid(u32 ecid[4]);
+
+static inline unsigned int MtoL(unsigned int data, int bits)
+{
+	unsigned int result = 0;
+	unsigned int mask = 1;
+	int i = 0;
+	for (i = 0; i<bits ; i++) {
+		if (data&(1<<i))
+			result |= mask<<(bits-i-1);
+	}
+	return result;
+}
+
+static void asv_core_setup(struct mp8845c_regulator *ri, struct mp8845c_regulator_platform_data *mp8845c_pdata)
+{
+	struct clk *clk = clk_get(NULL, "mpegbclk");
+	unsigned long clk_rate;
+	unsigned int ecid[4] = { 0, };
+	//unsigned int string[12] = { 0, };
+	int i, ids = 0, ro = 0;
+	int idslv, rolv, asvlv;
+
+	if(clk != NULL)
+	{
+		clk_rate = clk_get_rate(clk);
+		// if(clk_rate > 400000000)
+		{
+			//nxp_cpu_id_string(string);
+			nxp_cpu_id_ecid(ecid);
+
+			/* Use IDS/Ro */
+			ids = MtoL((ecid[1]>>16) & 0xFF, 8);
+			ro  = MtoL((ecid[1]>>24) & 0xFF, 8);
+
+			/* find IDS Level */
+			for (i=0; i<(ASV_CORE_ARRAY_SIZE-1); i++)
+			{
+				if (ids <= asv_core_tables[i].ids)
+					break;
+			}
+			idslv = ASV_CORE_ARRAY_SIZE != i ? i: (ASV_CORE_ARRAY_SIZE-1);
+
+			/* find RO Level */
+			for (i=0; i<(ASV_CORE_ARRAY_SIZE-1); i++)
+			{
+				if (ro <= asv_core_tables[i].ro)
+					break;
+			}
+			rolv = ASV_CORE_ARRAY_SIZE != i ? i: (ASV_CORE_ARRAY_SIZE-1);
+
+			/* find Lowest ASV Level */
+			asvlv = idslv > rolv ? rolv: idslv;
+
+			if(asvlv <= (ASV_CORE_ARRAY_SIZE-1))
+				mp8845c_pdata->init_uV = asv_core_tables[asvlv].uV;
+			
+			dev_info(ri->dev, "IDS(%dmA) RO(%d) ASV(%d) Vol(%duV) CLK(%luHz) \n", ids, ro, asvlv, mp8845c_pdata->init_uV, clk_rate);
+		}
+	}
+
+	return;
+}
+#endif
+
 static const int vout_uV_list[] = {
 	6000,    // 0
 	6067,    
@@ -516,6 +614,13 @@ static inline struct mp8845c_regulator *find_regulator_info(int id)
 static int mp8845c_regulator_preinit(struct mp8845c_regulator *ri, struct mp8845c_regulator_platform_data *mp8845c_pdata)
 {
 	int ret = 0;
+
+#ifdef FEATURE_ASV_CORE_TABLE
+	struct regulator_consumer_supply * temp = mp8845c_pdata->regulator.consumer_supplies;
+
+	if(!strcmp(temp->supply, "vdd_core_1.2V"))
+		asv_core_setup(ri, mp8845c_pdata);
+#endif
 
 	mp8845c_set_bits(ri->client, MP8845C_REG_SYSCNTL1, (1 << MP8845C_POS_MODE));
 
