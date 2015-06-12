@@ -353,6 +353,7 @@ struct stmmac_dma_ops {
 	void (*dma_diagnostic_fr) (void *data, struct stmmac_extra_stats *x,
 				   void __iomem *ioaddr);
 	void (*enable_dma_transmission) (void __iomem *ioaddr);
+	void (*enable_dma_receive) (void __iomem *ioaddr);	/* add by jhkim */
 	void (*enable_dma_irq) (void __iomem *ioaddr);
 	void (*disable_dma_irq) (void __iomem *ioaddr);
 	void (*start_tx) (void __iomem *ioaddr);

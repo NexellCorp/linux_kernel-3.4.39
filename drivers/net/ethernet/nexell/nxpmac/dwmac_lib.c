@@ -26,6 +26,12 @@
 
 #define GMAC_HI_REG_AE		0x80000000
 
+/* add by jhkim : prevent rx overflow */
+void dwmac_enable_dma_receive(void __iomem *ioaddr)
+{
+	writel(1, ioaddr + DMA_RCV_POLL_DEMAND);
+}
+
 /* CSR1 enables the transmit DMA to check for new descriptor */
 void dwmac_enable_dma_transmission(void __iomem *ioaddr)
 {
@@ -34,7 +40,8 @@ void dwmac_enable_dma_transmission(void __iomem *ioaddr)
 
 void dwmac_enable_dma_irq(void __iomem *ioaddr)
 {
-	writel(DMA_INTR_DEFAULT_MASK, ioaddr + DMA_INTR_ENA);
+	/* add by jhkim : add DMA_INTR_ENA_RUE to prevent rx overflow */
+	writel(DMA_INTR_DEFAULT_MASK | DMA_INTR_ENA_RUE, ioaddr + DMA_INTR_ENA);
 }
 
 void dwmac_disable_dma_irq(void __iomem *ioaddr)

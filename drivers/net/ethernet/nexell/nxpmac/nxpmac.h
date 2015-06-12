@@ -49,6 +49,7 @@ struct stmmac_priv {
 	int tx_coalesce;
 	int hwts_tx_en;
 	spinlock_t tx_lock;
+	spinlock_t rx_lock;	/* add by jhkim: to rx overflow */
 	bool tx_path_in_lpi_mode;
 	struct timer_list txtimer;
 
@@ -106,6 +107,8 @@ struct stmmac_priv {
 	u32 adv_ts;
 	int use_riwt;
 	spinlock_t ptp_lock;
+	struct work_struct rx_work; /* add by jhkim: to rx overflow */
+	int rx_unavail;	/* add by jhkim: to rx overflow */
 };
 
 extern int phyaddr;
