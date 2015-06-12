@@ -85,7 +85,7 @@ static int dma_txsize = DMA_TX_SIZE;
 module_param(dma_txsize, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(dma_txsize, "Number of descriptors in the TX list");
 
-#define DMA_RX_SIZE 256
+#define DMA_RX_SIZE 64
 static int dma_rxsize = DMA_RX_SIZE;
 module_param(dma_rxsize, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(dma_rxsize, "Number of descriptors in the RX list");
@@ -1494,11 +1494,12 @@ static void stmmac_dma_interrupt(struct stmmac_priv *priv)
 {
 	int status;
 	int rxovflow = (DMA_STATUS_RU & readl(priv->ioaddr + DMA_STATUS));
-
+	if (rxovflow)
+		pr_debug("RUE\n");
 	status = priv->hw->dma->dma_interrupt(priv->ioaddr, &priv->xstats);
 	if (likely((status & dwmac_handle_rx)) || (status & dwmac_handle_tx)) {
 		if (likely(napi_schedule_prep(&priv->napi))) {
-		//	stmmac_disable_dma_irq(priv); /* del by jhkim */
+			stmmac_disable_dma_irq(priv); /* del by jhkim */
 			__napi_schedule(&priv->napi);
 		}
 	}
