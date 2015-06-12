@@ -1494,8 +1494,7 @@ static void stmmac_dma_interrupt(struct stmmac_priv *priv)
 {
 	int status;
 	int rxovflow = (DMA_STATUS_RU & readl(priv->ioaddr + DMA_STATUS));
-	if (rxovflow)
-		pr_debug("RUE\n");
+
 	status = priv->hw->dma->dma_interrupt(priv->ioaddr, &priv->xstats);
 	if (likely((status & dwmac_handle_rx)) || (status & dwmac_handle_tx)) {
 		if (likely(napi_schedule_prep(&priv->napi))) {
