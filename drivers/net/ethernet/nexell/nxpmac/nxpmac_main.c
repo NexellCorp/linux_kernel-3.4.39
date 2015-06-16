@@ -85,7 +85,7 @@ static int dma_txsize = DMA_TX_SIZE;
 module_param(dma_txsize, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(dma_txsize, "Number of descriptors in the TX list");
 
-#define DMA_RX_SIZE 64
+#define DMA_RX_SIZE 256
 static int dma_rxsize = DMA_RX_SIZE;
 module_param(dma_rxsize, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(dma_rxsize, "Number of descriptors in the RX list");
@@ -134,6 +134,10 @@ static int stmmac_init_fs(struct net_device *dev);
 static void stmmac_exit_fs(void);
 #endif
 
+#define CONFIG_NXPMAC_MII_SYSFS
+#ifdef CONFIG_NXPMAC_MII_SYSFS
+struct phy_device *g_phydev = NULL;
+#endif
 #define STMMAC_COAL_TIMER(x) (jiffies + usecs_to_jiffies(x))
 
 /**
@@ -887,6 +891,10 @@ static int stmmac_init_phy(struct net_device *dev)
 		 " Link = %d\n", dev->name, phydev->phy_id, phydev->link);
 
 	priv->phydev = phydev;
+#ifdef CONFIG_NXPMAC_MII_SYSFS
+	g_phydev = phydev;
+#endif
+	//printk("  [%s] ... priv->phydev: %p\n", __func__, g_phydev);
 
 	return 0;
 }
@@ -1722,6 +1730,124 @@ static void stmmac_init_tx_coalesce(struct stmmac_priv *priv)
 	add_timer(&priv->txtimer);
 }
 
+#ifdef CONFIG_NXPMAC_MII_SYSFS
+#define MIIREG_NONE		99
+static unsigned int miireg = MIIREG_NONE;
+
+static ssize_t miireg_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	if (miireg == MIIREG_NONE)
+		return sprintf(buf, "-\n");
+	else
+		return sprintf(buf, "0x%x\n", miireg);
+}
+
+static ssize_t miireg_store(struct device *dev,
+			struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned long val;
+
+	int rc = kstrtoul(buf, 0, &val);
+	if (rc < 0)
+		return rc;
+
+	miireg = (uint32_t)val;
+
+	return n;
+}
+
+static ssize_t miidata_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	int data;
+
+	if (g_phydev == NULL)
+		return 0;
+	printk(" %s ... phydev: %p\n", __func__, g_phydev);
+
+	if (miireg == MIIREG_NONE)
+		return sprintf(buf, "-\n");
+
+	printk("phydev: %p\n", g_phydev);
+	data = phy_read(g_phydev, miireg);
+	//data = sys_mdio_read(phydev->bus, phydev->phy_id, miireg);
+
+	return sprintf(buf, "0x%x\n", data);
+}
+
+static ssize_t miidata_store(struct device *dev,
+			struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned long val;
+	int rc = kstrtoul(buf, 0, &val);
+	if (rc < 0)
+		return rc;
+
+	if (g_phydev == NULL)
+		return 0;
+	printk(" %s ... phydev: %p\n", __func__, g_phydev);
+
+	if (miireg == MIIREG_NONE)
+		return 0;
+
+	printk("  %s ... val: 0x%lx\n", __func__, val);
+
+	phy_write(g_phydev, miireg, (u16)val);
+	//sys_mdio_write(phydev->bus, phydev->phy_id, miireg, (u16)val);
+
+	return n;
+}
+
+
+
+#define MIIREG_ATTR_RW(type)	__ATTR(type, S_IRUGO | S_IWUSR, type##_show, type##_store)
+#define MIIREG_ATTR_RO(type)	__ATTR(type, S_IRUGO,           type##_show, type##_store)
+
+static struct device_attribute miireg_attr = MIIREG_ATTR_RW(miireg);
+static struct device_attribute miidata_attr = MIIREG_ATTR_RW(miidata);
+
+
+struct kobject *gmac_kobj;
+
+
+/* sys attribte group */
+static struct attribute *attrs[] = {
+	&miireg_attr.attr,
+	&miidata_attr.attr,
+	NULL,
+};
+
+static struct attribute_group attr_group = {
+		.attrs = (struct attribute **)attrs,
+};
+
+static int nxpmac_mii_sysfs(struct net_device *dev)
+{
+	struct stmmac_priv *priv = netdev_priv(dev);
+	int ret;
+
+	gmac_kobj = kobject_create_and_add("mii_phy", &priv->device->kobj);
+	if (!gmac_kobj) {
+		pr_err("%s: kobject create failed\n", __func__);
+		goto err_kobject_create;
+	}
+	ret = sysfs_create_group(gmac_kobj, &attr_group);
+	if (ret) {
+		pr_err("%s: sysfs create group failed\n", __func__);
+		goto err_group_create;
+	}
+
+	return 0;
+
+err_group_create:
+	kobject_del(gmac_kobj);
+err_kobject_create:
+	return -1;
+}
+#endif /* CONFIG_NXPMAC_MII_SYSFS */
+
+
 /**
  *  stmmac_open - open entry point of the driver
  *  @dev : pointer to the device structure.
@@ -1852,6 +1978,10 @@ static int stmmac_open(struct net_device *dev)
 
 	stmmac_init_tx_coalesce(priv);
 
+#ifdef CONFIG_NXPMAC_MII_SYSFS
+	nxpmac_mii_sysfs(dev);
+#endif
+
 	if ((priv->use_riwt) && (priv->hw->dma->rx_watchdog)) {
 		priv->rx_riwt = MAX_DMA_RIWT;
 		priv->hw->dma->rx_watchdog(priv->ioaddr, MAX_DMA_RIWT);
@@ -1931,6 +2061,10 @@ static int stmmac_release(struct net_device *dev)
 
 #ifdef CONFIG_NXPMAC_DEBUG_FS
 	stmmac_exit_fs();
+#endif
+
+#ifdef CONFIG_NXPMAC_MII_SYSFS
+	kobject_put(gmac_kobj);
 #endif
 
 #if 0	// remark by kook
