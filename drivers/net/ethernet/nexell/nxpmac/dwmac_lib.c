@@ -41,7 +41,7 @@ void dwmac_enable_dma_transmission(void __iomem *ioaddr)
 void dwmac_enable_dma_irq(void __iomem *ioaddr)
 {
 	/* add by jhkim : add DMA_INTR_ENA_RUE to prevent rx overflow */
-	writel(DMA_INTR_DEFAULT_MASK | DMA_INTR_ENA_RUE, ioaddr + DMA_INTR_ENA);
+	writel(DMA_INTR_DEFAULT_MASK, ioaddr + DMA_INTR_ENA);
 }
 
 void dwmac_disable_dma_irq(void __iomem *ioaddr)

@@ -107,8 +107,13 @@ struct stmmac_priv {
 	u32 adv_ts;
 	int use_riwt;
 	spinlock_t ptp_lock;
-	struct work_struct rx_work; /* add by jhkim: to rx overflow */
-	int rx_unavail;	/* add by jhkim: to rx overflow */
+	/* add by jhkim: to rx unavail */
+	struct kobject kobj;
+	int rx_unavail;
+	unsigned int *dma_rx_bitmap;
+	unsigned int *dma_tx_bitmap;
+	struct timer_list rxtimer;
+	u32 rx_unavail_timer;
 };
 
 extern int phyaddr;
