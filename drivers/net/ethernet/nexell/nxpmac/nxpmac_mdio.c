@@ -119,6 +119,8 @@ static int stmmac_mdio_write(struct mii_bus *bus, int phyaddr, int phyreg,
 	writel(phydata, priv->ioaddr + mii_data);
 	writel(value, priv->ioaddr + mii_address);
 
+	stmmac_mdio_read(bus, phyaddr, 0);		/* w/a write command pending problem */
+
 	/* Wait until any existing MII operation is complete */
 	return stmmac_mdio_busy_wait(priv->ioaddr, mii_address);
 }
