@@ -113,8 +113,10 @@ static CBOOL	SetDisplayMode( NX_DISPLAY_MODE *pDisMode )
 			bEmbeddedSync = CTRUE;
 	else	bEmbeddedSync = CFALSE;
 
+/*
 	if( bEmbeddedSync )
-		printk(KERN_INFO "[%s]DPC Format 655!!\n", __func__);
+		printk(KERN_INFO "[%s]DPC Format 656!!\n", __func__);
+*/
 
 	// Sync Delay?
 	if( bRGBMode )
@@ -353,6 +355,13 @@ static void _release_reset(void)
     NX_RSTCON_SetRST(RESETINDEX_OF_DISPLAYTOP_MODULE_i_HDMI_PHY_nRST   , 1);
 }
 
+static void _release_clk(int module)
+{
+	NX_DISPTOP_CLKGEN_SetBaseAddress(HDMI_CLKGEN, (U32)IO_ADDRESS(NX_DISPTOP_CLKGEN_GetPhysicalAddress(HDMI_CLKGEN)));
+	NX_DISPTOP_CLKGEN_SetClockDivisorEnable(HDMI_CLKGEN, CFALSE );	
+  NX_DPC_SetClockDivisorEnable(module, CFALSE);
+}
+
 static void _set_hdmi_clk_27MHz(void)
 {
     NX_HDMI_SetBaseAddress(0, (U32)IO_ADDRESS(NX_HDMI_GetPhysicalAddress(0)));
@@ -448,7 +457,7 @@ static void _mlc_set(int module, int width, int height)
 
     NX_MLC_SetScreenSize(module, width, height);
     NX_MLC_SetBackground(module, 0xFFFFFF);
-    NX_MLC_SetSRAMMODE(module, TOPMLC, SLEEPMODE);
+    
     NX_MLC_SetSRAMMODE(module, TOPMLC, RUN);
 
 #if 0
@@ -474,20 +483,18 @@ static void _mlc_set(int module, int width, int height)
 
 static void display_out_bt656(int module, int width, int height, int on)
 {
-    printk("[%s] module : %d, width : %d, hegiht : %d, Enable : %d\n", __func__, module, width, height, on);
+    /* printk("[%s] module : %d, width : %d, hegiht : %d, Enable : %d\n", __func__, module, width, height, on); */
 
     if (on) {
         _release_reset();
         _set_hdmi_clk_27MHz();
 			 	//dump_register_dpc(module);
-
         _dpc_clk_enable(module);
-        _mlc_set(module, width, height);
         _dpc_mode1();
         _mlc_set(module, width, height);
-
 				//dump_register_dpc(module);
     } else {
+			_release_clk(module);
     }
 }
 
@@ -497,7 +504,6 @@ static struct nxp_loopback_sensor _context;
 
 static int loopback_sensor_s_power(struct v4l2_subdev *sd, int on)
 {
-    printk("%s %d\n", __func__, on);
     return 0;
 }
 
@@ -505,7 +511,6 @@ static int loopback_sensor_s_stream(struct v4l2_subdev *sd, int enable)
 {
     struct nxp_loopback_sensor *me = v4l2_get_subdevdata(sd);
 
-    printk("%s %d\n", __func__, enable);
     display_out_bt656(me->dpc_module, me->width, me->height, enable);
 
     return 0;
@@ -517,7 +522,6 @@ static int loopback_sensor_s_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *
     struct nxp_loopback_sensor *me = v4l2_get_subdevdata(sd);
     me->width  = fmt->format.width;
     me->height = fmt->format.height;
-    printk("%s: %dx%d\n", __func__, me->width, me->height);
     return 0;
 }
 
@@ -581,8 +585,6 @@ void release_nxp_loopback_sensor(struct nxp_loopback_sensor *me)
 int register_nxp_loopback_sensor(struct nxp_loopback_sensor *me)
 {
 	int ret = 0;
-
-	printk("%s: start +++\n", __func__);
 
 	if( nxp_v4l2_get_v4l2_device() == NULL )
 		pr_err("%s: nxp_v4l2_get_v4l2_device() is null!!\n" , __func__);
