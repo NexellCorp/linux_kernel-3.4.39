@@ -353,6 +353,12 @@ static int nxp_tmu_triggers(struct nxp_tmu_platdata *plat, struct tmu_info *info
 	NX_TMU_ClearInterruptPendingAll(channel);
 	NX_TMU_SetP0IntEn(channel, temp_intr);
 
+	/* to check init temp */
+	for (i = 0; info->trigger_size > i; i++)
+		trig[i].triggered = 1;
+
+	schedule_delayed_work(&info->mon_work.work,msecs_to_jiffies(100));
+
 	return 0;
 }
 
@@ -456,7 +462,7 @@ static int nxp_tmu_suspend(struct platform_device *pdev, pm_message_t state)
 
 	mutex_lock(&info->mlock);
 	set_bit(STATE_SUSPEND_ENTER, &info->state);
-	
+
 	nxp_tmu_stop(info);
 	nxp_tmu_frequency(info->max_cpufreq);
 
