@@ -331,7 +331,8 @@ static int _hw_set_input_size(struct nxp_vin_clipper *me)
         NX_VIP_SetHVSync(module,
                 info->external_sync,
                 mbus_fmt->width*2,
-                mbus_fmt->height,
+                /*mbus_fmt->height,*/
+                info->interlace ? mbus_fmt->height >> 1 : mbus_fmt->height,
                 info->h_syncwidth,
                 info->h_frontporch,
                 info->h_backporch,
@@ -348,11 +349,14 @@ static int _hw_set_crop(struct nxp_vin_clipper *me)
     struct nxp_capture *parent = nxp_vin_to_parent(me);
     int module = parent->get_module_num(parent);
     struct v4l2_rect *c = &me->crop;
+    struct nxp_vin_platformdata *info = me->platdata;
 
     vmsg("%s: l(%d), t(%d), w(%d), h(%d)\n", __func__, c->left, c->top, c->width, c->height);
 
+    /*NX_VIP_SetClipRegion(module, c->left, c->top,*/
+            /*c->left + c->width, c->top + c->height);*/
     NX_VIP_SetClipRegion(module, c->left, c->top,
-            c->left + c->width, c->top + c->height);
+            c->left + c->width, info->interlace ? (c->top + c->height) >> 1 : c->top + c->height);
 
     return 0;
 }
@@ -486,6 +490,7 @@ static void _clear_buf(struct nxp_vin_clipper *me);
 /**
  * call back functions
  */
+#if 0
 static irqreturn_t clipper_irq_handler(void *data)
 {
     struct nxp_vin_clipper *me = data;
@@ -507,6 +512,46 @@ static irqreturn_t clipper_irq_handler(void *data)
 
     return IRQ_HANDLED;
 }
+#else
+static uint32_t _irq_count = 0;
+static irqreturn_t clipper_irq_handler(void *data)
+{
+    struct nxp_vin_clipper *me = data;
+
+    if (NXP_ATOMIC_READ(&me->state) & NXP_VIN_STATE_RUNNING_CLIPPER) {
+        bool interlace = me->platdata->interlace;
+        bool do_process = true;
+        if (interlace) {
+            _irq_count++;
+
+            if (_irq_count == 2) {
+                _irq_count = 0;
+            } else {
+                do_process = false;
+            }
+        }
+
+				/* printk("%s - do_process : %d, irq_count : %d\n", __func__, do_process, _irq_count); */
+
+        if (do_process) {
+            _done_buf(me, true);
+
+            if (NXP_ATOMIC_READ(&me->state) & NXP_VIN_STATE_STOPPING) {
+                struct nxp_capture *parent = nxp_vin_to_parent(me);
+               // printk("%s: real stop...\n", __func__);
+                parent->stop(parent, me);
+                _unregister_irq_handler(me);
+                _clear_buf(me);
+                complete(&me->stop_done);
+            } else {
+                _update_next_buffer(me);
+            }
+        }
+    }
+
+    return IRQ_HANDLED;
+}
+#endif
 
 static int clipper_buffer_queue(struct nxp_video_buffer *buf, void *me)
 {
@@ -1009,16 +1054,18 @@ static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
                     if (dst_width > c->width || dst_height > c->height) {
                         int deci_width = dst_width > c->width ? c->width : dst_width;
                         int deci_height = dst_height > c->height ? c->height : dst_height;
-                        pr_err("%s: Decimator wxh(%dx%d) is bigger than clipper(%dx%d)\n", __func__, dst_width, dst_height, c->width, c->height);
+
+                     	/*  printk("%s: Decimator wxh(%dx%d) is bigger than clipper(%dx%d)\n", __func__, dst_width, dst_height, c->width, c->height); */
+
                         /*while (!NX_VIP_GetInterruptPending(module, 1));*/
                         while (!NX_VIP_GetInterruptPendingAll(module));
                         /*printk("OD INT\n");*/
-                        printk("ALL INT\n");
+                        /* printk("ALL INT\n"); */
     #ifdef CONFIG_TURNAROUND_VIP_RESET
                         parent->backup_reset_restore_register(module);
     #endif
                         /*NX_VIP_SetDecimation(module, c->width, c->height, c->width, c->height);*/
-                        printk("set decimation: %d,%d --> %d,%d\n", c->width, c->height, YUV_YSTRIDE(deci_width-127), deci_height);
+                        /* printk("set decimation: %d,%d --> %d,%d\n", c->width, c->height, YUV_YSTRIDE(deci_width-127), deci_height); */
                         NX_VIP_SetDecimation(module, c->width, c->height, YUV_YSTRIDE(deci_width-127), deci_height);
     /*#ifdef CONFIG_TURNAROUND_VIP_RESET*/
                         /*NX_VIP_SetVIPEnable(module, CTRUE, CTRUE, CFALSE, CTRUE);*/

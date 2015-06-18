@@ -1210,12 +1210,53 @@ static void loopback_camera_setup_io(int module, bool force)
     pad = (u_int *)port;
     len = sizeof(port)/sizeof(port[0]);
 
-
     for (i = 0; i < len; i++) {
         io = *pad++;
         fn = *pad++;
         nxp_soc_gpio_set_io_dir(io, 0);
         nxp_soc_gpio_set_io_func(io, fn);
+    }
+}
+
+static bool is_tw9900_port_configured = false;
+static void tw9900_vin_setup_io(int module, bool force)
+{
+    printk(KERN_INFO "%s: module -> %d, force -> %d\n", __func__, module, ((force == true) ? 1 : 0));
+
+    if (!force && is_tw9900_port_configured)
+        return;
+    else {
+        u_int *pad;
+        int i, len;
+        u_int io, fn;
+
+        const u_int port[][2] = {
+            /* BT656 DATA */
+            //PCLK  
+            { PAD_GPIO_A + 28, NX_GPIO_PADFUNC_1 },
+            //DATA
+            { PAD_GPIO_A + 30, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  0, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  2, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  4, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  6, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  8, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
+
+        };
+
+        pad = (u_int *)port;
+        len = sizeof(port)/sizeof(port[0]);
+
+        for (i = 0; i < len; i++) {
+            io = *pad++;
+            fn = *pad++;
+            nxp_soc_gpio_set_io_dir(io, 0);
+            nxp_soc_gpio_set_io_func(io, fn);
+        }
+
+				is_tw9900_port_configured = true;
     }
 }
 
@@ -1235,13 +1276,78 @@ static int loopback_camera_power_enable(bool on)
         nxp_soc_gpio_set_io_func(loop_sel, nxp_soc_gpio_get_altnum(loop_sel));
         nxp_soc_gpio_set_out_value(loop_sel, 0);
     }
+    return 0;
+}
+
+static int tw9900_power_enable(bool on)
+{
+    if(on) 
+		{
+				unsigned int nMUX = 0;
+				unsigned int nIN = 0;
+				unsigned int nReset = 0;
+//				unsigned int nSCL = 0;
+//				unsigned int nSDA = 0;
+
+				/* U38 MUX Enable */
+				nMUX   = (PAD_GPIO_A + 3) | PAD_FUNC_ALT0;
+				nxp_soc_gpio_set_out_value(nMUX, 1); 
+				nxp_soc_gpio_set_io_dir(nMUX, 1); 
+				nxp_soc_gpio_set_io_func(nMUX, NX_GPIO_PADFUNC_0);
+				nxp_soc_gpio_set_out_value(nMUX, 1); 
+
+				/* tw9900 MUX Enable */
+				nIN    = (PAD_GPIO_C + 6) | PAD_FUNC_ALT0;
+				nxp_soc_gpio_set_out_value(nIN, 0); 
+				nxp_soc_gpio_set_io_dir(nIN, 1); 
+
+				printk(KERN_INFO "[%s] IO Function : %d\n", __func__, NX_GPIO_PADFUNC_0);
+
+				nxp_soc_gpio_set_io_func(nIN, NX_GPIO_PADFUNC_0);
+				mdelay(1);
+				nxp_soc_gpio_set_out_value(nIN, 0); 
+
+				/* tw9900 Reset */
+				nReset = (PAD_GPIO_A + 6) | PAD_FUNC_ALT0;
+				nxp_soc_gpio_set_out_value(nReset, 1); 
+				nxp_soc_gpio_set_io_dir(nReset, 1); 
+				nxp_soc_gpio_set_io_func(nReset, NX_GPIO_PADFUNC_0);
+				mdelay(1);
+
+				nxp_soc_gpio_set_out_value(nReset, 0); 
+				mdelay(10);
+
+				nxp_soc_gpio_set_out_value(nReset, 1); 
+				mdelay(100);
+
+				/* I2C Set  */
+#if 0
+				nSCL   = (PAD_GPIO_D + 4) | PAD_FUNC_ALT1;
+				nxp_soc_gpio_set_out_value(nSCL, 1); 
+				nxp_soc_gpio_set_io_dir(nSCL, 1); 
+
+				nSDA   = (PAD_GPIO_D + 5) | PAD_FUNC_ALT1;
+				nxp_soc_gpio_set_out_value(nSDA, 1); 
+				nxp_soc_gpio_set_io_dir(nSDA, 1); 
+#endif
+		}
 
     return 0;
 }
 
+static struct i2c_board_info tw9900_i2c_boardinfo[] = {
+    {
+			I2C_BOARD_INFO("tw9900", 0x44),
+    },
+};
+
 static struct nxp_v4l2_i2c_board_info sensor[] = {
 	{
 		.board_info 		= NULL,
+	},
+	{
+	    .board_info = &tw9900_i2c_boardinfo[0],
+    	.i2c_adapter_id = 1,
 	},
 };
 
@@ -1266,7 +1372,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .port           = 0,
             .data_order     = NXP_VIN_CBY0CRY1,
             .interlace      = false,
-						.clk_rate				=	24000000,
+						.clk_rate		=	24000000,
             .late_power_down = false,
             .power_enable   = loopback_camera_power_enable,
 						.set_clock			=	NULL,
@@ -1276,7 +1382,40 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 					.start_delay_ms	=	0,
 					.stop_delay_ms	=	0,
 				},
-    },
+   },
+#endif
+#if defined(CONFIG_VIDEO_TW9900)
+	 {
+				/* front_camera 656 interface */
+				.module = 1,
+				.sensor = &sensor[1],
+				.type = NXP_CAPTURE_INF_PARALLEL,
+				.parallel = {
+				.is_mipi        = false,
+				.external_sync  = false, //if external_sync is used(this means that value is true), 601 format else 656 form
+				.h_active       = 704,
+				.h_frontporch   = 7,
+				.h_syncwidth    = 1,
+				.h_backporch    = 10,
+				.v_active       = 480,
+				.v_frontporch   = 0,
+				.v_syncwidth    = 2,
+				.v_backporch    = 3,
+				.clock_invert   = true,
+				.port           = 0,
+				.data_order     = NXP_VIN_CBY0CRY1,
+				.interlace      = true,
+				.clk_rate       = 24000000,
+				.late_power_down = false,
+				.power_enable   = tw9900_power_enable,
+				.set_clock      = NULL,
+				.setup_io       = tw9900_vin_setup_io,
+		},
+		.deci = {
+			.start_delay_ms = 0,
+			.stop_delay_ms  = 0,
+		},
+  },
 #endif
 	{ 0, NULL, 0, },
 };
@@ -1287,6 +1426,12 @@ static struct platform_device loopback_camera_device = {
     .name			= "loopback-sensor",
 };
 #endif
+#endif
+
+#if defined(CONFIG_VIDEO_TW9900)
+static struct platform_device tw9900_device = {
+    .name			= "tw9900",
+};
 #endif
 
 /* out platformdata */
