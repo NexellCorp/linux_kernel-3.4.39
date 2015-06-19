@@ -16,11 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+#ifndef __S5P4418_ASV_H__
+#define __S5P4418_ASV_H__
 
 extern void nxp_cpu_id_ecid(u32 ecid[4]);
 extern void nxp_cpu_id_string(u32 string[12]);
-
-#if defined (CONFIG_ARCH_S5P4418)
 
 #define	CPU_ID_S5P4418		(0xE4418000)
 #define	VOLTAGE_STEP_UV		(12500)	/* 12.5 mV */
@@ -321,18 +321,14 @@ static int s5p4418_asv_current_label(char *buf)
 	return (s - buf);
 }
 
-static struct cpufreq_asv_ops asv_freq_ops = {
+static struct cpufreq_asv_ops asv_ops = {
 	.setup_table = s5p4418_asv_setup_table,
 	.get_voltage = s5p4418_asv_get_voltage,
 	.modify_vol_table = s5p4418_asv_modify_vol_table,
 	.current_label = s5p4418_asv_current_label,
 	.get_vol_margin = s5p4418_asv_get_vol_margin,
 };
-#else
-#define	FREQ_MAX_FREQ_KHZ	(1400*1000)
-#define	FREQ_ARRAY_SIZE		(11)
 
-static struct cpufreq_asv_ops asv_freq_ops = { };
 #endif
 
 

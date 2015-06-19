@@ -182,7 +182,7 @@ static int nxp_tmu_start(struct tmu_info *info)
 	u32 mode = 7;
 	int time = 1000;
 
-	NX_TMU_SetBaseAddress(channel, IO_ADDRESS(NX_TMU_GetPhysicalAddress(channel)));
+	NX_TMU_SetBaseAddress(channel, (void*)IO_ADDRESS(NX_TMU_GetPhysicalAddress(channel)));
 	NX_TMU_ClearInterruptPendingAll(channel);
 	NX_TMU_SetInterruptEnableAll(channel, CFALSE);
 
@@ -227,13 +227,13 @@ static inline void nxp_tmu_trim_ready(struct tmu_info *info)
 
 	while (count-- > 0) {
 	    // Program the measured data to e-fuse
-    	u32 val = readl(IO_ADDRESS((PHY_BASEADDR_TIEOFF_MODULE + (76*4))));
+    	u32 val = readl((void*)IO_ADDRESS((PHY_BASEADDR_TIEOFF_MODULE + (76*4))));
     	val = val | 0x3;
 
-    	writel(val, (u32*)IO_ADDRESS((PHY_BASEADDR_TIEOFF_MODULE + (76*4))));
+    	writel(val, (void*)IO_ADDRESS((PHY_BASEADDR_TIEOFF_MODULE + (76*4))));
 
     	// e-fuse Sensing Done. Check.
-    	val = readl((u32*)IO_ADDRESS((PHY_BASEADDR_TIEOFF_MODULE + (76*4))));
+    	val = readl((void*)IO_ADDRESS((PHY_BASEADDR_TIEOFF_MODULE + (76*4))));
     	done = (((val>>3) & 0x3) == 0x3);
     	if (done)
     		break;
@@ -353,6 +353,12 @@ static int nxp_tmu_triggers(struct nxp_tmu_platdata *plat, struct tmu_info *info
 	NX_TMU_ClearInterruptPendingAll(channel);
 	NX_TMU_SetP0IntEn(channel, temp_intr);
 
+	/* to check init temp */
+	for (i = 0; info->trigger_size > i; i++)
+		trig[i].triggered = 1;
+
+	schedule_delayed_work(&info->mon_work.work,msecs_to_jiffies(100));
+
 	return 0;
 }
 
@@ -456,7 +462,7 @@ static int nxp_tmu_suspend(struct platform_device *pdev, pm_message_t state)
 
 	mutex_lock(&info->mlock);
 	set_bit(STATE_SUSPEND_ENTER, &info->state);
-	
+
 	nxp_tmu_stop(info);
 	nxp_tmu_frequency(info->max_cpufreq);
 

@@ -188,7 +188,7 @@ int axp_chip_id_get(uint8_t chip_id[16])
     return ret;
 }
 EXPORT_SYMBOL_GPL(axp_chip_id_get);
-/*控制usb电压的开关，期望在外接usb host 充电时调用*/
+
 int axp_usbvol(void)
 {
 	axp_usbvolflag = 1;
@@ -211,46 +211,26 @@ int axp_usb_det(void)
 }
 EXPORT_SYMBOL_GPL(axp_usb_det);
 
-/*控制usb电流的开关，期望在外接usb host 充电时调用*/
 int axp_usbcur(void)
 {
     axp_usbcurflag = 1;
     return 0;
 }
 EXPORT_SYMBOL_GPL(axp_usbcur);
-/*控制usb电压的开关，期望在从usb host 拔出时调用*/
+
 int axp_usbvol_restore(void)
 {
  	axp_usbvolflag = 0;
     return 0;
 }
 EXPORT_SYMBOL_GPL(axp_usbvol_restore);
-/*控制usb电流的开关，期望在从usb host 拔出时调用*/
+
 int axp_usbcur_restore(void)
 {
 	axp_usbcurflag = 0;
     return 0;
 }
 EXPORT_SYMBOL_GPL(axp_usbcur_restore);
-
-int axp_otg_power_control(int enable)
-{
-	DBG_MSG("## [\e[31m%s\e[0m():%d] enable:%d\n", __func__, __LINE__, enable);
-
-	if (enable)
-	{
-		if (CFG_GPIO_OTG_VBUS_DET > -1)
-			gpio_set_value(CFG_GPIO_OTG_VBUS_DET, 1);
-	}
-	else
-	{
-		if (CFG_GPIO_OTG_VBUS_DET > -1)
-			gpio_set_value(CFG_GPIO_OTG_VBUS_DET, 0);
-	}
-
-	return 0;
-}
-EXPORT_SYMBOL_GPL(axp_otg_power_control);
 
 int axp_get_charging_state(void)
 {

@@ -180,7 +180,7 @@ static int __devinit nxp_ir_recv_probe(struct platform_device *pdev)
 	clk_enable(clk);
 
     NX_PPM_Initialize();
-    NX_PPM_SetBaseAddress(0, (U32)IO_ADDRESS(NX_PPM_GetPhysicalAddress(0)));
+    NX_PPM_SetBaseAddress(0, (void*)IO_ADDRESS(NX_PPM_GetPhysicalAddress(0)));
 
 //	NX_PPM_OpenModule(0);
 	nxp_dev = kzalloc(sizeof(struct nxp_rc_dev), GFP_KERNEL);

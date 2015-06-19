@@ -93,8 +93,6 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-//     { 1600000, 1340000, },
-//     { 1500000, 1280000, },
        { 1400000, 1240000, },
        { 1300000, 1180000, },
        { 1200000, 1140000, },
@@ -114,10 +112,6 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-//	.max_cpufreq    = 1200*1000,
-//	.max_retention  =   20*1000,
-//	.rest_cpufreq   =  400*1000,
-//	.rest_retention =    1*1000,
 };
 
 static struct platform_device dfs_plat_device = {
@@ -137,8 +131,8 @@ static struct platform_device dfs_plat_device = {
 struct nxp_tmu_trigger tmu_triggers[] = {
        {
                .trig_degree    =  85,
-               .trig_duration  =  100,
-               .trig_cpufreq   =  800*1000,    /* Khz */
+               .trig_duration  =  10,
+               .trig_cpufreq   =  400*1000,    /* Khz */
        },
 };
 
@@ -250,7 +244,7 @@ int  nxpmac_init(struct platform_device *pdev)
 	// Clock control
 	NX_CLKGEN_Initialize();
 	addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
-	NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (u32)IO_ADDRESS(addr) );
+	NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (void*)IO_ADDRESS(addr) );
 
 	NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 4);     // Sync mode for 100 & 10Base-T : External RX_clk
 	NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);    // Sync mode for 100 & 10Base-T
@@ -263,7 +257,7 @@ int  nxpmac_init(struct platform_device *pdev)
 	// Reset control
 	NX_RSTCON_Initialize();
 	addr = NX_RSTCON_GetPhysicalAddress();
-	NX_RSTCON_SetBaseAddress( (u32)IO_ADDRESS(addr) );
+	NX_RSTCON_SetBaseAddress( (void*)IO_ADDRESS(addr) );
 	NX_RSTCON_SetRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_NEGATE);
 	udelay(100);
 	NX_RSTCON_SetRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ASSERT);
@@ -670,6 +664,26 @@ static struct platform_device rt5631_dai = {
 	.id				= 0,
 	.dev			= {
 		.platform_data	= &i2s_dai_data,
+	}
+};
+#endif
+
+#if defined(CONFIG_SND_PDM_REC) || defined(CONFIG_SND_PDM_REC_MODULE)
+static struct platform_device pdm_recorder = {
+	.name	= "pdm-dit-recorder",
+	.id		= -1,
+};
+
+struct nxp_snd_dai_plat_data pdm_rec_dai_data = {
+	.sample_rate = 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
+};
+
+static struct platform_device pdm_rec_dai = {
+	.name	= "pdm-recorder",
+	.id		= -1,
+	.dev	= {
+		.platform_data	= &pdm_rec_dai_data,
 	}
 };
 #endif
@@ -1212,7 +1226,7 @@ static int front_camera_set_clock(ulong clk_rate)
 static int back_camera_set_clock(ulong clk_rate)
 {
 
-#if 0 //KEUN when OSC, doesn't stop front camera 
+#if 0 //KEUN when OSC, doesn't stop front camera
   	printk(KERN_INFO "%s: %d\n", __func__, (int)clk_rate);
     if (clk_rate > 0)
         nxp_soc_pwm_set_frequency(3, clk_rate, 50);
@@ -1325,7 +1339,7 @@ static int back_camera_power_enable(bool on)
 		nxp_soc_gpio_set_out_value(reset_io, 0);
 		mdelay(1);
 	}
-	
+
 	return 0;
 }
 
@@ -1359,7 +1373,7 @@ static int front_camera_power_enable(bool on)
   unsigned int reset_io = CFG_IO_CAMERA_FRONT_RESET;
   printk(KERN_INFO "%s: on %d\n", __func__, on);
 
-	if (on) 
+	if (on)
   {
     nxp_soc_gpio_set_io_dir(reset_io, 0);
     nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
@@ -1373,7 +1387,7 @@ static int front_camera_power_enable(bool on)
     nxp_soc_gpio_set_out_value(reset_io, 1);
     mdelay(1);
   }
-  else 
+  else
   {
     nxp_soc_gpio_set_out_value(reset_io, 0);
     mdelay(1);
@@ -1384,7 +1398,7 @@ static int front_camera_power_enable(bool on)
 
 static struct i2c_board_info front_camera_i2c_boardinfo[] = {
     {
-				I2C_BOARD_INFO("MT9D111", 0xBA>>1),			
+				I2C_BOARD_INFO("MT9D111", 0xBA>>1),
     },
 };
 
@@ -1481,7 +1495,7 @@ static struct i2c_board_info hdmi_edid_i2c_boardinfo = {
 
 static struct nxp_v4l2_i2c_board_info edid = {
     .board_info = &hdmi_edid_i2c_boardinfo,
-    .i2c_adapter_id = 0,
+    .i2c_adapter_id = 1,
 };
 
 static struct i2c_board_info hdmi_hdcp_i2c_boardinfo = {
@@ -1490,7 +1504,7 @@ static struct i2c_board_info hdmi_hdcp_i2c_boardinfo = {
 
 static struct nxp_v4l2_i2c_board_info hdcp = {
     .board_info = &hdmi_hdcp_i2c_boardinfo,
-    .i2c_adapter_id = 0,
+    .i2c_adapter_id = 1,
 };
 
 static void hdmi_set_int_external(int gpio)
@@ -1705,7 +1719,7 @@ static struct dw_mci_board _dwmci0_data = {
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH0_USE_DMA)
     .mode       	= DMA_MODE,
-#else   
+#else
     .mode      		= PIO_MODE,
 #endif
 };
@@ -1724,7 +1738,7 @@ static struct dw_mci_board _dwmci1_data = {
 	.get_cd			= _dwmci_get_cd,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
     .mode       	= DMA_MODE,
-#else   
+#else
     .mode       	= PIO_MODE,
 #endif
 };
@@ -1739,14 +1753,16 @@ static struct dw_mci_board _dwmci2_data = {
 	.bus_hz			= 50 * 1000 * 1000,
 	.caps			=  MMC_CAP_NONREMOVABLE |
 			 	  	   MMC_CAP_CMD23,
-				  	  
+
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 
+	.get_ro         = _dwmci_get_ro,
+	.get_cd			= _dwmci_get_cd,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
     .mode       	= DMA_MODE,
-#else   
+#else
     .mode       	= PIO_MODE,
 #endif
 
@@ -1939,6 +1955,12 @@ void __init nxp_board_devs_register(void)
 	printk("plat: add device asoc-rt5631\n");
 	i2c_register_board_info(RT5631_I2C_BUS, &rt5631_i2c_bdi, 1);
 	platform_device_register(&rt5631_dai);
+#endif
+
+#if defined(CONFIG_SND_PDM_REC) || defined(CONFIG_SND_PDM_REC_MODULE)
+	printk("plat: add device pdm capture\n");
+	platform_device_register(&pdm_recorder);
+	platform_device_register(&pdm_rec_dai);
 #endif
 
 #if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)

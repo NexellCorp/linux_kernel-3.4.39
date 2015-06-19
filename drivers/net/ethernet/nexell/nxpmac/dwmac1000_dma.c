@@ -189,6 +189,7 @@ const struct stmmac_dma_ops dwmac1000_dma_ops = {
 	.dump_regs = dwmac1000_dump_dma_regs,
 	.dma_mode = dwmac1000_dma_operation_mode,
 	.enable_dma_transmission = dwmac_enable_dma_transmission,
+	.enable_dma_receive = dwmac_enable_dma_receive, /* add by jhkim */
 	.enable_dma_irq = dwmac_enable_dma_irq,
 	.disable_dma_irq = dwmac_disable_dma_irq,
 	.start_tx = dwmac_dma_start_tx,

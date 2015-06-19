@@ -93,19 +93,17 @@ const u8 g_DispBusSI[3] = {
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
 static unsigned long dfs_freq_table[][2] = {
-     { 1600000, 1340000, },
-     { 1500000, 1280000, },
-       { 1400000, 1240000, },
-       { 1300000, 1180000, },
-       { 1200000, 1140000, },
-       { 1100000, 1100000, },
-       { 1000000, 1060000, },
-       {  900000, 1040000, },
-       {  800000, 1100000, },
-       {  700000, 1080000, },
-       {  600000, 1060000, },
-       {  500000, 1040000, },
-       {  400000, 1020000, },
+    { 1400000, 1240000, },
+	{ 1300000, 1180000, },
+	{ 1200000, 1140000, },
+	{ 1100000, 1100000, },
+	{ 1000000, 1060000, },
+	{  900000, 1040000, },
+	{  800000, 1000000, },
+	{  700000,  940000, },
+	{  600000,  940000, },
+	{  500000,  940000, },
+	{  400000,  940000, },
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
@@ -114,10 +112,6 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.supply_delay_us = 0,
 	.freq_table	   	= dfs_freq_table,
 	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-//	.max_cpufreq    = 1200*1000,
-//	.max_retention  =   20*1000,
-//	.rest_cpufreq   =  400*1000,
-//	.rest_retention =    1*1000,
 };
 
 static struct platform_device dfs_plat_device = {
@@ -208,62 +202,22 @@ int  nxpmac_init(struct platform_device *pdev)
 {
     u32 addr;
 
-#if defined (CONFIG_REALTEK_PHY_RTL8201)	// 20140515
-	// 100 & 10Base-T
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 7, 0 );        // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 8, 0 );        // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 9, 0 );        // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+10, 0 );        // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+11, 0 );        // PAD_GPIOE11,    GMAC0_PHY_TXEN
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+12, 3 );        // PAD_GPIOE12,    GMAC0_PHY_TXER
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+13, 3 );        // PAD_GPIOE13,    GMAC0_PHY_COL
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+14, 2 );        // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+15, 2 );        // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+16, 2 );        // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+17, 2 );        // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+18, 3 );        // PAD_GPIOE18,    GMAC0_RX_CLK
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+19, 3);        // PAD_GPIOE19,    GMAC0_PHY_RX_DV
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+20, 3 );        // PAD_GPIOE20,    GMAC0_GMII_MDC
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+21, 3 );        // PAD_GPIOE21,    GMAC0_GMII_MDI
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+22, 3 );        // PAD_GPIOE22,    GMAC0_PHY_RXER
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+23, 3 );        // PAD_GPIOE23,    GMAC0_PHY_CRS
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+24, 0 );        // PAD_GPIOE24,    GMAC0_GTX_CLK
-
-#else	// 1000Base-T
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  7), 3 );     // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  8), 3 );     // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  9), 3 );     // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 10), 3 );     // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 11), 3 );     // PAD_GPIOE11,    GMAC0_PHY_TXEN
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 14), 3 );     // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 15), 3 );     // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 16), 3 );     // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 17), 3 );     // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 18), 3 );     // PAD_GPIOE18,    GMAC0_RX_CLK
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 19), 3 );     // PAD_GPIOE19,    GMAC0_PHY_RX_DV
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 20), 3 );     // PAD_GPIOE20,    GMAC0_GMII_MDC
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 21), 3 );     // PAD_GPIOE21,    GMAC0_GMII_MDI
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 24), 3 );     // PAD_GPIOE24,    GMAC0_GTX_CLK
-#endif
-
-
 	// Clock control
 	NX_CLKGEN_Initialize();
 	addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
-	NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (u32)IO_ADDRESS(addr) );
+	NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (void*)IO_ADDRESS(addr) );
 
 	NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 4);     // Sync mode for 100 & 10Base-T : External RX_clk
 	NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);    // Sync mode for 100 & 10Base-T
 
 	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);    // TX Clk invert off : 100 & 10Base-T
-//	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CTRUE);     // TX clk invert on : 100 & 10Base-T
 
 	NX_CLKGEN_SetClockDivisorEnable( CLOCKINDEX_OF_DWC_GMAC_MODULE, CTRUE);
 
 	// Reset control
 	NX_RSTCON_Initialize();
 	addr = NX_RSTCON_GetPhysicalAddress();
-	NX_RSTCON_SetBaseAddress( (u32)IO_ADDRESS(addr) );
+	NX_RSTCON_SetBaseAddress( (void*)IO_ADDRESS(addr) );
 	NX_RSTCON_SetRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_NEGATE);
 	udelay(100);
 	NX_RSTCON_SetRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ASSERT);
@@ -281,7 +235,7 @@ int  nxpmac_init(struct platform_device *pdev)
 
     gpio_free(CFG_ETHER_GMAC_PHY_RST_NUM);
 
-     printk("NXP mac init ..................\n");
+	printk("NXP mac init ..................\n");
 	return 0;
 }
 
@@ -306,11 +260,11 @@ static struct stmmac_mdio_bus_data nxpmac0_mdio_bus = {
 
 static struct plat_stmmacenet_data nxpmac_plat_data = {
 #if defined (CONFIG_REALTEK_PHY_RTL8201)
-	.phy_addr = 3,  // 7 for 8211 3 for 8201
+	.phy_addr = 3,
     .clk_csr = 0xe,
     .speed = SPEED_100,
 #else
-    .phy_addr = 3,// 7 for 8211 3 for 8201
+    .phy_addr = 7,
     .clk_csr = 0x4, // PCLK 150~250 Mhz
     .speed = SPEED_1000,	// SPEED_1000
 #endif
@@ -610,21 +564,21 @@ static struct platform_device snd_null_dai = {
 //-------------------------------------
 static struct platform_device snd_null_1 = {
     .name = "snd-null",
-    .id = 1, 
+    .id = 1,
 };
 
 struct nxp_snd_dai_plat_data snd_null_dai_data_1 = {
-    .i2s_ch = 1, 
+    .i2s_ch = 1,
     .sample_rate = 48000,
     .pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
 };
 
 static struct platform_device snd_null_dai_1 = {
     .name = "snd-null-card",
-    .id = 1, 
+    .id = 1,
     .dev = {
     .platform_data = &snd_null_dai_data_1 ,
-    }    
+    }
 };
 
 
@@ -1226,89 +1180,71 @@ static struct platform_device mpegts_plat_device = {
 #include <mach/nxp-v4l2-platformdata.h>
 #include <mach/soc.h>
 
-static int front_camera_set_clock(ulong clk_rate)
+static void loopback_camera_setup_io(int module, bool force)
 {
-  	printk(KERN_INFO "%s: %d\n", __func__, (int)clk_rate);
+    u_int *pad;
+    int i, len;
+    u_int io, fn;
 
+    const u_int port[][2] = {
+        /* VCLK, HSYNC, VSYNC */
+        { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_E +  6, NX_GPIO_PADFUNC_1 },
+        /* DATA */
+        { PAD_GPIO_D + 28, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 29, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
+				/* BT565 DATA */
+        { PAD_GPIO_A +  8, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_A +  9, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_A + 10, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_A + 11, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_A + 12, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_A + 13, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_A + 14, NX_GPIO_PADFUNC_1 },
+        { PAD_GPIO_A + 15, NX_GPIO_PADFUNC_1 },
+    };
 
-    if (clk_rate > 0)
-        nxp_soc_pwm_set_frequency(1, clk_rate, 50);
-    else
-        nxp_soc_pwm_set_frequency(1, 0, 0);
-    msleep(1);
-    return 0;
+    pad = (u_int *)port;
+    len = sizeof(port)/sizeof(port[0]);
+
+    for (i = 0; i < len; i++) {
+        io = *pad++;
+        fn = *pad++;
+        nxp_soc_gpio_set_io_dir(io, 0);
+        nxp_soc_gpio_set_io_func(io, fn);
+    }
 }
 
-static int back_camera_set_clock(ulong clk_rate)
+static bool is_tw9900_port_configured = false;
+static void tw9900_vin_setup_io(int module, bool force)
 {
-  	printk(KERN_INFO "%s: %d\n", __func__, (int)clk_rate);
-    if (clk_rate > 0)
-        nxp_soc_pwm_set_frequency(3, clk_rate, 50);
-    else
-        nxp_soc_pwm_set_frequency(3, 0, 0);
-    msleep(1);
-    return 0;
-}
+    printk(KERN_INFO "%s: module -> %d, force -> %d\n", __func__, module, ((force == true) ? 1 : 0));
 
-static void back_vin_setup_io(int module, bool force)
-{
-    /* do nothing */
-}
-
-static bool is_camera_port_configured = false;
-static void front_camera_vin_setup_io(int module, bool force)
-{
-  	printk(KERN_INFO "%s: module -> %d, force -> %d\n", __func__, module, ((force == true) ? 1 : 0));
-
-    if (!force && is_camera_port_configured)
+    if (!force && is_tw9900_port_configured)
         return;
     else {
         u_int *pad;
         int i, len;
         u_int io, fn;
 
-
-        /* VIP0:0 = VCLK, VID0 ~ 7 */
         const u_int port[][2] = {
-#if 0 //vid 0
-            /* VCLK, HSYNC, VSYNC */
-            { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  6, NX_GPIO_PADFUNC_1 },
-            /* DATA */
-            { PAD_GPIO_D + 28, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 29, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
-#endif
-
-#if 0 //vid1
-             /* VCLK, HSYNC, VSYNC */
+            /* BT656 DATA */
+            //PCLK  
             { PAD_GPIO_A + 28, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E + 13, NX_GPIO_PADFUNC_2 },
-            { PAD_GPIO_E +  7, NX_GPIO_PADFUNC_2 },
-
-            { PAD_GPIO_A + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  0, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_B +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  4, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_B +  6, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  8, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
-#endif
-
-#if 1 //vid 2
-            /* VCLK, HSYNC, VSYNC */
-            { PAD_GPIO_C + 14, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 15, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 16, NX_GPIO_PADFUNC_3 },
-            /* DATA */
-            { PAD_GPIO_C + 17, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 18, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 19, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 20, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 21, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 22, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 23, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 24, NX_GPIO_PADFUNC_3 },
-#endif
+            //DATA
+            { PAD_GPIO_A + 30, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  0, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  2, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  4, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  6, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  8, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
 
         };
-
-        printk("%s\n", __func__);
 
         pad = (u_int *)port;
         len = sizeof(port)/sizeof(port[0]);
@@ -1320,353 +1256,182 @@ static void front_camera_vin_setup_io(int module, bool force)
             nxp_soc_gpio_set_io_func(io, fn);
         }
 
-        is_camera_port_configured = true;
+				is_tw9900_port_configured = true;
     }
 }
 
-static bool camera_power_enabled = false;
-static void camera_power_control(int enable)
+static int loopback_camera_power_enable(bool on)
 {
-    struct regulator *cam_io_28V = NULL;
-    struct regulator *cam_core_18V = NULL;
-
-  	printk(KERN_INFO "%s: enable -> %d\n", __func__, enable);
-
-    if (enable && camera_power_enabled)
-        return;
-    if (!enable && !camera_power_enabled)
-        return;
-
-    cam_core_18V = regulator_get(NULL, "vcam1_1.8V");
-    if (IS_ERR(cam_core_18V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for vcam1_1.8V", __func__);
-        return;
-    }
-
-    cam_io_28V = regulator_get(NULL, "vcam_2.8V");
-    if (IS_ERR(cam_io_28V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for vcam_2.8V", __func__);
-        return;
-    }
-
-    printk("%s: %d\n", __func__, enable);
-    if (enable) {
-        regulator_enable(cam_core_18V);
-        regulator_enable(cam_io_28V);
-    } else {
-        regulator_disable(cam_core_18V);
-        regulator_disable(cam_io_28V);
-    }
-
-    regulator_put(cam_io_28V);
-    regulator_put(cam_core_18V);
-
-    camera_power_enabled = enable ? true : false;
-}
-
-static bool is_back_camera_enabled = false;
-static bool is_back_camera_power_state_changed = false;
-static bool is_front_camera_enabled = false;
-static bool is_front_camera_power_state_changed = false;
-
-static int front_camera_power_enable(bool on);
-
-static int back_camera_power_enable(bool on)
-{
-#if 0
-    unsigned int io = CFG_IO_CAMERA_BACK_POWER_DOWN;
-#endif
-    unsigned int reset_io = CFG_IO_CAMERA_BACK_RESET;
-  	printk(KERN_INFO "%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
-
     if (on) {
-        front_camera_power_enable(0);
-        if (!is_back_camera_enabled) {
-            camera_power_control(1);
-						mdelay(100);
+        unsigned int nEnable = (PAD_GPIO_A + 21) | PAD_FUNC_ALT0;
+        unsigned int loop_sel = (PAD_GPIO_A + 22) | PAD_FUNC_ALT0;
 
+        nxp_soc_gpio_set_out_value(nEnable, 0);
+        nxp_soc_gpio_set_io_dir(nEnable, 1);
+        nxp_soc_gpio_set_io_func(nEnable, nxp_soc_gpio_get_altnum(nEnable));
+        nxp_soc_gpio_set_out_value(nEnable, 0);
+
+        nxp_soc_gpio_set_out_value(loop_sel, 0);
+        nxp_soc_gpio_set_io_dir(loop_sel, 1);
+        nxp_soc_gpio_set_io_func(loop_sel, nxp_soc_gpio_get_altnum(loop_sel));
+        nxp_soc_gpio_set_out_value(loop_sel, 0);
+    }
+    return 0;
+}
+
+static int tw9900_power_enable(bool on)
+{
+    if(on) 
+		{
+				unsigned int nMUX = 0;
+				unsigned int nIN = 0;
+				unsigned int nReset = 0;
+//				unsigned int nSCL = 0;
+//				unsigned int nSDA = 0;
+
+				/* U38 MUX Enable */
+				nMUX   = (PAD_GPIO_A + 3) | PAD_FUNC_ALT0;
+				nxp_soc_gpio_set_out_value(nMUX, 1); 
+				nxp_soc_gpio_set_io_dir(nMUX, 1); 
+				nxp_soc_gpio_set_io_func(nMUX, NX_GPIO_PADFUNC_0);
+				nxp_soc_gpio_set_out_value(nMUX, 1); 
+
+				/* tw9900 MUX Enable */
+				nIN    = (PAD_GPIO_C + 6) | PAD_FUNC_ALT0;
+				nxp_soc_gpio_set_out_value(nIN, 0); 
+				nxp_soc_gpio_set_io_dir(nIN, 1); 
+
+				printk(KERN_INFO "[%s] IO Function : %d\n", __func__, NX_GPIO_PADFUNC_0);
+
+				nxp_soc_gpio_set_io_func(nIN, NX_GPIO_PADFUNC_0);
+				mdelay(1);
+				nxp_soc_gpio_set_out_value(nIN, 0); 
+
+				/* tw9900 Reset */
+				nReset = (PAD_GPIO_A + 6) | PAD_FUNC_ALT0;
+				nxp_soc_gpio_set_out_value(nReset, 1); 
+				nxp_soc_gpio_set_io_dir(nReset, 1); 
+				nxp_soc_gpio_set_io_func(nReset, NX_GPIO_PADFUNC_0);
+				mdelay(1);
+
+				nxp_soc_gpio_set_out_value(nReset, 0); 
+				mdelay(10);
+
+				nxp_soc_gpio_set_out_value(nReset, 1); 
+				mdelay(100);
+
+				/* I2C Set  */
 #if 0
-            /* power enalbe & clk generration */
-            nxp_soc_gpio_set_out_value(io, 1);
-            nxp_soc_gpio_set_io_dir(io, 1);
-            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
+				nSCL   = (PAD_GPIO_D + 4) | PAD_FUNC_ALT1;
+				nxp_soc_gpio_set_out_value(nSCL, 1); 
+				nxp_soc_gpio_set_io_dir(nSCL, 1); 
+
+				nSDA   = (PAD_GPIO_D + 5) | PAD_FUNC_ALT1;
+				nxp_soc_gpio_set_out_value(nSDA, 1); 
+				nxp_soc_gpio_set_io_dir(nSDA, 1); 
 #endif
-
-            /* RST signal */
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            nxp_soc_gpio_set_io_dir(reset_io, 1);
-#if 1
-            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
-#endif
-            mdelay(1);
-
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-            mdelay(1);
-
-            is_back_camera_enabled = true;
-          	//is_back_camera_enabled = false;
-            is_back_camera_power_state_changed = true;
-        } else {
-            is_back_camera_power_state_changed = false;
-        }
-    } else {
-        if (is_back_camera_enabled) {
-            is_back_camera_enabled = false;
-            is_back_camera_power_state_changed = true;
-        } else {
-            is_back_camera_power_state_changed = false;
-        }
-
-        if (!(is_back_camera_enabled || is_front_camera_enabled)) {
-            camera_power_control(0);
-        }
-    }
+		}
 
     return 0;
 }
 
-static bool back_camera_power_state_changed(void)
-{
-  	printk(KERN_INFO "%s\n", __func__);
-
-    return is_back_camera_power_state_changed;
-}
-
-static struct i2c_board_info back_camera_i2c_boardinfo[] = {
+static struct i2c_board_info tw9900_i2c_boardinfo[] = {
     {
-				I2C_BOARD_INFO("S5K4ECGX", 0x5A>>1),
-    },
-};
-
-static int mipi_phy_enable(bool en)
-{
-    return 0;
-}
-
-struct nxp_mipi_csi_platformdata s5k4ecgx_plat_data = {
-    .module     = 0,
-    .clk_rate   = 27000000, // 27MHz
-    .lanes      = 4,
-    .alignment = 0,
-    .hs_settle  = 0,
-    .width      = 640,
-    .height     = 480,
-    .fixed_phy_vdd = false,
-    .irq        = 0, /* not used */
-    .base       = 0, /* not used */
-    .phy_enable = mipi_phy_enable
-};
-
-static int front_camera_power_enable(bool on)
-{
-  	unsigned int io = CFG_IO_CAMERA_FRONT_POWER_DOWN;
-    unsigned int reset_io = CFG_IO_CAMERA_FRONT_RESET;
-
-   printk(KERN_INFO "%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
-
-    if (on) {
-        back_camera_power_enable(0);
-        if (!is_front_camera_enabled) {
-            camera_power_control(1);
-						mdelay(100);
-
-            /* First RST signal to low */
-#if 1
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            nxp_soc_gpio_set_io_dir(reset_io, 1);
-            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
-            mdelay(1);
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-#else
-            nxp_soc_gpio_set_out_value(io, 0);
-            nxp_soc_gpio_set_io_dir(io, 1);
-            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-            mdelay(1);
-            nxp_soc_gpio_set_out_value(io, 1);
-#endif
-
-            is_front_camera_enabled = true;
-          	//is_front_camera_enabled = false;
-            is_front_camera_power_state_changed = true;
-        } else {
-            is_front_camera_power_state_changed = false;
-        }
-    } else {
-        if (is_front_camera_enabled) {
-            is_front_camera_enabled = false;
-            is_front_camera_power_state_changed = true;
-        } else {
-            is_front_camera_power_state_changed = false;
-        }
-        if (!(is_back_camera_enabled || is_front_camera_enabled)) {
-            camera_power_control(0);
-        }
-    }
-
-    return 0;
-}
-
-static bool front_camera_power_state_changed(void)
-{
-  	printk(KERN_INFO "%s\n", __func__);
-    return is_front_camera_power_state_changed;
-}
-
-static struct i2c_board_info front_camera_i2c_boardinfo[] = {
-    {
-				I2C_BOARD_INFO("S5K5CAGX", 0x78>>1),
+			I2C_BOARD_INFO("tw9900", 0x44),
     },
 };
 
 static struct nxp_v4l2_i2c_board_info sensor[] = {
-    {
-        .board_info = &back_camera_i2c_boardinfo[0],
-        .i2c_adapter_id = 1,
-    },
-    {
-        .board_info = &front_camera_i2c_boardinfo[0],
-        .i2c_adapter_id = 2,
-    },
-};
-
-#if 0
-static struct nxp_capture_platformdata capture_plat_data[] = {
-    {
-        /* back_camera 656 interface */
-        .module = 1,
-        .sensor = &sensor[0],
-				.type = NXP_CAPTURE_INF_CSI,
-				.parallel = {
-            .is_mipi        = true,
-            .external_sync  = true,
-            .h_active       = 640,
-            .h_frontporch   = 100,
-            .h_syncwidth    = 10,
-            .h_backporch    = 100,
-            .v_active       = 480,
-            .v_frontporch   = 1,
-            .v_syncwidth    = 1,
-            .v_backporch    = 1,
-            .clock_invert   = false,
-            .port           = NX_VIP_INPUTPORT_B,
-            .data_order     = NXP_VIN_CBY0CRY1,
-            .interlace      = false,
-            .clk_rate       = 27000000,
-            .late_power_down = false,
-            .power_enable   = back_camera_power_enable,
-            .set_clock      = back_camera_set_clock,
-            .setup_io       = back_vin_setup_io,
-        },
-        .deci = {
-            .start_delay_ms = 0,
-            .stop_delay_ms  = 0,
-        },
-        .csi = &s5k4ecgx_plat_data,
-    },
-    {
-        /* front_camera 601 interface */
-        .module = 0,
-        .sensor = &sensor[1],
-        .type = NXP_CAPTURE_INF_PARALLEL,
-				.parallel = {
-            .is_mipi        = false,
-            .external_sync  = false,
-            .h_active       = 640,
-            .h_frontporch   = 7,
-            .h_syncwidth    = 1,
-            /* .h_backporch    = 0, */
-            .h_backporch    = 10,
-            .v_active       = 480,
-            .v_frontporch   = 0,
-            .v_syncwidth    = 1,
-            .v_backporch    = 0,
-            .clock_invert   = true,
-            .port           = 1,
-            .data_order     = NXP_VIN_CBY0CRY1,
-            .interlace      = false,
-            .clk_rate       = 24000000,
-            .late_power_down = false,
-            .power_enable   = front_camera_power_enable,
-            .set_clock      = front_camera_set_clock,
-            .setup_io       = front_camera_vin_setup_io,
-        },
-				.deci = {
-            .start_delay_ms = 0,
-            .stop_delay_ms  = 0,
-        },
-    },
-    { 0, NULL, 0, },
-};
-#else
-static struct nxp_capture_platformdata capture_plat_data[] = {
 	{
-        /* front_camera 601 interface */
-        .module = 0,
-        .sensor = &sensor[1],
+		.board_info 		= NULL,
+	},
+	{
+	    .board_info = &tw9900_i2c_boardinfo[0],
+    	.i2c_adapter_id = 1,
+	},
+};
+
+static struct nxp_capture_platformdata capture_plat_data[] = {
+#if defined(CONFIG_LOOPBACK_SENSOR_DRIVER)
+	{
+        .module = 2,
+				.sensor = &sensor[0],
         .type = NXP_CAPTURE_INF_PARALLEL,
-				.parallel = {
+        .parallel = {
             .is_mipi        = false,
             .external_sync  = false,
-            .h_active       = 640,
+            .h_active       = 720,
             .h_frontporch   = 7,
             .h_syncwidth    = 1,
-            /* .h_backporch    = 0, */
             .h_backporch    = 10,
             .v_active       = 480,
             .v_frontporch   = 0,
             .v_syncwidth    = 1,
             .v_backporch    = 0,
-            .clock_invert   = true,
-            .port           = 1,
+						.clock_invert		=	true,
+            .port           = 0,
             .data_order     = NXP_VIN_CBY0CRY1,
             .interlace      = false,
-            .clk_rate       = 24000000,
+						.clk_rate		=	24000000,
             .late_power_down = false,
-            .power_enable   = front_camera_power_enable,
-            .set_clock      = front_camera_set_clock,
-            .setup_io       = front_camera_vin_setup_io,
+            .power_enable   = loopback_camera_power_enable,
+						.set_clock			=	NULL,
+            .setup_io       = loopback_camera_setup_io,
         },
-				.deci = {
-            .start_delay_ms = 0,
-            .stop_delay_ms  = 0,
-        },
-	},
-  {
-        /* back_camera 656 interface */
-        .module = 1,
-        .sensor = &sensor[0],
-				.type = NXP_CAPTURE_INF_CSI,
+				.deci	=	{
+					.start_delay_ms	=	0,
+					.stop_delay_ms	=	0,
+				},
+   },
+#endif
+#if defined(CONFIG_VIDEO_TW9900)
+	 {
+				/* front_camera 656 interface */
+				.module = 1,
+				.sensor = &sensor[1],
+				.type = NXP_CAPTURE_INF_PARALLEL,
 				.parallel = {
-            .is_mipi        = true,
-            .external_sync  = true,
-            .h_active       = 640,
-            .h_frontporch   = 100,
-            .h_syncwidth    = 10,
-            .h_backporch    = 100,
-            .v_active       = 480,
-            .v_frontporch   = 1,
-            .v_syncwidth    = 1,
-            .v_backporch    = 1,
-            .clock_invert   = false,
-            .port           = NX_VIP_INPUTPORT_B,
-            .data_order     = NXP_VIN_CBY0CRY1,
-            .interlace      = false,
-            .clk_rate       = 27000000,
-            .late_power_down = false,
-            .power_enable   = back_camera_power_enable,
-            .set_clock      = back_camera_set_clock,
-            .setup_io       = back_vin_setup_io,
-        },
-        .deci = {
-            .start_delay_ms = 0,
-            .stop_delay_ms  = 0,
-        },
-        .csi = &s5k4ecgx_plat_data,
-	},
-
+				.is_mipi        = false,
+				.external_sync  = false, //if external_sync is used(this means that value is true), 601 format else 656 form
+				.h_active       = 704,
+				.h_frontporch   = 7,
+				.h_syncwidth    = 1,
+				.h_backporch    = 10,
+				.v_active       = 480,
+				.v_frontporch   = 0,
+				.v_syncwidth    = 2,
+				.v_backporch    = 3,
+				.clock_invert   = true,
+				.port           = 0,
+				.data_order     = NXP_VIN_CBY0CRY1,
+				.interlace      = true,
+				.clk_rate       = 24000000,
+				.late_power_down = false,
+				.power_enable   = tw9900_power_enable,
+				.set_clock      = NULL,
+				.setup_io       = tw9900_vin_setup_io,
+		},
+		.deci = {
+			.start_delay_ms = 0,
+			.stop_delay_ms  = 0,
+		},
+  },
+#endif
 	{ 0, NULL, 0, },
 };
 
+#if defined(CONFIG_LOOPBACK_SENSOR_DRIVER)
+#if 0
+static struct platform_device loopback_camera_device = {
+    .name			= "loopback-sensor",
+};
+#endif
+#endif
+
+#if defined(CONFIG_VIDEO_TW9900)
+static struct platform_device tw9900_device = {
+    .name			= "tw9900",
+};
 #endif
 
 /* out platformdata */
@@ -1823,8 +1588,8 @@ static struct s3c64xx_spi_csinfo spi2_csi[] = {
         .line       = CFG_SPI2_CS,
         .set_level  = gpio_set_value,
         .fb_delay   = 0x2,
-		//.hierarchy = SSP_SLAVE,
-		.hierarchy = SSP_MASTER,
+		.hierarchy = SSP_SLAVE,
+		//.hierarchy = SSP_MASTER,
     },
 };
 struct spi_board_info spi2_board_info[] __initdata = {
@@ -1876,10 +1641,6 @@ static int _dwmci0_init(u32 slot_id, irq_handler_t handler, void *data)
 	return 0;
 }
 
-static int _dwmci_get_cd(u32 slot_id)
-{
-	return 0;
-}
 static int _dwmci0_get_cd(u32 slot_id)
 {
 	int io = CFG_SDMMC0_DETECT_IO;
@@ -1900,7 +1661,7 @@ static struct dw_mci_board _dwmci0_data = {
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH0_USE_DMA)
     .mode       	= DMA_MODE,
-#else   
+#else
     .mode      		= PIO_MODE,
 #endif
 };
@@ -1944,7 +1705,7 @@ static struct dw_mci_board _dwmci1_data = {
 	.detect_delay_ms= 200,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
     .mode       	= DMA_MODE,
-#else   
+#else
     .mode       	= PIO_MODE,
 #endif
 };
@@ -1972,7 +1733,7 @@ static int _dwmci2_get_cd(u32 slot_id)
 	return nxp_soc_gpio_get_in_value(io);
 }
 static struct dw_mci_board _dwmci2_data = {
-    .quirks			= DW_MCI_QUIRK_HIGHSPEED, 
+    .quirks			= DW_MCI_QUIRK_HIGHSPEED,
 	.bus_hz			= 50 * 1000 * 1000,
 	.caps			=  MMC_CAP_CMD23,
 	.desc_sz		= 4,
@@ -1986,7 +1747,7 @@ static struct dw_mci_board _dwmci2_data = {
 	.detect_delay_ms= 200,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
     .mode       	= DMA_MODE,
-#else   
+#else
     .mode       	= PIO_MODE,
 #endif
 
@@ -2211,6 +1972,13 @@ void __init nxp_board_devs_register(void)
 #if defined(CONFIG_NXP_HDMI_CEC)
     printk("plat: add device hdmi-cec\n");
     platform_device_register(&hdmi_cec_device);
+#endif
+
+#if defined(CONFIG_LOOPBACK_SENSOR_DRIVER)
+#if 0
+    printk("plat: add device loopback-sensor\n");
+    platform_device_register(&loopback_camera_device);
+#endif
 #endif
 
 #if 0//defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)

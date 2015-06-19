@@ -153,7 +153,7 @@ do {							\
 static int nxp_wdt_keepalive(struct watchdog_device *wdd)
 {
 	spin_lock(&wdt_lock);
-        writel(0, NXP_WTCLRINT);
+    writel(0, NXP_WTCLRINT);
 	writel(wdt_count, NXP_WTCNT);
 	spin_unlock(&wdt_lock);
 
@@ -167,7 +167,7 @@ static void __nxp_wdt_stop(void)
 	wtcon = readl(NXP_WTCON);
 	wtcon &= ~(NXP_WTCON_ENABLE | NXP_WTCON_RSTEN);
 	writel(wtcon, NXP_WTCON);
-        writel(0, NXP_WTCLRINT);
+    writel(0, NXP_WTCLRINT);
 }
 
 static int nxp_wdt_stop(struct watchdog_device *wdd)

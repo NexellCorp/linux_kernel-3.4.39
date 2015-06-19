@@ -309,7 +309,7 @@ static void suspend_cores(suspend_state_t stat)
 
 #if !defined (CONFIG_S5P4418_PM_IDLE)
 		if (SUSPEND_SUSPEND == stat) {
-			NX_RSTCON_SetBaseAddress(IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
+			NX_RSTCON_SetBaseAddress((void*)IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
 			NX_RSTCON_SetnRST(reset, RSTCON_nDISABLE);
 
 			NX_TIEOFF_Set(clamp, 1);
@@ -428,7 +428,7 @@ static void suspend_l2cache(suspend_state_t stat)
 		pl2c->filter_end = readl_relaxed(base + L2X0_ADDR_FILTER_END);
 		pl2c->pwr_ctrl = readl_relaxed(base + L2X0_POWER_CTRL);
 		pl2c->aux_ctrl = readl_relaxed(base + L2X0_AUX_CTRL);
-		pl2c->tieoff = readl_relaxed(IO_ADDRESS(PHY_BASEADDR_TIEOFF));
+		pl2c->tieoff = readl_relaxed((void*)IO_ADDRESS(PHY_BASEADDR_TIEOFF));
 		pl2c->l2x0_way_mask = pl2c->aux_ctrl & (1 << 16) ? (1 << 16) - 1 : (1 << 8) - 1 ;
 	} else {
 		int i = 0, lockregs = 8;
@@ -437,7 +437,7 @@ static void suspend_l2cache(suspend_state_t stat)
 			return;
 
 		/* TIEOFF */
-		writel_relaxed(pl2c->tieoff|0x3000, IO_ADDRESS(PHY_BASEADDR_TIEOFF));
+		writel_relaxed(pl2c->tieoff|0x3000, (void*)IO_ADDRESS(PHY_BASEADDR_TIEOFF));
 
 		/* restore */
 		writel_relaxed(pl2c->tag_latency, (base + L2X0_TAG_LATENCY_CTRL));

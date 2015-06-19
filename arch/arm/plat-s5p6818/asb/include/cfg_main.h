@@ -67,8 +67,8 @@
 #define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_C + 12)
 #else
  /*for rtl8211*/
-#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				(IRQ_GPIO_A_START + 9)
-#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_A + 10)
+#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				(IRQ_GPIO_E_START + 23)
+#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_C + 28)
 #endif
 
 /*------------------------------------------------------------------------------

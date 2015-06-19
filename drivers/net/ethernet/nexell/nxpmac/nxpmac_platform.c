@@ -28,6 +28,10 @@
 #include <linux/of_net.h>
 #include "nxpmac.h"
 
+#include <mach/platform.h>
+#include <mach/devices.h>
+#include <mach/soc.h>
+
 #ifdef CONFIG_OF
 static int stmmac_probe_config_dt(struct platform_device *pdev,
 				  struct plat_stmmacenet_data *plat,
@@ -295,7 +299,10 @@ struct platform_driver stmmac_pltfr_driver = {
 	.driver = {
 		   .name = NXPMAC_RESOURCE_NAME,
 		   .owner = THIS_MODULE,
-	//	   .pm = &stmmac_pltfr_pm_ops,
+#ifdef CFG_ETHER_LOOPBACK_MODE
+#else
+		   .pm = &stmmac_pltfr_pm_ops,
+#endif
 		   .of_match_table = of_match_ptr(stmmac_dt_ids),
 		   },
 };
