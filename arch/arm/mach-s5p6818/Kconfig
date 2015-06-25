@@ -117,6 +117,10 @@ config ANDROID_PERSISTENT_RAM_CONS_SIZE
     depends on ANDROID_RAM_CONSOLE
     default 16
 
+config DEFERRED_INIT_CALL
+	bool "Enable deferred_init_call"
+	default n
+
 source "arch/arm/plat-s5p6818/Kconfig"
 
 

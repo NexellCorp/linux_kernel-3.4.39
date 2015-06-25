@@ -1450,6 +1450,8 @@ int mmc_attach_mmc(struct mmc_host *host)
 	BUG_ON(!host);
 	WARN_ON(!host->claimed);
 
+    // psw0523 debugging
+    printk("==================> %s entered\n", __func__);
 	/* Set correct bus mode for MMC before attempting attach */
 	if (!mmc_host_is_spi(host))
 		mmc_set_bus_mode(host, MMC_BUSMODE_OPENDRAIN);
@@ -1505,6 +1507,7 @@ int mmc_attach_mmc(struct mmc_host *host)
 	if (err)
 		goto remove_card;
 
+    printk("==================> %s exit\n", __func__);
 	return 0;
 
 remove_card:

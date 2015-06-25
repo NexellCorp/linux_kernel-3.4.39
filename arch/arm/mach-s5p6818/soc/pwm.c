@@ -29,9 +29,9 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-/*
+
 #define	pr_debug	printk
-*/
+
 
 /*
  *	CLK In / TCNT = Frequency
@@ -208,10 +208,14 @@ static void pwm_set_device(struct pwm_device *pwm)
 	pr_debug("%s (ch:%d, rate:%ld, pwm_hz:%ld, count:%u, cmp:%u, tmux:%u)\n",
 	 	__func__, ch, pwm->rate, pwm->pwm_hz, pwm->counter, pwm->compare, tmux);
 
+    // psw0523 test
+    if (ch == 0)
+        return;
+
 	_LOCK_(ch);
 
-	/* for wakeup */
-	PWM_RESET();
+     /*for wakeup*/
+    PWM_RESET();
 
 	if (pwm->counter == pwm->compare || 0 == pwm->compare) {
 		nxp_soc_gpio_set_out_value(pwm->io, (0 == pwm->compare ? 0 : 1));

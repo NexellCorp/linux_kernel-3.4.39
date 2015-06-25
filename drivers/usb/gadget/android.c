@@ -53,7 +53,9 @@
 #include "u_serial.c"
 #include "f_acm.c"
 #include "f_adb.c"
+#if 0
 #include "f_mtp.c"
+#endif
 #include "f_accessory.c"
 #define USB_ETH_RNDIS y
 #include "f_rndis.c"
@@ -552,6 +554,7 @@ static struct android_usb_function acm_function = {
 };
 
 
+#if 0
 static int
 mtp_function_init(struct android_usb_function *f,
 		struct usb_composite_dev *cdev)
@@ -613,6 +616,7 @@ static struct android_usb_function ptp_function = {
 	.cleanup	= ptp_function_cleanup,
 	.bind_config	= ptp_function_bind_config,
 };
+#endif
 
 
 struct rndis_function_config {
@@ -992,8 +996,10 @@ static struct android_usb_function *supported_functions[] = {
 #endif
 	&adb_function,
 	&acm_function,
+#if 0
 	&mtp_function,
 	&ptp_function,
+#endif
 	&rndis_function,
 	&mass_storage_function,
 	&accessory_function,
@@ -1563,7 +1569,11 @@ static int __init init(void)
 
 	return usb_composite_probe(&android_usb_driver, android_bind);
 }
+/*#ifdef CONFIG_DEFERRED_INIT_CALL*/
+/*deferred_module_init(init);*/
+/*#else*/
 module_init(init);
+/*#endif*/
 
 static void __exit cleanup(void)
 {

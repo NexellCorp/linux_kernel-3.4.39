@@ -474,7 +474,7 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
         } else {
             NX_VIP_SetVIPEnable(me->module, CFALSE, CFALSE, CFALSE, CFALSE);
         }
-        /*dump_register(me->module);*/
+        dump_register(me->module);
 
         me->clip_enable = clip_enable;
         me->deci_enable = deci_enable;
@@ -695,7 +695,7 @@ static struct v4l2_subdev *_register_sensor(struct nxp_capture *me,
 
     static int sensor_index = 0;
 
-	
+
     if (board_info && board_info->board_info) {
         adapter = i2c_get_adapter(board_info->i2c_adapter_id);
         if (!adapter) {

@@ -128,7 +128,8 @@ static void __exit dw_mci_exit(void)
 	platform_driver_unregister(&dw_mci_pltfm_driver);
 }
 
-module_init(dw_mci_init);
+//module_init(dw_mci_init);
+subsys_initcall(dw_mci_init);
 module_exit(dw_mci_exit);
 
 MODULE_DESCRIPTION("DW Multimedia Card Interface driver");

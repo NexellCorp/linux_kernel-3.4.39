@@ -32,6 +32,12 @@
 
 #include <linux/timer.h>
 
+
+#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+extern bool is_backward_camera_on(void);
+extern void backward_camera_remove(void);
+#endif
+
 #ifdef DEBUG_SYNC
 #define DEBUG_SYNC_TIMEOUT_MS   (1000)
 #endif
@@ -920,7 +926,9 @@ static int nxp_vin_clipper_s_power(struct v4l2_subdev *sd, int on)
     if (on) {
         if (me->platdata->setup_io)
             me->platdata->setup_io(module, false);
+#ifndef CONFIG_SLSIAP_BACKWARD_CAMERA
         _hw_set_clock(me, true);
+#endif
         ret = v4l2_subdev_call(remote_source, core, s_power, 1);
     } else {
         _disable_all(me);
@@ -972,6 +980,15 @@ static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
                 }
             }
         }
+#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+#if 0
+        while (is_backward_camera_on()) {
+            printk("wait backward camera stopping...\n");
+            schedule_timeout_interruptible(HZ/5);
+        }
+        backward_camera_remove();
+#endif
+#endif
         _configure(me, enable);
         if (is_host_video) {
             ret = _register_irq_handler(me);

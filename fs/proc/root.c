@@ -156,6 +156,26 @@ static struct file_system_type proc_fs_type = {
 	.kill_sb	= proc_kill_sb,
 };
 
+// psw0523 add for deferred_initcall patch
+#ifdef CONFIG_DEFERRED_INIT_CALL
+extern void do_deferred_initcalls(void);
+
+static ssize_t deferred_initcalls_write_proc(struct file *file, const char __user *buf,
+        size_t nbytes, loff_t *ppos)
+{
+    static int deferred_initcalls_done = 0;
+    if (!deferred_initcalls_done) {
+        do_deferred_initcalls();
+        deferred_initcalls_done = 1;
+    }
+    return nbytes;
+}
+
+static const struct file_operations deferred_initcalls_fops = {
+    .write           = deferred_initcalls_write_proc,
+};
+#endif
+
 void __init proc_root_init(void)
 {
 	int err;
@@ -169,6 +189,10 @@ void __init proc_root_init(void)
 		unregister_filesystem(&proc_fs_type);
 		return;
 	}
+
+#ifdef CONFIG_DEFERRED_INIT_CALL
+    proc_create("deferred_initcalls", 0, NULL, &deferred_initcalls_fops);
+#endif
 
 	proc_symlink("mounts", NULL, "self/mounts");
 
@@ -205,7 +229,7 @@ static struct dentry *proc_root_lookup(struct inode * dir, struct dentry * dentr
 	if (!proc_lookup(dir, dentry, nd)) {
 		return NULL;
 	}
-	
+
 	return proc_pid_lookup(dir, dentry, nd);
 }
 
@@ -249,12 +273,12 @@ static const struct inode_operations proc_root_inode_operations = {
  * This is the root "inode" in the /proc tree..
  */
 struct proc_dir_entry proc_root = {
-	.low_ino	= PROC_ROOT_INO, 
-	.namelen	= 5, 
-	.mode		= S_IFDIR | S_IRUGO | S_IXUGO, 
-	.nlink		= 2, 
+	.low_ino	= PROC_ROOT_INO,
+	.namelen	= 5,
+	.mode		= S_IFDIR | S_IRUGO | S_IXUGO,
+	.nlink		= 2,
 	.count		= ATOMIC_INIT(1),
-	.proc_iops	= &proc_root_inode_operations, 
+	.proc_iops	= &proc_root_inode_operations,
 	.proc_fops	= &proc_root_operations,
 	.parent		= &proc_root,
 	.name		= "/proc",

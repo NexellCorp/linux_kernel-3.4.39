@@ -17,7 +17,7 @@
  * fixed by swpark@nexell.co.kr for compatibility with general v4l2 layer (not using soc camera interface)
  */
 
-//Suruibin 2015-04-03 V1.0 ae 
+//Suruibin 2015-04-03 V1.0 ae
 
 #include <linux/init.h>
 #include <linux/module.h>
@@ -1451,6 +1451,7 @@ static int sp2518_write_array(struct i2c_client *client, const struct regval_lis
 {
     int ret;
     while (vals->reg_num != 0xff) {
+        /*printk("{0x%02x, 0x%02x},\n", vals->reg_num, vals->value);*/
         ret = i2c_smbus_write_byte_data(client, vals->reg_num, vals->value);
         if (ret < 0)
             return ret;
@@ -2082,7 +2083,7 @@ static int sp2518_g_chip_ident(struct v4l2_subdev *sd, struct v4l2_dbg_chip_iden
 static int sp2518_s_power(struct v4l2_subdev *sd, int on)
 {
     /* used when suspending */
-    /* printk("%s: on %d\n", __func__, on); */
+     printk("%s: on %d\n", __func__, on);
     if (!on) {
         struct sp2518_priv *priv = to_priv(sd);
         priv->initialized = false;

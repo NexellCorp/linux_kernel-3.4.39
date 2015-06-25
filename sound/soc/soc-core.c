@@ -1617,15 +1617,37 @@ card_probe_error:
 	mutex_unlock(&card->mutex);
 }
 
+// psw0523 test
+#if 1
+#include <linux/kthread.h>
+static int _card_instantiate(void *data)
+{
+    struct snd_soc_card *card = data;
+    msleep(1000);
+    printk("%s entered\n", __func__);
+    snd_soc_instantiate_card(card);
+    printk("%s exit\n", __func__);
+    return 0;
+}
+#endif
 /*
  * Attempt to initialise any uninitialised cards.  Must be called with
  * client_mutex.
  */
 static void snd_soc_instantiate_cards(void)
 {
+#if 0
 	struct snd_soc_card *card;
 	list_for_each_entry(card, &card_list, list)
 		snd_soc_instantiate_card(card);
+#else
+    if (!list_empty(&card_list)) {
+        struct snd_soc_card *card = list_first_entry(&card_list, struct snd_soc_card, list);
+        /*printk("%s: start card_instantiate\n", __func__);*/
+        kthread_run(_card_instantiate, card, "card_instantiate");
+        /*printk("%s exit\n", __func__);*/
+    }
+#endif
 }
 
 /* probes a new socdev */
