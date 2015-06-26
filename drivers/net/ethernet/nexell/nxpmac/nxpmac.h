@@ -114,6 +114,7 @@ struct stmmac_priv {
 	unsigned int *dma_tx_bitmap;
 	struct timer_list rxtimer;
 	u32 rx_unavail_timer;
+	int dma_desc_size;
 };
 
 extern int phyaddr;

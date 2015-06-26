@@ -38,56 +38,6 @@
 #endif
 
 /*------------------------------------------------------------------------------
- * BUS Configure
- */
-#if (CFG_BUS_RECONFIG_ENB == 1)
-#include <mach/s5p6818_bus.h>
-
-const u16 g_DrexQoS[2] = {
-	0x100,		// S0
-	0xFFF		// S1, Default value
-};
-
-const u8 g_TopBusSI[8] = {
-	TOPBUS_SI_SLOT_DMAC0,
-	TOPBUS_SI_SLOT_USBOTG,
-	TOPBUS_SI_SLOT_USBHOST0,
-	TOPBUS_SI_SLOT_DMAC1,
-	TOPBUS_SI_SLOT_SDMMC,
-	TOPBUS_SI_SLOT_USBOTG,
-	TOPBUS_SI_SLOT_USBHOST1,
-	TOPBUS_SI_SLOT_USBOTG
-};
-
-const u8 g_BottomBusSI[8] = {
-	BOTBUS_SI_SLOT_1ST_ARM,
-	BOTBUS_SI_SLOT_MALI,
-	BOTBUS_SI_SLOT_DEINTERLACE,
-	BOTBUS_SI_SLOT_1ST_CODA,
-	BOTBUS_SI_SLOT_2ND_ARM,
-	BOTBUS_SI_SLOT_SCALER,
-	BOTBUS_SI_SLOT_TOP,
-	BOTBUS_SI_SLOT_2ND_CODA
-};
-
-const u8 g_BottomQoSSI[2] = {
-	1,	// Tidemark
-	(1<<BOTBUS_SI_SLOT_1ST_ARM) |	// Control
-	(1<<BOTBUS_SI_SLOT_2ND_ARM) |
-	(1<<BOTBUS_SI_SLOT_MALI) |
-	(1<<BOTBUS_SI_SLOT_TOP) |
-	(1<<BOTBUS_SI_SLOT_DEINTERLACE) |
-	(1<<BOTBUS_SI_SLOT_1ST_CODA)
-};
-
-const u8 g_DispBusSI[3] = {
-	DISBUS_SI_SLOT_1ST_DISPLAY,
-	DISBUS_SI_SLOT_2ND_DISPLAY,
-	DISBUS_SI_SLOT_2ND_DISPLAY  //DISBUS_SI_SLOT_GMAC
-};
-#endif	/* #if (CFG_BUS_RECONFIG_ENB == 1) */
-
-/*------------------------------------------------------------------------------
  * CPU Frequence
  */
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
@@ -288,7 +238,7 @@ static struct resource nxpmac_resource[] = {
 static u64 nxpmac_dmamask = DMA_BIT_MASK(32);
 
 struct platform_device nxp_gmac_dev = {
-    .name           = "stmmaceth",  //"s5p4418-gmac",
+    .name           = "stmmaceth",  //"s5p6818-gmac",
     .id             = -1,
     .num_resources  = ARRAY_SIZE(nxpmac_resource),
     .resource       = nxpmac_resource,

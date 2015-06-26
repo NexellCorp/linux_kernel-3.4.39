@@ -59,6 +59,54 @@ void phy_print_status(struct phy_device *phydev)
 }
 EXPORT_SYMBOL(phy_print_status);
 
+#ifdef CFG_ETHER_LOOPBACK_MODE
+/**
+ * @speed: 0: disable, 1: 10M, 2: 100M, 3: 1000M
+ */
+static int
+nxpmac_set_phy_loopback(struct phy_device *phydev, int speed)
+{
+	//unsigned long flags;
+
+	if (phydev == NULL)
+		return -1;
+
+	if (speed <= 0 || speed > 3)
+		return -1;
+
+	//spin_lock_irqsave(&priv->lock, flags);
+
+	/* disable PCS loopback */
+	phy_write(phydev, 31, 0);
+	phy_write(phydev, 0, 0x1140);
+	msleep(200);
+
+	/* enable PCS loopback */
+	phy_write(phydev, 31, 0);
+	phy_write(phydev, 0, 0x8000);
+	msleep(200);
+	switch (speed) {
+	case 1:	/* 10M */
+		phy_write(phydev, 0, 0x4100);
+		break;
+	case 2: /* 100M */
+		phy_write(phydev, 0, 0x6100);
+		break;
+	case 3: /* 1000M */
+		phy_write(phydev, 0, 0x4140);
+		break;
+	default:
+		break;
+	}
+	msleep(200);
+	//phy_write(phydev, 0, 0x8000);
+
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	return 0;
+}
+#endif /* CFG_ETHER_LOOPBACK_MODE */
+
 
 /**
  * phy_clear_interrupt - Ack the phy device's interrupt
@@ -766,67 +814,6 @@ void phy_start(struct phy_device *phydev)
 EXPORT_SYMBOL(phy_stop);
 EXPORT_SYMBOL(phy_start);
 
-#ifdef CFG_ETHER_LOOPBACK_MODE
-static int
-nxpmac_set_phy_loopback(struct phy_device *phydev, int speed)
-{
-	//unsigned long flags;
-
-	if (phydev == NULL)
-		return -1;
-
-	if (speed <= 0 || speed > 3)
-		return -1;
-
-	//spin_lock_irqsave(&priv->lock, flags);
-
-	/* disable PCS loopback */
-	phy_write(phydev, 31, 0);
-	phy_write(phydev, 0, 0x1140);
-
-	mdelay(100);
-
-	/* enable PCS loopback */
-	phy_write(phydev, 31, 0);
-	phy_write(phydev, 0, 0x8000);
-	mdelay(100);
-	switch (speed) {
-	case 1:	/* 10M */
-		phy_write(phydev, 0, 0x4100);
-		break;
-	case 2: /* 100M */
-		phy_write(phydev, 0, 0x6100);
-		break;
-	case 3: /* 1000M */
-		phy_write(phydev, 0, 0x4140);
-		break;
-	default:
-		break;
-	}
-	mdelay(100);
-
-	switch (speed) {
-	case 1:	/* 10M */
-		phy_write(phydev, 0, 0x4100);
-		break;
-	case 2: /* 100M */
-		phy_write(phydev, 0, 0x6100);
-		break;
-	case 3: /* 1000M */
-		phy_write(phydev, 0, 0x4140);
-		break;
-	default:
-		break;
-	}
-	mdelay(100);
-
-
-	//spin_unlock_irqrestore(&priv->lock, flags);
-
-	return 0;
-}
-#endif
-
 /**
  * phy_state_machine - Handle the state machine
  * @work: work_struct that describes the work to be done
@@ -852,7 +839,6 @@ void phy_state_machine(struct work_struct *work)
 			break;
 		case PHY_UP:
 			needs_aneg = 1;
-
 			phydev->link_timeout = PHY_AN_TIMEOUT;
 
 			break;

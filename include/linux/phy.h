@@ -231,15 +231,15 @@ int mdiobus_write(struct mii_bus *bus, int addr, u32 regnum, u16 val);
 enum phy_state {
 	PHY_DOWN=0,
 	PHY_STARTING,
-	PHY_READY,
+	PHY_READY,		/* 2 */
 	PHY_PENDING,
-	PHY_UP,
+	PHY_UP,			/* 4 */
 	PHY_AN,
-	PHY_RUNNING,
+	PHY_RUNNING,	/* 6 */
 	PHY_NOLINK,
-	PHY_FORCING,
+	PHY_FORCING,	/* 8 */
 	PHY_CHANGELINK,
-	PHY_HALTED,
+	PHY_HALTED,		/* 10 */
 	PHY_RESUMING
 };
 

@@ -38,56 +38,6 @@
 #endif
 
 /*------------------------------------------------------------------------------
- * BUS Configure
- */
-#if (CFG_BUS_RECONFIG_ENB == 1)
-#include <mach/s5p6818_bus.h>
-
-const u16 g_DrexQoS[2] = {
-	0x100,		// S0
-	0xFFF		// S1, Default value
-};
-
-const u8 g_TopBusSI[8] = {
-	TOPBUS_SI_SLOT_DMAC0,
-	TOPBUS_SI_SLOT_USBOTG,
-	TOPBUS_SI_SLOT_USBHOST0,
-	TOPBUS_SI_SLOT_DMAC1,
-	TOPBUS_SI_SLOT_SDMMC,
-	TOPBUS_SI_SLOT_USBOTG,
-	TOPBUS_SI_SLOT_USBHOST1,
-	TOPBUS_SI_SLOT_USBOTG
-};
-
-const u8 g_BottomBusSI[8] = {
-	BOTBUS_SI_SLOT_1ST_ARM,
-	BOTBUS_SI_SLOT_MALI,
-	BOTBUS_SI_SLOT_DEINTERLACE,
-	BOTBUS_SI_SLOT_1ST_CODA,
-	BOTBUS_SI_SLOT_2ND_ARM,
-	BOTBUS_SI_SLOT_SCALER,
-	BOTBUS_SI_SLOT_TOP,
-	BOTBUS_SI_SLOT_2ND_CODA
-};
-
-const u8 g_BottomQoSSI[2] = {
-	1,	// Tidemark
-	(1<<BOTBUS_SI_SLOT_1ST_ARM) |	// Control
-	(1<<BOTBUS_SI_SLOT_2ND_ARM) |
-	(1<<BOTBUS_SI_SLOT_MALI) |
-	(1<<BOTBUS_SI_SLOT_TOP) |
-	(1<<BOTBUS_SI_SLOT_DEINTERLACE) |
-	(1<<BOTBUS_SI_SLOT_1ST_CODA)
-};
-
-const u8 g_DispBusSI[3] = {
-	DISBUS_SI_SLOT_1ST_DISPLAY,
-	DISBUS_SI_SLOT_2ND_DISPLAY,
-	DISBUS_SI_SLOT_2ND_DISPLAY  //DISBUS_SI_SLOT_GMAC
-};
-#endif	/* #if (CFG_BUS_RECONFIG_ENB == 1) */
-
-/*------------------------------------------------------------------------------
  * CPU Frequence
  */
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
@@ -202,45 +152,6 @@ int  nxpmac_init(struct platform_device *pdev)
 {
     u32 addr;
 
-#if defined (CONFIG_REALTEK_PHY_RTL8201)	// 20140515
-	// 100 & 10Base-T
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 7, 0 );        // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 8, 0 );        // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 9, 0 );        // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+10, 0 );        // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+11, 0 );        // PAD_GPIOE11,    GMAC0_PHY_TXEN
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+12, 3 );        // PAD_GPIOE12,    GMAC0_PHY_TXER
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+13, 3 );        // PAD_GPIOE13,    GMAC0_PHY_COL
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+14, 2 );        // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+15, 2 );        // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+16, 2 );        // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+17, 2 );        // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+18, 3 );        // PAD_GPIOE18,    GMAC0_RX_CLK
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+19, 3);        // PAD_GPIOE19,    GMAC0_PHY_RX_DV
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+20, 3 );        // PAD_GPIOE20,    GMAC0_GMII_MDC
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+21, 3 );        // PAD_GPIOE21,    GMAC0_GMII_MDI
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+22, 3 );        // PAD_GPIOE22,    GMAC0_PHY_RXER
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+23, 3 );        // PAD_GPIOE23,    GMAC0_PHY_CRS
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+24, 0 );        // PAD_GPIOE24,    GMAC0_GTX_CLK
-
-#else	// 1000Base-T
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  7), 3 );     // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  8), 3 );     // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  9), 3 );     // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 10), 3 );     // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 11), 3 );     // PAD_GPIOE11,    GMAC0_PHY_TXEN
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 14), 3 );     // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 15), 3 );     // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 16), 3 );     // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 17), 3 );     // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 18), 3 );     // PAD_GPIOE18,    GMAC0_RX_CLK
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 19), 3 );     // PAD_GPIOE19,    GMAC0_PHY_RX_DV
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 20), 3 );     // PAD_GPIOE20,    GMAC0_GMII_MDC
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 21), 3 );     // PAD_GPIOE21,    GMAC0_GMII_MDI
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 24), 3 );     // PAD_GPIOE24,    GMAC0_GTX_CLK
-#endif
-
-
 	// Clock control
 	NX_CLKGEN_Initialize();
 	addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
@@ -266,16 +177,16 @@ int  nxpmac_init(struct platform_device *pdev)
 	udelay(100);
 
 
-    gpio_request(CFG_ETHER_GMAC_PHY_RST_NUM,"Ethernet Rst pin");
-	gpio_direction_output(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
+    gpio_request(CFG_ETHER_GMAC_PHY_RST_NUM, "Ethernet Rst pin");
+	gpio_direction_output(CFG_ETHER_GMAC_PHY_RST_NUM, 1);
 	udelay( 100 );
-	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 0 );
+	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 0);
 	udelay( 100 );
-	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
+	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1);
 
-    gpio_free(CFG_ETHER_GMAC_PHY_RST_NUM);
+	gpio_free(CFG_ETHER_GMAC_PHY_RST_NUM);
 
-     printk("NXP mac init ..................\n");
+	printk("NXP mac init ..................\n");
 	return 0;
 }
 
@@ -313,7 +224,7 @@ static struct plat_stmmacenet_data nxpmac_plat_data = {
 	.duplex = DUPLEX_FULL,
 	.pbl = 16,          /* burst 16 */
 	.has_gmac = 1,      /* GMAC ethernet    */
-	.enh_desc = 0,
+	.enh_desc = 1,
 	.mdio_bus_data = &nxpmac0_mdio_bus,
 	.init = &nxpmac_init,
 };

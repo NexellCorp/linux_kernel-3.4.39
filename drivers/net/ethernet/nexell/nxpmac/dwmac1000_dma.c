@@ -30,6 +30,10 @@
 #include "dwmac1000.h"
 #include "dwmac_dma.h"
 
+/*
+#define pr_debug printk
+*/
+
 static int dwmac1000_dma_init(void __iomem *ioaddr, int pbl, int fb, int mb,
 			      int burst_len, u32 dma_tx, u32 dma_rx, int atds)
 {
