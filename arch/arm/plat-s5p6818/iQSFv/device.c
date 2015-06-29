@@ -102,10 +102,10 @@ static unsigned long dfs_freq_table[][2] = {
 	{ 1000000, 1060000, },
 	{  900000, 1040000, },
 	{  800000, 1000000, },
-	{  700000,  940000, },
-	{  600000,  940000, },
-	{  500000,  940000, },
-	{  400000,  940000, },
+	//{  700000,  940000, },
+	//{  600000,  940000, },
+	//{  500000,  940000, },
+	//{  400000,  940000, },
 };
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
@@ -1394,7 +1394,7 @@ extern void register_backward_camera(struct platform_device *device);
 struct nxp_tmu_trigger tmu_triggers[] = {
 	{
 		.trig_degree	=  85,
-		.trig_duration	=  100,
+		.trig_duration	=  10,
 		.trig_cpufreq	=  800*1000,	/* Khz */
 	},
 };

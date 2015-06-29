@@ -303,6 +303,13 @@ static void pwm_set_init(void)
 
 	return;
 }
+
+#if 0
+bool bl_on = false;
+u64 start_time=0;
+u64 end_time=0;
+unsigned int time_msec;
+#endif
 #endif
 
 #define DISP_MODULE 0
@@ -339,10 +346,22 @@ static int _anim_thread(void *arg)
             }
 #endif
 #ifdef CONFIG_PLAT_S5P6818_IQSFV
-			mdelay(100);
-			//nxp_soc_gpio_set_out_value(CFG_IO_LCD_BL_ENB, 1);
-			//nxp_soc_gpio_set_io_func(CFG_IO_LCD_BL_ENB, 1);
-			pwm_set_init();
+			//mdelay(100);
+			//nxp_soc_gpio_set_out_value(CFG_IO_LCD_GD_PWR_EN, 1);
+			//mdelay(10);
+			//nxp_soc_gpio_set_out_value(CFG_IO_LVDS2RGB_EN, 1);
+			//pwm_set_init();
+
+			mdelay(300);
+			nxp_soc_gpio_set_out_value(CFG_IO_LCD_BL_ENB, 1);
+			nxp_soc_gpio_set_out_value(CFG_IO_EL_EN, 1);
+
+#if 0
+			bl_on = 0;
+			start_time = get_jiffies_64();
+
+			printk(KERN_ERR "## CFG_IO_LCD_BL_ENB : On. start_time:%ld \n", start_time );
+#endif
 #else
             nxp_soc_gpio_set_out_value(PAD_GPIO_A + 25, 1);
             nxp_soc_gpio_set_out_value(PAD_GPIO_D + 1, 1);
@@ -359,6 +378,20 @@ static int _anim_thread(void *arg)
 #if 1
     count = 0;
     while (1) {
+#if 0//def CONFIG_PLAT_S5P6818_IQSFV
+		if(bl_on == false)
+		{
+			end_time = get_jiffies_64();
+			time_msec = end_time - start_time;
+			if(jiffies_to_msecs(time_msec) >= 300)
+			{
+				bl_on = true;
+				printk(KERN_ERR "## CFG_IO_LCD_BL_ENB : On. time_msec:%ld \n", jiffies_to_msecs(time_msec));
+				nxp_soc_gpio_set_out_value(CFG_IO_LCD_BL_ENB, 1);
+				nxp_soc_gpio_set_out_value(CFG_IO_EL_EN, 1);
+			}
+		}
+#endif
         loop_count = me->img_count - SECOND_STAGE_START_FRAME;
         splash = &me->splash_info[SECOND_STAGE_START_FRAME + (count++%loop_count)];
         address = me->dma_addr + splash->ulImageAddr;
