@@ -51,6 +51,7 @@
 #include <linux/net_tstamp.h>
 
 #include <linux/ctype.h>
+#include <linux/gpio.h>
 #include <mach/devices.h>
 #include "nxpmac_ptp.h"
 #include "nxpmac.h"
@@ -63,6 +64,16 @@
 /*
 #define pr_debug	printk
 */
+
+#define __TRACE__
+#ifdef __TRACE__
+#define __trace(args, ...)	\
+	do { \
+		printk("  [%s %d] " args, __func__, __LINE__, ##__VA_ARGS__);\
+	} while(0)
+#else
+#define __trace(args, ...)	do { } while (0)
+#endif
 
 /*
  * w/a : unexpected descriptor be cached problem
@@ -923,6 +934,7 @@ static int stmmac_init_phy(struct net_device *dev)
  *  add by jhkim
  *	stmmac_display_descriptors: display current descriptors
  */
+#ifdef CONFIG_NXPMAC_DEBUG_FS
 static void stmac_display_desc_status(struct stmmac_priv *priv)
 {
 	struct dma_extended_desc *ep = (struct dma_extended_desc *)priv->dma_erx;
@@ -952,6 +964,7 @@ static void stmac_display_desc_status(struct stmmac_priv *priv)
 	for (i = 0; rxsize/32 > i; i++)
 		printk("Rx bitmaps [%3d] 0x%08x (%d)\n", i, bitmap[i], sizeof(rxsize/32));
 }
+
 
 static void stmmac_display_descriptors(struct stmmac_priv *priv)
 {
@@ -983,6 +996,7 @@ static void stmmac_display_descriptors(struct stmmac_priv *priv)
 	stmac_display_desc_status(priv);
 	printk("----------------------------------------------------------\n");
 }
+#endif
 
 /**
  * stmmac_display_ring: display ring
@@ -1937,9 +1951,52 @@ err_group_create:
 }
 #endif /* CONFIG_NXPMAC_MII_SYSFS */
 
+static int nxp_plat_initialize(void)
+{
+    u32 addr;
+
+	/* Clock control */
+	NX_CLKGEN_Initialize();
+	addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
+	NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (void*)IO_ADDRESS(addr) );
+
+	NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 4);     // Sync mode for 100 & 10Base-T : External RX_clk
+	NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);    // Sync mode for 100 & 10Base-T
+
+	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);    // TX Clk invert off : 100 & 10Base-T
+
+	NX_CLKGEN_SetClockDivisorEnable( CLOCKINDEX_OF_DWC_GMAC_MODULE, CTRUE);
 
 
-static int stmmac_hw_setup(struct net_device *dev, bool init_ptp)
+	/* Reset control */
+	NX_RSTCON_Initialize();
+	addr = NX_RSTCON_GetPhysicalAddress();
+	NX_RSTCON_SetBaseAddress( (void*)IO_ADDRESS(addr) );
+	NX_RSTCON_SetRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_NEGATE);
+	udelay(100);
+	NX_RSTCON_SetRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ASSERT);
+	udelay(100);
+	NX_RSTCON_SetRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_NEGATE);
+	udelay(100);
+
+#if 1
+    gpio_request(CFG_ETHER_GMAC_PHY_RST_NUM, "Ethernet Rst pin");
+	gpio_direction_output(CFG_ETHER_GMAC_PHY_RST_NUM, 1);
+	udelay( 100 );
+	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 0);
+	udelay( 100 );
+	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1);
+
+	gpio_free(CFG_ETHER_GMAC_PHY_RST_NUM);
+
+	printk("NXP mac init ..................\n");
+#endif
+	return 0;
+}
+
+
+
+static int nxpmac_hw_setup(struct net_device *dev, bool init_ptp)
 {
 	struct stmmac_priv *priv = netdev_priv(dev);
 	int ret;
@@ -2065,7 +2122,7 @@ static int stmmac_open(struct net_device *dev)
 		goto init_error;
 	}
 
-	ret = stmmac_hw_setup(dev, true);
+	ret = nxpmac_hw_setup(dev, true);
 	if (ret < 0) {
 		pr_err("%s: Hw setup failed\n", __func__);
 		goto init_error;
@@ -3077,6 +3134,8 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
 	struct net_device *ndev = NULL;
 	struct stmmac_priv *priv;
 
+	nxp_plat_initialize();
+
 	ndev = alloc_etherdev(sizeof(struct stmmac_priv));
 	if (!ndev)
 		return NULL;
@@ -3278,6 +3337,7 @@ int stmmac_suspend(struct net_device *ndev)
 	priv->oldduplex = -1;
 	return 0;
 }
+EXPORT_SYMBOL_GPL(stmmac_suspend);
 
 int stmmac_resume(struct net_device *ndev)
 {
@@ -3286,6 +3346,10 @@ int stmmac_resume(struct net_device *ndev)
 
 	if (!netif_running(ndev))
 		return 0;
+
+	__trace("phy resume...\n");
+
+	nxp_plat_initialize();
 
 	spin_lock_irqsave(&priv->lock, flags);
 
@@ -3306,7 +3370,7 @@ int stmmac_resume(struct net_device *ndev)
 	netif_device_attach(ndev);
 
 	init_dma_desc_rings(ndev, GFP_ATOMIC);
-	stmmac_hw_setup(ndev, false);
+	nxpmac_hw_setup(ndev, false);
 	stmmac_init_tx_coalesce(priv);
 
 	napi_enable(&priv->napi);
@@ -3320,6 +3384,7 @@ int stmmac_resume(struct net_device *ndev)
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(stmmac_resume);
 
 int stmmac_freeze(struct net_device *ndev)
 {

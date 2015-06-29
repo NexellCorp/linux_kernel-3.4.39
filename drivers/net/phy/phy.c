@@ -42,6 +42,16 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
+#define __TRACE__
+#ifdef __TRACE__
+#define __trace(args, ...)	\
+	do { \
+		printk("  [%s %d] " args, __func__, __LINE__, ##__VA_ARGS__);\
+	} while(0)
+#else
+#define __trace(args, ...)	do { } while (0)
+#endif
+
 /**
  * phy_print_status - Convenience function to print out the current phy status
  * @phydev: the phy_device struct
@@ -795,21 +805,37 @@ out_unlock:
  */
 void phy_start(struct phy_device *phydev)
 {
+	bool do_resume = false;
+	int err = 0;
+
+	__trace("phy start...\n");
+
 	mutex_lock(&phydev->lock);
 
 	switch (phydev->state) {
-		case PHY_STARTING:
-			phydev->state = PHY_PENDING;
+	case PHY_STARTING:
+		phydev->state = PHY_PENDING;
+		break;
+	case PHY_READY:
+		phydev->state = PHY_UP;
+		break;
+	case PHY_HALTED:
+		/* make sure interrupts are re-enabled for the PHY */
+		err = phy_enable_interrupts(phydev);
+		if (err < 0)
 			break;
-		case PHY_READY:
-			phydev->state = PHY_UP;
-			break;
-		case PHY_HALTED:
-			phydev->state = PHY_RESUMING;
-		default:
-			break;
+
+		phydev->state = PHY_RESUMING;
+		do_resume = true;
+		break;
+	default:
+		break;
 	}
 	mutex_unlock(&phydev->lock);
+
+	/* if phy was suspended, bring the physical link up again */
+	if (do_resume)
+		phy_resume(phydev);
 }
 EXPORT_SYMBOL(phy_stop);
 EXPORT_SYMBOL(phy_start);
@@ -823,7 +849,7 @@ void phy_state_machine(struct work_struct *work)
 	struct delayed_work *dwork = to_delayed_work(work);
 	struct phy_device *phydev =
 			container_of(dwork, struct phy_device, state_queue);
-	int needs_aneg = 0;
+	bool needs_aneg = false, do_suspend = false;
 	int err = 0;
 
 	mutex_lock(&phydev->lock);
@@ -963,6 +989,7 @@ void phy_state_machine(struct work_struct *work)
 				phydev->link = 0;
 				netif_carrier_off(phydev->attached_dev);
 				phydev->adjust_link(phydev->attached_dev);
+				do_suspend = true;
 			}
 			break;
 		case PHY_RESUMING:
@@ -1020,6 +1047,8 @@ void phy_state_machine(struct work_struct *work)
 
 	if (needs_aneg)
 		err = phy_start_aneg(phydev);
+	else if (do_suspend)
+		phy_suspend(phydev);
 
 	if (err < 0)
 		phy_error(phydev);

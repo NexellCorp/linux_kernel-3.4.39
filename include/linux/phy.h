@@ -285,6 +285,8 @@ struct phy_device {
 
 	u32 phy_id;
 
+	bool suspended;
+
 	enum phy_state state;
 
 	u32 dev_flags;
@@ -481,6 +483,8 @@ int get_phy_id(struct mii_bus *bus, int addr, u32 *phy_id);
 struct phy_device* get_phy_device(struct mii_bus *bus, int addr);
 int phy_device_register(struct phy_device *phy);
 int phy_init_hw(struct phy_device *phydev);
+int phy_suspend(struct phy_device *phydev);
+int phy_resume(struct phy_device *phydev);
 struct phy_device * phy_attach(struct net_device *dev,
 		const char *bus_id, u32 flags, phy_interface_t interface);
 struct phy_device *phy_find_first(struct mii_bus *bus);

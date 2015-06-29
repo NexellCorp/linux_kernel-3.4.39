@@ -152,7 +152,8 @@ int  nxpmac_init(struct platform_device *pdev)
 {
     u32 addr;
 
-	// Clock control
+#if 0
+	/* Clock control */
 	NX_CLKGEN_Initialize();
 	addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
 	NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (void*)IO_ADDRESS(addr) );
@@ -161,11 +162,11 @@ int  nxpmac_init(struct platform_device *pdev)
 	NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);    // Sync mode for 100 & 10Base-T
 
 	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);    // TX Clk invert off : 100 & 10Base-T
-//	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CTRUE);     // TX clk invert on : 100 & 10Base-T
 
 	NX_CLKGEN_SetClockDivisorEnable( CLOCKINDEX_OF_DWC_GMAC_MODULE, CTRUE);
 
-	// Reset control
+
+	/* Reset control */
 	NX_RSTCON_Initialize();
 	addr = NX_RSTCON_GetPhysicalAddress();
 	NX_RSTCON_SetBaseAddress( (void*)IO_ADDRESS(addr) );
@@ -185,6 +186,7 @@ int  nxpmac_init(struct platform_device *pdev)
 	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1);
 
 	gpio_free(CFG_ETHER_GMAC_PHY_RST_NUM);
+#endif
 
 	printk("NXP mac init ..................\n");
 	return 0;
