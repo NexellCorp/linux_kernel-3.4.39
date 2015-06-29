@@ -39,7 +39,7 @@ MODULE_DESCRIPTION("PHY library");
 MODULE_AUTHOR("Andy Fleming");
 MODULE_LICENSE("GPL");
 
-#define __TRACE__
+//#define __TRACE__
 #ifdef __TRACE__
 #define __trace(args, ...)	\
 	do { \

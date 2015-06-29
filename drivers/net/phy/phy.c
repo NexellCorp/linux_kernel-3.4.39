@@ -42,7 +42,7 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-#define __TRACE__
+//#define __TRACE__
 #ifdef __TRACE__
 #define __trace(args, ...)	\
 	do { \

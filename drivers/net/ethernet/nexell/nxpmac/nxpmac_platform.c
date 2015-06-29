@@ -234,16 +234,23 @@ static int stmmac_pltfr_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int stmmac_pltfr_suspend(struct device *dev)
 {
+	int ret;
 	struct net_device *ndev = dev_get_drvdata(dev);
+	//struct stmmac_priv *priv = netdev_priv(ndev);
+	//struct platform_device *pdev = to_platform_device(dev);
 
-	return stmmac_suspend(ndev);
+	ret = stmmac_suspend(ndev);
+	//if (priv->plat->exit)
+	//	priv->plat->exit(pdev, priv->plat->bsp_priv);
+
+	return ret;
 }
 
 static int stmmac_pltfr_resume(struct device *dev)
 {
 	struct net_device *ndev = dev_get_drvdata(dev);
-	struct stmmac_priv *priv = netdev_priv(ndev);
-	struct platform_device *pdev = to_platform_device(dev);
+	//struct stmmac_priv *priv = netdev_priv(ndev);
+	//struct platform_device *pdev = to_platform_device(dev);
 
 	//if (priv->plat->init)
 	//	priv->plat->init(pdev, priv->plat->bsp_priv);
