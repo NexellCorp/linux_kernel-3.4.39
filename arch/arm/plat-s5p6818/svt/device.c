@@ -152,7 +152,6 @@ int  nxpmac_init(struct platform_device *pdev)
 {
     u32 addr;
 
-#if 0
 	/* Clock control */
 	NX_CLKGEN_Initialize();
 	addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
@@ -186,7 +185,6 @@ int  nxpmac_init(struct platform_device *pdev)
 	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1);
 
 	gpio_free(CFG_ETHER_GMAC_PHY_RST_NUM);
-#endif
 
 	printk("NXP mac init ..................\n");
 	return 0;
@@ -228,7 +226,7 @@ static struct plat_stmmacenet_data nxpmac_plat_data = {
 	.has_gmac = 1,      /* GMAC ethernet    */
 	.enh_desc = 1,
 	.mdio_bus_data = &nxpmac0_mdio_bus,
-	.init = &nxpmac_init,
+	//.init = &nxpmac_init,
 };
 
 /* DWC GMAC Controller registration */
