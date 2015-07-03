@@ -17,6 +17,7 @@
 #include <linux/regulator/machine.h>
 #include <linux/module.h>
 #include <linux/version.h>
+#include <mach/platform.h>
 
 #include "axp-regu.h"
 #include "axp-cfg.h"
@@ -55,7 +56,7 @@ static int axp_set_voltage(struct regulator_dev *rdev,
 		return -EINVAL;
 	}
 	val = (min_uV - info->min_uV + info->step_uV - 1) / info->step_uV;
-    if(selector)
+	if(selector)
 		*selector = val;
 	val <<= info->vol_shift;
 	mask = ((1 << info->vol_nbits) - 1)  << info->vol_shift;
@@ -545,8 +546,22 @@ static int __devexit axp_regulator_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int axp_regulator_suspend(struct device *dev)
 {
+	struct regulator_dev *rdev = dev_get_drvdata(dev);
+	struct regulation_constraints *constraints = rdev->constraints;
+	struct regulator_state *state_standby = &constraints->state_standby;
+	int ret = 0;
+
+	axp_suspend_status = 0;
+
+	if(!strcmp(constraints->name, "axp22_dcdc2"))
+	{
+		if(state_standby)
+			ret = axp_set_voltage(rdev, state_standby->uV, state_standby->uV,NULL);
+
+	}
+
 	axp_suspend_status = 1;
-	return 0;
+	return ret;
 }
 
 static int axp_regulator_resume(struct device *dev)

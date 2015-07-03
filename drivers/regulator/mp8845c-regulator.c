@@ -665,7 +665,23 @@ static int __devexit mp8845c_remove(struct i2c_client *client)
 #ifdef CONFIG_PM
 static int mp8845c_suspend(struct i2c_client *client, pm_message_t state)
 {
+	struct mp8845c_platform_data *init_data = client->dev.platform_data;
+	struct mp8845c_regulator_platform_data *reg_plat_data = init_data->platform_data;
+	struct mp8845c_regulator *ri;
+	int id_info = init_data->id;
 	int ret = 0;
+
+	ri = find_regulator_info(id_info);
+	if (ri == NULL) {
+		dev_err(&client->dev, "%s() invalid regulator ID specified\n", __func__);
+		return -EINVAL;
+	}
+
+	ret = mp8845c_regulator_preinit(ri, reg_plat_data);
+	if (ret) {
+		dev_err(&client->dev, "%s() Fail in pre-initialisation\n", __func__);
+		return ret;
+	}
 
 	return ret;
 }
