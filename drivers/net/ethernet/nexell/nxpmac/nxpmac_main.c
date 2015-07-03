@@ -1969,6 +1969,17 @@ static int nxp_plat_initialize(void)
 
 
 	/* Reset control */
+#ifdef CONFIG_ARCH_S5P4418
+	NX_RSTCON_Initialize();
+	addr = NX_RSTCON_GetPhysicalAddress();
+	NX_RSTCON_SetBaseAddress( (void*)IO_ADDRESS(addr) );
+	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
+	udelay(100);
+	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_DISABLE);
+	udelay(100);
+	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
+	udelay(100);
+#else /* = CONFIG_ARCH_S5P6818 */
 	NX_RSTCON_Initialize();
 	addr = NX_RSTCON_GetPhysicalAddress();
 	NX_RSTCON_SetBaseAddress( (void*)IO_ADDRESS(addr) );
@@ -1978,8 +1989,8 @@ static int nxp_plat_initialize(void)
 	udelay(100);
 	NX_RSTCON_SetRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_NEGATE);
 	udelay(100);
+#endif
 
-#if 1
     gpio_request(CFG_ETHER_GMAC_PHY_RST_NUM, "Ethernet Rst pin");
 	gpio_direction_output(CFG_ETHER_GMAC_PHY_RST_NUM, 1);
 	udelay( 100 );
@@ -1988,7 +1999,6 @@ static int nxp_plat_initialize(void)
 	gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1);
 
 	gpio_free(CFG_ETHER_GMAC_PHY_RST_NUM);
-#endif
 
 	printk(" -- nxpmac initialize --\n");
 
