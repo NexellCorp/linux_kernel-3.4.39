@@ -39,6 +39,9 @@
 #include <linux/io.h>
 #include <linux/slab.h>
 #include <linux/err.h>
+#ifdef CONFIG_WDT_TASK
+#include <linux/workqueue.h>
+#endif
 
 #include <mach/platform.h>
 #include <mach/devices.h>
@@ -104,6 +107,21 @@ static struct resource	*wdt_irq;
 static struct clk	*wdt_clock;
 static unsigned int	 wdt_count;
 static DEFINE_SPINLOCK(wdt_lock);
+
+#ifdef CONFIG_WDT_TASK
+static struct workqueue_struct *wdt_wqueue;
+static struct delayed_work wdt_task_work;
+
+static void nxp_wdt_task_work(struct work_struct *work)
+{
+	spin_lock(&wdt_lock);
+    writel(0, NXP_WTCLRINT);
+	writel(wdt_count, NXP_WTCNT);
+	spin_unlock(&wdt_lock);
+
+    queue_delayed_work(wdt_wqueue, &wdt_task_work, msecs_to_jiffies(CONFIG_DEFAULT_WDT_TASK_TIMEOUT-1)*1000);
+}
+#endif
 
 #ifdef CONFIG_WDT_SYSFS
 static ssize_t wdt_show(struct device *dev,
@@ -433,7 +451,11 @@ static int __devinit nxp_wdt_probe(struct platform_device *pdev)
 
 	if (nxp_wdt_set_heartbeat(&nxp_wdd, tmr_margin)) {
 		started = nxp_wdt_set_heartbeat(&nxp_wdd,
+#ifdef CONFIG_WDT_TASK
+					CONFIG_DEFAULT_WDT_TASK_TIMEOUT);
+#else
 					CONFIG_NXP_WATCHDOG_DEFAULT_TIME);
+#endif
 
 		if (started == 0)
 			dev_info(dev,
@@ -480,6 +502,13 @@ static int __devinit nxp_wdt_probe(struct platform_device *pdev)
 		 (wtcon & NXP_WTCON_ENABLE) ?  "" : "in",
 		 (wtcon & NXP_WTCON_RSTEN) ? "en" : "dis",
 		 (wtcon & NXP_WTCON_INTEN) ? "en" : "dis");
+
+#ifdef CONFIG_WDT_TASK
+	wdt_wqueue = create_singlethread_workqueue("nxp_wdt_task_wqueue");
+	INIT_DELAYED_WORK_DEFERRABLE(&wdt_task_work, nxp_wdt_task_work);
+	nxp_wdt_start(&nxp_wdd);
+    queue_delayed_work(wdt_wqueue, &wdt_task_work, msecs_to_jiffies(CONFIG_DEFAULT_WDT_TASK_TIMEOUT-1)*1000);
+#endif
 
 	return 0;
 
