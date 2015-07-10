@@ -8,16 +8,18 @@
 #include "loopback-sensor.h"
 
 
+
+
 #if 1
 #define DUMP_REGISTER 1
 void dump_register_dpc(int module)
 {
 #if (DUMP_REGISTER)
 #define DBGOUT(args...)  printk(args)
-		NX_DPC_SetBaseAddress(module, (U32)IO_ADDRESS(NX_DPC_GetPhysicalAddress(module)));
-	
     struct NX_DPC_RegisterSet *pREG =
         (struct NX_DPC_RegisterSet*)NX_DPC_GetBaseAddress(module);
+		NX_DPC_SetBaseAddress(module, (void *)IO_ADDRESS(NX_DPC_GetPhysicalAddress(module)));
+	
     DBGOUT("DPC%d BASE ADDRESS: %p\n", module, pREG);
     DBGOUT(" DPCCTRL0     = 0x%04x\r\n", pREG->DPCCTRL0);
 #endif
@@ -30,7 +32,6 @@ static CBOOL	SetDisplayMode( NX_DISPLAY_MODE *pDisMode )
 	NX_DPC_PADCLK clock = NX_DPC_PADCLK_VCLK;
 
 	NX_DISPLAY_TFTLCD	*pTFTLCD        = pDisMode->pTFTLCD;
-	NX_ENCODER_MODE		*pEncoderMode	= pDisMode->pEncoderMode;
 
 	U32 				dwVCLKDivider=0, dwSyncDelay=0;
 	NX_DPC_DITHER 	    RDither, GDither, BDither;
@@ -347,7 +348,7 @@ static void _dpc_mode1(void)
 
 static void _release_reset(void)
 {
-    NX_RSTCON_SetBaseAddress((U32)IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
+    NX_RSTCON_SetBaseAddress((void *)IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
     NX_RSTCON_SetRST(RESETINDEX_OF_DISPLAYTOP_MODULE_i_HDMI_nRST       , 1);
     NX_RSTCON_SetRST(RESETINDEX_OF_DISPLAYTOP_MODULE_i_HDMI_VIDEO_nRST , 1);
     NX_RSTCON_SetRST(RESETINDEX_OF_DISPLAYTOP_MODULE_i_HDMI_SPDIF_nRST , 1);
@@ -357,21 +358,21 @@ static void _release_reset(void)
 
 static void _release_clk(int module)
 {
-	NX_DISPTOP_CLKGEN_SetBaseAddress(HDMI_CLKGEN, (U32)IO_ADDRESS(NX_DISPTOP_CLKGEN_GetPhysicalAddress(HDMI_CLKGEN)));
+	NX_DISPTOP_CLKGEN_SetBaseAddress(HDMI_CLKGEN, (void *)IO_ADDRESS(NX_DISPTOP_CLKGEN_GetPhysicalAddress(HDMI_CLKGEN)));
 	NX_DISPTOP_CLKGEN_SetClockDivisorEnable(HDMI_CLKGEN, CFALSE );	
   NX_DPC_SetClockDivisorEnable(module, CFALSE);
 }
 
 static void _set_hdmi_clk_27MHz(void)
 {
-    NX_HDMI_SetBaseAddress(0, (U32)IO_ADDRESS(NX_HDMI_GetPhysicalAddress(0)));
+    NX_HDMI_SetBaseAddress(0, (void *)IO_ADDRESS(NX_HDMI_GetPhysicalAddress(0)));
 
     NX_TIEOFF_Initialize();
-    NX_TIEOFF_SetBaseAddress((U32)IO_ADDRESS(NX_TIEOFF_GetPhysicalAddress()));
+    NX_TIEOFF_SetBaseAddress((void *)IO_ADDRESS(NX_TIEOFF_GetPhysicalAddress()));
     NX_TIEOFF_Set(TIEOFFINDEX_OF_DISPLAYTOP0_i_HDMI_PHY_REFCLK_SEL, 1);
 
     // HDMI PCLK Enable
-    NX_DISPTOP_CLKGEN_SetBaseAddress(HDMI_CLKGEN, (U32)IO_ADDRESS(NX_DISPTOP_CLKGEN_GetPhysicalAddress(HDMI_CLKGEN)));
+    NX_DISPTOP_CLKGEN_SetBaseAddress(HDMI_CLKGEN, (void *)IO_ADDRESS(NX_DISPTOP_CLKGEN_GetPhysicalAddress(HDMI_CLKGEN)));
     NX_DISPTOP_CLKGEN_SetClockPClkMode(HDMI_CLKGEN, NX_PCLKMODE_ALWAYS);
 
     // Enter Reset
