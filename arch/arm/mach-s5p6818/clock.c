@@ -779,8 +779,10 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
 	pr_debug("clk: %s.%d reqeust = %ld [input=0x%x]\n",
 			peri->dev_name, peri->dev_id, rate, mask);
 
+#if defined(CONFIG_SND_NXP_DFS)
     if (!strcmp(peri->dev_name, DEV_NAME_I2S))
 		input_mask |= (1<<CONFIG_SND_NXP_PLLDEV);
+#endif
 
 	if (!(input_mask & mask)) {
 		if (PLCK_MASK & mask)
@@ -915,8 +917,10 @@ int clk_enable(struct clk *clk)
 		peri->dev_name, peri->dev_id, _GATE_BCLK_ & peri->clk_mask0 ? "ON":"PASS",
 		_GATE_PCLK_ & peri->clk_mask0 ? "ON":"PASS");
 
+#if defined(CONFIG_SND_NXP_DFS)
     if (!strcmp(peri->dev_name, DEV_NAME_I2S))
 		input_mask |= (1<<CONFIG_SND_NXP_PLLDEV);
+#endif
 
 	if (!(input_mask & peri->clk_mask0)) {
 		/* Gated BCLK/PCLK enable */
@@ -973,8 +977,10 @@ void clk_disable(struct clk *clk)
 
 	peri->enable = false;
 
+#if defined(CONFIG_SND_NXP_DFS)
     if (!strcmp(peri->dev_name, DEV_NAME_I2S))
 		input_mask |= (1<<CONFIG_SND_NXP_PLLDEV);
+#endif
 
 	if (!(input_mask & peri->clk_mask0)) {
 		/* Gated BCLK/PCLK disable */
