@@ -512,8 +512,13 @@ static struct platform_device snd_null = {
 
 struct nxp_snd_dai_plat_data snd_null_dai_data = {
 	.i2s_ch = 0,
+#if defined(CONFIG_SND_NXP_DFS)
+	.sample_rate = SNDRV_PCM_RATE_8000_192000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE,
+#else
 	.sample_rate = 48000,
 	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
+#endif
 };
 
 static struct platform_device snd_null_dai = {
@@ -532,8 +537,13 @@ static struct platform_device snd_null_2 = {
 
 struct nxp_snd_dai_plat_data snd_null_dai_data_2 = {
 	.i2s_ch = 2,
+#if defined(CONFIG_SND_NXP_DFS)
+	.sample_rate = SNDRV_PCM_RATE_8000_192000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE,
+#else
 	.sample_rate = 48000,
 	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
+#endif
 };
 
 static struct platform_device snd_null_dai_2 = {
@@ -559,8 +569,13 @@ static struct i2c_board_info __initdata rt5631_i2c_bdi = {
 /* DAI */
 struct nxp_snd_dai_plat_data i2s_dai_data = {
 	.i2s_ch	= 1,
+#if defined(CONFIG_SND_NXP_DFS)
+	.sample_rate = SNDRV_PCM_RATE_8000_192000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE,
+#else
 	.sample_rate	= 48000,
 	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
+#endif
 #if 0
 	.hp_jack 		= {
 		.support    	= 1,

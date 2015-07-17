@@ -71,7 +71,13 @@
 #define	DVFS_CPU_PLL	(-1UL)
 #endif
 
-#define IGNORE_PLLs		(DVFS_CPU_PLL & DVFS_BCLK_PLL)
+#if defined(CONFIG_SND_NXP_DFS)
+#define	DFS_SND_PLL	~(1<<CONFIG_SND_NXP_PLLDEV) // default PLL2
+#else
+#define	DFS_SND_PLL	(-1UL)
+#endif
+
+#define IGNORE_PLLs		(DVFS_CPU_PLL & DVFS_BCLK_PLL & DFS_SND_PLL)
 #define	INPUT_MASK 		(((1<<INPUT_CLKS) - 1) & IGNORE_PLLs)
 
 #define	_PLL0_ 			(1 << _InPLL0_)
@@ -634,7 +640,7 @@ module_init(cpu_pll_sys_init);
  * Clock Interfaces
  */
 static inline long clk_divide(long rate, long request,
-				int align, int *divide)
+				int align, int *divide, int level)
 {
 	int div = (rate/request);
 	int max = MAX_DIVIDER & ~(align-1);
@@ -653,7 +659,10 @@ static inline long clk_divide(long rate, long request,
 		abs(request - rate/div) > abs(request - rate/adv))
 		div = adv;
 
-	div = (div > max ? max : div);
+	if (level == 2)
+		div = (div > max ? div/2 : div);
+	else		
+		div = (div > max ? max : div);
 	if (divide)
 		*divide = div;
 
@@ -675,7 +684,7 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
 	struct nxp_clk_periph *peri = cdev->peri;
 	unsigned long request = rate, rate_hz = 0, flags;
 	unsigned long clock_hz, freq_hz = 0;
-	unsigned int mask;
+	unsigned int mask, input_mask = INPUT_MASK;
 	int level, div[2] = { 0, };
 	int i, n, clk2 = 0;
 	short s1 = 0, s2 = 0, d1 = 0, d2 = 0;
@@ -688,7 +697,10 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
 	pr_debug("clk: %s.%d reqeust = %ld [input=0x%x]\n",
 			peri->dev_name, peri->dev_id, rate, mask);
 
-	if (!(INPUT_MASK & mask)) {
+    if (!strcmp(peri->dev_name, DEV_NAME_I2S))
+		input_mask |= (1<<CONFIG_SND_NXP_PLLDEV);
+
+	if (!(input_mask & mask)) {
 		if (PLCK_MASK & mask)
 			return core_get_rate(CORECLK_ID_PCLK);
 		else if (BLCK_MASK & mask)
@@ -699,7 +711,7 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
 
 next:
 	for (n = 0; INPUT_CLKS > n; n++) {
-		if (!(((mask & INPUT_MASK) >> n) & 0x1))
+		if (!(((mask & input_mask) >> n) & 0x1))
 			continue;
 
 		if (_InEXT1_ == n) {
@@ -716,7 +728,7 @@ next:
 
 		clock_hz = rate;
 		for (i = 0; level > i ; i++)
-			rate = clk_divide(rate, request, 2, &div[i]);
+			rate = clk_divide(rate, request, 2, &div[i], level);
 
 		if (rate_hz && (abs(rate-request) > abs(rate_hz-request)))
 			continue;
@@ -849,6 +861,7 @@ int clk_enable(struct clk *clk)
 	struct nxp_clk_periph *peri = cdev->peri;
 	unsigned long flags;
 	int i = 0, inv = 0;
+	unsigned int input_mask = INPUT_MASK;
 
 	if (! peri)
 		return 0;
@@ -858,7 +871,10 @@ int clk_enable(struct clk *clk)
 		peri->dev_name, peri->dev_id, _GATE_BCLK_ & peri->clk_mask0 ? "ON":"PASS",
 		_GATE_PCLK_ & peri->clk_mask0 ? "ON":"PASS");
 
-	if (!(INPUT_MASK & peri->clk_mask0)) {
+    if (!strcmp(peri->dev_name, DEV_NAME_I2S))
+		input_mask |= (1<<CONFIG_SND_NXP_PLLDEV);
+
+	if (!(input_mask & peri->clk_mask0)) {
 		/* Gated BCLK/PCLK enable */
 		if (_GATE_BCLK_ & peri->clk_mask0)
 			clk_gen_bclk(peri->base_addr, 1);
@@ -903,6 +919,7 @@ void clk_disable(struct clk *clk)
 	struct nxp_clk_dev *cdev = clk_container(clk);
 	struct nxp_clk_periph *peri = cdev->peri;
 	unsigned long flags;
+	unsigned int input_mask = INPUT_MASK;
 
 	if (! peri)
 		return;
@@ -911,7 +928,11 @@ void clk_disable(struct clk *clk)
 	pr_debug("clk: %s.%d disable\n", peri->dev_name, peri->dev_id);
 
 	peri->enable = false;
-	if (!(INPUT_MASK & peri->clk_mask0)) {
+
+    if (!strcmp(peri->dev_name, DEV_NAME_I2S))
+		input_mask |= (1<<CONFIG_SND_NXP_PLLDEV);
+
+	if (!(input_mask & peri->clk_mask0)) {
 		/* Gated BCLK/PCLK disable */
 		if (_GATE_BCLK_ & peri->clk_mask0)
 			clk_gen_bclk(peri->base_addr, 0);
@@ -951,7 +972,7 @@ EXPORT_SYMBOL(clk_disable);
  */
 void nxp_cpu_clock_update_rate(int pll)
 {
-	core_update_rate(pll);
+	core_pll_update_link(pll);
 }
 
 unsigned int nxp_cpu_clock_hz(int type)
@@ -1080,7 +1101,6 @@ void nxp_cpu_clock_print(void)
 	pll = pll_get_dvo (4), support_dvfs = pll == cpu ? 0 : 1;
 	printk("PLL%d: MPG BCLK = %10u, PCLK = %9u\n", pll, core_hz[13], core_hz[14]);
 }
-
 
 void nxp_cpu_clock_resume(void)
 {

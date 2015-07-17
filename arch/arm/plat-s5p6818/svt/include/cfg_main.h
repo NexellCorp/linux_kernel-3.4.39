@@ -116,7 +116,7 @@
 #define CFG_DISP_PRI_VSYNC_FRONT_PORCH          12
 #define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CTRUE
 
-#define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL2
+#define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL0
 #define CFG_DISP_PRI_CLKGEN0_DIV                12
 #define CFG_DISP_PRI_CLKGEN0_DELAY              0
 #define CFG_DISP_PRI_CLKGEN0_INVERT				0
@@ -194,17 +194,17 @@
  * 	Audio SPDIF (TX/RX)
  */
 #if defined (CONFIG_ANDROID)
-#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT					CTRUE
+#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT				CTRUE
 #else
-#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT					CFALSE
+#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT				CFALSE
 #endif
-#define	CFG_AUDIO_SPDIF_TX_SAMPLE_RATE				48000
-#define	CFG_AUDIO_SPDIF_RX_SAMPLE_RATE				48000
+#define	CFG_AUDIO_SPDIF_TX_SAMPLE_RATE			48000
+#define	CFG_AUDIO_SPDIF_RX_SAMPLE_RATE			48000
 
 /*------------------------------------------------------------------------------
-   *  Audio PDM
-    */
-#define CFG_AUDIO_PDM_SAMPLE_RATE               48000
+ * 	Audio PDM
+ */
+#define CFG_AUDIO_PDM_SAMPLE_RATE				48000
 
 /*------------------------------------------------------------------------------
  * 	I2C

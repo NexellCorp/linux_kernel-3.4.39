@@ -66,6 +66,9 @@ static struct snd_pcm_hardware nxp_pcm_hardware = {
 				    		SNDRV_PCM_INFO_PAUSE |
 				    		SNDRV_PCM_INFO_RESUME,	//  | SNDRV_PCM_INFO_BLOCK_TRANSFER
 	.formats			= SND_SOC_PCM_FORMATS,
+#if defined(CONFIG_SND_NXP_DFS)
+   	.rates        = SNDRV_PCM_RATE_8000_192000,
+#endif
 	.rate_min			= 8000,
 	.rate_max			= 192000,
 	.channels_min		= 1,
@@ -193,7 +196,9 @@ static void nxp_pcm_dma_complete(void *arg)
 	long long new = ktime_to_us(ktime_get());
 	long long period_us = prtd->period_time_us;
 	int over_samples = div64_s64((new - ts), period_us);
+#if !defined (CONFIG_CPU_S5P4418_SMP_ISR)
 	int i;
+#endif
 
 	/* i2s master mode */
 	if(prtd->dma_param->real_clock != 0) {
