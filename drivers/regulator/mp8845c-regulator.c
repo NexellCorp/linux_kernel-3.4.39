@@ -25,10 +25,15 @@
 #include <linux/err.h>
 #include <linux/i2c.h>
 #include <linux/slab.h>
+#include <linux/delay.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/mp8845c-regulator.h>
+
+extern void (*nxp_board_reset)(char str, const char *cmd);
+static void (*backup_board_restart)(char str, const char *cmd) = NULL;
+static struct i2c_client *mp8845c_i2c_client = NULL;
 
 #if defined(CONFIG_PLAT_S5P6818_ASB) || defined(CONFIG_PLAT_S5P6818_SVT)
 #define FEATURE_ASV_CORE_TABLE
@@ -498,6 +503,40 @@ static int mp8845c_get_voltage(struct regulator_dev *rdev)
 }
 #endif
 
+static void mp8845c_set_default_vol(char str, const char *cmd)
+{
+	int ret;
+	uint8_t reg_val = 0;
+
+	if (!mp8845c_i2c_client)
+		goto set_vol_pass;
+
+	mp8845c_read(mp8845c_i2c_client, MP8845C_REG_VSEL, &reg_val);
+
+	if(reg_val < 0xCB)
+	{
+		mp8845c_set_bits(mp8845c_i2c_client, MP8845C_REG_SYSCNTL2, (1 << MP8845C_POS_GO));
+		ret = mp8845c_write(mp8845c_i2c_client, MP8845C_REG_VSEL, 0xCB); // OTP 
+		printk(KERN_ERR "Set voltage: %d \n", ret);
+		mdelay(10);
+	}
+
+#if 0
+	if (!mp8845c_i2c_client[1])
+		goto set_vol_pass;
+
+	mp8845c_set_bits(mp8845c_i2c_client, MP8845C_REG_SYSCNTL2, (1 << MP8845C_POS_GO));
+	ret = mp8845c_write(mp8845c_i2c_client, MP8845C_REG_VSEL, 0xCB); // OTP 
+	printk(KERN_ERR "CORE Default Voltage : 1.1V \n");
+#endif
+
+set_vol_pass:
+	if (backup_board_restart)
+		backup_board_restart(str, cmd);
+	return;
+}
+
+
 static struct regulator_ops mp8845c_vout_ops = {
 	.list_voltage		= mp8845c_list_voltage,
 #if 1
@@ -649,6 +688,16 @@ static int __devinit mp8845c_probe(struct i2c_client *client, const struct i2c_d
 	i2c_set_clientdata(client, ri);
 	dev_dbg(&client->dev, "%s regulator driver is registered.\n", id->name);
 
+	if(id_info == 0)
+	{
+		mp8845c_i2c_client = client;
+		if(nxp_board_reset)
+			backup_board_restart = nxp_board_reset;
+		else
+			backup_board_restart = NULL;
+		nxp_board_reset = mp8845c_set_default_vol;
+	}
+
 	return 0;
 
 }
@@ -671,6 +720,7 @@ static int mp8845c_suspend(struct i2c_client *client, pm_message_t state)
 	int id_info = init_data->id;
 	int ret = 0;
 
+#if !defined(CONFIG_PLAT_S5P6818_ASB) && !defined(CONFIG_PLAT_S5P6818_SVT)
 	ri = find_regulator_info(id_info);
 	if (ri == NULL) {
 		dev_err(&client->dev, "%s() invalid regulator ID specified\n", __func__);
@@ -682,6 +732,7 @@ static int mp8845c_suspend(struct i2c_client *client, pm_message_t state)
 		dev_err(&client->dev, "%s() Fail in pre-initialisation\n", __func__);
 		return ret;
 	}
+#endif
 
 	return ret;
 }
