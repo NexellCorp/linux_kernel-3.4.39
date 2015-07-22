@@ -27,6 +27,9 @@ ifeq ($(CONFIG_PLAT_S5P4418_DRONEL),y)
 PLATBOARD :=dronel
 endif
 
+ifeq ($(CONFIG_PLAT_S5P4418_TK_AVN),y)
+PLATBOARD :=tk_avn
+endif
 
 #
 # Build options
