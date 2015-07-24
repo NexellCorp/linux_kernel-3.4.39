@@ -37,6 +37,9 @@
 #include <mach/nxp-hdmi-cec.h>
 #endif
 
+
+extern void init_bcm_wifi(void);
+
 /*------------------------------------------------------------------------------
  * BUS Configure
  */
@@ -1537,38 +1540,6 @@ static struct dw_mci_board _dwmci1_data = {
 // Wifi 5G
 #ifdef CONFIG_MMC_NXP_CH2
 
-int _dwmci2_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
-{
-	return 0;
-}
-
-int _dwmci2_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
-{
-	return 0;
-}
-
-static int _dwmci2_init(u32 slot_id, irq_handler_t handler, void *data)
-{
-	struct dw_mci *host = (struct dw_mci *)data;
-	int io  = PAD_GPIO_D + 19;
-	int irq = IRQ_GPIO_START + io;
-	int id  = 0, ret = 0;
-
-	printk("dw_mmc dw_mmc.%d: Using external card detect irq %3d (io %2d)\n", id, irq, io);
-
-	ret  = request_irq(irq, handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
-				DEV_NAME_SDHC "2", (void*)host->slot[slot_id]);
-	if (0 > ret)
-		pr_err("dw_mmc dw_mmc.%d: fail request interrupt %d ...\n", id, irq);
-	return 0;
-}
-
-static int _dwmci2_get_cd(u32 slot_id)
-{
-	int io = PAD_GPIO_D + 19;
-	return nxp_soc_gpio_get_in_value(io);
-}
-
 static struct dw_mci_board _dwmci2_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
 					DW_MCI_QUIRK_HIGHSPEED,
@@ -1576,11 +1547,7 @@ static struct dw_mci_board _dwmci2_data = {
 	.caps           = MMC_CAP_CMD23,
 	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
 	.detect_delay_ms= 200,
-	.cd_type        = DW_MCI_CD_EXTERNAL,
-	.init			= _dwmci2_init,
-	.get_cd			= _dwmci2_get_cd,
-	.ext_cd_init	= _dwmci2_ext_cd_init,
-	.ext_cd_cleanup	= _dwmci2_ext_cd_cleanup,
+	.cd_type        = DW_MCI_CD_NONE,
 	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
 	.mode			= DMA_MODE,
@@ -1943,6 +1910,9 @@ void __init nxp_board_devices_register(void)
 
     printk("plat: add device nplat\n");
     platform_device_register(&nplat_device);
+#if defined(CONFIG_BCMDHD)
+	init_bcm_wifi();
+#endif
 // e tnn, nplat
 	/* END */
 	printk("\n");

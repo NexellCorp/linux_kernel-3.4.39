@@ -87,7 +87,7 @@
 #define PAD_GPIOB9      (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: VIP0_VD[6]          ,2: SDEX[6]             ,3: I2S1SDI             =
 #define PAD_GPIOB10     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: VIP0_VD[7]          ,2: SDEX[7]             ,3: I2S2SDI             =
 // Wifi 5G
-#define PAD_GPIOB11     (PAD_MODE_OUT | PAD_FUNC_ALT2 | PAD_LEVEL_HIGH  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: CLE           ,1: CLE1                ,2: GPIO                ,3:_                    =
+#define PAD_GPIOB11     (PAD_MODE_OUT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: CLE           ,1: CLE1                ,2: GPIO                ,3:_                    =
 #define PAD_GPIOB12     (PAD_MODE_ALT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: ALE           ,1: ALE1                ,2: GPIO                ,3:_                    =
 #define PAD_GPIOB13     (PAD_MODE_ALT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_SD[0]    ,1: GPIO                ,2:_                    ,3:_                    =
 #define PAD_GPIOB14     (PAD_MODE_ALT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_RnB      ,1: MCUS_RnB1           ,2: GPIO                ,3:_                    =
@@ -110,7 +110,8 @@
 #define PAD_GPIOB26     (PAD_MODE_OUT  | PAD_FUNC_ALT1 | PAD_LEVEL_HIGH  | PAD_PULL_OFF  | PAD_STRENGTH_0)     // 0: MCUS_SD[10]   ,1: GPIO                ,2: MPEGTSI0_TDATA[2]   ,3: ECID_BONDING_ID[2]  =
 //#define PAD_GPIOB27     (PAD_MODE_IN  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: MCUS_SD[11]   ,1: GPIO                ,2: MPEGTSI0_TDATA[3]   ,3:_                    =
 // Wifi 5G
-#define PAD_GPIOB27     (PAD_MODE_OUT  | PAD_FUNC_ALT1 | PAD_LEVEL_HIGH  | PAD_PULL_OFF  | PAD_STRENGTH_0)     // 0: MCUS_SD[11]   ,1: GPIO                ,2: MPEGTSI0_TDATA[3]   ,3:_                    =
+//#define PAD_GPIOB27     (PAD_MODE_OUT  | PAD_FUNC_ALT1 | PAD_LEVEL_HIGH  | PAD_PULL_OFF  | PAD_STRENGTH_0)     // 0: MCUS_SD[11]   ,1: GPIO                ,2: MPEGTSI0_TDATA[3]   ,3:_                    =
+#define PAD_GPIOB27     (PAD_MODE_IN  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF  | PAD_STRENGTH_0)     // 0: MCUS_SD[11]   ,1: GPIO                ,2: MPEGTSI0_TDATA[3]   ,3:_                    =
 #define PAD_GPIOB28     (PAD_MODE_IN  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: MCUS_SD[12]   ,1: GPIO                ,2: MPEGTSI0_TDATA[4]   ,3: UART4_RXD           =
 //#define PAD_GPIOB29     (PAD_MODE_IN  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: MCUS_SD[13]   ,1: GPIO                ,2: MPEGTSI0_TDATA[5]   ,3: UART4_TXD           =
 //tnn, nplat power blue led
@@ -324,8 +325,10 @@
  *	WIFI
  */
 // Wifi 5G
-#define CFG_IO_WIFI_PWR_ON				((PAD_GPIO_B + 11) | PAD_FUNC_ALT0)		/* GPIO */
-#define CFG_IO_WIFI_RES_ON				((PAD_GPIO_B + 27) | PAD_FUNC_ALT0)		/* GPIO */
+#define CFG_WIFI_SDIO_ID                2
+#define CFG_IO_WIFI_HOST_WAKE_UP				((PAD_GPIO_B + 27) )		/* GPIO */
+#define CFG_IO_WIFI_HOST_WAKE_UP_IRQ_NUM                   (IRQ_GPIO_B_START + 27)
+#define CFG_IO_WIFI_REG_ON				((PAD_GPIO_B + 11) )		/* GPIO */
 
 #endif	/* __CFG_GPIO_H__ */
 
