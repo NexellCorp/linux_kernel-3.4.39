@@ -151,6 +151,7 @@ struct dw_mci_slot {
 static struct workqueue_struct *dw_mci_card_workqueue;
 
 
+#if defined(CONFIG_PLAT_S5P4418_TK_AVN)
 #include <mach/platform.h>
 static struct dw_mci_slot* mci_slot[4] = {NULL, NULL, NULL, NULL};
 static int mci_id = 0;
@@ -181,7 +182,7 @@ void force_presence_change(struct platform_device *dev, int state)
     sw_mci_rescan_card(state);
 }
 EXPORT_SYMBOL_GPL(force_presence_change);
-
+#endif
 
 #if defined(CONFIG_DEBUG_FS)
 static int dw_mci_req_show(struct seq_file *s, void *v)
@@ -2399,9 +2400,9 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 	slot->host = host;
 	host->slot[id] = slot;	/* add by jhkim */
 
-//#if defined(CONFIG_ESP8089)
+#if defined(CONFIG_PLAT_S5P4418_TK_AVN)
 	mci_slot[mci_id++] = slot;
-//#endif
+#endif
 	if(host->pdata->mode == DMA_MODE)	
 		mmc->ops = &dw_mci_ops;
 	else 
