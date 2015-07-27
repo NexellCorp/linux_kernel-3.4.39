@@ -669,7 +669,10 @@ static int suspend_enter(suspend_state_t state)
 	 */
 	cpu_suspend(0, __powerdown);
 
+#ifndef CONFIG_FALINUX_ZEROBOOT
+	// do not out message until l2cache resume
 	lldebugout("resume machine\n");
+#endif
 
 	/*
 	 * Wakeup status
@@ -678,6 +681,10 @@ static int suspend_enter(suspend_state_t state)
 	suspend_mark(SUSPEND_RESUME);
 #endif
 	suspend_l2cache(SUSPEND_RESUME);
+
+#ifdef CONFIG_FALINUX_ZEROBOOT
+	lldebugout("resume machine\n");
+#endif
 
 	resume_machine();
 

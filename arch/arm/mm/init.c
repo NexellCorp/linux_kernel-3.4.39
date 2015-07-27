@@ -362,7 +362,7 @@ void __init arm_memblock_init(struct meminfo *mi, struct machine_desc *mdesc)
 	memblock_reserve(PHYS_OFFSET + 0x00088000, SZ_64K);
 	memblock_reserve(PHYS_OFFSET + 0x00098000, SZ_64K);
 
-	memblock_reserve(PHYS_OFFSET + 0x0D000000, SZ_16M);
+	memblock_reserve(PHYS_OFFSET + 0x04000000, SZ_16M);
 #ifdef CONFIG_FALINUX_ZEROBOOT_MEM_STORAGE
 //	memblock_reserve(PHYS_OFFSET + 0x20000000, SZ_512M);
 #endif

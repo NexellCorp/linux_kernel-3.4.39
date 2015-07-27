@@ -350,6 +350,24 @@ static void l2x0_unlock(u32 cache_id)
 	}
 }
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+#include <linux/export.h>
+unsigned long get_zb_l2x0_base(void)
+{
+	return (unsigned long)l2x0_base;
+}
+EXPORT_SYMBOL(get_zb_l2x0_base);
+unsigned long get_zb_l2x0_way_mask(void)
+{
+	return (unsigned long)l2x0_way_mask;
+}
+EXPORT_SYMBOL(get_zb_l2x0_way_mask);
+unsigned long get_zb_l2x0_size(void)
+{
+	return (unsigned long)l2x0_size;
+}
+EXPORT_SYMBOL(get_zb_l2x0_size);
+#endif
 void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask)
 {
 	u32 aux;

@@ -450,7 +450,7 @@ void zb_remove_dma_priv_mem(unsigned long phys)
 		zb_put_free_node(z);
 	} else {
 		printk("bug list search phys 0x%lx\n", phys);
-		dump_stack();
+		//dump_stack();
 	}
 }
 
