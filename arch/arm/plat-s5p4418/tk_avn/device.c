@@ -1043,32 +1043,44 @@ static bool is_front_camera_power_state_changed = false;
 static int front_camera_power_enable(bool on);
 static int back_camera_power_enable(bool on)
 {
-    unsigned int io = CFG_IO_CAMERA_BACK_POWER_DOWN;
-    unsigned int reset_io = CFG_IO_CAMERA_RESET;
+
+#if 0
+    unsigned int io 			= CFG_IO_CAMERA_BACK_POWER_DOWN;
+    unsigned int reset_io = CFG_IO_CAMERA_BACK_RESET;
+    unsigned int power_mux_io =  ((PAD_GPIO_C + 24) | PAD_FUNC_ALT0);
+
     PM_DBGOUT("%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
+    printk("%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
     if (on) {
-        front_camera_power_enable(0);
+        //front_camera_power_enable(0);
         if (!is_back_camera_enabled) {
-            camera_power_control(1);
-            /* PD signal */
+            //camera_power_control(1);
+
+						/* Power MUX Enable */
+						nxp_soc_gpio_set_out_value(power_mux_io, 0);
+            nxp_soc_gpio_set_io_dir(power_mux_io, 1);
+            nxp_soc_gpio_set_io_func(power_mux_io, nxp_soc_gpio_get_altnum(power_mux_io));
+						mdelay(1);
+            nxp_soc_gpio_set_out_value(power_mux_io, 1);
+						mdelay(10);
+
+            /* PDN - High Active */
             nxp_soc_gpio_set_out_value(io, 0);
             nxp_soc_gpio_set_io_dir(io, 1);
             nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-            nxp_soc_gpio_set_out_value(io, 1);
-            camera_common_set_clock(24000000);
-            /* mdelay(10); */
-            mdelay(1);
-            nxp_soc_gpio_set_out_value(io, 0);
-            /* RST signal */
+						mdelay(10);
+
+            /* RST - Low Active */
             nxp_soc_gpio_set_out_value(reset_io, 1);
             nxp_soc_gpio_set_io_dir(reset_io, 1);
-            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(io));
+            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
             nxp_soc_gpio_set_out_value(reset_io, 0);
             /* mdelay(100); */
             mdelay(1);
             nxp_soc_gpio_set_out_value(reset_io, 1);
             /* mdelay(100); */
-            mdelay(1);
+            mdelay(10);
+
             is_back_camera_enabled = true;
             is_back_camera_power_state_changed = true;
         } else {
@@ -1088,24 +1100,23 @@ static int back_camera_power_enable(bool on)
             is_back_camera_power_state_changed = false;
         }
 
-        if (!(is_back_camera_enabled || is_front_camera_enabled)) {
+       if (!(is_back_camera_enabled || is_front_camera_enabled)) {
             camera_power_control(0);
         }
     }
+#endif
 
     return 0;
 }
 
 static bool back_camera_power_state_changed(void)
 {
+#if 0
     return is_back_camera_power_state_changed;
-}
+#endif
 
-static struct i2c_board_info back_camera_i2c_boardinfo[] = {
-    {
-        I2C_BOARD_INFO("SP2518", 0x60>>1),
-    },
-};
+	return true;
+}
 
 static int front_camera_power_enable(bool on)
 {
@@ -1167,6 +1178,12 @@ static bool front_camera_power_state_changed(void)
     return is_front_camera_power_state_changed;
 }
 
+static struct i2c_board_info tw9900_i2c_boardinfo[] = {
+    {
+        I2C_BOARD_INFO("tw9900", 0x88>>1),
+    },
+};
+
 static struct i2c_board_info front_camera_i2c_boardinfo[] = {
     {
         I2C_BOARD_INFO("SP0838", 0x18),
@@ -1175,7 +1192,7 @@ static struct i2c_board_info front_camera_i2c_boardinfo[] = {
 
 static struct nxp_v4l2_i2c_board_info sensor[] = {
     {
-        .board_info = &back_camera_i2c_boardinfo[0],
+        .board_info = &tw9900_i2c_boardinfo[0],
         .i2c_adapter_id = 0,
     },
     {
@@ -1186,39 +1203,43 @@ static struct nxp_v4l2_i2c_board_info sensor[] = {
 
 
 static struct nxp_capture_platformdata capture_plat_data[] = {
+#if defined(CONFIG_VIDEO_TW9900)
     {
         /* back_camera 656 interface */
-        .module = 0,
+        .module = 1,
         .sensor = &sensor[0],
         .type = NXP_CAPTURE_INF_PARALLEL,
         .parallel = {
             /* for 656 */
-            .is_mipi        = false,
-            .external_sync  = false, /* 656 interface */
-            .h_active       = 800,
-            .h_frontporch   = 7,
-            .h_syncwidth    = 1,
-            .h_backporch    = 10,
-            .v_active       = 600,
-            .v_frontporch   = 0,
-            .v_syncwidth    = 2,
-            .v_backporch    = 3,
-            .clock_invert   = true,
-            .port           = 0,
-            .data_order     = NXP_VIN_Y0CBY1CR,
-            .interlace      = false,
-            .clk_rate       = 24000000,
-            .late_power_down = true,
-            .power_enable   = back_camera_power_enable,
-            .power_state_changed = back_camera_power_state_changed,
-            .set_clock      = camera_common_set_clock,
-            .setup_io       = camera_common_vin_setup_io,
+            .is_mipi        			= false,
+            .external_sync  			= false, /* 656 interface */
+            .h_active       			= 704,
+            .h_frontporch   			= 7,
+            .h_syncwidth    			= 1,
+            .h_backporch    			= 10,
+            .v_active       			= 480,
+            .v_frontporch   			= 0,
+            .v_syncwidth    			= 2,
+            .v_backporch    			=	3,
+            .clock_invert   			= true,
+            .port           			= 0,
+            .data_order     			= NXP_VIN_CBY0CRY1,
+            .interlace      			= true,
+            .clk_rate       			= 24000000,
+            .late_power_down 			= false,
+            .power_enable   			= back_camera_power_enable,
+            .power_state_changed 	= back_camera_power_state_changed,
+            .set_clock      			= NULL,
+            //.setup_io       			= camera_common_vin_setup_io,
+            .setup_io       			= NULL,
         },
         .deci = {
             .start_delay_ms = 0,
             .stop_delay_ms  = 0,
         },
     },
+#endif
+#if defined(CONFIG_VIDEO_SP0828)
     {
         /* front_camera 601 interface */
         .module = 0,
@@ -1251,6 +1272,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .stop_delay_ms  = 0,
         },
     },
+#endif
     { 0, NULL, 0, },
 };
 /* out platformdata */
@@ -1333,8 +1355,9 @@ static void spi0_cs(u32 chipselect)
 
 	nxp_soc_gpio_set_io_dir( CFG_SPI0_CS,1);
 	nxp_soc_gpio_set_out_value(	 CFG_SPI0_CS , chipselect);
+#else
+	;
 #endif
-
 }
 
 static void spi1_cs(u32 chipselect) 

@@ -3,16 +3,13 @@
 #include <linux/module.h>
 #include <linux/interrupt.h>
 #include <linux/switch.h>
-#include <linux/delay.h>
 
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
 #include <media/v4l2-ctrls.h>
 
-//#include <nexell/platform.h>
-
-/*#include <mach/platform.h>*/
-/*#include <mach/soc.h>*/
+#include <mach/platform.h>
+#include <mach/soc.h>
 
 /*#define DEBUG_TW9900*/
 #ifdef DEBUG_TW9900
@@ -21,15 +18,7 @@
 #define vmsg(a...)
 #endif
 
-#if 0
-extern void nxp_soc_gpio_set_out_value(unsigned int io, int high);
-extern int  nxp_soc_gpio_get_altnum(unsigned int io);
-extern void nxp_soc_gpio_set_io_dir(unsigned int io, int out);
-extern void nxp_soc_gpio_set_io_func(unsigned int io, unsigned int func);
-#endif
-
-extern void dump_register(int module);
-
+//#define BRIGHTNESS_TEST
 #define DEFAULT_BRIGHTNESS  0x1e
 struct tw9900_state {
     struct media_pad pad;
@@ -46,187 +35,25 @@ struct tw9900_state {
     /* standard control */
     struct v4l2_ctrl *ctrl_brightness;
     char brightness;
+
+    /* nexell: detect worker */
+    /*struct work_struct work;*/
+    struct delayed_work work;
 };
 
-struct reg_val {
-    uint8_t reg;
-    uint8_t val;
-};
-
-#define END_MARKER {0xff, 0xff}
-
-static struct reg_val _sensor_init_data[] =
-{
-    {0x02, 0x40},
-    {0x03, 0xa2},
-    {0x07, 0x02},
-    {0x08, 0x12},
-    {0x09, 0xf0},
-    {0x0a, 0x1c},
-    /*{0x0b, 0xd0}, // 720 */
-    {0x0b, 0xc0}, // 704
-    {0x1b, 0x00},
-    /*{0x10, 0xfa},*/
-    {0x10, 0x1e},
-    {0x11, 0x64},
-    {0x2f, 0xe6},
-    {0x55, 0x00},
-#if 1
-    /*{0xb1, 0x20},*/
-    /*{0xb1, 0x02},*/
-    {0xaf, 0x00},
-    {0xb1, 0x20},
-    {0xb4, 0x20},
-    /*{0x06, 0x80},*/
-#endif
-    /*{0xaf, 0x40},*/
-    /*{0xaf, 0x00},*/
-    /*{0xaf, 0x80},*/
-    END_MARKER
-};
+#define MUX0					0
+#define MUX1 					1
+#define SV_DET					0x16
+#define REARCAM_BACKDETECT_TIME	700
+#define REARCAM_MPOUT_TIME		300
 
 static struct tw9900_state _state;
+static int rearcam_brightness_tbl[12] = {30, -15, -12, -9, -6, -3, 0, 10, 20, 30, 35, 40};
 
 void tw9900_external_set_brightness(char brightness) {
     _state.brightness = brightness;
 }
 EXPORT_SYMBOL(tw9900_external_set_brightness);
-
-#if 0
-/**
- * hw function
- */
-/* debugging */
-#define DUMP_REGISTER 1
-void dump_register(int module)
-{
-#if (DUMP_REGISTER)
-#define DBGOUT(args...)  printk(args)
-    NX_VIP_RegisterSet *pREG =
-        (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
-
-    DBGOUT("BASE ADDRESS: %p\n", pREG);
-#if defined(CONFIG_ARCH_S5P4418)
-    DBGOUT(" VIP_CONFIG     = 0x%04x\r\n", pREG->VIP_CONFIG);
-    DBGOUT(" VIP_HVINT      = 0x%04x\r\n", pREG->VIP_HVINT);
-    DBGOUT(" VIP_SYNCCTRL   = 0x%04x\r\n", pREG->VIP_SYNCCTRL);
-    DBGOUT(" VIP_SYNCMON    = 0x%04x\r\n", pREG->VIP_SYNCMON);
-    DBGOUT(" VIP_VBEGIN     = 0x%04x\r\n", pREG->VIP_VBEGIN);
-    DBGOUT(" VIP_VEND       = 0x%04x\r\n", pREG->VIP_VEND);
-    DBGOUT(" VIP_HBEGIN     = 0x%04x\r\n", pREG->VIP_HBEGIN);
-    DBGOUT(" VIP_HEND       = 0x%04x\r\n", pREG->VIP_HEND);
-    DBGOUT(" VIP_FIFOCTRL   = 0x%04x\r\n", pREG->VIP_FIFOCTRL);
-    DBGOUT(" VIP_HCOUNT     = 0x%04x\r\n", pREG->VIP_HCOUNT);
-    DBGOUT(" VIP_VCOUNT     = 0x%04x\r\n", pREG->VIP_VCOUNT);
-    DBGOUT(" VIP_CDENB      = 0x%04x\r\n", pREG->VIP_CDENB);
-    DBGOUT(" VIP_ODINT      = 0x%04x\r\n", pREG->VIP_ODINT);
-    DBGOUT(" VIP_IMGWIDTH   = 0x%04x\r\n", pREG->VIP_IMGWIDTH);
-    DBGOUT(" VIP_IMGHEIGHT  = 0x%04x\r\n", pREG->VIP_IMGHEIGHT);
-    DBGOUT(" CLIP_LEFT      = 0x%04x\r\n", pREG->CLIP_LEFT);
-    DBGOUT(" CLIP_RIGHT     = 0x%04x\r\n", pREG->CLIP_RIGHT);
-    DBGOUT(" CLIP_TOP       = 0x%04x\r\n", pREG->CLIP_TOP);
-    DBGOUT(" CLIP_BOTTOM    = 0x%04x\r\n", pREG->CLIP_BOTTOM);
-    DBGOUT(" DECI_TARGETW   = 0x%04x\r\n", pREG->DECI_TARGETW);
-    DBGOUT(" DECI_TARGETH   = 0x%04x\r\n", pREG->DECI_TARGETH);
-    DBGOUT(" DECI_DELTAW    = 0x%04x\r\n", pREG->DECI_DELTAW);
-    DBGOUT(" DECI_DELTAH    = 0x%04x\r\n", pREG->DECI_DELTAH);
-    DBGOUT(" DECI_CLEARW    = 0x%04x\r\n", pREG->DECI_CLEARW);
-    DBGOUT(" DECI_CLEARH    = 0x%04x\r\n", pREG->DECI_CLEARH);
-    DBGOUT(" DECI_LUSEG     = 0x%04x\r\n", pREG->DECI_LUSEG);
-    DBGOUT(" DECI_CRSEG     = 0x%04x\r\n", pREG->DECI_CRSEG);
-    DBGOUT(" DECI_CBSEG     = 0x%04x\r\n", pREG->DECI_CBSEG);
-    DBGOUT(" DECI_FORMAT    = 0x%04x\r\n", pREG->DECI_FORMAT);
-    DBGOUT(" DECI_ROTFLIP   = 0x%04x\r\n", pREG->DECI_ROTFLIP);
-    DBGOUT(" DECI_LULEFT    = 0x%04x\r\n", pREG->DECI_LULEFT);
-    DBGOUT(" DECI_CRLEFT    = 0x%04x\r\n", pREG->DECI_CRLEFT);
-    DBGOUT(" DECI_CBLEFT    = 0x%04x\r\n", pREG->DECI_CBLEFT);
-    DBGOUT(" DECI_LURIGHT   = 0x%04x\r\n", pREG->DECI_LURIGHT);
-    DBGOUT(" DECI_CRRIGHT   = 0x%04x\r\n", pREG->DECI_CRRIGHT);
-    DBGOUT(" DECI_CBRIGHT   = 0x%04x\r\n", pREG->DECI_CBRIGHT);
-    DBGOUT(" DECI_LUTOP     = 0x%04x\r\n", pREG->DECI_LUTOP);
-    DBGOUT(" DECI_CRTOP     = 0x%04x\r\n", pREG->DECI_CRTOP);
-    DBGOUT(" DECI_CBTOP     = 0x%04x\r\n", pREG->DECI_CBTOP);
-    DBGOUT(" DECI_LUBOTTOM  = 0x%04x\r\n", pREG->DECI_LUBOTTOM);
-    DBGOUT(" DECI_CRBOTTOM  = 0x%04x\r\n", pREG->DECI_CRBOTTOM);
-    DBGOUT(" DECI_CBBOTTOM  = 0x%04x\r\n", pREG->DECI_CBBOTTOM);
-    DBGOUT(" CLIP_LUSEG     = 0x%04x\r\n", pREG->CLIP_LUSEG);
-    DBGOUT(" CLIP_CRSEG     = 0x%04x\r\n", pREG->CLIP_CRSEG);
-    DBGOUT(" CLIP_CBSEG     = 0x%04x\r\n", pREG->CLIP_CBSEG);
-    DBGOUT(" CLIP_FORMAT    = 0x%04x\r\n", pREG->CLIP_FORMAT);
-    DBGOUT(" CLIP_ROTFLIP   = 0x%04x\r\n", pREG->CLIP_ROTFLIP);
-    DBGOUT(" CLIP_LULEFT    = 0x%04x\r\n", pREG->CLIP_LULEFT);
-    DBGOUT(" CLIP_CRLEFT    = 0x%04x\r\n", pREG->CLIP_CRLEFT);
-    DBGOUT(" CLIP_CBLEFT    = 0x%04x\r\n", pREG->CLIP_CBLEFT);
-    DBGOUT(" CLIP_LURIGHT   = 0x%04x\r\n", pREG->CLIP_LURIGHT);
-    DBGOUT(" CLIP_CRRIGHT   = 0x%04x\r\n", pREG->CLIP_CRRIGHT);
-    DBGOUT(" CLIP_CBRIGHT   = 0x%04x\r\n", pREG->CLIP_CBRIGHT);
-    DBGOUT(" CLIP_LUTOP     = 0x%04x\r\n", pREG->CLIP_LUTOP);
-    DBGOUT(" CLIP_CRTOP     = 0x%04x\r\n", pREG->CLIP_CRTOP);
-    DBGOUT(" CLIP_CBTOP     = 0x%04x\r\n", pREG->CLIP_CBTOP);
-    DBGOUT(" CLIP_LUBOTTOM  = 0x%04x\r\n", pREG->CLIP_LUBOTTOM);
-    DBGOUT(" CLIP_CRBOTTOM  = 0x%04x\r\n", pREG->CLIP_CRBOTTOM);
-    DBGOUT(" CLIP_CBBOTTOM  = 0x%04x\r\n", pREG->CLIP_CBBOTTOM);
-    DBGOUT(" VIP_SCANMODE   = 0x%04x\r\n", pREG->VIP_SCANMODE);
-    DBGOUT(" CLIP_YUYVENB   = 0x%04x\r\n", pREG->CLIP_YUYVENB);
-    DBGOUT(" CLIP_BASEADDRH = 0x%04x\r\n", pREG->CLIP_BASEADDRH);
-    DBGOUT(" CLIP_BASEADDRL = 0x%04x\r\n", pREG->CLIP_BASEADDRL);
-    DBGOUT(" CLIP_STRIDEH   = 0x%04x\r\n", pREG->CLIP_STRIDEH);
-    DBGOUT(" CLIP_STRIDEL   = 0x%04x\r\n", pREG->CLIP_STRIDEL);
-    DBGOUT(" VIP_VIP1       = 0x%04x\r\n", pREG->VIP_VIP1);
-    /* DBGOUT(" VIPCLKENB      = 0x%04x\r\n", pREG->VIPCLKENB); */
-    /* DBGOUT(" VIPCLKGEN[0][0]= 0x%04x\r\n", pREG->VIPCLKGEN[0][0]); */
-    /* DBGOUT(" VIPCLKGEN[0][1]= 0x%04x\r\n", pREG->VIPCLKGEN[0][1]); */
-    /* DBGOUT(" VIPCLKGEN[1][0]= 0x%04x\r\n", pREG->VIPCLKGEN[1][0]); */
-    /* DBGOUT(" VIPCLKGEN[1][1]= 0x%04x\r\n", pREG->VIPCLKGEN[1][1]); */
-#elif defined(CONFIG_ARCH_S5P6818)
-    DBGOUT(" VIP_CONFIG     = 0x%04x\r\n", pREG->VIP_CONFIG);
-    DBGOUT(" VIP_HVINT      = 0x%04x\r\n", pREG->VIP_HVINT);
-    DBGOUT(" VIP_SYNCCTRL   = 0x%04x\r\n", pREG->VIP_SYNCCTRL);
-    DBGOUT(" VIP_SYNCMON    = 0x%04x\r\n", pREG->VIP_SYNCMON);
-    DBGOUT(" VIP_VBEGIN     = 0x%04x\r\n", pREG->VIP_VBEGIN);
-    DBGOUT(" VIP_VEND       = 0x%04x\r\n", pREG->VIP_VEND);
-    DBGOUT(" VIP_HBEGIN     = 0x%04x\r\n", pREG->VIP_HBEGIN);
-    DBGOUT(" VIP_HEND       = 0x%04x\r\n", pREG->VIP_HEND);
-    DBGOUT(" VIP_FIFOCTRL   = 0x%04x\r\n", pREG->VIP_FIFOCTRL);
-    DBGOUT(" VIP_HCOUNT     = 0x%04x\r\n", pREG->VIP_HCOUNT);
-    DBGOUT(" VIP_VCOUNT     = 0x%04x\r\n", pREG->VIP_VCOUNT);
-    DBGOUT(" VIP_PADCLK_SEL = 0x%04x\r\n", pREG->VIP_PADCLK_SEL);
-    DBGOUT(" VIP_INFIFOCLR  = 0x%04x\r\n", pREG->VIP_INFIFOCLR);
-    DBGOUT(" VIP_CDENB      = 0x%04x\r\n", pREG->VIP_CDENB);
-    DBGOUT(" VIP_ODINT      = 0x%04x\r\n", pREG->VIP_ODINT);
-    DBGOUT(" VIP_IMGWIDTH   = 0x%04x\r\n", pREG->VIP_IMGWIDTH);
-    DBGOUT(" VIP_IMGHEIGHT  = 0x%04x\r\n", pREG->VIP_IMGHEIGHT);
-    DBGOUT(" CLIP_LEFT      = 0x%04x\r\n", pREG->CLIP_LEFT);
-    DBGOUT(" CLIP_RIGHT     = 0x%04x\r\n", pREG->CLIP_RIGHT);
-    DBGOUT(" CLIP_TOP       = 0x%04x\r\n", pREG->CLIP_TOP);
-    DBGOUT(" CLIP_BOTTOM    = 0x%04x\r\n", pREG->CLIP_BOTTOM);
-    DBGOUT(" DECI_TARGETW   = 0x%04x\r\n", pREG->DECI_TARGETW);
-    DBGOUT(" DECI_TARGETH   = 0x%04x\r\n", pREG->DECI_TARGETH);
-    DBGOUT(" DECI_DELTAW    = 0x%04x\r\n", pREG->DECI_DELTAW);
-    DBGOUT(" DECI_DELTAH    = 0x%04x\r\n", pREG->DECI_DELTAH);
-    DBGOUT(" DECI_CLEARW    = 0x%04x\r\n", pREG->DECI_CLEARW);
-    DBGOUT(" DECI_CLEARH    = 0x%04x\r\n", pREG->DECI_CLEARH);
-    DBGOUT(" DECI_FORMAT    = 0x%04x\r\n", pREG->DECI_FORMAT);
-    DBGOUT(" DECI_LUADDR    = 0x%04x\r\n", pREG->DECI_LUADDR);
-    DBGOUT(" DECI_LUSTRIDE  = 0x%04x\r\n", pREG->DECI_LUSTRIDE);
-    DBGOUT(" DECI_CRADDR    = 0x%04x\r\n", pREG->DECI_CRADDR);
-    DBGOUT(" DECI_CRSTRIDE  = 0x%04x\r\n", pREG->DECI_CRSTRIDE);
-    DBGOUT(" DECI_CBADDR    = 0x%04x\r\n", pREG->DECI_CBADDR);
-    DBGOUT(" DECI_CBSTRIDE  = 0x%04x\r\n", pREG->DECI_CBSTRIDE);
-    DBGOUT(" CLIP_FORMAT    = 0x%04x\r\n", pREG->CLIP_FORMAT);
-    DBGOUT(" CLIP_LUADDR    = 0x%04x\r\n", pREG->CLIP_LUADDR);
-    DBGOUT(" CLIP_LUSTRIDE  = 0x%04x\r\n", pREG->CLIP_LUSTRIDE);
-    DBGOUT(" CLIP_CRADDR    = 0x%04x\r\n", pREG->CLIP_CRADDR);
-    DBGOUT(" CLIP_CRSTRIDE  = 0x%04x\r\n", pREG->CLIP_CRSTRIDE);
-    DBGOUT(" CLIP_CBADDR    = 0x%04x\r\n", pREG->CLIP_CBADDR);
-    DBGOUT(" CLIP_CBSTRIDE  = 0x%04x\r\n", pREG->CLIP_CBSTRIDE);
-    DBGOUT(" VIP_SCANMODE   = 0x%04x\r\n", pREG->VIP_SCANMODE);
-    DBGOUT(" VIP_VIP1       = 0x%04x\r\n", pREG->VIP_VIP1);
-#endif
-
-#endif
-}
-#endif
 
 /**
  * util functions
@@ -236,7 +63,7 @@ static inline struct tw9900_state *ctrl_to_me(struct v4l2_ctrl *ctrl)
     return container_of(ctrl->handler, struct tw9900_state, handler);
 }
 
-#define THINE_I2C_RETRY_CNT				10
+#define THINE_I2C_RETRY_CNT				3
 static int _i2c_read_byte(struct i2c_client *client, u8 addr, u8 *data)
 {
 	s8 i = 0;
@@ -287,10 +114,7 @@ static int _i2c_write_byte(struct i2c_client *client, u8 addr, u8 val)
 	for(i=0; i<THINE_I2C_RETRY_CNT; i++) {
 		ret = i2c_transfer(client->adapter, &msg, 1);
 		if (likely(ret == 1))
-		{
-			/*printk("[%s]i2c write succeed! :  addr - 0x%X, Val - 0x%X\n", __func__, addr, val);*/
 			break;
-		}
 	}
 
 	if (ret != 1) {
@@ -307,16 +131,16 @@ static int _i2c_write_byte(struct i2c_client *client, u8 addr, u8 val)
 static int tw9900_set_mux(struct v4l2_ctrl *ctrl)
 {
     struct tw9900_state *me = ctrl_to_me(ctrl);
-    /*printk("%s: val %d\n", __func__, ctrl->val);*/
+    //printk("%s: val %d me->brightness %d\n", __func__, ctrl->val, me->brightness);
     if (ctrl->val == 0) {
         // MUX 0
-        if (me->brightness != DEFAULT_BRIGHTNESS)
+        if (rearcam_brightness_tbl[me->brightness] != DEFAULT_BRIGHTNESS)
             _i2c_write_byte(me->i2c_client, 0x10, DEFAULT_BRIGHTNESS);
         _i2c_write_byte(me->i2c_client, 0x02, 0x40);
     } else {
         // MUX 1
-        if (me->brightness != DEFAULT_BRIGHTNESS)
-            _i2c_write_byte(me->i2c_client, 0x10, me->brightness);
+        if (rearcam_brightness_tbl[me->brightness] != DEFAULT_BRIGHTNESS)
+            _i2c_write_byte(me->i2c_client, 0x10, rearcam_brightness_tbl[me->brightness]);
         _i2c_write_byte(me->i2c_client, 0x02, 0x44);
     }
 
@@ -326,13 +150,24 @@ static int tw9900_set_mux(struct v4l2_ctrl *ctrl)
 static int tw9900_set_brightness(struct v4l2_ctrl *ctrl)
 {
     struct tw9900_state *me = ctrl_to_me(ctrl);
+
+#ifdef BRIGHTNESS_TEST
+		printk(KERN_ERR "%s: brightness = %d\n", __func__, ctrl->val);
+		_i2c_write_byte(me->i2c_client, 0x10, ctrl->val);
+#else	
     if (ctrl->val != me->brightness) {
-        _i2c_write_byte(me->i2c_client, 0x10, ctrl->val);
+
+		printk(KERN_ERR "%s: brightness = %d\n", __func__, rearcam_brightness_tbl[ctrl->val]);
+        _i2c_write_byte(me->i2c_client, 0x10, rearcam_brightness_tbl[ctrl->val]);
+
         me->brightness = ctrl->val;
     }
+#endif
     return 0;
 }
 
+static bool _is_backgear_on(void);
+static bool _is_camera_on(void);
 static int tw9900_get_status(struct v4l2_ctrl *ctrl)
 {
     struct tw9900_state *me = ctrl_to_me(ctrl);
@@ -342,18 +177,32 @@ static int tw9900_get_status(struct v4l2_ctrl *ctrl)
 
     _i2c_read_byte(me->i2c_client, 0x02, &data);
     mux = (data & 0x0c) >> 2;
+
     if (mux == 0) {
+        // AV IN
         _i2c_read_byte(me->i2c_client, 0x01, &data);
         if (!(data & 0x80))
             val |= 1 << 0;
-
-        _i2c_read_byte(me->i2c_client, 0x16, &data);
-        if (data & 0x40)
-            val |= 1 << 1;
+        // Rearcam IN
+        if (_is_backgear_on()) {
+            _i2c_read_byte(me->i2c_client, 0x16, &data);
+            if (data & 0x40)
+                val |= 1 << 1;
+        }
+        //printk("%s: mux 0 --> 0x%x\n", __func__, val);
     } else {
-        _i2c_read_byte(me->i2c_client, 0x01, &data);
-        if (!(data & 0x80))
+        // Rearcam IN
+#if 0
+        if (switch_get_state(&me->switch_dev))
             val |= 1 << 1;
+#else
+//        if (_is_backgear_on()) {
+            _i2c_read_byte(me->i2c_client, 0x01, &data);
+            if (!(data & 0x80))
+                val |= 1 << 1;
+//        }
+#endif
+        //printk("%s: mux 1 --> 0x%x\n", __func__, val);
     }
 
     ctrl->val = val;
@@ -419,7 +268,6 @@ static int tw9900_initialize_ctrls(struct tw9900_state *me)
 {
     v4l2_ctrl_handler_init(&me->handler, NUM_CTRLS);
 
-
     me->ctrl_mux = v4l2_ctrl_new_custom(&me->handler, &tw9900_custom_ctrls[0], NULL);
     if (!me->ctrl_mux) {
          printk(KERN_ERR "%s: failed to v4l2_ctrl_new_custom for mux\n", __func__);
@@ -449,78 +297,152 @@ static int tw9900_initialize_ctrls(struct tw9900_state *me)
     return 0;
 }
 
-static void read_register(void)
+static inline bool _is_backgear_on(void)
 {
-	uint8_t addr[] =
+#if 0
+    int val = nxp_soc_gpio_get_in_value((PAD_GPIO_E + 10) | PAD_FUNC_ALT0);
+    if (!val)
+    {
+    	//NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_CAM_PWR_EN), PAD_GET_BITNO(CFG_IO_CAM_PWR_EN), 1);
+		//_i2c_write_byte(_state.i2c_client, 0x02, 0x44);
+        return true;
+    }
+	else
 	{
-		0x02,
-    	0x03,
-    	0x07,
-    	0x08,
-    	0x09,
-    	0x0a,
-    	0x0b,
-    	0x1b,
-    	0x10,
-    	0x11,
-    	0x2f,
-    	0x55,
-    	0xaf,
-    	0xb1,
-    	0xb4,
-    	0x52
-	};
+    	return false;
+	}
+#else
+	return true;
+#endif
+}
 
-	int i=0;
-	uint8_t result;
-    struct tw9900_state *me = &_state;
+static inline bool _is_camera_on(void)
+{
+    // read status
+	u8 data;
+	u8 cin0;
 
-	for(i=0; i<(sizeof(addr)/sizeof(addr[0])); i++)
+#if 0
+	extern int mux_status;
+#endif
+
+    _i2c_read_byte(_state.i2c_client, 0x01, &data);
+    printk(KERN_ERR "%s: data 0x%x\n", __func__, data);
+
+#if 0
+	NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_CAM_PWR_EN), PAD_GET_BITNO(CFG_IO_CAM_PWR_EN), 1);
+	_i2c_write_byte(_state.i2c_client, 0x02, 0x44);
+
+	if(mux_status == MUX0)
 	{
-		_i2c_read_byte(me->i2c_client, addr[i], &result);
-		mdelay(10);
-		printk(KERN_INFO "[%s] ADDR : 0x%02X, VAL : 0x%02X\n", __func__, addr[i], result);
+		_i2c_read_byte(_state.i2c_client, SV_DET, &cin0);
+		printk(KERN_ERR "%s: cin0 0x%x\n", __func__, cin0);
+		cin0 &= (1<<6);
+		if(cin0) {
+			return true;
+		} else {
+			return false;
+		}	
+	}
+#endif
+
+    if (data & 0x80)
+        return false;
+
+    if ((data & 0x40) && (data & 0x08))
+        return true;
+
+    return false;
+}
+
+
+static irqreturn_t _irq_handler(int irq, void *devdata)
+{
+    printk("IRQ1\n");
+    __cancel_delayed_work(&_state.work);
+    if (switch_get_state(&_state.switch_dev) && !_is_backgear_on()) {
+        printk(KERN_ERR "BACKGEAR OFF\n");
+        switch_set_state(&_state.switch_dev, 0);
+    } else if (!switch_get_state(&_state.switch_dev) && _is_backgear_on()) {
+        schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
+    }
+    return IRQ_HANDLED;
+}
+
+static irqreturn_t _irq_handler3(int irq, void *devdata)
+{
+    printk("IRQ3\n");
+
+    if (switch_get_state(&_state.switch_dev)/* && !_is_camera_on()*/) {
+        printk(KERN_ERR "CAMERA OFF\n");
+        switch_set_state(&_state.switch_dev, 0);
+    } else if (!switch_get_state(&_state.switch_dev) && _is_backgear_on()) {
+        schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_MPOUT_TIME));
+    }
+
+    return IRQ_HANDLED;
+}
+
+static void _work_handler(struct work_struct *work)
+{
+    if (_is_backgear_on() && _is_camera_on()) {
+        printk(KERN_ERR "CAMERA ON\n");
+		if (rearcam_brightness_tbl[_state.brightness] != DEFAULT_BRIGHTNESS)
+		{
+			//printk(KERN_ERR "brightness = %d\n",_state.brightness);
+        	_i2c_write_byte(_state.i2c_client, 0x10, rearcam_brightness_tbl[_state.brightness]);
+		}
+        switch_set_state(&_state.switch_dev, 1);
+        return;
+    } else if (switch_get_state(&_state.switch_dev)) {
+        printk(KERN_ERR "BACKGEAR OFF\n");
+        switch_set_state(&_state.switch_dev, 0);
+    }
+	else if(_is_backgear_on())
+	{
+		schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
+		printk(KERN_ERR "Rearcam check\n");
 	}
 }
 
 static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 {
-	if (enable) {
-  	if (_state.first) {
+    if (enable) {
+        if (_state.first) 
+				{
+        	int ret = request_irq(IRQ_GPIO_A_START + 3, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);
+          if (ret) {
+         		pr_err("%s: failed to request_irq(irqnum %d)\n", __func__, IRQ_ALIVE_4);
+         		return -1;
+          }
 #if 0
-    	/*int ret = request_irq(IRQ_ALIVE_4, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);*/
-      int ret = request_irq(IRQ_GPIO_A_START + 3, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);
-      if (ret) {
-     		pr_err("%s: failed to request_irq(irqnum %d)\n", __func__, IRQ_ALIVE_4);
-     		return -1;
-      }
-#else
-			int i=0;
-			struct tw9900_state *me = &_state;
-			struct reg_val *reg_val = _sensor_init_data;
-
-			while (reg_val->reg != 0xff) 
-			{
-				 _i2c_write_byte(me->i2c_client, reg_val->reg, reg_val->val);
-				mdelay(10);
-				i++;
-				reg_val++;
-			}
+					ret = request_irq(IRQ_ALIVE_4, _irq_handler3, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900-mpout", &_state);
+					if (ret) {
+							pr_err("%s: failed to request_irq (irqnum %d)\n", __func__, IRQ_ALIVE_4);
+							return -1;
+					}
 #endif
-			//read_register();
-     	//_state.first = false;
-		}
-	}
+     			_state.first = false;
+					printk(KERN_ERR "%s: exit\n", __func__);
 
-
-	return 0;
+					if (_is_backgear_on()){
+						if (_is_camera_on())	{
+							printk(KERN_ERR "INITIAL CAMERA ON\n");
+									switch_set_state(&_state.switch_dev, 1);
+						} else {
+							printk(KERN_ERR "RECHECK CAMERA ON\n");
+							schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
+						}
+				}
+			}
+    }
+    return 0;
 }
 
 static int tw9900_s_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
         struct v4l2_subdev_format *fmt)
 {
     vmsg("%s\n", __func__);
-
     return 0;
 }
 
@@ -583,6 +505,8 @@ static int tw9900_probe(struct i2c_client *client, const struct i2c_device_id *i
     switch_dev_register(&state->switch_dev);
     switch_set_state(&state->switch_dev, 0);
 
+    INIT_DELAYED_WORK(&_state.work, _work_handler);
+
     state->first = true;
 
     vmsg("%s exit\n", __func__);
@@ -609,7 +533,7 @@ static struct i2c_driver tw9900_i2c_driver = {
         .name = "tw9900",
     },
     .probe = tw9900_probe,
-    .remove = tw9900_remove,
+    .remove = __devexit_p(tw9900_remove),
     .id_table = tw9900_id,
 };
 
