@@ -10,6 +10,7 @@ mio-y += mio.block.o \
          media/exchange.o \
          media/include/include.o \
          media/ftl/ftl.o \
+         media/nfc/phy/nfc.lib.o \
          media/nfc/nfc.sche.o \
          media/nfc/phy/nfc.phy.o \
          media/nfc/phy/nfc.phy.rand.o \

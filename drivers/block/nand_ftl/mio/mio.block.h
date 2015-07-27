@@ -66,6 +66,13 @@
 /******************************************************************************
  *
  ******************************************************************************/
+//WQ : handling block request with WorkQueue. Just for test.
+//#define TRANS_USING_WQ
+//#define USING_WQ_THREAD
+
+/******************************************************************************
+ *
+ ******************************************************************************/
 #define MIO_FIRST_MINOR     (0)
 #define MIO_MINOR_CNT       (16)
 
@@ -172,6 +179,18 @@ struct mio_state
         } lock;
 
     } transaction;
+
+#ifdef TRANS_USING_WQ
+#ifdef USING_WQ_THREAD
+	struct kthread_worker	io_worker;
+	struct task_struct	*io_thread;
+	struct kthread_work	io_work;
+
+	struct workqueue_struct *wq;
+	struct work_struct work;
+	bool bg_stop;
+#endif
+#endif
 };
 
 struct mio_device

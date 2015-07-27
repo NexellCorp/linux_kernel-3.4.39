@@ -44,6 +44,11 @@ static int miosys_print_elapsed_t(void);
 static int miosys_print_elapsed_media(void);
 static int miosys_print_threadstatus(void);
 static int miosys_print_ftlinfo(const char * text, unsigned int len);
+#ifdef __MIO_UNIT_TEST_RANDOMIZER__
+static int miosys_run_randomizer(int);
+static int miosys_prt_randomizer(void);
+static int miosys_clr_randomizer(void);
+#endif
 
 struct file_operations miosys_fops =
 {
@@ -109,7 +114,12 @@ static ssize_t miosys_write(struct file * file, const char * buf, size_t count, 
             MIOSYS_REQUEST_READRETRYTABLE = 0x30000000,
             MIOSYS_REQUEST_ELAPSED_T = 0x40000000,
             MIOSYS_REQUEST_ELAPSED_MEDIA = 0x41000000,
-            MIOSYS_REQUEST_THREAD_STATUS = 0x50000000, 
+            MIOSYS_REQUEST_THREAD_STATUS = 0x50000000,
+#ifdef __MIO_UNIT_TEST_RANDOMIZER__
+			MIOSYS_REQUEST_RUN_RANDOMIZER = 0x60000000,			// MIO_UNIT_TEST_RANDOMIZER
+			MIOSYS_REQUEST_PRT_RANDOMIZER = 0x61000000,
+			MIOSYS_REQUEST_CLR_RANDOMIZER = 0x62000000,
+#endif
             MIOSYS_MAX = 0xFFFFFFFF
 
         } state = MIOSYS_NONE;
@@ -117,6 +127,9 @@ static ssize_t miosys_write(struct file * file, const char * buf, size_t count, 
         char delim[] = " \n";
         char * token = strtok(cmd_buf, delim);
         int breaker = 0;
+#ifdef __MIO_UNIT_TEST_RANDOMIZER__
+		int run_randomizer_cnt = run_randomizer_cnt;
+#endif
 
         while ((token != NULL) && !breaker)
         {
@@ -152,6 +165,23 @@ static ssize_t miosys_write(struct file * file, const char * buf, size_t count, 
                     {
                         miosys_print_ftlinfo((const char *)token, strlen(token));
                     }
+#ifdef __MIO_UNIT_TEST_RANDOMIZER__
+					/***********************************************************************
+					 * MIO_UNIT_TEST_RANDOMIZER
+					 ***********************************************************************/
+					else if (!memcmp((const void *)token, (const void *)"randtest", strlen("randtest")))
+					{
+						state = MIOSYS_REQUEST_RUN_RANDOMIZER;
+					}
+					else if (!memcmp((const void *)token, (const void *)"randprint", strlen("randprint")))
+					{
+						state = MIOSYS_REQUEST_PRT_RANDOMIZER;
+					}
+					else if (!memcmp((const void *)token, (const void *)"randclear", strlen("randclear")))
+					{
+						state = MIOSYS_REQUEST_CLR_RANDOMIZER;
+					}
+#endif
                     else
                     {
                         breaker = 1;
@@ -162,6 +192,15 @@ static ssize_t miosys_write(struct file * file, const char * buf, size_t count, 
                 case MIOSYS_REQUEST_SMART: { breaker = 1; } break;
                 case MIOSYS_REQUEST_WEARLEVEL: { breaker = 1; } break;
                 case MIOSYS_REQUEST_THREAD_STATUS: { breaker = 1; } break;
+#ifdef __MIO_UNIT_TEST_RANDOMIZER__
+				case MIOSYS_REQUEST_RUN_RANDOMIZER:
+				{
+					run_randomizer_cnt = simple_strtoul(token, NULL, 10);
+					breaker = 1;
+				} break;
+				case MIOSYS_REQUEST_PRT_RANDOMIZER: { breaker = 1; } break;
+				case MIOSYS_REQUEST_CLR_RANDOMIZER: { breaker = 1; } break;
+#endif
 
                 default: { breaker = 1; } break;
 
@@ -179,6 +218,18 @@ static ssize_t miosys_write(struct file * file, const char * buf, size_t count, 
             case MIOSYS_REQUEST_ELAPSED_T:      { miosys_print_elapsed_t(); } break;
             case MIOSYS_REQUEST_ELAPSED_MEDIA:  { miosys_print_elapsed_media(); } break;
             case MIOSYS_REQUEST_THREAD_STATUS:  { miosys_print_threadstatus(); } break;
+#ifdef __MIO_UNIT_TEST_RANDOMIZER__
+			case MIOSYS_REQUEST_RUN_RANDOMIZER:
+			{
+				if (run_randomizer_cnt < 1 || run_randomizer_cnt > 1000000)
+					run_randomizer_cnt = 1;
+				//Exchange.sys.fn.print("  > run randomize %d times.\n", run_randomizer_cnt);
+
+				miosys_run_randomizer(run_randomizer_cnt);
+			} break;
+			case MIOSYS_REQUEST_PRT_RANDOMIZER: { miosys_prt_randomizer(); } break;
+			case MIOSYS_REQUEST_CLR_RANDOMIZER: { miosys_clr_randomizer(); } break;
+#endif
 
             default: {} break;
         }
@@ -493,6 +544,33 @@ int miosys_print_readretrytable(void)
     }
     return 0;
 }
+
+#ifdef __MIO_UNIT_TEST_RANDOMIZER__
+extern void NFC_PHY_RAND_Test(int cnt);
+int miosys_run_randomizer(int cnt)
+{
+	NFC_PHY_RAND_Test(cnt);
+
+    return 0;
+}
+
+extern void NFC_PHY_RAND_Print(void);
+int miosys_prt_randomizer(void)
+{
+	NFC_PHY_RAND_Print();
+
+    return 0;
+}
+
+void NFC_PHY_RAND_Clear(void);
+int miosys_clr_randomizer(void)
+{
+	NFC_PHY_RAND_Clear();
+
+	return 0;
+}
+#endif /* __MIO_UNIT_TEST_RANDOMIZER__ */
+
 
 int miosys_print_elapsed_t(void)
 {

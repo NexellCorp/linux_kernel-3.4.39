@@ -133,7 +133,7 @@ static int mio_background_thread(void * _arg)
         Exchange.sys.fnSpor();
 
         io_state->background.status = MIO_BG_SLEEP;
-        wait_event_timeout(io_state->background.wake.q, io_state->background.wake.cnt, HZ/10); // Wake-Up Every 100 ms
+        wait_event_interruptible_timeout(io_state->background.wake.q, io_state->background.wake.cnt, HZ/10); // Wake-Up Every 100 ms
         io_state->background.status = MIO_BG_IDLE;
 
         if (io_state->power.suspending)
@@ -184,7 +184,15 @@ static int mio_background_thread(void * _arg)
             {
                 if (!io_state->power.suspending)
                 {
+#ifdef TRANS_USING_WQ
+#ifdef USING_WQ_THREAD
+					queue_kthread_work(&mio_dev.io_state->io_worker, &io_state->io_work);
+#else
+					queue_work(io_state->wq, &io_state->work);
+#endif /* USING_WQ_THREAD */
+#else
                     wake_up_process(io_state->transaction.thread);
+#endif /* TRANS_USING_WQ */
                 }
             }
         }
@@ -414,11 +422,16 @@ static int mio_transaction(struct request * _req, struct mio_state * _io_state)
 /******************************************************************************
  *
  ******************************************************************************/
+#ifndef TRANS_USING_WQ
 static int mio_transaction_thread(void * _arg)
 {
     struct mio_state * io_state = mio_dev.io_state;
     struct request_queue * rq = io_state->transaction.rq;
     struct request * req = NULL;
+
+	/* Scheduling */
+	//struct sched_param param = { .sched_priority = 50 };
+	//sched_setscheduler(current, SCHED_FIFO, &param);
 
     if (Exchange.debug.misc.block_thread) { Exchange.sys.fn.print("MIO.BLOCK: mio_transaction_thread() Start\n"); }
 
@@ -465,12 +478,28 @@ static int mio_transaction_thread(void * _arg)
 
             spin_unlock_irq(rq->queue_lock);
             {
+				#ifdef __MIO_UNIT_TEST_SLEEP__
+				ktime_t t1;
+				s64 ns = 0;
+				#endif
                 io_state->transaction.status = MIO_SCHEDULED;
 
 #if defined (__COMPILE_MODE_ELAPSE_T__)
                 if (Exchange.sys.fn.elapse_t_start) { Exchange.sys.fn.elapse_t_start(ELAPSE_T_TRANSACTION_THREAD_SCHEDULED); }
 #endif
-                wait_event_timeout(io_state->transaction.wake.q, io_state->transaction.wake.cnt, HZ/10);
+				#ifdef __MIO_UNIT_TEST_SLEEP__
+				t1 = ktime_get();
+				#endif
+
+				wait_event_interruptible_timeout(io_state->transaction.wake.q, io_state->transaction.wake.cnt, HZ/10);
+
+				#ifdef __MIO_UNIT_TEST_SLEEP__
+				ns = ktime_to_ns(ktime_sub(ktime_get(), t1));
+				ns = div64_u64(ns, 1000L * 1000L);
+
+				if (ns >= (HZ/10 * 2))
+					printk("%s: sleeping too long!!! (req: %d, elapse: %lld)\n", __func__, HZ/10, ns);
+				#endif
 
 #if defined (__COMPILE_MODE_ELAPSE_T__)
                 if (Exchange.sys.fn.elapse_t_end) { Exchange.sys.fn.elapse_t_end(ELAPSE_T_TRANSACTION_THREAD_SCHEDULED); }
@@ -524,6 +553,7 @@ static int mio_transaction_thread(void * _arg)
 
     return 0;
 }
+#endif
 
 /******************************************************************************
  *
@@ -554,6 +584,16 @@ static void mio_request_fetch(struct request_queue * _q)
     }
     else
     {
+#ifdef TRANS_USING_WQ
+
+#ifndef USING_WQ_THREAD
+		queue_work(io_state->wq, &io_state->work);
+#else
+		queue_kthread_work(&mio_dev.io_state->io_worker, &io_state->io_work);
+#endif
+
+#else
+		int ret;
         // Wake Up Background Thread for Suspend Resume
         if (!io_state->power.suspending && (MIO_BG_SCHEDULED == io_state->background.status))
         {
@@ -562,7 +602,8 @@ static void mio_request_fetch(struct request_queue * _q)
 
         // Wake Up Transaction Thread
         io_state->transaction.wake.cnt += 1;
-        wake_up_process(io_state->transaction.thread);
+        ret = wake_up_process(io_state->transaction.thread);
+#endif /* TRANS_USING_WQ */
     }
 }
 
@@ -745,6 +786,144 @@ static void mio_elapse_t_io_measure_end(int _rw, int _r, int _w)
 }
 #endif
 
+#ifdef TRANS_USING_WQ
+#ifdef USING_WQ_THREAD
+static void mio_trans_work(struct kthread_work *work)
+#else
+static void mio_trans_work(struct work_struct *work)
+#endif
+{
+    struct mio_state * io_state = mio_dev.io_state;
+    struct request_queue * rq = io_state->transaction.rq;
+
+	struct request *req = NULL;
+	int background_done = 0;
+
+	spin_lock_irq(rq->queue_lock);
+
+	while (1) {
+		int res;
+
+		io_state->bg_stop = false;
+		if (!req && !(req = blk_fetch_request(rq))) {
+			if (!background_done)
+			//if (io_state->background && !background_done)
+			{
+				spin_unlock_irq(rq->queue_lock);
+				mio_mutex_lock();
+				// Wake Up Background Thread for Suspend Resume
+				if (!io_state->power.suspending && (MIO_BG_SCHEDULED == io_state->background.status))
+				{
+					wake_up_process(io_state->background.thread);
+				}
+				mio_mutext_unlock();
+				spin_lock_irq(rq->queue_lock);
+				/*
+				 * Do background processing just once per idle
+				 * period.
+				 */
+				background_done = !io_state->bg_stop;
+				continue;
+			}
+			break;
+		}
+
+		spin_unlock_irq(rq->queue_lock);
+
+		mio_mutex_lock();
+		res = mio_transaction(req, io_state);
+		mio_mutext_unlock();
+
+		spin_lock_irq(rq->queue_lock);
+
+		if (!__blk_end_request_cur(req, res))
+			req = NULL;
+
+		background_done = 0;
+	}
+
+	spin_unlock_irq(rq->queue_lock);
+}
+#endif /* TRANS_USING_WQ */
+
+
+/******************************************************************************
+ *
+ ******************************************************************************/
+#ifdef __MIO_UNIT_TEST_THREAD__
+struct unit_test_thread {
+	struct task_struct *task;
+};
+
+static DEFINE_PER_CPU(struct unit_test_thread, unit_test_info);
+
+extern void NFC_PHY_tDelay(unsigned int _tDelay);
+static int mio_unit_test(void *u)
+{
+	ktime_t w1, w2;
+	long tout = HZ;
+	s64 ns = 0, w_ns = 0;
+
+
+	w1 = ktime_get();
+
+	while (!kthread_should_stop()) {
+		int i = 30;
+
+		while (i--)
+		{
+			ktime_t t1, t2;
+
+			set_current_state(TASK_UNINTERRUPTIBLE);
+			t1 = ktime_get();
+			schedule_timeout(tout);
+			//NFC_PHY_tDelay(NSEC_PER_SEC);
+			t2 = ktime_get();
+
+			ns += ktime_to_ns(ktime_sub(t2, t1));
+		}
+
+		break;
+	}
+
+	w2 = ktime_get();
+	w_ns += ktime_to_ns(ktime_sub(w2, w1));
+
+	printk(" I'm cpu.%d. loop: %lld, total: %lld \n", raw_smp_processor_id(), ns, w_ns);
+
+	return 0;
+}
+
+static int mio_unit_test_prepare(void)
+{
+	struct task_struct *p;
+	struct unit_test_thread *utest;
+	int cpu;
+
+	for_each_possible_cpu(cpu)
+	{
+		p = kthread_create(mio_unit_test, NULL, "mio_unit_test:%d", cpu);
+		if (IS_ERR(p)) {
+			pr_err("Mio unit test thread for cpu.%d create failed.\n", cpu);
+			return PTR_ERR(p);
+		}
+
+		utest = &per_cpu(unit_test_info, cpu);
+		utest->task = p;
+
+		kthread_bind(p, cpu);
+		wake_up_process(p);
+	}
+
+	return 0;
+}
+#else
+void mio_unit_test_prepare(void)
+{
+}
+#endif /* __MIO_UNIT_TEST_THREAD__ */
+
+
 /******************************************************************************
  *
  ******************************************************************************/
@@ -874,6 +1053,8 @@ static int __init mio_init(void)
         /**********************************************************************
          * KThreads
          **********************************************************************/
+
+#ifndef TRANS_USING_WQ
 //#define THREAD_BIND_TO_CORE
 
         if (NULL == mio_dev.io_state->transaction.thread)
@@ -893,9 +1074,11 @@ static int __init mio_init(void)
 #if defined (THREAD_BIND_TO_CORE)
             // get_cpu() ÈÄ¿¡ put_cpu()
             kthread_bind(mio_dev.io_state->transaction.thread, 0);
+
             wake_up_process(mio_dev.io_state->transaction.thread);
 #endif
         }
+#endif /* TRANS_USING_WQ */
 
         if (NULL == mio_dev.io_state->background.thread)
         {
@@ -904,7 +1087,10 @@ static int __init mio_init(void)
             if (IS_ERR(mio_dev.io_state->background.thread))
             {
                 mio_dev.io_state->background.thread = NULL;
+
+#ifndef TRANS_USING_WQ
                 if (mio_dev.io_state->transaction.thread) { kthread_stop(mio_dev.io_state->transaction.thread); mio_dev.io_state->transaction.thread = NULL; }
+#endif /* TRANS_USING_WQ */
 
                 blk_cleanup_queue(mio_dev.io_state->transaction.rq);
                 return -ENODEV;
@@ -989,6 +1175,34 @@ static int __init mio_init(void)
             mio_dev.io_state->transaction.rq->limits.max_discard_sectors = mio_dev.capacity;
             mio_dev.io_state->transaction.rq->limits.discard_zeroes_data = 1;
 
+            /******************************************************************
+             * Workqueue Setup
+             ******************************************************************/
+#ifdef TRANS_USING_WQ 
+#ifdef USING_WQ_THREAD
+			init_kthread_worker(&mio_dev.io_state->io_worker);
+
+			mio_dev.io_state->io_thread = kthread_run(kthread_worker_fn,
+					&mio_dev.io_state->io_worker, "mio_wq");
+			if (IS_ERR(mio_dev.io_state->io_thread)) {
+				int err = PTR_ERR(mio_dev.io_state->io_thread);
+				mio_dev.io_state->io_thread = NULL;
+
+				printk(KERN_ERR "failed to run io thread\n");
+				return err;
+			}
+			init_kthread_work(&mio_dev.io_state->io_work, mio_trans_work);
+#else
+			mio_dev.io_state->wq = alloc_workqueue("mio_wq", WQ_HIGHPRI | WQ_UNBOUND, 0);
+			if (!mio_dev.io_state->wq)
+			{
+				printk(KERN_ERR "MIO.BLOCK: alloc_workqueue() Fail\n");
+				return -ENODEV;
+			}
+			INIT_WORK(&mio_dev.io_state->work, mio_trans_work);
+#endif /* USING_WQ_THREAD */ 
+#endif /* TRANS_USING_WQ */
+
             add_disk(mio_dev.disk);
         }
     }
@@ -1010,6 +1224,13 @@ static int __init mio_init(void)
     printk(KERN_INFO "MIO.BLOCK:  Init End: Capacity %xh(%d) Sectors = %d MB\n", mio_dev.capacity, mio_dev.capacity, ((mio_dev.capacity>>10)<<9)>>10);
     printk(KERN_INFO "MIO.BLOCK: --------------------------------------------------------------------------\n");
     printk(KERN_INFO "MIO.BLOCK:\n");
+
+    /**************************************************************************
+     * Create mio unit test thread
+     **************************************************************************/
+	#ifdef __MIO_UNIT_TEST_THREAD__
+	mio_unit_test_prepare();
+	#endif
 
     return 0;
 }
@@ -1038,7 +1259,9 @@ static void __exit mio_exit(void)
         put_disk(mio_dev.disk);
 
         if (mio_dev.io_state->background.thread) { kthread_stop(mio_dev.io_state->background.thread); mio_dev.io_state->background.thread = NULL; }
+#ifndef TRANS_USING_WQ
         if (mio_dev.io_state->transaction.thread) { kthread_stop(mio_dev.io_state->transaction.thread); mio_dev.io_state->transaction.thread = NULL; }
+#endif
 
         blk_cleanup_queue(mio_dev.io_state->transaction.rq);
         unregister_blkdev(mio_major, "mio");
