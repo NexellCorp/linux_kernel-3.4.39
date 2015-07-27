@@ -137,6 +137,10 @@ void flush_tlb_all(void)
 		local_flush_tlb_all();
 	broadcast_tlb_a15_erratum();
 }
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL 
+#include <linux/export.h>
+EXPORT_SYMBOL(flush_tlb_all);
+#endif
 
 void flush_tlb_mm(struct mm_struct *mm)
 {
@@ -146,6 +150,9 @@ void flush_tlb_mm(struct mm_struct *mm)
 		local_flush_tlb_mm(mm);
 	broadcast_tlb_mm_a15_erratum(mm);
 }
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL 
+EXPORT_SYMBOL(flush_tlb_mm);
+#endif
 
 void flush_tlb_page(struct vm_area_struct *vma, unsigned long uaddr)
 {

@@ -232,6 +232,15 @@ static void default_idle(void)
 void (*pm_idle)(void) = default_idle;
 EXPORT_SYMBOL(pm_idle);
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+u32 (*get_zeroboot_status)(void) 	 = NULL;
+EXPORT_SYMBOL(get_zeroboot_status);
+
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL
+void (*zeroboot_cpu_idle_hook)(void) = NULL;
+EXPORT_SYMBOL(zeroboot_cpu_idle_hook);
+#endif
+#endif
 /*
  * The idle thread, has rather strange semantics for calling pm_idle,
  * but this is what x86 does and we need to do the same, so that
@@ -267,7 +276,14 @@ void cpu_idle(void)
 			} else if (!need_resched()) {
 				stop_critical_timings();
 				if (cpuidle_idle_call())
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL
+				{
+					if (zeroboot_cpu_idle_hook) zeroboot_cpu_idle_hook();
 					pm_idle();
+				}
+#else
+					pm_idle();
+#endif
 				start_critical_timings();
 				/*
 				 * pm_idle functions must always

@@ -247,7 +247,11 @@ static struct mem_type mem_types[] = {
 	},
 	[MT_HIGH_VECTORS] = {
 		.prot_pte  = L_PTE_PRESENT | L_PTE_YOUNG | L_PTE_DIRTY |
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL
+				L_PTE_USER | L_PTE_SHARED,
+#else
 				L_PTE_USER | L_PTE_RDONLY,
+#endif
 		.prot_l1   = PMD_TYPE_TABLE,
 		.domain    = DOMAIN_USER,
 	},
@@ -1203,9 +1207,13 @@ static void __init map_lowmem(void)
 		map.type = MT_MEMORY;
 
 		create_mapping(&map, false);
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL
+		create_mapping(&map, true);
+#endif
 	}
 
 #ifdef CONFIG_DEBUG_RODATA
+#ifndef CONFIG_FALINUX_ZEROBOOT_NAL
 	start = __pa(_stext) & PMD_MASK;
 	end = ALIGN(__pa(__end_rodata), PMD_SIZE);
 
@@ -1216,7 +1224,46 @@ static void __init map_lowmem(void)
 
 	create_mapping(&map, true);
 #endif
+#endif
 }
+
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL
+unsigned long zb_get_text(void)
+{
+	return (unsigned long)_text;
+}
+EXPORT_SYMBOL(zb_get_text);
+
+unsigned long zb_get_etext(void)
+{
+	return (unsigned long)_etext;
+}
+EXPORT_SYMBOL(zb_get_etext);
+
+unsigned long zb_get_sdata(void)
+{
+	return (unsigned long)_sdata;
+}
+EXPORT_SYMBOL(zb_get_sdata);
+
+unsigned long zb_get_edata(void)
+{
+	return (unsigned long)_edata;
+}
+EXPORT_SYMBOL(zb_get_edata);
+
+unsigned long zb_get___bss_start(void)
+{
+	return (unsigned long)__bss_start;
+}
+EXPORT_SYMBOL(zb_get___bss_start);
+
+unsigned long zb_get___bss_stop(void)
+{
+	return (unsigned long)__bss_stop;
+}
+EXPORT_SYMBOL(zb_get___bss_stop);
+#endif
 
 /*
  * paging_init() sets up the page tables, initialises the zone memory

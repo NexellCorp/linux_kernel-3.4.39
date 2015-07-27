@@ -1176,6 +1176,18 @@ __vectors_start:
 	W(b)	vector_irq + stubs_offset
 	W(b)	vector_fiq + stubs_offset
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+__zero_pabt:
+	W(ldr)	pc, __zero_pabt_addr
+__zero_dabt:
+	W(ldr)	pc, __zero_dabt_addr
+
+__zero_pabt_addr:
+	.long	0x0
+__zero_dabt_addr:
+	.long	0x0
+#endif
+
 	.globl	__vectors_end
 __vectors_end:
 

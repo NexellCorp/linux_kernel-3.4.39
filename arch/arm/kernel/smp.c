@@ -686,3 +686,10 @@ void flush_all_cpu_caches(void)
 {
 	on_each_cpu(flush_all_cpu_cache, NULL, 1);
 }
+
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL
+unsigned long nal_smp_data[CONFIG_NR_CPUS] __used \
+__attribute__((__section__(".data..percpu..shared_aligned")));
+EXPORT_SYMBOL(nal_smp_data);
+#endif
+

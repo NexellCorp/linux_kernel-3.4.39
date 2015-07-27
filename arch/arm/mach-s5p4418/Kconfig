@@ -154,4 +154,56 @@ config PM_DBGOUT
 
 source "arch/arm/plat-s5p4418/Kconfig"
 
+#------------------------------------------------ 
+# falinux zeroboot boot configuration 
+#------------------------------------------------ 
+menu "Falinux zeroboot support" 
+
+config FALINUX_ZEROBOOT
+	bool "support falinux zeroboot"
+	depends on ARCH_S5P4418
+	---help---
+	  No information. 
+
+config FALINUX_ZEROBOOT_NAL
+	bool "suppoet zeroboot nal"
+	depends on FALINUX_ZEROBOOT
+	---help---
+	  No information. 
+
+config  FALINUX_NAND_BBT_SURPORT
+    bool "suppoet zeroboot nand bbt"
+    depends on FALINUX_ZEROBOOT
+    ---help---
+      No information.
+
+config  FALINUX_NAND_BBT_ROOTFS_SURPORT
+    bool "suppoet zeroboot nand bbt for rootfs"
+    depends on FALINUX_NAND_BBT_SURPORT
+    ---help---
+      No information.
+
+choice
+	prompt "FALINUX Board select"
+	default CONFIG_ZEROBOOT_S5P4418
+	depends on FALINUX_ZEROBOOT 
+
+config ZEROBOOT_S5P4418
+	bool	"NEXELL S5p4418"
+
+config ZEROBOOT_MX6Q_SABREAUTO
+	bool    "MX6q sabre auto Board" 
+
+config ZEROBOOT_NXP5430
+	bool	"NEXELL NXP5430"
+
+endchoice 
+
+config FALINUX_ZEROBOOT_MEM_STORAGE
+	bool "suppoet zeroboot mem storage driver"
+	depends on FALINUX_ZEROBOOT
+	---help---
+	  No information. 
+
+endmenu 
 

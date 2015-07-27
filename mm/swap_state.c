@@ -42,6 +42,9 @@ struct address_space swapper_space = {
 	.i_mmap_nonlinear = LIST_HEAD_INIT(swapper_space.i_mmap_nonlinear),
 	.backing_dev_info = &swap_backing_dev_info,
 };
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL 
+EXPORT_SYMBOL(swapper_space); 
+#endif 
 
 #define INC_CACHE_INFO(x)	do { swap_cache_info.x++; } while (0)
 

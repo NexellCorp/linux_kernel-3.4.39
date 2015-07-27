@@ -83,6 +83,13 @@
  */
 	.arm
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+	.section        ".zeroboot","ax"
+	.type      zeroboot_text, %function 
+ENTRY(zeroboot_text)
+	b      stext 
+#endif 
+
 	__HEAD
 ENTRY(stext)
 

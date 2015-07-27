@@ -524,6 +524,8 @@ static inline int mmc_blk_part_switch(struct mmc_card *card,
 	if (main_md->part_curr == md->part_type)
 		return 0;
 
+// FIXME
+// ZEROBOOAT retry switch function
 	if (mmc_card_mmc(card)) {
 		u8 part_config = card->ext_csd.part_config;
 
@@ -833,6 +835,12 @@ static int mmc_blk_issue_discard_rq(struct mmc_queue *mq, struct request *req)
 	unsigned int from, nr, arg;
 	int err = 0, type = MMC_BLK_DISCARD;
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+printk("===========================================\n");
+printk("ZEROBOOT MUST add RETRY function for mmc_blk_issue_discard_rq\n");
+printk("===========================================\n");
+#endif
+	
 	if (!mmc_can_erase(card)) {
 		err = -EOPNOTSUPP;
 		goto out;
@@ -847,6 +855,10 @@ static int mmc_blk_issue_discard_rq(struct mmc_queue *mq, struct request *req)
 		arg = MMC_TRIM_ARG;
 	else
 		arg = MMC_ERASE_ARG;
+
+#ifdef CONFIG_FALINUX_ZEROBOOT
+	// FIXME ZEROBOOT acess check
+#endif
 retry:
 	if (card->quirks & MMC_QUIRK_INAND_CMD38) {
 		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
@@ -879,6 +891,11 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
 	unsigned int from, nr, arg, trim_arg, erase_arg;
 	int err = 0, type = MMC_BLK_SECDISCARD;
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+printk("===========================================\n");
+printk("ZEROBOOT MUST add RETRY function for mmc_blk_issue_secdiscard_rq\n");
+printk("===========================================\n");
+#endif
 	if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
 		err = -EOPNOTSUPP;
 		goto out;
@@ -958,13 +975,52 @@ out:
 	return err ? 0 : 1;
 }
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+int (*get_zb_access_status)(void);
+EXPORT_SYMBOL(get_zb_access_status);
+int get_mmc_buf_status(void)
+{
+	if (get_zb_access_status == NULL)
+		return 0;
+
+	return get_zb_access_status();
+}
+void (*set_zb_access_status)(int);
+EXPORT_SYMBOL(set_zb_access_status);
+void set_mmc_buf_status(int value)
+{
+	if (set_zb_access_status == NULL)
+		return ;
+
+	set_zb_access_status(value);
+}
+#endif
+
 static int mmc_blk_issue_flush(struct mmc_queue *mq, struct request *req)
 {
 	struct mmc_blk_data *md = mq->data;
 	struct mmc_card *card = md->queue.card;
 	int ret = 0;
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+	int force_retry = 0;
+/* ZEROBOOT
+ * check nalcode access
+ * if yes... check status and simple retry
+ */
+	do {
+		ret = mmc_flush_cache(card);
+		if (get_mmc_buf_status()) {
+			set_mmc_buf_status(0);
+			force_retry++;
+			printk("======%s force retry %d\n", __FUNCTION__, force_retry);
+			continue;
+		}
+		break;
+	} while (1);
+#else
 	ret = mmc_flush_cache(card);
+#endif
 	if (ret)
 		ret = -EIO;
 
@@ -1060,8 +1116,9 @@ static int mmc_blk_err_check(struct mmc_card *card,
 		do {
 			int err = get_card_status(card, &status, 5);
 			if (err) {
-				pr_err("%s: error %d requesting status\n",
-				       req->rq_disk->disk_name, err);
+//				pr_err("%s: error %d requesting status\n",
+//				       req->rq_disk->disk_name, err);
+//				dump_stack();
 				return MMC_BLK_CMD_ERR;
 			}
 			/*
@@ -1281,6 +1338,46 @@ static int mmc_blk_cmd_err(struct mmc_blk_data *md, struct mmc_card *card,
 	return ret;
 }
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+void (*zb_storage_reset)(void);
+EXPORT_SYMBOL(zb_storage_reset);
+
+void (*zb_storage_wait_lock)(void);
+EXPORT_SYMBOL(zb_storage_wait_lock);
+
+void (*zb_storage_wait_unlock)(void);
+EXPORT_SYMBOL(zb_storage_wait_unlock);
+
+static void mmc_zb_storage_reset(void)
+{
+	if (zb_storage_reset)
+		zb_storage_reset();
+}
+
+void mmc_zb_storage_lock(void)
+{
+	if (zb_storage_wait_lock)
+		zb_storage_wait_lock();
+}
+EXPORT_SYMBOL(mmc_zb_storage_lock);
+
+void mmc_zb_storage_unlock(void)
+{
+	if (zb_storage_wait_unlock)
+		zb_storage_wait_unlock();
+}
+EXPORT_SYMBOL(mmc_zb_storage_unlock);
+
+
+void mmc_zb_storage_test_lock(void)
+{
+	mmc_zb_storage_lock();
+	mmc_zb_storage_unlock();
+}
+EXPORT_SYMBOL(mmc_zb_storage_test_lock);
+
+#endif
+
 static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 {
 	struct mmc_blk_data *md = mq->data;
@@ -1291,6 +1388,9 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 	struct mmc_queue_req *mq_rq;
 	struct request *req;
 	struct mmc_async_req *areq;
+#ifdef CONFIG_FALINUX_ZEROBOOT
+	int force_retry = 0;
+#endif
 
 	if (!rqc && !mq->mqrq_prev->req)
 		return 0;
@@ -1301,6 +1401,9 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 			areq = &mq->mqrq_cur->mmc_active;
 		} else
 			areq = NULL;
+#ifdef CONFIG_FALINUX_ZEROBOOT
+mmc_zb_storage_test_lock();
+#endif
 		areq = mmc_start_req(card->host, areq, (int *) &status);
 		if (!areq)
 			return 0;
@@ -1310,6 +1413,44 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 		req = mq_rq->req;
 		type = rq_data_dir(req) == READ ? MMC_BLK_READ : MMC_BLK_WRITE;
 		mmc_queue_bounce_post(mq_rq);
+
+#ifdef CONFIG_FALINUX_ZEROBOOT
+/* ZEROBOOT
+ * check nalcode access
+ * if yes... check status and simple retry
+ * prepare it again and resend.
+ */
+
+		if (get_mmc_buf_status()) {
+				char *zb_mmc_blk_status[] =  {
+						"MMC_BLK_SUCCESS",
+						"MMC_BLK_PARTIAL",
+						"MMC_BLK_CMD_ERR",
+						"MMC_BLK_RETRY",
+						"MMC_BLK_ABORT",
+						"MMC_BLK_DATA_ERR",
+						"MMC_BLK_ECC_ERR",
+						"MMC_BLK_NOMEDIUM",
+				};
+
+			set_mmc_buf_status(0);
+			force_retry++;
+			printk("======%s force retry %d\n", __FUNCTION__, force_retry);
+			printk("======%s \n", zb_mmc_blk_status[status]);
+
+			//areq->host
+
+			if ( 1 ) {
+			//	mmc_zb_storage_reset();
+
+				//mmc_blk_reset(md, card->host, type);
+				mmc_blk_rw_rq_prep(mq_rq, card, 0, mq);
+mmc_zb_storage_test_lock();
+				mmc_start_req(card->host, &mq_rq->mmc_active, NULL);
+				continue;
+			}
+		}
+#endif
 
 		switch (status) {
 		case MMC_BLK_SUCCESS:
@@ -1404,8 +1545,34 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 
  start_new_req:
 	if (rqc) {
+#ifdef CONFIG_FALINUX_ZEROBOOT
+		set_mmc_buf_status(0);
+		mmc_zb_storage_test_lock();
+#endif
 		mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
 		mmc_start_req(card->host, &mq->mqrq_cur->mmc_active, NULL);
+
+#ifdef CONFIG_FALINUX_ZEROBOOT
+		if (get_mmc_buf_status()) {
+				char *zb_mmc_blk_status[] =  {
+						"MMC_BLK_SUCCESS",
+						"MMC_BLK_PARTIAL",
+						"MMC_BLK_CMD_ERR",
+						"MMC_BLK_RETRY",
+						"MMC_BLK_ABORT",
+						"MMC_BLK_DATA_ERR",
+						"MMC_BLK_ECC_ERR",
+						"MMC_BLK_NOMEDIUM",
+				};
+
+				set_mmc_buf_status(0);
+				force_retry++;
+				printk("******%s new force retry %d\n", __FUNCTION__, force_retry);
+				printk("******%s new \n", zb_mmc_blk_status[status]);
+				goto start_new_req;
+		}
+#endif
+
 	}
 
 	return 0;

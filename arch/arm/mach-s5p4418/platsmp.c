@@ -170,3 +170,12 @@ void  __init platform_smp_prepare_cpus(unsigned int max_cpus)
 	__raw_writel((-1UL), SCR_SIGNAGURE_RESET);
 }
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+#include <linux/export.h>
+unsigned long get__secondary_startup_phys(void)
+{
+	return (unsigned long)virt_to_phys(__secondary_startup);
+}
+EXPORT_SYMBOL(get__secondary_startup_phys);
+#endif
+

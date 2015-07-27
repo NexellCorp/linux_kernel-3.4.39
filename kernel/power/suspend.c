@@ -147,13 +147,14 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 	error = dpm_suspend_end(PMSG_SUSPEND);
 	if (error) {
 		printk(KERN_ERR "PM: Some devices failed to power down\n");
-		goto Platform_finish;
+//		goto Platform_finish;
 	}
 
 	if (suspend_ops->prepare_late) {
 		error = suspend_ops->prepare_late();
-		if (error)
-			goto Platform_wake;
+		if (error) {
+//			goto Platform_wake;
+		}
 	}
 
 	if (suspend_test(TEST_PLATFORM))

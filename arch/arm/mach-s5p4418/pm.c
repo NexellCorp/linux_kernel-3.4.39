@@ -49,6 +49,11 @@ void (*nxp_board_pm_mark)(struct suspend_mark_up *mark, int suspend) = NULL;
 void (*do_suspend)(ulong, ulong) = NULL;
 EXPORT_SYMBOL_GPL(do_suspend);
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+int (*zb_snapshot_fn)(unsigned long);
+EXPORT_SYMBOL(zb_snapshot_fn);
+#endif
+
 void pm_suspend_data_save(void *mem)
 {
 	unsigned int *src = sramptr;
@@ -320,6 +325,9 @@ static void suspend_mark(suspend_state_t stat)
 {
 	struct suspend_mark_up mark = {
 		.resume_fn = (U32)virt_to_phys(cpu_resume),
+#ifdef CONFIG_FALINUX_ZEROBOOT_TEST
+#endif
+		//.resume_fn = 0x40090000,
 		.signature = SUSPEND_SIGNATURE,
 		.save_phy_addr = (u32)PM_SAVE_ADDR,
 		.save_phy_len = PM_SAVE_SIZE,
@@ -571,7 +579,14 @@ static int __powerdown(unsigned long arg)
 
 	lldebugout("suspend machine\n");
 
-	END_FLUSH_CACHE();
+#ifdef CONFIG_FALINUX_ZEROBOOT
+	if (zb_snapshot_fn) {
+		zb_snapshot_fn(0);
+		lldebugout("suspend machine\n");
+		FLUSH_CACHE();
+	}
+#endif
+END_FLUSH_CACHE();
 	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
 
 	while (1);

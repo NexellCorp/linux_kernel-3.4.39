@@ -177,7 +177,15 @@ static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
 /* we don't need complex calculations here as the pmd is folded into the pgd */
 #define pmd_addr_end(addr,end) (end)
 
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL
+extern u32 zero_set_pte_ext_hook_pre( pte_t *pte, u32 pte_val, u32 pte_ext );
+#define    set_pte_ext(ptep,pte,ext) do { \
+											cpu_set_pte_ext(ptep,pte,ext); \
+											(zero_set_pte_ext_hook_pre(ptep,pte,ext)); \
+											}  while(0)
+#else 
 #define set_pte_ext(ptep,pte,ext) cpu_set_pte_ext(ptep,pte,ext)
+#endif
 
 #endif /* __ASSEMBLY__ */
 

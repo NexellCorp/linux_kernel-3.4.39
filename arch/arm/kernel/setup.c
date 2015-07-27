@@ -128,11 +128,19 @@ EXPORT_SYMBOL(outer_cache);
  */
 int __cpu_architecture __read_mostly = CPU_ARCH_UNKNOWN;
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+struct stack {
+	u32 irq[5];
+	u32 abt[5];
+	u32 und[5];
+} ____cacheline_aligned;
+#else
 struct stack {
 	u32 irq[3];
 	u32 abt[3];
 	u32 und[3];
 } ____cacheline_aligned;
+#endif
 
 static struct stack stacks[NR_CPUS];
 
@@ -149,6 +157,9 @@ static union { char c[4]; unsigned long l; } endian_test __initdata = { { 'l', '
 #define ENDIANNESS ((char)endian_test.l)
 
 DEFINE_PER_CPU(struct cpuinfo_arm, cpu_data);
+#ifdef CONFIG_FALINUX_ZEROBOOT
+EXPORT_SYMBOL(cpu_data);
+#endif
 
 /*
  * Standard memory resources

@@ -2029,7 +2029,7 @@ uart_report_port(struct uart_driver *drv, struct uart_port *port)
 	case UPIO_AU:
 	case UPIO_TSI:
 		snprintf(address, sizeof(address),
-			 "MMIO 0x%llx", (unsigned long long)port->mapbase);
+			 "MMIO 0x%llx: mem 0x%llx", (unsigned long long)port->mapbase, (unsigned long long)port->membase);
 		break;
 	default:
 		strlcpy(address, "*unknown*", sizeof(address));

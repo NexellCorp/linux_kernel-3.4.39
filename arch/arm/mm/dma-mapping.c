@@ -362,10 +362,37 @@ __dma_alloc(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gfp,
 	return addr;
 }
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+extern void zb_add_dma_priv_mem(unsigned long phys, unsigned long len);
+extern void zb_remove_dma_priv_mem(unsigned long phys);
+#endif
 /*
  * Allocate DMA-coherent memory space and return both the kernel remapped
  * virtual and bus address for that space.
  */
+#ifdef CONFIG_FALINUX_ZEROBOOT
+void *
+dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gfp)
+{
+	void *memory;
+	int ret;
+
+	ret = dma_alloc_from_coherent(dev, size, handle, &memory);
+	if (ret) {
+		zb_add_dma_priv_mem(*handle, size);
+		return memory;
+	}
+
+	memory = __dma_alloc(dev, size, handle, gfp,
+			   pgprot_dmacoherent(pgprot_kernel),
+			   __builtin_return_address(0));
+	if (memory) {
+		zb_add_dma_priv_mem(*handle, size);
+	}
+	return memory;
+}
+EXPORT_SYMBOL(dma_alloc_coherent);
+#else
 void *
 dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gfp)
 {
@@ -379,11 +406,28 @@ dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gf
 			   __builtin_return_address(0));
 }
 EXPORT_SYMBOL(dma_alloc_coherent);
+#endif
 
 /*
  * Allocate a writecombining region, in much the same way as
  * dma_alloc_coherent above.
  */
+#ifdef CONFIG_FALINUX_ZEROBOOT
+void *
+dma_alloc_writecombine(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gfp)
+{
+	void *memory;
+
+	memory = __dma_alloc(dev, size, handle, gfp,
+			   pgprot_writecombine(pgprot_kernel),
+			   __builtin_return_address(0));
+	if (memory)
+		zb_add_dma_priv_mem(*handle, size);
+
+	return memory;
+}
+EXPORT_SYMBOL(dma_alloc_writecombine);
+#else
 void *
 dma_alloc_writecombine(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gfp)
 {
@@ -392,6 +436,7 @@ dma_alloc_writecombine(struct device *dev, size_t size, dma_addr_t *handle, gfp_
 			   __builtin_return_address(0));
 }
 EXPORT_SYMBOL(dma_alloc_writecombine);
+#endif
 
 static int dma_mmap(struct device *dev, struct vm_area_struct *vma,
 		    void *cpu_addr, dma_addr_t dma_addr, size_t size)
@@ -442,6 +487,25 @@ EXPORT_SYMBOL(dma_mmap_writecombine);
  * free a page as defined by the above mapping.
  * Must not be called with IRQs disabled.
  */
+#ifdef CONFIG_FALINUX_ZEROBOOT
+void dma_free_coherent(struct device *dev, size_t size, void *cpu_addr, dma_addr_t handle)
+{
+	WARN_ON(irqs_disabled());
+
+	zb_remove_dma_priv_mem(handle);
+
+	if (dma_release_from_coherent(dev, get_order(size), cpu_addr))
+		return;
+
+	size = PAGE_ALIGN(size);
+
+	if (!arch_is_coherent())
+		__dma_free_remap(cpu_addr, size);
+
+	__dma_free_buffer(pfn_to_page(dma_to_pfn(dev, handle)), size);
+}
+EXPORT_SYMBOL(dma_free_coherent);
+#else
 void dma_free_coherent(struct device *dev, size_t size, void *cpu_addr, dma_addr_t handle)
 {
 	WARN_ON(irqs_disabled());
@@ -457,6 +521,7 @@ void dma_free_coherent(struct device *dev, size_t size, void *cpu_addr, dma_addr
 	__dma_free_buffer(pfn_to_page(dma_to_pfn(dev, handle)), size);
 }
 EXPORT_SYMBOL(dma_free_coherent);
+#endif
 
 /*
  * Make an area consistent for devices.

@@ -56,6 +56,419 @@ struct ion_device *get_global_ion_device(void)
     return g_ion_nxp;
 }
 EXPORT_SYMBOL(get_global_ion_device);
+
+#ifdef CONFIG_FALINUX_ZEROBOOT
+#include <linux/mutex.h>
+
+LIST_HEAD(zb_dma_used_node);
+LIST_HEAD(zb_dma_free_node);
+
+struct zb_dma_used_mem {
+	unsigned long phys;
+	unsigned long len;
+
+	struct list_head dma_list;
+};
+
+// 1G 를 PAGE_SIZE 로 나누면
+// 0x40000 = 256K
+// bit operation 을 하게 되면 256Kbit
+// 32KiB 면 4G 를 PAGE 로 정의할수 있다.
+
+#define	ZB_DMA_MEM_SIZE	SZ_32K
+#define	ZB_ION_COUNT	(ZB_DMA_MEM_SIZE / (sizeof(struct zb_dma_used_mem)))
+
+#define	ZB_DMA_MEM_NODE_SIZE	SZ_1M
+#define	ZB_DMA_MEM_NODE_COUNT	(ZB_DMA_MEM_NODE_SIZE / (sizeof(struct zb_dma_used_mem)))
+
+extern u32 zero_trace;
+struct zb_dma_used_mem *zb_dma_mem = NULL;
+unsigned char *dma_used_mem;
+EXPORT_SYMBOL(dma_used_mem);
+int zb_dma_count = 0;
+EXPORT_SYMBOL(zb_dma_count);
+
+struct mutex zb_dma_lock;
+
+void zb_dma_alloc(void)
+{
+//	dma_used_mem = (struct zb_dma_used_mem *)kzalloc(ZB_DMA_MEM_SIZE, GFP_KERNEL);
+//	dma_used_mem[0].phys = 0xffffffff;	// to avoid 0 search bug
+
+	dma_used_mem = (unsigned char *)kzalloc(ZB_DMA_MEM_SIZE, GFP_KERNEL);
+}
+
+struct zb_dma_used_mem* zb_dma_node_alloc(void)
+{
+	return (struct zb_dma_used_mem *)kzalloc(ZB_DMA_MEM_NODE_SIZE, GFP_KERNEL);
+}
+
+static void zb_dma_priv_set_bit(unsigned long phys)
+{
+	unsigned long dividend, remainder, order;
+	unsigned char *imem = dma_used_mem;
+	unsigned char mask;
+
+	if (!imem) {
+		printk("Fail!!! dma used mem is NULL\n");
+		return;
+	} 
+
+	phys &= ~(PAGE_SIZE -1);
+	order = phys / PAGE_SIZE;
+
+	dividend = order >> 8;	
+	remainder = order & 0x7;
+	mask = 1 << remainder;
+
+	imem[dividend] |= mask;
+}
+
+static void zb_dma_priv_clr_bit(unsigned long phys)
+{
+	unsigned long dividend, remainder, order;
+	unsigned char *imem = dma_used_mem;
+	unsigned char mask;
+
+	if (!imem) {
+		printk("Fail!!! dma used mem is NULL\n");
+		return;
+	} 
+
+	phys &= ~(PAGE_SIZE -1);
+	order = phys / PAGE_SIZE;
+
+	dividend = order >> 8;	
+	remainder = order & 0x7;
+	mask = ~(1 << remainder);
+
+	imem[dividend] &= mask;
+}
+
+static inline struct zb_dma_used_mem* zb_get_free_node(void)
+{
+	struct zb_dma_used_mem *z;
+	unsigned long flags;
+
+	//mutex_lock(&zb_dma_lock);
+	local_irq_save(flags);	
+	
+	list_for_each_entry(z, &zb_dma_free_node, dma_list) {
+		list_del(&z->dma_list);
+		zb_dma_count++;
+		mutex_unlock(&zb_dma_lock);
+		return z;
+	}
+
+	//mutex_unlock(&zb_dma_lock);
+	local_irq_restore(flags);
+	return NULL;
+}
+static inline void zb_put_free_node(struct zb_dma_used_mem *z)
+{
+	unsigned long flags;
+
+	//mutex_lock(&zb_dma_lock);
+	local_irq_save(flags);	
+	
+	list_add(&z->dma_list, &zb_dma_free_node);
+
+	if (zb_dma_count > 0) zb_dma_count--;
+	//mutex_unlock(&zb_dma_lock);
+	local_irq_restore(flags);
+}
+static inline struct zb_dma_used_mem* zb_get_used_node(void)
+{
+	struct zb_dma_used_mem *z;
+	unsigned long flags;
+
+	//mutex_lock(&zb_dma_lock);
+	local_irq_save(flags);	
+	
+	list_for_each_entry(z, &zb_dma_used_node, dma_list) {
+		list_del(&z->dma_list);
+		//mutex_unlock(&zb_dma_lock);
+		local_irq_restore(flags);
+		return z;
+	}
+
+	//mutex_unlock(&zb_dma_lock);
+	local_irq_restore(flags);
+	return NULL;
+}
+static inline struct zb_dma_used_mem* zb_search_used_node(unsigned long phys)
+{
+	struct zb_dma_used_mem *z;
+	unsigned long flags;
+
+	//mutex_lock(&zb_dma_lock);
+	local_irq_save(flags);	
+	
+	list_for_each_entry(z, &zb_dma_used_node, dma_list) {
+		if (z->phys == phys) {
+			list_del(&z->dma_list);
+			//mutex_unlock(&zb_dma_lock);
+			local_irq_restore(flags);
+			return z;
+		}
+	}
+
+	//mutex_unlock(&zb_dma_lock);
+	local_irq_restore(flags);
+	return NULL;
+}
+static inline void zb_put_used_node(struct zb_dma_used_mem *z)
+{
+	unsigned long flags;
+
+	//mutex_lock(&zb_dma_lock);
+	local_irq_save(flags);	
+	
+	list_add(&z->dma_list, &zb_dma_used_node);
+
+	//mutex_unlock(&zb_dma_lock);
+	local_irq_restore(flags);
+}
+
+#if 0
+void zb_add_dma_priv_mem(unsigned long phys, unsigned long len)
+{
+	struct zb_dma_used_mem *imem;
+	unsigned int index, hit, i;
+	unsigned long flags;
+
+	if (zero_trace)
+		return;
+
+	if (phys == 0 || len == 0) {
+		printk("invalid arg phys 0x%lx len 0x%lx\n", phys, len);
+		return;
+	}
+
+	if (len < PAGE_SIZE) {
+//		printk("resize len 0x%lx\n", len);
+		len = PAGE_SIZE;
+		return;
+	}
+
+	if (phys & ~PAGE_MASK) {
+//		printk("align phys 0x%lx->", phys);
+		phys &= PAGE_MASK;
+//		printk("0x%lx\n", phys);
+		return;
+	}
+
+//	mutex_lock(&zb_dma_lock);
+	local_irq_save(flags);	
+
+	imem = &dma_used_mem[0];
+	for(i = 0, hit = 0, index = 0; i < ZB_ION_COUNT; i++, imem++) {
+		// 처음 찾은 경우
+		if (imem->phys == 0 && hit == 0) {
+			hit = 1;
+			index = i;
+		}
+
+		// 이미 있는 경우
+		if (imem->phys == phys) {
+			if (index)
+				printk("zb_add_dma_priv_mem duplicated request phys 0x%lx modify index 0x%x -> 0x%x\n", phys, index, i);
+
+			if (imem->len != len) {
+				printk("zb_add_dma_priv_mem duplicated and different len request len 0x%lx, exist len 0x%lx\n", len, imem->len);
+				//panic(" zb_add_dma_priv_mem has a BUG");
+				if (len < imem->len)
+					len = imem->len;
+			}
+
+			if (index == 0)
+				hit = 1;
+			else {
+				hit++;
+			}
+
+			index = i;
+		}
+	}
+
+	if (hit > 1) {
+		printk("Too many hit count %d, may cause BUG!!!\n", hit);
+		panic("search BUG");
+	}
+	if (hit == 0) {
+		printk("zb_add_dma_priv_mem fail to search phys 0x%lx\n", phys);
+		panic("you need more memory");
+		//mutex_unlock(&zb_dma_lock);
+		local_irq_restore(flags);
+		return;
+	}
+	
+	imem = &dma_used_mem[index];
+	imem->phys = phys;
+	imem->len = len;
+	zb_dma_count++;
+
+	//mutex_unlock(&zb_dma_lock);
+	local_irq_restore(flags);
+}
+EXPORT_SYMBOL(zb_add_dma_priv_mem);
+
+void zb_remove_dma_priv_mem(unsigned long phys)
+{
+	struct zb_dma_used_mem *imem;
+	unsigned int hit, i;
+	unsigned long flags;
+
+	if (zero_trace)
+		return;
+
+	if (phys == 0) {
+		printk("invalid arg phys 0x%lx\n", phys);
+		return;
+	}
+
+	if (phys & ~PAGE_MASK) {
+//		printk("align phys 0x%lx->", phys);
+		phys &= PAGE_MASK;
+//		printk("0x%lx\n", phys);
+		return;
+	}
+
+//	mutex_lock(&zb_dma_lock);
+	local_irq_save(flags);	
+
+	imem = &dma_used_mem[0];
+	for(i = 0, hit = 0; i < ZB_ION_COUNT; i++, imem++) {
+		if (imem->phys == phys) {
+			if (!hit) {
+				printk("duplicate phys 0x%lx len 0x%lx found at index 0x%x\n", imem->phys, imem->len, i);
+			}
+			hit++;
+			imem->phys = 0;
+			imem->len = 0;
+			zb_dma_count--;
+		}
+	}
+
+//	mutex_unlock(&zb_dma_lock);
+	local_irq_restore(flags);
+}
+EXPORT_SYMBOL(zb_remove_dma_priv_mem);
+
+#else
+void zb_add_dma_priv_mem(unsigned long phys, unsigned long len)
+{
+	unsigned long base, end;
+	unsigned long flags;
+
+	if (zero_trace)
+		return;
+
+	if (phys == 0 || len == 0) {
+		printk("invalid arg phys 0x%lx len 0x%lx\n", phys, len);
+		return;
+	}
+
+	if (len < PAGE_SIZE)
+		len = PAGE_SIZE;
+
+	if (phys & ~PAGE_MASK)
+		phys &= PAGE_MASK;
+
+	local_irq_save(flags);	
+
+	base = phys; 
+	end = phys + len;
+	for (; base < end; base += PAGE_SIZE) {
+		zb_dma_priv_set_bit(base);
+	}
+
+{
+	struct zb_dma_used_mem *z;
+
+	z = zb_get_free_node();
+	if (z) {
+		z->phys = phys;
+		z->len = len;
+//		if (len != 0x1000) {
+	//		printk("%x+%x\n", phys, len);
+//			dump_stack();
+//		}
+//		else
+//			printk("%x+\n", phys);
+		zb_put_free_node(z);
+	} else {
+		panic("bug no more free node");
+	}
+}
+
+	local_irq_restore(flags);
+}
+EXPORT_SYMBOL(zb_add_dma_priv_mem);
+
+void zb_remove_dma_priv_mem(unsigned long phys)
+{
+	unsigned long base, end, len;
+	unsigned long flags;
+
+	if (zero_trace)
+		return;
+
+	// FIXME needs len
+	// to avoid error
+	len = PAGE_SIZE;
+	if (phys == 0 || len == 0) {
+		printk("invalid arg phys 0x%lx len 0x%lx\n", phys, len);
+		return;
+	}
+
+	if (len < PAGE_SIZE)
+		len = PAGE_SIZE;
+
+	if (phys & ~PAGE_MASK)
+		phys &= PAGE_MASK;
+
+	local_irq_save(flags);	
+
+	base = phys;
+	end = phys + len;
+	for (; base < end; base += PAGE_SIZE) {
+		zb_dma_priv_clr_bit(base);
+	}
+
+{
+	struct zb_dma_used_mem *z;
+
+	z = zb_search_used_node(phys);
+	if (z) {
+		z->phys = phys;
+		z->len = len;
+		if (len != 0x1000)
+			printk("%x-%x\n", phys, len);
+		else
+			printk("%x-\n", phys);
+		zb_put_free_node(z);
+	} else {
+		printk("bug list search phys 0x%lx\n", phys);
+		dump_stack();
+	}
+}
+
+	local_irq_restore(flags);
+}
+EXPORT_SYMBOL(zb_remove_dma_priv_mem);
+#endif
+
+unsigned long zb_get_dma_mem(void)
+{
+	return (unsigned long)dma_used_mem;
+}
+EXPORT_SYMBOL(zb_get_dma_mem);
+#else
+void zb_add_dma_priv_mem()	{};
+void zb_remove_dma_priv_mem()	{};
+#endif
+
 /**
  * nxp ion contig heap ops
  */
@@ -72,6 +485,7 @@ static int ion_nxp_contig_heap_allocate(struct ion_heap *heap,
         pr_err("%s error: %d\n", __func__, (int)buffer->priv_phys);
         return (int)buffer->priv_phys;
     }
+	zb_add_dma_priv_mem(buffer->priv_phys, len);
     buffer->flags = flags;
 
     return 0;
@@ -98,6 +512,7 @@ static int ion_nxp_reserve_heap_allocate(struct ion_heap *heap,
 
 static void ion_nxp_heap_free(struct ion_buffer *buffer)
 {
+	zb_remove_dma_priv_mem(buffer->priv_phys);
     cma_free(buffer->priv_phys);
 }
 
@@ -379,6 +794,43 @@ static int nxp_ion_probe(struct platform_device *pdev)
     s_nxp_ion_dev   = &pdev->dev;
 
     platform_set_drvdata(pdev, g_ion_nxp);
+
+#ifdef CONFIG_FALINUX_ZEROBOOT
+	mutex_init(&zb_dma_lock);
+	zb_dma_alloc();	
+
+
+{
+	struct zb_dma_used_mem *cur, *n;
+	int i;
+
+	INIT_LIST_HEAD(&zb_dma_used_node);
+	INIT_LIST_HEAD(&zb_dma_free_node);
+
+	zb_dma_mem = zb_dma_node_alloc();
+	if (zb_dma_mem) {
+		for (i = 0; i < ZB_DMA_MEM_NODE_COUNT; i++) { 
+			list_add_tail(&zb_dma_mem[i].dma_list, &zb_dma_free_node);
+		}
+		printk("======== zb dma node %d added\n", ZB_DMA_MEM_NODE_COUNT);
+		printk("======== zb dma node %d added\n", ZB_DMA_MEM_NODE_COUNT);
+		printk("======== zb dma node %d added\n", ZB_DMA_MEM_NODE_COUNT);
+		printk("======== zb dma node %d added\n", ZB_DMA_MEM_NODE_COUNT);
+		printk("======== zb dma node %d added\n", ZB_DMA_MEM_NODE_COUNT);
+
+//		list_for_each_entry_safe(cur, n, &zb_dma_free_node, dma_list) {
+//			list_del(&cur->dma_list);
+//		}
+	} else {
+		printk(" memory alloc fail ===========\n");
+		printk(" memory alloc fail ===========\n");
+		printk(" memory alloc fail ===========\n");
+		printk(" memory alloc fail ===========\n");
+		printk(" memory alloc fail ===========\n");
+		BUG();
+	}
+}
+#endif
 
     printk("%s success!!!\n", __func__);
     return 0;

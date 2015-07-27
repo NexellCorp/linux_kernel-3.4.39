@@ -86,6 +86,31 @@ SECTIONS
 #else
 	. = PAGE_OFFSET + TEXT_OFFSET;
 #endif
+
+#ifdef CONFIG_FALINUX_ZEROBOOT
+	.zeroboot : {
+		_zeroboot = .;
+		*(.zeroboot)
+	} 
+
+	. = ALIGN(256*1024) + 256*1024 + TEXT_OFFSET;
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL
+	.nalboot : {
+		_nalboot = .;
+		*(.nalboot)
+	} 
+
+	. = ALIGN(32*1024) + 64*1024; 
+
+	.nalstack : {
+		_nalstack = .;
+		*(._nalstack)
+	} 
+
+	. = ALIGN(32*1024) + 64*1024; 
+#endif 
+#endif 
+
 	.head.text : {
 		_text = .;
 		HEAD_TEXT

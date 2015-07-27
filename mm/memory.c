@@ -67,6 +67,11 @@
 
 #include "internal.h"
 
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL
+u32 zero_trace = 0;
+EXPORT_SYMBOL(zero_trace);
+#endif
+
 #ifndef CONFIG_NEED_MULTIPLE_NODES
 /* use the per-pgdat data instead for discontigmem - mbligh */
 unsigned long max_mapnr;
@@ -826,6 +831,20 @@ check_pfn:
 out:
 	return pfn_to_page(pfn);
 }
+
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL 
+u32 (* zero_set_pte_ext_hook)( pte_t *pte, u32 pte_val, u32 pte_ext ) = NULL; 
+EXPORT_SYMBOL(zero_set_pte_ext_hook); 
+
+u32 zero_set_pte_ext_hook_pre( pte_t *pte, u32 pte_val, u32 pte_ext ) 
+{
+	if( zero_trace == 0                 ) return pte;
+	if( zero_set_pte_ext_hook == NULL   ) return pte;
+
+	return zero_set_pte_ext_hook(pte,pte_val,pte_ext); 
+} 
+EXPORT_SYMBOL(zero_set_pte_ext_hook_pre); 
+#endif 
 
 /*
  * copy one vm_area from one task to the other. Assumes the page tables
@@ -2009,6 +2028,9 @@ pte_t *__get_locked_pte(struct mm_struct *mm, unsigned long addr,
 	}
 	return NULL;
 }
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL 
+EXPORT_SYMBOL(get_locked_pte); 
+#endif 
 
 /*
  * This is the old fallback for page remapping.
@@ -3893,6 +3915,9 @@ int access_process_vm(struct task_struct *tsk, unsigned long addr,
 
 	return ret;
 }
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL 
+EXPORT_SYMBOL(access_process_vm); 
+#endif 
 
 /*
  * Print the name of a VMA.

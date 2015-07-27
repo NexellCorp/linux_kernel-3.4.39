@@ -8,11 +8,17 @@
 #include <linux/stddef.h>
 #include <linux/mm.h>
 #include <linux/mmzone.h>
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL 
+#include <linux/export.h>
+#endif 
 
 struct pglist_data *first_online_pgdat(void)
 {
 	return NODE_DATA(first_online_node);
 }
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL 
+EXPORT_SYMBOL(first_online_pgdat); 
+#endif 
 
 struct pglist_data *next_online_pgdat(struct pglist_data *pgdat)
 {
@@ -22,6 +28,9 @@ struct pglist_data *next_online_pgdat(struct pglist_data *pgdat)
 		return NULL;
 	return NODE_DATA(nid);
 }
+#ifdef CONFIG_FALINUX_ZEROBOOT_NAL 
+EXPORT_SYMBOL(next_online_pgdat); 
+#endif 
 
 /*
  * next_zone - helper magic for for_each_zone()
@@ -41,6 +50,9 @@ struct zone *next_zone(struct zone *zone)
 	}
 	return zone;
 }
+#ifdef CONFIG_FALINUX_ZEROBOOT 
+EXPORT_SYMBOL(next_zone); 
+#endif
 
 static inline int zref_in_nodemask(struct zoneref *zref, nodemask_t *nodes)
 {
