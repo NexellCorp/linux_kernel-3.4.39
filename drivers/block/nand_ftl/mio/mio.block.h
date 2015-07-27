@@ -60,6 +60,8 @@
 #include <linux/vmalloc.h>
 #include <linux/mm.h>
 #include <linux/pm.h>
+#include <linux/io.h>
+#include <linux/of.h>
 
 /******************************************************************************
  *
@@ -73,6 +75,7 @@
 #define MIO_TIME_DIFF_MAX(J64)  (0xFFFFFFFFFFFFFFFF - (J64))
 #define MIO_TIME_MSEC(MS)       msecs_to_jiffies(MS)
 #define MIO_TIME_SEC(S)         msecs_to_jiffies(S * 1000)
+
 
 /******************************************************************************
  *
@@ -182,4 +185,6 @@ struct mio_device
     struct gendisk * disk;
     struct mio_state * io_state;
 };
+
+MIO_BLOCK_EXT struct mio_device mio_dev;
 
