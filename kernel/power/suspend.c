@@ -181,7 +181,9 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 	BUG_ON(irqs_disabled());
 
  Enable_cpus:
+#ifndef CONFIG_FALINUX_ZEROBOOT
 	enable_nonboot_cpus();
+#endif
 
  Platform_wake:
 	if (suspend_ops->wake)
@@ -241,6 +243,10 @@ int suspend_devices_and_enter(suspend_state_t state)
 	if (suspend_ops->end)
 		suspend_ops->end();
 	trace_machine_suspend(PWR_EVENT_EXIT);
+
+#ifdef CONFIG_FALINUX_ZEROBOOT
+	enable_nonboot_cpus();
+#endif
 	return error;
 
  Recover_platform:

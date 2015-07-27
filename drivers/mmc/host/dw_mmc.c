@@ -1018,7 +1018,7 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	if (!test_bit(DW_MMC_CARD_PRESENT, &slot->flags)) {
 		spin_unlock_bh(&host->lock);
 #ifdef CONFIG_FALINUX_ZEROBOOT
-		mmc_zb_storage_unlock();
+//		mmc_zb_storage_unlock();
 #endif
 		mrq->cmd->error = -ENOMEDIUM;
 		mmc_request_done(mmc, mrq);
