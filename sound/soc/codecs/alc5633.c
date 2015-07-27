@@ -18,6 +18,7 @@
 #include <linux/delay.h>
 #include <linux/pm.h>
 #include <linux/i2c.h>
+#include <linux/gpio.h>
 #include <linux/platform_device.h>
 #include <linux/spi/spi.h>
 #include <sound/core.h>
@@ -27,6 +28,9 @@
 #include <sound/soc-dapm.h>
 #include <sound/initval.h>
 #include <sound/tlv.h>
+#include <mach/platform.h>
+#include <mach/s5p4418.h>
+#include <mach/soc.h>
 
 #include "alc5633.h"
 
@@ -86,7 +90,7 @@ static const u16 alc5633_reg[ALC5633_VENDOR_ID1 + 1] = {
 
 
 static struct alc5633_init_reg init_list[] = {
-        {ALC5633_SPK_OUT_VOL            , 0xe000},//speaker output volume is 0db by default,
+        {ALC5633_SPK_OUT_VOL            , 0xe0a5},//speaker output volume is 0db by default,
         {ALC5633_SPK_HP_MIXER_CTRL      , 0x0020},//HP from HP_VOL
         {ALC5633_HP_OUT_VOL             , 0xc0c0},//HP output volume is 0 db by default
         {ALC5633_AUXOUT_VOL             , 0x0010},//Auxout volume is 0db by default
@@ -94,7 +98,7 @@ static struct alc5633_init_reg init_list[] = {
         {ALC5633_ADC_CTRL               , 0x000a},
         {ALC5633_MIC_CTRL_2             , 0x7700},//boost 40db
         {ALC5633_HPMIXER_CTRL           , 0x3e3e},//"HP Mixer Control"
-//      {ALC5633_AUXMIXER_CTRL          , 0x3e3e},//"AUX Mixer Control"
+        {ALC5633_AUXMIXER_CTRL          , 0x3e3e},//"AUX Mixer Control" // tnn
         {ALC5633_SPKMIXER_CTRL          , 0x08fc},//"SPK Mixer Control"
         {ALC5633_SPK_AMP_CTRL           , 0x0000},
 //      {ALC5633_GEN_PUR_CTRL_1         , 0x8C00}, //set spkratio to auto
@@ -112,10 +116,12 @@ static struct alc5633_init_reg init_list[] = {
 
 #define ALC5633_INIT_REG_LEN ARRAY_SIZE(init_list)
 
+int audio_path = 7;
+
 int alc5633_write_mask(struct snd_soc_codec *codec, unsigned short reg,
                          unsigned int value, unsigned int mask)
 {
-      printk("%s reg=0x%x, mask=0x%x, val=0x%x\n", __func__, reg, mask, value);
+      //printk("%s reg=0x%x, mask=0x%x, val=0x%x\n", __func__, reg, mask, value);
     return snd_soc_update_bits(codec, reg, mask, value);
 }
 
@@ -150,7 +156,7 @@ static inline void alc5633_write_reg_cache(struct snd_soc_codec *codec,
 
 static int alc5633_write(struct snd_soc_codec *codec, unsigned int reg, unsigned int val)
 {
-      printk("%s reg=0x%x, val=0x%x\n", __func__, reg, val);
+      //printk("%s reg=0x%x, val=0x%x\n", __func__, reg, val);
         snd_soc_write(codec, reg, val);
         alc5633_write_reg_cache(codec, reg, val);
 
@@ -1124,13 +1130,37 @@ static const struct snd_kcontrol_new alc5633_hpr_mux_control =
 
 #endif
 
+// tnn
+#define CFG_GPIO_AMP_EN					(PAD_GPIO_B + 26)
+//#define CFG_GPIO_AMP_EN					(PAD_GPIO_B + 24)
 
+void alc5633_amp_en()
+{
+    unsigned int temp_gpio;
+	
+	temp_gpio = gpio_get_value(CFG_GPIO_AMP_EN);
+
+	if(temp_gpio == 0) {
+		gpio_set_value(CFG_GPIO_AMP_EN, 1);
+	}
+
+}
 
 static int spk_event(struct snd_soc_dapm_widget *w,
         struct snd_kcontrol *kcontrol, int event)
 {
         struct snd_soc_codec *codec = w->codec;
         unsigned int l, r;
+		unsigned int temp_gpio;// tnn
+
+		temp_gpio = gpio_get_value(CFG_GPIO_AMP_EN);
+	
+		if(temp_gpio == 0) {
+			gpio_set_value(CFG_GPIO_AMP_EN, 1);
+		}
+
+	if(!(audio_path & 0x01))
+		return 0;
 
         l = (alc5633_read(codec, ALC5633_PWR_MANAG_ADD4) & (0x01 << 15)) >> 15;
         r = (alc5633_read(codec, ALC5633_PWR_MANAG_ADD4) & (0x01 << 14)) >> 14;
@@ -1142,7 +1172,8 @@ static int spk_event(struct snd_soc_dapm_widget *w,
                         alc5633_write_mask(codec, ALC5633_SPK_OUT_VOL, 0x8000, 0x8000);
 
                         alc5633_write_mask(codec, ALC5633_PWR_MANAG_ADD1, 0x0000, 0x2020);
-			printk("spk_event 0\n");
+			//printk("spk_event 0\n");
+			//gpio_set_value(CFG_GPIO_AMP_EN, 0);
                 }
 
                 break;
@@ -1153,7 +1184,8 @@ static int spk_event(struct snd_soc_dapm_widget *w,
                         alc5633_write_mask(codec, ALC5633_SPK_OUT_VOL, 0x0000, 0x8000);
                         alc5633_write(codec, ALC5633_DAC_DIG_VOL, 0x1010);
                         alc5633_write_index(codec, 0X45, 0X4100);
-			printk("spk_event 1\n");
+			//printk("spk_event 1\n");
+			gpio_set_value(CFG_GPIO_AMP_EN, 1);
                 }
                 break;
         default:
@@ -1170,6 +1202,9 @@ static int auxout_event(struct snd_soc_dapm_widget *w,
         unsigned int l, r;
 	static unsigned int aux_out_enable=0;
 
+	if(!(audio_path & 0x02))
+		return 0;
+
         l = (alc5633_read(codec, ALC5633_PWR_MANAG_ADD4) & (0x01 << 9)) >> 9;
         r = (alc5633_read(codec, ALC5633_PWR_MANAG_ADD4) & (0x01 << 8)) >> 8;
 
@@ -1179,7 +1214,7 @@ static int auxout_event(struct snd_soc_dapm_widget *w,
                 {
                         alc5633_write_mask(codec, ALC5633_AUXOUT_VOL, 0x8080, 0x8080);
 			aux_out_enable=0;
-			printk("auxout_event 0\n");
+			//printk("auxout_event 0\n");
                 }
 
                 break;
@@ -1188,7 +1223,7 @@ static int auxout_event(struct snd_soc_dapm_widget *w,
                 {
                         alc5633_write_mask(codec, ALC5633_AUXOUT_VOL, 0x0000, 0x8080);
 			aux_out_enable=1;
-			printk("auxout_event 1\n");
+			//printk("auxout_event 1\n");
                 }
                 break;
         default:
@@ -1256,6 +1291,9 @@ static int hp_event(struct snd_soc_dapm_widget *w,
         unsigned int l, r;
 	static unsigned int hp_out_enable=0;
 
+	if(!(audio_path & 0x04))
+		return 0;
+
         l = (alc5633_read(codec, ALC5633_PWR_MANAG_ADD4) & (0x01 << 11)) >> 11;
         r = (alc5633_read(codec, ALC5633_PWR_MANAG_ADD4) & (0x01 << 10)) >> 10;
 
@@ -1265,7 +1303,7 @@ static int hp_event(struct snd_soc_dapm_widget *w,
                 {
 			close_hp_end_widgets(codec);
 			hp_out_enable = 0;
-			printk("hp_event 0\n");
+			//printk("hp_event 0\n");
                 }
 
                 break;
@@ -1276,7 +1314,7 @@ static int hp_event(struct snd_soc_dapm_widget *w,
 			open_hp_end_widgets(codec);
 			hp_out_enable = 1;
                         alc5633_write(codec, ALC5633_DAC_DIG_VOL, 0x0000);
-			printk("hp_event 1\n");
+			//printk("hp_event 1\n");
                 }
                 break;
         default:
@@ -1289,7 +1327,7 @@ static int hp_event(struct snd_soc_dapm_widget *w,
 static int dac_event(struct snd_soc_dapm_widget *w,
         struct snd_kcontrol *kcontrol, int event)
 {
-	printk("dac_event\n");
+	//printk("dac_event\n");
         struct snd_soc_codec *codec = w->codec;
         static unsigned int dac_enable=0;
 
@@ -1802,7 +1840,7 @@ static int alc5633_hifi_pcm_params(struct snd_pcm_substream *substream,
         int rate = params_rate(params);
         int coeff = 0;
 
-        printk(KERN_DEBUG "enter %s\n", __func__);
+        //printk(KERN_DEBUG "enter %s\n", __func__);
         if (!alc5633->master)
                 coeff = get_coeff_in_slave_mode(alc5633->sysclk, rate);
         else
@@ -1845,7 +1883,7 @@ static int alc5633_hifi_codec_set_dai_fmt(
         struct alc5633_priv *alc5633 =  snd_soc_codec_get_drvdata(codec);
         u16 iface = 0;
 
-        printk(KERN_DEBUG "enter %s\n", __func__);
+        //printk(KERN_DEBUG "enter %s\n", __func__);
         switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
         case SND_SOC_DAIFMT_CBM_CFM:
                 alc5633->master = 1;
@@ -1895,7 +1933,7 @@ static int alc5633_hifi_codec_set_dai_sysclk(struct snd_soc_dai *codec_dai,
         struct snd_soc_codec *codec = codec_dai->codec;
         struct alc5633_priv *alc5633 = snd_soc_codec_get_drvdata(codec);
 
-        printk(KERN_DEBUG "enter %s\n", __func__);
+        //printk(KERN_DEBUG "enter %s\n", __func__);
         if ((freq >= (256 * 8000)) && (freq <= (512 * 96000))) {
                 alc5633->sysclk = freq;
                 return 0;
@@ -2071,6 +2109,81 @@ static ssize_t alc5633_index_show(struct device *dev,
 }
 static DEVICE_ATTR(index_reg, 0444, alc5633_index_show, NULL);
 
+static ssize_t show_audiopath (struct device *dev, struct device_attribute *attr, char *buf);
+static ssize_t set_audiopath (struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
+static DEVICE_ATTR(audiopath, S_IRWXUGO, show_audiopath, set_audiopath);
+
+static ssize_t show_audiopath(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	//read register
+	buf[0] = audio_path + '0';
+	buf[1] = NULL;
+
+	return 1;
+}
+
+struct snd_soc_codec *attr_codec;
+
+static ssize_t set_audiopath (struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	int temp;
+
+	temp = buf[0] - '0';
+	temp ^= audio_path;
+
+	audio_path = buf[0] - '0';
+	if(temp & 0x01)
+	{
+		if(audio_path & 0x01)
+                	alc5633_write_mask(attr_codec, ALC5633_SPK_OUT_VOL, 0x0000, 0x8000);
+		else
+                        alc5633_write_mask(attr_codec, ALC5633_SPK_OUT_VOL, 0x8000, 0x8000);
+	}		
+
+        if(temp & 0x02) 
+        {       
+                if(audio_path & 0x02)
+                        alc5633_write_mask(attr_codec, ALC5633_AUXOUT_VOL, 0x0000, 0x8080);
+                else
+                        alc5633_write_mask(attr_codec, ALC5633_AUXOUT_VOL, 0x8080, 0x8080);
+
+        }
+
+        if(temp & 0x04)
+        {
+                if(audio_path & 0x04)
+                	alc5633_write_mask(attr_codec, ALC5633_HP_OUT_VOL, 0x0000, 0x8080);
+                else
+                	alc5633_write_mask(attr_codec, ALC5633_HP_OUT_VOL, 0x8080, 0x8080);
+        }
+
+	return count;
+}
+
+static struct attribute *tnn_audio_sysfs_entries[] = {
+	&dev_attr_audiopath,
+	NULL
+};
+
+static struct attribute_group tnn_audio_attr_group = {
+	.name = NULL,
+	.attrs = tnn_audio_sysfs_entries,
+};
+
+//int tnn_audio_sysfs_create(struct platform_device *pdev)
+int tnn_audio_sysfs_create(struct device *pdev)
+{
+	//return sysfs_create_group(&pdev->dev.kobj, &tnn_audio_attr_group);
+	return sysfs_create_group(&pdev->kobj, &tnn_audio_attr_group);
+}
+
+//void tnn_audio_sysfs_remove(struct platform_device *pdev)
+void tnn_audio_sysfs_remove(struct device *pdev)
+{
+        //sysfs_remove_group(&pdev->dev.kobj, &tnn_audio_attr_group);
+        sysfs_remove_group(&pdev->kobj, &tnn_audio_attr_group);
+}
+
 static int alc5633_probe(struct snd_soc_codec *codec)
 {
 	struct alc5633_priv *alc5633 = snd_soc_codec_get_drvdata(codec);
@@ -2078,7 +2191,7 @@ static int alc5633_probe(struct snd_soc_codec *codec)
 	int ret;
 
 	pr_info("Codec driver version %s\n", VERSION);
-      printk("%s\n", __func__);
+      //printk("%s\n", __func__);
 
 	ret = snd_soc_codec_set_cache_io(codec, 8, 16, SND_SOC_I2C);
 	if (ret != 0) {
@@ -2094,7 +2207,7 @@ static int alc5633_probe(struct snd_soc_codec *codec)
 	alc5633_write_mask(codec, ALC5633_PWR_MANAG_ADD3,
 		PWR_DIS_FAST_VREF,PWR_DIS_FAST_VREF);	
 
-      printk("call alc5633_reg_init\n");
+      //printk("call alc5633_reg_init\n");
 	alc5633_reg_init(codec);
 
 #if 0
@@ -2106,11 +2219,26 @@ static int alc5633_probe(struct snd_soc_codec *codec)
 	codec->dapm.bias_level = SND_SOC_BIAS_STANDBY;
 	alc5633->codec = codec;
 
+	attr_codec = codec;
+
+#if 0
 	ret = device_create_file(codec->dev, &dev_attr_index_reg);
  	if (ret < 0) {
  		dev_err(codec->dev,
 			"Failed to create index_reg sysfs files: %d\n", ret);
 		return ret;
+	}
+#endif
+	alc5633_amp_en();
+
+	if(tnn_audio_sysfs_create(codec->dev)) {
+ 		dev_err(codec->dev,
+			"Failed to create tnn_audio sysfs files.\n");
+	}
+	else
+	{
+ 		dev_err(codec->dev,
+			"Success to create tnn_audio sysfs files.\n");
 	}
 
 	return 0;
@@ -2118,6 +2246,7 @@ static int alc5633_probe(struct snd_soc_codec *codec)
 
 static int alc5633_remove(struct snd_soc_codec *codec)
 {
+	tnn_audio_sysfs_remove(codec->dev);
 	alc5633_set_bias_level(codec, SND_SOC_BIAS_OFF);
 	return 0;
 }
@@ -2293,8 +2422,8 @@ static int __init alc5633_modinit(void)
 {
         int ret;
 
-        printk(KERN_DEBUG "enter %s\n", __func__);
-        printk("enter %s\n", __func__);
+        //printk(KERN_DEBUG "enter %s\n", __func__);
+        //printk("enter %s\n", __func__);
         ret = i2c_add_driver(&alc5633_i2c_driver);
         if (ret != 0) {
                 printk(KERN_ERR "Failed to register ALC5633 I2C driver: %d\n", ret);
