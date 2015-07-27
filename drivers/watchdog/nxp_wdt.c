@@ -559,6 +559,10 @@ static unsigned long wtdat_save;
 
 static int nxp_wdt_suspend(struct platform_device *dev, pm_message_t state)
 {
+#ifdef CONFIG_WDT_TASK
+	cancel_delayed_work(&wdt_task_work);
+#endif
+
 	/* Save watchdog state, and turn it off. */
 	wtcon_save = readl(NXP_WTCON);
 
@@ -591,6 +595,10 @@ static int nxp_wdt_resume(struct platform_device *dev)
 
 	pr_info("watchdog %sabled\n",
 		(wtcon_save & NXP_WTCON_ENABLE) ? "en" : "dis");
+
+#ifdef CONFIG_WDT_TASK
+    queue_delayed_work(wdt_wqueue, &wdt_task_work, msecs_to_jiffies(CONFIG_DEFAULT_WDT_TASK_TIMEOUT-1)*1000);
+#endif
 
 	return 0;
 }
