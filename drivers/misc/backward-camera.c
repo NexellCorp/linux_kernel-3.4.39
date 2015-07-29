@@ -243,10 +243,12 @@ static bool _s_first = true;
 static void _turn_on(struct nxp_backward_camera_context *me)
 {
     printk("%s\n", __func__);
+#if 0
     if (_s_first == true) {
         vip_run(me->plat_data->vip_module_num);
         _s_first = false;
     }
+#endif
     /*mlc_overlay_run(me->plat_data->mlc_module_num);*/
 #if 0
     _mlc_video_set_param(me->plat_data->mlc_module_num, me->plat_data);
@@ -274,7 +276,8 @@ static void _turn_off(struct nxp_backward_camera_context *me)
 static inline bool _is_backgear_on(struct nxp_backward_camera_platform_data *pdata)
 {
     bool is_on = nxp_soc_gpio_get_in_value(pdata->backgear_gpio_num);
-    /*printk("%s: is_on %d\n", __func__, is_on);*/
+		printk("%s: gpio in/out %d\n", __func__, nxp_soc_gpio_get_io_dir(pdata->backgear_gpio_num));
+    printk("%s: is_on %d\n", __func__, is_on);
     if (!pdata->active_high)
         is_on ^= 1;
     return is_on;
