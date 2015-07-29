@@ -962,6 +962,8 @@ static int nxp_vin_clipper_s_power(struct v4l2_subdev *sd, int on)
         return -EINVAL;
     }
 
+	// psw0523 test TNN
+#if !defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
     if (on) {
         if (me->platdata->setup_io)
             me->platdata->setup_io(module, false);
@@ -972,6 +974,7 @@ static int nxp_vin_clipper_s_power(struct v4l2_subdev *sd, int on)
         ret = v4l2_subdev_call(remote_source, core, s_power, 0);
         _hw_set_clock(me, false);
     }
+#endif
 
     return ret;
 }

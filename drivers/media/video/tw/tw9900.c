@@ -299,7 +299,7 @@ static int tw9900_initialize_ctrls(struct tw9900_state *me)
 
 static inline bool _is_backgear_on(void)
 {
-#if 0
+#if 1
     int val = nxp_soc_gpio_get_in_value((PAD_GPIO_E + 10) | PAD_FUNC_ALT0);
     if (!val)
     {

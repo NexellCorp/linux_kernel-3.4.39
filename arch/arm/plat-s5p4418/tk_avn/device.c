@@ -521,6 +521,7 @@ static struct i2c_board_info __initdata stk831x_i2c_bdi = {
 #include <linux/cma.h>
 extern void nxp_cma_region_reserve(struct cma_region *, const char *);
 
+#if 0
 void __init nxp_reserve_mem(void)
 {
     static struct cma_region regions[] = {
@@ -549,6 +550,51 @@ void __init nxp_reserve_mem(void)
 #endif
     nxp_cma_region_reserve(regions, map);
 }
+#else
+void __init nxp_reserve_mem(void)
+{
+    static struct cma_region regions[] = {
+#ifdef CONFIG_ION_NXP_RESERVEHEAP_SIZE
+        {
+            .name = "ion-reserve",
+            .size = CONFIG_ION_NXP_RESERVEHEAP_SIZE * SZ_1K,
+            {
+                .alignment = PAGE_SIZE,
+            }
+        },
+#endif
+        {
+            .name = "ion",
+#ifdef CONFIG_ION_NXP_CONTIGHEAP_SIZE
+            .size = CONFIG_ION_NXP_CONTIGHEAP_SIZE * SZ_1K,
+#else
+			.size = 0,
+#endif
+            {
+                .alignment = PAGE_SIZE,
+            }
+        },
+        {
+            .size = 0
+        }
+    };
+
+    static const char map[] __initconst =
+        "ion-nxp/ion-reserve=ion-reserve;"
+        "ion-nxp/ion-nxp=ion;"
+        "nx_vpu=ion;";
+
+#ifdef CONFIG_ION_NXP_RESERVEHEAP_SIZE
+    printk("%s: reserve CMA: size %d\n", __func__, CONFIG_ION_NXP_RESERVEHEAP_SIZE * SZ_1K);
+#endif
+
+#ifdef CONFIG_ION_NXP_CONTIGHEAP_SIZE
+    printk("%s: reserve CMA: size %d\n", __func__, CONFIG_ION_NXP_CONTIGHEAP_SIZE * SZ_1K);
+#endif
+
+    nxp_cma_region_reserve(regions, map);
+}
+#endif
 #endif
 
 
@@ -1662,7 +1708,7 @@ EXPORT_SYMBOL(nxp_otgvbus_pwr_set);
 /*------------------------------------------------------------------------------
  * Backward Camera driver
  */
-#if defined(CONFIG_NXP4330_BACKWARD_CAMERA)
+#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
 #include <mach/nxp-backward-camera.h>
 
 static struct reg_val _sensor_init_data[] =
@@ -1754,7 +1800,8 @@ static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_dat
 
 static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .backgear_gpio_num  = CFG_BACKWARD_GEAR,
-    .active_high        = false,	// tnn
+    //.active_high        = false,	// tnn
+    .active_high        = true,	// tnn
     .vip_module_num     = 1,
     .mlc_module_num     = 0,
 
@@ -1923,6 +1970,11 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_NXP_HDMI_CEC)
     printk("plat: add device hdmi-cec\n");
     platform_device_register(&hdmi_cec_device);
+#endif
+
+#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+	printk("plat: register device backward-camera platform device to tnn-boot\n");
+	platform_device_register(&backward_camera_device);
 #endif
 
 //s tnn, nplat
