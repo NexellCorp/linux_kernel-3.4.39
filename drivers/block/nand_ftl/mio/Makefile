@@ -10,7 +10,6 @@ mio-y += mio.block.o \
          media/exchange.o \
          media/include/include.o \
          media/ftl/ftl.o \
-         media/nfc/phy/nfc.lib.o \
          media/nfc/nfc.sche.o \
          media/nfc/phy/nfc.phy.o \
          media/nfc/phy/nfc.phy.rand.o \
@@ -18,3 +17,9 @@ mio-y += mio.block.o \
          media/nfc/phy/nfc.phy.readretry.o \
          media/nfc/phy/nfc.phy.lowapi.o \
          media/nfc/phy/nfc.phy.lowapi.rawread.o
+
+ifdef CONFIG_ARM64
+mio-y += media/nfc/phy/nfc.lib64.o
+else
+mio-y += media/nfc/phy/nfc.lib.o
+endif
