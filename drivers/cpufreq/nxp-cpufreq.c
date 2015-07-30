@@ -900,7 +900,7 @@ static void *nxp_cpufreq_make_table(struct platform_device *pdev,
 			id++;
 		}
 	} else {
-		for (id = 0; tb_size > id; id++, freq_table++) {
+		for (id = 0; tb_size > id; id++) {
 			dvfs_tables[id][0] = plat_tbs[id][0];	/* frequency */
 			dvfs_tables[id][1] = plat_tbs[id][1];	/* voltage */
 			freq_table[id].index = id;
