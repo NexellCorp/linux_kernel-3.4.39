@@ -870,7 +870,7 @@ static void *nxp_cpufreq_make_table(struct platform_device *pdev,
 	tb_size = (pdata->table_size ? pdata->table_size : asv_size);
 
 	/* alloc with end table */
-	freq_table = kzalloc((sizeof(*freq_table)*tb_size + 1), GFP_KERNEL);
+	freq_table = kzalloc((sizeof(*freq_table) * (tb_size + 1)), GFP_KERNEL);
 	if (!freq_table) {
 		dev_err(&pdev->dev, "failed allocate freq table !!!\n");
 		return NULL;
