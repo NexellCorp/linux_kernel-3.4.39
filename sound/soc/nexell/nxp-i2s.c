@@ -441,7 +441,11 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 		cutoff_master_clock(par);
 		clk_disable(par->clk);
 		nxp_cpu_pll_change_frequency(SND_NXP_DFS_PLLNO, request);
+#if defined(CONFIG_ARCH_S5P4418)
+		nxp_cpu_clock_update_rate(CONFIG_SND_NXP_PLLDEV);
+#elif defined(CONFIG_ARCH_S5P6818)
 		nxp_cpu_clock_update_pll(CONFIG_SND_NXP_PLLDEV);
+#endif
 		clk_set_rate(par->clk, request);
 		clk_enable(par->clk);
 		supply_master_clock(par);
@@ -791,7 +795,11 @@ static int nxp_i2s_set_dfs_sysclk(struct nxp_i2s_snd_param *par)
 		cutoff_master_clock(par);
 		clk_disable(par->clk);
 		nxp_cpu_pll_change_frequency(SND_NXP_DFS_PLLNO, request);
+#if defined(CONFIG_ARCH_S5P4418)
+		nxp_cpu_clock_update_rate(CONFIG_SND_NXP_PLLDEV);
+#elif defined(CONFIG_ARCH_S5P6818)
 		nxp_cpu_clock_update_pll(CONFIG_SND_NXP_PLLDEV);
+#endif
 		clk_set_rate(par->clk, request);
 		clk_enable(par->clk);
 		supply_master_clock(par);
