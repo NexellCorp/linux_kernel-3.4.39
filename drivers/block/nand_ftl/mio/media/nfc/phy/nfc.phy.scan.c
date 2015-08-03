@@ -1434,6 +1434,7 @@ unsigned int NFC_PHY_ScanSkhynix(unsigned char * _id, unsigned char * _onfi_id, 
          * Check NAND ID
          **********************************************************************/
              if ((0xDE == id[1]) && (0x94 == id[2]) && (0xDA == id[3]) && (0x74 == id[4]) && (0xC4 == id[5])) { nand = NAND_HYNIX_H27UCG8T2ATR; }
+        else if ((0xDE == id[1]) && (0x94 == id[2]) && (0xEB == id[3]) && (0x74 == id[4]) && (0x44 == id[5])) { nand = NAND_HYNIX_H27UCG8T2BTR; }
         else if ((0xD7 == id[1]) && (0x94 == id[2]) && (0x91 == id[3]) && (0x60 == id[4]) && (0x44 == id[5])) { nand = NAND_HYNIX_H27UCG8T2CTR; }
         else if ((0xD7 == id[1]) && (0x14 == id[2]) && (0x9E == id[3]) && (0x34 == id[4]) && (0x4A == id[5])) { nand = NAND_HYNIX_H27UBG8T2DTR; }
         else if ((0xDE == id[1]) && (0x14 == id[2]) && (0xA7 == id[3]) && (0x42 == id[4]) && (0x4A == id[5])) { nand = NAND_HYNIX_H27UCG8T2ETR; }
@@ -1510,7 +1511,7 @@ unsigned int NFC_PHY_ScanSkhynix(unsigned char * _id, unsigned char * _onfi_id, 
                     nand_config->_f.timing.async.tRR   = 20;
                     nand_config->_f.timing.async.tFEAT = 1000;
 
-                    nand_config->_f.timing.async.tCS   = 15;
+                    nand_config->_f.timing.async.tCS   = 20;
                     nand_config->_f.timing.async.tCH   = 5;
                     nand_config->_f.timing.async.tCLS  = 10;
                     nand_config->_f.timing.async.tALS  = 10;
@@ -1584,6 +1585,113 @@ unsigned int NFC_PHY_ScanSkhynix(unsigned char * _id, unsigned char * _onfi_id, 
                 bytes_per_page = 8192;
 
             } break;
+
+			case NAND_HYNIX_H27UCG8T2BTR:
+            {
+                if (scan_format)
+                {
+                    /**********************************************************
+                     * manufacturer
+                     **********************************************************/
+                    memcpy((void *)nand_config->_f.manufacturer, (const void *)"HYNIX", strlen("HYNIX"));
+                    memcpy((void *)nand_config->_f.modelname, (const void *)"H27UCG8T2BTR", strlen("H27UCG8T2BTR"));
+                    memcpy((void *)nand_config->_f.id, (const void *)id, sizeof(unsigned char) * 8);
+                    memcpy((void *)nand_config->_f.generation, (const void *)"20NM B-DIE", strlen("20NM B-DIE"));
+
+                    /**********************************************************
+                     * timing config
+                     **********************************************************/
+                    nand_config->_f.interfacetype = NAND_INTERFACE_ASYNC;
+                    nand_config->_f.onfi_detected = 0;
+                    nand_config->_f.onfi_timing_mode = 0;
+
+                    nand_config->_f.timing.async.tClk  = __MHZ(50);
+                    nand_config->_f.timing.async.tRWC  = 20;
+                    nand_config->_f.timing.async.tR    = 100000;
+                    nand_config->_f.timing.async.tWB   = 100;
+                    nand_config->_f.timing.async.tCCS  = 200;
+                    nand_config->_f.timing.async.tADL  = 400;
+                    nand_config->_f.timing.async.tRHW  = 100;
+                    nand_config->_f.timing.async.tWHR  = 80;
+                    nand_config->_f.timing.async.tWW   = 100;
+                    nand_config->_f.timing.async.tRR   = 20;
+                    nand_config->_f.timing.async.tFEAT = 1000;
+
+                    nand_config->_f.timing.async.tCS   = 20;
+                    nand_config->_f.timing.async.tCH   = 5;
+                    nand_config->_f.timing.async.tCLS  = 10;
+                    nand_config->_f.timing.async.tALS  = 10;
+                    nand_config->_f.timing.async.tCLH  = 5;
+                    nand_config->_f.timing.async.tALH  = 5;
+                    nand_config->_f.timing.async.tWP   = 10;
+                    nand_config->_f.timing.async.tWH   = 7;
+                    nand_config->_f.timing.async.tWC   = 20;
+                    nand_config->_f.timing.async.tDS   = 7;
+                    nand_config->_f.timing.async.tDH   = 5;
+
+                    nand_config->_f.timing.async.tCEA  = 25;
+                    nand_config->_f.timing.async.tREA  = 16;
+                    nand_config->_f.timing.async.tRP   = 10;
+                    nand_config->_f.timing.async.tREH  = 15;
+                    nand_config->_f.timing.async.tRC   = 20;
+                    nand_config->_f.timing.async.tCOH  = 15;
+
+                    /**********************************************************
+                     * cell config
+                     **********************************************************/
+                    nand_config->_f.luns_per_ce                       = 1;
+                    nand_config->_f.databytes_per_page                = 16384;
+                    nand_config->_f.sparebytes_per_page               = 1280;
+                    nand_config->_f.number_of_planes                  = 2;
+                    nand_config->_f.pages_per_block                   = 256;
+                    nand_config->_f.mainblocks_per_lun                = 2048;
+                    nand_config->_f.extendedblocks_per_lun            = 84;
+                    nand_config->_f.next_lun_address                  = 0;
+                    nand_config->_f.over_provisioning                 = NAND_OVER_PROVISIONING;
+                    nand_config->_f.bits_per_cell                     = 2;
+                    nand_config->_f.number_of_bits_ecc_correctability = 40;
+                    nand_config->_f.maindatabytes_per_eccunit         = 1024;
+                    nand_config->_f.eccbits_per_maindata              = 40;
+                    nand_config->_f.eccbits_per_blockinformation      = NFC_PHY_GetEccBitsOfBlockInformation(nand_config->_f.databytes_per_page,
+                                                                                                             nand_config->_f.sparebytes_per_page,
+                                                                                                             nand_config->_f.maindatabytes_per_eccunit,
+                                                                                                             nand_config->_f.number_of_bits_ecc_correctability);
+                    nand_config->_f.block_endurance                   = 1000; // Spec Does Not Described !!
+                    nand_config->_f.factorybadblocks_per_nand         = 100;
+
+                    /**********************************************************
+                     * operation config
+                     **********************************************************/
+                    nand_config->_f.support_list.slc_mode            = 0;
+                    nand_config->_f.support_list.multiplane_read     = 0;
+                    nand_config->_f.support_list.multiplane_write    = 1;
+                    nand_config->_f.support_list.cache_read          = 0;
+                    nand_config->_f.support_list.cache_write         = 1;
+                    nand_config->_f.support_list.interleave          = 0;
+                    nand_config->_f.support_list.randomize           = 1;
+
+                    nand_config->_f.support_type.multiplane_read     = 0;
+                    nand_config->_f.support_type.multiplane_write    = 1;
+                    nand_config->_f.support_type.cache_read          = 0;
+                    nand_config->_f.support_type.cache_write         = 1;
+                    nand_config->_f.support_type.interleave          = 0;
+                    nand_config->_f.support_type.paired_page_mapping = 0;
+                    nand_config->_f.support_type.block_indicator     = 1;
+                    nand_config->_f.support_type.paired_plane        = 0;   // 0: match block & page address, 1: match page address
+                    nand_config->_f.support_type.multiplane_erase    = 1;   // 1: CMD1(0x60)-ADDR-CMD1(0x60)-ADDR-CMD2(0xD0)-BSY, 2: CMD1(0x60)-ADDR-CMD2(0xD1)-BSY-CMD1(0x60)-ADDR-CMD2(0xD0)-BSY
+                    nand_config->_f.support_type.read_retry          = NAND_READRETRY_TYPE_HYNIX_20NM_MLC_BC_DIE;
+
+                    nand_config->_f.step_of_static_wear_leveling     = (nand_config->_f.block_endurance * 20) / 100; // Endurance's 20%
+                  //nand_config->_f.max_channel;
+                  //nand_config->_f.max_way;
+
+                    if (Exchange.ftl.fnConfig) { Exchange.ftl.fnConfig((void *)&phy_features.nand_config); }
+                }
+
+                bytes_per_page = 16384;
+
+            } break;
+
 
             case NAND_HYNIX_H27UCG8T2CTR:
             {
@@ -1732,7 +1840,7 @@ unsigned int NFC_PHY_ScanSkhynix(unsigned char * _id, unsigned char * _onfi_id, 
                     memcpy((void *)nand_config->_f.manufacturer, (const void *)"HYNIX", strlen("HYNIX"));
                     memcpy((void *)nand_config->_f.modelname, (const void *)"H27UBG8T2DTR", strlen("H27UBG8T2DTR"));
                     memcpy((void *)nand_config->_f.id, (const void *)id, sizeof(unsigned char) * 8);
-                    memcpy((void *)nand_config->_f.generation, (const void *)"16NM ?-DIE", strlen("16NM ?-DIE"));
+                    memcpy((void *)nand_config->_f.generation, (const void *)"16NM A-DIE", strlen("16NM A-DIE"));
 
                     /**********************************************************
                      * timing config
@@ -1776,7 +1884,7 @@ unsigned int NFC_PHY_ScanSkhynix(unsigned char * _id, unsigned char * _onfi_id, 
                     nand_config->_f.timing.async.tRWC  = 20;
                     nand_config->_f.timing.async.tR    = 100000;
                     nand_config->_f.timing.async.tWB   = 100;
-                    nand_config->_f.timing.async.tCCS  = 200;
+                    nand_config->_f.timing.async.tCCS  = 300;
                     nand_config->_f.timing.async.tADL  = 400;
                     nand_config->_f.timing.async.tRHW  = 100;
                     nand_config->_f.timing.async.tWHR  = 80;
@@ -1784,7 +1892,7 @@ unsigned int NFC_PHY_ScanSkhynix(unsigned char * _id, unsigned char * _onfi_id, 
                     nand_config->_f.timing.async.tRR   = 20;
                     nand_config->_f.timing.async.tFEAT = 1000;
 
-                    nand_config->_f.timing.async.tCS   = 15;
+                    nand_config->_f.timing.async.tCS   = 20;
                     nand_config->_f.timing.async.tCH   = 5;
                     nand_config->_f.timing.async.tCLS  = 10;
                     nand_config->_f.timing.async.tALS  = 10;

@@ -88,6 +88,7 @@
 
 // NAND Model
 #define NAND_HYNIX_H27UCG8T2ATR                 (NAND_HYNIX_20NM_A_DIE | (1<<0))    // Hynix MLC 20nm       [ 1 DIE, 1 CE, 1 R/B, Common IO   ]     64Gb, Async
+#define NAND_HYNIX_H27UCG8T2BTR                 (NAND_HYNIX_20NM_B_DIE | (1<<0))    // Hynix MLC 20nm       [ 1 DIE, 1 CE, 1 R/B, Common IO   ]     64Gb, Async
 #define NAND_HYNIX_H27UCG8T2CTR                 (NAND_HYNIX_20NM_C_DIE | (1<<0))    // Hynix MLC 20nm       [ 1 DIE, 1 CE, 1 R/B, Common IO   ]     32Gb, Async
 #define NAND_HYNIX_H27UBG8T2DTR                 (NAND_HYNIX_16NM_x_DIE | (1<<0))    // Hynix MLC 16nm       [ 1 DIE, 1 CE, 1 R/B, Common IO   ]     32Gb, Async
 #define NAND_HYNIX_H27UCG8T2ETR                 (NAND_HYNIX_16NM_B_DIE | (1<<0))    // Hynix MLC 16nm       [ 1 DIE, 1 CE, 1 R/B, Common IO   ]     64Gb, Async
