@@ -2029,7 +2029,7 @@ unsigned int NFC_PHY_ScanSkhynix(unsigned char * _id, unsigned char * _onfi_id, 
                     nand_config->_f.timing.async.tRR   = 20;
                     nand_config->_f.timing.async.tFEAT = 1000;
 
-                    nand_config->_f.timing.async.tCS   = 15;
+                    nand_config->_f.timing.async.tCS   = 20;
                     nand_config->_f.timing.async.tCH   = 5;
                     nand_config->_f.timing.async.tCLS  = 10;
                     nand_config->_f.timing.async.tALS  = 10;
