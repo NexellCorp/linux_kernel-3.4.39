@@ -72,6 +72,8 @@
 #define NAND_TOSHIBA_TH58TEG8DCJTA20            (NAND_TOSHIBA_19NM | (1<<0x04))     // Toshiba MLC 19nm [ 4 DIE, 2 CE, 2 R/B, Common IO   ]     256Gb, Toggle,
 #define NAND_TOSHIBA_TH58TEG8DCJTAK0            (NAND_TOSHIBA_19NM | (1<<0x05))
 
+#define NAND_TOSHIBA_TC58TEG5DCJTA00			(NAND_TOSHIBA_19NM | (1<<0x06))		// Toshiba MLC 19nm
+
 /******************************************************************************
  * NAND Maker SKHynix
  ******************************************************************************/
