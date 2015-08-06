@@ -1686,7 +1686,7 @@ unsigned int NFC_PHY_ScanSkhynix(unsigned char * _id, unsigned char * _onfi_id, 
          **********************************************************************/
              if ((0xDE == id[1]) && (0x94 == id[2]) && (0xDA == id[3]) && (0x74 == id[4]) && (0xC4 == id[5])) { nand = NAND_HYNIX_H27UCG8T2ATR; }
         else if ((0xDE == id[1]) && (0x94 == id[2]) && (0xEB == id[3]) && (0x74 == id[4]) && (0x44 == id[5])) { nand = NAND_HYNIX_H27UCG8T2BTR; }
-        else if ((0xD7 == id[1]) && (0x94 == id[2]) && (0x91 == id[3]) && (0x60 == id[4]) && (0x44 == id[5])) { nand = NAND_HYNIX_H27UCG8T2CTR; }
+        else if ((0xD7 == id[1]) && (0x94 == id[2]) && (0x91 == id[3]) && (0x60 == id[4]) && (0x44 == id[5])) { nand = NAND_HYNIX_H27UBG8T2CTR; }
         else if ((0xD7 == id[1]) && (0x14 == id[2]) && (0x9E == id[3]) && (0x34 == id[4]) && (0x4A == id[5])) { nand = NAND_HYNIX_H27UBG8T2DTR; }
         else if ((0xDE == id[1]) && (0x14 == id[2]) && (0xA7 == id[3]) && (0x42 == id[4]) && (0x4A == id[5])) { nand = NAND_HYNIX_H27UCG8T2ETR; }
         // Add More NAND Here !!
@@ -1944,7 +1944,7 @@ unsigned int NFC_PHY_ScanSkhynix(unsigned char * _id, unsigned char * _onfi_id, 
             } break;
 
 
-            case NAND_HYNIX_H27UCG8T2CTR:
+            case NAND_HYNIX_H27UBG8T2CTR:
             {
                 if (scan_format)
                 {
@@ -1952,7 +1952,7 @@ unsigned int NFC_PHY_ScanSkhynix(unsigned char * _id, unsigned char * _onfi_id, 
                      * manufacturer
                      **********************************************************/
                     memcpy((void *)nand_config->_f.manufacturer, (const void *)"HYNIX", strlen("HYNIX"));
-                    memcpy((void *)nand_config->_f.modelname, (const void *)"H27UCG8T2CTR", strlen("H27UCG8T2CTR"));
+                    memcpy((void *)nand_config->_f.modelname, (const void *)"H27UBG8T2CTR", strlen("H27UBG8T2CTR"));
                     memcpy((void *)nand_config->_f.id, (const void *)id, sizeof(unsigned char) * 8);
                     memcpy((void *)nand_config->_f.generation, (const void *)"20NM C-DIE", strlen("20NM C-DIE"));
 
