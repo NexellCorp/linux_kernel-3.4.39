@@ -1172,6 +1172,14 @@ static int mtv_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, u
 		break;
 #endif /* #ifdef RTV_FM_ENABLE */
 
+	case IOCTL_GET_DMOED_CNT:
+	{
+		int demod_cnt = RAONTV_MAX_NUM_DEMOD_CHIP;
+		if (put_user(demod_cnt, (int *)arg))
+			ret = -EFAULT;
+	}
+		break;
+
 	case IOCTL_TEST_GPIO_SET:
 	case IOCTL_TEST_GPIO_GET:
 		ret = test_gpio(arg, cmd);

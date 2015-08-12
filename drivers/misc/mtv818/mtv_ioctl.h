@@ -90,6 +90,8 @@ typedef struct
 #define IOCTL_TEST_GPIO_GET	_IOWR(RAONTV_IOC_MAGIC, 7, IOCTL_GPIO_ACCESS_INFO)
 
 
+#define IOCTL_GET_DMOED_CNT		_IOR(RAONTV_IOC_MAGIC, 8, int)
+
 /*==============================================================================
  * ISDB-T IO control commands(10~29)
  *============================================================================*/
