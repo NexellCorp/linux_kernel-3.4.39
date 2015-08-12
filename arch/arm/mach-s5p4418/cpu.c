@@ -172,6 +172,7 @@ static int __init cpu_l2cach_init(void)
 	#define L2_AUX_NEW_VAL 	_AUX_BRESP				|	\
 							_AUX_PREFETCH_I			|	\
 							_AUX_PREFETCH_D			|	\
+							_AUX_SHARED				|	\
 							_AUX_WAY_SIZE(3)		|	\
 							_AUX_16_WAY			 	|	\
 							_AUX_FULL_LINE_OF_ZERO

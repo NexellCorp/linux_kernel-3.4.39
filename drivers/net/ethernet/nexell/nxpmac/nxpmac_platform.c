@@ -234,14 +234,26 @@ static int stmmac_pltfr_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int stmmac_pltfr_suspend(struct device *dev)
 {
+	int ret;
 	struct net_device *ndev = dev_get_drvdata(dev);
+	struct stmmac_priv *priv = netdev_priv(ndev);
+	struct platform_device *pdev = to_platform_device(dev);
 
-	return stmmac_suspend(ndev);
+	ret = stmmac_suspend(ndev);
+	if (priv->plat->exit)
+		priv->plat->exit(pdev);
+
+	return ret;
 }
 
 static int stmmac_pltfr_resume(struct device *dev)
 {
 	struct net_device *ndev = dev_get_drvdata(dev);
+	struct stmmac_priv *priv = netdev_priv(ndev);
+	struct platform_device *pdev = to_platform_device(dev);
+
+	if (priv->plat->init)
+		priv->plat->init(pdev);
 
 	return stmmac_resume(ndev);
 }
@@ -299,7 +311,7 @@ struct platform_driver stmmac_pltfr_driver = {
 	.driver = {
 		   .name = NXPMAC_RESOURCE_NAME,
 		   .owner = THIS_MODULE,
-#ifdef CFG_ETHER_LOOPBACK_MODE
+#if CFG_ETHER_LOOPBACK_MODE == 1
 #else
 		   .pm = &stmmac_pltfr_pm_ops,
 #endif

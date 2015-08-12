@@ -39,6 +39,11 @@ choice
 		help
    	 		Support for the drone2 low cost board.
 
+	config PLAT_S5P4418_TK_AVN
+		bool "DRONEL: Android tk_avn board"
+		help
+   	 		Support for the tk_avn board.
+
 endchoice
 
 #

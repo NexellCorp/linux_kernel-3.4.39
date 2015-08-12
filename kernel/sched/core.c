@@ -7348,7 +7348,7 @@ void normalize_rt_tasks(void)
 
 #endif /* CONFIG_MAGIC_SYSRQ */
 
-#if defined(CONFIG_IA64) || defined(CONFIG_KGDB_KDB)
+/*#if defined(CONFIG_IA64) || defined(CONFIG_KGDB_KDB)*/
 /*
  * These functions are only useful for the IA64 MCA handling, or kdb.
  *
@@ -7370,7 +7370,7 @@ struct task_struct *curr_task(int cpu)
 	return cpu_curr(cpu);
 }
 
-#endif /* defined(CONFIG_IA64) || defined(CONFIG_KGDB_KDB) */
+/*#endif [> defined(CONFIG_IA64) || defined(CONFIG_KGDB_KDB) <]*/
 
 #ifdef CONFIG_IA64
 /**

@@ -41,6 +41,10 @@
 
 #include <mach/platform.h>
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+#include "nalcode_storage.h"
+#endif
+
 //#define	MMC_RESUME_WORK_QUEUE
 
 /* Common flag combinations */
@@ -147,7 +151,7 @@ struct dw_mci_slot {
 static struct workqueue_struct *dw_mci_card_workqueue;
 
 
-#if defined(CONFIG_ESP8089)
+#if defined(CONFIG_PLAT_S5P4418_TK_AVN)
 #include <mach/platform.h>
 static struct dw_mci_slot* mci_slot[4] = {NULL, NULL, NULL, NULL};
 static int mci_id = 0;
@@ -172,6 +176,12 @@ void sw_mci_rescan_card(unsigned insert)
 	return;
 }
 EXPORT_SYMBOL_GPL(sw_mci_rescan_card);
+
+void force_presence_change(struct platform_device *dev, int state)
+{
+    sw_mci_rescan_card(state);
+}
+EXPORT_SYMBOL_GPL(force_presence_change);
 #endif
 
 #if defined(CONFIG_DEBUG_FS)
@@ -341,6 +351,11 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
 
 	return cmdr;
 }
+
+#ifdef CONFIG_FALINUX_ZEROBOOT
+extern void mmc_zb_storage_lock(void);
+extern void mmc_zb_storage_unlock(void);
+#endif
 
 static void dw_mci_start_command(struct dw_mci *host,
 				 struct mmc_command *cmd, u32 cmd_flags)
@@ -561,10 +576,18 @@ static void dw_mci_idmac_start_dma(struct dw_mci *host, unsigned int sg_len)
 	mci_writel(host, PLDMND, 1);
 }
 
+#ifdef CONFIG_FALINUX_ZEROBOOT
+dma_addr_t zb_mmc_sg_dma = 0;
+EXPORT_SYMBOL(zb_mmc_sg_dma);
+#endif
+
 static int dw_mci_idmac_init(struct dw_mci *host)
 {
 	struct idmac_desc *p;
 	int i;
+#ifdef CONFIG_FALINUX_ZEROBOOT
+		static int host_order = 0;
+#endif
 
 	/* Number of descriptors in the ring buffer */
 	host->ring_size = PAGE_SIZE / sizeof(struct idmac_desc);
@@ -585,6 +608,20 @@ static int dw_mci_idmac_init(struct dw_mci *host)
 
 	/* Set the descriptor base address */
 	mci_writel(host, DBADDR, host->sg_dma);
+
+#ifdef CONFIG_FALINUX_ZEROBOOT
+		if (host_order == 1) {
+			printk("===========================\n");
+			printk("sg_dma 0x%x \n", host->sg_dma);
+			if (zb_mmc_sg_dma)
+				zb_mmc_sg_dma = host->sg_dma;
+			printk("zb_mmc_sg_dma 0x%x \n", zb_mmc_sg_dma);
+			printk("===========================\n");
+		}
+	
+		host_order++;
+#endif
+
 	return 0;
 }
 
@@ -854,6 +891,18 @@ static void __dw_mci_start_request(struct dw_mci *host,
 	u32 cmdflags, timeout = 0;
 	u32 hw_timeout = host->pdata->hw_timeout;
 
+#if 0
+#ifdef CONFIG_FALINUX_ZEROBOOT
+	while ( zb_buf_status == 1  ) {
+		//printk("WAIT>..\n");
+		udelay(1);
+		//schedule() ;
+	}
+
+	//BUF_STORAGE_ACCESS = STORAGE_ACCESS_MARK_DONE;
+#endif
+#endif
+
 	mrq = slot->mrq;
 	if (host->pdata->select_slot)
 		host->pdata->select_slot(slot->id);
@@ -902,6 +951,10 @@ static void dw_mci_start_request(struct dw_mci *host,
 	struct mmc_command *cmd;
 
 	cmd = mrq->sbc ? mrq->sbc : mrq->cmd;
+	//printk("#\n");
+#ifdef CONFIG_FALINUX_ZEROBOOT
+	BUF_STORAGE_ACCESS = STORAGE_ACCESS_MARK_DONE;
+#endif
 	__dw_mci_start_request(host, slot, cmd);
 }
 
@@ -960,10 +1013,14 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	 * atomic, otherwise the card could be removed in between and the
 	 * request wouldn't fail until another card was inserted.
 	 */
+//	mmc_zb_storage_lock();
 	spin_lock_bh(&host->lock);
 
 	if (!test_bit(DW_MMC_CARD_PRESENT, &slot->flags)) {
 		spin_unlock_bh(&host->lock);
+#ifdef CONFIG_FALINUX_ZEROBOOT
+//		mmc_zb_storage_unlock();
+#endif
 		mrq->cmd->error = -ENOMEDIUM;
 		mmc_request_done(mmc, mrq);
 		return;
@@ -972,6 +1029,7 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	dw_mci_queue_request(host, slot, mrq);
 
 	spin_unlock_bh(&host->lock);
+//	mmc_zb_storage_unlock();
 }
 
 static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
@@ -1260,6 +1318,10 @@ static void dw_mci_hw_reset(struct mmc_host *host)
 
 	dev_warn(&host->class_dev, "device is being hw reset\n");
 
+	if (brd->hw_reset)
+		printk("========dw mmc hw reset is exist\n");
+	else
+		printk("========dw mmc hw reset is NULL\n");
 	/* Use platform hw_reset function */
 	if (brd->hw_reset)
 		brd->hw_reset(slot->id);
@@ -1410,10 +1472,26 @@ static void dw_mci_timeout_timer(unsigned long data)
 		spin_unlock(&host->lock);
 		dw_mci_command_complete(host, mrq->stop ? mrq->stop : mrq->cmd);
 		dw_mci_wait_fifo_reset(&host->dev, host);
+#if 0
+//#ifdef CONFIG_FALINUX_ZEROBOOT
+		if ( BUF_STORAGE_ACCESS == STORAGE_ACCESS_MARK_NALCODE ) {
+			printk("NALCODE ACCESSED.. RETRY..\n");
+			dw_mci_start_request(host,host->cur_slot);
+
+		} else {
+
+			spin_lock(&host->lock);
+
+			dw_mci_request_end(host, mrq);
+			spin_unlock(&host->lock);
+	
+		}
+#else
 		spin_lock(&host->lock);
 
 		dw_mci_request_end(host, mrq);
 		spin_unlock(&host->lock);
+#endif
 	}
 }
 
@@ -2322,7 +2400,7 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 	slot->host = host;
 	host->slot[id] = slot;	/* add by jhkim */
 
-#if defined(CONFIG_ESP8089)
+#if defined(CONFIG_PLAT_S5P4418_TK_AVN)
 	mci_slot[mci_id++] = slot;
 #endif
 	if(host->pdata->mode == DMA_MODE)	
@@ -2511,6 +2589,10 @@ static bool mci_wait_reset(struct device *dev, struct dw_mci *host)
 	return false;
 }
 
+static struct dw_mci *zb_host = NULL;
+static struct dw_mci *zb_host1 = NULL;
+static struct dw_mci *zb_host2 = NULL;
+	
 int dw_mci_probe(struct dw_mci *host)
 {
 	int width, i, ret = 0;
@@ -2687,6 +2769,15 @@ int dw_mci_probe(struct dw_mci *host)
 	if (host->quirks & DW_MCI_QUIRK_IDMAC_DTO)
 		dev_info(&host->dev, "Internal DMAC interrupt fix enabled.\n");
 
+	if (!zb_host) {
+		zb_host = host;
+	}
+	else if (!zb_host1) {
+		zb_host1 = host;
+	}
+	else if (!zb_host2) {
+		zb_host1 = host;
+	}
 	return 0;
 
 err_init_slot:
@@ -2713,6 +2804,159 @@ err_dmaunmap:
 	return ret;
 }
 EXPORT_SYMBOL(dw_mci_probe);
+
+int zb_dw_mmc_clean(void)
+{
+    int ret;
+ 
+    if (zb_host) {
+         ret = dw_mci_suspend(zb_host);
+         if (!ret)
+             dw_mci_resume(zb_host);
+     }
+     if (zb_host1) {
+         ret = dw_mci_suspend(zb_host1);
+         if (!ret)
+             dw_mci_resume(zb_host1);
+     } 
+     if (zb_host2) {
+         ret = dw_mci_suspend(zb_host2);
+         if (!ret)
+             dw_mci_resume(zb_host2);
+     }
+
+	return 0;
+}
+
+ EXPORT_SYMBOL(zb_dw_mmc_clean);
+
+
+void zb_mmc_retry_pre()
+{
+
+	//dw_mci_suspend(zb_host1);
+#if 0
+		if (zb_host1->pdata->resume) {
+				zb_host1->pdata->resume(zb_host1);
+				printk("DONT. REMOVE RESUME HOST...RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+	
+			}
+			printk("RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+			if (zb_host1->vmmc) {
+				printk("RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+				//regulator_enable(host->vmmc);
+				}		
+#if 0
+			if (!mci_wait_reset(&zb_host1->dev, zb_host1)) {
+					printk("RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+			}
+	
+
+			if (zb_host1->dma_ops->init)
+				zb_host1->dma_ops->init(zb_host1);
+	
+			/* Restore the old value at FIFOTH register */
+			printk("RERY TRY - FUNC: %s, LINE: %d, FIFOTH: %8x\n",__func__,__LINE__,zb_host1->fifoth_val);
+			mci_writel(zb_host1, FIFOTH, zb_host1->fifoth_val);
+	
+
+			/* ADD SD/EMMC Clock Shifting by Youngbok Park */
+			mci_writel(zb_host1, CLKCTRL, zb_host1->pdata->clk_dly);
+	
+			mci_writel(zb_host1, RINTSTS, 0xFFFFFFFF);
+			mci_writel(zb_host1, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER |
+				   SDMMC_INT_TXDR | SDMMC_INT_RXDR |
+				   DW_MCI_ERROR_FLAGS | SDMMC_INT_CD);
+	
+			/* add by jhkim: disalbe internal card detection */
+			mci_writel(zb_host1, INTMASK, mci_readl(zb_host1, INTMASK) & ~SDMMC_INT_CD);
+			mci_writel(zb_host1, CTRL, SDMMC_CTRL_INT_ENABLE);
+#endif
+
+
+#endif
+
+}
+EXPORT_SYMBOL(zb_mmc_retry_pre);
+
+void zb_mmc_retry_after()
+{
+
+	//dw_mci_resume(zb_host1);
+
+#if 1
+
+	{
+	struct dw_mci_slot *slot = zb_host1->slot[0];
+	struct mmc_host *mmc = slot->mmc;
+		printk("RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+	
+		//dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
+		//dw_mci_setup_bus(slot, true);
+	
+	printk("CALL....................... mmc_resume_host \n");
+	 //mmc_resume_host(zb_host1->slot[0]->mmc);
+
+	 
+	 {
+
+#if 0
+		slot->mmc->ios.power_mode = MMC_POWER_UP;
+	 	slot->mmc->ios.bus_width = MMC_BUS_WIDTH_1;
+		dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
+		mdelay(10);
+
+		slot->mmc->ios.power_mode = MMC_POWER_ON;
+		dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
+		mdelay(10);
+#endif
+
+	 #if 0
+		 int bit;
+		 printk("RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+	 
+		 
+		 /* If ocr is set, we use it */
+		
+		 zb_host1->ios.vdd = bit;
+		
+			 zb_host1->ios.chip_select = MMC_CS_DONTCARE;
+		 zb_host1->ios.bus_mode = MMC_BUSMODE_PUSHPULL;
+		 zb_host1->ios.power_mode = MMC_POWER_UP;
+		 zb_host1->ios.bus_width = MMC_BUS_WIDTH_1;
+		 zb_host1->ios.timing = MMC_TIMING_LEGACY;
+		 mmc_set_ios(zb_host1);
+	 
+		 /*
+		  * This delay should be sufficient to allow the power supply
+		  * to reach the minimum voltage.
+		  */
+		 mmc_delay(10);
+	 
+	 
+		 zb_host1->ios.clock = zb_host1->f_init;
+	 
+		 zb_host1->ios.power_mode = MMC_POWER_ON;
+		 mmc_set_ios(host);
+	 
+		 /*
+		  * This delay must be at least 74 clock sizes, or 1 ms, or the
+		  * time required to reach a stable voltage.
+		  */
+		 mmc_delay(10);
+	 #endif
+	 
+	 }
+
+	 //mmc_resume_host(zb_host1->slot[0]->mmc);
+}
+
+#endif
+	
+
+
+}
+EXPORT_SYMBOL(zb_mmc_retry_after);
 
 void dw_mci_remove(struct dw_mci *host)
 {
@@ -2752,7 +2996,8 @@ void dw_mci_remove(struct dw_mci *host)
 }
 EXPORT_SYMBOL(dw_mci_remove);
 
-
+int zb_suspend_type = 0;
+EXPORT_SYMBOL(zb_suspend_type);
 
 #ifdef CONFIG_PM_SLEEP
 /*
@@ -2760,8 +3005,46 @@ EXPORT_SYMBOL(dw_mci_remove);
  */
 int dw_mci_suspend(struct dw_mci *host)
 {
-	int i, ret = 0;
+#ifdef CONFIG_FALINUX_ZEROBOOT
+	//if (1) { //Retry Test
 
+	if (zb_suspend_type==0) { // In case of normal suspend
+
+		int i, ret = 0;
+		for (i = 0; i < host->num_slots; i++) {
+			struct dw_mci_slot *slot = host->slot[i];
+			if (!slot)
+				continue;
+			if (slot->mmc)
+				slot->mmc->pm_flags |= slot->mmc->pm_caps;
+			ret = mmc_suspend_host(slot->mmc);
+			if (ret < 0) {
+				while (--i >= 0) {
+					slot = host->slot[i];
+					if (slot)
+						mmc_resume_host(host->slot[i]->mmc);
+				}
+				return ret;
+			}
+		}
+
+			printk("RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+		if (host->vmmc) {
+			regulator_disable(host->vmmc);
+			printk("RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+		}
+
+		if (host->pdata->suspend) {
+			host->pdata->suspend(host);
+			printk("RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+			}
+	} else { // In case of zeroboot snapshot suspend
+		//DO NOTHING	
+		printk("SUSPEND RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+	}
+	return 0;
+ #else
+	int i, ret = 0;
 	for (i = 0; i < host->num_slots; i++) {
 		struct dw_mci_slot *slot = host->slot[i];
 		if (!slot)
@@ -2782,15 +3065,134 @@ int dw_mci_suspend(struct dw_mci *host)
 	if (host->vmmc)
 		regulator_disable(host->vmmc);
 
-	if (host->pdata->suspend)
-		host->pdata->suspend(host);
+//	if (host->pdata->suspend)
+//		host->pdata->suspend(host);
 
 	return 0;
+#endif
 }
 EXPORT_SYMBOL(dw_mci_suspend);
 
 int dw_mci_resume(struct dw_mci *host)
 {
+
+#ifdef CONFIG_FALINUX_ZEROBOOT
+
+	if ( zb_suspend_type == 0 ) {
+	//if ( 1  ) {
+			int ret = 0;
+#ifndef MMC_RESUME_WORK_QUEUE
+		int i;
+#endif
+
+		if (host->pdata->resume) {
+			host->pdata->resume(host);
+			printk("DONT. REMOVE RESUME HOST...RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+
+		}
+		printk("RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+		if (host->vmmc) {
+			printk("RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+			//regulator_enable(host->vmmc);
+			}
+		if (!mci_wait_reset(&host->dev, host)) {
+			ret = -ENODEV;
+			return ret;
+		}
+
+		if (host->dma_ops->init)
+			host->dma_ops->init(host);
+		/* Restore the old value at FIFOTH register */
+		mci_writel(host, FIFOTH, host->fifoth_val);
+
+		/* ADD SD/EMMC Clock Shifting by Youngbok Park */
+		mci_writel(host, CLKCTRL, host->pdata->clk_dly);
+
+		mci_writel(host, RINTSTS, 0xFFFFFFFF);
+		mci_writel(host, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER |
+			   SDMMC_INT_TXDR | SDMMC_INT_RXDR |
+			   DW_MCI_ERROR_FLAGS | SDMMC_INT_CD);
+
+		/* add by jhkim: disalbe internal card detection */
+		mci_writel(host, INTMASK, mci_readl(host, INTMASK) & ~SDMMC_INT_CD);
+		mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE);
+
+	
+		/*
+ 		 * call delayed work to save resume time
+ 		 */
+
+
+	#ifndef MMC_RESUME_WORK_QUEUE
+		for (i = 0; i < host->num_slots; i++) {
+			//if ( i != 0 ) continue;	
+			struct dw_mci_slot *slot = host->slot[i];
+			struct mmc_host *mmc = slot->mmc;
+			int present =0;
+			printk("RERY TRY - FUNC: %s, LINE: %d SLOT: %d .............................................\n",__func__,__LINE__,i);
+			if (!slot)
+				continue;
+			if (host->pdata->cd_type == DW_MCI_CD_EXTERNAL){
+				if(dw_mci_get_cd(mmc)){
+				set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+				slot->last_detect_state = 1;
+				printk("RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+
+				dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
+				dw_mci_setup_bus(slot, true);
+				}
+			}
+
+			if (slot->mmc->pm_flags & MMC_PM_KEEP_POWER) {
+				printk("RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+				dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
+				dw_mci_setup_bus(slot, true);
+			}
+			ret = mmc_resume_host(host->slot[i]->mmc);
+			if (ret < 0)
+				return ret;
+		}
+	#else
+		printk("RERY TRY - FUNC: %s, LINE: %d\n",__func__,__LINE__);
+		queue_work(dw_mci_card_workqueue, &host->resume_work);
+	#endif
+
+
+	} 
+	else {
+		static int resume_count = 0;
+
+		printk("RESUME MMC\n");
+
+
+		if (host->dma_ops->init)
+			host->dma_ops->init(host);
+	
+		/* Restore the old value at FIFOTH register */
+		mci_writel(host, FIFOTH, host->fifoth_val);
+	
+		/* ADD SD/EMMC Clock Shifting by Youngbok Park */
+		mci_writel(host, CLKCTRL, host->pdata->clk_dly);
+	
+		mci_writel(host, RINTSTS, 0xFFFFFFFF);
+		mci_writel(host, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER |
+			   SDMMC_INT_TXDR | SDMMC_INT_RXDR |
+			   DW_MCI_ERROR_FLAGS | SDMMC_INT_CD);
+	
+			/* add by jhkim: disalbe internal card detection */
+		mci_writel(host, INTMASK, mci_readl(host, INTMASK) & ~SDMMC_INT_CD);
+		mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE);
+		printk("RESUME MMC2\n");
+		resume_count++;
+		if ( resume_count >= 2 ) {
+			zb_suspend_type = 0;
+			resume_count =0;
+
+		}
+		
+	}
+	return 0;
+#else
 
 	int ret = 0;
 #ifndef MMC_RESUME_WORK_QUEUE
@@ -2859,6 +3261,7 @@ int dw_mci_resume(struct dw_mci *host)
 	queue_work(dw_mci_card_workqueue, &host->resume_work);
 #endif
 
+#endif
 	return 0;
 }
 EXPORT_SYMBOL(dw_mci_resume);

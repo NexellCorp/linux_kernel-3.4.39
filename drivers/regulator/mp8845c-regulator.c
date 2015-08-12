@@ -30,7 +30,10 @@
 #include <linux/regulator/machine.h>
 #include <linux/regulator/mp8845c-regulator.h>
 
-//#define FEATURE_ASV_CORE_TABLE
+#if defined(CONFIG_PLAT_S5P6818_ASB) || defined(CONFIG_PLAT_S5P6818_SVT)
+#define FEATURE_ASV_CORE_TABLE
+#endif
+
 #ifdef FEATURE_ASV_CORE_TABLE
 #include <linux/clk.h>
 
@@ -41,11 +44,19 @@ struct asv_core_tb_info {
 };
 
 static struct asv_core_tb_info asv_core_tables[] = {
+#if 1 // REV0.3
+	[0] = {	.ids = 6,	.ro = 90,	.uV = 1200000, },
+	[1] = {	.ids = 15,	.ro = 130,	.uV = 1175000, },
+	[2] = {	.ids = 38,	.ro = 170,	.uV = 1150000, },
+	[3] = {	.ids = 78,	.ro = 200,	.uV = 1100000, },
+	[4] = {	.ids = 78,	.ro = 200,	.uV = 1050000, },
+#else // REV0.2
 	[0] = {	.ids = 6,	.ro = 80,	.uV = 1200000, },
 	[1] = {	.ids = 15,	.ro = 120,	.uV = 1175000, },
 	[2] = {	.ids = 38,	.ro = 160,	.uV = 1150000, },
 	[3] = {	.ids = 78,	.ro = 190,	.uV = 1100000, },
 	[4] = {	.ids = 78,	.ro = 190,	.uV = 1050000, },
+#endif
 };
 
 #define	ASV_CORE_ARRAY_SIZE	ARRAY_SIZE(asv_core_tables)
@@ -78,7 +89,7 @@ static void asv_core_setup(struct mp8845c_regulator *ri, struct mp8845c_regulato
 	if(clk != NULL)
 	{
 		clk_rate = clk_get_rate(clk);
-		if(clk_rate > 400000000)
+		// if(clk_rate > 400000000)
 		{
 			//nxp_cpu_id_string(string);
 			nxp_cpu_id_ecid(ecid);

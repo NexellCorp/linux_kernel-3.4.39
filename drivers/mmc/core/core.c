@@ -1172,7 +1172,6 @@ static void mmc_power_up(struct mmc_host *host)
 {
 	int bit;
 
-    printk("==============> %s entered\n", __func__);
 	mmc_host_clk_hold(host);
 
 	/* If ocr is set, we use it */
@@ -1191,14 +1190,14 @@ static void mmc_power_up(struct mmc_host *host)
 	host->ios.bus_width = MMC_BUS_WIDTH_1;
 	host->ios.timing = MMC_TIMING_LEGACY;
     // psw0523 fix
-	/*mmc_set_ios(host);*/
+	mmc_set_ios(host);
 
 	/*
 	 * This delay should be sufficient to allow the power supply
 	 * to reach the minimum voltage.
 	 */
     // psw0523 fix
-	/*mmc_delay(10);*/
+	mmc_delay(10);
 
 	host->ios.clock = host->f_init;
 
@@ -1210,10 +1209,9 @@ static void mmc_power_up(struct mmc_host *host)
 	 * time required to reach a stable voltage.
 	 */
     // psw0523 fix
-	/*mmc_delay(10);*/
+	mmc_delay(10);
 
 	mmc_host_clk_release(host);
-    printk("==============> %s exit\n", __func__);
 }
 
 void mmc_power_off(struct mmc_host *host)
@@ -1971,7 +1969,7 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 	host->f_init = freq;
 
     // psw0523 debugging
-    printk("=============> %s entered\n", __func__);
+    //printk("=============> %s entered\n", __func__);
 #ifdef CONFIG_MMC_DEBUG
 	pr_info("%s: %s: trying to init card at %u Hz\n",
 		mmc_hostname(host), __func__, host->f_init);
