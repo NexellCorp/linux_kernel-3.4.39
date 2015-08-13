@@ -28,8 +28,8 @@ DHDOFILES = aiutils.o bcmsdh_sdmmc_linux.o dhd_linux.o siutils.o bcmutils.o   \
 	bcmsdh.o dhd_cdc.o bcmsdh_linux.o dhd_common.o dhd_wlfc.o dhd_ip.o linux_osl.o \
 	bcmsdh_sdmmc.o dhd_custom_gpio.o sbutils.o wldev_common.o wl_android.o
 
-#DHDCFLAGS += -DOOB_INTR_ONLY -DHW_OOB
-DHDCFLAGS += -DSDIO_ISR_THREAD
+DHDCFLAGS += -DOOB_INTR_ONLY -DHW_OOB
+#DHDCFLAGS += -DSDIO_ISR_THREAD
 DHDCFLAGS += -DENABLE_INSMOD_NO_FW_LOAD
 obj-$(CONFIG_BCMDHD) += bcmdhd.o
 bcmdhd-objs += $(DHDOFILES)
