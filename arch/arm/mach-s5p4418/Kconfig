@@ -150,6 +150,10 @@ config PM_DBGOUT
 	bool "Support PM_DBGOUT"
 	default n
 
+config DEFERRED_INIT_CALL
+	bool "Enable deferred_init_call"
+	default n
+
 source "arch/arm/plat-s5p4418/Kconfig"
 
 

@@ -1079,15 +1079,19 @@ static struct dw_mci_board _dwmci2_data = {
 				  	  DW_MCI_QUIRK_HIGHSPEED |
 				  	  DW_MMC_QUIRK_HW_RESET_PW |
 				      DW_MCI_QUIRK_NO_DETECT_EBIT,
-	.bus_hz			= 100 * 1000 * 1000,
+	/*.bus_hz			= 100 * 1000 * 1000,*/
+	.bus_hz			= 200 * 1000 * 1000,
+    /*.hs_over_clk    = 50 * 1000 * 1000,*/
 	.caps			= MMC_CAP_UHS_DDR50 |
 					  MMC_CAP_NONREMOVABLE |
 			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
 				  	  MMC_CAP_ERASE | MMC_CAP_HW_RESET,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
+    .clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
+	/*.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(0),*/
 
 	.desc_sz		= 4,
-	.detect_delay_ms= 200,
+	/*.detect_delay_ms= 200,*/
+	.detect_delay_ms= 0,
 	.sdr_timing		= 0x01010001,
 	.ddr_timing		= 0x03030002,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
@@ -1167,14 +1171,14 @@ void __init nxp_board_devices_register(void)
 #endif
 
 #if defined(CONFIG_MMC_DW)
+    #ifdef CONFIG_MMC_NXP_CH2
+	nxp_mmc_add_device(2, &_dwmci2_data);
+	#endif
 	#ifdef CONFIG_MMC_NXP_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
     #ifdef CONFIG_MMC_NXP_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
-	#endif
-    #ifdef CONFIG_MMC_NXP_CH2
-	nxp_mmc_add_device(2, &_dwmci2_data);
 	#endif
 #endif
 
