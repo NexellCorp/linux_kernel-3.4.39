@@ -234,7 +234,7 @@
 #define PAD_GPIOE10     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXD[3]     ,2:_                    ,3:_                    =
 #define PAD_GPIOE11     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXEN       ,2:_                    ,3:_                    =
 #define PAD_GPIOE12     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXER       ,2:_                    ,3:_                    = Backlight Enable
-#define PAD_GPIOE13     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_COL        ,2: VIP0_Ext_HSYNC      ,3:_                    =
+#define PAD_GPIOE13     (PAD_MODE_OUT  | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_COL        ,2: VIP0_Ext_HSYNC      ,3:_                    =
 // spi_1
 #define PAD_GPIOE14     (PAD_MODE_ALT  | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_2)     // 0: GPIO          1: GMAC0_PHY_RXD[0]     ,2: SSP1_CLKIO          ,3:_                    =
 #define PAD_GPIOE15     (PAD_MODE_OUT  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_RXD[1]     ,2: SSP1_FSS            ,3:_                    =
@@ -294,7 +294,7 @@
 /*------------------------------------------------------------------------------
  *	CAMERA Back Power Down PN
  */
-#define CFG_IO_CAMERA_BACK_POWER_DOWN		((PAD_GPIO_E + 7) | PAD_FUNC_ALT0)
+#define CFG_IO_CAMERA_BACK_POWER_DOWN		((PAD_GPIO_C + 16) | PAD_FUNC_ALT0)
 
 /*------------------------------------------------------------------------------
  *	CAMERA Front Power Down PD
@@ -305,6 +305,7 @@
  *	CAMERA Reset
  */
 #define CFG_IO_CAMERA_RESET					((PAD_GPIO_B + 8) | PAD_FUNC_ALT0)		/* GPIO */
+#define CFG_IO_CAMERA_BACK_RESET			((PAD_GPIO_C + 15) | PAD_FUNC_ALT0)		/* GPIO */
 
 /*------------------------------------------------------------------------------
  * 	Backward Camera

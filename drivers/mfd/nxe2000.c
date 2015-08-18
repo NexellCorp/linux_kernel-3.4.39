@@ -35,6 +35,7 @@
 #include <linux/mfd/nxe2000.h>
 #include <mach/platform.h>
 
+//#define NXE2000_GPIOLIB_ENABEL
 #define NXE2000_PM_RESTART		(0)
 
 static struct i2c_client *nxe2000_i2c_client;
@@ -540,6 +541,7 @@ static void nxe2000_watchdog_init(struct nxe2000 *nxe2000)
 }
 #endif
 
+#ifdef NXE2000_GPIOLIB_ENABEL
 static int nxe2000_gpio_get(struct gpio_chip *gc, unsigned offset)
 {
 	struct nxe2000 *nxe2000 = container_of(gc, struct nxe2000,
@@ -669,6 +671,7 @@ static void nxe2000_gpio_init(struct nxe2000 *nxe2000,
 	if (ret)
 		dev_warn(nxe2000->dev, "GPIO registration failed: %d\n", ret);
 }
+#endif
 
 static int nxe2000_remove_subdev(struct device *dev, void *unused)
 {
@@ -767,6 +770,7 @@ static void nxe2000_debuginit(struct nxe2000 *nxe2000)
 			nxe2000, &debug_fops);
 }
 #else
+#if 0
 static void print_regs(const char *header, struct i2c_client *client,
 		int start_offset, int end_offset)
 {
@@ -800,9 +804,8 @@ static void nxe2000_debuginit(struct nxe2000 *nxe2000)
 	print_regs("OPT   Regs",		client, 0xB0, 0xB1);
 	print_regs("CHG   Regs",		client, 0xB2, 0xDF);
 	print_regs("FUEL  Regs",		client, 0xE0, 0xFC);
-
-	return 0;
 }
+#endif
 #endif
 
 static void nxe2000_noe_init(struct nxe2000 *nxe2000)
@@ -859,9 +862,13 @@ static int nxe2000_i2c_probe(struct i2c_client *client,
 
 	nxe2000_noe_init(nxe2000);
 
+#ifdef NXE2000_GPIOLIB_ENABEL
 	nxe2000_gpio_init(nxe2000, pdata);
+#endif
 
+#ifdef CONFIG_DEBUG_FS
 	nxe2000_debuginit(nxe2000);
+#endif
 
 #ifdef CONFIG_NXE2000_WDG_TEST
 	nxe2000_watchdog_init(nxe2000);

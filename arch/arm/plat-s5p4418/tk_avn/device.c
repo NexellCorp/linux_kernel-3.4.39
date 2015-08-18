@@ -1090,31 +1090,31 @@ static int front_camera_power_enable(bool on);
 static int back_camera_power_enable(bool on)
 {
 
-#if 0
+#if 1
     unsigned int io 			= CFG_IO_CAMERA_BACK_POWER_DOWN;
-    unsigned int reset_io = CFG_IO_CAMERA_BACK_RESET;
-    unsigned int power_mux_io =  ((PAD_GPIO_C + 24) | PAD_FUNC_ALT0);
+    unsigned int reset_io		= CFG_IO_CAMERA_BACK_RESET;
+    unsigned int power_mux_io	= ((PAD_GPIO_C + 24) | PAD_FUNC_ALT0);
 
     PM_DBGOUT("%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
     printk("%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
     if (on) {
-        //front_camera_power_enable(0);
+        front_camera_power_enable(0);
         if (!is_back_camera_enabled) {
-            //camera_power_control(1);
+            camera_power_control(1);
 
-						/* Power MUX Enable */
-						nxp_soc_gpio_set_out_value(power_mux_io, 0);
+			/* Power MUX Enable */
+			nxp_soc_gpio_set_out_value(power_mux_io, 0);
             nxp_soc_gpio_set_io_dir(power_mux_io, 1);
             nxp_soc_gpio_set_io_func(power_mux_io, nxp_soc_gpio_get_altnum(power_mux_io));
-						mdelay(1);
+			mdelay(1);
             nxp_soc_gpio_set_out_value(power_mux_io, 1);
-						mdelay(10);
+			mdelay(10);
 
             /* PDN - High Active */
             nxp_soc_gpio_set_out_value(io, 0);
             nxp_soc_gpio_set_io_dir(io, 1);
             nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-						mdelay(10);
+			mdelay(10);
 
             /* RST - Low Active */
             nxp_soc_gpio_set_out_value(reset_io, 1);
@@ -1157,11 +1157,7 @@ static int back_camera_power_enable(bool on)
 
 static bool back_camera_power_state_changed(void)
 {
-#if 0
     return is_back_camera_power_state_changed;
-#endif
-
-	return true;
 }
 
 static int front_camera_power_enable(bool on)
@@ -1266,7 +1262,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .v_active       			= 480,
             .v_frontporch   			= 0,
             .v_syncwidth    			= 2,
-            .v_backporch    			=	3,
+            .v_backporch    			= 3,
             .clock_invert   			= true,
             .port           			= 0,
             .data_order     			= NXP_VIN_CBY0CRY1,
@@ -1274,10 +1270,9 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .clk_rate       			= 24000000,
             .late_power_down 			= false,
             .power_enable   			= back_camera_power_enable,
-            .power_state_changed 	= back_camera_power_state_changed,
+            .power_state_changed 		= back_camera_power_state_changed,
             .set_clock      			= NULL,
-            //.setup_io       			= camera_common_vin_setup_io,
-            .setup_io       			= NULL,
+            .setup_io       			= camera_common_vin_setup_io,
         },
         .deci = {
             .start_delay_ms = 0,
@@ -1564,10 +1559,10 @@ static int _dwmci0_get_cd(u32 slot_id)
 
 static struct dw_mci_board _dwmci0_data = {
 	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
-	.bus_hz			= 40 * 1000 * 1000,	// 80.. 40Mhz=>20Mhz
+	.bus_hz			= 90 * 1000 * 1000,	// 80.. 40Mhz=>20Mhz
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 	.cd_type		= DW_MCI_CD_EXTERNAL,
 //	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 	.init			= _dwmci0_init,
@@ -1591,7 +1586,8 @@ static struct dw_mci_board _dwmci1_data = {
 					  DW_MMC_QUIRK_HW_RESET_PW |
 					  DW_MCI_QUIRK_NO_DETECT_EBIT,
 	/*.bus_hz			= 80 * 1000 * 1000,*/
-	.bus_hz			= 200 * 1000 * 1000,
+	//.bus_hz			= 200 * 1000 * 1000,
+	.bus_hz			= 100 * 1000 * 1000,
     .hs_over_clk    = 50 * 1000 * 1000,
 	.caps			= MMC_CAP_UHS_DDR50 |
 						MMC_CAP_NONREMOVABLE |
@@ -1599,7 +1595,7 @@ static struct dw_mci_board _dwmci1_data = {
 						MMC_CAP_ERASE | MMC_CAP_HW_RESET,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(0),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(1),
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
 	.mode       	= DMA_MODE,
 #else
@@ -1712,7 +1708,7 @@ EXPORT_SYMBOL(nxp_otgvbus_pwr_set);
  */
 #if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
 #include <mach/nxp-backward-camera.h>
-
+#if 0
 static struct reg_val _sensor_init_data[] =
 {
     {0x03, 0xa6},
@@ -1729,6 +1725,38 @@ static struct reg_val _sensor_init_data[] =
     {0x55, 0x00},
     END_MARKER
 };
+#else
+	static struct reg_val _sensor_init_data[] =
+	{
+		{0x02, 0x40},
+		//{0x02, 0x44},
+		{0x03, 0xa2},
+		{0x07, 0x02},
+		{0x08, 0x12},
+		{0x09, 0xf0},
+		{0x0a, 0x1c},
+		/*{0x0b, 0xd0}, // 720 */
+		{0x0b, 0xc0}, // 704
+		{0x1b, 0x00},
+		/*{0x10, 0xfa},*/
+		{0x10, 0x1e},
+		{0x11, 0x64},
+		{0x2f, 0xe6},
+		{0x55, 0x00},
+#if 1
+		/*{0xb1, 0x20},*/
+		/*{0xb1, 0x02},*/
+		{0xaf, 0x00},
+		{0xb1, 0x20},
+		{0xb4, 0x20},
+		/*{0x06, 0x80},*/
+#endif
+		/*{0xaf, 0x40},*/
+		/*{0xaf, 0x00},*/
+		/*{0xaf, 0x80},*/
+		END_MARKER
+	};
+#endif
 
 #define CAMERA_RESET        ((PAD_GPIO_C + 15) | PAD_FUNC_ALT1)
 #define CAMERA_POWER_DOWN   ((PAD_GPIO_C + 16) | PAD_FUNC_ALT1)
@@ -1792,9 +1820,23 @@ static void _sensor_setup_io(void)
 }
 
 // This is callback function for rgb overlay drawing
-static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data)
+static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data, void *mem)
 {
     printk("%s\n", __func__);
+#if 1
+    memset(mem, 0, plat_data->width*plat_data->height*4);
+    /* draw redbox at (0, 0) -- (50, 50) */
+    {    
+        u32 color = 0xFFFF0000;
+        int i, j;
+        u32 *pbuffer = (u32 *)mem;
+        for(i=0; i<50 ; i++) {
+            for(j=0; j<50 ;  j++) {
+                pbuffer[i * 1024 + j] = color;
+            }
+        }
+    }    
+#endif
 }
 
 #define BACKWARD_CAM_WIDTH  704
@@ -1829,10 +1871,15 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .v_backporch        = 3,
     .data_order         = 0,
     .interlace          = true,
-
+#if 0
     .lu_addr            = 0x7FD28000,
     .cb_addr            = 0x7FD7A800,
     .cr_addr            = 0x7FD91000,
+#else
+    .lu_addr            = 0,
+    .cb_addr            = 0,
+    .cr_addr            = 0,
+#endif
 
     .lu_stride          = 704,
     .cb_stride          = 384,
@@ -1841,7 +1888,11 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .rgb_format         = MLC_RGBFMT_A8R8G8B8,
     .width              = 1024,
     .height             = 600,
+#if 0
     .rgb_addr           = 0x7FDA8000,
+#else
+    .rgb_addr           = 0,
+#endif
     .draw_rgb_overlay   = _draw_rgb_overlay,
 };
 

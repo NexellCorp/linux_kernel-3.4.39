@@ -1334,7 +1334,7 @@ static int __init dwc_otg_driver_init(void)
 	return retval;
 }
 
-#ifdef CONFIG_DEFERRED_INIT_CALL
+#if 0//def CONFIG_DEFERRED_INIT_CALL
 deferred_module_init(dwc_otg_driver_init);
 #else
 module_init(dwc_otg_driver_init);
