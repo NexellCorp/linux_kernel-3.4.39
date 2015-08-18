@@ -3,6 +3,7 @@
 #include <linux/module.h>
 #include <linux/interrupt.h>
 #include <linux/switch.h>
+#include <linux/delay.h>
 
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
@@ -39,6 +40,43 @@ struct tw9900_state {
     /* nexell: detect worker */
     /*struct work_struct work;*/
     struct delayed_work work;
+};
+
+struct reg_val {
+    uint8_t reg;
+    uint8_t val;
+};
+
+#define END_MARKER {0xff, 0xff}
+
+static struct reg_val _sensor_init_data[] =
+{
+    {0x02, 0x40},
+    {0x03, 0xa2},
+    {0x07, 0x02},
+    {0x08, 0x12},
+    {0x09, 0xf0},
+    {0x0a, 0x1c},
+    /*{0x0b, 0xd0}, // 720 */
+    {0x0b, 0xc0}, // 704
+    {0x1b, 0x00},
+    /*{0x10, 0xfa},*/
+    {0x10, 0x1e},
+    {0x11, 0x64},
+    {0x2f, 0xe6},
+    {0x55, 0x00},
+#if 1
+    /*{0xb1, 0x20},*/
+    /*{0xb1, 0x02},*/
+    {0xaf, 0x00},
+    {0xb1, 0x20},
+    {0xb4, 0x20},
+    /*{0x06, 0x80},*/
+#endif
+    /*{0xaf, 0x40},*/
+    /*{0xaf, 0x00},*/
+    /*{0xaf, 0x80},*/
+    END_MARKER
 };
 
 #define MUX0					0
@@ -131,7 +169,6 @@ static int _i2c_write_byte(struct i2c_client *client, u8 addr, u8 val)
 static int tw9900_set_mux(struct v4l2_ctrl *ctrl)
 {
     struct tw9900_state *me = ctrl_to_me(ctrl);
-    //printk("%s: val %d me->brightness %d\n", __func__, ctrl->val, me->brightness);
     if (ctrl->val == 0) {
         // MUX 0
         if (rearcam_brightness_tbl[me->brightness] != DEFAULT_BRIGHTNESS)
@@ -156,7 +193,6 @@ static int tw9900_set_brightness(struct v4l2_ctrl *ctrl)
 		_i2c_write_byte(me->i2c_client, 0x10, ctrl->val);
 #else	
     if (ctrl->val != me->brightness) {
-
 		printk(KERN_ERR "%s: brightness = %d\n", __func__, rearcam_brightness_tbl[ctrl->val]);
         _i2c_write_byte(me->i2c_client, 0x10, rearcam_brightness_tbl[ctrl->val]);
 
@@ -300,7 +336,8 @@ static int tw9900_initialize_ctrls(struct tw9900_state *me)
 static inline bool _is_backgear_on(void)
 {
 #if 1
-    int val = nxp_soc_gpio_get_in_value((PAD_GPIO_E + 10) | PAD_FUNC_ALT0);
+    int val = nxp_soc_gpio_get_in_value(CFG_BACKWARD_GEAR);
+
     if (!val)
     {
     	//NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_CAM_PWR_EN), PAD_GET_BITNO(CFG_IO_CAM_PWR_EN), 1);
@@ -327,7 +364,7 @@ static inline bool _is_camera_on(void)
 #endif
 
     _i2c_read_byte(_state.i2c_client, 0x01, &data);
-    printk(KERN_ERR "%s: data 0x%x\n", __func__, data);
+    //rintk(KERN_ERR "%s: data 0x%x\n", __func__, data);
 
 #if 0
 	NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_CAM_PWR_EN), PAD_GET_BITNO(CFG_IO_CAM_PWR_EN), 1);
@@ -358,10 +395,8 @@ static inline bool _is_camera_on(void)
 
 static irqreturn_t _irq_handler(int irq, void *devdata)
 {
-    printk("IRQ1\n");
     __cancel_delayed_work(&_state.work);
     if (switch_get_state(&_state.switch_dev) && !_is_backgear_on()) {
-        printk(KERN_ERR "BACKGEAR OFF\n");
         switch_set_state(&_state.switch_dev, 0);
     } else if (!switch_get_state(&_state.switch_dev) && _is_backgear_on()) {
         schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
@@ -371,10 +406,8 @@ static irqreturn_t _irq_handler(int irq, void *devdata)
 
 static irqreturn_t _irq_handler3(int irq, void *devdata)
 {
-    printk("IRQ3\n");
 
     if (switch_get_state(&_state.switch_dev)/* && !_is_camera_on()*/) {
-        printk(KERN_ERR "CAMERA OFF\n");
         switch_set_state(&_state.switch_dev, 0);
     } else if (!switch_get_state(&_state.switch_dev) && _is_backgear_on()) {
         schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_MPOUT_TIME));
@@ -385,23 +418,21 @@ static irqreturn_t _irq_handler3(int irq, void *devdata)
 
 static void _work_handler(struct work_struct *work)
 {
+
     if (_is_backgear_on() && _is_camera_on()) {
-        printk(KERN_ERR "CAMERA ON\n");
 		if (rearcam_brightness_tbl[_state.brightness] != DEFAULT_BRIGHTNESS)
 		{
-			//printk(KERN_ERR "brightness = %d\n",_state.brightness);
+			printk(KERN_ERR "brightness = %d\n",_state.brightness);
         	_i2c_write_byte(_state.i2c_client, 0x10, rearcam_brightness_tbl[_state.brightness]);
 		}
         switch_set_state(&_state.switch_dev, 1);
         return;
     } else if (switch_get_state(&_state.switch_dev)) {
-        printk(KERN_ERR "BACKGEAR OFF\n");
         switch_set_state(&_state.switch_dev, 0);
     }
 	else if(_is_backgear_on())
 	{
 		schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
-		printk(KERN_ERR "Rearcam check\n");
 	}
 }
 
@@ -409,12 +440,12 @@ static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 {
     if (enable) {
         if (_state.first) 
-				{
-        	int ret = request_irq(IRQ_GPIO_A_START + 3, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);
-          if (ret) {
+		{
+      	 	int ret = request_irq(IRQ_GPIO_A_START + 3, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);
+        	if (ret) {
          		pr_err("%s: failed to request_irq(irqnum %d)\n", __func__, IRQ_ALIVE_4);
          		return -1;
-          }
+          	}
 #if 0
 					ret = request_irq(IRQ_ALIVE_4, _irq_handler3, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900-mpout", &_state);
 					if (ret) {
@@ -422,19 +453,30 @@ static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 							return -1;
 					}
 #endif
-     			_state.first = false;
-					printk(KERN_ERR "%s: exit\n", __func__);
 
-					if (_is_backgear_on()){
-						if (_is_camera_on())	{
-							printk(KERN_ERR "INITIAL CAMERA ON\n");
-									switch_set_state(&_state.switch_dev, 1);
-						} else {
-							printk(KERN_ERR "RECHECK CAMERA ON\n");
-							schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
-						}
-				}
+#if 0
+			int  i=0;
+			struct tw9900_state *me = &_state;
+			struct reg_val *reg_val = _sensor_init_data;
+
+			while( reg_val->reg != 0xff)
+			{
+				_i2c_write_byte(me->i2c_client, reg_val->reg, reg_val->val);
+				mdelay(10);
+				i++;
+				reg_val++;
 			}
+#endif
+     		_state.first = false;
+
+			if (_is_backgear_on()){
+				if (_is_camera_on())	{
+					switch_set_state(&_state.switch_dev, 1);
+				} else {
+					schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
+				}
+				}
+		}
     }
     return 0;
 }

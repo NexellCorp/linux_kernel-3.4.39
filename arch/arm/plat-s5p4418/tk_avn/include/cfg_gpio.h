@@ -294,7 +294,7 @@
 /*------------------------------------------------------------------------------
  *	CAMERA Back Power Down PN
  */
-#define CFG_IO_CAMERA_BACK_POWER_DOWN		((PAD_GPIO_E + 7) | PAD_FUNC_ALT0)
+#define CFG_IO_CAMERA_BACK_POWER_DOWN		((PAD_GPIO_C + 16) | PAD_FUNC_ALT0)
 
 /*------------------------------------------------------------------------------
  *	CAMERA Front Power Down PD
@@ -305,6 +305,7 @@
  *	CAMERA Reset
  */
 #define CFG_IO_CAMERA_RESET					((PAD_GPIO_B + 8) | PAD_FUNC_ALT0)		/* GPIO */
+#define CFG_IO_CAMERA_BACK_RESET			((PAD_GPIO_C + 15) | PAD_FUNC_ALT0)		/* GPIO */
 
 /*------------------------------------------------------------------------------
  * 	Backward Camera
