@@ -151,7 +151,7 @@ struct dw_mci_slot {
 static struct workqueue_struct *dw_mci_card_workqueue;
 
 
-#if defined(CONFIG_PLAT_S5P4418_TK_AVN)
+#if defined(CONFIG_ESP8089)
 #include <mach/platform.h>
 static struct dw_mci_slot* mci_slot[4] = {NULL, NULL, NULL, NULL};
 static int mci_id = 0;
@@ -2400,7 +2400,7 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 	slot->host = host;
 	host->slot[id] = slot;	/* add by jhkim */
 
-#if defined(CONFIG_PLAT_S5P4418_TK_AVN)
+#if defined(CONFIG_ESP8089)
 	mci_slot[mci_id++] = slot;
 #endif
 	if(host->pdata->mode == DMA_MODE)	

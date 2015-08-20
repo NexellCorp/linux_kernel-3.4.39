@@ -151,18 +151,6 @@ static int _wifi_reset(int on)
     return 0;
 }
 
-extern struct platform_device dwmci_dev_ch2;
-extern void force_presence_change(struct platform_device *dev, int state);
-
-static int _wifi_set_carddetect(int val)
-{
-    printk("%s %d\n", __func__, val);
-
-	force_presence_change(NULL, val);
-
-    return 0;
-}
-
 static unsigned char _wifi_mac_addr[IFHWADDRLEN] = { 0, 0x90, 0x4c, 0, 0, 0 };
 
 static int _wifi_get_mac_addr(unsigned char *buf)
@@ -170,6 +158,37 @@ static int _wifi_get_mac_addr(unsigned char *buf)
     memcpy(buf, _wifi_mac_addr, IFHWADDRLEN);
     return 0;
 }
+
+extern struct platform_device dwmci_dev_ch2;
+static void (*wifi_status_cb)(struct platform_device *, int state);
+
+int bcm_wlan_ext_cd_init(
+            void (*notify_func)(struct platform_device *, int))
+{
+    wifi_status_cb = notify_func;
+    return 0;
+}
+
+int bcm_wlan_ext_cd_cleanup(
+            void (*notify_func)(struct platform_device *, int))
+{
+    wifi_status_cb = NULL;
+    return 0;
+}
+
+
+static int _wifi_set_carddetect(int val)
+{
+    printk("%s %d\n", __func__, val);
+
+     if (wifi_status_cb)
+        wifi_status_cb(&dwmci_dev_ch2, val);
+    else
+        pr_warning("%s: Nobody to notify\n", __func__);
+
+    return 0;
+}
+
 
 static struct wifi_platform_data _wifi_control = {
     .set_power          = _wifi_power,

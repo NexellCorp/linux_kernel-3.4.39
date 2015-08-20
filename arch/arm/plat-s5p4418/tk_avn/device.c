@@ -1606,6 +1606,10 @@ static struct dw_mci_board _dwmci1_data = {
 
 // Wifi 5G
 #ifdef CONFIG_MMC_NXP_CH2
+extern int bcm_wlan_ext_cd_init(
+            void (*notify_func)(struct platform_device *, int));
+extern int bcm_wlan_ext_cd_cleanup(
+            void (*notify_func)(struct platform_device *, int));
 
 static struct dw_mci_board _dwmci2_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
@@ -1614,7 +1618,10 @@ static struct dw_mci_board _dwmci2_data = {
 	.caps           = MMC_CAP_CMD23,
 	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
 	.detect_delay_ms= 200,
-	.cd_type        = DW_MCI_CD_NONE,
+	.ext_cd_init        = bcm_wlan_ext_cd_init,
+	.ext_cd_cleanup     = bcm_wlan_ext_cd_cleanup,
+    .pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
+	.cd_type        = DW_MCI_CD_EXTERNAL,
 	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
 	.mode			= DMA_MODE,
