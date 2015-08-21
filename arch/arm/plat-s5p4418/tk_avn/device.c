@@ -707,8 +707,8 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,	 950000, 2000000, 1, 1, 1200000, 1,  4);	/* 1.2V ARM */
-NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1,  4);	/* 1.1V CORE */
+NXE2000_PDATA_INIT(dc1,      0,	 950000, 2000000, 1, 1, 1300000, 1,  4);	/* 1.2V ARM */
+NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1200000, 1,  4);	/* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
 NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V SYS */
@@ -1586,8 +1586,8 @@ static struct dw_mci_board _dwmci1_data = {
 					  DW_MMC_QUIRK_HW_RESET_PW |
 					  DW_MCI_QUIRK_NO_DETECT_EBIT,
 	/*.bus_hz			= 80 * 1000 * 1000,*/
-	//.bus_hz			= 200 * 1000 * 1000,
-	.bus_hz			= 100 * 1000 * 1000,
+	.bus_hz			= 200 * 1000 * 1000,
+	//.bus_hz			= 100 * 1000 * 1000,
     .hs_over_clk    = 50 * 1000 * 1000,
 	.caps			= MMC_CAP_UHS_DDR50 |
 						MMC_CAP_NONREMOVABLE |
@@ -1595,7 +1595,7 @@ static struct dw_mci_board _dwmci1_data = {
 						MMC_CAP_ERASE | MMC_CAP_HW_RESET,
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(1),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
 	.mode       	= DMA_MODE,
 #else
@@ -1606,10 +1606,12 @@ static struct dw_mci_board _dwmci1_data = {
 
 // Wifi 5G
 #ifdef CONFIG_MMC_NXP_CH2
+#if defined(CONFIG_BCMDHD) || defined(CONFIG_BCMDHD_MODULE)
 extern int bcm_wlan_ext_cd_init(
             void (*notify_func)(struct platform_device *, int));
 extern int bcm_wlan_ext_cd_cleanup(
             void (*notify_func)(struct platform_device *, int));
+#endif
 
 static struct dw_mci_board _dwmci2_data = {
 	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
@@ -1618,10 +1620,14 @@ static struct dw_mci_board _dwmci2_data = {
 	.caps           = MMC_CAP_CMD23,
 	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
 	.detect_delay_ms= 200,
+#if defined(CONFIG_BCMDHD) || defined(CONFIG_BCMDHD_MODULE)
 	.ext_cd_init        = bcm_wlan_ext_cd_init,
 	.ext_cd_cleanup     = bcm_wlan_ext_cd_cleanup,
     .pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
 	.cd_type        = DW_MCI_CD_EXTERNAL,
+#else
+	.cd_type        = DW_MCI_CD_NONE,
+#endif
 	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
 	.mode			= DMA_MODE,

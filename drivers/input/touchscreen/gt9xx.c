@@ -2160,6 +2160,13 @@ struct goodix_init_thread_data {
 
 static int _init_thread(void *arg)
 {
+#if 1
+    struct goodix_ts_data *ts = (struct goodix_ts_data *)arg;
+    struct i2c_client *client = ts->client;
+    struct i2c_device_id *id = ts->id;
+    s32 ret = -1;
+    u16 version_info;
+#else
     struct goodix_init_thread_data *data = (struct goodix_init_thread_data *)arg;
     struct i2c_client *client = data->client;
     struct i2c_device_id *id = data->id;
@@ -2167,6 +2174,7 @@ static int _init_thread(void *arg)
     s32 ret = -1;
     struct goodix_ts_data *ts;
     u16 version_info;
+#endif
 
     GTP_DEBUG_FUNC();
 
@@ -2182,6 +2190,7 @@ static int _init_thread(void *arg)
         GTP_ERROR("I2C check functionality failed.");
         return -ENODEV;
     }
+#if 0
     ts = kzalloc(sizeof(*ts), GFP_KERNEL);
     if (ts == NULL)
     {
@@ -2190,6 +2199,7 @@ static int _init_thread(void *arg)
     }
 
     memset(ts, 0, sizeof(*ts));
+#endif
     INIT_WORK(&ts->work, goodix_ts_work_func);
     ts->client = client;
     spin_lock_init(&ts->irq_lock);          // 2.6.39 later
@@ -2256,11 +2266,13 @@ static int _init_thread(void *arg)
     }
 #endif
 
+#if 0
     ret = gtp_request_input_dev(ts);
     if (ret < 0)
     {
         GTP_ERROR("GTP request input dev failed");
     }
+#endif
 
     ret = gtp_request_irq(ts);
     if (ret < 0)
@@ -2439,10 +2451,36 @@ Output:
 #endif
     printk(KERN_ERR "%s line %d\n", __func__, __LINE__);
 #else
+#if 1
+    static struct goodix_ts_data *data;
+    s32 ret = -1;
+
+    data = kzalloc(sizeof(*data), GFP_KERNEL);
+    if (data == NULL)
+    {
+        GTP_ERROR("Alloc GFP_KERNEL memory failed.");
+        return -ENOMEM;
+    }
+
+    memset(data, 0, sizeof(*data));
+
+    data->abs_x_max = 4096;
+    data->abs_y_max = 4096;
+    ret = gtp_request_input_dev(data);
+    if (ret < 0)
+    {
+        GTP_ERROR("GTP request input dev failed");
+    }
+
+    data->client = client;
+    data->id = id;;
+    kthread_run(_init_thread, data, "goodix-init-thread");
+#else
     static struct goodix_init_thread_data data;
     data.client = client;
     data.id = id;;
     kthread_run(_init_thread, &data, "goodix-init-thread");
+#endif
 #endif
     return 0;
 }

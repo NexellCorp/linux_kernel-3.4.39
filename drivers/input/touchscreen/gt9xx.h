@@ -77,6 +77,7 @@ typedef enum
 struct goodix_ts_data {
     spinlock_t irq_lock;
     struct i2c_client *client;
+    struct i2c_device_id *id;
     struct input_dev  *input_dev;
     struct hrtimer timer;
     struct work_struct  work;
