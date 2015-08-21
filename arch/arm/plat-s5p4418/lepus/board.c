@@ -25,9 +25,25 @@
 #include <linux/init.h>
 #include <linux/types.h>
 #include <mach/platform.h>
+#include <mach/pm.h>
+#include <asm/io.h>
 
 /* debug macro */
 #define DBGOUT(msg...)		{ printk(KERN_INFO msg); }
+
+#define FASTBOOT_SIGNATURE		0x46415354 /* (ASCII) : FAST  */
+
+static void set_user_reset(char str, const char *cmd)
+{
+	__raw_writel((-1UL), SCR_USER_SIG6_RESET);
+	if (cmd && !strcmp(cmd, "bootloader")) 
+	{
+		__raw_writel(FASTBOOT_SIGNATURE, SCR_USER_SIG6_SET);
+		__raw_readl (SCR_USER_SIG6_READ);	/* verify */
+		printk("user reset : fastboot [0x%x:0x%x] \n", SCR_USER_SIG6_READ, readl(SCR_USER_SIG6_READ));
+	}
+}
+
 
 /*------------------------------------------------------------------------------
  * set nexell soc pad func.
@@ -197,6 +213,8 @@ void nxp_board_base_init(void)
 
 		g_initGpio = 0;
 	}
+
+	nxp_board_reset = set_user_reset;
 }
 
 #if defined (CONFIG_INITRAMFS_SOURCE) && defined (CONFIG_DEVTMPFS_MOUNT)
