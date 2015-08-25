@@ -1134,7 +1134,7 @@ static const struct snd_kcontrol_new alc5633_hpr_mux_control =
 #define CFG_GPIO_AMP_EN					(PAD_GPIO_B + 26)
 //#define CFG_GPIO_AMP_EN					(PAD_GPIO_B + 24)
 
-void alc5633_amp_en()
+void alc5633_amp_en(void)
 {
     unsigned int temp_gpio;
 	
@@ -1328,7 +1328,9 @@ static int dac_event(struct snd_soc_dapm_widget *w,
         struct snd_kcontrol *kcontrol, int event)
 {
 	//printk("dac_event\n");
+#ifdef ALC5633_EQ_FUNC_ENA
         struct snd_soc_codec *codec = w->codec;
+#endif
         static unsigned int dac_enable=0;
 
         switch (event) {
@@ -1339,26 +1341,17 @@ static int dac_event(struct snd_soc_dapm_widget *w,
                 if (dac_enable)
                 {
 
-#if ALC5633_EQ_FUNC_ENA
-
+#ifdef ALC5633_EQ_FUNC_ENA
         #if (ALC5633_EQ_FUNC_SEL==ALC5633_EQ_FOR_DAC)
-
                 alc5633_update_eqmode(codec,NORMAL);    //disable EQ
-
         #endif
-
 #endif
 
-#if ALC5633_ALC_FUNC_ENA
-
+#ifdef ALC5633_ALC_FUNC_ENA
         #if (ALC5633_ALC_FUNC_SEL==ALC5633_ALC_FOR_DAC)
-
                 alc5633_alc_enable(codec,0);            //disable ALC
-
         #endif
-
 #endif
-
                         dac_enable=0;
                 }
                 break;
@@ -1369,24 +1362,16 @@ static int dac_event(struct snd_soc_dapm_widget *w,
                 if(!dac_enable)
                 {
 
-#if ALC5633_EQ_FUNC_ENA
-
+#ifdef ALC5633_EQ_FUNC_ENA
         #if (ALC5633_EQ_FUNC_SEL==ALC5633_EQ_FOR_DAC)
-
                 alc5633_update_eqmode(codec,EQ_DEFAULT_PRESET); //enable EQ preset
-
         #endif
-
 #endif
 
-#if ALC5633_ALC_FUNC_ENA
-
+#ifdef ALC5633_ALC_FUNC_ENA
         #if (ALC5633_ALC_FUNC_SEL==ALC5633_ALC_FOR_DAC)
-
                 alc5633_alc_enable(codec,1);            //enable ALC
-
         #endif
-
 #endif
                         dac_enable=1;
                 }
@@ -2085,10 +2070,11 @@ static ssize_t alc5633_index_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
 	struct i2c_client *client = to_i2c_client(dev);
-	struct alc5633_priv *alc5633 = i2c_get_clientdata(client);
-	struct snd_soc_codec *codec = alc5633->codec;
-	unsigned int val;
-	int cnt = 0, i;
+	//struct alc5633_priv *alc5633 = i2c_get_clientdata(client);
+	//struct snd_soc_codec *codec = alc5633->codec;
+	//unsigned int val;
+	//int i;
+	int cnt = 0;
 
 	cnt += sprintf(buf, "ALC5633 index register\n");
 #if 0
@@ -2187,7 +2173,7 @@ void tnn_audio_sysfs_remove(struct device *pdev)
 static int alc5633_probe(struct snd_soc_codec *codec)
 {
 	struct alc5633_priv *alc5633 = snd_soc_codec_get_drvdata(codec);
-	unsigned int val;
+	//unsigned int val;
 	int ret;
 
 	pr_info("Codec driver version %s\n", VERSION);
@@ -2234,11 +2220,6 @@ static int alc5633_probe(struct snd_soc_codec *codec)
 	if(tnn_audio_sysfs_create(codec->dev)) {
  		dev_err(codec->dev,
 			"Failed to create tnn_audio sysfs files.\n");
-	}
-	else
-	{
- 		dev_err(codec->dev,
-			"Success to create tnn_audio sysfs files.\n");
 	}
 
 	return 0;

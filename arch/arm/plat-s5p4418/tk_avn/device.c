@@ -454,30 +454,60 @@ static struct platform_device es8316_dai = {
 
 /* CODEC */
 static struct i2c_board_info __initdata alc5633_i2c_bdi = {
-        .type   = "alc5633",                     // compatilbe with wm8976
-        .addr   = (0x38>>1),            // 0x1A (7BIT), 0x34(8BIT)
+	.type   = "alc5633",                     // compatilbe with wm8976
+	.addr   = (0x38>>1),            // 0x1A (7BIT), 0x34(8BIT)
 };
 
 /* DAI */
 struct nxp_snd_dai_plat_data i2s_dai_data = {
-        .i2s_ch = 0,
-        .sample_rate    = 48000,
-        .hp_jack                = {
-                .support        = 1,
-                .detect_io              = PAD_GPIO_A + 0,
-                .detect_level   = 1,
-        },
+	.i2s_ch			= 0,
+	.sample_rate	= 48000,
+	.hp_jack		= {
+		.support		= 0,
+		.detect_io		= PAD_GPIO_A + 0,
+		.detect_level	= 1,
+	},
 };
 
 static struct platform_device alc5633_dai = {
-        .name                   = "alc5633-audio",
-        .id                             = 0,
-        .dev                    = {
-                .platform_data  = &i2s_dai_data,
-        }
+	.name	= "alc5633-audio",
+	.id		= 0,
+	.dev	= {
+		.platform_data  = &i2s_dai_data,
+	}
 };
 #endif
 /* tnn mid e*/
+#if defined(CONFIG_SND_CODEC_ALCDUMMY)
+#include <linux/i2c.h>
+
+#define ALCDUMMY_I2C_BUS          (1)
+
+/* CODEC */
+static struct i2c_board_info __initdata alcdummy_i2c_bdi = {
+	.type   = "alcdummy",                     // compatilbe with wm8976
+	.addr   = (0x38>>1),            // 0x1A (7BIT), 0x34(8BIT)
+};
+
+/* DAI */
+struct nxp_snd_dai_plat_data i2s_dummy_data = {
+	.i2s_ch			= 1,
+	.sample_rate	= 48000,
+	.hp_jack		= {
+		.support		= 0,
+		.detect_io		= PAD_GPIO_A + 0,
+		.detect_level	= 1,
+	},
+};
+
+static struct platform_device alcdummy_dai = {
+	.name		= "alcdummy-audio",
+	.id			= 1,
+	.dev		= {
+		.platform_data  = &i2s_dummy_data,
+	}
+};
+#endif
 
 
 /*------------------------------------------------------------------------------
@@ -2005,6 +2035,11 @@ void __init nxp_board_devices_register(void)
         platform_device_register(&alc5633_dai);
 #endif
 /* tnn mid e*/
+#if defined(CONFIG_SND_CODEC_ALCDUMMY)
+        printk("plat: add device asoc-alcdummy\n");
+        i2c_register_board_info(ALCDUMMY_I2C_BUS, &alcdummy_i2c_bdi, 1);
+        platform_device_register(&alcdummy_dai);
+#endif
 
 #if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)
     printk("plat: add device nxp-v4l2\n");
