@@ -85,7 +85,7 @@
 #define AXP_ALDO2_ENABLE					1		/* VCC1P8_ALIVE		ALDO2	 : 	AXP22:  700~3300, 100/step*/
 #define AXP_ALDO3_ENABLE					1		/* VCC1P0_ALIVE		ALDO3	 : 	AXP22:  700~3300, 100/step*/
 #define AXP_DLDO1_ENABLE					1		/* VCC_WIDE			DLDO1	 : 	AXP22:  700~3300, 100/step*/
-#define AXP_DLDO2_ENABLE					0		/* VCC1P8_CAM			DLDO2	 : 	AXP22 : 700~3300, 100/step*/
+#define AXP_DLDO2_ENABLE					1		/* VCC1P8_CAM			DLDO2	 : 	AXP22 : 700~3300, 100/step*/
 #define AXP_DLDO3_ENABLE					0		/* NC					DLDO3	 : 	AXP22:  700~3300, 100/step*/
 #define AXP_DLDO4_ENABLE					0		/* NC					DLDO4	 : 	AXP22:  700~3300, 100/step*/
 #define AXP_ELDO1_ENABLE					1		/* VCC1P8_SYS			ELDO1	 : 	AXP22:  700~3300, 100/step*/

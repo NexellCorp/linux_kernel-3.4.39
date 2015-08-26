@@ -508,7 +508,7 @@ static int __devinit axp_regulator_probe(struct platform_device *pdev)
 #else
 	if (ri->desc.id == AXP22_ID_LDO1 || ri->desc.id == AXP22_ID_LDO2 \
 		|| ri->desc.id == AXP22_ID_LDO3 || ri->desc.id == AXP22_ID_LDO4 \
-		|| ri->desc.id == AXP22_ID_LDO5 || ri->desc.id == AXP22_ID_LDO6 \
+		|| ri->desc.id == AXP22_ID_LDO5 \
 		|| ri->desc.id == AXP22_ID_LDO7 || ri->desc.id == AXP22_ID_LDO8 \
 		|| ri->desc.id == AXP22_ID_LDO9 || ri->desc.id == AXP22_ID_LDO10 \
 		|| ri->desc.id == AXP22_ID_LDO11 || ri->desc.id == AXP22_ID_LDO12 \
@@ -520,7 +520,7 @@ static int __devinit axp_regulator_probe(struct platform_device *pdev)
         return -EINVAL;
 #endif
 
-	if (ri->desc.id == AXP22_ID_DCDC2|| ri->desc.id == AXP22_ID_DCDC3 )
+	if (ri->desc.id == AXP22_ID_DCDC2 || ri->desc.id == AXP22_ID_DCDC3 || ri->desc.id == AXP22_ID_LDO6 )
 		ri->desc.ops = &axp22_dcdc_ops;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,3,0)
