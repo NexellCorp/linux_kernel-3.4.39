@@ -254,23 +254,23 @@ static struct regulator_init_data axp_regl_init_data[] = {
 		/*.num_consumer_supplies = ARRAY_SIZE(ldo5_data),*/
 		/*.consumer_supplies = ldo5_data,*/
 	/*},*/
-	/*[vcc_ldo6] = {*/
-		/*.constraints = { */
-			/*.name = "axp22_dldo2",*/
-			/*.min_uV = AXP22_LDO6_MIN,*/
-			/*.max_uV = AXP22_LDO6_MAX,*/
-			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
-/*#if defined (CONFIG_KP_OUTPUTINIT)*/
-			/*.initial_state = PM_SUSPEND_STANDBY,*/
-			/*.state_standby = {*/
-				/*.uV = AXP_DLDO2_VALUE,*/
-				/*.enabled = AXP_DLDO2_ENABLE,*/
-			/*}*/
-/*#endif*/
-		/*},*/
-		/*.num_consumer_supplies = ARRAY_SIZE(ldo6_data),*/
-		/*.consumer_supplies = ldo6_data,*/
-	/*},*/
+	[vcc_ldo6] = {
+		.constraints = { 
+			.name = "axp22_dldo2",
+			.min_uV = AXP22_LDO6_MIN,
+			.max_uV = AXP22_LDO6_MAX,
+			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
+#if defined (CONFIG_KP_OUTPUTINIT)
+			.initial_state = PM_SUSPEND_STANDBY,
+			.state_standby = {
+				.uV = AXP_DLDO2_VALUE,
+				.enabled = AXP_DLDO2_ENABLE,
+			}
+#endif
+		},
+		.num_consumer_supplies = ARRAY_SIZE(ldo6_data),
+		.consumer_supplies = ldo6_data,
+	},
 	/*[vcc_ldo7] = {*/
 		/*.constraints = {*/
 			/*.name = "axp22_dldo3",*/
@@ -501,11 +501,13 @@ static struct axp_funcdev_info axp_regldevs[] = {
 		/*.name = "axp22-regulator",*/
 		/*.id = AXP22_ID_LDO5,*/
 		/*.platform_data = &axp_regl_init_data[vcc_ldo5],*/
-	/*}, {*/
-		/*.name = "axp22-regulator",*/
-		/*.id = AXP22_ID_LDO6,*/
-		/*.platform_data = &axp_regl_init_data[vcc_ldo6],*/
-	/*}, {*/
+	/*}, */
+	{
+		.name = "axp22-regulator",
+		.id = AXP22_ID_LDO6,
+		.platform_data = &axp_regl_init_data[vcc_ldo6],
+	},
+	/*{*/
 		/*.name = "axp22-regulator",*/
 		/*.id = AXP22_ID_LDO7,*/
 		/*.platform_data = &axp_regl_init_data[vcc_ldo7],*/

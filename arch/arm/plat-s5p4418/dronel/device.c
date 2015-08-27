@@ -450,6 +450,7 @@ static struct i2c_board_info __initdata stk831x_i2c_bdi = {
 #include <linux/cma.h>
 extern void nxp_cma_region_reserve(struct cma_region *, const char *);
 
+#if 0
 void __init nxp_reserve_mem(void)
 {
     static struct cma_region regions[] = {
@@ -478,6 +479,59 @@ void __init nxp_reserve_mem(void)
 #endif
     nxp_cma_region_reserve(regions, map);
 }
+#else
+void __init nxp_reserve_mem(void)
+{
+    static struct cma_region regions[] = {
+#ifdef CONFIG_ION_NXP_RESERVEHEAP_SIZE
+        {
+            .name = "ion-reserve",
+            .size = CONFIG_ION_NXP_RESERVEHEAP_SIZE * SZ_1K,
+            {
+                .alignment = PAGE_SIZE,
+            }
+        },
+#endif
+        {
+            .name = "ion",
+#ifdef CONFIG_ION_NXP_CONTIGHEAP_SIZE
+            .size = CONFIG_ION_NXP_CONTIGHEAP_SIZE * SZ_1K,
+#else
+			.size = 0,
+#endif
+            {
+                .alignment = PAGE_SIZE,
+            }
+        },
+        {
+            .size = 0
+        }
+    };
+#if 0
+    static const char map[] __initconst =
+        //"ion-nxp/ion-reserve=ion-reserve;"
+        "ion-nxp/ion-reserve=ion;"
+        "ion-nxp/ion-nxp=ion;"
+        "nx_vpu=ion;";
+#else
+   static const char map[] __initconst =
+        "ion-nxp/ion-reserve=ion-reserve;"
+        "ion-nxp/ion-nxp=ion;"
+        "nx_vpu=ion;";
+#endif
+
+
+#ifdef CONFIG_ION_NXP_RESERVEHEAP_SIZE
+    printk("%s: reserve CMA: size %d\n", __func__, CONFIG_ION_NXP_RESERVEHEAP_SIZE * SZ_1K);
+#endif
+
+#ifdef CONFIG_ION_NXP_CONTIGHEAP_SIZE
+    printk("%s: reserve CMA: size %d\n", __func__, CONFIG_ION_NXP_CONTIGHEAP_SIZE * SZ_1K);
+#endif
+
+    nxp_cma_region_reserve(regions, map);
+}
+#endif
 #endif
 
 #if defined(CONFIG_I2C_NXP) || defined (CONFIG_I2C_SLSI)
@@ -526,6 +580,7 @@ static int camera_common_set_clock(ulong clk_rate)
     else
         nxp_soc_pwm_set_frequency(1, 0, 0);
     msleep(1);
+
     return 0;
 }
 
@@ -641,7 +696,7 @@ static void camera_power_control(int enable)
 
     cam_core_18V = regulator_get(NULL, "vcam1_1.8V");
     if (IS_ERR(cam_core_18V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for vcam1_1.8V", __func__);
+        printk(KERN_ERR "%s: failed to regulator_get() for vcam1_1.8V\n", __func__);
         return;
     }
     printk("%s: %d\n", __func__, enable);
@@ -1151,6 +1206,212 @@ static struct platform_device hdmi_cec_device = {
 #endif /* CONFIG_NXP_HDMI_CEC */
 
 /*------------------------------------------------------------------------------
+ * Backward Camera Driver
+ */
+
+#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+#include <mach/nxp-backward-camera.h>
+
+#define CAMERA_POWER_PN	((PAD_GPIO_C + 4) | PAD_FUNC_ALT0)
+#define CAMERA_RESET	((PAD_GPIO_C + 5) | PAD_FUNC_ALT0)
+#define	CAMERA_POWER_PD	((PAD_GPIO_C + 6) | PAD_FUNC_ALT0)
+
+static int _sensor_set_clock(int clk_rate);
+
+static void _sensor_power_control(int enable)
+{
+#if 0
+    struct regulator *cam_core_18V = NULL;
+
+    printk("%s: %d\n", __func__, enable);
+
+    cam_core_18V = regulator_get(NULL, "vcam1_1.8V");
+    if (IS_ERR(cam_core_18V)) {
+        printk(KERN_ERR "%s: failed to regulator_get() for vcam1_1.8V\n", __func__);
+        return;
+    }
+    if (enable) {
+        regulator_enable(cam_core_18V);
+    } else {
+        regulator_disable(cam_core_18V);
+    }
+
+    regulator_put(cam_core_18V);
+#endif
+}
+
+static int _sensor_power_enable(bool enable)
+{
+	u32	io_pn		=	CAMERA_POWER_PN;
+	u32 io_reset	=	CAMERA_RESET;
+	u32	io_pd		=	CAMERA_POWER_PD;
+
+	if(enable) {
+		/* PD signal */
+		nxp_soc_gpio_set_out_value(io_pd & 0xff, 1);
+
+		/* POWER OFF */
+		_sensor_power_control(0);
+
+		/* POWER ON	*/
+		_sensor_power_control(1);
+
+		/* PN signal */
+		nxp_soc_gpio_set_out_value(io_pn, 0);
+		nxp_soc_gpio_set_io_dir(io_pn, 1);
+		nxp_soc_gpio_set_io_func(io_pn, nxp_soc_gpio_get_altnum(io_pn));
+		nxp_soc_gpio_set_out_value(io_pn, 1);
+		_sensor_set_clock(24000000);
+		/* mdelay(10); */
+		mdelay(1);
+		nxp_soc_gpio_set_out_value(io_pn, 0);
+
+		/* RST signal */
+		nxp_soc_gpio_set_out_value(io_reset, 1);
+		nxp_soc_gpio_set_io_dir(io_reset, 1);
+		nxp_soc_gpio_set_io_func(io_reset, nxp_soc_gpio_get_altnum(io_pn));
+		nxp_soc_gpio_set_out_value(io_reset, 0);
+		mdelay(1);
+		nxp_soc_gpio_set_out_value(io_reset, 1);
+		/* mdelay(100); */
+		mdelay(1);
+	}
+	return 0;
+}
+
+static void _sensor_setup_io(void)
+{
+	u_int *pad;
+	int i, len;
+	u_int io, fn;
+
+	/* VIP0:0 = VCLK, VID0 ~ 7 */
+	const u_int port[][2] = {
+		 /* VCLK, HSYNC, VSYNC */
+		{ PAD_GPIO_A + 28, NX_GPIO_PADFUNC_1 },
+		{ PAD_GPIO_E + 13, NX_GPIO_PADFUNC_2 },
+		{ PAD_GPIO_E +  7, NX_GPIO_PADFUNC_2 },
+
+		{ PAD_GPIO_A + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  0, NX_GPIO_PADFUNC_1 },
+		{ PAD_GPIO_B +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  4, NX_GPIO_PADFUNC_1 },
+		{ PAD_GPIO_B +  6, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  8, NX_GPIO_PADFUNC_1 },
+		{ PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
+	};
+
+	printk("%s\n", __func__);
+
+	pad = (u_int *)port;
+	len = sizeof(port)/sizeof(port[0]);
+
+	for (i = 0; i < len; i++) {
+		io = *pad++;
+		fn = *pad++;
+		nxp_soc_gpio_set_io_dir(io, 0);
+		nxp_soc_gpio_set_io_func(io, fn);
+	}
+}
+
+static int _sensor_set_clock(int clk_rate)
+{
+	if (clk_rate > 0)
+		nxp_soc_pwm_set_frequency(1, clk_rate, 50);
+	else
+		nxp_soc_pwm_set_frequency(1, 0, 0);
+
+	msleep(1);
+
+	return 0;
+}
+
+static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data, void *mem)
+{
+#if 1
+	printk("%s\n", __func__);
+	memset(mem, 0, plat_data->width * plat_data->height * 4);
+	{
+		u32 color = 0xFFFF0000;
+		int i, j;
+		u32 *pbuffer = (u32 *)mem;
+		for( i=0; i<50; i++) {
+			for( j=0; j<50; j++) {
+				pbuffer[i * 1024 + j] = color;
+			}
+		}
+	}
+#else
+	memset(mem, 0, plat_data->width * plat_data->height * 4);
+	printk("[%s] Just Call!!\n", __func__);
+#endif
+}
+
+#define BACKWARD_CAM_WIDTH	800
+#define	BACKWARD_CAM_HEIGHT	600
+
+static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
+    .backgear_gpio_num  = CFG_BACKWARD_GEAR,
+    //.active_high        = false,  // tnn
+    .active_high        = true, // tnn
+    .vip_module_num     = 0, 
+    .mlc_module_num     = 0, 
+
+    // sensor
+    .i2c_bus            = 0,
+    .chip_addr          = 0x60 >> 1,
+    .reg_val            = _sensor_init_data,
+    .power_enable       = _sensor_power_enable,
+	.clk_rate			= 24000000,
+    .set_clock          = _sensor_set_clock,
+    .setup_io           = _sensor_setup_io,
+
+    // vip
+    .port               = 0,
+    .external_sync      = false,
+    .is_mipi            = false,
+    .h_active           = BACKWARD_CAM_WIDTH,
+    .h_frontporch       = 7,
+    .h_syncwidth        = 1,
+    .h_backporch        = 10,
+    .v_active           = BACKWARD_CAM_HEIGHT,
+    .v_frontporch       = 0,
+    .v_syncwidth        = 2,
+    .v_backporch        = 3,
+    .data_order         = 2,
+    .interlace          = false,
+#if 0
+    .lu_addr            = 0x7FD28000,
+    .cb_addr            = 0x7FD7A800,
+    .cr_addr            = 0x7FD91000,
+#else
+    .lu_addr            = 0,
+    .cb_addr            = 0,
+    .cr_addr            = 0,
+#endif
+
+    .lu_stride          = 896, 
+    .cb_stride          = 448, 
+    .cr_stride          = 448, 
+
+    .rgb_format         = MLC_RGBFMT_A8R8G8B8,
+    .width              = 1024,
+    .height             = 600, 
+#if 0
+    .rgb_addr           = 0x7FDA8000,
+#else
+    .rgb_addr           = 0,
+#endif
+    .draw_rgb_overlay   = _draw_rgb_overlay,
+};
+
+
+struct platform_device backward_camera_device = {
+    .name           = "nxp-backward-camera",
+    .dev            = {
+        .platform_data  = &backward_camera_plat_data,
+    }    
+};
+#endif
+
+/*------------------------------------------------------------------------------
  * register board platform devices
  */
 void __init nxp_board_devices_register(void)
@@ -1248,6 +1509,13 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_NXP_HDMI_CEC)
     printk("plat: add device hdmi-cec\n");
     platform_device_register(&hdmi_cec_device);
+#endif
+
+#if 0
+#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+    printk("plat: register device backward-camera platform device to boot\n");
+    platform_device_register(&backward_camera_device);
+#endif
 #endif
 
 	/* END */
