@@ -294,7 +294,7 @@ static void _vip_hw_set_addr(int module, struct nxp_backward_camera_platform_dat
 #endif
 }
 
-static void _vip_set_addr(int module)
+static void _vip_run(int module)
 {
     struct nxp_backward_camera_context *me = &_context;
 
@@ -306,14 +306,6 @@ static void _vip_set_addr(int module)
     _vip_hw_set_sensor_param(module, me->plat_data);
     _vip_hw_set_addr(module, me->plat_data, lu_addr, cb_addr, cr_addr);
 
-#if 0
-	printk("[%s] module : %d, lu_addr : 0x%x, cb_addr : 0x%x, cr_addr : 0x%x\n",
-				__func__, module, lu_addr, cb_addr, cr_addr);
-#endif
-}
-
-static void _vip_run(int module)
-{
     NX_VIP_SetVIPEnable(module, CTRUE, CTRUE, CTRUE, CFALSE);
     //_vip_dump_register(module);
 }
@@ -511,9 +503,6 @@ static int _camera_sensor_run(struct nxp_backward_camera_context *me)
     reg_val = me->plat_data->reg_val;
     while (reg_val->reg != 0xff) {
         i2c_smbus_write_byte_data(me->client, reg_val->reg, reg_val->val);
-#if 0
-		printk("[%s] reg addr : 0x%2X, reg value : 0x%2X\n", __func__, reg_val->reg, reg_val->val);
-#endif
         reg_val++;
     }
 
@@ -523,8 +512,7 @@ static int _camera_sensor_run(struct nxp_backward_camera_context *me)
 static void _turn_on(struct nxp_backward_camera_context *me)
 {
     if (me->is_first == true) {
-        //_vip_run(me->plat_data->vip_module_num);
-		_vip_set_addr(me->plat_data->vip_module_num);
+        _vip_run(me->plat_data->vip_module_num);
         _mlc_video_set_param(me->plat_data->mlc_module_num, me->plat_data);
         _mlc_video_set_addr(me->plat_data->mlc_module_num,
                 me->plat_data->lu_addr,
@@ -533,28 +521,29 @@ static void _turn_on(struct nxp_backward_camera_context *me)
                 me->plat_data->lu_stride,
                 me->plat_data->cb_stride,
                 me->plat_data->cr_stride);
-#if 0				
-		printk("[%s] mlc num : %d, lu_addr : 0x%x, cb_addr : 0x%x, cr_addr : 0x%x, lu_stride : %d, cb_stride : %d, cr_stride : %d\n", 
-				__func__, me->plat_data->mlc_module_num, me->plat_data->lu_addr, me->plat_data->cb_addr, me->plat_data->cr_addr, 
-				me->plat_data->lu_stride, me->plat_data->cb_stride, me->plat_data->cr_stride);
-#endif
-			
-       _vip_run(me->plat_data->vip_module_num);
-       _mlc_rgb_overlay_set_param(me->plat_data->mlc_module_num, me->plat_data);
-       _mlc_rgb_overlay_draw(me->plat_data->mlc_module_num, me->plat_data, me->virt_rgb);
+
+    	if (me->plat_data->draw_rgb_overlay)
+		{
+			_mlc_rgb_overlay_set_param(me->plat_data->mlc_module_num, me->plat_data);
+       		_mlc_rgb_overlay_draw(me->plat_data->mlc_module_num, me->plat_data, me->virt_rgb);
+		}
         me->is_first = false;
     }
 
 	//_mlc_dump_register(me->plat_data->mlc_module_num);
     _mlc_video_run(me->plat_data->mlc_module_num);
-   	_mlc_overlay_run(me->plat_data->mlc_module_num);
+
+   	if (me->plat_data->draw_rgb_overlay)
+	   	_mlc_overlay_run(me->plat_data->mlc_module_num);
 }
 
 static void _turn_off(struct nxp_backward_camera_context *me)
-{
-    _mlc_overlay_stop(me->plat_data->mlc_module_num);
+{	
+	if (me->plat_data->draw_rgb_overlay)		
+    	_mlc_overlay_stop(me->plat_data->mlc_module_num);
+
     _mlc_video_stop(me->plat_data->mlc_module_num);
-}
+}	
 
 static inline bool _is_backgear_on(struct nxp_backward_camera_platform_data *pdata)
 {
