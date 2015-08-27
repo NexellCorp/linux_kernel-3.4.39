@@ -424,6 +424,7 @@ static int _init_thread(void *arg)
 	struct gsl_ts *ts = (struct gsl_ts *)arg;
     struct i2c_client *client = ts->client;
 
+    msleep(600);
 	init_chip(ts->client);
 	//check_mem_data(ts->client);
 
