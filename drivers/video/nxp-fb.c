@@ -377,12 +377,12 @@ nxp_fb_init_display(struct fb_info *info)
 	nxp_fb_dev_set_layer(par);
 
     // psw0523 fix for quickbooting
-	/*#if defined(CONFIG_LOGO_NXP_COPY)*/
-	/*nxp_fb_copy_boot_logo(par, (xres * yres * pixel));*/
-	/*#else*/
-	/*memset((void*)par->fb_dev.fb_vir_base,*/
-			/*FB_CLEAR_COLOR, par->fb_dev.fb_phy_len);*/
-	/*#endif*/
+	#if defined(CONFIG_LOGO_NXP_COPY)
+	nxp_fb_copy_boot_logo(par, (xres * yres * pixel));
+	#else
+	memset((void*)par->fb_dev.fb_vir_base,
+			FB_CLEAR_COLOR, par->fb_dev.fb_phy_len);
+	#endif
 
 	#if !defined(CONFIG_BACKLIGHT_PWM) || !defined(CONFIG_LOGO_NXP_COPY)
 	nxp_fb_dev_enable(par, false, 1);	/* display out : off */

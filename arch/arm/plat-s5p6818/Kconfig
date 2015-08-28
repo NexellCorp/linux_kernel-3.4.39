@@ -40,6 +40,10 @@ choice
 		help
    	 		Support for the ASB board.
 
+   	config PLAT_S5P6818_PAVO
+		bool "PAVO: Android AVN board"
+		help
+   	 		Support for the PAVO board.
 
 endchoice
 

@@ -460,8 +460,10 @@ static void _mlc_rgb_overlay_set_param(int module, struct nxp_backward_camera_pl
 
 static void _mlc_rgb_overlay_draw(int module, struct nxp_backward_camera_platform_data *me, void *mem)
 {
+/* MCJINO BLOCK
     if (me->draw_rgb_overlay)
         me->draw_rgb_overlay(me, mem);
+*/
 }
 
 static int _get_i2c_client(struct nxp_backward_camera_context *me)
@@ -522,24 +524,19 @@ static void _turn_on(struct nxp_backward_camera_context *me)
                 me->plat_data->cb_stride,
                 me->plat_data->cr_stride);
 
-    	if (me->plat_data->draw_rgb_overlay)
-		{
 			_mlc_rgb_overlay_set_param(me->plat_data->mlc_module_num, me->plat_data);
        		_mlc_rgb_overlay_draw(me->plat_data->mlc_module_num, me->plat_data, me->virt_rgb);
-		}
         me->is_first = false;
     }
 
 	//_mlc_dump_register(me->plat_data->mlc_module_num);
     _mlc_video_run(me->plat_data->mlc_module_num);
 
-   	if (me->plat_data->draw_rgb_overlay)
 	   	_mlc_overlay_run(me->plat_data->mlc_module_num);
 }
 
 static void _turn_off(struct nxp_backward_camera_context *me)
 {	
-	if (me->plat_data->draw_rgb_overlay)		
     	_mlc_overlay_stop(me->plat_data->mlc_module_num);
 
     _mlc_video_stop(me->plat_data->mlc_module_num);
