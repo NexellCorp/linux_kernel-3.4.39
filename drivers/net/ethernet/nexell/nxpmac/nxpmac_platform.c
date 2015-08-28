@@ -239,6 +239,8 @@ static int stmmac_pltfr_suspend(struct device *dev)
 	struct stmmac_priv *priv = netdev_priv(ndev);
 	struct platform_device *pdev = to_platform_device(dev);
 
+	//lldebugout(" +++++ plat_suspend enter\n");
+
 	ret = stmmac_suspend(ndev);
 	if (priv->plat->exit)
 		priv->plat->exit(pdev);
@@ -252,45 +254,16 @@ static int stmmac_pltfr_resume(struct device *dev)
 	struct stmmac_priv *priv = netdev_priv(ndev);
 	struct platform_device *pdev = to_platform_device(dev);
 
+	//lldebugout(" +++++ plat_resume enter\n");
+
 	if (priv->plat->init)
 		priv->plat->init(pdev);
 
 	return stmmac_resume(ndev);
 }
 
-int stmmac_pltfr_freeze(struct device *dev)
-{
-	int ret;
-	struct plat_stmmacenet_data *plat_dat = dev_get_platdata(dev);
-	struct net_device *ndev = dev_get_drvdata(dev);
-	struct platform_device *pdev = to_platform_device(dev);
-
-	ret = stmmac_freeze(ndev);
-	if (plat_dat->exit)
-		plat_dat->exit(pdev);
-
-	return ret;
-}
-
-int stmmac_pltfr_restore(struct device *dev)
-{
-	struct plat_stmmacenet_data *plat_dat = dev_get_platdata(dev);
-	struct net_device *ndev = dev_get_drvdata(dev);
-	struct platform_device *pdev = to_platform_device(dev);
-
-	if (plat_dat->init)
-		plat_dat->init(pdev);
-
-	return stmmac_restore(ndev);
-}
-
-static const struct dev_pm_ops stmmac_pltfr_pm_ops = {
-	.suspend = stmmac_pltfr_suspend,
-	.resume = stmmac_pltfr_resume,
-	.freeze = stmmac_pltfr_freeze,
-	.thaw = stmmac_pltfr_restore,
-	.restore = stmmac_pltfr_restore,
-};
+static SIMPLE_DEV_PM_OPS(stmmac_pltfr_pm_ops,
+			 stmmac_pltfr_suspend, stmmac_pltfr_resume);
 #else
 static const struct dev_pm_ops stmmac_pltfr_pm_ops;
 #endif /* CONFIG_PM */

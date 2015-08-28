@@ -1101,13 +1101,11 @@ static int stmmac_init_rx_buffers(struct stmmac_priv *priv, struct dma_desc *p,
 {
 	struct sk_buff *skb;
 
-	skb = __netdev_alloc_skb(priv->dev, priv->dma_buf_sz + NET_IP_ALIGN,
-				 flags);
+	skb = __netdev_alloc_skb_ip_align(priv->dev, priv->dma_buf_sz, flags);
 	if (!skb) {
 		pr_err("%s: Rx init fails; skb is NULL\n", __func__);
 		return -ENOMEM;
 	}
-	skb_reserve(skb, NET_IP_ALIGN);
 	priv->rx_skbuff[i] = skb;
 	priv->rx_skbuff_dma[i] = dma_map_single(priv->device, skb->data,
 						priv->dma_buf_sz,
@@ -1145,7 +1143,7 @@ static void stmmac_free_rx_buffers(struct stmmac_priv *priv, int i)
  * and allocates the socket buffers. It suppors the chained and ring
  * modes.
  */
-static int init_dma_desc_rings(struct net_device *dev, gfp_t flags)
+static int init_dma_desc_rings(struct net_device *dev, gfp_t flags, int is_resume)
 {
 	int i;
 	struct stmmac_priv *priv = netdev_priv(dev);
@@ -1185,9 +1183,11 @@ static int init_dma_desc_rings(struct net_device *dev, gfp_t flags)
 		else
 			p = priv->dma_rx + i;
 
-		ret = stmmac_init_rx_buffers(priv, p, i, flags);
-		if (ret)
-			goto err_init_rx_buffers;
+		if (!is_resume) {
+			ret = stmmac_init_rx_buffers(priv, p, i, flags);
+			if (ret)
+				goto err_init_rx_buffers;
+		}
 
 		if (netif_msg_probe(priv))
 			pr_debug("[%p]\t[%p]\t[%x]\n", priv->rx_skbuff[i],
@@ -1221,7 +1221,8 @@ static int init_dma_desc_rings(struct net_device *dev, gfp_t flags)
 		else
 			p = priv->dma_tx + i;
 		p->des2 = 0;
-		priv->tx_skbuff_dma[i] = 0;
+		priv->tx_skbuff_dma[i].buf = 0;
+		priv->tx_skbuff_dma[i].map_as_page = false;
 		priv->tx_skbuff[i] = NULL;
 	}
 
@@ -1251,28 +1252,38 @@ static void dma_free_rx_skbufs(struct stmmac_priv *priv)
 
 static void dma_free_tx_skbufs(struct stmmac_priv *priv)
 {
+
 	int i;
 
 	for (i = 0; i < priv->dma_tx_size; i++) {
-		if (priv->tx_skbuff[i] != NULL) {
-			struct dma_desc *p;
-			if (priv->extend_desc)
-				p = &((priv->dma_etx + i)->basic);
-			else
-				p = priv->dma_tx + i;
+		struct dma_desc *p;
 
-			if (priv->tx_skbuff_dma[i])
+		if (priv->extend_desc)
+			p = &((priv->dma_etx + i)->basic);
+		else
+			p = priv->dma_tx + i;
+
+		if (priv->tx_skbuff_dma[i].buf) {
+			if (priv->tx_skbuff_dma[i].map_as_page)
+				dma_unmap_page(priv->device,
+					       priv->tx_skbuff_dma[i].buf,
+					       priv->hw->desc->get_tx_len(p),
+					       DMA_TO_DEVICE);
+			else
 				dma_unmap_single(priv->device,
-						 priv->tx_skbuff_dma[i],
+						 priv->tx_skbuff_dma[i].buf,
 						 priv->hw->desc->get_tx_len(p),
 						 DMA_TO_DEVICE);
+		}
+
+		if (priv->tx_skbuff[i] != NULL) {
 			dev_kfree_skb_any(priv->tx_skbuff[i]);
 			priv->tx_skbuff[i] = NULL;
-			priv->tx_skbuff_dma[i] = 0;
+			priv->tx_skbuff_dma[i].buf = 0;
+			priv->tx_skbuff_dma[i].map_as_page = false;
 		}
 	}
 }
-
 /**
  * alloc_dma_desc_resources - alloc TX/RX resources.
  * @priv: private structure
@@ -1473,12 +1484,19 @@ static void stmmac_tx_clean(struct stmmac_priv *priv)
 			pr_debug("%s: curr %d, dirty %d\n", __func__,
 				 priv->cur_tx, priv->dirty_tx);
 
-		if (likely(priv->tx_skbuff_dma[entry])) {
-			dma_unmap_single(priv->device,
-					 priv->tx_skbuff_dma[entry],
-					 priv->hw->desc->get_tx_len(p),
-					 DMA_TO_DEVICE);
-			priv->tx_skbuff_dma[entry] = 0;
+		if (likely(priv->tx_skbuff_dma[entry].buf)) {
+			if (priv->tx_skbuff_dma[entry].map_as_page)
+				dma_unmap_page(priv->device,
+					       priv->tx_skbuff_dma[entry].buf,
+					       priv->hw->desc->get_tx_len(p),
+					       DMA_TO_DEVICE);
+			else
+				dma_unmap_single(priv->device,
+						 priv->tx_skbuff_dma[entry].buf,
+						 priv->hw->desc->get_tx_len(p),
+						 DMA_TO_DEVICE);
+			priv->tx_skbuff_dma[entry].buf = 0;
+			priv->tx_skbuff_dma[entry].map_as_page = false;
 		}
 		priv->hw->mode->clean_desc3(priv, p);
 
@@ -2098,6 +2116,7 @@ static int stmmac_open(struct net_device *dev)
 #if 0	// remark by kook
 	clk_prepare_enable(priv->stmmac_clk);
 #endif
+	__trace(" +++ opened\n");
 
 	stmmac_check_ether_addr(priv);
 
@@ -2107,7 +2126,7 @@ static int stmmac_open(struct net_device *dev)
 		if (ret) {
 			pr_err("%s: Cannot attach to PHY (error: %d)\n",
 			       __func__, ret);
-			goto phy_error;
+			return ret;
 		}
 	}
 
@@ -2129,7 +2148,7 @@ static int stmmac_open(struct net_device *dev)
 		goto dma_desc_error;
 	}
 
-	ret = init_dma_desc_rings(dev, GFP_KERNEL);
+	ret = init_dma_desc_rings(dev, GFP_KERNEL, 0);
 	if (ret < 0) {
 		pr_err("%s: DMA descriptors initialization failed\n", __func__);
 		goto init_error;
@@ -2199,7 +2218,6 @@ init_error:
 dma_desc_error:
 	if (priv->phydev)
 		phy_disconnect(priv->phydev);
-phy_error:
 #if 0	// remark by kook
 	clk_disable_unprepare(priv->stmmac_clk);
 #endif
@@ -2271,6 +2289,8 @@ static int stmmac_release(struct net_device *dev)
 
 	stmmac_release_ptp(priv);
 
+	__trace(" --- opened\n");
+
 	return 0;
 }
 
@@ -2320,35 +2340,34 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
 	first = desc;
 	first_entry = entry;
 
-	priv->tx_skbuff[entry] = skb;
-
 	/* To program the descriptors according to the size of the frame */
 	if (priv->mode == STMMAC_RING_MODE) {
 		is_jumbo = priv->hw->mode->is_jumbo_frm(skb->len,
 							priv->plat->enh_desc);
-		if (unlikely(is_jumbo))
-			entry = priv->hw->mode->jumbo_frm(priv, skb,
-							  csum_insertion);
 	} else {
 		is_jumbo = priv->hw->mode->is_jumbo_frm(skb->len,
 							 priv->plat->enh_desc);
-		if (unlikely(is_jumbo))
-			entry = priv->hw->mode->jumbo_frm(priv, skb,
-							   csum_insertion);
 	}
 	if (likely(!is_jumbo)) {
 		desc->des2 = dma_map_single(priv->device, skb->data,
 					    nopaged_len, DMA_TO_DEVICE);
-		priv->tx_skbuff_dma[entry] = desc->des2;
+		if (dma_mapping_error(priv->device, desc->des2))
+			goto dma_map_err;
+		priv->tx_skbuff_dma[entry].buf = desc->des2;
 		priv->hw->desc->prepare_tx_desc(desc, 1, nopaged_len,
 						csum_insertion, priv->mode);
-	} else
+	} else {
 		desc = first;
+		entry = priv->hw->mode->jumbo_frm(priv, skb, csum_insertion);
+		if (unlikely(entry < 0))
+			goto dma_map_err;
+	}
 
 	for (i = 0; i < nfrags; i++) {
 		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
 		int len = skb_frag_size(frag);
 
+		priv->tx_skbuff[entry] = NULL;
 		entry = (++priv->cur_tx) % txsize;
 		if (priv->extend_desc)
 			desc = (struct dma_desc *)(priv->dma_etx + entry);
@@ -2357,8 +2376,11 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
 
 		desc->des2 = skb_frag_dma_map(priv->device, frag, 0, len,
 					      DMA_TO_DEVICE);
-		priv->tx_skbuff_dma[entry] = desc->des2;
-		priv->tx_skbuff[entry] = NULL;
+		if (dma_mapping_error(priv->device, desc->des2))
+			goto dma_map_err; /* should reuse desc w/o issues */
+
+		priv->tx_skbuff_dma[entry].buf = desc->des2;
+		priv->tx_skbuff_dma[entry].map_as_page = true;
 		priv->hw->desc->prepare_tx_desc(desc, 0, len, csum_insertion,
 						priv->mode);
 		wmb();
@@ -2368,6 +2390,8 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
 			(unsigned long)(priv->dma_tx_phy+(entry*priv->dma_desc_size)),
 			priv->dma_desc_size);
 	}
+
+	priv->tx_skbuff[entry] = skb;
 
 	/* Finalize the latest segment. */
 	priv->hw->desc->close_tx_desc(desc);
@@ -2431,6 +2455,13 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
 	spin_unlock(&priv->tx_lock);
 
 	return NETDEV_TX_OK;
+
+dma_map_err:
+	spin_unlock(&priv->tx_lock);
+	dev_err(priv->device, "Tx dma map failed\n");
+	dev_kfree_skb(skb);
+	priv->dev->stats.tx_dropped++;
+	return NETDEV_TX_OK;
 }
 
 /**
@@ -2465,7 +2496,12 @@ static inline void stmmac_rx_refill(struct stmmac_priv *priv)
 			priv->rx_skbuff_dma[entry] =
 			    dma_map_single(priv->device, skb->data, bfsize,
 					   DMA_FROM_DEVICE);
-
+			if (dma_mapping_error(priv->device,
+					      priv->rx_skbuff_dma[entry])) {
+				dev_err(priv->device, "Rx dma map failed\n");
+				dev_kfree_skb(skb);
+				break;
+			}
 			p->des2 = priv->rx_skbuff_dma[entry];
 
 			priv->hw->mode->refill_desc3(priv, p);
@@ -3365,14 +3401,11 @@ int stmmac_resume(struct net_device *ndev)
 {
 	struct stmmac_priv *priv = netdev_priv(ndev);
 	unsigned long flags;
-#ifdef CONFIG_NXPMAC_DEBUG_FS
-	int ret;
-#endif
 
 	if (!netif_running(ndev))
 		return 0;
 
-	__trace("phy resume...\n");
+	__trace("stmmac resume...\n");
 
 	nxp_plat_initialize();
 
@@ -3384,17 +3417,20 @@ int stmmac_resume(struct net_device *ndev)
 	 * this bit because it can generate problems while resuming
 	 * from another devices (e.g. serial console).
 	 */
-	if (device_may_wakeup(priv->device))
+	if (device_may_wakeup(priv->device)) {
 		priv->hw->mac->pmt(priv->ioaddr, 0);
+	} else {
 #if 0	// remark by kook
-	else
 		/* enable the clk prevously disabled */
 		clk_prepare_enable(priv->stmmac_clk);
 #endif
+		//if (priv->mii)
+		//	stmmac_mdio_reset(priv->mii);
+	}
 
 	netif_device_attach(ndev);
 
-	init_dma_desc_rings(ndev, GFP_ATOMIC);
+	init_dma_desc_rings(ndev, GFP_ATOMIC, 1);
 	nxpmac_hw_setup(ndev, false, 0);
 	stmmac_init_tx_coalesce(priv);
 
@@ -3403,12 +3439,6 @@ int stmmac_resume(struct net_device *ndev)
 	netif_start_queue(ndev);
 
 	spin_unlock_irqrestore(&priv->lock, flags);
-
-#ifdef CONFIG_NXPMAC_DEBUG_FS
-	ret = stmmac_init_fs(ndev);
-	if (ret < 0)
-		pr_warn("%s: failed debugFS registration\n", __func__);
-#endif
 
 	if (priv->phydev)
 		phy_start(priv->phydev);
