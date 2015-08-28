@@ -62,6 +62,9 @@
 #define CFG_NAND_ECC_BITS               		40			/* 512 - 4,8,16,24 1024 - 24,40,60 */
 //#define CFG_NAND_ECCIRQ_MODE
 
+/* FTL */
+#define CFG_NAND_FTL_START_BLOCK				0x6000000	/* byte address, Must Be Multiple of 8MB */
+
 /*------------------------------------------------------------------------------
  *	Nand (GPIO)
  */
