@@ -49,6 +49,20 @@ static struct nxp_backward_camera_context {
     struct platform_device *my_device;
 } _context;
 
+static void _mlc_dump_register(int module)
+{
+#define DBGOUT(args...)  printk(args)
+    struct NX_MLC_RegisterSet *pREG = 
+    (struct NX_MLC_RegisterSet*)NX_MLC_GetBaseAddress(module);
+
+    DBGOUT("BASE ADDRESS: %p\n", pREG);
+#if defined(CONFIG_ARCH_S5P4418)
+    DBGOUT(" MLC_MLCCONTROLT    = 0x%04x\r\n", pREG->MLCCONTROLT);
+#endif
+
+}
+
+
 static void _vip_dump_register(int module)
 {
 #define DBGOUT(args...)  printk(args)
@@ -327,6 +341,8 @@ static void _mlc_video_stop(int module)
     NX_MLC_SetVideoLayerLineBufferSleepMode(module, CTRUE);
     NX_MLC_SetLayerEnable(module, MLC_LAYER_VIDEO, CFALSE);
     NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
+
+	//_mlc_dump_register(module);
 }
 
 static void _mlc_overlay_run(int module)
@@ -514,6 +530,7 @@ static void _turn_on(struct nxp_backward_camera_context *me)
         me->is_first = false;
     }
 
+//	_mlc_dump_register(me->plat_data->mlc_module_num);
     _mlc_video_run(me->plat_data->mlc_module_num);
    	_mlc_overlay_run(me->plat_data->mlc_module_num);
 }
@@ -527,8 +544,7 @@ static void _turn_off(struct nxp_backward_camera_context *me)
 static inline bool _is_backgear_on(struct nxp_backward_camera_platform_data *pdata)
 {
     bool is_on = nxp_soc_gpio_get_in_value(pdata->backgear_gpio_num);
-    if (!pdata->active_high)
-        is_on ^= 1;
+    if (!pdata->active_high) is_on ^= 1;
     return is_on;
 }
 
