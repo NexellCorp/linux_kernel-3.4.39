@@ -235,7 +235,7 @@
 /*------------------------------------------------------------------------------
  *	TOUCH
  */
-#define	CFG_IO_TOUCH_PENDOWN_DETECT			((PAD_GPIO_D + 8) | PAD_FUNC_ALT0)
+#define	CFG_IO_TOUCH_PENDOWN_DETECT			((PAD_GPIO_D + 8))
 
 /*------------------------------------------------------------------------------
  *	AUDIO

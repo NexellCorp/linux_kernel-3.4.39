@@ -27,6 +27,7 @@
 #include <linux/power_supply.h>
 #include <linux/irq.h>
 #include <linux/amba/pl022.h>
+#include <linux/gpio.h>
 
 
 
@@ -276,16 +277,20 @@ static struct i2c_board_info __initdata gslX680_i2c_bdi = {
 
 #define TSC2007_I2C_BUS     (2)
 
+static int tsc2007_get_pendown_state(struct device *dev){
+	return !gpio_get_value(CFG_IO_TOUCH_PENDOWN_DETECT);
+}
+
 struct tsc2007_platform_data tsc2007_plat_data = {
-        //.touch_points = 10,
-        //.x_resol      = CFG_DISP_PRI_RESOL_WIDTH,
-        //.y_resol      = CFG_DISP_PRI_RESOL_HEIGHT,
-        //.rotate           = 90,
-        //.x_plate_ohms = 1000,
-        //.max_rt           = 1400,//1200,
-        .x_plate_ohms   = 10,
-        //.poll_delay   = 5,
-        .poll_period    = 10,
+        .x_plate_ohms   = 1000,
+		.min_x = 0,
+		.min_y = 4096,
+		.max_y = 0,
+		.max_y = 4096,
+		.fuzzx = 0,
+		.fuzzy = 0,
+		.fuzzz = 0,
+		.get_pendown_state = &tsc2007_get_pendown_state,
 
     };
 

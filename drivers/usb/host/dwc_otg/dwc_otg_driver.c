@@ -1334,11 +1334,11 @@ static int __init dwc_otg_driver_init(void)
 	return retval;
 }
 
-#ifdef CONFIG_DEFERRED_INIT_CALL
-deferred_module_init(dwc_otg_driver_init);
-#else
+//#ifdef CONFIG_DEFERRED_INIT_CALL 
+//deferred_module_init(dwc_otg_driver_init);
+//#else
 module_init(dwc_otg_driver_init);
-#endif
+//#endif
 
 /**
  * This function is called when the driver is removed from the kernel
