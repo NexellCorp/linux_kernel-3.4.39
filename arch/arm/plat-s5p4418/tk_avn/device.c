@@ -957,6 +957,7 @@ static int camera_common_set_clock(ulong clk_rate)
 static bool is_camera_port_configured = false;
 static void camera_common_vin_setup_io(int module, bool force)
 {
+	printk("+++ %s +++\n", __func__);
     if (!force && is_camera_port_configured)
         return;
     else {
@@ -1003,6 +1004,8 @@ static void camera_common_vin_setup_io(int module, bool force)
 
         is_camera_port_configured = true;
     }
+
+	printk("--- %s ---\n", __func__);
 }
 
 static bool camera_power_enabled = false;
