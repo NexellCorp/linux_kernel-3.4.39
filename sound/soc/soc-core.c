@@ -1453,8 +1453,24 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 	}
 
 	/* card bind complete so register a sound card */
+#ifdef CONFIG_PLAT_S5P4418_TK_AVN
+	if (!strcmp(dev_name(card->dev), "alc5633-audio.0")) {
+		ret = snd_card_create(0, SNDRV_DEFAULT_STR1,
+				card->owner, 0, &card->snd_card);
+	}
+	else if (!strcmp(dev_name(card->dev), "alcdummy-audio.1")) {
+		ret = snd_card_create(1, SNDRV_DEFAULT_STR1,
+				card->owner, 0, &card->snd_card);
+	}
+	else{
+		ret = snd_card_create(SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1,
+				card->owner, 0, &card->snd_card);
+	}
+#else
 	ret = snd_card_create(SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1,
 			card->owner, 0, &card->snd_card);
+#endif
+
 	if (ret < 0) {
 		pr_err("asoc: can't create sound card for card %s: %d\n",
 			card->name, ret);
