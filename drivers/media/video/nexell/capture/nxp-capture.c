@@ -474,7 +474,7 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
         } else {
             NX_VIP_SetVIPEnable(me->module, CFALSE, CFALSE, CFALSE, CFALSE);
         }
-        dump_register(me->module);
+        /*dump_register(me->module);*/
 
         me->clip_enable = clip_enable;
         me->deci_enable = deci_enable;

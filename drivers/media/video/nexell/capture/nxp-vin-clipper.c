@@ -895,6 +895,7 @@ static int nxp_vin_clipper_s_power(struct v4l2_subdev *sd, int on)
     int module;
 
     vmsg("%s: %d\n", __func__, on);
+    printk("%s: %d\n", __func__, on);
 
 	me = v4l2_get_subdevdata(sd);
 	if (!me) {
