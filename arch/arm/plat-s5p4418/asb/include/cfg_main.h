@@ -67,15 +67,8 @@
 
 #define CFG_ETHER_LOOPBACK_MODE					1	/* 0: disable, 1: 10M, 2: 100M(x), 3: 1000M(x) */
 
- /*for rtl8201*/
-#if defined (CONFIG_REALTEK_PHY_RTL8201)
-#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				-1
-#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_C + 12)
-#else
- /*for rtl8211*/
 #define	CFG_ETHER_GMAC_PHY_IRQ_NUM				(IRQ_GPIO_E_START + 23)
 #define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_C + 28)
-#endif
 
 /*------------------------------------------------------------------------------
  * 	Nand (HWECC)
@@ -83,7 +76,9 @@
 #define CFG_NAND_ECC_BYTES 						1024
 #define CFG_NAND_ECC_BITS               		40			/* 512 - 4,8,16,24 1024 - 24,40,60 */
 //#define CFG_NAND_ECCIRQ_MODE
-//#define CFG_MTD_NAND_BMT_FIRST_LAST
+
+/* FTL */
+#define CFG_NAND_FTL_START_BLOCK				0x6000000	/* byte address, Must Be Multiple of 8MB */
 
 /*------------------------------------------------------------------------------
  *	Nand (GPIO)
