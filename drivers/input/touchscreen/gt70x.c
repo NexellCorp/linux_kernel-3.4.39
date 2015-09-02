@@ -142,16 +142,11 @@ static void goodix_ts_work_func(struct work_struct *work)
 		static u8 point_data[2 + 1 + 8 * GTP_MAX_TOUCH +1] = {GTP_READ_COOR_ADDR >> 8, GTP_READ_COOR_ADDR & 0xFF};
 		static u8  end_cmd[3] = {GTP_READ_COOR_ADDR >> 8, GTP_READ_COOR_ADDR & 0xFF, 0};
 
-
-
-
 		 static struct goodix_ts_data *ts = NULL;
 
 		 ts = container_of(work, struct goodix_ts_data, work.work);
 
 //		 printk("goodix_ts_work_func \n");
-
-
 
 //		if(touch_check_qstart_rtk()==BACK)
 //		{
@@ -171,22 +166,22 @@ static void goodix_ts_work_func(struct work_struct *work)
 		finger = point_data[GTP_ADDR_LENGTH];
 		if((finger & 0x80) == 0) //表示坐标未准备好
 		{
-//				printk("\n TCP NO ready \n");
-
-				goto DEAL_END;
+//			printk("\n TCP NO ready \n");
+			goto DEAL_END;
 		}
+
 		touch_num = finger & 0x0f;
 		if(touch_num > GTP_MAX_TOUCH)
 		{
-				GTP_ERROR("touch_num > GTP_MAX_TOUCH \n");
-				goto DEAL_END;
+			GTP_ERROR("touch_num > GTP_MAX_TOUCH \n");
+			goto DEAL_END;
 		}
 
 		if(touch_num)
 		{
-//				if(BackCarMode == BACK && TouchDown) goto DEAL_END;
-				for(i = 0; i < touch_num; i++)
-				{
+//			if(BackCarMode == BACK && TouchDown) goto DEAL_END;
+			for(i = 0; i < touch_num; i++)
+			{
 //						printk("\n get touch piont \n");
 						coor_data = &point_data[i * 8 + 3];
 						id = coor_data[0] & 0x0F;
@@ -247,7 +242,8 @@ static s8 gtp_request_irq(struct goodix_ts_data *ts)
 		s32 ret = -1;
 
 	 ts->client->irq=TS_INT;
-    ret = request_irq(ts->client->irq, guitar_ts_irq_handler, IRQ_TYPE_EDGE_FALLING,//IRQ_TYPE_EDGE_RISING,
+    ret = request_irq(ts->client->irq, guitar_ts_irq_handler,
+    					IRQF_DISABLED | IRQ_TYPE_EDGE_FALLING,//IRQ_TYPE_EDGE_RISING,
                       ts->client->name, ts);
     if (ret)
     {
