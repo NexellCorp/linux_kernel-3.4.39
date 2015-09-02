@@ -556,7 +556,7 @@ static int nxp_i2c_algo_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, 
 	par->thd_count = 0;
 
 	pr_debug("\n %s(msg num:%d)\n", __func__, num);
-printk("\e[31m retry cnt  %d , delay %d \e[0m\n", i, delay);
+	
 	for ( ; j > 0; j--, tmsg++) {
 		par->no_stop = (1 == j ? 0 : 1);
 		len = tmsg->len;
