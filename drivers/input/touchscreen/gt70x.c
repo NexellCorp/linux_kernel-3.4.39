@@ -26,7 +26,7 @@
 
 
 #define GTP_INT_TRIGGER  1
-#define	DELAY_WORK_JIFFIES 		10
+#define	DELAY_WORK_TIME 		10	// ms
 
 
 static struct workqueue_struct *msd_tp_wq;
@@ -237,7 +237,7 @@ static irqreturn_t guitar_ts_irq_handler(s32 irq, void *dev_id)
 
 //  printk("guitar_ts_irq_handler \n");
     disable_irq_nosync(ts->client->irq);
-    queue_delayed_work(msd_tp_wq, &ts->work, DELAY_WORK_JIFFIES);
+    queue_delayed_work(msd_tp_wq, &ts->work, msecs_to_jiffies(DELAY_WORK_TIME));
 
     return IRQ_HANDLED;
 }
