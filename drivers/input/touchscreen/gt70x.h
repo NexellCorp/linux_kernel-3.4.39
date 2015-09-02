@@ -34,7 +34,8 @@ struct goodix_ts_data {
     struct i2c_client *client;
     struct input_dev  *input_dev;
     struct hrtimer timer;
-    struct work_struct  work;
+//  struct work_struct  work;
+    struct delayed_work  work;
     s32 irq_is_disable;
     s32 use_irq;
     u16 abs_x_max;

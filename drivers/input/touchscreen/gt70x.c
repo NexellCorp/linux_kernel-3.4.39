@@ -26,6 +26,7 @@
 
 
 #define GTP_INT_TRIGGER  1
+#define	DELAY_WORK_JIFFIES 		10
 
 
 static struct workqueue_struct *msd_tp_wq;
@@ -146,7 +147,7 @@ static void goodix_ts_work_func(struct work_struct *work)
 
 		 static struct goodix_ts_data *ts = NULL;
 
-		 ts = container_of(work, struct goodix_ts_data, work);
+		 ts = container_of(work, struct goodix_ts_data, work.work);
 
 //		 printk("goodix_ts_work_func \n");
 
@@ -234,9 +235,9 @@ static irqreturn_t guitar_ts_irq_handler(s32 irq, void *dev_id)
 {
    struct goodix_ts_data *ts = (struct goodix_ts_data*)dev_id;
 
-//    printk("guitar_ts_irq_handler \n");
+//  printk("guitar_ts_irq_handler \n");
     disable_irq_nosync(ts->client->irq);
-    queue_work(msd_tp_wq, &ts->work);
+    queue_delayed_work(msd_tp_wq, &ts->work, DELAY_WORK_JIFFIES);
 
     return IRQ_HANDLED;
 }
@@ -455,7 +456,7 @@ static s32 msd_tp_probe(struct i2c_client *client, const struct i2c_device_id *i
 
     // psw0523 fix for quickboot
 
-    INIT_WORK(&ts->work, goodix_ts_work_func);
+    INIT_DELAYED_WORK(&ts->work, goodix_ts_work_func);
     ret = gtp_request_irq(ts);
     if(ret < 0)
     {
