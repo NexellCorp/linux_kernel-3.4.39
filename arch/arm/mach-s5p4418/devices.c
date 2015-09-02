@@ -268,6 +268,44 @@ static AMBA_AHB_DEVICE(uart5, "uart-pl011.5", 0, PHY_BASEADDR_UART5, {IRQ_PHY_UA
 #define	I2C2_SDA	NXP_I2C2_MOD_SDA
 #endif
 
+#ifdef CFG_I2C0_RETRY_CNT
+#define I2C0_RETRY_CNT CFG_I2C0_RETRY_CNT
+#else
+#define I2C0_RETRY_CNT 3
+#endif
+
+#ifdef CFG_I2C0_RETRY_DELAY
+#define I2C0_RETRY_DELAY CFG_I2C0_RETRY_DELAY
+#else
+#define I2C0_RETRY_DELAY 0
+#endif
+
+#ifdef CFG_I2C1_RETRY_CNT
+#define I2C1_RETRY_CNT CFG_I2C1_RETRY_CNT
+#else
+#define I2C1_RETRY_CNT 3
+#endif
+
+#ifdef CFG_I2C1_RETRY_DELAY_
+#define I2C1_RETRY_DELAY CFG_I2C1_RETRY_DELAY
+#else
+#define I2C1_RETRY_DELAY 0
+#endif
+
+
+#ifdef CFG_I2C2_RETRY_CNT
+#define I2C2_RETRY_CNT CFG_I2C2_RETRY_CNT
+#else
+#define I2C2_RETRY_CNT 3
+#endif
+
+#ifdef CFG_I2C2_RETRY_DELAY_
+#define I2C2_RETRY_DELAY CFG_I2C2_RETRY_DELAY
+#else
+#define I2C2_RETRY_DELAY 0
+#endif
+
+
 #if	defined(CONFIG_I2C_NXP_PORT0)
 
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port0 = {
@@ -293,6 +331,8 @@ static struct nxp_i2c_plat_data i2c_data_ch0 = {
 	.gpio 		= &nxp_i2c_gpio_port0,
 	.base_addr	= PHY_BASEADDR_I2C0,
 	.rate 		= CFG_I2C0_CLK,
+	.retry_cnt  =  I2C0_RETRY_CNT, 
+	.retry_delay=  I2C0_RETRY_DELAY, 
 };
 
 static struct platform_device i2c_device_ch0 = {
@@ -332,6 +372,8 @@ static struct nxp_i2c_plat_data i2c_data_ch1 = {
 	.gpio 		= &nxp_i2c_gpio_port1,
 	.base_addr	= PHY_BASEADDR_I2C1,
 	.rate 		= CFG_I2C1_CLK,
+	.retry_cnt  =  I2C1_RETRY_CNT, 
+	.retry_delay=  I2C1_RETRY_DELAY, 
 };
 
 static struct platform_device i2c_device_ch1 = {
@@ -370,6 +412,8 @@ static struct nxp_i2c_plat_data i2c_data_ch2 = {
 	.gpio 		= &nxp_i2c_gpio_port2,
 	.base_addr	= PHY_BASEADDR_I2C2,
 	.rate 		= CFG_I2C2_CLK,
+	.retry_cnt  =  I2C2_RETRY_CNT, 
+	.retry_delay=  I2C2_RETRY_DELAY, 
 };
 
 static struct platform_device i2c_device_ch2 = {
