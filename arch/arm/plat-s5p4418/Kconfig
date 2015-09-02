@@ -39,6 +39,11 @@ choice
 		help
    	 		Support for the drone2 low cost board.
 
+	config PLAT_S5P4418_MSD8000B
+		bool "AVN: Android msd8000b AVN board"
+		help
+   	 		Support for the msd8000b avn board.
+
 endchoice
 
 #

@@ -27,6 +27,10 @@ ifeq ($(CONFIG_PLAT_S5P4418_DRONEL),y)
 PLATBOARD :=dronel
 endif
 
+ifeq ($(CONFIG_PLAT_S5P4418_MSD8000B),y)
+PLATBOARD :=msd8000b
+endif
+
 
 #
 # Build options
