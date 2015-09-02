@@ -260,16 +260,6 @@ static struct platform_device nand_plat_device = {
 };
 #endif	/* CONFIG_MTD_NAND_NEXELL */
 
-#if defined(CONFIG_TOUCHSCREEN_GSLX680)
-#include <linux/i2c.h>
-#define	GSLX680_I2C_BUS		(1)
-
-static struct i2c_board_info __initdata gslX680_i2c_bdi = {
-	.type	= "gslX680",
-	.addr	= (0x40),
-    	.irq    = PB_PIO_IRQ(CFG_IO_TOUCH_PENDOWN_DETECT),
-};
-#endif
 
 #if defined(CONFIG_TOUCHSCREEN_TSC2007)
 #include <linux/i2c.h>
@@ -280,17 +270,25 @@ static struct i2c_board_info __initdata gslX680_i2c_bdi = {
 static int tsc2007_get_pendown_state(struct device *dev){
 	return !gpio_get_value(CFG_IO_TOUCH_PENDOWN_DETECT);
 }
+#define MAX_12BIT           ((1 << 12) - 1)
+#define MIN_12BIT           (0)
+
 
 struct tsc2007_platform_data tsc2007_plat_data = {
-        .x_plate_ohms   = 1000,
-		.min_x = 0,
-		.min_y = 4096,
-		.max_y = 0,
-		.max_y = 4096,
+		#if 1
+        .x_plate_ohms   = 100,
+		.min_x = MIN_12BIT,
+		.min_y = MIN_12BIT,
+		.max_x = MAX_12BIT,
+		.max_y = MAX_12BIT,
 		.fuzzx = 0,
 		.fuzzy = 0,
 		.fuzzz = 0,
 		.get_pendown_state = &tsc2007_get_pendown_state,
+		#else
+        .x_plate_ohms   = 10,
+        .poll_period    = 10,
+		#endif
 
     };
 
@@ -328,44 +326,11 @@ static struct platform_device key_plat_device = {
 };
 #endif	/* CONFIG_KEYBOARD_NXP_KEY || CONFIG_KEYBOARD_NXP_KEY_MODULE */
 
-/*------------------------------------------------------------------------------
- * ASoC Codec platform device
- */
-#if defined(CONFIG_SND_CODEC_WM8976) || defined(CONFIG_SND_CODEC_WM8976_MODULE)
-#include <linux/i2c.h>
-
-#define	WM8976_I2C_BUS		(0)
-
-/* CODEC */
-static struct i2c_board_info __initdata wm8976_i2c_bdi = {
-	.type	= "wm8978",			// compatilbe with wm8976
-	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
-};
-
-/* DAI */
-struct nxp_snd_dai_plat_data i2s_dai_data = {
-	.i2s_ch	= 0,
-	.sample_rate	= 48000,
-	.hp_jack 		= {
-		.support    	= 1,
-		.detect_io		= PAD_GPIO_E + 8,
-		.detect_level	= 1,
-	},
-};
-
-static struct platform_device wm8976_dai = {
-	.name			= "wm8976-audio",
-	.id				= 0,
-	.dev			= {
-		.platform_data	= &i2s_dai_data,
-	}
-};
-#endif
 
 #if defined(CONFIG_SND_CODEC_ALC5623)
 #include <linux/i2c.h>
 
-#define	ALC5623_I2C_BUS		(0)
+#define	ALC5623_I2C_BUS		(1)
 
 /* CODEC */
 static struct i2c_board_info __initdata alc5623_i2c_bdi = {
@@ -414,39 +379,6 @@ static struct platform_device spdif_trans_dai = {
 };
 #endif
 
-/*------------------------------------------------------------------------------
- * G-Sensor platform device
- */
-#if defined(CONFIG_SENSORS_MMA865X) || defined(CONFIG_SENSORS_MMA865X_MODULE)
-#include <linux/i2c.h>
-
-#define	MMA865X_I2C_BUS		(2)
-
-/* CODEC */
-static struct i2c_board_info __initdata mma865x_i2c_bdi = {
-	.type	= "mma8653",
-	.addr	= 0x1D//(0x3a),
-};
-
-#endif
-
-#if defined(CONFIG_SENSORS_STK831X) || defined(CONFIG_SENSORS_STK831X_MODULE)
-#include <linux/i2c.h>
-
-#define	STK831X_I2C_BUS		(2)
-
-/* CODEC */
-static struct i2c_board_info __initdata stk831x_i2c_bdi = {
-#if   defined CONFIG_SENSORS_STK8312
-	.type	= "stk8312",
-	.addr	= (0x3d),
-#elif defined CONFIG_SENSORS_STK8313
-	.type	= "stk8313",
-	.addr	= (0x22),
-#endif
-};
-
-#endif
 
 /*------------------------------------------------------------------------------
  *  * reserve mem
@@ -487,25 +419,36 @@ void __init nxp_reserve_mem(void)
 
 #if defined(CONFIG_I2C_NXP) || defined (CONFIG_I2C_SLSI)
 #define I2CUDELAY(x)	1000000/x
-/* gpio i2c 3 */
-#define	I2C3_SCL	PAD_GPIO_E + 14
-#define	I2C3_SDA	PAD_GPIO_E + 15
+
+/* gpio i2c 3 */ 
+#define	I2C3_SCL	PAD_GPIO_B + 16
+#define	I2C3_SDA	PAD_GPIO_B + 18
+#define I2C3_CLK    CFG_I2C3_CLK
+
+/* GPIO I2C4 : USB HUB */
 #if defined(CONFIG_USB_HUB_USB2514)
-/* GPIO I2C5 : USB HUB */
-#define I2C5_SDA    PAD_GPIO_C + 27
-#define I2C5_SCL    PAD_GPIO_C + 25
-#define I2C5_CLK    CFG_I2C3_CLK
+#define	I2C4_SCL	PAD_GPIO_C + 25
+#define	I2C4_SDA	PAD_GPIO_C + 27
+#define I2C4_CLK    CFG_I2C4_CLK
 #endif
 
-/* GPIO I2C7 : PMIC VDDA */
+#define	I2C5_SCL	PAD_GPIO_D + 22
+#define	I2C5_SDA	PAD_GPIO_D + 23
+#define I2C5_CLK    CFG_I2C7_CLK
+
+#define	I2C6_SCL	PAD_GPIO_D + 26
+#define	I2C6_SDA	PAD_GPIO_D + 27
+#define I2C6_CLK    CFG_I2C8_CLK
+
+/* GPIO I2C7: PMIC VDDA */
 #define I2C7_SDA    PAD_GPIO_E + 8
 #define I2C7_SCL    PAD_GPIO_E + 9
-#define I2C7_CLK    CFG_I2C3_CLK
+#define I2C7_CLK    CFG_I2C7_CLK
 
 /* GPIO I2C8 : PMIC VDDB */
 #define I2C8_SDA    PAD_GPIO_E + 10
 #define I2C8_SCL    PAD_GPIO_E + 11
-#define I2C8_CLK    CFG_I2C3_CLK
+#define I2C8_CLK    CFG_I2C8_CLK
 
 
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port3 = {
@@ -517,13 +460,29 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port3 = {
 };
 
 #if defined(CONFIG_USB_HUB_USB2514)
-static struct i2c_gpio_platform_data nxp_i2c_gpio_port5 = {
-    .sda_pin    = I2C5_SDA,
-    .scl_pin    = I2C5_SCL,
-    .udelay     = I2CUDELAY(I2C5_CLK),              /* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
+static struct i2c_gpio_platform_data nxp_i2c_gpio_port4 = {
+    .sda_pin    = I2C4_SDA,
+    .scl_pin    = I2C4_SCL,
+    .udelay     = I2CUDELAY(I2C4_CLK),              /* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
     .timeout    = 10,
 };
 #endif
+
+static struct i2c_gpio_platform_data nxp_i2c_gpio_port5 = {
+    .sda_pin    = I2C5_SDA,
+    .scl_pin    = I2C5_SCL,
+    .udelay     = I2CUDELAY(CFG_I2C5_CLK),              /* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
+
+    .timeout    = 10,
+};
+
+static struct i2c_gpio_platform_data nxp_i2c_gpio_port6 = {
+    .sda_pin    = I2C6_SDA,
+    .scl_pin    = I2C6_SCL,
+    .udelay     = I2CUDELAY(CFG_I2C6_CLK),              /* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
+
+    .timeout    = 10,
+};
 
 
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port7 = {
@@ -550,6 +509,15 @@ static struct platform_device i2c_device_ch3 = {
 };
 
 #if defined(CONFIG_USB_HUB_USB2514)
+static struct platform_device i2c_device_ch4 = {
+    .name   = "i2c-gpio",
+    .id     = 4,
+    .dev    = {
+        .platform_data  = &nxp_i2c_gpio_port4,
+    },
+};
+#endif
+
 static struct platform_device i2c_device_ch5 = {
     .name   = "i2c-gpio",
     .id     = 5,
@@ -557,8 +525,14 @@ static struct platform_device i2c_device_ch5 = {
         .platform_data  = &nxp_i2c_gpio_port5,
     },
 };
-#endif
 
+static struct platform_device i2c_device_ch6 = {
+    .name   = "i2c-gpio",
+    .id     = 6,
+    .dev    = {
+        .platform_data  = &nxp_i2c_gpio_port6,
+    },
+};
 
 static struct platform_device i2c_device_ch7 = {
     .name   = "i2c-gpio",
@@ -579,8 +553,10 @@ static struct platform_device i2c_device_ch8 = {
 static struct platform_device *i2c_devices[] = {
 	&i2c_device_ch3,
 #if defined(CONFIG_USB_HUB_USB2514)
-    &i2c_device_ch5,
+    &i2c_device_ch4,
 #endif
+    &i2c_device_ch5,
+    &i2c_device_ch6,
     &i2c_device_ch7,
     &i2c_device_ch8,
 };
@@ -589,334 +565,6 @@ static struct platform_device *i2c_devices[] = {
 /*------------------------------------------------------------------------------
  * PMIC platform device
  */
-#if defined(CONFIG_REGULATOR_NXE2000)
-
-#include <linux/i2c.h>
-#include <linux/regulator/machine.h>
-#include <linux/mfd/nxe2000.h>
-#include <linux/gpio.h>
-#include <linux/io.h>
-#include <linux/regulator/fixed.h>
-#include <linux/regulator/nxe2000-regulator.h>
-#include <linux/power/nxe2000_battery.h>
-//#include <linux/rtc/rtc-nxe2000.h>
-//#include <linux/rtc.h>
-
-#define NXE2000_I2C_BUS		(3)
-#define NXE2000_I2C_ADDR	(0x64 >> 1)
-
-/* NXE2000 IRQs */
-#define NXE2000_IRQ_BASE	(IRQ_SYSTEM_END)
-#define NXE2000_GPIO_BASE	(ARCH_NR_GPIOS) //PLATFORM_NXE2000_GPIO_BASE
-#define NXE2000_GPIO_IRQ	(NXE2000_GPIO_BASE + 8)
-
-//#define CONFIG_NXE2000_RTC
-
-
-static struct regulator_consumer_supply nxe2000_dc1_supply_0[] = {
-	REGULATOR_SUPPLY("vdd_arm_1.3V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_dc2_supply_0[] = {
-	REGULATOR_SUPPLY("vdd_core_1.2V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_dc3_supply_0[] = {
-	REGULATOR_SUPPLY("vdd_sys_3.3V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_dc4_supply_0[] = {
-	REGULATOR_SUPPLY("vdd_ddr_1.6V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_dc5_supply_0[] = {
-	REGULATOR_SUPPLY("vdd_sys_1.6V", NULL),
-};
-
-static struct regulator_consumer_supply nxe2000_ldo1_supply_0[] = {
-	REGULATOR_SUPPLY("vgps_3.3V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldo2_supply_0[] = {
-	REGULATOR_SUPPLY("vcam1_1.8V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldo3_supply_0[] = {
-	REGULATOR_SUPPLY("vsys1_1.8V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldo4_supply_0[] = {
-	REGULATOR_SUPPLY("vsys_1.9V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldo5_supply_0[] = {
-	REGULATOR_SUPPLY("vcam_2.8V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldo6_supply_0[] = {
-	REGULATOR_SUPPLY("valive_3.3V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldo7_supply_0[] = {
-	REGULATOR_SUPPLY("vvid_2.8V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldo8_supply_0[] = {
-	REGULATOR_SUPPLY("vdumy0_3.3V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldo9_supply_0[] = {
-	REGULATOR_SUPPLY("vcam_3.3V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldo10_supply_0[] = {
-	REGULATOR_SUPPLY("vdumy2_1.2V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldortc1_supply_0[] = {
-	REGULATOR_SUPPLY("valive_1.8V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
-	REGULATOR_SUPPLY("valive_1.0V", NULL),
-};
-
-
-#define NXE2000_PDATA_INIT(_name, _sname, _minuv, _maxuv, _always_on, _boot_on, \
-	_init_uv, _init_enable, _slp_slots) \
-	static struct nxe2000_regulator_platform_data pdata_##_name##_##_sname = \
-	{	\
-		.regulator = {	\
-			.constraints = {	\
-				.min_uV		= _minuv,	\
-				.max_uV		= _maxuv,	\
-				.valid_modes_mask	= (REGULATOR_MODE_NORMAL |	\
-									REGULATOR_MODE_STANDBY),	\
-				.valid_ops_mask		= (REGULATOR_CHANGE_MODE |	\
-									REGULATOR_CHANGE_STATUS |	\
-									REGULATOR_CHANGE_VOLTAGE),	\
-				.always_on	= _always_on,	\
-				.boot_on	= _boot_on,		\
-				.apply_uV	= 1,			\
-			},	\
-			.num_consumer_supplies =		\
-				ARRAY_SIZE(nxe2000_##_name##_supply_##_sname),	\
-			.consumer_supplies	= nxe2000_##_name##_supply_##_sname, \
-			.supply_regulator	= 0,	\
-		},	\
-		.init_uV		= _init_uv,		\
-		.init_enable	= _init_enable,	\
-		.sleep_slots	= _slp_slots,	\
-	}
-/* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
-/*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,	1000000, 2000000, 1, 1, 1300000, 1,  4);	/* 1.2V ARM */
-NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1,  4);	/* 1.1V CORE */
-NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
-NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1600000, 1, -1);	/* 1.6V DDR */
-NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1600000, 1,  4);	/* 1.6V SYS */
-#if defined(CONFIG_RFKILL_NXP)
-NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V GPS */
-#else
-NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 1,  0);	/* 3.3V GPS */
-#endif
-NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 0,  0);	/* 1.8V CAM1 */
-NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1900000, 1,  2);	/* 1.8V SYS1 */
-NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  2);	/* 1.9V SYS */
-NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 1, 1, 2800000, 0,  0);	/* 2.8V VCAM */
-NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
-NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 3300000, 1,  1);	/* 3.3V VID */
-NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
-NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 1, 1, 2800000, 0,  0);	/* 3.3V VCAM */
-NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
-NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
-NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
-
-
-/*-------- if nxe2000 RTC exists -----------*/
-#ifdef CONFIG_NXE2000_RTC
-static struct nxe2000_rtc_platform_data rtc_data = {
-	.irq	= NXE2000_IRQ_BASE,
-	.time	= {
-		.tm_year	= 1970,
-		.tm_mon		= 0,
-		.tm_mday	= 1,
-		.tm_hour	= 0,
-		.tm_min		= 0,
-		.tm_sec		= 0,
-	},
-};
-
-#define NXE2000_RTC_REG	\
-{	\
-	.id		= 0,	\
-	.name	= "rtc_nxe2000",	\
-	.platform_data	= &rtc_data,	\
-}
-#endif
-/*-------- if Nexell RTC exists -----------*/
-
-#define NXE2000_REG(_id, _name, _sname)	\
-{	\
-	.id		= NXE2000_ID_##_id,	\
-	.name	= "nxe2000-regulator",	\
-	.platform_data	= &pdata_##_name##_##_sname,	\
-}
-
-#define NXE2000_BATTERY_REG	\
-{	\
-    .id		= -1,	\
-    .name	= "nxe2000-battery",	\
-    .platform_data	= &nxe2000_battery_data,	\
-}
-
-//==========================================
-//NXE2000 Power_Key device data
-//==========================================
-static struct nxe2000_pwrkey_platform_data nxe2000_pwrkey_data = {
-	.irq 		= NXE2000_IRQ_BASE,
-	.delay_ms 	= 20,
-};
-#define NXE2000_PWRKEY_REG		\
-{	\
-	.id 	= -1,	\
-	.name 	= "nxe2000-pwrkey",	\
-	.platform_data 	= &nxe2000_pwrkey_data,	\
-}
-
-
-static struct nxe2000_battery_platform_data nxe2000_battery_data = {
-	.irq 				= NXE2000_IRQ_BASE,
-
-	.input_power_type	= INPUT_POWER_TYPE_ADP_UBC,
-
-	.gpio_otg_usbid		= CFG_GPIO_OTG_USBID_DET,
-	.gpio_otg_vbus		= CFG_GPIO_OTG_VBUS_DET,
-	.gpio_pmic_vbus		= CFG_GPIO_PMIC_VUSB_DET,
-	.gpio_pmic_lowbat	= CFG_GPIO_PMIC_LOWBAT_DET,
-
-	.alarm_vol_mv		= 3400,
-//	.alarm_vol_mv		= 3412,
-	.bat_impe			= 1500,
-	.slp_ibat			= 3400,
-//	.adc_channel		= NXE2000_ADC_CHANNEL_VBAT,
-	.multiple			= 100,	//100%
-	.monitor_time		= 60,
-		/* some parameter is depend of battery type */
-	.type[0] = {
-		.ch_vfchg		= 0x03,	/* VFCHG	= 0 - 4 (4.05v, 4.10v, 4.15v, 4.20v, 4.35v) */
-		.ch_vrchg		= 0x03,	/* VRCHG	= 0 - 4 (3.85v, 3.90v, 3.95v, 4.00v, 4.10v) */
-		.ch_vbatovset	= 0xFF,	/* VBATOVSET	= 0 or 1 (0 : 4.38v(up)/3.95v(down) 1: 4.53v(up)/4.10v(down)) */
-		.ch_ichg 		= 0x07,	/* ICHG		= 0 - 0x1D (100mA - 3000mA) */
-		.ch_ilim_adp 	= 0x18,	/* ILIM_ADP	= 0 - 0x1D (100mA - 3000mA) */
-		.ch_ilim_usb 	= 0x04,	/* ILIM_USB	= 0 - 0x1D (100mA - 3000mA) */
-		.ch_icchg		= 0x00,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
-		.fg_target_vsys	= 3450,	/* This value is the target one to DSOC=0% */
-		.fg_target_ibat	= 1000,	/* This value is the target one to DSOC=0% */
-		.fg_poff_vbat	= 0,	/* setting value of 0 per Vbat */
-		.jt_en			= 0,	/* JEITA Enable	  = 0 or 1 (1:enable, 0:disable) */
-		.jt_hw_sw		= 1,	/* JEITA HW or SW = 0 or 1 (1:HardWare, 0:SoftWare) */
-		.jt_temp_h		= 50,	/* degree C */
-		.jt_temp_l		= 12,	/* degree C */
-		.jt_vfchg_h 	= 0x03,	/* VFCHG High  	= 0 - 4 (4.05v, 4.10v, 4.15v, 4.20v, 4.35v) */
-		.jt_vfchg_l 	= 0,	/* VFCHG Low  	= 0 - 4 (4.05v, 4.10v, 4.15v, 4.20v, 4.35v) */
-		.jt_ichg_h		= 0x07,	/* ICHG High  	= 0 - 0x1D (100mA - 3000mA) */
-		.jt_ichg_l		= 0x04,	/* ICHG Low   	= 0 - 0x1D (100mA - 3000mA) */
-	},
-	/*
-	.type[1] = {
-		.ch_vfchg		= 0x0,
-		.ch_vrchg		= 0x0,
-		.ch_vbatovset	= 0x0,
-		.ch_ichg		= 0x0,
-		.ch_ilim_adp	= 0x0,
-		.ch_ilim_usb	= 0x0,
-		.ch_icchg		= 0x00,
-		.fg_target_vsys	= 3300,//3000,
-		.fg_target_ibat	= 1000,//1000,
-		.jt_en			= 0,
-		.jt_hw_sw		= 1,
-		.jt_temp_h		= 40,
-		.jt_temp_l		= 10,
-		.jt_vfchg_h		= 0x0,
-		.jt_vfchg_l		= 0,
-		.jt_ichg_h		= 0x01,
-		.jt_ichg_l		= 0x01,
-	},
-	*/
-
-/*  JEITA Parameter
-*
-*          VCHG
-*            |
-* jt_vfchg_h~+~~~~~~~~~~~~~~~~~~~+
-*            |                   |
-* jt_vfchg_l-| - - - - - - - - - +~~~~~~~~~~+
-*            |    Charge area    +          |
-*  -------0--+-------------------+----------+--- Temp
-*            !                   +
-*          ICHG
-*            |                   +
-*  jt_ichg_h-+ - -+~~~~~~~~~~~~~~+~~~~~~~~~~+
-*            +    |              +          |
-*  jt_ichg_l-+~~~~+   Charge area           |
-*            |    +              +          |
-*         0--+----+--------------+----------+--- Temp
-*            0   jt_temp_l      jt_temp_h   55
-*/
-};
-
-
-
-#define NXE2000_DEV_REG 		\
-	NXE2000_REG(DC1, dc1, 0),	\
-	NXE2000_REG(DC2, dc2, 0),	\
-	NXE2000_REG(DC3, dc3, 0),	\
-	NXE2000_REG(DC4, dc4, 0),	\
-	NXE2000_REG(DC5, dc5, 0),	\
-	NXE2000_REG(LDO1, ldo1, 0),	\
-	NXE2000_REG(LDO2, ldo2, 0),	\
-	NXE2000_REG(LDO3, ldo3, 0),	\
-	NXE2000_REG(LDO4, ldo4, 0),	\
-	NXE2000_REG(LDO5, ldo5, 0),	\
-	NXE2000_REG(LDO6, ldo6, 0),	\
-	NXE2000_REG(LDO7, ldo7, 0),	\
-	NXE2000_REG(LDO8, ldo8, 0),	\
-	NXE2000_REG(LDO9, ldo9, 0),	\
-	NXE2000_REG(LDO10, ldo10, 0),	\
-	NXE2000_REG(LDORTC1, ldortc1, 0),	\
-	NXE2000_REG(LDORTC2, ldortc2, 0)
-
-static struct nxe2000_subdev_info nxe2000_devs_dcdc[] = {
-	NXE2000_DEV_REG,
-	NXE2000_BATTERY_REG,
-	NXE2000_PWRKEY_REG,
-#ifdef CONFIG_NXE2000_RTC
-	NXE2000_RTC_REG,
-#endif
-};
-
-
-#define NXE2000_GPIO_INIT(_init_apply, _output_mode, _output_val, _led_mode, _led_func) \
-	{									\
-		.output_mode_en = _output_mode,	\
-		.output_val		= _output_val,	\
-		.init_apply		= _init_apply,	\
-		.led_mode		= _led_mode,	\
-		.led_func		= _led_func,	\
-	}
-struct nxe2000_gpio_init_data nxe2000_gpio_data[] = {
-	NXE2000_GPIO_INIT(false, false, 0, 0, 0),
-	NXE2000_GPIO_INIT(false, false, 0, 0, 0),
-	NXE2000_GPIO_INIT(false, false, 0, 0, 0),
-	NXE2000_GPIO_INIT(false, false, 0, 0, 0),
-	NXE2000_GPIO_INIT(false, false, 0, 0, 0),
-};
-
-static struct nxe2000_platform_data nxe2000_platform = {
-	.num_subdevs		= ARRAY_SIZE(nxe2000_devs_dcdc),
-	.subdevs			= nxe2000_devs_dcdc,
-	.irq_base			= NXE2000_IRQ_BASE,
-	.irq_type			= IRQ_TYPE_EDGE_FALLING,
-	.gpio_base			= NXE2000_GPIO_BASE,
-	.gpio_init_data		= nxe2000_gpio_data,
-	.num_gpioinit_data	= ARRAY_SIZE(nxe2000_gpio_data),
-	.enable_shutdown_pin	= true,
-};
-
-static struct i2c_board_info __initdata nxe2000_i2c_boardinfo[] = {
-	{
-		I2C_BOARD_INFO("nxe2000", NXE2000_I2C_ADDR),
-		.irq			= CFG_GPIO_PMIC_INTR,
-		.platform_data	= &nxe2000_platform,
-	},
-};
-#endif  /* CONFIG_REGULATOR_NXE2000 */
 
 #if defined(CONFIG_REGULATOR_MP8845C)
 #include <linux/i2c.h>
@@ -986,7 +634,7 @@ static struct i2c_board_info __initdata mp8845c_regulators[] = {
  * USB HUB platform device
  */
 #if defined(CONFIG_USB_HUB_USB2514)
-#define USB2514_I2C_BUS     (5)
+#define USB2514_I2C_BUS     (4)
 
 static struct i2c_board_info __initdata usb2514_i2c_bdi = {
     .type   = "usb2514",
@@ -1245,11 +893,11 @@ static struct i2c_board_info front_camera_i2c_boardinfo[] = {
 static struct nxp_v4l2_i2c_board_info sensor[] = {
     {
         .board_info = &back_camera_i2c_boardinfo[0],
-        .i2c_adapter_id = 0,
+        .i2c_adapter_id = 3,
     },
     {
         .board_info = &front_camera_i2c_boardinfo[0],
-        .i2c_adapter_id = 0,
+        .i2c_adapter_id = 3,
     },
 };
 
@@ -1333,7 +981,7 @@ static struct i2c_board_info hdmi_edid_i2c_boardinfo = {
 
 static struct nxp_v4l2_i2c_board_info edid = {
     .board_info = &hdmi_edid_i2c_boardinfo,
-    .i2c_adapter_id = 0,
+    .i2c_adapter_id = 5,
 };
 
 static struct i2c_board_info hdmi_hdcp_i2c_boardinfo = {
@@ -1342,7 +990,7 @@ static struct i2c_board_info hdmi_hdcp_i2c_boardinfo = {
 
 static struct nxp_v4l2_i2c_board_info hdcp = {
     .board_info = &hdmi_hdcp_i2c_boardinfo,
-    .i2c_adapter_id = 0,
+    .i2c_adapter_id = 5,
 };
 
 
@@ -2105,33 +1753,6 @@ static struct dw_mci_board _dwmci2_data = {
 
 #endif /* CONFIG_MMC_DW */
 
-/*------------------------------------------------------------------------------
- * RFKILL driver
- */
-#if defined(CONFIG_RFKILL_NXP)
-
-struct rfkill_dev_data  rfkill_dev_data =
-{
-	.supply_name 	= "vgps_3.3V",	// vwifi_3.3V, vgps_3.3V
-	.module_name 	= "wlan",
-	.initval		= RFKILL_INIT_SET | RFKILL_INIT_OFF,
-    .delay_time_off	= 1000,
-};
-
-struct nxp_rfkill_plat_data rfkill_plat_data = {
-	.name		= "WiFi-Rfkill",
-	.type		= RFKILL_TYPE_WLAN,
-	.rf_dev		= &rfkill_dev_data,
-    .rf_dev_num	= 1,
-};
-
-static struct platform_device rfkill_device = {
-	.name			= DEV_NAME_RFKILL,
-	.dev			= {
-		.platform_data	= &rfkill_plat_data,
-	}
-};
-#endif	/* CONFIG_RFKILL_NXP */
 
 
 /*------------------------------------------------------------------------------
@@ -2192,9 +1813,6 @@ void __init nxp_board_devs_register(void)
 	platform_device_register(&bl_plat_device);
 #endif
 
-#if defined(CONFIG_MTD_NAND_NXP)
-	platform_device_register(&nand_plat_device);
-#endif
 
 #if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
 	printk("plat: add device keypad\n");
@@ -2203,17 +1821,6 @@ void __init nxp_board_devs_register(void)
 
 #if defined(CONFIG_I2C_NXP) || defined (CONFIG_I2C_SLSI)
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
-#endif
-
-#if defined(CONFIG_REGULATOR_NXE2000)
-	printk("plat: add device nxe2000 pmic\n");
-	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_i2c_boardinfo, ARRAY_SIZE(nxe2000_i2c_boardinfo));
-#endif
-
-#if defined(CONFIG_SND_CODEC_WM8976) || defined(CONFIG_SND_CODEC_WM8976_MODULE)
-	printk("plat: add device asoc-wm8976\n");
-	i2c_register_board_info(WM8976_I2C_BUS, &wm8976_i2c_bdi, 1);
-	platform_device_register(&wm8976_dai);
 #endif
 
 #if defined(CONFIG_SND_CODEC_ALC5623) || defined(CONFIG_SND_CODEC_ALC5623_MODULE)
@@ -2236,24 +1843,6 @@ void __init nxp_board_devs_register(void)
 #if defined(CONFIG_SPI_SPIDEV) || defined(CONFIG_SPI_SPIDEV_MODULE)
     spi_register_board_info(spi0_board_info, ARRAY_SIZE(spi0_board_info));
     printk("plat: register spidev\n");
-#endif
-
-#if defined(CONFIG_TOUCHSCREEN_GSLX680)
-	printk("plat: add touch(gslX680) device\n");
-	i2c_register_board_info(GSLX680_I2C_BUS, &gslX680_i2c_bdi, 1);
-#endif
-
-#if defined(CONFIG_SENSORS_MMA865X) || defined(CONFIG_SENSORS_MMA865X_MODULE)
-	printk("plat: add g-sensor mma865x\n");
-	i2c_register_board_info(2, &mma865x_i2c_bdi, 1);
-#elif defined(CONFIG_SENSORS_MMA7660) || defined(CONFIG_SENSORS_MMA7660_MODULE)
-	printk("plat: add g-sensor mma7660\n");
-	i2c_register_board_info(MMA7660_I2C_BUS, &mma7660_i2c_bdi, 1);
-#endif
-
-#if defined(CONFIG_RFKILL_NXP)
-    printk("plat: add device rfkill\n");
-    platform_device_register(&rfkill_device);
 #endif
 
 #if defined(CONFIG_NXP_HDMI_CEC)

@@ -164,6 +164,11 @@
 #define CFG_I2C1_CLK							100000
 #define CFG_I2C2_CLK							100000
 #define CFG_I2C3_CLK							100000
+#define CFG_I2C4_CLK							100000
+#define CFG_I2C5_CLK							100000
+#define CFG_I2C6_CLK							100000
+#define CFG_I2C7_CLK							100000
+#define CFG_I2C8_CLK							100000
 
 /*------------------------------------------------------------------------------
  * 	SPI
