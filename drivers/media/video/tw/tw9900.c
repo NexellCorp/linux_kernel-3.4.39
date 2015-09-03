@@ -485,7 +485,6 @@ static void read_register(void)
 
 static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 {
-	printk("[%s] enable : %d\n", __func__, enable);
 	if (enable) {
   	if (_state.first) {
 #if 0
@@ -496,6 +495,7 @@ static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
      		return -1;
       }
 #else
+	#if 0
 			int i=0;
 			struct tw9900_state *me = &_state;
 			struct reg_val *reg_val = _sensor_init_data;
@@ -508,16 +508,15 @@ static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 				i++;
 				reg_val++;
 			}
+	#endif
 #endif
 			//read_register();
-     	//_state.first = false;
+     	_state.first = false;
 		}
 
 
 	} else{
 		
-#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
-#endif
 	}
 
 	return 0;
