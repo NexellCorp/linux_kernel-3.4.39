@@ -1122,7 +1122,7 @@ static int front_camera_power_enable(bool on);
 static int back_camera_power_enable(bool on)
 {
 
-#if 1
+#if 0
     unsigned int io 			= CFG_IO_CAMERA_BACK_POWER_DOWN;
     unsigned int reset_io		= CFG_IO_CAMERA_BACK_RESET;
     unsigned int power_mux_io	= ((PAD_GPIO_C + 24) | PAD_FUNC_ALT0);
