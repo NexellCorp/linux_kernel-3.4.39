@@ -514,7 +514,6 @@ static int tw9900_probe(struct i2c_client *client, const struct i2c_device_id *i
     int ret;
 
     vmsg("%s entered\n", __func__);
-    printk("%s entered\n", __func__);
 
     sd = &state->sd;
     strcpy(sd->name, "tw9900");
@@ -548,7 +547,6 @@ static int tw9900_probe(struct i2c_client *client, const struct i2c_device_id *i
     state->first = true;
 
     vmsg("%s exit\n", __func__);
-    printk("%s exit\n", __func__);
 
     return 0;
 }
