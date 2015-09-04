@@ -987,6 +987,7 @@ static int camera_common_set_clock(ulong clk_rate)
 static bool is_camera_port_configured = false;
 static void camera_common_vin_setup_io(int module, bool force)
 {
+#if 0
     if (!force && is_camera_port_configured)
         return;
     else {
@@ -1033,6 +1034,7 @@ static void camera_common_vin_setup_io(int module, bool force)
 
         is_camera_port_configured = true;
     }
+#endif
 }
 
 static bool camera_power_enabled = false;
@@ -1120,13 +1122,12 @@ static int front_camera_power_enable(bool on);
 static int back_camera_power_enable(bool on)
 {
 
-#if 1
+#if 0
     unsigned int io 			= CFG_IO_CAMERA_BACK_POWER_DOWN;
     unsigned int reset_io		= CFG_IO_CAMERA_BACK_RESET;
     unsigned int power_mux_io	= ((PAD_GPIO_C + 24) | PAD_FUNC_ALT0);
 
     PM_DBGOUT("%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
-    printk("%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
     if (on) {
         front_camera_power_enable(0);
         if (!is_back_camera_enabled) {

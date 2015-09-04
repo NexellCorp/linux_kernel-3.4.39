@@ -335,22 +335,16 @@ static int tw9900_initialize_ctrls(struct tw9900_state *me)
 
 static inline bool _is_backgear_on(void)
 {
-#if 1
     int val = nxp_soc_gpio_get_in_value(CFG_BACKWARD_GEAR);
 
-    if (!val)
+    if (val)
     {
     	//NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_CAM_PWR_EN), PAD_GET_BITNO(CFG_IO_CAM_PWR_EN), 1);
 		//_i2c_write_byte(_state.i2c_client, 0x02, 0x44);
         return true;
     }
 	else
-	{
     	return false;
-	}
-#else
-	return true;
-#endif
 }
 
 static inline bool _is_camera_on(void)
@@ -401,12 +395,12 @@ static irqreturn_t _irq_handler(int irq, void *devdata)
     } else if (!switch_get_state(&_state.switch_dev) && _is_backgear_on()) {
         schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
     }
+
     return IRQ_HANDLED;
 }
 
 static irqreturn_t _irq_handler3(int irq, void *devdata)
 {
-
     if (switch_get_state(&_state.switch_dev)/* && !_is_camera_on()*/) {
         switch_set_state(&_state.switch_dev, 0);
     } else if (!switch_get_state(&_state.switch_dev) && _is_backgear_on()) {
@@ -418,7 +412,6 @@ static irqreturn_t _irq_handler3(int irq, void *devdata)
 
 static void _work_handler(struct work_struct *work)
 {
-
     if (_is_backgear_on() && _is_camera_on()) {
 		if (rearcam_brightness_tbl[_state.brightness] != DEFAULT_BRIGHTNESS)
 		{
@@ -441,7 +434,7 @@ static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
     if (enable) {
         if (_state.first) 
 		{
-      	 	int ret = request_irq(IRQ_GPIO_A_START + 3, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);
+      	 	int ret = request_irq(IRQ_GPIO_START + CFG_BACKWARD_GEAR, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);
         	if (ret) {
          		pr_err("%s: failed to request_irq(irqnum %d)\n", __func__, IRQ_ALIVE_4);
          		return -1;
@@ -458,6 +451,8 @@ static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 			int  i=0;
 			struct tw9900_state *me = &_state;
 			struct reg_val *reg_val = _sensor_init_data;
+
+			printk("[%s] line : %d\n", __func__, __LINE__);
 
 			while( reg_val->reg != 0xff)
 			{

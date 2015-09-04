@@ -1026,6 +1026,18 @@ static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
                 }
             }
         }
+
+#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+		if( module == 1 ){
+			while (is_backward_camera_on()) {
+				printk("wait backward camera stopping...\n");
+				schedule_timeout_interruptible(HZ/5);
+			}
+			backward_camera_remove();
+			printk("end of backword_camera_remove()\n");
+		}
+#endif
+
         _configure(me, enable);
         if (is_host_video) {
             ret = _register_irq_handler(me);
