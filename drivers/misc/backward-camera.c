@@ -47,6 +47,8 @@ static struct nxp_backward_camera_context {
 
     /* for remove */
     struct platform_device *my_device;
+	bool is_on;
+	bool removed;
 } _context;
 
 static void _mlc_dump_register(int module)
@@ -187,8 +189,8 @@ static void _vip_dump_register(int module)
 static void _vip_hw_set_clock(int module, struct nxp_backward_camera_platform_data *param, bool on)
 {
     if (on) {
-        volatile u32 *clkgen_base = (volatile u32 *)IO_ADDRESS(NX_CLKGEN_GetPhysicalAddress(NX_VIP_GetClockNumber(module)));
-        NX_CLKGEN_SetBaseAddress(NX_VIP_GetClockNumber(module), (U32)clkgen_base);
+        volatile void *clkgen_base = (volatile void *)IO_ADDRESS(NX_CLKGEN_GetPhysicalAddress(NX_VIP_GetClockNumber(module)));
+        NX_CLKGEN_SetBaseAddress(NX_VIP_GetClockNumber(module), (void *)clkgen_base);
         NX_CLKGEN_SetClockDivisorEnable(NX_VIP_GetClockNumber(module), CTRUE);
         NX_CLKGEN_SetClockBClkMode(NX_VIP_GetClockNumber(module), NX_BCLKMODE_DYNAMIC);
 #if defined(CONFIG_ARCH_S5P4418)
@@ -208,7 +210,7 @@ static void _vip_hw_set_clock(int module, struct nxp_backward_camera_platform_da
             NX_CLKGEN_SetClockDivisor(NX_VIP_GetClockNumber(module), 0, 1);
             NX_CLKGEN_SetClockDivisorEnable(NX_VIP_GetClockNumber(module), CTRUE);
         }
-        NX_VIP_SetBaseAddress(module, IO_ADDRESS(NX_VIP_GetPhysicalAddress(module)));
+        NX_VIP_SetBaseAddress(module, (void *)IO_ADDRESS(NX_VIP_GetPhysicalAddress(module)));
     }
 }
 
@@ -515,7 +517,7 @@ static int _camera_sensor_run(struct nxp_backward_camera_context *me)
 static void _turn_on(struct nxp_backward_camera_context *me)
 {
     if (me->is_first == true) {
-        _vip_run(me->plat_data->vip_module_num);
+        //_vip_run(me->plat_data->vip_module_num);
         _mlc_video_set_param(me->plat_data->mlc_module_num, me->plat_data);
         _mlc_video_set_addr(me->plat_data->mlc_module_num,
                 me->plat_data->lu_addr,
@@ -533,19 +535,67 @@ static void _turn_on(struct nxp_backward_camera_context *me)
 //	_mlc_dump_register(me->plat_data->mlc_module_num);
     _mlc_video_run(me->plat_data->mlc_module_num);
    	_mlc_overlay_run(me->plat_data->mlc_module_num);
+	me->is_on = true;
 }
 
 static void _turn_off(struct nxp_backward_camera_context *me)
 {
     _mlc_overlay_stop(me->plat_data->mlc_module_num);
     _mlc_video_stop(me->plat_data->mlc_module_num);
+	me->is_on = false;
 }
 
-static inline bool _is_backgear_on(struct nxp_backward_camera_platform_data *pdata)
+#define THINE_I2C_RETRY_CNT             3
+static int _i2c_read_byte(struct i2c_client *client, u8 addr, u8 *data)
 {
+    s8 i = 0;
+    s8 ret = 0;
+    u8 buf = 0;
+    struct i2c_msg msg[2];
+
+    msg[0].addr = client->addr;
+    msg[0].flags = 0;
+    msg[0].len = 1;
+    msg[0].buf = &addr;
+
+    msg[1].addr = client->addr;
+    msg[1].flags = I2C_M_RD;
+    msg[1].len = 1;
+    msg[1].buf = &buf;
+
+    for(i=0; i<THINE_I2C_RETRY_CNT; i++) {
+        ret = i2c_transfer(client->adapter, msg, 2); 
+        if (likely(ret == 2)) 
+            break;
+    }   
+
+    if (unlikely(ret != 2)) {
+        dev_err(&client->dev, "_i2c_read_byte failed reg:0x%02x\n", addr);
+        return -EIO;
+    }   
+
+    *data = buf;
+    return 0;
+}
+
+#if 1
+static inline bool _is_backgear_on(struct nxp_backward_camera_platform_data *pdata)
+#else
+static inline bool _is_backgear_on(struct nxp_backward_camera_context *me)
+#endif
+{
+#if 1
     bool is_on = nxp_soc_gpio_get_in_value(pdata->backgear_gpio_num);
     if (!pdata->active_high) is_on ^= 1;
     return is_on;
+#else
+	//tw9900 read status
+	u8 data = 0;
+	_i2c_read_byte(me->client, 0x01, &data);
+	if( data & 0x80 )
+		return 0;
+	return 1;
+#endif
 }
 
 static inline bool _is_running(struct nxp_backward_camera_context *me)
@@ -568,6 +618,7 @@ static void _decide(struct nxp_backward_camera_context *me)
     /*me->running = NX_MLC_GetLayerEnable(me->plat_data->mlc_module_num, 3); // video layer*/
     me->running = _is_running(me);
     me->backgear_on = _is_backgear_on(me->plat_data);
+	//printk("%s: running %d, backgear on %d\n", __func__, me->running, me->backgear_on);
     if (me->backgear_on && !me->running)
         _turn_on(me);
     else if (me->running && !me->backgear_on)
@@ -752,13 +803,13 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
     me->plat_data = pdata;
     me->irq = IRQ_GPIO_START + pdata->backgear_gpio_num;
 
-	NX_MLC_SetBaseAddress(pdata->mlc_module_num, IO_ADDRESS(NX_MLC_GetPhysicalAddress(pdata->mlc_module_num)));
-	NX_VIP_SetBaseAddress(pdata->vip_module_num, IO_ADDRESS(NX_VIP_GetPhysicalAddress(pdata->vip_module_num)));
+	NX_MLC_SetBaseAddress(pdata->mlc_module_num, (void *)IO_ADDRESS(NX_MLC_GetPhysicalAddress(pdata->mlc_module_num)));
+	NX_VIP_SetBaseAddress(pdata->vip_module_num, (void *)IO_ADDRESS(NX_VIP_GetPhysicalAddress(pdata->vip_module_num)));
 
     _get_i2c_client(me);
     _camera_sensor_run(me);
-
     _allocate_memory(me);
+	_vip_run(me->plat_data->vip_module_num);
 
     INIT_WORK(&me->work, _work_handler);
 #if 1
@@ -771,6 +822,8 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
 
     me->is_first = true;
 
+	me->removed = false;
+
     _decide(me);
 
     me->my_device = pdev;
@@ -782,6 +835,7 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
     return 0;
 }
 
+#if 0
 static int nxp_backward_camera_remove(struct platform_device *pdev)
 {
     struct nxp_backward_camera_context *me = &_context;
@@ -789,6 +843,26 @@ static int nxp_backward_camera_remove(struct platform_device *pdev)
     free_irq(_context.irq, &_context);
     return 0;
 }
+#else
+static int nxp_backward_camera_remove(struct platform_device *pdev)
+{
+	struct nxp_backward_camera_context *me = &_context;
+	if( me->removed == false ) {
+		printk(KERN_ERR "%s\n", __func__);
+		if( me->is_on ) {
+			_mlc_overlay_stop(me->plat_data->mlc_module_num);
+			_mlc_video_stop(me->plat_data->mlc_module_num);
+			_vip_stop(me->plat_data->vip_module_num);	
+		}
+		_free_buffer(me);
+		free_irq(_context.irq, &_context);
+		me->removed = true;
+	}
+	return 0;
+}
+
+
+#endif
 
 static struct platform_driver backward_camera_driver = {
     .probe  = nxp_backward_camera_probe,
@@ -803,7 +877,11 @@ static struct platform_driver backward_camera_driver = {
 bool is_backward_camera_on(void)
 {
     struct nxp_backward_camera_context *me = &_context;
-    return _is_backgear_on(me->plat_data);
+#if 0
+    return _is_backgear_on(me);
+#else
+	return me->is_on;
+#endif
 }
 
 void backward_camera_remove(void)
