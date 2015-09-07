@@ -21,10 +21,6 @@
 #define MLC_LAYER_RGB_OVERLAY 0
 #endif
 
-#ifndef MLC_LAYER_VIDEO
-#define MLC_LAYER_VIDEO     3
-#endif
-
 static struct nxp_backward_camera_context {
     struct nxp_backward_camera_platform_data *plat_data;
     int irq;
@@ -68,6 +64,8 @@ static void _mlc_dump_register(int module)
 
 }
 
+
+static void _vip_dump_register(int module)
 {
 #define DBGOUT(args...)  printk(args)
     NX_VIP_RegisterSet *pREG =
@@ -363,6 +361,9 @@ static void _mlc_overlay_stop(int module)
     NX_MLC_SetDirtyFlag(module, layer);
 }
 
+#ifndef MLC_LAYER_VIDEO
+#define MLC_LAYER_VIDEO     3
+#endif
 
 static void _mlc_video_set_param(int module, struct nxp_backward_camera_platform_data *param)
 {
@@ -382,10 +383,11 @@ static void _mlc_video_set_param(int module, struct nxp_backward_camera_platform
             (CBOOL)hf, (CBOOL)hf, (CBOOL)vf, (CBOOL)vf);
     NX_MLC_SetPosition(module, MLC_LAYER_VIDEO,
             0, 0, dstw - 1, dsth - 1);
-
-  	//NX_MLC_SetLayerPriority(module, 0);
-  	NX_MLC_SetLayerPriority(module, 1);
-
+#if 0 //keun 2015. 08. 17
+    NX_MLC_SetLayerPriority(module, 0);
+#else
+    NX_MLC_SetLayerPriority(module, 1);
+#endif
     NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);
 }
 
@@ -730,6 +732,7 @@ static void _free_buffer(struct nxp_backward_camera_context *me)
         me->ion_handle_rgb = NULL;
     }
 }
+
 
 #ifdef CONFIG_PM
 #define RESUME_CAMERA_ON_DELAY_MS   300
