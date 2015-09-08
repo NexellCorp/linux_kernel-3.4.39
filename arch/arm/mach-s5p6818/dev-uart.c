@@ -131,9 +131,9 @@ static struct s3c24xx_uart_platdata  uart0_data = {
 	.ucon = S5PV210_UCON_DEFAULT,
 	.ufcon = S5PV210_UFCON_DEFAULT,
 	.has_fracval = 1,
-	#if defined(CONFIG_SERIAL_NXP_UART0_DMA)
+	#if defined(CONFIG_SERIAL_NXP_UART0_DMA) && defined(CONFIG_DMA_ENGINE)
 	.enable_dma = 1,
- 	.dma_filter = pl08x_filter_id,
+	.dma_filter = pl08x_filter_id,
  	.dma_rx_param = (void *) DMA_PERIPHERAL_NAME_UART0_RX,
  	.dma_tx_param = (void *) DMA_PERIPHERAL_NAME_UART0_TX,
 	#else
@@ -159,7 +159,7 @@ static struct s3c24xx_uart_platdata  uart1_data = {
 	.ucon = S5PV210_UCON_DEFAULT,
 	.ufcon = S5PV210_UFCON_DEFAULT,
 	.has_fracval = 1,
-	#if defined(CONFIG_SERIAL_NXP_UART1_DMA)
+	#if defined(CONFIG_SERIAL_NXP_UART1_DMA) && defined(CONFIG_DMA_ENGINE)
 	.enable_dma = 1,
  	.dma_filter = pl08x_filter_id,
  	.dma_rx_param = (void *) DMA_PERIPHERAL_NAME_UART1_RX,
@@ -190,7 +190,7 @@ static struct s3c24xx_uart_platdata  uart2_data = {
 	.ucon = S5PV210_UCON_DEFAULT,
 	.ufcon = S5PV210_UFCON_DEFAULT,
 	.has_fracval = 1,
-	#if defined(CONFIG_SERIAL_NXP_UART2_DMA)
+	#if defined(CONFIG_SERIAL_NXP_UART2_DMA) && defined(CONFIG_DMA_ENGINE)
 	.enable_dma = 1,
  	.dma_filter = pl08x_filter_id,
  	.dma_rx_param = (void *) DMA_PERIPHERAL_NAME_UART2_RX,

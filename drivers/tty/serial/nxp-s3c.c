@@ -122,7 +122,7 @@ static int s3c24xx_serial_txempty_nofifo(struct uart_port *port)
  * in the interrupt controller. Check if the port type is s3c64xx or higher.
  */
  
-#if 1// def CONFIG_DMA_ENGINE
+#ifdef CONFIG_DMA_ENGINE
 #define S3C24XX_DMA_BUFFER_SIZE PAGE_SIZE
 
 static int s3c24xx_sgbuf_init(struct dma_chan *chan, struct s3c24xx_sgbuf *sg,
@@ -250,7 +250,7 @@ static void s3c24xx_dma_probe(struct s3c24xx_uart_port *uport)
 	}
 }
 #else
-static void s3c24xx_dma_probe(struct uart_amba_port *uport)
+static void s3c24xx_dma_probe(struct s3c24xx_uart_port *uport)
 {
 	s3c24xx_dma_probe_initcall(uport);
 }
@@ -860,55 +860,55 @@ static inline bool s3c24xx_dma_rx_running(struct s3c24xx_uart_port *uport)
 
 #else
 /* Blank functions if the DMA engine is not available */
-static inline void s3c24xx_dma_probe(struct uart_amba_port *uport)
+static inline void s3c24xx_dma_probe(struct s3c24xx_uart_port *uport)
 {
 }
 
-static inline void s3c24xx_dma_remove(struct uart_amba_port *uport)
+static inline void s3c24xx_dma_remove(struct s3c24xx_uart_port *uport)
 {
 }
 
-static inline void s3c24xx_dma_startup(struct uart_amba_port *uport)
+static inline void s3c24xx_dma_startup(struct s3c24xx_uart_port *uport)
 {
 }
 
-static inline void s3c24xx_dma_shutdown(struct uart_amba_port *uport)
+static inline void s3c24xx_dma_shutdown(struct s3c24xx_uart_port *uport)
 {
 }
 
-static inline bool s3c24xx_dma_tx_irq(struct uart_amba_port *uport)
-{
-	return false;
-}
-
-static inline void s3c24xx_dma_tx_stop(struct uart_amba_port *uport)
-{
-}
-
-static inline bool s3c24xx_dma_tx_start(struct uart_amba_port *uport)
+static inline bool s3c24xx_dma_tx_irq(struct s3c24xx_uart_port *uport)
 {
 	return false;
 }
 
-static inline void s3c24xx_dma_rx_irq(struct uart_amba_port *uport)
+static inline void s3c24xx_dma_tx_stop(struct s3c24xx_uart_port *uport)
 {
 }
 
-static inline void s3c24xx_dma_rx_stop(struct uart_amba_port *uport)
+static inline bool s3c24xx_dma_tx_start(struct s3c24xx_uart_port *uport)
+{
+	return false;
+}
+
+static inline int s3c24xx_dma_rx_irq(struct s3c24xx_uart_port *uport)
 {
 }
 
-static inline int s3c24xx_dma_rx_trigger_dma(struct uart_amba_port *uport)
+static inline void s3c24xx_dma_rx_stop(struct s3c24xx_uart_port *uport)
+{
+}
+
+static inline int s3c24xx_dma_rx_trigger_dma(struct s3c24xx_uart_port *uport)
 {
 	return -EIO;
 }
 
-static inline bool s3c24xx_dma_rx_available(struct uart_amba_port *uport)
+static inline bool s3c24xx_dma_rx_available(struct s3c24xx_uart_port *uport)
 {
 	return false;
 }
 
-static inline bool s3c24xx_dma_rx_running(struct uart_amba_port *uport)
+static inline bool s3c24xx_dma_rx_running(struct s3c24xx_uart_port *uport)
 {
 	return false;
 }
@@ -977,6 +977,7 @@ static void s3c24xx_serial_rx_disable(struct uart_port *port)
 static void s3c24xx_serial_stop_tx(struct uart_port *port)
 {
 	struct s3c24xx_uart_port *uport = to_uport(port);
+#ifdef CONFIG_DMA_ENGINE
 	struct s3c24xx_uart_platdata *data = s3c24xx_port_to_data(port);
 	unsigned int ucon;
 
@@ -1000,6 +1001,7 @@ static void s3c24xx_serial_stop_tx(struct uart_port *port)
 		wr_regl(port, S3C2410_UCON, ucon);
 	//	tx_enabled(port) = 0;
 	}
+#endif
 	if (tx_enabled(port)) {
 		if (s3c24xx_serial_has_interrupt_mask(port))
 			__set_bit(S3C64XX_UINTM_TXD,
