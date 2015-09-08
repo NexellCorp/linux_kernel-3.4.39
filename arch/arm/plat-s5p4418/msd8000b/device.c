@@ -1062,7 +1062,7 @@ static struct dw_mci_board _dwmci0_data = {
 	.caps			= MMC_CAP_CMD23,
 	.detect_delay_ms= 200,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(1),
 	.init			= _dwmci0_init,
 	.get_ro         = _dwmci_get_ro,
 	.get_cd			= _dwmci0_get_cd,
@@ -1085,11 +1085,11 @@ static struct dw_mci_board _dwmci2_data = {
 				      DW_MCI_QUIRK_NO_DETECT_EBIT,
 	/*.bus_hz			= 100 * 1000 * 1000,*/
 	.bus_hz			= 200 * 1000 * 1000,
-    /*.hs_over_clk    = 50 * 1000 * 1000,*/
-	.caps			= MMC_CAP_UHS_DDR50 |
+    .hs_over_clk    = 50 * 1000 * 1000,
+	.caps			= MMC_CAP_UHS_DDR50 | 
 					  MMC_CAP_NONREMOVABLE |
 			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
-				  	  MMC_CAP_HW_RESET,
+				  	   MMC_CAP_HW_RESET,
     .clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(1),
 
 	.desc_sz		= 4,
