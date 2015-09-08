@@ -104,6 +104,8 @@ static void nand_select_chip(struct mtd_info *mtd, int chipnr)
 		NX_MCUS_SetNFBank(chipnr);
 		NX_MCUS_SetNFCSEnable(CTRUE);
 	}
+
+	dmb();
 }
 
 #define MASK_CLE	0x10	/* NFCM   + 2C00_0000 */
