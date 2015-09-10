@@ -5193,7 +5193,7 @@ void dwc_otg_core_reset(dwc_otg_core_if_t * core_if)
 
     gotgctl.d32 = DWC_READ_REG32(&global_regs->gotgctl);
 
-	if (core_if->host_flag && !gotgctl.b.conidsts) {
+	if (core_if->host_flag) {
 		do {    
 			gintsts.d32 = DWC_READ_REG32(&global_regs->gintsts);
 			if (++count > 100) 
@@ -5627,7 +5627,7 @@ int dwc_otg_set_param_dma_desc_enable(dwc_otg_core_if_t * core_if, int32_t val)
 #if defined(CONFIG_ARCH_CPU_SLSI)
 	val = 0;
 #if defined(CONFIG_USB_VIDEO_CLASS)
-	val = 1;
+//	val = 1;
 #endif
 #endif
 

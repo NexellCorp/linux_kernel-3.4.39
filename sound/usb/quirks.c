@@ -668,6 +668,16 @@ int snd_usb_apply_boot_quirk(struct usb_device *dev,
 	case USB_ID(0x0763, 0x2012):  /* M-Audio Fast Track Pro USB */
 		return snd_usb_fasttrackpro_boot_quirk(dev);
 	}
+#if defined (CONFIG_HID_IUI)
+	int i = 0;
+
+	for (i = 0; i <= 0xff; i++) {
+		if (id == USB_ID(0x05ac, (0x1200 | i))) {
+			printk("Apple IAP2 USB %s\n", __func__);
+			return snd_usb_fasttrackpro_boot_quirk(dev);
+		}
+#endif
+	}
 
 	return 0;
 }
