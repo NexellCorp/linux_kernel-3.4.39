@@ -623,6 +623,11 @@ config MMC_USHC
 config MMC_NXP
 	bool
 
+config MMC_NXP_MMC_SWITCH_DDR_SDR_TRANSMODE
+	bool  "support SSR/SDR transfer mode swtich"
+	depends on MMC_DW && ARCH_S5P4418
+	default n
+
 config MMC_NXP_CH0
 	bool "Support SD/MMC CH 0"
 	depends on MMC_DW
