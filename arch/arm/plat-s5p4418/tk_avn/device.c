@@ -399,7 +399,7 @@ static struct platform_device spdif_transciever = {
 };
 
 struct nxp_snd_dai_plat_data spdif_trans_dai_data = {
-	.sample_rate = 48000,
+	.sample_rate = 44100,
 	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
 };
 
@@ -461,7 +461,7 @@ static struct i2c_board_info __initdata alc5633_i2c_bdi = {
 /* DAI */
 struct nxp_snd_dai_plat_data i2s_dai_data = {
 	.i2s_ch			= 0,
-	.sample_rate	= 48000,
+	.sample_rate	= 44100,
 	.hp_jack		= {
 		.support		= 0,
 		.detect_io		= PAD_GPIO_A + 0,
@@ -492,7 +492,7 @@ static struct i2c_board_info __initdata alcdummy_i2c_bdi = {
 /* DAI */
 struct nxp_snd_dai_plat_data i2s_dummy_data = {
 	.i2s_ch			= 1,
-	.sample_rate	= 48000,
+	.sample_rate	= 44100,
 	.hp_jack		= {
 		.support		= 0,
 		.detect_io		= PAD_GPIO_A + 0,
@@ -1616,10 +1616,8 @@ static struct dw_mci_board _dwmci1_data = {
 					  DW_MCI_QUIRK_HIGHSPEED |
 					  DW_MMC_QUIRK_HW_RESET_PW |
 					  DW_MCI_QUIRK_NO_DETECT_EBIT,
-	/*.bus_hz			= 80 * 1000 * 1000,*/
-	.bus_hz			= 200 * 1000 * 1000,
-	//.bus_hz			= 100 * 1000 * 1000,
-    .hs_over_clk    = 50 * 1000 * 1000,
+	.bus_hz			= 120 * 1000 * 1000,
+    .hs_over_clk    = 10 * 1000 * 1000,
 	.caps			= MMC_CAP_UHS_DDR50 |
 						MMC_CAP_NONREMOVABLE |
 						MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
