@@ -135,13 +135,13 @@
 #define	CFG_AUDIO_I2S0_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S0_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
 #define	CFG_AUDIO_I2S0_FRAME_BIT				32		// 32, 48
-#define	CFG_AUDIO_I2S0_SAMPLE_RATE				48000
+#define	CFG_AUDIO_I2S0_SAMPLE_RATE				44100
 #define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			1
 
 #define	CFG_AUDIO_I2S1_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S1_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
 #define	CFG_AUDIO_I2S1_FRAME_BIT				32		// 32, 48
-#define	CFG_AUDIO_I2S1_SAMPLE_RATE				48000
+#define	CFG_AUDIO_I2S1_SAMPLE_RATE				44100
 #define	CFG_AUDIO_I2S1_PRE_SUPPLY_MCLK			1
 
 #define	CFG_AUDIO_I2S2_MASTER_MODE				CTRUE	// CTRUE
@@ -153,17 +153,20 @@
 /*------------------------------------------------------------------------------
  * 	Audio SPDIF (TX/RX)
  */
-#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT					CTRUE
-#define	CFG_AUDIO_SPDIF_TX_SAMPLE_RATE				48000
-#define	CFG_AUDIO_SPDIF_RX_SAMPLE_RATE				48000
+#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT				CTRUE
+#define	CFG_AUDIO_SPDIF_TX_SAMPLE_RATE			44100
+#define	CFG_AUDIO_SPDIF_RX_SAMPLE_RATE			44100
 
 /*------------------------------------------------------------------------------
  * 	I2C
  */
-#define CFG_I2C0_CLK							100000
+#define CFG_I2C0_CLK							400000
 #define CFG_I2C1_CLK							400000	/* TOUCH */
 #define CFG_I2C2_CLK							200000
 #define CFG_I2C3_CLK							100000
+
+#define CFG_I2C0_RETRY_CNT 						10	
+#define CFG_I2C0_RETRY_DELAY 					500
 
 /*------------------------------------------------------------------------------
  * 	SPI
