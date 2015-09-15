@@ -31,6 +31,10 @@ ifeq ($(CONFIG_PLAT_S5P6818_PAVO),y)
 PLATBOARD :=pavo
 endif
 
+ifeq ($(CONFIG_PLAT_S5P6818_AVN_REF),y)
+PLATBOARD :=avn_ref
+endif
+
 #
 # Build options
 #
