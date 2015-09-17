@@ -1857,6 +1857,14 @@ void __init nxp_board_devs_register(void)
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif
 
+#if defined(CONFIG_REGULATOR_MP8845C)
+	printk("plat: add device mp8845c ARM\n");
+	i2c_register_board_info(MP8845C_I2C_BUS0, &mp8845c_regulators[0], 1);
+
+	printk("plat: add device mp8845c CORE\n");
+	i2c_register_board_info(MP8845C_I2C_BUS1, &mp8845c_regulators[1], 1);
+#endif
+
 #if defined(CONFIG_SND_CODEC_RT5640) || defined(CONFIG_SND_CODEC_RT5640_MODULE)
 	printk("plat: add device asoc-rt5640\n");
 	i2c_register_board_info(RT5640_I2C_BUS, &rt5640_i2c_bdi, 1);
