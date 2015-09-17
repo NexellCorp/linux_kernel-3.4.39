@@ -546,11 +546,43 @@ static struct platform_device key_plat_device = {
 };
 #endif	/* CONFIG_KEYBOARD_NXP_KEY || CONFIG_KEYBOARD_NXP_KEY_MODULE */
 
+#if defined(CONFIG_SND_CODEC_RT5640)
+#include <linux/i2c.h>
+
+#define	RT5640_I2C_BUS		(1)
+
+/* CODEC */
+static struct i2c_board_info __initdata rt5640_i2c_bdi = {
+	.type	= "rt5640",			// compatilbe with wm8976
+	.addr	= (0x38>>1),		// 0x1A (7BIT), 0x34(8BIT)
+};
+
+/* DAI */
+struct nxp_snd_dai_plat_data rt5640_i2s_dai_data = {
+	.i2s_ch	= 0,
+	.sample_rate	= 48000,
+#if 0
+   	.hp_jack 		= {
+		.support    	= 1,
+		.detect_io		= PAD_GPIO_E + 8,
+		.detect_level	= 1,
+	},
+#endif	
+};
+
+static struct platform_device rt5640_dai = {
+	.name			= "rt5640-audio",
+	.id				= 0,
+	.dev			= {
+		.platform_data	= &rt5640_i2s_dai_data,
+	}
+};
+#endif
 
 #if defined(CONFIG_SND_CODEC_ALC5623)
 #include <linux/i2c.h>
 
-#define	ALC5623_I2C_BUS		(1)
+#define	ALC5623_I2C_BUS		(MDEC_HDCAM_HMRX_AUDIO2_I2CBUS)
 
 /* CODEC */
 static struct i2c_board_info __initdata alc5623_i2c_bdi = {
@@ -559,21 +591,23 @@ static struct i2c_board_info __initdata alc5623_i2c_bdi = {
 };
 
 /* DAI */
-struct nxp_snd_dai_plat_data i2s_dai_data = {
-	.i2s_ch	= 0,
+struct nxp_snd_dai_plat_data alc5623_i2s_dai_data = {
+	.i2s_ch	= 1,
 	.sample_rate	= 48000,
-	.hp_jack 		= {
+#if 0
+   	.hp_jack 		= {
 		.support    	= 1,
 		.detect_io		= PAD_GPIO_E + 8,
 		.detect_level	= 1,
 	},
+#endif	
 };
 
 static struct platform_device alc5623_dai = {
 	.name			= "alc5623-audio",
-	.id				= 0,
+	.id				= 1,
 	.dev			= {
-		.platform_data	= &i2s_dai_data,
+		.platform_data	= &alc5623_i2s_dai_data,
 	}
 };
 #endif
@@ -1216,7 +1250,7 @@ static int _dwmci0_get_cd(u32 slot_id)
 
 static struct dw_mci_board _dwmci0_data = {
     .quirks         = DW_MCI_QUIRK_HIGHSPEED,
-    .bus_hz         = 50 * 1000 * 1000,
+    .bus_hz         = 100 * 1000 * 1000,
     .caps           = MMC_CAP_CMD23,
     .detect_delay_ms= 200,
     .cd_type        = DW_MCI_CD_EXTERNAL,
@@ -1535,6 +1569,12 @@ void __init nxp_board_devices_register(void)
 
 	printk("plat: add device mp8845c CORE\n");
 	i2c_register_board_info(MP8845C_I2C_BUS1, &mp8845c_regulators[1], 1);
+#endif
+
+#if defined(CONFIG_SND_CODEC_RT5640) || defined(CONFIG_SND_CODEC_RT5640_MODULE)
+	printk("plat: add device asoc-rt5640\n");
+	i2c_register_board_info(RT5640_I2C_BUS, &rt5640_i2c_bdi, 1);
+	platform_device_register(&rt5640_dai);
 #endif
 
 #if defined(CONFIG_SND_CODEC_ALC5623) || defined(CONFIG_SND_CODEC_ALC5623_MODULE)

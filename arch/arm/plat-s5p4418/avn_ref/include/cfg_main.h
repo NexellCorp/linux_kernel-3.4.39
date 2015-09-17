@@ -137,19 +137,19 @@
  */
 #define	CFG_AUDIO_I2S0_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S0_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
-#define	CFG_AUDIO_I2S0_FRAME_BIT				48		// 32, 48
+#define	CFG_AUDIO_I2S0_FRAME_BIT				32		// 32, 48
 #define	CFG_AUDIO_I2S0_SAMPLE_RATE				48000
-#define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			0
+#define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			1
 
 #define	CFG_AUDIO_I2S1_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S1_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
-#define	CFG_AUDIO_I2S1_FRAME_BIT				48		// 32, 48
+#define	CFG_AUDIO_I2S1_FRAME_BIT				32		// 32, 48
 #define	CFG_AUDIO_I2S1_SAMPLE_RATE				48000
-#define	CFG_AUDIO_I2S1_PRE_SUPPLY_MCLK			0
+#define	CFG_AUDIO_I2S1_PRE_SUPPLY_MCLK			1
 
 #define	CFG_AUDIO_I2S2_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S2_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
-#define	CFG_AUDIO_I2S2_FRAME_BIT				48		// 32, 48
+#define	CFG_AUDIO_I2S2_FRAME_BIT				32		// 32, 48
 #define	CFG_AUDIO_I2S2_SAMPLE_RATE				48000
 #define	CFG_AUDIO_I2S2_PRE_SUPPLY_MCLK			0
 
@@ -201,15 +201,27 @@
 /*------------------------------------------------------------------------------
  * 	Keypad
  */
+#define USERDEF_KEY1							251
+#define USERDEF_KEY2							252
+#define USERDEF_KEY3							253
+#define USERDEF_KEY4							254
 
-#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0, PAD_GPIO_ALV + 2, PAD_GPIO_ALV + 3 }
-#define CFG_KEYPAD_KEY_CODE						{ KEY_POWER, KEY_LEFT, KEY_RIGHT }
+#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0, PAD_GPIO_ALV + 1, PAD_GPIO_ALV + 2, PAD_GPIO_ALV + 3, PAD_GPIO_ALV + 4}
+#define CFG_KEYPAD_KEY_CODE						{ KEY_POWER, USERDEF_KEY1, USERDEF_KEY2, USERDEF_KEY3, USERDEF_KEY4 }
 #define CFG_KEYPAD_REPEAT						CFALSE /* 0: Repeat Off 1 : Repeat On */
 
 /*------------------------------------------------------------------------------
  * 	SDHC
  */
 #define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_E + 31)	/* external cd */
+
+/*------------------------------------------------------------------------------
+ * 	DWCOTG
+ */
+
+//#define CFG_SWITCH_USB_5V_EN        			(PAD_GPIO_ALV + 5)
+//#define CFG_SWITCH_USB_HOST_DEVICE     			(PAD_GPIO_B + 20)
+//#define CFG_OTG_BOOT_MODE           			CFG_OTG_MODE_DEVICE
 
 /*------------------------------------------------------------------------------
  * 	ADC
