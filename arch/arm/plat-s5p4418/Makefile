@@ -31,6 +31,10 @@ ifeq ($(CONFIG_PLAT_S5P4418_MSD8000B),y)
 PLATBOARD :=msd8000b
 endif
 
+ifeq ($(CONFIG_PLAT_S5P4418_AVN_REF),y)
+PLATBOARD :=avn_ref
+endif
+
 ifeq ($(CONFIG_PLAT_S5P4418_TK_AVN),y)
 PLATBOARD :=tk_avn
 endif
