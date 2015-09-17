@@ -61,10 +61,13 @@
 #include "dwc_otg_regs.h"
 #include "dwc_otg_cil.h"
 
-#ifdef CONFIG_BATTERY_NXE2000
+/* nexell soc headers */
+#include <mach/platform.h>
+#if defined (CONFIG_BATTERY_NXE2000)
 #include <linux/power/nxe2000_battery.h>
-#endif
-#ifdef CONFIG_KP_AXP22
+#elif defined (CFG_SWITCH_USB_5V_EN)
+extern void otg_power_en(int enable);
+#elif defined (CONFIG_KP_AXP22)
 extern int axp_otg_power_control(int enable);
 #endif
 
@@ -2275,6 +2278,8 @@ void dwc_otg_core_host_init(dwc_otg_core_if_t * core_if)
 			if(ret < 0)
 				dwc_msleep(100);
 		} while(ret < 0);
+#elif defined (CFG_SWITCH_USB_5V_EN)
+		otg_power_en(1);
 #endif
 		for(i = 0; i < 10; i++){
 			hprt0.d32 = dwc_otg_read_hprt0(core_if);
@@ -5193,7 +5198,7 @@ void dwc_otg_core_reset(dwc_otg_core_if_t * core_if)
 
     gotgctl.d32 = DWC_READ_REG32(&global_regs->gotgctl);
 
-	if (core_if->host_flag && !gotgctl.b.conidsts) {
+	if (core_if->host_flag) {
 		do {    
 			gintsts.d32 = DWC_READ_REG32(&global_regs->gintsts);
 			if (++count > 100) 
@@ -5627,7 +5632,7 @@ int dwc_otg_set_param_dma_desc_enable(dwc_otg_core_if_t * core_if, int32_t val)
 #if defined(CONFIG_ARCH_CPU_SLSI)
 	val = 0;
 #if defined(CONFIG_USB_VIDEO_CLASS)
-	val = 1;
+//	val = 1;
 #endif
 #endif
 
