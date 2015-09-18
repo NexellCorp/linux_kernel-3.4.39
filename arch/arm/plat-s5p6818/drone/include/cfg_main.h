@@ -29,7 +29,7 @@
  * 	System Name
  */
 #define	CFG_SYS_CPU_NAME						"s5p6818"
-#define	CFG_SYS_BOARD_NAME						"s5p6818-drone"
+#define	CFG_SYS_BOARD_NAME						"s5p6818-dronel"
 
 /*------------------------------------------------------------------------------
  * 	BUS config
@@ -61,6 +61,9 @@
 #define CFG_NAND_ECC_BYTES 						1024
 #define CFG_NAND_ECC_BITS               		40			/* 512 - 4,8,16,24 1024 - 24,40,60 */
 //#define CFG_NAND_ECCIRQ_MODE
+
+/* FTL */
+#define CFG_NAND_FTL_START_BLOCK				0x6000000	/* byte address, Must Be Multiple of 8MB */
 
 /*------------------------------------------------------------------------------
  *	Nand (GPIO)
@@ -96,8 +99,8 @@
 #define CFG_DISP_PRI_VSYNC_FRONT_PORCH           12
 #define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CTRUE
 
-#define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL0
-#define CFG_DISP_PRI_CLKGEN0_DIV                15 //20
+#define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL2
+#define CFG_DISP_PRI_CLKGEN0_DIV                14 //20
 #define CFG_DISP_PRI_CLKGEN0_DELAY              0
 #define CFG_DISP_PRI_CLKGEN0_INVERT				0
 #define CFG_DISP_PRI_CLKGEN1_SOURCE             DPC_VCLK_SRC_VCLK2
@@ -167,7 +170,7 @@
  */
 #define CFG_I2C0_CLK							100000
 #define CFG_I2C1_CLK							400000	/* TOUCH */
-#define CFG_I2C2_CLK							100000
+#define CFG_I2C2_CLK							200000
 #define CFG_I2C3_CLK							100000
 
 /*------------------------------------------------------------------------------
@@ -209,26 +212,28 @@
 /*------------------------------------------------------------------------------
  * 	SDHC
  */
-#define	CFG_SDMMC2_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
+#define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
 
 
 /*------------------------------------------------------------------------------
- * 	NXE2000 PMIC
+ * 	PMIC
  */
-#define CFG_SW_UBC_ENABLE						(1)
-
-/**
- * 0 : GPIO interrupt (CFG_GPIO_PMIC_VUSB_DET)
- * 1 : PMIC interrupt (FVUSBDETSINT)
- */
-#define CFG_USB_DET_FROM_PMIC_INT				(0)
-
-#define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)
-#define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_D + 21)
-#define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)		/* Choice for SW_UBC or Wake-up*/
-#define CFG_GPIO_PMIC_LOWBAT_DET				(PAD_GPIO_ALV + 3)		/* Critical low battery detect */
-#define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)
+/* NXE2000 PMIC	*/
+#define CFG_SW_UBC_ENABLE						(1)					/* S/W UBC Check */
+#define CFG_USB_DET_FROM_PMIC_INT				(0)					/* 0 : GPIO interrupt (CFG_GPIO_PMIC_VUSB_DET)		1 : PMIC interrupt (FVUSBDETSINT) */
+#define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)	/* USB ID Deteict */
+#define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_D + 21)	/* USB OTG Power Enable */
+#define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)	/* Choice for SW_UBC or Wake-up*/
+#define CFG_GPIO_PMIC_LOWBAT_DET				(-1)					/* Critical low battery detect */
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
+
+/* AXP228 PMIC	*/
+#define	CFG_PMIC_I2_CBUS						3					/* i2c channel */
+#define CFG_BATTERY_CAP							3000					/* Battery Capacity */
+
+/* PMIC Common*/
+#define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)	/* PMIC Interrupt */
+
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode
@@ -237,13 +242,13 @@
 /* Wakeup Source : ALIVE [0~7] */
 #define CFG_PWR_WAKEUP_SRC_ALIVE0				CTRUE					/* KEY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE0				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE1				CTRUE
+#define CFG_PWR_WAKEUP_SRC_ALIVE1				CTRUE					/* External SD */
 #define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_BOTHEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE2				CTRUE					/* PMIC - VUSB*/
+#define CFG_PWR_WAKEUP_SRC_ALIVE2				CTRUE					/* PMIC - VUSB */
 #define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE3				CFALSE					/* PMIC - CRITICAL LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_ASYNC_LOWLEVEL
-#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR - LOW BATTERY */
+#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR */
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE
