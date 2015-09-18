@@ -650,8 +650,8 @@ static struct regulator_consumer_supply mp8845c_vout_0[] = {
 static struct regulator_consumer_supply mp8845c_vout_1[] = {
 	REGULATOR_SUPPLY("vdd_core_1.2V", NULL),
 };
-MP8845C_PDATA_INIT(vout, 0, 600000, 1500000, 1, 1, 1200000, 1, -1);	/* ARM */
-MP8845C_PDATA_INIT(vout, 1, 600000, 1500000, 1, 1, 1100000, 1, -1);	/* CORE */
+MP8845C_PDATA_INIT(vout, 0, 600000, 1500000, 1, 1, 1225000, 1, -1);	/* ARM */
+MP8845C_PDATA_INIT(vout, 1, 600000, 1500000, 1, 1, 1135000, 1, -1);	/* CORE */
 static struct mp8845c_platform_data __initdata mp8845c_platform[] = {
 	MP8845C_REGULATOR(0, vout, 0),
 	MP8845C_REGULATOR(1, vout, 1),
