@@ -75,7 +75,7 @@
 #define PAD_GPIOB6      (PAD_MODE_ALT | PAD_FUNC_ALT3 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: VIP0_VD[4]          ,2: SDEX[4]             ,3: I2S1SDO             =
 #define PAD_GPIOB7      (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC0_CDATA[3]     ,2:_                    ,3:_                    =
 #define PAD_GPIOB8      (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: VIP0_VD[5]          ,2: SDEX[5]             ,3: I2S2SDO             =
-#define PAD_GPIOB9      (PAD_MODE_ALT | PAD_FUNC_ALT3 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: VIP0_VD[6]          ,2: SDEX[6]             ,3: I2S1SDI             =
+#define PAD_GPIOB9      (PAD_MODE_ALT | PAD_FUNC_ALT3 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: VIP0_VD[6]          ,2: SDEX[6]             ,3: I2S1SDI             =
 #define PAD_GPIOB10     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: VIP0_VD[7]          ,2: SDEX[7]             ,3: I2S2SDI             =
 #define PAD_GPIOB11     (PAD_MODE_OUT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: CLE           ,1: CLE1                ,2: GPIO                ,3:_                    =
 #define PAD_GPIOB12     (PAD_MODE_IN  | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: ALE           ,1: ALE1                ,2: GPIO                ,3:_                    =
@@ -226,10 +226,10 @@
  *
  -----------------------------------------------------------------------------*/
 #define PAD_GPIOALV0    (PAD_MODE_INT | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
-#define PAD_GPIOALV1    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
-#define PAD_GPIOALV2    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
-#define PAD_GPIOALV3    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
-#define PAD_GPIOALV4    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
+#define PAD_GPIOALV1    (PAD_MODE_INT | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
+#define PAD_GPIOALV2    (PAD_MODE_INT | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
+#define PAD_GPIOALV3    (PAD_MODE_INT | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
+#define PAD_GPIOALV4    (PAD_MODE_INT | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
 #define PAD_GPIOALV5    (PAD_MODE_OUT | PAD_LEVEL_LOW  | PAD_PULL_OFF)				//
 
 /*------------------------------------------------------------------------------
@@ -241,7 +241,7 @@
  *	AUDIO
  */
 
-#define CFG_IO_AUDIO_AMP_POWER              (PAD_GPIO_D + 24)
+#define CFG_IO_AUDIO_RT5623_AMP_POWER              (PAD_GPIO_D + 24)
 
 
 

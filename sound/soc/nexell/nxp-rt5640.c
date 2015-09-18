@@ -33,9 +33,9 @@
 #define	pr_debug	printk
 */
 
-#if defined (CFG_IO_AUDIO_AMP_POWER)
+#if defined (CFG_IO_AUDIO_RT5640_AMP_POWER)
 #include <linux/gpio.h>
-#define AUDIO_AMP_POWER     CFG_IO_AUDIO_AMP_POWER
+#define AUDIO_AMP_POWER     CFG_IO_AUDIO_RT5640_AMP_POWER
 #endif
 
 static char str_dai_name[16] = DEV_NAME_I2S;
@@ -107,7 +107,7 @@ static int rt5640_spk_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *k, int event)
 {
 	pr_debug("%s:%d (event:%d)\n", __func__, __LINE__, event);
-#if defined (CFG_IO_AUDIO_AMP_POWER)
+#if defined (AUDIO_AMP_POWER)
 	if (SND_SOC_DAPM_EVENT_ON(event))
 		gpio_set_value(AUDIO_AMP_POWER, 1);
 	else
@@ -129,8 +129,10 @@ static const struct snd_soc_dapm_route rt5640_audio_map[] = {
 	{"Headphone Jack", NULL, "HPOR"},
 
 	/* speaker connected to SPOL, SPOR */
-	{"Ext Spk", NULL, "SPOR"},
-	{"Ext Spk", NULL, "SPOL"},
+	{"Ext Spk", NULL, "SPOLP"},
+	{"Ext Spk", NULL, "SPOLN"},
+	{"Ext Spk", NULL, "SPORP"},
+	{"Ext Spk", NULL, "SPORN"},
 };
 
 #if defined(CONFIG_PLAT_S5P4418_SECRET) || !defined(CONFIG_ANDROID)
@@ -168,9 +170,12 @@ static int rt5640_dai_init(struct snd_soc_pcm_runtime *rtd)
 	rt5640 = codec;
 
 	/* set endpoints to not connected */
-	snd_soc_dapm_nc_pin(dapm, "AUXO1");
-	snd_soc_dapm_nc_pin(dapm, "AUXO2");
-	snd_soc_dapm_nc_pin(dapm, "MONO");
+	snd_soc_dapm_nc_pin(dapm, "SPOLP");
+	snd_soc_dapm_nc_pin(dapm, "SPOLN");
+	snd_soc_dapm_nc_pin(dapm, "SPORP");
+	snd_soc_dapm_nc_pin(dapm, "SPORN");
+	snd_soc_dapm_nc_pin(dapm, "MonoP");
+	snd_soc_dapm_nc_pin(dapm, "MonoN");
 	
 	snd_soc_dapm_enable_pin(dapm, "IN1P");
 	snd_soc_dapm_enable_pin(dapm, "IN1N");
@@ -255,7 +260,7 @@ static int rt5640_probe(struct platform_device *pdev)
 			jack->name = NULL;
 		}
 	}
-#if defined (CFG_IO_AUDIO_AMP_POWER)
+#if defined (AUDIO_AMP_POWER)
 	gpio_request(AUDIO_AMP_POWER, "rt56i40_amp_en");
 	gpio_direction_output(AUDIO_AMP_POWER, 0);
 #endif
@@ -305,7 +310,7 @@ static int rt5640_remove(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = platform_get_drvdata(pdev);
 	snd_soc_unregister_card(card);
-#if defined (CFG_IO_AUDIO_AMP_POWER)
+#if defined (AUDIO_AMP_POWER)
 	gpio_free(AUDIO_AMP_POWER);
 #endif
 	return 0;

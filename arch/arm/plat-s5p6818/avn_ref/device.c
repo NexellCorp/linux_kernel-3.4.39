@@ -406,7 +406,7 @@ struct nxp_snd_dai_plat_data spdif_trans_dai_data = {
 
 static struct platform_device spdif_trans_dai = {
 	.name	= "spdif-transciever",
-	.id		= -1,
+	.id		= 2,
 	.dev	= {
 		.platform_data	= &spdif_trans_dai_data,
 	}

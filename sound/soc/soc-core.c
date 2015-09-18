@@ -1453,16 +1453,16 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 	}
 
 	/* card bind complete so register a sound card */
-#if defined (CONFIG_PLAT_S5P6818_AVN_REF)
-	if (!strcmp(dev_name(card->dev), "rt5640-audio.0")) {
-		ret = snd_card_create(0, SNDRV_DEFAULT_STR1,
+#if defined (CONFIG_ARCH_CPU_SLSI)
+	char card_chk, card_id;
+	sprintf(&card_chk, "%s", dev_name(card->dev) + (sizeof(char) * strlen(dev_name(card->dev)) - 2)); 
+	sprintf(&card_id, "%s", dev_name(card->dev) + (sizeof(char) * strlen(dev_name(card->dev)) - 1)); 
+	if (card_chk == '.') {
+		pr_debug("card number %d\n", (int)(card_id - 0x30));
+		ret = snd_card_create((int)(card_id - 0x30), SNDRV_DEFAULT_STR1,
 				card->owner, 0, &card->snd_card);
-	}
-	else if (!strcmp(dev_name(card->dev), "alc5623-audio.1")) {
-		ret = snd_card_create(1, SNDRV_DEFAULT_STR1,
-				card->owner, 0, &card->snd_card);
-	}
-	else{
+	} else {
+		pr_debug("default card numbering\n");
 		ret = snd_card_create(SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1,
 				card->owner, 0, &card->snd_card);
 	}

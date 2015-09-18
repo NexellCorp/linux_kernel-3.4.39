@@ -153,9 +153,9 @@
 /*------------------------------------------------------------------------------
  * 	Audio SPDIF (TX/RX)
  */
-#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT					CTRUE
-#define	CFG_AUDIO_SPDIF_TX_SAMPLE_RATE				48000
-#define	CFG_AUDIO_SPDIF_RX_SAMPLE_RATE				48000
+#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT				CTRUE
+#define	CFG_AUDIO_SPDIF_TX_SAMPLE_RATE			48000
+#define	CFG_AUDIO_SPDIF_RX_SAMPLE_RATE			48000
 
 /*------------------------------------------------------------------------------
  * 	I2C
@@ -180,7 +180,7 @@
 #define CFG_SPI1_CLK							10000000
 #define CFG_SPI2_CLK							10000000
 
-#define CFG_SPI0_CS                         PAD_GPIO_C + 30 
+#define CFG_SPI0_CS                         	PAD_GPIO_C + 30 
 
 /*------------------------------------------------------------------------------
  * 	Keypad

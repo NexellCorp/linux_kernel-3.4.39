@@ -164,7 +164,7 @@
  * 	I2C
  */
 #define CFG_I2C0_CLK							100000
-#define CFG_I2C1_CLK							100000
+#define CFG_I2C1_CLK							400000
 #define CFG_I2C2_CLK							100000
 #define CFG_I2C3_CLK							100000
 #define CFG_I2C4_CLK							100000
@@ -173,6 +173,9 @@
 #define CFG_I2C7_CLK							100000
 #define CFG_I2C8_CLK							100000
 #define CFG_I2C9_CLK							100000
+
+#define CFG_I2C1_RETRY_CNT 						10	
+#define CFG_I2C1_RETRY_DELAY 					500
 
 /*------------------------------------------------------------------------------
  * 	SPI
@@ -219,9 +222,9 @@
  * 	DWCOTG
  */
 
-//#define CFG_SWITCH_USB_5V_EN        			(PAD_GPIO_ALV + 5)
-//#define CFG_SWITCH_USB_HOST_DEVICE     			(PAD_GPIO_B + 20)
-//#define CFG_OTG_BOOT_MODE           			CFG_OTG_MODE_DEVICE
+#define CFG_SWITCH_USB_5V_EN        			(PAD_GPIO_ALV + 5)
+#define CFG_SWITCH_USB_HOST_DEVICE     			(PAD_GPIO_B + 20)
+#define CFG_OTG_BOOT_MODE           			CFG_OTG_MODE_DEVICE
 
 /*------------------------------------------------------------------------------
  * 	ADC

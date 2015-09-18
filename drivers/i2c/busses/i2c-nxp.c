@@ -43,7 +43,6 @@
 
 #define NOSTOP_GPIO 		(1)
 #define	I2C_CLOCK_RATE		(100000)	/* wait 50 msec */
-#define TRANS_RETRY_CNT		(1)
 #define	WAIT_ACK_TIME		(500)		/* wait 50 msec */
 
 const static int i2c_gpio [][2] = {
@@ -101,6 +100,7 @@ struct nxp_i2c_param {
 	/* test */
 	int irq_count;
 	int thd_count;
+	int retry_delay;
 };
 
 /*
@@ -337,15 +337,15 @@ static irqreturn_t i2c_irq_thread(int irqno, void *dev_id)
 
 	/* Arbitration Check. */
 	if ((_ARBITSTAT((void *)base) != 0)) {
-		pr_err("Fail, arbit i2c.%d  addr [0x%02x] data[0x%02x], trans[%2d:%2d]\n",
-			par->hw.port, (msg->addr<<1), par->pre_data, cnt, len);
+//		pr_err("Fail, arbit i2c.%d  addr [0x%02x] data[0x%02x], trans[%2d:%2d]\n",
+//			par->hw.port, (msg->addr<<1), par->pre_data, cnt, len);
 		par->trans_status = I2C_TRANS_ERR;
 		goto __irq_end;
 	}
 
 	if (par->request_ack && _ACKSTAT((void *)base)) {
-		pr_err("Fail, noack i2c.%d addr [0x%02x] data[0x%02x], trans[%2d:%2d]\n",
-			par->hw.port, (msg->addr<<1), par->pre_data, cnt, len);
+//		pr_err("Fail, noack i2c.%d addr [0x%02x] data[0x%02x], trans[%2d:%2d]\n",
+//			par->hw.port, (msg->addr<<1), par->pre_data, cnt, len);
 		par->trans_status = I2C_TRANS_ERR;
 		goto __irq_end;
 	}
@@ -537,6 +537,7 @@ static int nxp_i2c_algo_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, 
 	int j = num;
 	int ret = -EAGAIN;
 	int len = 0;
+	int delay = par->retry_delay;
 	int  (*transfer_i2c)(struct nxp_i2c_param *, struct i2c_msg *, int) = NULL;
 
 	par->polling = 1;
@@ -563,8 +564,9 @@ static int nxp_i2c_algo_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, 
 			ret = transfer_i2c(par, tmsg, num);
 			if (ret == len)
 				break;
-			pr_err("i2c.%d addr 0x%02x (try:%d)\n",
-				par->hw.port, tmsg->addr<<1, adapter->retries-i+1);
+			udelay(delay);
+//			pr_err("i2c.%d addr 0x%02x (try:%d)\n",
+//				par->hw.port, tmsg->addr<<1, adapter->retries-i+1);
 		}
 
 		/* Error */
@@ -581,8 +583,8 @@ static int nxp_i2c_algo_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, 
 	if (ret == len)
 		return num;
 
-	pr_err("Error: i2c.%d, addr:%02x, trans len:%d(%d), try:%d\n",
-		par->hw.port, (msgs->addr<<1), ret, len, adapter->retries);
+//	pr_err("Error: i2c.%d, addr:%02x, trans len:%d(%d), try:%d\n",
+//		par->hw.port, (msgs->addr<<1), ret, len, adapter->retries);
 
 	return ret;
 }
@@ -617,6 +619,8 @@ static int	nxp_i2c_set_param(struct nxp_i2c_param *par, struct platform_device *
 	par->hw.scl_io = plat->gpio->scl_pin ? plat->gpio->scl_pin : i2c_gpio[plat->port][0];
 	par->hw.sda_io = plat->gpio->sda_pin ? plat->gpio->sda_pin : i2c_gpio[plat->port][1];
 	par->no_stop = 0;
+	par->retry_delay = plat->retry_delay;
+	par->adapter.retries = plat->retry_cnt;
 	par->timeout = WAIT_ACK_TIME;
 	par->rate =	plat->rate ? plat->rate : I2C_CLOCK_RATE;
 	nxp_soc_gpio_set_io_func(par->hw.scl_io, 1);
@@ -707,7 +711,8 @@ static int nxp_i2c_probe(struct platform_device *pdev)
 	par->adapter.algo 		= &nxp_i2c_algo;
 	par->adapter.algo_data = par;
 	par->adapter.dev.parent= &pdev->dev;
-	par->adapter.retries 	= TRANS_RETRY_CNT;
+//	par->adapter.retries	= TRANS_RETRY_CNT;
+
 
 	ret = i2c_add_numbered_adapter(&par->adapter);
 	if (ret) {

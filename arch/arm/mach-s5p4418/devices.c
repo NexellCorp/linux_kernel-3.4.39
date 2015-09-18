@@ -268,6 +268,43 @@ static AMBA_AHB_DEVICE(uart5, "uart-pl011.5", 0, PHY_BASEADDR_UART5, {IRQ_PHY_UA
 #define	I2C2_SDA	NXP_I2C2_MOD_SDA
 #endif
 
+#ifdef CFG_I2C0_RETRY_CNT
+#define I2C0_RETRY_CNT CFG_I2C0_RETRY_CNT
+#else
+#define I2C0_RETRY_CNT 3
+#endif
+
+#ifdef CFG_I2C0_RETRY_DELAY
+#define I2C0_RETRY_DELAY CFG_I2C0_RETRY_DELAY
+#else
+#define I2C0_RETRY_DELAY 0
+#endif
+
+#ifdef CFG_I2C1_RETRY_CNT
+#define I2C1_RETRY_CNT CFG_I2C1_RETRY_CNT
+#else
+#define I2C1_RETRY_CNT 3
+#endif
+
+#ifdef CFG_I2C1_RETRY_DELAY_
+#define I2C1_RETRY_DELAY CFG_I2C1_RETRY_DELAY
+#else
+#define I2C1_RETRY_DELAY 0
+#endif
+
+
+#ifdef CFG_I2C2_RETRY_CNT
+#define I2C2_RETRY_CNT CFG_I2C2_RETRY_CNT
+#else
+#define I2C2_RETRY_CNT 3
+#endif
+
+#ifdef CFG_I2C2_RETRY_DELAY_
+#define I2C2_RETRY_DELAY CFG_I2C2_RETRY_DELAY
+#else
+#define I2C2_RETRY_DELAY 0
+#endif
+
 #if	defined(CONFIG_I2C_NXP_PORT0)
 
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port0 = {
@@ -293,6 +330,8 @@ static struct nxp_i2c_plat_data i2c_data_ch0 = {
 	.gpio 		= &nxp_i2c_gpio_port0,
 	.base_addr	= PHY_BASEADDR_I2C0,
 	.rate 		= CFG_I2C0_CLK,
+	.retry_cnt  =  I2C0_RETRY_CNT, 
+	.retry_delay=  I2C0_RETRY_DELAY, 
 };
 
 static struct platform_device i2c_device_ch0 = {
@@ -332,6 +371,8 @@ static struct nxp_i2c_plat_data i2c_data_ch1 = {
 	.gpio 		= &nxp_i2c_gpio_port1,
 	.base_addr	= PHY_BASEADDR_I2C1,
 	.rate 		= CFG_I2C1_CLK,
+	.retry_cnt  =  I2C1_RETRY_CNT, 
+	.retry_delay=  I2C1_RETRY_DELAY, 
 };
 
 static struct platform_device i2c_device_ch1 = {
@@ -370,6 +411,8 @@ static struct nxp_i2c_plat_data i2c_data_ch2 = {
 	.gpio 		= &nxp_i2c_gpio_port2,
 	.base_addr	= PHY_BASEADDR_I2C2,
 	.rate 		= CFG_I2C2_CLK,
+	.retry_cnt  =  I2C2_RETRY_CNT, 
+	.retry_delay=  I2C2_RETRY_DELAY, 
 };
 
 static struct platform_device i2c_device_ch2 = {
@@ -1173,11 +1216,13 @@ static struct platform_device otg_plat_device = {
     .resource       = otg_resources,
 };
 
-#define CFG_SWITCH_USB_5V_EN        (PAD_GPIO_D + 10)
-#define CFG_SWITCH_USB_HOST_DEVICE  (PAD_GPIO_D + 11)
+//#define CFG_SWITCH_USB_5V_EN        (PAD_GPIO_D + 10)
+//#define CFG_SWITCH_USB_HOST_DEVICE  (PAD_GPIO_D + 11)
 #define CFG_OTG_MODE_HOST           1
 #define CFG_OTG_MODE_DEVICE         0
+#if !defined(CFG_OTG_BOOT_MODE)
 #define CFG_OTG_BOOT_MODE           CFG_OTG_MODE_DEVICE
+#endif
 
 static int cur_otg_mode = CFG_OTG_BOOT_MODE;
 
@@ -1185,6 +1230,7 @@ unsigned int get_otg_mode(void)
 {
     return cur_otg_mode;
 }
+EXPORT_SYMBOL(get_otg_mode);
 
 void set_otg_mode(unsigned int mode, int is_force)
 {
@@ -1193,12 +1239,24 @@ void set_otg_mode(unsigned int mode, int is_force)
     if ((mode == cur_otg_mode) && !is_force) return;
 
     cur_otg_mode = mode;
-
+#if defined (CFG_SWITCH_USB_HOST_DEVICE)
+	pr_debug("%s %d\n", __func__, mode);
+	nxp_soc_gpio_set_out_value(CFG_SWITCH_USB_HOST_DEVICE, mode);
+#endif
     return;
 }
-
-EXPORT_SYMBOL(get_otg_mode);
 EXPORT_SYMBOL(set_otg_mode);
+
+#if defined (CFG_SWITCH_USB_5V_EN)
+void otg_power_en(int enable)
+{
+	pr_debug("%s %d\n", __func__, enable);
+
+	nxp_soc_gpio_set_out_value(CFG_SWITCH_USB_5V_EN, enable);
+}
+EXPORT_SYMBOL(otg_power_en);
+#endif /* CFG_SWITCH_USB_5V_EN */
+
 #endif/* CONFIG_USB_DWCOTG */
 
 /*------------------------------------------------------------------------------
