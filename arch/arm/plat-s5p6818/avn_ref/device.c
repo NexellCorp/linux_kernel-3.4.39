@@ -656,8 +656,8 @@ static struct mp8845c_platform_data __initdata mp8845c_platform[] = {
 	MP8845C_REGULATOR(0, vout, 0),
 	MP8845C_REGULATOR(1, vout, 1),
 };
-#define MP8845C_I2C_BUS0		(8)
-#define MP8845C_I2C_BUS1		(7)
+#define MP8845C_I2C_BUS0		(7)
+#define MP8845C_I2C_BUS1		(8)
 #define MP8845C_I2C_ADDR		(0x1c)
 static struct i2c_board_info __initdata mp8845c_regulators[] = {
 	I2C_FLATFORM_INFO("mp8845c", MP8845C_I2C_ADDR, &mp8845c_platform[0]),
