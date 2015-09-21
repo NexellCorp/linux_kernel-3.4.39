@@ -246,6 +246,25 @@ static void print_wake_event(void)
 	}
 }
 
+static void suspend_cpu_enter(void)
+{
+	struct save_gpio *gpio = saved_regs.gpio;
+	unsigned int base = IO_ADDRESS(PHY_BASEADDR_GPIOA);
+	int gic_irqs  = NR_IRQS;
+	int i = 0, size = 5;
+
+	for (i = 0; size > i; i++, gpio++, base += 0x1000) {
+		writel(gpio_alfn[i][0], (base+0x20));
+		writel(gpio_alfn[i][1], (base+0x24));
+		writel(0, (base+0x04));	/* Input */
+		writel(0, (base+0x58));	/* GPIOx_PULLSEL - Down */
+		writel(0, (base+0x60)); /* GPIOx_PULLENB - Disable */
+	}
+
+	for (i = 32; i < gic_irqs; i += 4)
+		writel_relaxed(0x00, GIC_DIST_BASE + GIC_DIST_TARGET + i * 4 / 4);
+}
+
 static void suspend_cores(suspend_state_t stat)
 {
 #ifndef CONFIG_S5P6818_PM_IDLE
@@ -343,11 +362,6 @@ static void suspend_mark(suspend_state_t stat)
 }
 #endif
 
-static void suspend_l2cache(suspend_state_t stat)
-{
-	return;
-}
-
 static void suspend_gpio(suspend_state_t stat)
 {
 	struct save_gpio *gpio = saved_regs.gpio;
@@ -376,15 +390,6 @@ static void suspend_gpio(suspend_state_t stat)
 		 */
 		gpio = saved_regs.gpio;
 		base = IO_ADDRESS(PHY_BASEADDR_GPIOA);
-
-		for (i = 0; size > i; i++, gpio++, base += 0x1000) {
-			writel(gpio_alfn[i][0], (base+0x20));
-			writel(gpio_alfn[i][1], (base+0x24));
-			writel(0, (base+0x04));	/* Input */
-			writel(0, (base+0x58));	/* GPIOx_PULLSEL - Down */
-			writel(0, (base+0x60)); /* GPIOx_PULLENB - Disable */
-		}
-
 	} else {
 		for (i = 0; size > i; i++, gpio++, base += 0x1000) {
 #ifndef CONFIG_S5P6818_PM_IDLE
@@ -467,8 +472,6 @@ static void __power_prepare(void)
 static int __power_down(unsigned long arg)
 {
 	int ret = suspend_machine();
-	int gic_irqs  = NR_IRQS;
-	int i = 0;
 
 #ifndef CONFIG_S5P6818_PM_IDLE
 	void (*power_down)(ulong, ulong) =
@@ -492,8 +495,7 @@ static int __power_down(unsigned long arg)
 	}
 	lldebugout("suspend machine\n", __func__);
 
-	for (i = 32; i < gic_irqs; i += 4)
-		writel_relaxed(0x00, GIC_DIST_BASE + GIC_DIST_TARGET + i * 4 / 4);
+	suspend_cpu_enter();
 
 	dmb();
 	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
@@ -573,7 +575,7 @@ static int suspend_enter(suspend_state_t state)
 	suspend_clock(SUSPEND_SUSPEND);
 	suspend_gpio(SUSPEND_SUSPEND);
 	suspend_alive(SUSPEND_SUSPEND);
-	suspend_l2cache(SUSPEND_SUSPEND);
+
 #ifndef CONFIG_S5P6818_PM_IDLE
 	suspend_mark(SUSPEND_SUSPEND);
 #endif
@@ -594,7 +596,6 @@ static int suspend_enter(suspend_state_t state)
 #ifndef CONFIG_S5P6818_PM_IDLE
 	suspend_mark(SUSPEND_RESUME);
 #endif
-	suspend_l2cache(SUSPEND_RESUME);
 
 	resume_machine();
 
