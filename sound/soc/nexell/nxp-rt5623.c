@@ -117,7 +117,7 @@ static int alc5623_jack_status_check(void)
 	}
 #endif
 
-	return !level;
+	return level;
 }
 
 static int alc5623_hw_params(struct snd_pcm_substream *substream,
