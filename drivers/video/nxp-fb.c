@@ -52,9 +52,8 @@
 #include <linux/ion.h>
 
 extern struct ion_device *get_global_ion_device(void);
-extern int nx_fb_init_sysfs(struct fb_info *fb_info);
-
 #endif
+extern int nx_fb_init_sysfs(struct fb_info *fb_info);
 
 /*
  *  Alters the hardware state
@@ -1193,8 +1192,8 @@ static int nxp_fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *inf
 	return 0;
 }
 
-#ifdef CONFIG_FB_NXP_ION_MEM
 #define NXPFB_SET_POS	 	_IOW('N', 104, __u32)
+#ifdef CONFIG_FB_NXP_ION_MEM
 #define NXPFB_GET_FB_FD 	_IOWR('N', 101, __u32)
 #define NXPFB_SET_FB_FD 	_IOW('N', 102, __u32)
 #define NXPFB_GET_ACTIVE	_IOR('N', 103, __u32)
@@ -1203,7 +1202,9 @@ static int nxp_fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *inf
 static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
 {
 	struct nxp_fb_param *par = info->par;
+#ifdef CONFIG_FB_NXP_ION_MEM
 	struct nxp_fb_device *dev = &par->fb_dev;
+#endif	
     int ret = 0;
 	pr_debug("%s (cmd:0x%x, type:%c, nr:%d) \n\n", __func__, cmd, _IOC_TYPE(cmd), _IOC_NR(cmd));
 
