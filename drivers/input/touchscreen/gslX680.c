@@ -570,12 +570,13 @@ static void report_data(struct gsl_ts *ts, u16 x, u16 y, u8 pressure, u8 id)
 	#endif
 		return;
 	}
-	input_report_abs(ts->input, ABS_MT_PRESSURE, id);
-	input_report_abs(ts->input, ABS_MT_TOUCH_MAJOR, 1);
+	input_mt_slot(ts->input, id);
+	input_report_abs(ts->input, ABS_MT_TRACKING_ID, id-1);
 	input_report_abs(ts->input, ABS_MT_POSITION_X, x);
 	input_report_abs(ts->input, ABS_MT_POSITION_Y, y);
+	input_report_abs(ts->input, ABS_MT_PRESSURE, pressure); 
+	input_report_key(ts->input, BTN_TOUCH, 1);
 
-	input_mt_sync(ts->input);
 }
 
 static void gslX680_ts_worker(struct work_struct *work)
@@ -699,8 +700,9 @@ static void gslX680_ts_worker(struct work_struct *work)
 		if( (0 == touches) || ((0 != id_state_old_flag[i]) && (0 == id_state_flag[i])) )
 		{
 		#ifdef REPORT_DATA_ANDROID_4_0
-			input_report_abs(ts->input, ABS_MT_TOUCH_MAJOR, 0);
-			input_mt_sync(ts->input);
+			input_mt_slot(ts->input, i);
+			input_report_abs(ts->input, ABS_MT_TRACKING_ID, -1);
+			input_mt_report_slot_state(ts->input, MT_TOOL_FINGER, false);
 		#endif
 			id_sign[i]=0;
 		}
@@ -869,15 +871,25 @@ static int gslX680_ts_init(struct i2c_client *client, struct gsl_ts *ts)
 	input_device->dev.parent = &client->dev;
 	input_set_drvdata(input_device, ts);
 
+	set_bit(ABS_MT_POSITION_X, input_device->absbit);
+	set_bit(ABS_MT_POSITION_Y, input_device->absbit);
+	set_bit(ABS_MT_TOUCH_MAJOR, input_device->absbit);
+	set_bit(ABS_MT_WIDTH_MAJOR, input_device->absbit);
+	set_bit(ABS_PRESSURE, input_device->absbit);
+	set_bit(BTN_TOUCH, input_device->keybit);
 	set_bit(EV_ABS, input_device->evbit);
-
-//	__set_bit(INPUT_PROP_DIRECT, input_device->propbit);
-//	input_mt_init_slots(input_device, (MAX_CONTACTS + 1));
-
+	set_bit(EV_KEY, input_device->evbit);
+	set_bit(EV_SYN,input_device->evbit);
+	__set_bit(INPUT_PROP_DIRECT, input_device->propbit);
+	input_mt_init_slots(input_device, (MAX_CONTACTS + 1));
+	 
 	input_set_abs_params(input_device,ABS_MT_POSITION_X, 0, SCREEN_MAX_X, 0, 0);
 	input_set_abs_params(input_device,ABS_MT_POSITION_Y, 0, SCREEN_MAX_Y, 0, 0);
 	input_set_abs_params(input_device,ABS_MT_TOUCH_MAJOR, 0, PRESS_MAX, 0, 0);
-	input_set_abs_params(input_device, ABS_MT_PRESSURE, 0, 255, 0, 0);
+	input_set_abs_params(input_device,ABS_MT_WIDTH_MAJOR, 0, 200, 0, 0);
+       input_set_abs_params(input_device, ABS_MT_TRACKING_ID, 0, 5, 0, 0);
+	input_set_abs_params(input_device,ABS_PRESSURE, 0, PRESS_MAX, 0 , 0);
+	input_set_abs_params(input_device, ABS_MT_PRESSURE, 0, PRESS_MAX, 0, 0);
 #ifdef HAVE_TOUCH_KEY
 	input_device->evbit[0] = BIT_MASK(EV_KEY);
 	//input_device->evbit[0] = BIT_MASK(EV_SYN) | BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
