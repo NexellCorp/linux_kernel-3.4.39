@@ -3,13 +3,13 @@
 static IOCTL_REG_ACCESS_INFO ioctl_reg_access_info;
 static IOCTL_GPIO_ACCESS_INFO gpio_info;
 
-unsigned int mtv_curr_channel[RAONTV_MAX_NUM_DEMOD_CHIP]; /* TDMB/DAB/FM: KHz, ISDBT: Channel number. */
-unsigned int mtv_prev_channel[RAONTV_MAX_NUM_DEMOD_CHIP]; /* TDMB/DAB/FM: KHz, ISDBT: Channel number. */
+unsigned int mtv_curr_channel[MAX_NUM_BB_DEMOD]; /* TDMB/DAB/FM: KHz, ISDBT: Channel number. */
+unsigned int mtv_prev_channel[MAX_NUM_BB_DEMOD]; /* TDMB/DAB/FM: KHz, ISDBT: Channel number. */
 
 
-static int dmb_read_thread_should_stop[RAONTV_MAX_NUM_DEMOD_CHIP];
-static pthread_t tsp_read_thread_cb[RAONTV_MAX_NUM_DEMOD_CHIP];
-static pthread_t *tsp_read_thread_cb_ptr[RAONTV_MAX_NUM_DEMOD_CHIP];
+static int dmb_read_thread_should_stop[MAX_NUM_BB_DEMOD];
+static pthread_t tsp_read_thread_cb[MAX_NUM_BB_DEMOD];
+static pthread_t *tsp_read_thread_cb_ptr[MAX_NUM_BB_DEMOD];
 
 
 /* To get signal inforamtion.*/
@@ -17,7 +17,7 @@ static volatile int dm_timer_thread_run;
 static pthread_t dm_timer_thread_cb;
 static pthread_t *dm_timer_thread_cb_ptr;
 
-static volatile unsigned int periodic_debug_info_mask[RAONTV_MAX_NUM_DEMOD_CHIP];
+static volatile unsigned int periodic_debug_info_mask[MAX_NUM_BB_DEMOD];
 
 
 typedef struct
@@ -71,9 +71,9 @@ typedef struct
 	unsigned long	null_cnt;
 } TSP_INFO;
 
-static PID_INFO pid_info[RAONTV_MAX_NUM_DEMOD_CHIP][8192];
-static TSP_INFO tsp_info[RAONTV_MAX_NUM_DEMOD_CHIP];
-static __u32 pid_grp_bits[RAONTV_MAX_NUM_DEMOD_CHIP][NUM_PID_GROUP]; /* 32 Bits for PID pre group*/
+static PID_INFO pid_info[MAX_NUM_BB_DEMOD][8192];
+static TSP_INFO tsp_info[MAX_NUM_BB_DEMOD];
+static __u32 pid_grp_bits[MAX_NUM_BB_DEMOD][NUM_PID_GROUP]; /* 32 Bits for PID pre group*/
 
 void show_video_tsp_statistics(int demod_no)
 {
@@ -469,14 +469,10 @@ void init_periodic_debug_info(int demod_no)
 
 
 
-void test_GPIO(void)
+void test_GPIO(int demod_no, int fd_dmb_dev)
 {
 	int key;
-	int fd_dmb_dev;
 
-	if((fd_dmb_dev=open_mtv_device()) < 0)
-		return;
-		
 	while(1)
 	{
 		DMSG0("================ GPIO Test ===============\n");
@@ -506,6 +502,7 @@ void test_GPIO(void)
 					break;				
 			}
 
+			gpio_info.demod_no = demod_no;
 			if(ioctl(fd_dmb_dev, IOCTL_TEST_GPIO_SET, &gpio_info) < 0)
 			{						
 				EMSG0("IOCTL_TEST_GPIO_SET failed\n");
@@ -519,6 +516,7 @@ void test_GPIO(void)
 			scanf("%u" , &gpio_info.pin);	
 			CLEAR_STDIN;
 
+			gpio_info.demod_no = demod_no;
 			if(ioctl(fd_dmb_dev, IOCTL_TEST_GPIO_GET, &gpio_info) < 0)
 			{						
 				EMSG0("IOCTL_TEST_GPIO_GET failed\n");
@@ -538,8 +536,7 @@ void test_GPIO(void)
 	}
 
 GPIO_TEST_EXIT:
-
-	close_mtv_device(fd_dmb_dev);
+	return;
 }
 
 static void show_register_page(void)
@@ -559,10 +556,18 @@ static void show_register_page(void)
 
 void test_RegisterIO(int demod_no, int fd_dmb_dev)
 {
+	IOCTL_TEST_MTV_POWER_ON_INFO param;
 	int key;
 	unsigned int i, page, addr, read_cnt, write_data;
 	const char *page_str[] = 
 		{"HOST", "RF", "COMM", "DD", "MSC0", "MSC1", "OFDM", "FEC", "FIC"};
+
+	/* Power-up chip*/
+	param.demod_no = 0;
+	if(ioctl(fd_dmb_dev, IOCTL_TEST_MTV_POWER_ON, &param) < 0) {	
+		EMSG0("IOCTL_TEST_MTV_POWER_ON failed\n");
+		return;
+	}
 
 	while(1)
 	{
@@ -695,6 +700,9 @@ void test_RegisterIO(int demod_no, int fd_dmb_dev)
 	}
 
 REG_IO_TEST_EXIT:
+	param.demod_no = 0;
+	if(ioctl(fd_dmb_dev, IOCTL_TEST_MTV_POWER_OFF,	&param) < 0)
+		EMSG0("IOCTL_TEST_MTV_POWER_OFF failed\n");
 
 	return;
 }
@@ -725,14 +733,15 @@ int  close_mtv_device(int fd)
 	return close(fd);
 }
 
-int open_mtv_device(void)
+int open_mtv_device(int demod_no)
 {
 	int fd;
 	char name[32];
+	const char *dev_name[] = {"mtv818_av", "mtv818_tpeg"};
 
 	DMSG1("[open_mtv_device] Entered...... (%d)\n", ++tdmb_drv_open_cnt);
 	
-	sprintf(name,"/dev/%s", RAONTV_DEV_NAME);
+	sprintf(name,"/dev/%s", dev_name[demod_no]);
 
 #ifdef MTV_BLOCKING_READ_MODE
 	fd = open(name, O_RDWR); /* Blocking mode */
@@ -751,14 +760,13 @@ int main(void)
 {
 	int key, ret;
 	int fd_dmb_dev;
-	IOCTL_TEST_MTV_POWER_ON_INFO param;
 
 	tdmb_drv_open_cnt = 0;
 
 	dmb_read_thread_should_stop[0] = 1;
 	tsp_read_thread_cb_ptr[0] = NULL;
 
-#if (RAONTV_MAX_NUM_DEMOD_CHIP == 2)
+#if (MAX_NUM_BB_DEMOD == 2)
 	dmb_read_thread_should_stop[1] = 1;
 	tsp_read_thread_cb_ptr[1] = NULL;
 #endif
@@ -791,8 +799,8 @@ int main(void)
 	#ifdef RTV_FM_ENABLE
 		DMSG0("\t3: FM Test\n");
 	#endif
-		DMSG0("\t4: GPIO Test\n");
-		DMSG0("\t5: Register IO Test\n");
+//		DMSG0("\t4: GPIO Test\n");
+//		DMSG0("\t5: Register IO Test\n");
 		DMSG0("\tq or Q: Quit\n");
 		DMSG0("===============================================\n");
    		
@@ -813,25 +821,7 @@ int main(void)
 	#ifdef RTV_FM_ENABLE
 			case '3': test_FM(); break;
 	#endif
-			case '4': test_GPIO(); break;
-			
-			case '5':
-				if((fd_dmb_dev=open_mtv_device()) < 0)
-					goto APP_MAIN_EXIT;				
-				
-				/* Power-up chip*/
-				param.demod_no = 0;
-				if(ioctl(fd_dmb_dev, IOCTL_TEST_MTV_POWER_ON, &param) < 0)
-					EMSG0("IOCTL_TEST_MTV_POWER_ON failed\n");
-				else				
-					test_RegisterIO(0, fd_dmb_dev);
-
-				param.demod_no = 0;
-				if(ioctl(fd_dmb_dev, IOCTL_TEST_MTV_POWER_OFF,  &param) < 0)
-					EMSG0("IOCTL_TEST_MTV_POWER_OFF failed\n");
-
-				close_mtv_device(fd_dmb_dev);
-				break;
+			//case '4': test_GPIO(); break;
 				
 			case 'q':
 			case 'Q': goto APP_MAIN_EXIT;

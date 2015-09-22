@@ -1,11 +1,12 @@
 #include "test.h"
 
+
 #if defined(RTV_DAB_ENABLE) || defined(RTV_TDMB_ENABLE)
 
 /*============================================================================
  * Configuration for File dump
  *===========================================================================*/
-#define _DAB_MSC_FILE_DUMP_ENABLE /* for MSC data*/
+//#define _DAB_MSC_FILE_DUMP_ENABLE /* for MSC data*/
 //#define _DAB_FIC_FILE_DUMP_ENABLE /* for FIC data */
 
 /* MSC filename: /data/raontech/dab_msc_FREQ_SUBCHID.ts */
@@ -30,27 +31,27 @@ typedef struct
 } SUB_CH_INFO;
 
 #ifdef _DAB_FIC_FILE_DUMP_ENABLE
-	static FILE *fd_fic[RAONTV_MAX_NUM_DEMOD_CHIP];
-	static char fic_fname[RAONTV_MAX_NUM_DEMOD_CHIP][64];
+	static FILE *fd_fic[MAX_NUM_BB_DEMOD];
+	static char fic_fname[MAX_NUM_BB_DEMOD][64];
 #endif
 
 #ifdef RTV_DAB_ENABLE
-static volatile BOOL full_scan_state[RAONTV_MAX_NUM_DEMOD_CHIP];
+static volatile BOOL full_scan_state[MAX_NUM_BB_DEMOD];
 #endif
 
-static volatile BOOL is_open_fic[RAONTV_MAX_NUM_DEMOD_CHIP];
-static unsigned int dab_tdmb_fic_size[RAONTV_MAX_NUM_DEMOD_CHIP];
+static volatile BOOL is_open_fic[MAX_NUM_BB_DEMOD];
+static unsigned int dab_tdmb_fic_size[MAX_NUM_BB_DEMOD];
 
-static BOOL is_power_on[RAONTV_MAX_NUM_DEMOD_CHIP];
+static BOOL is_power_on[MAX_NUM_BB_DEMOD];
 
-static int fd_dab_dmb_dev; /* MTV device file descriptor. */
+static int fd_dab_dmb_dev[MAX_NUM_BB_DEMOD]; /* MTV device file descriptor. */
 #if defined(RTV_IF_TSIF) || defined(RTV_IF_SPI_SLAVE)
 static int fd_dab_tsif_dev;
 #endif
 
 /* Use the mutex for lock the add/delete/set_reconfiguration subch 
 at read, fic, main threads when DAB reconfiguration occured. */
-static pthread_mutex_t dab_mutex[RAONTV_MAX_NUM_DEMOD_CHIP];
+static pthread_mutex_t dab_mutex[MAX_NUM_BB_DEMOD];
 
 #define DAB_LOCK_INIT(demod_no)		pthread_mutex_init(&dab_mutex[demod_no], NULL)
 #define DAB_LOCK(demod_no)			pthread_mutex_lock(&dab_mutex[demod_no])
@@ -58,19 +59,19 @@ static pthread_mutex_t dab_mutex[RAONTV_MAX_NUM_DEMOD_CHIP];
 #define DAB_LOCK_DEINIT(demod_no)	((void)0)
 
 #ifdef RTV_MULTI_SERVICE_MODE
-static IOCTL_MULTI_SERVICE_BUF multi_svc_buf[RAONTV_MAX_NUM_DEMOD_CHIP];
+static IOCTL_MULTI_SERVICE_BUF multi_svc_buf[MAX_NUM_BB_DEMOD];
 #else
-static unsigned char single_svc_buf[RAONTV_MAX_NUM_DEMOD_CHIP][MAX_READ_TSP_SIZE];
+static unsigned char single_svc_buf[MAX_NUM_BB_DEMOD][MAX_READ_TSP_SIZE];
 #endif
 
 #if (RTV_NUM_DAB_AVD_SERVICE == 1)
-static unsigned int prev_opened_subch_id[RAONTV_MAX_NUM_DEMOD_CHIP]; /* Previous sub channel ID. used for 1 service */
+static unsigned int prev_opened_subch_id[MAX_NUM_BB_DEMOD]; /* Previous sub channel ID. used for 1 service */
 #endif
 
-static unsigned int av_subch_id[RAONTV_MAX_NUM_DEMOD_CHIP];
-static unsigned int num_opend_subch[RAONTV_MAX_NUM_DEMOD_CHIP];
+static unsigned int av_subch_id[MAX_NUM_BB_DEMOD];
+static unsigned int num_opend_subch[MAX_NUM_BB_DEMOD];
 
-SUB_CH_INFO subch_info[RAONTV_MAX_NUM_DEMOD_CHIP][MAX_NUM_SUB_CHANNEL];
+SUB_CH_INFO subch_info[MAX_NUM_BB_DEMOD][MAX_NUM_SUB_CHANNEL];
 
 static RTV_FIC_ENSEMBLE_INFO ensemble_info;
 
@@ -118,7 +119,7 @@ static void tdmb_dab_dm_timer_handler(void)
 {
 	tdmb_data_proc_dm_timer(0);
 
-#if (RAONTV_MAX_NUM_DEMOD_CHIP == 2)
+#if (MAX_NUM_BB_DEMOD == 2)
 	tdmb_data_proc_dm_timer(1);
 #endif
 }
@@ -233,7 +234,7 @@ static inline int get_fic_size(void)
 #ifdef RTV_TDMB_ENABLE
 	fic_size = 384;
 #else
-	if (ioctl(fd_dab_dmb_dev, IOCTL_DAB_GET_FIC_SIZE, &fic_size))
+	if (ioctl(fd_dab_dmb_dev[demod_no], IOCTL_DAB_GET_FIC_SIZE, &fic_size))
 		DMSG0("[do_ansemble_acquisition] IOCTL_DAB_GET_FIC_SIZE error\n");
 #endif
 
@@ -255,10 +256,10 @@ static void tsif_fic_sig_handler(int signo)
 #endif
 
 #ifdef RTV_TDMB_ENABLE
-	ret = ioctl(fd_dab_dmb_dev, IOCTL_TDMB_READ_FIC, &read_info);
+	ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_TDMB_READ_FIC, &read_info);
 #else
 	read_info.size = fic_size;
-	ret = ioctl(fd_dab_dmb_dev, IOCTL_DAB_READ_FIC, &read_info);
+	ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_DAB_READ_FIC, &read_info);
 #endif
 	if (ret == 0)
 	{
@@ -297,9 +298,9 @@ static int setup_tsif_fic_sig_handler(void)
 		return -1;
 	}
 
-	fcntl(fd_dab_dmb_dev, F_SETOWN, getpid());
-	oflag = fcntl(fd_dab_dmb_dev, F_GETFL);
-	fcntl(fd_dab_dmb_dev, F_SETFL, oflag | FASYNC);
+	fcntl(fd_dab_dmb_dev[demod_no], F_SETOWN, getpid());
+	oflag = fcntl(fd_dab_dmb_dev[demod_no], F_GETFL);
+	fcntl(fd_dab_dmb_dev[demod_no], F_SETFL, oflag | FASYNC);
 
 	return 0;
 }
@@ -343,9 +344,9 @@ static int close_fic(int demod_no)
 	{
 		param.demod_no = demod_no;
 #ifdef RTV_TDMB_ENABLE
-		if(ioctl(fd_dab_dmb_dev, IOCTL_TDMB_CLOSE_FIC, &param) < 0)
+		if(ioctl(fd_dab_dmb_dev[demod_no], IOCTL_TDMB_CLOSE_FIC, &param) < 0)
 #else
-		if(ioctl(fd_dab_dmb_dev, IOCTL_DAB_CLOSE_FIC, &param) < 0)
+		if(ioctl(fd_dab_dmb_dev[demod_no], IOCTL_DAB_CLOSE_FIC, &param) < 0)
 #endif
 			EMSG0("[DMB] CLOSE_FIC failed.\n");
 	
@@ -372,9 +373,9 @@ static int open_fic(int demod_no)
 	{
 		param.demod_no = demod_no;
 #ifdef RTV_TDMB_ENABLE
-		ret = ioctl(fd_dab_dmb_dev, IOCTL_TDMB_OPEN_FIC, &param);
+		ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_TDMB_OPEN_FIC, &param);
 #else
-		ret = ioctl(fd_dab_dmb_dev, IOCTL_DAB_OPEN_FIC, &param);
+		ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_DAB_OPEN_FIC, &param);
 #endif
 		if(ret)
 		{
@@ -382,7 +383,7 @@ static int open_fic(int demod_no)
 			return -1;
 		}
 
-		rtvFICDEC_Init(); /* FIC parser Init */
+		rtvFICDEC_Init(demod_no); /* FIC parser Init */
 		is_open_fic[demod_no] = TRUE;
 	}
 
@@ -404,7 +405,7 @@ static E_RTV_FIC_DEC_RET_TYPE proc_fic_parsing(int demod_no, unsigned char *buf,
 		fwrite(buf, sizeof(char), size, fd_fic[demod_no]);
 #endif
 
-	ficdec_ret = rtvFICDEC_Decode(buf, size);
+	ficdec_ret = rtvFICDEC_Decode(demod_no, buf, size);
 	if(ficdec_ret != RTV_FIC_RET_GOING)
 	{
 		DMSG1("[DMB] FIC parsing result: %s\n",
@@ -412,7 +413,7 @@ static E_RTV_FIC_DEC_RET_TYPE proc_fic_parsing(int demod_no, unsigned char *buf,
 
 		if(ficdec_ret == RTV_FIC_RET_DONE)
 		{
-			rtvFICDEC_GetEnsembleInfo(&ensemble_info);
+			rtvFICDEC_GetEnsembleInfo(demod_no, &ensemble_info);
 
 			// Show a decoded table.
 			show_fic_information(&ensemble_info, freq_khz);
@@ -570,11 +571,11 @@ static void tdmb_dab_read(int demod_no, int dev)
 #endif
 }
 
-#if (RAONTV_MAX_NUM_DEMOD_CHIP == 2)
+#if (MAX_NUM_BB_DEMOD == 2)
 static void *tdmb_dab_read_thread_secondary(void *arg)
 {
 #if defined(RTV_IF_SPI) 	
-	int dev = fd_dab_dmb_dev;
+	int dev = fd_dab_dmb_dev[BB_TPEG_DEMOD_IDX];
 #elif defined(RTV_IF_TSIF) || defined(RTV_IF_SPI_SLAVE)
 	int dev = fd_dab_tsif_dev; 
 #endif	  
@@ -583,10 +584,10 @@ static void *tdmb_dab_read_thread_secondary(void *arg)
 
 	for(;;)
 	{
-		if(mtv_read_thread_should_stop(1))
+		if(mtv_read_thread_should_stop(BB_TPEG_DEMOD_IDX))
 			break;
 
-		tdmb_dab_read(1, dev);
+		tdmb_dab_read(BB_TPEG_DEMOD_IDX, dev);
 	}
 
 	DMSG0("[tdmb_dab_read_thread_secondary] Exit...\n");
@@ -602,7 +603,7 @@ static void *tdmb_dab_read_thread_secondary(void *arg)
 static void *tdmb_dab_read_thread_primary(void *arg)
 {
 #if defined(RTV_IF_SPI) 	
-	int dev = fd_dab_dmb_dev;
+	int dev = fd_dab_dmb_dev[BB_AV_DEMOD_IDX];
 #elif defined(RTV_IF_TSIF) || defined(RTV_IF_SPI_SLAVE)
 	int dev = fd_dab_tsif_dev; 
 #endif	  
@@ -611,10 +612,10 @@ static void *tdmb_dab_read_thread_primary(void *arg)
 
 	for(;;)
 	{
-		if(mtv_read_thread_should_stop(0))
+		if(mtv_read_thread_should_stop(BB_AV_DEMOD_IDX))
 			break;
 
-		tdmb_dab_read(0, dev);
+		tdmb_dab_read(BB_AV_DEMOD_IDX, dev);
 	}
 
 	DMSG0("[tdmb_dab_read_thread_primary] Exit...\n");
@@ -631,10 +632,10 @@ static int check_signal_info(int demod_no)
 #ifdef RTV_TDMB_ENABLE
 	IOCTL_TDMB_SIGNAL_INFO sig_info;
 	sig_info.demod_no = demod_no;
-	ret = ioctl(fd_dab_dmb_dev, IOCTL_TDMB_GET_SIGNAL_INFO, &sig_info);
+	ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_TDMB_GET_SIGNAL_INFO, &sig_info);
 #else
 	IOCTL_DAB_SIGNAL_INFO sig_info;
-	ret = ioctl(fd_dab_dmb_dev, IOCTL_DAB_GET_SIGNAL_INFO, &sig_info);
+	ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_DAB_GET_SIGNAL_INFO, &sig_info);
 #endif
 	if(ret < 0)
 	{
@@ -678,10 +679,10 @@ static int check_lock_status(int demod_no)
 
 	param.demod_no = demod_no;
 #ifdef RTV_TDMB_ENABLE
-	ret = ioctl(fd_dab_dmb_dev, IOCTL_TDMB_GET_LOCK_STATUS, &param);
+	ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_TDMB_GET_LOCK_STATUS, &param);
 	lock = (param.lock_mask == RTV_TDMB_CHANNEL_LOCK_OK) ? 1 : 0;
 #else
-	ret = ioctl(fd_dab_dmb_dev, IOCTL_DAB_GET_LOCK_STATUS, &param);
+	ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_DAB_GET_LOCK_STATUS, &param);
 	lock = (param.lock_mask == RTV_DAB_CHANNEL_LOCK_OK) ? 1 : 0;
 #endif
 
@@ -741,9 +742,9 @@ static int close_all_sub_channels(int demod_no)
 
 	param.demod_no = demod_no;
 #ifdef RTV_TDMB_ENABLE
-	if(ioctl(fd_dab_dmb_dev, IOCTL_TDMB_CLOSE_ALL_SUBCHANNELS, &param) < 0)
+	if(ioctl(fd_dab_dmb_dev[demod_no], IOCTL_TDMB_CLOSE_ALL_SUBCHANNELS, &param) < 0)
 #else
-	if(ioctl(fd_dab_dmb_dev, IOCTL_DAB_CLOSE_ALL_SUBCHANNELS, &param) < 0)
+	if(ioctl(fd_dab_dmb_dev[demod_no], IOCTL_DAB_CLOSE_ALL_SUBCHANNELS, &param) < 0)
 #endif
 	{
 		EMSG0("[DMB] CLOSE_ALL_SUBCHANNELS failed\n");
@@ -790,9 +791,9 @@ static int close_sub_channel(int demod_no, unsigned int subch_id)
 	param.demod_no = demod_no;
 	param.subch_id = subch_id;
 #ifdef RTV_TDMB_ENABLE
-	if((ret=ioctl(fd_dab_dmb_dev, IOCTL_TDMB_CLOSE_SUBCHANNEL, &param)) < 0)
+	if((ret=ioctl(fd_dab_dmb_dev[demod_no], IOCTL_TDMB_CLOSE_SUBCHANNEL, &param)) < 0)
 #else
-	if((ret=ioctl(fd_dab_dmb_dev, IOCTL_DAB_CLOSE_SUBCHANNEL, &param)) < 0)
+	if((ret=ioctl(fd_dab_dmb_dev[demod_no], IOCTL_DAB_CLOSE_SUBCHANNEL, &param)) < 0)
 #endif
 	{
 		EMSG1("[DMB] IOCTL_DAB_CLOSE_SUBCHANNEL failed: %d\n", ret);
@@ -886,9 +887,9 @@ static int open_sub_channel(int demod_no, IOCTL_TDMB_SUB_CH_INFO *sub_ch_ptr)
 
 	sub_ch_ptr->demod_no = demod_no;
 #ifdef RTV_TDMB_ENABLE
-	if((ret=ioctl(fd_dab_dmb_dev, IOCTL_TDMB_OPEN_SUBCHANNEL, sub_ch_ptr)) < 0)
+	if((ret=ioctl(fd_dab_dmb_dev[demod_no], IOCTL_TDMB_OPEN_SUBCHANNEL, sub_ch_ptr)) < 0)
 #else
-	if((ret=ioctl(fd_dab_dmb_dev, IOCTL_DAB_OPEN_SUBCHANNEL, sub_ch_ptr)) < 0)
+	if((ret=ioctl(fd_dab_dmb_dev[demod_no], IOCTL_DAB_OPEN_SUBCHANNEL, sub_ch_ptr)) < 0)
 #endif
 	{
 		delete_sub_channel(demod_no, subch_id);	
@@ -900,7 +901,7 @@ static int open_sub_channel(int demod_no, IOCTL_TDMB_SUB_CH_INFO *sub_ch_ptr)
 #ifdef RTV_TDMB_ENABLE
 	dab_tdmb_fic_size [demod_no]= 384;
 #else
-	if (ioctl(fd_dab_dmb_dev, IOCTL_DAB_GET_FIC_SIZE, &dab_tdmb_fic_size))
+	if (ioctl(fd_dab_dmb_dev[demod_no], IOCTL_DAB_GET_FIC_SIZE, &dab_tdmb_fic_size))
 		DMSG0("[do_ansemble_acquisition] IOCTL_DAB_GET_FIC_SIZE error\n");
 	else
 		DMSG1("[open_sub_channel] FIC size: %u\n", dab_tdmb_fic_size);
@@ -932,9 +933,9 @@ static int do_ansemble_acquisition(int demod_no, U32 ch_freq_khz)
 		{
 			read_info.demod_no = demod_no;
 		#ifdef RTV_TDMB_ENABLE
-			ret = ioctl(fd_dab_dmb_dev, IOCTL_TDMB_READ_FIC, &read_info);
+			ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_TDMB_READ_FIC, &read_info);
 		#else
-			ret = ioctl(fd_dab_dmb_dev, IOCTL_DAB_READ_FIC, &read_info);
+			ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_DAB_READ_FIC, &read_info);
 		#endif
 			if(ret == 0)
 			{
@@ -1022,9 +1023,9 @@ static int full_scan_freq(int demod_no)
 		scan_info.demod_no = demod_no;
 
 	#ifdef RTV_TDMB_ENABLE
-		ret = ioctl(fd_dab_dmb_dev, IOCTL_TDMB_SCAN_FREQ, &scan_info);
+		ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_TDMB_SCAN_FREQ, &scan_info);
 	#else
-		ret = ioctl(fd_dab_dmb_dev, IOCTL_DAB_SCAN_FREQ, &scan_info);
+		ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_DAB_SCAN_FREQ, &scan_info);
 	#endif
 		if(ret == 0)
 		{
@@ -1079,9 +1080,9 @@ static int power_up(int demod_no)
 
 	param.demod_no = demod_no;
 #ifdef RTV_TDMB_ENABLE
-	ret = ioctl(fd_dab_dmb_dev, IOCTL_TDMB_POWER_ON, &param);
+	ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_TDMB_POWER_ON, &param);
 #else
-	ret = ioctl(fd_dab_dmb_dev, IOCTL_DAB_POWER_ON, &param);
+	ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_DAB_POWER_ON, &param);
 #endif
 	if(ret < 0)
 	{
@@ -1098,7 +1099,7 @@ static int power_up(int demod_no)
 	is_open_fic[demod_no] = FALSE;
 	dab_tdmb_fic_size[demod_no] = 0;
 	
-	rtvFICDEC_Init(); /// ???????????????
+	rtvFICDEC_Init(demod_no);
 
 	DAB_LOCK_INIT(demod_no);
 
@@ -1111,7 +1112,7 @@ static int power_up(int demod_no)
 		}
 	}
 
-#if (RAONTV_MAX_NUM_DEMOD_CHIP == 2)
+#if (MAX_NUM_BB_DEMOD == 2)
 	if (demod_no == 1) {
 		if((ret = create_mtv_read_thread(1, tdmb_dab_read_thread_secondary)) != 0)
 		{
@@ -1150,9 +1151,9 @@ printf("[TDMB power_down] IOCTL_TDMB_POWER_OFF\n");
 
 	param.demod_no = demod_no;
 #ifdef RTV_TDMB_ENABLE
-	ret = ioctl(fd_dab_dmb_dev, IOCTL_TDMB_POWER_OFF, &param);
+	ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_TDMB_POWER_OFF, &param);
 #else
-	ret = ioctl(fd_dab_dmb_dev, IOCTL_DAB_POWER_OFF);
+	ret = ioctl(fd_dab_dmb_dev[demod_no], IOCTL_DAB_POWER_OFF);
 #endif
 	if(ret < 0)
 	{
@@ -1292,13 +1293,16 @@ AGING_TEST_tdmb_dab_exit:
 #endif
 
 ///
-#if (RAONTV_MAX_NUM_DEMOD_CHIP == 2)
+#if (MAX_NUM_BB_DEMOD == 2)
 void test_TDMB_DAB_proc(int demod_no)
 {
 	int key, ret;
 	IOCTL_TDMB_SUB_CH_INFO sub_ch_info;
 	unsigned int ch_freq_khz, subch_id;
 	E_RTV_SERVICE_TYPE svc_type;
+
+	if((fd_dab_dmb_dev[demod_no]=open_mtv_device(demod_no)) < 0)
+		return;
 
 	while(1)
 	{
@@ -1323,6 +1327,9 @@ void test_TDMB_DAB_proc(int demod_no)
 		DMSG0("\tc: [DEBUG] Hide the periodic TSP statistics\n");
 
 		DMSG0("\ta: [TEST] Aging Test\n");
+
+		DMSG0("\tg: [TEST] GPIO Test\n");
+		DMSG0("\tr: Register IO Test\n");
 
 		DMSG0("\tq or Q: Quit\n");
 		DMSG0("===============================================\n");
@@ -1391,7 +1398,7 @@ void test_TDMB_DAB_proc(int demod_no)
 
 			case '8':
 				DMSG0("[TEST] Register IO Test\n");
-				test_RegisterIO(demod_no, fd_dab_dmb_dev);
+				test_RegisterIO(demod_no, fd_dab_dmb_dev[demod_no]);
 				break;
 
 			case '9':
@@ -1450,6 +1457,14 @@ void test_TDMB_DAB_proc(int demod_no)
 				//AGING_TEST_tdmb_dab();
 				break;
 
+			case 'g':
+				test_GPIO(demod_no, fd_dab_dmb_dev[demod_no]);
+				break;
+
+			case 'r':
+				test_RegisterIO(demod_no, fd_dab_dmb_dev[demod_no]);
+				break;
+
 			case 'q':
 			case 'Q':
 				goto TDMB_DAB_EXIT;
@@ -1462,8 +1477,10 @@ void test_TDMB_DAB_proc(int demod_no)
 	} 
 
 TDMB_DAB_EXIT:
+	power_down(demod_no);
 
-//	power_down(0);
+	ret = close_mtv_device(fd_dab_dmb_dev[demod_no]);
+	DMSG2("[DMB] %d close() result : %d\n", demod_no, ret);
 
 	DMSG0("TDMB_DAB_EXIT\n");
 	
@@ -1481,9 +1498,6 @@ void test_TDMB_DAB(void)
 	is_power_on[0] = FALSE;
 	is_power_on[1] = FALSE;
 
-	if((fd_dab_dmb_dev=open_mtv_device()) < 0)
-		return;
-		
 #if defined(RTV_IF_TSIF) || defined(RTV_IF_SPI_SLAVE)
 	if((fd_dab_tsif_dev=open_tsif_device()) < 0)
 		return;
@@ -1501,7 +1515,7 @@ void test_TDMB_DAB(void)
 
 	while (1) {
 		DMSG1("==============[%s] =========================\n", TEST_MODE_STR);
-#if (RAONTV_MAX_NUM_DEMOD_CHIP == 2)		
+#if (MAX_NUM_BB_DEMOD == 2)		
 		DMSG0("============== [Select Demod Chip] ==================\n");
 		DMSG0("\t0: Primaray chip\n");
 		DMSG0("\t1: Secondary Chip\n");
@@ -1509,7 +1523,7 @@ void test_TDMB_DAB(void)
 		DMSG0("\tq or Q: Quit\n");
 		DMSG0("===============================================\n");
 
-#if (RAONTV_MAX_NUM_DEMOD_CHIP == 2)
+#if (MAX_NUM_BB_DEMOD == 2)
 		demod_no = getc(stdin);				
 		CLEAR_STDIN;
 #else
@@ -1520,12 +1534,12 @@ void test_TDMB_DAB(void)
 		switch (demod_no) {
 		case '0':
 			DMSG1("[%s] Primaray chip Selected.\n", TEST_MODE_STR);
-			test_TDMB_DAB_proc(0);
+			test_TDMB_DAB_proc(BB_AV_DEMOD_IDX);
 			return;
 			
 		case '1':	
 			DMSG1("[%s] Secondary chip Selected.\n", TEST_MODE_STR);
-			test_TDMB_DAB_proc(1);
+			test_TDMB_DAB_proc(BB_TPEG_DEMOD_IDX);
 			return;
 
 		case 'q':
@@ -1541,14 +1555,6 @@ void test_TDMB_DAB(void)
 	} 
 
 TDMB_DAB_EXIT:
-
-	power_down(0);
-#if (RAONTV_MAX_NUM_DEMOD_CHIP == 2)
-	power_down(1);
-#endif
-
-	ret = close_mtv_device(fd_dab_dmb_dev);
-	DMSG2("[DMB] %s close() result : %d\n", RAONTV_DEV_NAME, ret);
 	
 #if defined(RTV_IF_TSIF) || defined(RTV_IF_SPI_SLAVE)
 	close(fd_dab_tsif_dev);
@@ -1569,7 +1575,7 @@ void test_TDMB_DAB(void)
 
 	is_power_on[0] = FALSE;
 
-	if((fd_dab_dmb_dev=open_mtv_device()) < 0)
+	if((fd_dab_dmb_dev[BB_AV_DEMOD_IDX] = open_mtv_device(BB_AV_DEMOD_IDX)) < 0)
 		return;
 		
 #if defined(RTV_IF_TSIF) || defined(RTV_IF_SPI_SLAVE)
@@ -1611,6 +1617,9 @@ void test_TDMB_DAB(void)
 
 		DMSG0("\ta: [TEST] Aging Test\n");
 
+		DMSG0("\tg: [TEST] GPIO Test\n");
+		DMSG0("\tr: Register IO Test\n");
+
 		DMSG0("\tq or Q: Quit\n");
 		DMSG0("===============================================\n");
    		
@@ -1630,17 +1639,17 @@ void test_TDMB_DAB(void)
 		{
 			case '0':
 				DMSG0("[DAB Power ON]\n");
-				power_up(0);				
+				power_up(BB_AV_DEMOD_IDX);				
 				break;
 				
 			case '1':	
 				DMSG0("[DAB Power OFF]\n");
-				power_down(0);
+				power_down(BB_AV_DEMOD_IDX);
 				break;
 
 			case '2':
 				DMSG0("[DAB Scan freq]\n");
-				full_scan_freq(0);				
+				full_scan_freq(BB_AV_DEMOD_IDX);				
 				break;
 
 			case '3':
@@ -1652,33 +1661,33 @@ void test_TDMB_DAB(void)
 				sub_ch_info.ch_freq_khz = ch_freq_khz;
 				sub_ch_info.subch_id = subch_id;
 				sub_ch_info.svc_type = svc_type;
-				open_sub_channel(0, &sub_ch_info);
+				open_sub_channel(BB_AV_DEMOD_IDX, &sub_ch_info);
 				break;
 
 			case '4':
 				DMSG0("[DAB Close Sub Channel]\n");
 				subch_id = get_subch_id_from_user();
-				close_sub_channel(0, subch_id);
+				close_sub_channel(BB_AV_DEMOD_IDX, subch_id);
 				break;
 
 			case '5':
 				DMSG0("[DAB Close ALL Sub Channels]\n");
-				close_all_sub_channels(0);
+				close_all_sub_channels(BB_AV_DEMOD_IDX);
 				break;
 
 			case '6':
 				DMSG0("[DAB Get Lockstatus]\n");
-				check_lock_status(0);
+				check_lock_status(BB_AV_DEMOD_IDX);
 				break;
 
 			case '7':
 				DMSG0("[DAB Get Singal Info]\n");
-				check_signal_info(0);
+				check_signal_info(BB_AV_DEMOD_IDX);
 				break;
 
 			case '8':
 				DMSG0("[TEST] Register IO Test\n");
-				test_RegisterIO(0, fd_dab_dmb_dev);
+				test_RegisterIO(BB_AV_DEMOD_IDX, fd_dab_dmb_dev[BB_AV_DEMOD_IDX]);
 				break;
 
 			case '9':
@@ -1687,11 +1696,11 @@ void test_TDMB_DAB(void)
 				sub_ch_info.ch_freq_khz = 183008;
 				sub_ch_info.subch_id = 1;
 				sub_ch_info.svc_type = RTV_SERVICE_VIDEO;
-				open_sub_channel(0, &sub_ch_info);
+				open_sub_channel(BB_AV_DEMOD_IDX, &sub_ch_info);
 
 				sub_ch_info.subch_id = 3;
 				sub_ch_info.svc_type = RTV_SERVICE_DATA;
-				open_sub_channel(0, &sub_ch_info);
+				open_sub_channel(BB_AV_DEMOD_IDX, &sub_ch_info);
 
 /*
 				sub_ch_info.ch_freq_khz = 208736;
@@ -1714,27 +1723,35 @@ void test_TDMB_DAB(void)
 
 			case 's':
 				DMSG0("[DEBUG] Show the periodic SIGNAL information\n");
-				show_periodic_sig_info(0);
+				show_periodic_sig_info(BB_AV_DEMOD_IDX);
 				break;
 
 			case 'h':
 				DMSG0("[DEBUG] Hide the periodic SIGNAL information\n");
-				hide_periodic_sig_info(0);
+				hide_periodic_sig_info(BB_AV_DEMOD_IDX);
 				break;
 
 			case 'p':
 				DMSG0("[DEBUG] Show the periodic TSP statistics\n");
-				show_periodic_tsp_statistics(0);
+				show_periodic_tsp_statistics(BB_AV_DEMOD_IDX);
 				break;
 
 			case 'c':
 				DMSG0("[DEBUG] Hide the periodic TSP statistics\n");
-				hide_periodic_tsp_statistics(0);
+				hide_periodic_tsp_statistics(BB_AV_DEMOD_IDX);
 				break;
 
 			case 'a':
 				DMSG0("[TEST] Aging Test\n");
 				//AGING_TEST_tdmb_dab(0);
+				break;
+
+			case 'g':
+				test_GPIO(BB_AV_DEMOD_IDX, fd_dab_dmb_dev[BB_AV_DEMOD_IDX]);
+				break;
+
+			case 'r':
+				test_RegisterIO(BB_AV_DEMOD_IDX, fd_dab_dmb_dev[BB_AV_DEMOD_IDX]);
 				break;
 
 			case 'q':
@@ -1750,9 +1767,9 @@ void test_TDMB_DAB(void)
 
 TDMB_DAB_EXIT:
 
-	power_down(0);
+	power_down(BB_AV_DEMOD_IDX);
 
-	ret = close_mtv_device(fd_dab_dmb_dev);
+	ret = close_mtv_device(fd_dab_dmb_dev[BB_AV_DEMOD_IDX]);
 	DMSG2("[DMB] %s close() result : %d\n", RAONTV_DEV_NAME, ret);
 	
 #if defined(RTV_IF_TSIF) || defined(RTV_IF_SPI_SLAVE)
@@ -1763,7 +1780,7 @@ TDMB_DAB_EXIT:
 	
 	return;
 }
-#endif /* #if (RAONTV_MAX_NUM_DEMOD_CHIP == 2) */
+#endif /* #if (MAX_NUM_BB_DEMOD == 2) */
 
 #endif /* #if defined(RTV_DAB_ENABLE) || defined(RTV_TDMB_ENABLE) */
 

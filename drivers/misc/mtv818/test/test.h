@@ -39,6 +39,12 @@
 #include "raontv_ficdec.h"
 #endif
 
+#define BB_AV_DEMOD_IDX			0
+#define BB_TPEG_DEMOD_IDX		1
+
+#define MAX_NUM_BB_DEMOD		2
+
+
 /* Determine if the MTV device file is opened in blocking mode for SPI interface. 
 The read() system call is blocked until data was appeared. */
 //#define MTV_BLOCKING_READ_MODE
@@ -165,7 +171,7 @@ typedef struct
 
 
 extern BOOL mtv_is_power_on;
-extern unsigned int mtv_prev_channel[RAONTV_MAX_NUM_DEMOD_CHIP];
+extern unsigned int mtv_prev_channel[];
 
 
 #define CLEAR_STDIN	while(getc(stdin) != '\n')
@@ -285,7 +291,7 @@ void tsif_run(int fd_tsif_dev, int run);
 #endif
 
 int close_mtv_device(int fd);
-int open_mtv_device(void);
+int open_mtv_device(int demod_no);
 
 void delete_mtv_read_thread(int demod_no);
 int create_mtv_read_thread(int demod_no, void *(*start_routine)(void *));

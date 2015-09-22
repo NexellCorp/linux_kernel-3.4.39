@@ -62,7 +62,6 @@ void mtv_spi_read_burst(int demod_no, unsigned char reg, unsigned char *buf, int
 		.cs_change	= 0,
 		.delay_usecs = 0,
 	};
-	struct mtv_cb * mtv_cb_ptr = mtv_cb_ptrs[demod_no];
 
 	spi_message_init(&msg);
 	out_buf[0] = RAONTV_CHIP_ADDR;
@@ -110,9 +109,7 @@ unsigned char mtv_spi_read(int demod_no, unsigned char reg)
 		.cs_change	= 0,
 		.delay_usecs = 0,
 	};
-	struct mtv_cb * mtv_cb_ptr = mtv_cb_ptrs[demod_no];
 
-	printk(KERN_DEBUG "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] <<<< \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
 	spi_message_init(&msg);
 	out_buf[0] = RAONTV_CHIP_ADDR;
 	out_buf[1] = reg;	
@@ -135,7 +132,6 @@ unsigned char mtv_spi_read(int demod_no, unsigned char reg)
 		DMBERR("error: %d\n", ret);  
 		return 0xFF;
 	}
-	printk(KERN_DEBUG "## \e[31m PJSMSG \e[0m [%s():%s:%d\t]  \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
 
 	return in_buf[1];
 }
@@ -152,9 +148,6 @@ void mtv_spi_write(int demod_no, unsigned char reg, unsigned char val)
 		.delay_usecs = 0,
 	};
 	int ret;
-	struct mtv_cb * mtv_cb_ptr = mtv_cb_ptrs[demod_no];
-
-	printk(KERN_DEBUG "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] <<<< \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
 
 	spi_message_init(&msg);
 
@@ -171,17 +164,13 @@ void mtv_spi_write(int demod_no, unsigned char reg, unsigned char val)
 	{
 		DMBERR("error: %d\n", ret);  
 	}
-	printk(KERN_DEBUG "## \e[31m PJSMSG \e[0m [%s():%s:%d\t]  \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
-
 }
 
 
 static int mtv_spi_probe_0(struct spi_device *spi)
 {
 	int ret;
-	struct mtv_cb * mtv_cb_ptr = mtv_cb_ptrs[0];
 	
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t]  \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
 	DMBMSG("MTV spi 0 ENTERED!!!!!!!!!!!!!!\n");
 	
 	spi->bits_per_word = 8;
@@ -214,40 +203,6 @@ struct spi_driver mtv_spi_driver_0 = {
 	.resume 	= NULL,
 	.remove	= __devexit_p(mtv_spi_remove),
 };
-
-#if (RAONTV_MAX_NUM_DEMOD_CHIP == 2)
-static int mtv_spi_probe_1(struct spi_device *spi)
-{
-	int ret;
-	struct mtv_cb * mtv_cb_ptr = mtv_cb_ptrs[1];
-	
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t]  \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
-	DMBMSG("MTV spi 1 ENTERED!!!!!!!!!!!!!!\n");
-	
-	spi->bits_per_word = 8;
-	spi->mode = SPI_MODE_0;
-	
-	ret = spi_setup(spi);
-	if (ret < 0)
-	       return ret;
-
-	mtv_cb_ptr->spi_ptr = spi;
-
-	return 0;
-}
-
-struct spi_driver mtv_spi_driver_1 = {
-	.driver = {
-		.name = SPI_DEV_NAME_1,
-		.owner = THIS_MODULE,
-	},
-
-	.probe    = mtv_spi_probe_1,
-	.suspend	= NULL,
-	.resume 	= NULL,
-	.remove	= __devexit_p(mtv_spi_remove),
-};
-#endif
 
 #endif /* #ifdef RTV_IF_SPI */
 

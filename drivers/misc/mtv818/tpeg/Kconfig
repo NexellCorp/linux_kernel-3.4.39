@@ -1,0 +1,5 @@
+config TDMB_MTV818_TPEG
+    tristate "Raontech TDMB TPEG module support"
+    depends on SPI || I2C
+    help
+      This enables support for the RAONTECH TDMB module=======

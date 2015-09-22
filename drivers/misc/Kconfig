@@ -564,7 +564,10 @@ source "drivers/misc/ti-st/Kconfig"
 source "drivers/misc/lis3lv02d/Kconfig"
 source "drivers/misc/carma/Kconfig"
 source "drivers/misc/altera-stapl/Kconfig"
-source "drivers/misc/mtv818/Kconfig"
+source "drivers/misc/mtv818/av/Kconfig"
+source "drivers/misc/mtv818/tpeg/Kconfig"
+#source "drivers/misc/carbt-adanis/Kconfig"
+#source "drivers/misc/caravn/Kconfig"
 source "drivers/misc/coda960/Kconfig"
 
 config SLSIAP_BACKWARD_CAMERA
