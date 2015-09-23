@@ -243,6 +243,18 @@
 
 #define CFG_IO_AUDIO_AMP_POWER              (PAD_GPIO_D + 24)
 
+/*------------------------------------------------------------------------------
+ *	Backward Camera	
+ */
+
+#define CFG_BACKWARD_GEAR					(PAD_GPIO_ALV + 3)
+
+/*------------------------------------------------------------------------------
+ *  CAMERA Back Power Down
+ */
+
+#define CFG_IO_CAMERA_BACK_POWER_DOWN     	((PAD_GPIO_E + 12) | PAD_FUNC_ALT0)        /* GPIO */
+
 
 
 

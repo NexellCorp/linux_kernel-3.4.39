@@ -297,6 +297,8 @@ static void _vip_run(int module)
 {
     struct nxp_backward_camera_context *me = &_context;
 
+	printk("+++ %s +++\n", __func__);
+
     u32 lu_addr = me->plat_data->lu_addr;
     u32 cb_addr = me->plat_data->cb_addr;
     u32 cr_addr = me->plat_data->cr_addr;
@@ -307,6 +309,8 @@ static void _vip_run(int module)
 
     NX_VIP_SetVIPEnable(module, CTRUE, CTRUE, CTRUE, CFALSE);
     //_vip_dump_register(module);
+
+	printk("--- %s ---\n", __func__);
 }
 
 static void _vip_stop(int module)
@@ -473,6 +477,8 @@ static int _get_i2c_client(struct nxp_backward_camera_context *me)
 {
     struct i2c_client *client;
     struct i2c_adapter *adapter = i2c_get_adapter(me->plat_data->i2c_bus);
+
+printk("+++ %s +++\n", __func__);
     if (!adapter) {
         pr_err("%s: unable to get i2c adapter %d\n", __func__, me->plat_data->i2c_bus);
         return -EINVAL;
@@ -489,6 +495,8 @@ static int _get_i2c_client(struct nxp_backward_camera_context *me)
     client->flags = 0;
 
     me->client = client;
+
+printk("--- %s ---\n", __func__);
     return 0;
 }
 
@@ -496,6 +504,7 @@ static int _camera_sensor_run(struct nxp_backward_camera_context *me)
 {
     struct reg_val *reg_val;
 
+printk("+++ %s +++\n", __func__);
     if (me->plat_data->power_enable)
         me->plat_data->power_enable(true);
 
@@ -507,10 +516,13 @@ static int _camera_sensor_run(struct nxp_backward_camera_context *me)
 
     reg_val = me->plat_data->reg_val;
     while (reg_val->reg != 0xff) {
+		printk("%s : reg : 0x%02X, val : 0x%02X\n", __func__, reg_val->reg, reg_val->val);
         i2c_smbus_write_byte_data(me->client, reg_val->reg, reg_val->val);
         reg_val++;
     }
 
+
+printk("--- %s ---\n", __func__);
     return 0;
 }
 
@@ -640,6 +652,7 @@ static void _work_handler(struct work_struct *work)
 extern struct ion_device *get_global_ion_device(void);
 static int _allocate_memory(struct nxp_backward_camera_context *me)
 {
+	printk("+++ %s +++\n", __func__);
     struct ion_device *ion_dev = get_global_ion_device();
     if (me->plat_data->lu_addr && me->plat_data->rgb_addr)
         return 0;
@@ -712,6 +725,8 @@ static int _allocate_memory(struct nxp_backward_camera_context *me)
                 me->virt_rgb);
 #endif
     }
+
+	printk("--- %s ---\n", __func__);
 
     return 0;
 }
@@ -800,6 +815,8 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
     struct nxp_backward_camera_platform_data *pdata = pdev->dev.platform_data;
     struct nxp_backward_camera_context *me = &_context;
 
+	printk("+++ %s +++\n", __func__);
+
     me->plat_data = pdata;
     me->irq = IRQ_GPIO_START + pdata->backgear_gpio_num;
 
@@ -827,6 +844,8 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
     _decide(me);
 
     me->my_device = pdev;
+
+	printk("--- %s ---\n", __func__);
 
 #ifdef CONFIG_PM
     INIT_DELAYED_WORK(&me->resume_work, _resume_work);
