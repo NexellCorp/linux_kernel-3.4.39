@@ -1080,11 +1080,10 @@ static struct dw_mci_board _dwmci0_data = {
 	.ext_cd_init	= _dwmci_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH0_USE_DMA)
-	.mode       	= DMA_MODE,
+	.mode			= DMA_MODE,
 #else
-	.mode       	= PIO_MODE,
+	.mode 			= PIO_MODE,
 #endif
-
 };
 #endif
 
@@ -1098,9 +1097,9 @@ static struct dw_mci_board _dwmci1_data = {
 	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(0),
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
-	.mode       	= DMA_MODE,
+	.mode			= DMA_MODE,
 #else
-	.mode       	= PIO_MODE,
+	.mode 			= PIO_MODE,
 #endif
 };
 #endif
@@ -1116,7 +1115,7 @@ static struct dw_mci_board _dwmci2_data = {
 					  MMC_CAP_NONREMOVABLE |
 			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
 				  	  MMC_CAP_HW_RESET,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(3) | DW_MMC_SAMPLE_PHASE(2),
 
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,

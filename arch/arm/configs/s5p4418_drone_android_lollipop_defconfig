@@ -345,11 +345,11 @@ CONFIG_ANDROID_PERSISTENT_RAM_CONS_SIZE=16
 #
 # Board features
 #
-# CONFIG_PLAT_S5P4418_DRONE is not set
+CONFIG_PLAT_S5P4418_DRONE=y
 # CONFIG_PLAT_S5P4418_DRONE2 is not set
 # CONFIG_PLAT_S5P4418_SVT is not set
 # CONFIG_PLAT_S5P4418_ASB is not set
-CONFIG_PLAT_S5P4418_LEPUS=y
+# CONFIG_PLAT_S5P4418_LEPUS is not set
 # CONFIG_PLAT_S5P4418_DRONEL is not set
 
 #
@@ -495,7 +495,7 @@ CONFIG_ARM_FLUSH_CONSOLE_ON_RESTART=y
 # CONFIG_USE_OF is not set
 CONFIG_ZBOOT_ROM_TEXT=0
 CONFIG_ZBOOT_ROM_BSS=0
-CONFIG_CMDLINE="console=ttyAMA0,115200n8 androidboot.hardware=dronel_s5p4418 androidboot.console=ttyAMA0 androidboot.serialno=0123456789abcdef initrd=0x49000000,0x100000 init=/init"
+CONFIG_CMDLINE="console=ttyAMA0,115200n8 androidboot.hardware=s5p4418_drone androidboot.console=ttyAMA0 androidboot.serialno=0123456789abcdef initrd=0x49000000,0x100000 init=/init"
 CONFIG_CMDLINE_FROM_BOOTLOADER=y
 # CONFIG_CMDLINE_EXTEND is not set
 # CONFIG_CMDLINE_FORCE is not set
