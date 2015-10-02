@@ -105,7 +105,6 @@ static struct pwm_device devs_pwm[] = {
 #ifdef CFG_PWM3_CLK_INV
 		.invert = 1,
 #endif
-
 	},
 };
 #define	PWN_CHANNELS	(4)
