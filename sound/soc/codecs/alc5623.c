@@ -36,12 +36,12 @@
 #define pr_debug	printk
 */
 
-#if defined(CFG_NOUSE_SND_DAPM)
+#if defined(CONFIG_NOUSE_SND_DAPM)
 static struct snd_soc_codec *alc5623_codec;
 static int aud_vol_val = 0;
 
 static DEFINE_MUTEX(sysfs_lock);
-#endif // CFG_NOUSE_SND_DAPM
+#endif // CONFIG_NOUSE_SND_DAPM
 
 static struct i2c_client *i2c;
 static int caps_charge = 2000;
@@ -58,7 +58,7 @@ struct alc5623_priv {
 	unsigned int jack_det_ctrl;
 };
 
-#if defined(CFG_NOUSE_SND_DAPM)
+#if defined(CONFIG_NOUSE_SND_DAPM)
 static ssize_t alc5623_aud_vol_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
@@ -106,7 +106,7 @@ static ssize_t alc5623_aud_vol_store(struct device *dev,
 	return status ? : count;
 }
 static DEVICE_ATTR(aud_vol, 0664, alc5623_aud_vol_show, alc5623_aud_vol_store);
-#endif // CFG_NOUSE_SND_DAPM
+#endif // CONFIG_NOUSE_SND_DAPM
 
 static void alc5623_fill_cache(struct snd_soc_codec *codec)
 {
@@ -1267,7 +1267,7 @@ static int alc5623_probe(struct snd_soc_codec *codec)
 		return -EINVAL;
 	}
 
-#if defined(CFG_NOUSE_SND_DAPM)
+#if defined(CONFIG_NOUSE_SND_DAPM)
     ret = device_create_file(codec->card->dev, &dev_attr_aud_vol);
 	if (ret != 0) {
 		dev_err(codec->dev,
@@ -1276,7 +1276,7 @@ static int alc5623_probe(struct snd_soc_codec *codec)
 	}
 
 	alc5623_codec = codec;
-#endif // CFG_NOUSE_SND_DAPM
+#endif // CONFIG_NOUSE_SND_DAPM
 
     init_codec(i2c);
     alc5623_fill_cache(codec);

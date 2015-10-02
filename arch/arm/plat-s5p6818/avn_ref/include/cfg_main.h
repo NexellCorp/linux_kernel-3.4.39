@@ -132,12 +132,6 @@
 #define CFG_PWM0_CLK_INV						1		/* for LCD Backlight */
 
 /*------------------------------------------------------------------------------
- * 	Audio use/nouse dapm
- */
-
-#define CFG_NOUSE_SND_DAPM						1
-
-/*------------------------------------------------------------------------------
  * 	Audio I2S (0, 1, 2)
  */
 #define	CFG_AUDIO_I2S0_MASTER_MODE				CTRUE	// CTRUE

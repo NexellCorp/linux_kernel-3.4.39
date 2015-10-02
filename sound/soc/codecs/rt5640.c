@@ -29,7 +29,7 @@
 #define pr_debug    printk
 */
 
-#if defined(CFG_NOUSE_SND_DAPM)
+#if defined(CONFIG_NOUSE_SND_DAPM)
 static int is_playing = 0;
 static int is_aux = 0;
 static int aux_vol_val = 0;
@@ -37,7 +37,7 @@ static int mic_vol_val = 0;
 static int aud_vol_val = 0;
 
 static DEFINE_MUTEX(sysfs_lock);
-#endif // CFG_NOUSE_SND_DAPM
+#endif // CONFIG_NOUSE_SND_DAPM
 
 //#define RTK_IOCTL
 #ifdef RTK_IOCTL
@@ -2650,9 +2650,9 @@ static int rt5640_hw_params(struct snd_pcm_substream *substream,
 	unsigned int reg_val = 0;
 	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
-#if defined(CFG_NOUSE_SND_DAPM)
+#if defined(CONFIG_NOUSE_SND_DAPM)
 	int stream = substream->stream;
-#endif // CFG_NOUSE_SND_DAPM
+#endif // CONFIG_NOUSE_SND_DAPM
 
 	rt5640->lrck[dai->id] = params_rate(params);
 	pre_div = get_clk_info(rt5640->sysclk, rt5640->lrck[dai->id]);
@@ -2689,7 +2689,7 @@ static int rt5640_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
-#if defined(CFG_NOUSE_SND_DAPM)
+#if defined(CONFIG_NOUSE_SND_DAPM)
 	if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		printk("\033[33m\33[1m[%s] SNDRV_PCM_STREAM_PLAYBACK \033[0m\r\n", __FUNCTION__);
 		is_playing = 1;
@@ -2713,9 +2713,9 @@ static int rt5640_hw_params(struct snd_pcm_substream *substream,
 		snd_soc_update_bits(codec, RT5640_HP_VOL,
 			RT5640_L_MUTE | RT5640_VOL_L_MUTE | RT5640_R_MUTE | RT5640_VOL_R_MUTE, 0);
 	}
-#endif // CFG_NOUSE_SND_DAPM
+#endif // CONFIG_NOUSE_SND_DAPM
 
-#if defined(CFG_NOUSE_SND_DAPM)
+#if defined(CONFIG_NOUSE_SND_DAPM)
 	if (stream == SNDRV_PCM_STREAM_CAPTURE) {
 		printk("\033[33m\33[1m[%s] SNDRV_PCM_STREAM_CAPTURE \033[0m\r\n", __FUNCTION__);
 		// set index register
@@ -2752,7 +2752,7 @@ static int rt5640_hw_params(struct snd_pcm_substream *substream,
 			RT5640_ADC_L_VOL_MASK | RT5640_ADC_R_VOL_MASK,
 			(0x2f << RT5640_ADC_L_VOL_SFT) | (0x2f << RT5640_ADC_R_VOL_SFT));
 	}
-#endif // CFG_NOUSE_SND_DAPM
+#endif // CONFIG_NOUSE_SND_DAPM
 
 	dai_sel = get_sdp_info(codec, dai->id);
 	//dai_sel |= (RT5640_U_IF1 | RT5640_U_IF2);
@@ -3375,7 +3375,7 @@ static ssize_t rt5640_codec_adb_store(struct device *dev,
 }
 static DEVICE_ATTR(codec_reg_adb, 0664, rt5640_codec_adb_show, rt5640_codec_adb_store);
 
-#if defined(CFG_NOUSE_SND_DAPM)
+#if defined(CONFIG_NOUSE_SND_DAPM)
 static ssize_t rt5640_aux_onoff_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
@@ -3605,7 +3605,7 @@ static ssize_t rt5640_aud_vol_store(struct device *dev,
 }
 static DEVICE_ATTR(aud_vol, 0664, rt5640_aud_vol_show, rt5640_aud_vol_store);
 
-#endif // CFG_NOUSE_SND_DAPM
+#endif // CONFIG_NOUSE_SND_DAPM
 
 static int rt5640_set_bias_level(struct snd_soc_codec *codec,
 			enum snd_soc_bias_level level)
@@ -3739,14 +3739,14 @@ static int rt5640_probe(struct snd_soc_codec *codec)
 	DC_Calibrate(codec);
 	codec->dapm.bias_level = SND_SOC_BIAS_STANDBY;
 	rt5640->codec = codec;
-#if !defined(CFG_NOUSE_SND_DAPM)
+#if !defined(CONFIG_NOUSE_SND_DAPM)
 	snd_soc_add_codec_controls(codec, rt5640_snd_controls,
 			ARRAY_SIZE(rt5640_snd_controls));
 	snd_soc_dapm_new_controls(&codec->dapm, rt5640_dapm_widgets,
 			ARRAY_SIZE(rt5640_dapm_widgets));
 	snd_soc_dapm_add_routes(&codec->dapm, rt5640_dapm_routes,
 			ARRAY_SIZE(rt5640_dapm_routes));
-#endif // CFG_NOUSE_SND_DAPM
+#endif // CONFIG_NOUSE_SND_DAPM
 
 #if (CONFIG_SND_SOC_RT5642_MODULE | CONFIG_SND_SOC_RT5642)
 	rt5640->dsp_sw = RT5640_DSP_AEC_NS_FENS;
@@ -3785,7 +3785,7 @@ static int rt5640_probe(struct snd_soc_codec *codec)
 		return ret;
 	}
 
-#if defined(CFG_NOUSE_SND_DAPM)
+#if defined(CONFIG_NOUSE_SND_DAPM)
 	ret = device_create_file(codec->card->dev, &dev_attr_aux_onoff);
 	if (ret != 0) {
 		dev_err(codec->dev,
@@ -3814,7 +3814,7 @@ static int rt5640_probe(struct snd_soc_codec *codec)
 		return ret;
 	}
 
-#endif // CFG_NOUSE_SND_DAPM
+#endif // CONFIG_NOUSE_SND_DAPM
 
 	rt5640_codec = codec;
 	setup_timer( &mclk_check_timer, mclk_check_timer_callback, 0 );
@@ -3862,7 +3862,7 @@ static int rt5640_resume(struct snd_soc_codec *codec)
 #define rt5640_resume NULL
 #endif
 
-#if defined(CFG_NOUSE_SND_DAPM)
+#if defined(CONFIG_NOUSE_SND_DAPM)
 
 void rt5640_shutdown_sound_path(void)
 {
@@ -3900,7 +3900,7 @@ int rt5640_startup(struct snd_pcm_substream *pcm,struct snd_soc_dai *dai)
 	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	return 0;
 }
-#endif // CFG_NOUSE_SND_DAPM
+#endif // CONFIG_NOUSE_SND_DAPM
 
 #define RT5640_STEREO_RATES SNDRV_PCM_RATE_8000_96000
 #define RT5640_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE | \
@@ -3913,11 +3913,11 @@ struct snd_soc_dai_ops rt5640_aif_dai_ops = {
 	.set_sysclk = rt5640_set_dai_sysclk,
 	.set_pll = rt5640_set_dai_pll,
 
-#if defined(CFG_NOUSE_SND_DAPM)
+#if defined(CONFIG_NOUSE_SND_DAPM)
 	.shutdown = rt5640_shutdown,
 	.startup = rt5640_startup,
 	.prepare = rt5640_prepare,
-#endif // CFG_NOUSE_SND_DAPM
+#endif // CONFIG_NOUSE_SND_DAPM
 };
 
 struct snd_soc_dai_driver rt5640_dai[] = {
@@ -3988,7 +3988,7 @@ static struct snd_soc_codec_driver soc_codec_dev_rt5640 = {
 	.remove = rt5640_remove,
 	.suspend = rt5640_suspend,
 	.resume = rt5640_resume,
-#if !defined(CFG_NOUSE_SND_DAPM)
+#if !defined(CONFIG_NOUSE_SND_DAPM)
 	.set_bias_level = rt5640_set_bias_level,
 	.reg_cache_size = RT5640_VENDOR_ID2 + 1,
 	.reg_word_size = sizeof(u16),
@@ -3996,7 +3996,7 @@ static struct snd_soc_codec_driver soc_codec_dev_rt5640 = {
 	.volatile_register = rt5640_volatile_register,
 	.readable_register = rt5640_readable_register,
 	.reg_cache_step = 1,
-#endif // CFG_NOUSE_SND_DAPM
+#endif // CONFIG_NOUSE_SND_DAPM
 };
 
 static const struct i2c_device_id rt5640_i2c_id[] = {
