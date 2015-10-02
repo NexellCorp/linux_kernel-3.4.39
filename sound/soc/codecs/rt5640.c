@@ -25,6 +25,20 @@
 #include <sound/initval.h>
 #include <sound/tlv.h>
 
+/*
+#define pr_debug    printk
+*/
+
+#if defined(CFG_NOUSE_SND_DAPM)
+static int is_playing = 0;
+static int is_aux = 0;
+static int aux_vol_val = 0;
+static int mic_vol_val = 0;
+static int aud_vol_val = 0;
+
+static DEFINE_MUTEX(sysfs_lock);
+#endif // CFG_NOUSE_SND_DAPM
+
 //#define RTK_IOCTL
 #ifdef RTK_IOCTL
 #if defined(CONFIG_SND_HWDEP) || defined(CONFIG_SND_HWDEP_MODULE)
@@ -139,6 +153,7 @@ static struct rt5640_init_reg init_list[] = {
 static int rt5640_reg_init(struct snd_soc_codec *codec)
 {
 	int i;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	for (i = 0; i < RT5640_INIT_REG_LEN; i++)
 		snd_soc_write(codec, init_list[i].reg, init_list[i].val);
@@ -149,6 +164,7 @@ static int rt5640_reg_init(struct snd_soc_codec *codec)
 static int rt5640_index_sync(struct snd_soc_codec *codec)
 {
 	int i;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	for (i = 0; i < RT5640_INIT_REG_LEN; i++)
 		if (RT5640_PRIV_INDEX == init_list[i].reg ||
@@ -227,6 +243,7 @@ static const u16 rt5640_reg[RT5640_VENDOR_ID2 + 1] = {
 
 static int rt5640_reset(struct snd_soc_codec *codec)
 {
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	return snd_soc_write(codec, RT5640_RESET, 0);
 }
 
@@ -245,6 +262,7 @@ static int rt5640_index_write(struct snd_soc_codec *codec,
 		unsigned int reg, unsigned int value)
 {
 	int ret;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	ret = snd_soc_write(codec, RT5640_PRIV_INDEX, reg);
 	if (ret < 0) {
@@ -276,6 +294,7 @@ static unsigned int rt5640_index_read(
 	struct snd_soc_codec *codec, unsigned int reg)
 {
 	int ret;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	ret = snd_soc_write(codec, RT5640_PRIV_INDEX, reg);
 	if (ret < 0) {
@@ -301,6 +320,7 @@ static int rt5640_index_update_bits(struct snd_soc_codec *codec,
 {
 	unsigned int old, new;
 	int change, ret;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	ret = rt5640_index_read(codec, reg);
 	if (ret < 0) {
@@ -329,6 +349,7 @@ bool checkMclkError(struct snd_soc_codec *codec)
 {
 	int CodecValue1,CodecValue2;
 	int valB8, val61;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	/* backup MX61 value */
 	val61 = snd_soc_read(codec,RT5640_PWR_DIG1);
@@ -356,6 +377,7 @@ bool checkMclkError(struct snd_soc_codec *codec)
 static void mclk_check_work_handler(struct work_struct *work)
 {
 	struct snd_soc_codec *codec = rt5640_codec;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	if (checkMclkError(codec)) {
 		printk("\nNO MCLK\n");
@@ -375,6 +397,7 @@ static void mclk_check_work_handler(struct work_struct *work)
 void mclk_check_timer_callback(unsigned long data )
 {
 	int ret = 0;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	schedule_work(&mclk_check_work);
 
@@ -387,6 +410,7 @@ void mclk_check_timer_callback(unsigned long data )
 static int rt5640_volatile_register(
 	struct snd_soc_codec *codec, unsigned int reg)
 {
+//	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	switch (reg) {
 	case RT5640_RESET:
 	case RT5640_PRIV_DATA:
@@ -412,6 +436,7 @@ static int rt5640_volatile_register(
 static int rt5640_readable_register(
 	struct snd_soc_codec *codec, unsigned int reg)
 {
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	switch (reg) {
 	case RT5640_RESET:
 	case RT5640_SPK_VOL:
@@ -541,6 +566,7 @@ static int rt5640_readable_register(
 void DC_Calibrate(struct snd_soc_codec *codec)
 {
 	unsigned int sclk_src;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	sclk_src = snd_soc_read(codec, RT5640_GLB_CLK) &
 		RT5640_SCLK_SRC_MASK;
@@ -577,6 +603,7 @@ int rt5640_headset_detect(struct snd_soc_codec *codec, int jack_insert)
 	int jack_type;
 	int sclk_src = 0;
 	int reg63, reg64;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	if(jack_insert) {
 		reg63 = snd_soc_read(codec, RT5640_PWR_ANLG1);
@@ -655,6 +682,7 @@ static int rt5640_dmic_get(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 	struct rt5640_priv *rt5640 = snd_soc_codec_get_drvdata(codec);
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	ucontrol->value.integer.value[0] = rt5640->dmic_en;
 
@@ -666,6 +694,7 @@ static int rt5640_dmic_put(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 	struct rt5640_priv *rt5640 = snd_soc_codec_get_drvdata(codec);
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	if (rt5640->dmic_en == ucontrol->value.integer.value[0])
 		return 0;
@@ -724,6 +753,7 @@ static int rt5640_dmic1_src_get(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 	struct rt5640_priv *rt5640 = snd_soc_codec_get_drvdata(codec);
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	ucontrol->value.integer.value[0] = rt5640->dmic1_src;
 
@@ -735,6 +765,7 @@ static int rt5640_dmic1_src_put(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 	struct rt5640_priv *rt5640 = snd_soc_codec_get_drvdata(codec);
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	if (rt5640->dmic1_src == ucontrol->value.integer.value[0])
 		return 0;
@@ -824,6 +855,7 @@ static unsigned int regctl_addr;
 static int rt5640_regctl_info(struct snd_kcontrol *kcontrol,
 			struct snd_ctl_elem_info *uinfo)
 {
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	uinfo->count = 2;
 	uinfo->value.integer.min = 0;
@@ -835,6 +867,7 @@ static int rt5640_regctl_get(struct snd_kcontrol *kcontrol,
 			struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	ucontrol->value.integer.value[0] = regctl_addr;
 	ucontrol->value.integer.value[1] = snd_soc_read(codec, regctl_addr);
 	return 0;
@@ -844,6 +877,7 @@ static int rt5640_regctl_put(struct snd_kcontrol *kcontrol,
 			struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	regctl_addr = ucontrol->value.integer.value[0];
 	if(ucontrol->value.integer.value[1] <= REGVAL_MAX)
 		snd_soc_write(codec, regctl_addr, ucontrol->value.integer.value[1]);
@@ -859,6 +893,7 @@ static int rt5640_vol_rescale_get(struct snd_kcontrol *kcontrol,
 		(struct soc_mixer_control *)kcontrol->private_value;
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 	unsigned int val = snd_soc_read(codec, mc->reg);
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	ucontrol->value.integer.value[0] = RT5640_VOL_RSCL_MAX -
 		((val & RT5640_L_VOL_MASK) >> mc->shift);
@@ -875,6 +910,7 @@ static int rt5640_vol_rescale_put(struct snd_kcontrol *kcontrol,
 		(struct soc_mixer_control *)kcontrol->private_value;
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 	unsigned int val, val2;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	val = RT5640_VOL_RSCL_MAX - ucontrol->value.integer.value[0];
 	val2 = RT5640_VOL_RSCL_MAX - ucontrol->value.integer.value[1];
@@ -979,6 +1015,7 @@ static int set_dmic_clk(struct snd_soc_dapm_widget *w,
 	struct rt5640_priv *rt5640 = snd_soc_codec_get_drvdata(codec);
 	int div[] = {2, 3, 4, 6, 8, 12}, idx = -EINVAL, i;
 	int rate, red, bound, temp;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	rate = rt5640->lrck[rt5640->aif_pu] << 8;
 	red = 3000000 * 12;
@@ -1009,6 +1046,7 @@ static int check_sysclk1_source(struct snd_soc_dapm_widget *source,
 			 struct snd_soc_dapm_widget *sink)
 {
 	unsigned int val;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	val = snd_soc_read(source->codec, RT5640_GLB_CLK);
 	val &= RT5640_SCLK_SRC_MASK;
@@ -1422,6 +1460,7 @@ static int rt5640_adc_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
 	struct snd_soc_codec *codec = w->codec;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
@@ -1446,6 +1485,7 @@ static int rt5640_spk_event(struct snd_soc_dapm_widget *w,
 {
 	struct snd_soc_codec *codec = w->codec;
 	struct rt5640_priv *rt5640 = snd_soc_codec_get_drvdata(codec);
+	pr_debug("\033[33m\33[1m[%s] event : %d\033[0m\r\n", __FUNCTION__, event);
 
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
@@ -1481,6 +1521,7 @@ static int rt5640_set_dmic1_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
 	struct snd_soc_codec *codec = w->codec;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
@@ -1504,6 +1545,7 @@ static int rt5640_set_dmic2_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
 	struct snd_soc_codec *codec = w->codec;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
@@ -1528,6 +1570,7 @@ void hp_amp_power(struct snd_soc_codec *codec, int on)
 {
 	static int hp_amp_power_count;
 //	printk("one bit hp_amp_power on=%d hp_amp_power_count=%d\n",on,hp_amp_power_count);
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	if(on) {
 		if(hp_amp_power_count <= 0) {
@@ -1585,6 +1628,7 @@ void hp_amp_power(struct snd_soc_codec *codec, int on)
 
 static void rt5640_pmu_depop(struct snd_soc_codec *codec)
 {
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	hp_amp_power(codec, 1);
 	/* headphone unmute sequence */
 	msleep(5);
@@ -1597,6 +1641,7 @@ static void rt5640_pmu_depop(struct snd_soc_codec *codec)
 
 static void rt5640_pmd_depop(struct snd_soc_codec *codec)
 {
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	snd_soc_update_bits(codec, RT5640_DEPOP_M3,
 		RT5640_CP_FQ1_MASK | RT5640_CP_FQ2_MASK | RT5640_CP_FQ3_MASK,
 		(RT5640_CP_FQ_96_KHZ << RT5640_CP_FQ1_SFT) |
@@ -1617,6 +1662,7 @@ void hp_amp_power(struct snd_soc_codec *codec, int on)
 {
 	static int hp_amp_power_count;
 //	printk("hp_amp_power on=%d hp_amp_power_count=%d\n",on,hp_amp_power_count);
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	if(on) {
 		if(hp_amp_power_count <= 0) {
@@ -1673,6 +1719,7 @@ void hp_amp_power(struct snd_soc_codec *codec, int on)
 
 static void rt5640_pmu_depop(struct snd_soc_codec *codec)
 {
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	hp_amp_power(codec, 1);
 	/* headphone unmute sequence */
 	snd_soc_update_bits(codec, RT5640_DEPOP_M3,
@@ -1700,6 +1747,7 @@ static void rt5640_pmu_depop(struct snd_soc_codec *codec)
 
 static void rt5640_pmd_depop(struct snd_soc_codec *codec)
 {
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	/* headphone mute sequence */
 	snd_soc_update_bits(codec, RT5640_DEPOP_M3,
 		RT5640_CP_FQ1_MASK | RT5640_CP_FQ2_MASK | RT5640_CP_FQ3_MASK,
@@ -1728,6 +1776,7 @@ static int rt5640_hp_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
 	struct snd_soc_codec *codec = w->codec;
+	pr_debug("\033[33m\33[1m[%s] event : %d\033[0m\r\n", __FUNCTION__, event);
 
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
@@ -1752,6 +1801,7 @@ static int rt5640_mono_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
 	struct snd_soc_codec *codec = w->codec;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
@@ -1775,6 +1825,7 @@ static int rt5640_lout_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
 	struct snd_soc_codec *codec = w->codec;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
@@ -1805,6 +1856,7 @@ static int rt5640_index_sync_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
 	struct snd_soc_codec *codec = w->codec;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
@@ -1822,6 +1874,7 @@ static int rt5640_dac1_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
 	struct snd_soc_codec *codec = w->codec;
+	pr_debug("\033[33m\33[1m[%s] event : %d\033[0m\r\n", __FUNCTION__, event);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMD:
@@ -1841,6 +1894,7 @@ static int rt5640_recmixl_event(struct snd_soc_dapm_widget *w,
 {
 	struct snd_soc_codec *codec = w->codec;
 	unsigned int value;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
@@ -1864,6 +1918,7 @@ static int rt5640_recmixr_event(struct snd_soc_dapm_widget *w,
 {
 	struct snd_soc_codec *codec = w->codec;
 	unsigned int value;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
@@ -2514,6 +2569,7 @@ static const struct snd_soc_dapm_route rt5640_dapm_routes[] = {
 static int get_sdp_info(struct snd_soc_codec *codec, int dai_id)
 {
 	int ret = 0, val;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	if(codec == NULL)
 		return -EINVAL;
@@ -2567,6 +2623,7 @@ static int get_sdp_info(struct snd_soc_codec *codec, int dai_id)
 static int get_clk_info(int sclk, int rate)
 {
 	int i, pd[] = {1, 2, 3, 4, 6, 8, 12, 16};
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 #ifdef USE_ASRC
 	return 0;
@@ -2591,6 +2648,11 @@ static int rt5640_hw_params(struct snd_pcm_substream *substream,
 	unsigned int val_len = 0, val_clk, mask_clk, dai_sel;
 	int pre_div, bclk_ms, frame_size;
 	unsigned int reg_val = 0;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
+
+#if defined(CFG_NOUSE_SND_DAPM)
+	int stream = substream->stream;
+#endif // CFG_NOUSE_SND_DAPM
 
 	rt5640->lrck[dai->id] = params_rate(params);
 	pre_div = get_clk_info(rt5640->sysclk, rt5640->lrck[dai->id]);
@@ -2626,6 +2688,71 @@ static int rt5640_hw_params(struct snd_pcm_substream *substream,
 	default:
 		return -EINVAL;
 	}
+
+#if defined(CFG_NOUSE_SND_DAPM)
+	if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		printk("\033[33m\33[1m[%s] SNDRV_PCM_STREAM_PLAYBACK \033[0m\r\n", __FUNCTION__);
+		is_playing = 1;
+		snd_soc_update_bits(codec, RT5640_PWR_DIG1,
+			RT5640_PWR_I2S1 | RT5640_PWR_I2S2 | RT5640_PWR_DAC_L1 | RT5640_PWR_DAC_R1,
+			RT5640_PWR_I2S1 | RT5640_PWR_I2S2 | RT5640_PWR_DAC_L1 | RT5640_PWR_DAC_R1);
+		snd_soc_update_bits(codec, RT5640_OUT_L3_MIXER,
+			RT5640_M_DAC_L1_OM_L, 0);
+		snd_soc_update_bits(codec, RT5640_OUT_R3_MIXER,
+			RT5640_M_DAC_R1_OM_R, 0);
+		snd_soc_update_bits(codec, RT5640_PWR_MIXER,
+			RT5640_PWR_OM_L | RT5640_PWR_OM_R, RT5640_PWR_OM_L | RT5640_PWR_OM_R);
+		snd_soc_update_bits(codec, RT5640_PWR_VOL,
+			RT5640_PWR_HV_L | RT5640_PWR_HV_R, RT5640_PWR_HV_L | RT5640_PWR_HV_R);
+		snd_soc_update_bits(codec, RT5640_PWR_ANLG1,
+			RT5640_PWR_HP_L | RT5640_PWR_HP_R | RT5640_PWR_HA, RT5640_PWR_HP_L | RT5640_PWR_HP_R | RT5640_PWR_HA);
+		snd_soc_update_bits(codec, RT5640_DEPOP_M1,
+			RT5640_HP_SG_MASK | RT5640_HP_CB_MASK, RT5640_HP_SG_MASK | RT5640_HP_CB_MASK);
+		snd_soc_update_bits(codec, RT5640_DEPOP_M2,
+			RT5640_DEPOP_MASK | RT5640_DIG_DP_MASK, RT5640_DEPOP_AUTO | RT5640_DIG_DP_MASK);
+		snd_soc_update_bits(codec, RT5640_HP_VOL,
+			RT5640_L_MUTE | RT5640_VOL_L_MUTE | RT5640_R_MUTE | RT5640_VOL_R_MUTE, 0);
+	}
+#endif // CFG_NOUSE_SND_DAPM
+
+#if defined(CFG_NOUSE_SND_DAPM)
+	if (stream == SNDRV_PCM_STREAM_CAPTURE) {
+		printk("\033[33m\33[1m[%s] SNDRV_PCM_STREAM_CAPTURE \033[0m\r\n", __FUNCTION__);
+		// set index register
+ 		rt5640_index_update_bits(codec,
+			RT5640_CHOP_DAC_ADC, 0x1000, 0x1000);
+   		snd_soc_update_bits(codec, RT5640_PWR_DIG1,
+			RT5640_PWR_I2S1 | RT5640_PWR_ADC_L | RT5640_PWR_ADC_R,
+			RT5640_PWR_I2S1 | RT5640_PWR_ADC_L | RT5640_PWR_ADC_R);
+   		snd_soc_update_bits(codec, RT5640_PWR_DIG2,
+			RT5640_PWR_ADC_SF, RT5640_PWR_ADC_SF);
+  		snd_soc_update_bits(codec, RT5640_PWR_ANLG1,
+			RT5640_PWR_VREF1 | RT5640_PWR_MB |
+			RT5640_PWR_BG | RT5640_PWR_VREF2,
+			RT5640_PWR_VREF1 | RT5640_PWR_MB |
+			RT5640_PWR_BG | RT5640_PWR_VREF2);
+		msleep(10);
+		snd_soc_update_bits(codec, RT5640_PWR_ANLG1,
+			RT5640_PWR_FV1 | RT5640_PWR_FV2,
+			RT5640_PWR_FV1 | RT5640_PWR_FV2);
+		snd_soc_update_bits(codec, RT5640_PWR_ANLG1,
+			RT5640_PWR_LDO2, RT5640_PWR_LDO2);
+		snd_soc_update_bits(codec, RT5640_GEN_CTRL1, 0x3e01, 0x3e01);
+		snd_soc_update_bits(codec, RT5640_PWR_MIXER,
+			RT5640_PWR_RM_L | RT5640_PWR_RM_R, RT5640_PWR_RM_L | RT5640_PWR_RM_R);
+		snd_soc_update_bits(codec, RT5640_REC_L2_MIXER,
+			RT5640_M_BST1_RM_L, 0);
+		snd_soc_update_bits(codec, RT5640_REC_R2_MIXER,
+			RT5640_M_BST1_RM_R, 0);
+		snd_soc_update_bits(codec, RT5640_PWR_ANLG2,
+			RT5640_PWR_BST1 | RT5640_PWR_MB1, RT5640_PWR_BST1 | RT5640_PWR_MB1);
+		snd_soc_update_bits(codec, RT5640_ADC_DIG_VOL,
+			(0x80 << 8) | (0x80 << 0), 0);
+		snd_soc_update_bits(codec, RT5640_ADC_DIG_VOL,
+			RT5640_ADC_L_VOL_MASK | RT5640_ADC_R_VOL_MASK,
+			(0x2f << RT5640_ADC_L_VOL_SFT) | (0x2f << RT5640_ADC_R_VOL_SFT));
+	}
+#endif // CFG_NOUSE_SND_DAPM
 
 	dai_sel = get_sdp_info(codec, dai->id);
 	//dai_sel |= (RT5640_U_IF1 | RT5640_U_IF2);
@@ -2694,6 +2821,7 @@ static int rt5640_prepare(struct snd_pcm_substream *substream,
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_codec *codec = rtd->codec;
 	struct rt5640_priv *rt5640 = snd_soc_codec_get_drvdata(codec);
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	rt5640->aif_pu = dai->id;
 	return 0;
@@ -2704,6 +2832,7 @@ static int rt5640_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	struct snd_soc_codec *codec = dai->codec;
 	struct rt5640_priv *rt5640 = snd_soc_codec_get_drvdata(codec);
 	unsigned int reg_val = 0, dai_sel;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
 	case SND_SOC_DAIFMT_CBM_CFM:
@@ -2775,6 +2904,7 @@ static int rt5640_set_dai_sysclk(struct snd_soc_dai *dai,
 	struct snd_soc_codec *codec = dai->codec;
 	struct rt5640_priv *rt5640 = snd_soc_codec_get_drvdata(codec);
 	unsigned int reg_val = 0;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	if (freq == rt5640->sysclk && clk_id == rt5640->sysclk_src)
 		return 0;
@@ -2825,6 +2955,7 @@ static int rt5640_pll_calc(const unsigned int freq_in,
 	int max_n = RT5640_PLL_N_MAX, max_m = RT5640_PLL_M_MAX;
 	int k, n = 0, m = 0, red, n_t, m_t, pll_out, in_t, out_t, red_t = abs(freq_out - freq_in);
 	bool bypass = false;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	if (RT5640_PLL_INP_MAX < freq_in || RT5640_PLL_INP_MIN > freq_in)
 		return -EINVAL;
@@ -2882,6 +3013,7 @@ static int rt5640_set_dai_pll(struct snd_soc_dai *dai, int pll_id, int source,
 	struct rt5640_priv *rt5640 = snd_soc_codec_get_drvdata(codec);
 	struct rt5640_pll_code pll_code;
 	int ret;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	if (source == rt5640->pll_src && freq_in == rt5640->pll_in &&
 	    freq_out == rt5640->pll_out)
@@ -2957,11 +3089,12 @@ static int rt5640_set_dai_pll(struct snd_soc_dai *dai, int pll_id, int source,
 static ssize_t rt5640_index_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	struct i2c_client *client = to_i2c_client(dev);
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
 	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
 	struct snd_soc_codec *codec = rt5640->codec;
 	unsigned int val;
 	int cnt = 0, i;
+	pr_debug("\033[33m\33[1m[%s] %s\033[0m\r\n", __FUNCTION__, dev_name(dev));
 
 	cnt += sprintf(buf, "RT5640 index register\n");
 	for (i = 0; i < 0xb4; i++) {
@@ -2984,11 +3117,12 @@ static ssize_t rt5640_index_store(struct device *dev,
 				  struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
-	struct i2c_client *client = to_i2c_client(dev);
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
 	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
 	struct snd_soc_codec *codec = rt5640->codec;
 	unsigned int val = 0, addr = 0;
 	int i;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	pr_debug("register \"%s\" count=%d\n", buf, count);
 	for (i = 0; i < count; i++) {
@@ -3030,11 +3164,12 @@ static DEVICE_ATTR(index_reg, 0664, rt5640_index_show, rt5640_index_store);
 static ssize_t rt5640_codec_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	struct i2c_client *client = to_i2c_client(dev);
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
 	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
 	struct snd_soc_codec *codec = rt5640->codec;
 	unsigned int val;
 	int cnt = 0, i;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	cnt += sprintf(buf, "RT5640 codec register\n");
 	codec->cache_bypass = 1;
@@ -3060,11 +3195,12 @@ static ssize_t rt5640_codec_store(struct device *dev,
 				  struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
-	struct i2c_client *client = to_i2c_client(dev);
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
 	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
 	struct snd_soc_codec *codec = rt5640->codec;
 	unsigned int val = 0, addr = 0;
 	int i;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	pr_debug("register \"%s\" count=%d\n", buf, count);
 	for (i = 0; i < count; i++) {	/*address */
@@ -3107,11 +3243,12 @@ static DEVICE_ATTR(codec_reg, 0666, rt5640_codec_show, rt5640_codec_store);
 static ssize_t rt5640_codec_adb_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	struct i2c_client *client = to_i2c_client(dev);
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
 	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
 	struct snd_soc_codec *codec = rt5640->codec;
 	unsigned int val;
 	int cnt = 0, i;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	for (i = 0; i < rt5640->adb_reg_num; i++) {
 		if (cnt + RT5640_REG_DISP_LEN >= PAGE_SIZE)
@@ -3140,7 +3277,7 @@ static ssize_t rt5640_codec_adb_show(struct device *dev,
 static ssize_t rt5640_codec_adb_store(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct i2c_client *client = to_i2c_client(dev);
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
 	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
 	struct snd_soc_codec *codec = rt5640->codec;
 #if (CONFIG_SND_SOC_RT5642_MODULE | CONFIG_SND_SOC_RT5642)
@@ -3148,6 +3285,7 @@ static ssize_t rt5640_codec_adb_store(struct device *dev,
 #endif
 	unsigned int value = 0;
 	int i = 2, j = 0;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	if (buf[0] == 'R' || buf[0] == 'r') {
 		while (j < 0x100 && i < count) {
@@ -3237,10 +3375,243 @@ static ssize_t rt5640_codec_adb_store(struct device *dev,
 }
 static DEVICE_ATTR(codec_reg_adb, 0664, rt5640_codec_adb_show, rt5640_codec_adb_store);
 
+#if defined(CFG_NOUSE_SND_DAPM)
+static ssize_t rt5640_aux_onoff_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
+	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
+	struct snd_soc_codec *codec = rt5640->codec;
+	unsigned int value;
+	ssize_t status;
+
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
+	mutex_lock(&sysfs_lock);
+
+	value = is_aux;
+
+	status = sprintf(buf, "%d\n", value);
+	pr_debug("\033[33m\33[1m[%s] value : %d \033[0m\r\n", __FUNCTION__, value);
+
+	mutex_unlock(&sysfs_lock);
+	return status;
+}
+
+static ssize_t rt5640_aux_onoff_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
+	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
+	struct snd_soc_codec *codec = rt5640->codec;
+	unsigned int value = 0;
+	ssize_t status;
+
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
+	mutex_lock(&sysfs_lock);
+
+	status = strict_strtol(buf, 0, &value);
+	if (status == 0) {
+		pr_debug("\033[33m\33[1m[%s] value : %d \033[0m\r\n", __FUNCTION__, value);
+		is_aux = value;
+	}
+
+	if (is_aux) {
+		pr_debug("\033[33m\33[1m[%s] ON \033[0m\r\n", __FUNCTION__);
+		snd_soc_update_bits(codec, RT5640_PWR_VOL,
+			RT5640_PWR_IN_L | RT5640_PWR_IN_R, RT5640_PWR_IN_L | RT5640_PWR_IN_R);
+		snd_soc_update_bits(codec, RT5640_OUT_L3_MIXER,
+			RT5640_M_IN_L_OM_L, 0);
+		snd_soc_update_bits(codec, RT5640_OUT_R3_MIXER,
+			RT5640_M_IN_R_OM_R, 0);
+		snd_soc_update_bits(codec, RT5640_PWR_MIXER,
+			RT5640_PWR_OM_L | RT5640_PWR_OM_R, RT5640_PWR_OM_L | RT5640_PWR_OM_R);
+		snd_soc_update_bits(codec, RT5640_PWR_VOL,
+			RT5640_PWR_HV_L | RT5640_PWR_HV_R, RT5640_PWR_HV_L | RT5640_PWR_HV_R);
+		snd_soc_update_bits(codec, RT5640_PWR_ANLG1,
+			RT5640_PWR_HP_L | RT5640_PWR_HP_R | RT5640_PWR_HA, RT5640_PWR_HP_L | RT5640_PWR_HP_R | RT5640_PWR_HA);
+		snd_soc_update_bits(codec, RT5640_DEPOP_M1,
+			RT5640_HP_SG_MASK | RT5640_HP_CB_MASK, RT5640_HP_SG_MASK | RT5640_HP_CB_MASK);
+		snd_soc_update_bits(codec, RT5640_DEPOP_M2,
+			RT5640_DEPOP_MASK | RT5640_DIG_DP_MASK, RT5640_DEPOP_AUTO | RT5640_DIG_DP_MASK);
+		snd_soc_update_bits(codec, RT5640_HP_VOL,
+			RT5640_L_MUTE | RT5640_VOL_L_MUTE | RT5640_R_MUTE | RT5640_VOL_R_MUTE, 0);
+	} else {
+		pr_debug("\033[33m\33[1m[%s] OFF \033[0m\r\n", __FUNCTION__);
+		snd_soc_update_bits(codec, RT5640_OUT_L3_MIXER,
+			RT5640_M_IN_L_OM_L, RT5640_M_IN_L_OM_L);
+		snd_soc_update_bits(codec, RT5640_OUT_R3_MIXER,
+			RT5640_M_IN_R_OM_R, RT5640_M_IN_R_OM_R);
+		snd_soc_update_bits(codec, RT5640_PWR_VOL,
+			RT5640_PWR_IN_L | RT5640_PWR_IN_R, 0);
+	}
+	mutex_unlock(&sysfs_lock);
+	return status ? : count;
+}
+static DEVICE_ATTR(aux_onoff, 0664, rt5640_aux_onoff_show, rt5640_aux_onoff_store);
+
+static ssize_t rt5640_aux_vol_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
+	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
+	struct snd_soc_codec *codec = rt5640->codec;
+	unsigned int value;
+	ssize_t status;
+
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
+	mutex_lock(&sysfs_lock);
+
+	value = aux_vol_val;
+
+	status = sprintf(buf, "%d\n", value);
+	pr_debug("\033[33m\33[1m[%s] value : %d \033[0m\r\n", __FUNCTION__, value);
+
+	mutex_unlock(&sysfs_lock);
+	return status;
+}
+
+static ssize_t rt5640_aux_vol_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
+	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
+	struct snd_soc_codec *codec = rt5640->codec;
+	unsigned int value = 0;
+	ssize_t status;
+	int vol_level;
+
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
+	mutex_lock(&sysfs_lock);
+
+	status = strict_strtol(buf, 0, &value);
+	if (status == 0) {
+		pr_debug("\033[33m\33[1m[%s] value : %d \033[0m\r\n", __FUNCTION__, value);
+		aux_vol_val = value;
+	}
+
+	vol_level = (aux_vol_val * 1000) / 3125 - 1;
+	if (vol_level < 0) vol_level = 0;
+	pr_debug("\033[33m\33[1m[%s] vol_level : %d \033[0m\r\n", __FUNCTION__, vol_level);
+
+	snd_soc_update_bits(codec, RT5640_INL_INR_VOL,
+		RT5640_INL_VOL_MASK | RT5640_INR_VOL_MASK, ((0x1f - vol_level) << RT5640_INL_VOL_SFT) | ((0x1f - vol_level) << RT5640_INR_VOL_SFT));
+
+	mutex_unlock(&sysfs_lock);
+	return status ? : count;
+}
+static DEVICE_ATTR(aux_vol, 0664, rt5640_aux_vol_show, rt5640_aux_vol_store);
+
+static ssize_t rt5640_mic_vol_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
+	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
+	struct snd_soc_codec *codec = rt5640->codec;
+	unsigned int value;
+	ssize_t status;
+
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
+	mutex_lock(&sysfs_lock);
+
+	value = mic_vol_val;
+
+	status = sprintf(buf, "%d\n", value);
+	pr_debug("\033[33m\33[1m[%s] value : %d \033[0m\r\n", __FUNCTION__, value);
+
+	mutex_unlock(&sysfs_lock);
+	return status;
+}
+
+static ssize_t rt5640_mic_vol_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
+	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
+	struct snd_soc_codec *codec = rt5640->codec;
+	unsigned int value = 0;
+	ssize_t status;
+	int vol_level;
+
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
+	mutex_lock(&sysfs_lock);
+
+	status = strict_strtol(buf, 0, &value);
+	if (status == 0) {
+		pr_debug("\033[33m\33[1m[%s] value : %d \033[0m\r\n", __FUNCTION__, value);
+		mic_vol_val = value;
+	}
+
+	vol_level = (mic_vol_val * 1000) / 11111;
+	if (vol_level < 0) vol_level = 0;
+	pr_debug("\033[33m\33[1m[%s] vol_level : %d \033[0m\r\n", __FUNCTION__, vol_level);
+
+	snd_soc_update_bits(codec, RT5640_IN1_IN2,
+		RT5640_BST_MASK1, (vol_level << RT5640_BST_SFT1));
+
+	mutex_unlock(&sysfs_lock);
+	return status ? : count;
+}
+static DEVICE_ATTR(mic_vol, 0664, rt5640_mic_vol_show, rt5640_mic_vol_store);
+
+static ssize_t rt5640_aud_vol_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
+	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
+	struct snd_soc_codec *codec = rt5640->codec;
+	unsigned int value;
+	ssize_t status;
+
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
+	mutex_lock(&sysfs_lock);
+
+	value = aud_vol_val;
+
+	status = sprintf(buf, "%d\n", value);
+	pr_debug("\033[33m\33[1m[%s] value : %d \033[0m\r\n", __FUNCTION__, value);
+
+	mutex_unlock(&sysfs_lock);
+	return status;
+}
+
+static ssize_t rt5640_aud_vol_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
+	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
+	struct snd_soc_codec *codec = rt5640->codec;
+	unsigned int value = 0;
+	ssize_t status;
+	int vol_level;
+
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
+	mutex_lock(&sysfs_lock);
+
+	status = strict_strtol(buf, 0, &value);
+	if (status == 0) {
+		pr_debug("\033[33m\33[1m[%s] value : %d \033[0m\r\n", __FUNCTION__, value);
+		aud_vol_val = value;
+	}
+
+	vol_level = (aud_vol_val * 1000) / 2500 - 1;
+	if (vol_level < 0) vol_level = 0;
+	pr_debug("\033[33m\33[1m[%s] vol_level : %d \033[0m\r\n", __FUNCTION__, vol_level);
+
+	snd_soc_update_bits(codec, RT5640_HP_VOL,
+		(0x3f << 8) | (0x3f << 0), ((0x27 - vol_level) << 8) | ((0x27 - vol_level) << 0));
+
+	mutex_unlock(&sysfs_lock);
+	return status ? : count;
+}
+static DEVICE_ATTR(aud_vol, 0664, rt5640_aud_vol_show, rt5640_aud_vol_store);
+
+#endif // CFG_NOUSE_SND_DAPM
+
 static int rt5640_set_bias_level(struct snd_soc_codec *codec,
 			enum snd_soc_bias_level level)
 {
 	struct rt5640_priv *rt5640 = snd_soc_codec_get_drvdata(codec);
+	pr_debug("\033[33m\33[1m[%s] level : %d\033[0m\r\n", __FUNCTION__, level);
 
 	switch (level) {
 	case SND_SOC_BIAS_ON:
@@ -3319,6 +3690,7 @@ static int rt5640_probe(struct snd_soc_codec *codec)
 {
 	struct rt5640_priv *rt5640 = snd_soc_codec_get_drvdata(codec);
 	int ret;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	pr_info("Codec driver version %s\n", VERSION);
 
@@ -3367,13 +3739,14 @@ static int rt5640_probe(struct snd_soc_codec *codec)
 	DC_Calibrate(codec);
 	codec->dapm.bias_level = SND_SOC_BIAS_STANDBY;
 	rt5640->codec = codec;
-
+#if !defined(CFG_NOUSE_SND_DAPM)
 	snd_soc_add_codec_controls(codec, rt5640_snd_controls,
 			ARRAY_SIZE(rt5640_snd_controls));
 	snd_soc_dapm_new_controls(&codec->dapm, rt5640_dapm_widgets,
 			ARRAY_SIZE(rt5640_dapm_widgets));
 	snd_soc_dapm_add_routes(&codec->dapm, rt5640_dapm_routes,
 			ARRAY_SIZE(rt5640_dapm_routes));
+#endif // CFG_NOUSE_SND_DAPM
 
 #if (CONFIG_SND_SOC_RT5642_MODULE | CONFIG_SND_SOC_RT5642)
 	rt5640->dsp_sw = RT5640_DSP_AEC_NS_FENS;
@@ -3391,26 +3764,57 @@ static int rt5640_probe(struct snd_soc_codec *codec)
 #endif
 #endif
 
-	ret = device_create_file(codec->dev, &dev_attr_index_reg);
+	ret = device_create_file(codec->card->dev, &dev_attr_index_reg);
 	if (ret != 0) {
 		dev_err(codec->dev,
 			"Failed to create index_reg sysfs files: %d\n", ret);
 		return ret;
 	}
 	
-	ret = device_create_file(codec->dev, &dev_attr_codec_reg);
+	ret = device_create_file(codec->card->dev, &dev_attr_codec_reg);
 	if (ret != 0) {
 		dev_err(codec->dev,
 			"Failed to create codex_reg sysfs files: %d\n", ret);
 		return ret;
 	}
 
-	ret = device_create_file(codec->dev, &dev_attr_codec_reg_adb);
+	ret = device_create_file(codec->card->dev, &dev_attr_codec_reg_adb);
 	if (ret != 0) {
 		dev_err(codec->dev,
 			"Failed to create codec_reg_adb sysfs files: %d\n", ret);
 		return ret;
 	}
+
+#if defined(CFG_NOUSE_SND_DAPM)
+	ret = device_create_file(codec->card->dev, &dev_attr_aux_onoff);
+	if (ret != 0) {
+		dev_err(codec->dev,
+			"Failed to create aux_onoff sysfs files: %d\n", ret);
+		return ret;
+	}
+	
+	ret = device_create_file(codec->card->dev, &dev_attr_aux_vol);
+	if (ret != 0) {
+		dev_err(codec->dev,
+			"Failed to create aux_vol sysfs files: %d\n", ret);
+		return ret;
+	}
+	
+	ret = device_create_file(codec->card->dev, &dev_attr_mic_vol);
+	if (ret != 0) {
+		dev_err(codec->dev,
+			"Failed to create mic_vol sysfs files: %d\n", ret);
+		return ret;
+	}
+
+	ret = device_create_file(codec->card->dev, &dev_attr_aud_vol);
+	if (ret != 0) {
+		dev_err(codec->dev,
+			"Failed to create aud_vol sysfs files: %d\n", ret);
+		return ret;
+	}
+
+#endif // CFG_NOUSE_SND_DAPM
 
 	rt5640_codec = codec;
 	setup_timer( &mclk_check_timer, mclk_check_timer_callback, 0 );
@@ -3421,6 +3825,7 @@ static int rt5640_probe(struct snd_soc_codec *codec)
 
 static int rt5640_remove(struct snd_soc_codec *codec)
 {
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	rt5640_set_bias_level(codec, SND_SOC_BIAS_OFF);
 	return 0;
 }
@@ -3428,6 +3833,7 @@ static int rt5640_remove(struct snd_soc_codec *codec)
 #ifdef CONFIG_PM
 static int rt5640_suspend(struct snd_soc_codec *codec)
 {
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 #if (CONFIG_SND_SOC_RT5642_MODULE | CONFIG_SND_SOC_RT5642)
 	/* After opening LDO of DSP, then close LDO of codec.
 	 * (1) DSP LDO power on
@@ -3443,6 +3849,7 @@ static int rt5640_suspend(struct snd_soc_codec *codec)
 
 static int rt5640_resume(struct snd_soc_codec *codec)
 {
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	rt5640_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 #if (CONFIG_SND_SOC_RT5642_MODULE | CONFIG_SND_SOC_RT5642)
 	/* After opening LDO of codec, then close LDO of DSP. */
@@ -3455,6 +3862,46 @@ static int rt5640_resume(struct snd_soc_codec *codec)
 #define rt5640_resume NULL
 #endif
 
+#if defined(CFG_NOUSE_SND_DAPM)
+
+void rt5640_shutdown_sound_path(void)
+{
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
+	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
+	struct snd_soc_codec *codec = rt5640->codec;
+
+	snd_soc_write(codec, 0x4f, 0x01ff);
+	snd_soc_write(codec, 0x52, 0x01ff);
+}
+
+void rt5640_shutdown(struct snd_pcm_substream *pcm,struct snd_soc_dai *dai)
+{
+	struct i2c_client *client = to_i2c_client(rt5640_codec->dev);
+	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
+	struct snd_soc_codec *codec = rt5640->codec;
+
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
+
+	if(pcm->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		is_playing = 0;
+		if(!is_aux) {
+			pr_debug("\033[33m\033[1m[%s] shutdown sound path here\033[0m\r\n",__FUNCTION__);//salary - warning
+			rt5640_shutdown_sound_path();
+		}
+		pr_debug("\033[33m\033[1m[%s] PLAYBACK\033[0m\r\n",__FUNCTION__);//salary - warning
+	} else if(pcm->stream == SNDRV_PCM_STREAM_CAPTURE) {
+		pr_debug("\033[33m\033[1m[%s] RECORDING\033[0m\r\n",__FUNCTION__);//salary - warning
+	}
+	
+}
+
+int rt5640_startup(struct snd_pcm_substream *pcm,struct snd_soc_dai *dai)
+{
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
+	return 0;
+}
+#endif // CFG_NOUSE_SND_DAPM
+
 #define RT5640_STEREO_RATES SNDRV_PCM_RATE_8000_96000
 #define RT5640_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE | \
 			SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S8)
@@ -3465,6 +3912,12 @@ struct snd_soc_dai_ops rt5640_aif_dai_ops = {
 	.set_fmt = rt5640_set_dai_fmt,
 	.set_sysclk = rt5640_set_dai_sysclk,
 	.set_pll = rt5640_set_dai_pll,
+
+#if defined(CFG_NOUSE_SND_DAPM)
+	.shutdown = rt5640_shutdown,
+	.startup = rt5640_startup,
+	.prepare = rt5640_prepare,
+#endif // CFG_NOUSE_SND_DAPM
 };
 
 struct snd_soc_dai_driver rt5640_dai[] = {
@@ -3535,6 +3988,7 @@ static struct snd_soc_codec_driver soc_codec_dev_rt5640 = {
 	.remove = rt5640_remove,
 	.suspend = rt5640_suspend,
 	.resume = rt5640_resume,
+#if !defined(CFG_NOUSE_SND_DAPM)
 	.set_bias_level = rt5640_set_bias_level,
 	.reg_cache_size = RT5640_VENDOR_ID2 + 1,
 	.reg_word_size = sizeof(u16),
@@ -3542,6 +3996,7 @@ static struct snd_soc_codec_driver soc_codec_dev_rt5640 = {
 	.volatile_register = rt5640_volatile_register,
 	.readable_register = rt5640_readable_register,
 	.reg_cache_step = 1,
+#endif // CFG_NOUSE_SND_DAPM
 };
 
 static const struct i2c_device_id rt5640_i2c_id[] = {
@@ -3555,6 +4010,7 @@ static int rt5640_i2c_probe(struct i2c_client *i2c,
 {
 	struct rt5640_priv *rt5640;
 	int ret;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	rt5640 = kzalloc(sizeof(struct rt5640_priv), GFP_KERNEL);
 	if (NULL == rt5640)
@@ -3572,6 +4028,7 @@ static int rt5640_i2c_probe(struct i2c_client *i2c,
 
 static int rt5640_i2c_remove(struct i2c_client *i2c)
 {
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	snd_soc_unregister_codec(&i2c->dev);
 	kfree(i2c_get_clientdata(i2c));
 	return 0;
@@ -3581,6 +4038,7 @@ static int rt5640_i2c_shutdown(struct i2c_client *client)
 {
 	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
 	struct snd_soc_codec *codec = rt5640->codec;
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 
 	if (codec != NULL)
 		rt5640_set_bias_level(codec, SND_SOC_BIAS_OFF);
@@ -3601,12 +4059,14 @@ struct i2c_driver rt5640_i2c_driver = {
 
 static int __init rt5640_modinit(void)
 {
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	return i2c_add_driver(&rt5640_i2c_driver);
 }
 module_init(rt5640_modinit);
 
 static void __exit rt5640_modexit(void)
 {
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
 	i2c_del_driver(&rt5640_i2c_driver);
 }
 module_exit(rt5640_modexit);
