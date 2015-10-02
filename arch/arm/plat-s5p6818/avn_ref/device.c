@@ -182,8 +182,9 @@ static struct platform_device *fb_devices[] = {
 
 static struct platform_pwm_backlight_data bl_plat_data = {
 	.pwm_id			= CFG_LCD_PRI_PWM_CH,
-	.max_brightness = 350,	/* 255 is 100%, set over 100% */
-	.dft_brightness = 128,	/* 50% */
+	.max_brightness = 200,	/* 255 is 100%, set over 100% */
+	.dft_brightness = 135,	/* 50% */
+	.lth_brightness = 70,	/* about to 5% */
 	.pwm_period_ns	= 1000000000/CFG_LCD_PRI_PWM_FREQ,
 };
 
