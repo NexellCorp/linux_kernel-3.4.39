@@ -165,6 +165,18 @@ static int prepare_gpio_suspend(void)
 	return 0;
 }
 
+void watchdog_clear(void)
+{
+	NX_WDT_Initialize();
+	NX_WDT_SetBaseAddress(0, (void*)IO_ADDRESS(NX_WDT_GetPhysicalAddress(0)));
+	NX_WDT_OpenModule(0);
+
+	// watchdog disable
+	NX_WDT_SetEnable(0, CFALSE);
+	NX_WDT_SetResetEnable(0, CFALSE);
+	NX_WDT_ClearInterruptPending(0, NX_WDT_GetInterruptNumber(0));
+}
+
 static int suspend_machine(void)
 {
 	const U32 pads[][2] = {
@@ -725,6 +737,8 @@ static void suspend_finish(void)
 	PM_DBGOUT("%s\n", __func__);
 	if (board_pm && board_pm->finish)
 		board_pm->finish();
+
+	watchdog_clear();
 }
 
 static void suspend_end(void)
