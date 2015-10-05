@@ -2206,12 +2206,11 @@ s3c24xx_serial_console_setup(struct console *co, char *options)
 		co->index = 0;
 
 	uport = s3c24xx_serial_ports[co->index];
-	port  = &uport->port;
-
 	/* is the port configured? */
 
-	if (port->mapbase == 0x0)
+	if (!uport)
 		return -ENODEV;
+	port  = &uport->port;
 
 	cons_uart = port;
 
