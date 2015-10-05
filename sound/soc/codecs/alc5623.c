@@ -105,7 +105,7 @@ static ssize_t alc5623_aud_vol_store(struct device *dev,
 	mutex_unlock(&sysfs_lock);
 	return status ? : count;
 }
-static DEVICE_ATTR(aud_vol, 0664, alc5623_aud_vol_show, alc5623_aud_vol_store);
+static DEVICE_ATTR(aud_vol, 0666, alc5623_aud_vol_show, alc5623_aud_vol_store);
 #endif // CONFIG_NOUSE_SND_DAPM
 
 static void alc5623_fill_cache(struct snd_soc_codec *codec)

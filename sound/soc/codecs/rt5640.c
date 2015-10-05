@@ -3447,7 +3447,7 @@ static ssize_t rt5640_aux_onoff_store(struct device *dev,
 	mutex_unlock(&sysfs_lock);
 	return status ? : count;
 }
-static DEVICE_ATTR(aux_onoff, 0664, rt5640_aux_onoff_show, rt5640_aux_onoff_store);
+static DEVICE_ATTR(aux_onoff, 0666, rt5640_aux_onoff_show, rt5640_aux_onoff_store);
 
 static ssize_t rt5640_aux_vol_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
@@ -3499,7 +3499,7 @@ static ssize_t rt5640_aux_vol_store(struct device *dev,
 	mutex_unlock(&sysfs_lock);
 	return status ? : count;
 }
-static DEVICE_ATTR(aux_vol, 0664, rt5640_aux_vol_show, rt5640_aux_vol_store);
+static DEVICE_ATTR(aux_vol, 0666, rt5640_aux_vol_show, rt5640_aux_vol_store);
 
 static ssize_t rt5640_mic_vol_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
@@ -3551,7 +3551,7 @@ static ssize_t rt5640_mic_vol_store(struct device *dev,
 	mutex_unlock(&sysfs_lock);
 	return status ? : count;
 }
-static DEVICE_ATTR(mic_vol, 0664, rt5640_mic_vol_show, rt5640_mic_vol_store);
+static DEVICE_ATTR(mic_vol, 0666, rt5640_mic_vol_show, rt5640_mic_vol_store);
 
 static ssize_t rt5640_aud_vol_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
@@ -3603,7 +3603,7 @@ static ssize_t rt5640_aud_vol_store(struct device *dev,
 	mutex_unlock(&sysfs_lock);
 	return status ? : count;
 }
-static DEVICE_ATTR(aud_vol, 0664, rt5640_aud_vol_show, rt5640_aud_vol_store);
+static DEVICE_ATTR(aud_vol, 0666, rt5640_aud_vol_show, rt5640_aud_vol_store);
 
 #endif // CONFIG_NOUSE_SND_DAPM
 
