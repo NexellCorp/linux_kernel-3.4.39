@@ -129,8 +129,10 @@
  * 	PWM
  */
 #define CFG_LCD_PRI_PWM_CH						0
-#define CFG_LCD_PRI_PWM_FREQ					30000
+#define CFG_LCD_PRI_PWM_FREQ					20000
 #define CFG_LCD_PRI_PWM_DUTYCYCLE				50		/* (%) */
+
+#define CFG_PWM0_CLK_INV						1		/* for LCD Backlight */
 
 /*------------------------------------------------------------------------------
  * 	Audio I2S (0, 1, 2)

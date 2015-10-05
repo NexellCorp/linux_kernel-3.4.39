@@ -346,6 +346,16 @@ static struct i2c_board_info __initdata Goodix80X_i2c_bdi = {
 #endif
 
 
+#if defined(CONFIG_GT9XX_10_VW)
+#include <linux/i2c.h>
+#define	Goodix9XX_I2C_BUS		(1)
+
+static struct i2c_board_info __initdata Goodix9xx_i2c_bdi = {
+	.type	= "Goodix-MSD",
+	.addr	= (0x14),
+    	.irq    = PB_PIO_IRQ(MSD_CFG_IO_TOUCH_PENDOWN_DETECT),
+};
+#endif
 /*------------------------------------------------------------------------------
  * Keypad platform device
  */
@@ -1077,6 +1087,23 @@ static struct dw_mci_board _dwmci0_data = {
 };
 #endif
 
+#ifdef CONFIG_MMC_NXP_CH1
+static struct dw_mci_board _dwmci1_data = {
+	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
+	.bus_hz			= 100 * 1000 * 1000,
+	.caps = MMC_CAP_CMD23|MMC_CAP_NONREMOVABLE,
+	.detect_delay_ms= 200,
+	.cd_type 		= DW_MCI_CD_NONE,
+	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(1),
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
+	.mode       	= DMA_MODE,
+#else
+	.mode       	= PIO_MODE,
+#endif
+};
+#endif
+
 #ifdef CONFIG_MMC_NXP_CH2
 static struct dw_mci_board _dwmci2_data = {
     .quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
@@ -1180,6 +1207,9 @@ void __init nxp_board_devices_register(void)
 	#ifdef CONFIG_MMC_NXP_CH0
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
+    #ifdef CONFIG_MMC_NXP_CH1
+	nxp_mmc_add_device(1, &_dwmci1_data);
+	#endif
 #endif
 
 #if defined(CONFIG_DM9000) || defined(CONFIG_DM9000_MODULE)
@@ -1235,6 +1265,10 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_MS_GT80X_MSD)
 	printk("plat: add touch(Goodix80X) device\n");
 	i2c_register_board_info(Goodix80X_I2C_BUS, &Goodix80X_i2c_bdi, 1);
+#endif
+#if defined(CONFIG_GT9XX_10_VW)
+	printk("plat: add touch(Goodix9xx vw) device\n");
+	i2c_register_board_info(Goodix9XX_I2C_BUS, &Goodix9xx_i2c_bdi, 1);
 #endif
 #if defined(CONFIG_SENSORS_MMA865X) || defined(CONFIG_SENSORS_MMA865X_MODULE)
 	printk("plat: add g-sensor mma865x\n");

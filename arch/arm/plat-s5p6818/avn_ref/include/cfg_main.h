@@ -129,6 +129,8 @@
 #define CFG_LCD_PRI_PWM_FREQ					20000
 #define CFG_LCD_PRI_PWM_DUTYCYCLE				50		/* (%) */
 
+#define CFG_PWM0_CLK_INV						1		/* for LCD Backlight */
+
 /*------------------------------------------------------------------------------
  * 	Audio I2S (0, 1, 2)
  */
@@ -169,6 +171,7 @@
 #define CFG_I2C6_CLK							100000
 #define CFG_I2C7_CLK							100000
 #define CFG_I2C8_CLK							100000
+#define CFG_I2C9_CLK							100000
 
 #define CFG_I2C1_RETRY_CNT 						10	
 #define CFG_I2C1_RETRY_DELAY 					500
@@ -180,15 +183,20 @@
 #define CFG_SPI1_CLK							10000000
 #define CFG_SPI2_CLK							10000000
 
+#define CFG_SPI0_COM_MODE                       1 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
+
+
+#define CFG_SPI0_CS_GPIO_MODE                   1       /* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
+
 #define CFG_SPI0_CS                         	PAD_GPIO_C + 30 
 
 /*------------------------------------------------------------------------------
  * 	Keypad
  */
-#define USERDEF_KEY1							251
-#define USERDEF_KEY2							252
-#define USERDEF_KEY3							253
-#define USERDEF_KEY4							254
+#define USERDEF_KEY1							59  /* F1 */
+#define USERDEF_KEY2							60  /* F2 */
+#define USERDEF_KEY3							61  /* F3 */
+#define USERDEF_KEY4							62  /* F4 */
 
 #define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0, PAD_GPIO_ALV + 1, PAD_GPIO_ALV + 2, PAD_GPIO_ALV + 3, PAD_GPIO_ALV + 4}
 #define CFG_KEYPAD_KEY_CODE						{ KEY_POWER, USERDEF_KEY1, USERDEF_KEY2, USERDEF_KEY3, USERDEF_KEY4 }

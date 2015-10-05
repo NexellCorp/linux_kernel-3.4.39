@@ -59,6 +59,10 @@ config SND_PDM_REC
 	select SND_NXP_PDM
 	default n
 
+config NOUSE_SND_DAPM
+	bool "nouse dapm control for codec"
+	depends on SND_NXP_I2S
+
 config SND_CODEC_NULL
 	tristate "I2S audio null codec."
 	depends on SND_NXP_I2S

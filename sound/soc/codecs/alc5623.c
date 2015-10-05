@@ -33,8 +33,15 @@
 #include "alc5623.h"
 
 /*
-#define pr_debug				printk
+#define pr_debug	printk
 */
+
+#if defined(CONFIG_NOUSE_SND_DAPM)
+static struct snd_soc_codec *alc5623_codec;
+static int aud_vol_val = 0;
+
+static DEFINE_MUTEX(sysfs_lock);
+#endif // CONFIG_NOUSE_SND_DAPM
 
 static struct i2c_client *i2c;
 static int caps_charge = 2000;
@@ -50,6 +57,56 @@ struct alc5623_priv {
 	unsigned int add_ctrl;
 	unsigned int jack_det_ctrl;
 };
+
+#if defined(CONFIG_NOUSE_SND_DAPM)
+static ssize_t alc5623_aud_vol_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct snd_soc_codec *codec = alc5623_codec;
+	unsigned int value;
+	ssize_t status;
+
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
+	mutex_lock(&sysfs_lock);
+
+	value = aud_vol_val;
+
+	status = sprintf(buf, "%d\n", value);
+	pr_debug("\033[33m\33[1m[%s] value : %d \033[0m\r\n", __FUNCTION__, value);
+
+	mutex_unlock(&sysfs_lock);
+	return status;
+}
+
+static ssize_t alc5623_aud_vol_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct snd_soc_codec *codec = alc5623_codec;
+	unsigned int value = 0;
+	ssize_t status;
+	int vol_level;
+
+	pr_debug("\033[33m\33[1m[%s]\033[0m\r\n", __FUNCTION__);
+	mutex_lock(&sysfs_lock);
+
+	status = strict_strtol(buf, 0, &value);
+	if (status == 0) {
+		pr_debug("\033[33m\33[1m[%s] value : %d \033[0m\r\n", __FUNCTION__, value);
+		aud_vol_val = value;
+	}
+
+	vol_level = (aud_vol_val * 1000) / 3125 - 1;
+	if (vol_level < 0) vol_level = 0;
+	pr_debug("\033[33m\33[1m[%s] vol_level : %d \033[0m\r\n", __FUNCTION__, vol_level);
+
+	snd_soc_update_bits(codec, ALC5623_SPK_OUT_VOL,
+		(0x1f << 8) | (0x1f << 0), ((0x1f - vol_level) << 8) | ((0x1f - vol_level) << 0));
+
+	mutex_unlock(&sysfs_lock);
+	return status ? : count;
+}
+static DEVICE_ATTR(aud_vol, 0664, alc5623_aud_vol_show, alc5623_aud_vol_store);
+#endif // CONFIG_NOUSE_SND_DAPM
 
 static void alc5623_fill_cache(struct snd_soc_codec *codec)
 {
@@ -1209,6 +1266,17 @@ static int alc5623_probe(struct snd_soc_codec *codec)
 	default:
 		return -EINVAL;
 	}
+
+#if defined(CONFIG_NOUSE_SND_DAPM)
+    ret = device_create_file(codec->card->dev, &dev_attr_aud_vol);
+	if (ret != 0) {
+		dev_err(codec->dev,
+			"Failed to create aud_vol sysfs files: %d\n", ret);
+		return ret;
+	}
+
+	alc5623_codec = codec;
+#endif // CONFIG_NOUSE_SND_DAPM
 
     init_codec(i2c);
     alc5623_fill_cache(codec);

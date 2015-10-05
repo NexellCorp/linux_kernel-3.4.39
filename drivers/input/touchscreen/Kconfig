@@ -950,4 +950,14 @@ config MS_GT80X_MSD
           To compile this driver as a module, choose M here: the
           module will be called gt80x.
 
+config GT9XX_10_VW
+        tristate "GT9XX_10_VW Capacitive touch screen driver"
+        help
+          Say Y here to enable the driver for the touchscreen.
+
+          If unsure, say Y.
+
+          To compile this driver as a module, choose M here: the
+          module will be called gt80x.
+
 endif
