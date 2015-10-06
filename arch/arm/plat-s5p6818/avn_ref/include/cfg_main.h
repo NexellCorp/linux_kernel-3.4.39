@@ -37,8 +37,7 @@
 /*------------------------------------------------------------------------------
  * 	Uart
  */
-#define CFG_UART_DEBUG_CH						0	/* For Low level debug */
-#define	CFG_UART_DEBUG_BAUDRATE					115200
+#define	CFG_UART_DEBUG_BAUDRATE					115200		/* For Low level debug */
 #define	CFG_UART_CLKGEN_CLOCK_HZ				14750000	/* 50000000 */
 
 /*------------------------------------------------------------------------------
