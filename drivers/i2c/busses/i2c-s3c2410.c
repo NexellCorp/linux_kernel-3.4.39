@@ -1011,13 +1011,6 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "cannot claim IRQ %d\n", i2c->irq);
 		goto err_iomap;
 	}
-/*
-	ret = s3c24xx_i2c_register_cpufreq(i2c);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "failed to register cpufreq notifier\n");
-		goto err_irq;
-	}
-*/
 	/* Note, previous versions of the driver used i2c_add_adapter()
 	 * to add the bus at any number. We now pass the bus number via
 	 * the platform data, so if unset it will now default to always
@@ -1046,9 +1039,6 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
 	return 0;
 
  err_cpufreq:
-//	s3c24xx_i2c_deregister_cpufreq(i2c);
-
- err_irq:
 	free_irq(i2c->irq, i2c);
 
  err_iomap:
