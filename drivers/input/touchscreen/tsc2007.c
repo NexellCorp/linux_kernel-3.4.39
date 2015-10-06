@@ -64,6 +64,18 @@
 #define PWRDOWN		(TSC2007_12BIT | TSC2007_POWER_OFF_IRQ_EN)
 
 
+#define	SAMPLE_AVERAGE
+#define	ADCVAL_X_MAX		(4096)
+#define	ADCVAL_Y_MAX		(4096)
+
+#define TOUCH_COLLECT_NR         10
+#define TOUCH_VALID_VALUE        4
+#define TSC_ABS(x,y)    (((x)>(y))?(x)-(y):(y)-(x))
+unsigned int tsc_old_pos_x[3], tsc_old_pos_y[3];
+unsigned int tsc_old_pos_idx;
+
+
+
 struct ts_event {
 	u16	x;
 	u16	y;
@@ -172,6 +184,167 @@ static u32 tsc2007_calculate_pressure(struct tsc2007 *tsc, struct ts_event *tc)
 
 	return rt;
 }
+unsigned int tca_touch_getvaliddata(unsigned int Number[], unsigned int num)
+{
+    unsigned int CurrNum, CurrCnt, OldNum, OldCnt;
+    int i, InvalidCnt;
+
+    OldNum=OldCnt=0;
+    InvalidCnt = 0;
+    CurrNum = Number[0];
+    CurrCnt = 1;
+
+    for (i=1 ; i<num ; i++)
+    {
+        if (CurrNum != Number[i])
+        {
+            if (OldCnt < CurrCnt)
+            {
+                OldCnt = CurrCnt;
+                OldNum = CurrNum;
+                InvalidCnt = 0;
+            }
+            else if (OldCnt == CurrCnt)
+            {
+                InvalidCnt++;
+            }
+            CurrNum = Number[i];
+            CurrCnt = 1;
+        }
+        else
+            CurrCnt++;
+    }
+
+    if (OldCnt < CurrCnt)
+    {
+        OldCnt = CurrCnt;
+        OldNum = CurrNum;
+        InvalidCnt = 0;
+    }
+    else if (OldCnt == CurrCnt)
+    {
+        InvalidCnt++;
+    }
+
+    if (InvalidCnt)
+        return 0;
+
+    return OldNum;
+}
+static void tsc2007_touchbublesort(unsigned int Number[],unsigned int num)
+{
+    int i,j;
+    unsigned int temp;
+    for(i=0 ; i<(int)(num-1) ; i++)
+    {
+        for(j=i+1;j<(int)num;j++)
+        {
+            if(Number[i]>Number[j])
+            {
+                temp   = Number[i];
+                Number[i] = Number[j];
+                Number[j] = temp;
+            }
+        }
+    }
+}
+int tsc207_sample_average(struct tsc2007 *ts, struct ts_event *tc)
+{
+	unsigned int  i, ValidNum=0;
+    unsigned int r_x[TOUCH_COLLECT_NR];
+	unsigned int r_y[TOUCH_COLLECT_NR];
+    unsigned long  x_tol, y_tol;
+    unsigned int m_pos_x, m_pos_y;
+    unsigned int z1,z2;
+    unsigned int index;
+	u32 rt;
+	m_pos_x = m_pos_y = 0;
+    ValidNum = 0;
+	memset(r_x,0,sizeof(r_x));
+	memset(r_y,0,sizeof(r_y));
+
+	for(i=0; i<TOUCH_COLLECT_NR; i++){
+		tsc2007_read_values(ts, tc);
+
+		r_x[ValidNum] = tc->x;
+		r_y[ValidNum] = tc->y;
+		
+		if((r_x[ValidNum] != 0)&&(r_y[ValidNum] != 0)
+			&&(r_x[ValidNum] < ADCVAL_X_MAX)&&(r_y[ValidNum] < ADCVAL_Y_MAX) ){
+		rt = tsc2007_calculate_pressure(ts, &tc);
+			if(rt <= ts->max_rt)
+	           ValidNum++;
+		}
+	
+		
+	}
+
+    if(ValidNum<TOUCH_VALID_VALUE)
+    {
+	printk("Touch raw data not valid to get avgerage\n");
+        goto digi_int_exit;
+    }
+			
+    tsc2007_touchbublesort(r_x,ValidNum);
+    tsc2007_touchbublesort(r_y,ValidNum);
+
+    x_tol = y_tol = 0; //sum the coordinate values
+    m_pos_x = tca_touch_getvaliddata(r_x, ValidNum);
+    m_pos_y = tca_touch_getvaliddata(r_y, ValidNum);
+    if (!m_pos_x || !m_pos_y)
+    {
+        index = (ValidNum-TOUCH_VALID_VALUE)>>1;
+			
+        for(i=index;i<(index+TOUCH_VALID_VALUE);++i)
+        {
+            x_tol += r_x[i];
+            y_tol += r_y[i];
+        }
+        m_pos_x = x_tol/TOUCH_VALID_VALUE;
+        m_pos_y = y_tol/TOUCH_VALID_VALUE;
+    }
+			
+    if ((tsc_old_pos_x[tsc_old_pos_idx]!= m_pos_x) || (tsc_old_pos_y[tsc_old_pos_idx]!= m_pos_y)) {
+        if ((TSC_ABS(tsc_old_pos_x[tsc_old_pos_idx], m_pos_x) <= 16) && (TSC_ABS(tsc_old_pos_y[tsc_old_pos_idx], m_pos_y) <= 16)) {
+            if ((tsc_old_pos_x[tsc_old_pos_idx] == tsc_old_pos_x[(tsc_old_pos_idx+2)%3]) &&
+				(tsc_old_pos_y[tsc_old_pos_idx] == tsc_old_pos_y[(tsc_old_pos_idx+2)%3])) {
+                tc->x = tsc_old_pos_x[(tsc_old_pos_idx+1)%3];
+                tc->y = tsc_old_pos_y[(tsc_old_pos_idx+1)%3];
+			 	
+                tsc_old_pos_idx++;
+                if (tsc_old_pos_idx > 2)
+                    tsc_old_pos_idx = 0;
+
+                tsc_old_pos_x[tsc_old_pos_idx] = m_pos_x;
+                tsc_old_pos_y[tsc_old_pos_idx] = m_pos_y;
+			
+                if(tc->x && tc->y) {
+                    return 0;
+                }
+                else {
+                    return -1;
+                }
+            }
+        }
+    }
+    tsc_old_pos_idx++;
+    if (tsc_old_pos_idx > 2)
+        tsc_old_pos_idx = 0;
+
+    tsc_old_pos_x[tsc_old_pos_idx] = m_pos_x;
+    tsc_old_pos_y[tsc_old_pos_idx] = m_pos_y;
+
+
+digi_int_exit:
+    tc->x = m_pos_x;
+    tc->y = m_pos_y;
+    if(m_pos_x && m_pos_y) {
+        return 0;
+    }
+    else {
+        return -1;
+		}
+}
 
 static void tsc2007_send_up_event(struct tsc2007 *tsc)
 {
@@ -184,6 +357,8 @@ static void tsc2007_send_up_event(struct tsc2007 *tsc)
 	input_report_abs(input, ABS_PRESSURE, 0);
 	input_sync(input);
 }
+
+
 
 static void tsc2007_work(struct work_struct *work)
 {
@@ -215,7 +390,14 @@ static void tsc2007_work(struct work_struct *work)
 		dev_dbg(&ts->client->dev, "pen is still down\n");
 	}
 
+	#ifndef SAMPLE_AVERAGE
 	tsc2007_read_values(ts, &tc);
+	#else
+	if (tsc207_sample_average(ts,&tc) != 0) {
+		//printk("sample average invalid \n");
+		goto out;
+	}
+	#endif
 
 	rt = tsc2007_calculate_pressure(ts, &tc);
 

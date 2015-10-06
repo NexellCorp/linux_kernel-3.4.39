@@ -417,22 +417,18 @@ static int tsc2007_get_pendown_state(struct device *dev){
 
 
 struct tsc2007_platform_data tsc2007_plat_data = {
-		#if 1
-        .x_plate_ohms   = 100,
-		.min_x = MIN_12BIT,
-		.min_y = MIN_12BIT,
-		.max_x = MAX_12BIT,
-		.max_y = MAX_12BIT,
-		.fuzzx = 0,
-		.fuzzy = 0,
-		.fuzzz = 0,
-		.get_pendown_state = &tsc2007_get_pendown_state,
-		#else
-        .x_plate_ohms   = 10,
-        .poll_period    = 10,
-		#endif
-
-    };
+        .x_plate_ohms   = 10000,
+        .min_x = MIN_12BIT,
+        .min_y = MIN_12BIT,
+        .max_x = MAX_12BIT,
+        .max_y = MAX_12BIT,
+        .poll_delay = 5,
+        .poll_period    = 5,
+        .fuzzx = 0,
+        .fuzzy = 0,
+        .fuzzz = 0,
+        .get_pendown_state = &tsc2007_get_pendown_state,
+};
 
 static struct i2c_board_info __initdata tsc2007_i2c_bdi = {
     .type   = "tsc2007",
