@@ -623,7 +623,14 @@ static int mp8845c_regulator_preinit(struct mp8845c_regulator *ri, struct mp8845
 		asv_core_setup(ri, mp8845c_pdata);
 #endif
 
-	mp8845c_set_bits(ri->client, MP8845C_REG_SYSCNTL1, (1 << MP8845C_POS_MODE));
+	ret = mp8845c_set_bits(ri->client, MP8845C_REG_SYSCNTL1, (1 << MP8845C_POS_MODE));
+
+#ifndef CONFIG_ENABLE_CORE_DDR
+	if(ri->id == MP8845C_1_VOUT) 
+	{
+		return ret;
+	}
+#endif
 
 	if (mp8845c_pdata->init_enable)
 	{
