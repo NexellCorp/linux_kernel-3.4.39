@@ -32,7 +32,8 @@ obj-y += \
 		$(PROTOTYPE)/$(MODULES)/nx_gpio.o		\
 		$(PROTOTYPE)/$(MODULES)/nx_alive.o		\
 		$(PROTOTYPE)/$(MODULES)/nx_clkgen.o		\
-		$(PROTOTYPE)/$(MODULES)/nx_ecid.o
+		$(PROTOTYPE)/$(MODULES)/nx_ecid.o		\
+		$(PROTOTYPE)/$(MODULES)/nx_wdt.o
 
 obj-$(CONFIG_NXP_DISPLAY)				+= 	$(PROTOTYPE)/$(MODULES)/nx_displaytop.o		\
 								   			$(PROTOTYPE)/$(MODULES)/nx_disptop_clkgen.o	\

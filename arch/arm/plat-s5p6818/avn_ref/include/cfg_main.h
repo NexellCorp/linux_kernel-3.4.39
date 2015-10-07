@@ -37,8 +37,7 @@
 /*------------------------------------------------------------------------------
  * 	Uart
  */
-#define CFG_UART_DEBUG_CH						0	/* For Low level debug */
-#define	CFG_UART_DEBUG_BAUDRATE					115200
+#define	CFG_UART_DEBUG_BAUDRATE					115200		/* For Low level debug */
 #define	CFG_UART_CLKGEN_CLOCK_HZ				14750000	/* 50000000 */
 
 /*------------------------------------------------------------------------------
@@ -129,6 +128,8 @@
 #define CFG_LCD_PRI_PWM_FREQ					20000
 #define CFG_LCD_PRI_PWM_DUTYCYCLE				50		/* (%) */
 
+#define CFG_PWM0_CLK_INV						1		/* for LCD Backlight */
+
 /*------------------------------------------------------------------------------
  * 	Audio I2S (0, 1, 2)
  */
@@ -169,6 +170,7 @@
 #define CFG_I2C6_CLK							100000
 #define CFG_I2C7_CLK							100000
 #define CFG_I2C8_CLK							100000
+#define CFG_I2C9_CLK							100000
 
 #define CFG_I2C1_RETRY_CNT 						10	
 #define CFG_I2C1_RETRY_DELAY 					500
@@ -179,6 +181,11 @@
 #define CFG_SPI0_CLK							10000000
 #define CFG_SPI1_CLK							10000000
 #define CFG_SPI2_CLK							10000000
+
+#define CFG_SPI0_COM_MODE                       1 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
+
+
+#define CFG_SPI0_CS_GPIO_MODE                   1       /* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
 
 #define CFG_SPI0_CS                         	PAD_GPIO_C + 30 
 

@@ -141,6 +141,18 @@ static const char * __wake_event_name [] = {
 #define	RTC_ALARM_INTENB	(0x010)
 #define	RTC_ALARM_INTPND	(0x014)
 
+void watchdog_clear(void)
+{
+	NX_WDT_Initialize();
+	NX_WDT_SetBaseAddress(0, (void*)IO_ADDRESS(NX_WDT_GetPhysicalAddress(0)));
+	NX_WDT_OpenModule(0);
+
+	// watchdog disable
+	NX_WDT_SetEnable(0, CFALSE);
+	NX_WDT_SetResetEnable(0, CFALSE);
+	NX_WDT_ClearInterruptPending(0, NX_WDT_GetInterruptNumber(0));
+}
+
 static int suspend_machine(void)
 {
 	const U32 pads[][2] = {
@@ -684,6 +696,8 @@ static void suspend_finish(void)
 	PM_DBGOUT("%s\n", __func__);
 	if (board_pm && board_pm->finish)
 		board_pm->finish();
+
+	watchdog_clear();
 }
 
 static void suspend_end(void)

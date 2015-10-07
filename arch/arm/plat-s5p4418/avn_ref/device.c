@@ -93,25 +93,9 @@ const u8 g_DispBusSI[3] = {
  */
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
-static unsigned long dfs_freq_table[][2] = {
-	{ 1400000, },
-//	{ 1300000, },
-	{ 1200000, },
-//	{ 1100000, },
-	{ 1000000, },
-//	{  900000, },
-	{  800000, },
-	{  700000, },
-	{  600000, },
-	{  500000, },
-	{  400000, },
-};
-
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
 	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
-	.freq_table	   	= dfs_freq_table,
-	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
 	.max_cpufreq	= 1400*1000,
 	.max_retention  =   20*1000,
 	.rest_cpufreq   =  400*1000,
@@ -122,47 +106,6 @@ static struct platform_device dfs_plat_device = {
 	.name			= DEV_NAME_CPUFREQ,
 	.dev			= {
 		.platform_data	= &dfs_plat_data,
-	}
-};
-#endif
-
-#define CPU_LIMIT_CONTROL
-/*------------------------------------------------------------------------------
- * CPUFREQ Limit
- */
-#if defined(CPU_LIMIT_CONTROL)
-#if 0
-static char *freq_proct_list[] = { "com.into.stability", };
-
-static struct nxp_cpufreq_limit_data freq_limit_data = {
-	.limit_name	 	= freq_proct_list,
-	.limit_num 		= ARRAY_SIZE(freq_proct_list),
-	.aval_max_freq 	= 1200000,
-	.op_max_freq	= 1600000,
-	.sched_duration	= 1000,
-	.sched_timeout	= 3000,
-};
-#else
-static char *freq_proct_list[] = { "com.antutu", };
-
-static struct nxp_cpufreq_limit_data freq_limit_data = {
-	.limit_name		= freq_proct_list,
-	.limit_num 		= ARRAY_SIZE(freq_proct_list),
-	.aval_max_freq	= 1400000,
-	.op_max_freq	= 1200000,
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-	.limit_level0_freq	= 1200000,
-	.limit_level1_freq	= 1000000,
-	.min_max_freq	= 800000,
-	.prev_max_freq = 1400000,
-#endif
-};
-#endif
-
-static struct platform_device freq_limit_device = {
-	.name			= "cpufreq-limit",
-	.dev			= {
-		.platform_data	= &freq_limit_data,
 	}
 };
 #endif
@@ -254,8 +197,9 @@ static struct platform_device *fb_devices[] = {
 
 static struct platform_pwm_backlight_data bl_plat_data = {
 	.pwm_id			= CFG_LCD_PRI_PWM_CH,
-	.max_brightness = 350,	/* 255 is 100%, set over 100% */
-	.dft_brightness = 128,	/* 50% */
+	.max_brightness = 200,	/* 255 is 100%, set over 100% */
+	.dft_brightness = 135,	/* 50% */
+	.lth_brightness = 70,	/* about to 5% */
 	.pwm_period_ns	= 1000000000/CFG_LCD_PRI_PWM_FREQ,
 };
 
@@ -1523,9 +1467,6 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 	printk("plat: add dynamic frequency (pll.%d)\n", dfs_plat_data.pll_dev);
 	platform_device_register(&dfs_plat_device);
-	#if defined(CPU_LIMIT_CONTROL)
-	platform_device_register(&freq_limit_device);
-	#endif
 #endif
 
 #if defined (CONFIG_FB_NXP)
