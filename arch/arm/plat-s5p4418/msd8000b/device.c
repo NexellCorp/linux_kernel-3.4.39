@@ -134,7 +134,9 @@ static struct platform_device msd_gpio_device = {
 
 #endif
 
-#define CPU_LIMIT_CONTROL
+// psw0523 test for booting time
+/* #define CPU_LIMIT_CONTROL */
+
 /*------------------------------------------------------------------------------
  * CPUFREQ Limit
  */
