@@ -507,8 +507,8 @@ static int nxe2000_regulator_preinit(struct device *parent,
 		dev_err(ri->dev, "Not able to 0x%02X rail %d err %d\n",
 			nxe2000_pdata->sleep_slots, ri->desc.id, ret);
 
-#ifndef CONFIG_ENABLE_CORE_DDR
-	if(ri->id == NXE2000_ID_DC2 || ri->id == NXE2000_ID_DC4) 
+#ifndef CONFIG_ENABLE_INIT_VOLTAGE
+	if(ri->id == NXE2000_ID_DC1 || ri->id == NXE2000_ID_DC2 || ri->id == NXE2000_ID_DC4) 
 	{
 		return ret;
 	}

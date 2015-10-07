@@ -625,8 +625,8 @@ static int mp8845c_regulator_preinit(struct mp8845c_regulator *ri, struct mp8845
 
 	ret = mp8845c_set_bits(ri->client, MP8845C_REG_SYSCNTL1, (1 << MP8845C_POS_MODE));
 
-#ifndef CONFIG_ENABLE_CORE_DDR
-	if(ri->id == MP8845C_1_VOUT) 
+#ifndef CONFIG_ENABLE_INIT_VOLTAGE
+	if(ri->id == MP8845C_0_VOUT || ri->id == MP8845C_1_VOUT) 
 	{
 		return ret;
 	}

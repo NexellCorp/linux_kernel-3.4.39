@@ -268,7 +268,7 @@
 #define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
 
-//#define CONFIG_ENABLE_CORE_DDR					/* Enalbe init voltage for CORE, DDR*/
+//#define CONFIG_ENABLE_INIT_VOLTAGE					/* Enalbe init voltage for ARM, CORE, DDR*/
 
 
 /*------------------------------------------------------------------------------
