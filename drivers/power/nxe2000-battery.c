@@ -48,7 +48,7 @@
 //
 ///////////////////////////////////////////////////////////////////////
 
-#define NXE2000_BATTERY_VERSION "NXE2000_BATTERY_VERSION: 2014.11.27 V3.1.3.3(2015.01.21:modify)"
+#define NXE2000_BATTERY_VERSION "NXE2000_BATTERY_VERSION: 2014.11.27 V3.1.3.3(2015.06.08:modify)"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
