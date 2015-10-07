@@ -604,7 +604,23 @@ static int __devexit nxe2000_regulator_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int nxe2000_regulator_suspend(struct device *dev)
 {
-//	struct nxe2000_regulator *info = dev_get_drvdata(dev);
+#if 0
+	struct nxe2000_regulator_platform_data *nxe2000_pdata = dev->platform_data;
+	struct nxe2000_regulator *ri = dev_get_drvdata(dev);
+
+	int ret = 0;
+
+	nxe2000_suspend_status = 0;
+
+	if(ri->id == NXE2000_ID_DC1) 
+	{
+		ret = __nxe2000_set_voltage(dev, ri, nxe2000_pdata->init_uV, nxe2000_pdata->init_uV, 0, 0);
+		if (ret < 0) {
+			dev_err(ri->dev, "Not able to initialize voltage %d for rail %d err %d\n", nxe2000_pdata->init_uV, ri->desc.id, ret);
+			return ret;
+		}
+	}
+#endif
 
 	nxe2000_suspend_status = 1;
 
