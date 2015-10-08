@@ -391,16 +391,16 @@ static void clr_reg(struct i2c_client *client)
 
 	write_buf[0] = 0x88;
 	gsl_ts_write(client, 0xe0, &write_buf[0], 1);
-	//msleep(20);
+	msleep(20);
 	write_buf[0] = 0x03;
 	gsl_ts_write(client, 0x80, &write_buf[0], 1);
-	//msleep(5);
+	msleep(5);
 	write_buf[0] = 0x04;
 	gsl_ts_write(client, 0xe4, &write_buf[0], 1);
-	//msleep(5);
+	msleep(5);
 	write_buf[0] = 0x00;
 	gsl_ts_write(client, 0xe0, &write_buf[0], 1);
-	//msleep(20);
+	msleep(20);
 }
 
 static void init_chip(struct i2c_client *client)
