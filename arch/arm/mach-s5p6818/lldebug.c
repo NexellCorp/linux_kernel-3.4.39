@@ -214,7 +214,7 @@ inline static void uart_init(void)
 	struct s5p_uart *uart = (struct s5p_uart *)UART_PHYS_BASE;
 	unsigned int baudrate = UART_DEBUG_BAUDRATE;
 	unsigned int clkval;
-	printk("\e[31m test \e[0m \n");
+
 	/* Clock Generotor & reset */
 	if (0 == pdat->rate) {
 		u32 val = UART_DEBUG_HZ / baudrate;
@@ -252,7 +252,6 @@ inline static void uart_putc(char ch)
 	struct s5p_uart *uart = (struct s5p_uart *)UART_PHYS_BASE;
 	unsigned int mask = 0x8;
 	return;
-	printk("\e[31m %p\e[0m \n",uart);
 	/* wait for room in the tx FIFO */
 	while ((readl(&uart->ufstat) & TX_FIFO_FULL_MASK)) {
 		if (readl(&uart->uerstat) & mask)
