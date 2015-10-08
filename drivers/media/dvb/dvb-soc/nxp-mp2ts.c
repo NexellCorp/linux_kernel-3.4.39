@@ -430,12 +430,12 @@ static int _init_device(struct ts_drv_context *ctx)
     addr = NX_RSTCON_GetPhysicalAddress();
     printk("NX_RSTCON_GetPhysicalAddress = 0x%08x\n", addr);
     NX_RSTCON_SetBaseAddress( (void*)IO_ADDRESS(addr) );
-#if defined(CONFIG_MACH_S5P4418)
+#if defined(CONFIG_ARCH_S5P4418)
     NX_RSTCON_SetnRST(RESETINDEX_OF_MPEGTSI_MODULE_i_nRST, RSTCON_DISABLE);
     udelay(100);
     NX_RSTCON_SetnRST(RESETINDEX_OF_MPEGTSI_MODULE_i_nRST, RSTCON_ENABLE);
     udelay(100);
-#elif defined(CONFIG_MACH_S5P6818)
+#elif defined(CONFIG_ARCH_S5P6818)
     NX_RSTCON_SetRST(RESETINDEX_OF_MPEGTSI_MODULE_i_nRST, RSTCON_ASSERT);
     udelay(100);
     NX_RSTCON_SetRST(RESETINDEX_OF_MPEGTSI_MODULE_i_nRST, RSTCON_NEGATE);
