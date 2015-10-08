@@ -233,7 +233,7 @@
 
 /* PMIC Common*/
 #define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)	/* PMIC Interrupt */
-//#define CONFIG_ENABLE_INIT_VOLTAGE					/* Enalbe init voltage for ARM, CORE, DDR*/
+#define CONFIG_ENABLE_INIT_VOLTAGE					/* Enalbe init voltage for ARM, CORE, DDR*/
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode
