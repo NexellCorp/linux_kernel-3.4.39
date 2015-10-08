@@ -623,7 +623,14 @@ static int mp8845c_regulator_preinit(struct mp8845c_regulator *ri, struct mp8845
 		asv_core_setup(ri, mp8845c_pdata);
 #endif
 
-	mp8845c_set_bits(ri->client, MP8845C_REG_SYSCNTL1, (1 << MP8845C_POS_MODE));
+	ret = mp8845c_set_bits(ri->client, MP8845C_REG_SYSCNTL1, (1 << MP8845C_POS_MODE));
+
+#ifndef CONFIG_ENABLE_INIT_VOLTAGE
+	if(ri->id == MP8845C_0_VOUT || ri->id == MP8845C_1_VOUT) 
+	{
+		return ret;
+	}
+#endif
 
 	if (mp8845c_pdata->init_enable)
 	{
@@ -722,19 +729,21 @@ static int mp8845c_suspend(struct i2c_client *client, pm_message_t state)
 	int id_info = init_data->id;
 	int ret = 0;
 
-#if !defined(CONFIG_PLAT_S5P6818_ASB) && !defined(CONFIG_PLAT_S5P6818_SVT)
 	ri = find_regulator_info(id_info);
 	if (ri == NULL) {
 		dev_err(&client->dev, "%s() invalid regulator ID specified\n", __func__);
 		return -EINVAL;
 	}
 
-	ret = mp8845c_regulator_preinit(ri, reg_plat_data);
-	if (ret) {
-		dev_err(&client->dev, "%s() Fail in pre-initialisation\n", __func__);
-		return ret;
+	if(ri->id == MP8845C_0_VOUT) 
+	{
+		ret = __mp8845c_set_voltage(ri, reg_plat_data->init_uV, reg_plat_data->init_uV, NULL);
+		if (ret < 0) {
+			dev_err(ri->dev, "Not able to initialize voltage %d for rail %d err %d\n", 
+								reg_plat_data->init_uV, ri->desc.id, ret);
+			return ret;
+		}
 	}
-#endif
 
 	return ret;
 }

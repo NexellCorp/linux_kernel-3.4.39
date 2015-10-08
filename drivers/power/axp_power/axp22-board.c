@@ -396,7 +396,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.min_uV = AXP22_DCDC2_MIN,
 			.max_uV = AXP22_DCDC2_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
+#if defined (CONFIG_KP_OUTPUTINIT) && defined(CONFIG_ENABLE_INIT_VOLTAGE)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				.uV = AXP_DCDC2_VALUE,
@@ -413,7 +413,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.min_uV = AXP22_DCDC3_MIN,
 			.max_uV = AXP22_DCDC3_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
+#if defined (CONFIG_KP_OUTPUTINIT) && defined(CONFIG_ENABLE_INIT_VOLTAGE)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				.uV = AXP_DCDC3_VALUE,
@@ -447,7 +447,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.min_uV = AXP22_DCDC5_MIN,
 			.max_uV = AXP22_DCDC5_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
+#if defined (CONFIG_KP_OUTPUTINIT) && defined(CONFIG_ENABLE_INIT_VOLTAGE)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				.uV = AXP_DCDC5_VALUE,

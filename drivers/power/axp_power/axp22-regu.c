@@ -556,8 +556,7 @@ static int axp_regulator_suspend(struct device *dev)
 	if(!strcmp(constraints->name, "axp22_dcdc2"))
 	{
 		if(state_standby)
-			ret = axp_set_voltage(rdev, state_standby->uV, state_standby->uV,NULL);
-
+			ret = axp_set_voltage(rdev, AXP_DCDC2_VALUE, AXP_DCDC2_VALUE,NULL);
 	}
 
 	axp_suspend_status = 1;
