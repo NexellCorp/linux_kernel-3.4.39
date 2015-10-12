@@ -117,7 +117,7 @@
 /*------------------------------------------------------------------------------
  *  LVDS
  */
-#define CFG_DISP_LVDS_LCD_FORMAT                LVDS_LCDFORMAT_JEIDA
+#define CFG_DISP_LVDS_LCD_FORMAT                LVDS_LCDFORMAT_VESA
 
 
 
