@@ -489,7 +489,7 @@ CONFIG_ARM_FLUSH_CONSOLE_ON_RESTART=y
 # CONFIG_USE_OF is not set
 CONFIG_ZBOOT_ROM_TEXT=0
 CONFIG_ZBOOT_ROM_BSS=0
-CONFIG_CMDLINE="console=ttyAMA0,115200n8 androidboot.hardware=s5p4418_avn_ref androidboot.console=ttyAMA0 androidboot.serialno=0123456789abcdef root=/dev/mmcblk0p2 rootfstype=ext4 rootwait init=/init lpj=790528 quiet"
+CONFIG_CMDLINE="console=ttyAMA3,115200n8 androidboot.hardware=s5p4418_avn_ref androidboot.console=ttyAMA3 androidboot.serialno=0123456789abcdef root=/dev/mmcblk0p2 rootfstype=ext4 rootwait init=/init lpj=790528 quiet"
 CONFIG_CMDLINE_FROM_BOOTLOADER=y
 # CONFIG_CMDLINE_EXTEND is not set
 # CONFIG_CMDLINE_FORCE is not set
@@ -1254,6 +1254,7 @@ CONFIG_TOUCHSCREEN_TSC2007=y
 # CONFIG_TOUCHSCREEN_ATMEL_MXT640T is not set
 # CONFIG_TOUCHSCREEN_GOODIX is not set
 # CONFIG_MS_GT80X_MSD is not set
+# CONFIG_GT9XX_10_VW is not set
 CONFIG_INPUT_MISC=y
 # CONFIG_INPUT_AD714X is not set
 # CONFIG_INPUT_BMA150 is not set
@@ -1320,7 +1321,7 @@ CONFIG_SERIAL_NXP_UART0=y
 # CONFIG_SERIAL_NXP_UART0_DMA is not set
 # CONFIG_SERIAL_NXP_UART1 is not set
 # CONFIG_SERIAL_NXP_UART2 is not set
-# CONFIG_SERIAL_NXP_UART3 is not set
+CONFIG_SERIAL_NXP_UART3=y
 # CONFIG_SERIAL_NXP_UART4 is not set
 # CONFIG_SERIAL_NXP_UART5 is not set
 # CONFIG_SERIAL_NXP_RESUME_WORK is not set
