@@ -848,6 +848,7 @@ static ssize_t _enable_tvout(struct device *pdev,
     if (!strncmp(buf, "1", 1)) {
         printk("%s: enable tvout\n", __func__);
         if (!switch_get_state(&tvout_switch)) {
+            nxp_soc_disp_device_connect_to(DISP_DEVICE_TVOUT, DISP_DEVICE_SYNCGEN1, NULL);
             switch_set_state(&tvout_switch, 1);
         }
     } else {
@@ -899,7 +900,6 @@ static int tvout_probe(struct platform_device *pdev)
     tvout_switch.name = "tvout";
     switch_dev_register(&tvout_switch);
     nxp_soc_disp_register_proc_ops(DISP_DEVICE_TVOUT, &tvout_ops);
-    nxp_soc_disp_device_connect_to(DISP_DEVICE_TVOUT, DISP_DEVICE_SYNCGEN1, NULL);
     return 0;
 }
 
