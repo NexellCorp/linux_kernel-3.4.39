@@ -706,20 +706,7 @@ static void tw9900_vin_setup_io(int module, bool force)
 
         /* VIP0:0 = VCLK, VID0 ~ 7 */
         const u_int port[][2] = {
-
-#if 1 //vid0
-            /* VCLK, HSYNC, VSYNC */
-			{ PAD_GPIO_A + 28, NX_GPIO_PADFUNC_1 },
-            //{ PAD_GPIO_E + 13, NX_GPIO_PADFUNC_2 },
-            //{ PAD_GPIO_E +  7, NX_GPIO_PADFUNC_2 },
-
-            { PAD_GPIO_A + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  0, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_B +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  4, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_B +  6, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  8, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
-#endif
-
-#if 0	//vid1
+#if 1	//vid0
 			/* VCLK, HSYNC, VSYNC */
             { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
@@ -729,6 +716,18 @@ static void tw9900_vin_setup_io(int module, bool force)
             { PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
+#endif
+
+#if 0 //vid1
+            /* VCLK, HSYNC, VSYNC */
+			{ PAD_GPIO_A + 28, NX_GPIO_PADFUNC_1 },
+            //{ PAD_GPIO_E + 13, NX_GPIO_PADFUNC_2 },
+            //{ PAD_GPIO_E +  7, NX_GPIO_PADFUNC_2 },
+
+            { PAD_GPIO_A + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  0, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  4, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  6, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  8, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
 #endif
 
 #if 0	//vid2
@@ -1291,18 +1290,7 @@ static void _sensor_setup_io(void)
 
 	/* VIP0:0 = VCLK, VID0 ~ 7 */
 	const u_int port[][2] = {
-#if 1
-	  /* VCLK, HSYNC, VSYNC */
-	  { PAD_GPIO_A + 28, NX_GPIO_PADFUNC_1 },
-		//{ PAD_GPIO_E + 13, NX_GPIO_PADFUNC_2 },
-	 	//{ PAD_GPIO_E +  7, NX_GPIO_PADFUNC_2 },
-
-	  { PAD_GPIO_A + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  0, NX_GPIO_PADFUNC_1 },
-	  { PAD_GPIO_B +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  4, NX_GPIO_PADFUNC_1 },
-	  { PAD_GPIO_B +  6, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  8, NX_GPIO_PADFUNC_1 },
-	  { PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
-#endif
-#if 0	//vid1
+#if 1	//vid0
 	  /* VCLK, HSYNC, VSYNC */
 	  { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
 	  { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
@@ -1312,6 +1300,18 @@ static void _sensor_setup_io(void)
 	  { PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
 	  { PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
 	  { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
+#endif
+
+#if 0 //vid 1
+	  /* VCLK, HSYNC, VSYNC */
+	  { PAD_GPIO_A + 28, NX_GPIO_PADFUNC_1 },
+		//{ PAD_GPIO_E + 13, NX_GPIO_PADFUNC_2 },
+	 	//{ PAD_GPIO_E +  7, NX_GPIO_PADFUNC_2 },
+
+	  { PAD_GPIO_A + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  0, NX_GPIO_PADFUNC_1 },
+	  { PAD_GPIO_B +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  4, NX_GPIO_PADFUNC_1 },
+	  { PAD_GPIO_B +  6, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  8, NX_GPIO_PADFUNC_1 },
+	  { PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
 #endif
 
 #if 0	//vid2
