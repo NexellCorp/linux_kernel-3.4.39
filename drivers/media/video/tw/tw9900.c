@@ -360,7 +360,7 @@ static inline bool _is_camera_on(void)
 #endif
 	
     _i2c_read_byte(_state.i2c_client, 0x01, &data);
-    printk(KERN_INFO "%s: data 0x%x\n", __func__, data);
+    //printk(KERN_INFO "%s: data 0x%x\n", __func__, data);
 
 #if 0
 	NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_CAM_PWR_EN), PAD_GET_BITNO(CFG_IO_CAM_PWR_EN), 1);
@@ -391,7 +391,7 @@ static inline bool _is_camera_on(void)
 
 static irqreturn_t _irq_handler(int irq, void *devdata)
 {
-	printk("%s : switch value : %d, backgear on : %d\n", __func__, switch_get_state(&_state.switch_dev), _is_backgear_on());
+//	printk("%s : switch value : %d, backgear on : %d\n", __func__, switch_get_state(&_state.switch_dev), _is_backgear_on());
 #if 0
     __cancel_delayed_work(&_state.work);
     if (switch_get_state(&_state.switch_dev) && !_is_backgear_on()) {
@@ -423,15 +423,15 @@ static void _work_handler(struct work_struct *work)
     if (_is_backgear_on() && _is_camera_on()) {
 		if (rearcam_brightness_tbl[_state.brightness] != DEFAULT_BRIGHTNESS)
 		{
-			printk(KERN_ERR "brightness = %d\n",_state.brightness);
+			//printk(KERN_ERR "brightness = %d\n",_state.brightness);
         	_i2c_write_byte(_state.i2c_client, 0x10, rearcam_brightness_tbl[_state.brightness]);
 		}
         switch_set_state(&_state.switch_dev, 1);
-		printk("%s : backward camera on!!\n", __func__);
+	//	printk("%s : backward camera on!!\n", __func__);
         return;
     } else if (switch_get_state(&_state.switch_dev)) {
         switch_set_state(&_state.switch_dev, 0);
-		printk("%s : backward camera off!!\n", __func__);
+	//	printk("%s : backward camera off!!\n", __func__);
     }
 	else if(_is_backgear_on())
 	{
