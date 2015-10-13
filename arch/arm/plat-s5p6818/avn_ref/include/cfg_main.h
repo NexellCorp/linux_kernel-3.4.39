@@ -69,7 +69,7 @@
  * 	Display (DPC and MLC)
  */
 /* Primary */
-#define CFG_DISP_PRI_SCREEN_LAYER               0
+#define CFG_DISP_PRI_SCREEN_LAYER               1
 #define CFG_DISP_PRI_SCREEN_RGB_FORMAT          MLC_RGBFMT_A8R8G8B8
 #define CFG_DISP_PRI_SCREEN_PIXEL_BYTE	        4
 #define CFG_DISP_PRI_SCREEN_COLOR_KEY	        0x090909
@@ -204,8 +204,9 @@
 #define USERDEF_KEY3							KEY_VOLUMEUP
 #define USERDEF_KEY4							KEY_HOMEPAGE
 
-#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0, PAD_GPIO_ALV + 1, PAD_GPIO_ALV + 2, PAD_GPIO_ALV + 3, PAD_GPIO_ALV + 4}
-#define CFG_KEYPAD_KEY_CODE						{ KEY_POWER, USERDEF_KEY1, USERDEF_KEY2, USERDEF_KEY3, USERDEF_KEY4 }
+
+#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0, PAD_GPIO_ALV + 1, PAD_GPIO_ALV + 2, /* PAD_GPIO_ALV + 3,*/ PAD_GPIO_ALV + 4}
+#define CFG_KEYPAD_KEY_CODE						{ KEY_POWER, USERDEF_KEY1, USERDEF_KEY2, /* USERDEF_KEY3, */ USERDEF_KEY4 }
 #define CFG_KEYPAD_REPEAT						CFALSE /* 0: Repeat Off 1 : Repeat On */
 
 /*------------------------------------------------------------------------------

@@ -51,7 +51,7 @@ struct nxp_backward_camera_platform_data {
     u32 height;
     u32 rgb_addr;
 
-    void (*draw_rgb_overlay)(struct nxp_backward_camera_platform_data *);
+    void (*draw_rgb_overlay)(struct nxp_backward_camera_platform_data *, void *);
 };
 
 #endif
