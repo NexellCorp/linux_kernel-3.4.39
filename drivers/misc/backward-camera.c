@@ -284,6 +284,7 @@ static void _vip_hw_set_addr(int module, struct nxp_backward_camera_platform_dat
             param->interlace ? ALIGN(param->h_active, 64)   : param->h_active,
             param->interlace ? ALIGN(param->h_active/2, 64) : param->h_active/2);
 #else
+	//printk("%s : width : %d, height : %d, lu_stride : %d, cb_stride : %d\n", __func__, param->h_active, param->v_active, param->lu_stride, param->cb_stride);
     NX_VIP_SetClipperAddr(module, NX_VIP_FORMAT_420, param->h_active, param->v_active,
             lu_addr, cb_addr, cr_addr,
             param->lu_stride,

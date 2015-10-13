@@ -196,6 +196,19 @@ void dump_register(int module)
 #endif
 }
 
+void dump_register_value(int module)
+{
+#if (DUMP_REGISTER)
+#define DBGOUT(args...)  printk(args)
+    NX_VIP_RegisterSet *pREG =
+        (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
+
+    //DBGOUT("BASE ADDRESS: %p\n", pREG);
+	DBGOUT(" VIP_SYNCCTRL   = 0x%04x\r\n", pREG->VIP_SYNCCTRL);
+#endif
+}
+
+
 static int _hw_get_irq_num(struct nxp_capture *me)
 {
 #if defined(CONFIG_ARCH_S5P4418)
@@ -475,7 +488,6 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
             NX_VIP_SetVIPEnable(me->module, CFALSE, CFALSE, CFALSE, CFALSE);
         }
         /*dump_register(me->module);*/
-        dump_register(me->module);
 
         me->clip_enable = clip_enable;
         me->deci_enable = deci_enable;
@@ -523,6 +535,7 @@ static irqreturn_t _irq_handler(int irq, void *desc)
 
     NX_VIP_ClearInterruptPendingAll(me->module);
 
+//	dump_register_value(me->module);
     spin_lock_irqsave(&me->lock, flags);
 
     if (!list_empty(&me->irq_entry_list))

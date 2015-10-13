@@ -51,7 +51,8 @@ struct reg_val {
 
 static struct reg_val _sensor_init_data[] =
 {
-    {0x02, 0x40},
+    {0x02, 0x40}, //MUX0
+//    {0x02, 0x44}, //MUX1
     {0x03, 0xa2},
     {0x07, 0x02},
     {0x08, 0x12},
@@ -337,7 +338,6 @@ static int tw9900_initialize_ctrls(struct tw9900_state *me)
 static inline bool _is_backgear_on(void)
 {
     int val = nxp_soc_gpio_get_in_value(CFG_BACKWARD_GEAR);
-	printk("+++ %s ---\n", __func__);
 
     if (!val)
     {
@@ -354,8 +354,6 @@ static inline bool _is_camera_on(void)
     // read status
 	u8 data;
 	u8 cin0;
-
-	printk("+++ %s ---\n", __func__);
 
 #if 0
 	extern int mux_status;
@@ -393,7 +391,6 @@ static inline bool _is_camera_on(void)
 
 static irqreturn_t _irq_handler(int irq, void *devdata)
 {
-	printk("+++ %s +++\n", __func__);
 	printk("%s : switch value : %d, backgear on : %d\n", __func__, switch_get_state(&_state.switch_dev), _is_backgear_on());
 #if 0
     __cancel_delayed_work(&_state.work);
@@ -407,7 +404,6 @@ static irqreturn_t _irq_handler(int irq, void *devdata)
     schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
 #endif
 
-	printk("--- %s ---\n", __func__);
     return IRQ_HANDLED;
 }
 
@@ -424,7 +420,6 @@ static irqreturn_t _irq_handler3(int irq, void *devdata)
 
 static void _work_handler(struct work_struct *work)
 {
-	printk("+++ %s +++\n", __func__);
     if (_is_backgear_on() && _is_camera_on()) {
 		if (rearcam_brightness_tbl[_state.brightness] != DEFAULT_BRIGHTNESS)
 		{
@@ -442,12 +437,10 @@ static void _work_handler(struct work_struct *work)
 	{
 		schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
 	}
-	printk("--- %s ---\n", __func__);
 }
 
 static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 {
-	printk("+++ %s +++\n", __func__);
 	printk("%s : enable : %d, state : %d\n", __func__, enable, _state.first);
     if (enable) {
         if (_state.first) 
@@ -467,7 +460,8 @@ static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 			}
 #endif
 
-#if 0
+#if !defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+
 			int  i=0;
 			struct tw9900_state *me = &_state;
 			struct reg_val *reg_val = _sensor_init_data;
@@ -494,7 +488,6 @@ static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 		}
     }
 
-	printk("--- %s ---\n", __func__);
     return 0;
 }
 
