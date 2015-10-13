@@ -1005,8 +1005,8 @@ static bool front_camera_power_state_changed(void)
 
 static struct i2c_board_info tw9900_i2c_boardinfo[] = {
     {
-    	I2C_BOARD_INFO("tw9900", 0x8A>>1),
-       	//I2C_BOARD_INFO("tw9900", 0x88>>1),
+    	//I2C_BOARD_INFO("tw9900", 0x8A>>1),
+       	I2C_BOARD_INFO("tw9900", 0x88>>1),
     },
 };
 
@@ -1057,12 +1057,12 @@ struct nxp_mipi_csi_platformdata front_plat_data = {
 static struct nxp_v4l2_i2c_board_info sensor[] = {
     {
         .board_info = &tw9900_i2c_boardinfo[0],
-        .i2c_adapter_id = 4,
+        .i2c_adapter_id = TW9900_CS4955_HUB_I2CBUS,
     },
 #if defined(CONFIG_VIDEO_TW9992)
     {
         .board_info = &front_camera_i2c_boardinfo[0],
-        .i2c_adapter_id = 3,
+        .i2c_adapter_id = MDEC_HDCAM_HMRX_AUDIO2_I2CBUS,
     },
 #endif
 };
@@ -1370,8 +1370,8 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
 
     // sensor
     .i2c_bus            = 4,
-    .chip_addr          = 0x8A >> 1,
-   	//.chip_addr          = 0x88 >> 1,
+    //.chip_addr          = 0x8A >> 1,
+   	.chip_addr          = 0x88 >> 1,
     .reg_val            = _sensor_init_data,
     .power_enable       = _sensor_power_enable,
     .set_clock          = NULL,
