@@ -574,4 +574,10 @@ config SLSIAP_BACKWARD_CAMERA
       If you say yes here, you can view camera as soon as kernel booting, and
       this driver switch on/off camera by gpio interrupt
 
+config FCI_FC8300
+    bool "Support FCI FC8300 ISDBT MOUDULE"
+    depends on (I2C && NXP_MP2TS_IF)
+    default n
+    help
+		support fci fc8300 isdbt.
 endmenu
