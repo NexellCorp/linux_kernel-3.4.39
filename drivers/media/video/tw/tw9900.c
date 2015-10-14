@@ -420,6 +420,7 @@ static irqreturn_t _irq_handler3(int irq, void *devdata)
 
 static void _work_handler(struct work_struct *work)
 {
+    //if (_is_backgear_on() && _is_camera_on()) {
     if (_is_backgear_on() && _is_camera_on()) {
 		if (rearcam_brightness_tbl[_state.brightness] != DEFAULT_BRIGHTNESS)
 		{
@@ -553,7 +554,7 @@ static int tw9900_probe(struct i2c_client *client, const struct i2c_device_id *i
     i2c_set_clientdata(client, sd);
     state->i2c_client = client;
 
-    state->switch_dev.name = "tw9900";
+    state->switch_dev.name = "rearcam";
     switch_dev_register(&state->switch_dev);
     switch_set_state(&state->switch_dev, 0);
 
