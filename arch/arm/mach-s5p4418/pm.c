@@ -291,6 +291,36 @@ static void print_wake_event(void)
 	}
 }
 
+static void suspend_cpu_enter(void)
+{
+	struct save_gpio *gpio = saved_regs.gpio;
+	unsigned int base = IO_ADDRESS(PHY_BASEADDR_GPIOA);
+	int gic_irqs  = NR_IRQS;
+	int i = 0, size = 5;
+
+	for (i = 0; size > i; i++, gpio++, base += 0x1000) {
+		if (i == 1) { // except UART 4,5 setting
+			writel(gpio_alfn[i][0], (base+0x20));
+			writel((gpio_alfn[i][1]&0x33ffffff)|(readl(base+0x24)&0xcc000000), (base+0x24));
+			writel(readl(base+0x04)&0xa0000000, (base+0x04));	/* Input */
+			writel(readl(base+0x58)&0xa0000000, (base+0x58));	/* GPIOx_PULLSEL - Down */
+			writel(readl(base+0x60)&0xa0000000, (base+0x60));	/* GPIOx_PULLENB - Disable */
+		} else if (i == 3) { // except UART 0,1,2,3 setting
+			writel(gpio_alfn[i][0], (base+0x20));
+			writel((gpio_alfn[i][1]&0xfffff00f)|(readl(base+0x24)&0xff0), (base+0x24));
+			writel(readl(base+0x04)&0x3c0000, (base+0x04));	/* Input */
+			writel(readl(base+0x58)&0x3c0000, (base+0x58));	/* GPIOx_PULLSEL - Down */
+			writel(readl(base+0x60)&0x3c0000, (base+0x60));	/* GPIOx_PULLENB - Disable */
+		} else {
+			writel(gpio_alfn[i][0], (base+0x20));
+			writel(gpio_alfn[i][1], (base+0x24));
+			writel(0, (base+0x04));	/* Input */
+			writel(0, (base+0x58));	/* GPIOx_PULLSEL - Down */
+			writel(0, (base+0x60)); /* GPIOx_PULLENB - Disable */
+		}
+	}
+}
+
 static void suspend_cores(suspend_state_t stat)
 {
 	unsigned int core = 0, clamp = 0;
@@ -502,17 +532,6 @@ static void suspend_gpio(suspend_state_t stat)
 		 */
 		gpio = saved_regs.gpio;
 		base = IO_ADDRESS(PHY_BASEADDR_GPIOA);
-
-		for (i = 0; size > i; i++, gpio++, base += 0x1000) {
-			writel(gpio_alfn[i][0], (base+0x20));
-			writel(gpio_alfn[i][1], (base+0x24));
-
-			writel(0, (base+0x04));	/* Input */
-
-			writel(0, (base+0x58));	/* GPIOx_PULLSEL - Down */
-			writel(0, (base+0x60)); /* GPIOx_PULLENB - Disable */
-		}
-
 	} else {
 		for (i = 0; size > i; i++, gpio++, base += 0x1000) {
 #if !defined (CONFIG_S5P4418_PM_IDLE)
@@ -528,7 +547,6 @@ static void suspend_gpio(suspend_state_t stat)
 			writel(gpio->mode[2],(base+0x28));
 			writel(gpio->mask,   (base+0x10));
 			writel(gpio->mask,   (base+0x3C));
-
 			writel((-1UL),       (base+0x14));	/* clear pend */
 		}
 	}
@@ -623,7 +641,9 @@ static int __powerdown(unsigned long arg)
 		return 0;
 	}
 
-	lldebugout("suspend machine\n");
+	suspend_cpu_enter();
+	
+	lldebugout("suspend machine...\n");
 
 	END_FLUSH_CACHE();
 	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
