@@ -447,7 +447,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.min_uV = AXP22_DCDC5_MIN,
 			.max_uV = AXP22_DCDC5_MAX,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT) && defined(CONFIG_ENABLE_INIT_VOLTAGE)
+#if defined (CONFIG_KP_OUTPUTINIT)
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				.uV = AXP_DCDC5_VALUE,
