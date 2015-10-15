@@ -56,6 +56,15 @@
 #define	CFG_ETHER_EXT_IRQ_NUM					(IRQ_GPIO_C_START + 26)
 
 /*------------------------------------------------------------------------------
+ * 	GMAC PHY
+ */
+
+#define CFG_ETHER_LOOPBACK_MODE					0       /* 0: disable, 1: 10M, 2: 100M(x), 3: 1000M(x) */
+
+#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				(IRQ_GPIO_A_START + 9)
+#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_A + 10)
+
+/*------------------------------------------------------------------------------
  * 	Nand (HWECC)
  */
 #define CFG_NAND_ECC_BYTES 						1024
