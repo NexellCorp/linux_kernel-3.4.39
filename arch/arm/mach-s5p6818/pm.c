@@ -35,6 +35,11 @@
 #include <asm/hardware/pl080.h>
 #include <mach/platform.h>
 #include <mach/pm.h>
+#include <mach/gpio.h>
+#include <asm/hardware/gic.h>
+
+#define INTC_BASE		(void __iomem *)IO_ADDRESS(PHY_BASEADDR_INTC)
+#define GIC_DIST_BASE		(void __iomem *)(INTC_BASE + 0x00001000)		// 0xC0009000
 
 #define SRAM_SAVE_SIZE		(0x10000)	/* 64 Kbyte */
 
@@ -104,6 +109,29 @@ static const char * __wake_event_name [] = {
 #define	POWER_KEY_MASK		(0x3FC)
 #define	RTC_ALARM_INTENB	(0x010)
 #define	RTC_ALARM_INTPND	(0x014)
+
+
+static unsigned long gpio_alfn[5][2];
+static int prepare_gpio_suspend(void)
+{
+	int i, size = 5;
+
+	printk("%s:\n", __func__);
+
+	for (i = 0; size > i; i++) {
+		int j;
+
+		for (j = 0; j < GPIO_NUM_PER_BANK/2; j++)
+			gpio_alfn[i][0] |= (GET_GPIO_ALTFUNC(i, j) << (j<<1));
+		for (j = 0; j < GPIO_NUM_PER_BANK/2; j++)
+			gpio_alfn[i][1] |= (GET_GPIO_ALTFUNC(i, j+16) << (j<<1));
+
+		printk("  alfn[%d][0]: 0x%08lx, alfn[%d][1]: 0x%08lx\n",
+				i, gpio_alfn[i][0], i, gpio_alfn[i][1]);
+	}
+
+	return 0;
+}
 
 void watchdog_clear(void)
 {
@@ -230,6 +258,39 @@ static void print_wake_event(void)
 	}
 }
 
+static void suspend_cpu_enter(void)
+{
+	struct save_gpio *gpio = saved_regs.gpio;
+	unsigned int base = IO_ADDRESS(PHY_BASEADDR_GPIOA);
+	int gic_irqs  = NR_IRQS;
+	int i = 0, size = 5;
+
+	for (i = 0; size > i; i++, gpio++, base += 0x1000) {
+		if (i == 1) { // except UART 4,5 setting
+			writel(gpio_alfn[i][0], (base+0x20));
+			writel((gpio_alfn[i][1]&0x33ffffff)|(readl(base+0x24)&0xcc000000), (base+0x24));
+			writel(readl(base+0x04)&0xa0000000, (base+0x04));	/* Input */
+			writel(readl(base+0x58)&0xa0000000, (base+0x58));	/* GPIOx_PULLSEL - Down */
+			writel(readl(base+0x60)&0xa0000000, (base+0x60));	/* GPIOx_PULLENB - Disable */
+		} else if (i == 3) { // except UART 0,1,2,3 setting
+			writel(gpio_alfn[i][0], (base+0x20));
+			writel((gpio_alfn[i][1]&0xfffff00f)|(readl(base+0x24)&0xff0), (base+0x24));
+			writel(readl(base+0x04)&0x3c0000, (base+0x04));	/* Input */
+			writel(readl(base+0x58)&0x3c0000, (base+0x58));	/* GPIOx_PULLSEL - Down */
+			writel(readl(base+0x60)&0x3c0000, (base+0x60));	/* GPIOx_PULLENB - Disable */
+		} else {
+			writel(gpio_alfn[i][0], (base+0x20));
+			writel(gpio_alfn[i][1], (base+0x24));
+			writel(0, (base+0x04));	/* Input */
+			writel(0, (base+0x58));	/* GPIOx_PULLSEL - Down */
+			writel(0, (base+0x60)); /* GPIOx_PULLENB - Disable */
+		}
+	}
+
+	for (i = 32; i < gic_irqs; i += 4)
+		writel_relaxed(0x00, GIC_DIST_BASE + GIC_DIST_TARGET + i * 4 / 4);
+}
+
 static void suspend_cores(suspend_state_t stat)
 {
 #ifndef CONFIG_S5P6818_PM_IDLE
@@ -327,11 +388,6 @@ static void suspend_mark(suspend_state_t stat)
 }
 #endif
 
-static void suspend_l2cache(suspend_state_t stat)
-{
-	return;
-}
-
 static void suspend_gpio(suspend_state_t stat)
 {
 	struct save_gpio *gpio = saved_regs.gpio;
@@ -354,6 +410,12 @@ static void suspend_gpio(suspend_state_t stat)
 
 			writel((-1UL), (base+0x14));	/* clear pend */
 		}
+
+		/*
+		 * Set GPIO input mode, when suspending
+		 */
+		gpio = saved_regs.gpio;
+		base = IO_ADDRESS(PHY_BASEADDR_GPIOA);
 	} else {
 		for (i = 0; size > i; i++, gpio++, base += 0x1000) {
 #ifndef CONFIG_S5P6818_PM_IDLE
@@ -436,6 +498,7 @@ static void __power_prepare(void)
 static int __power_down(unsigned long arg)
 {
 	int ret = suspend_machine();
+
 #ifndef CONFIG_S5P6818_PM_IDLE
 	void (*power_down)(ulong, ulong) =
 		(void (*)(ulong, ulong))((ulong)core_do_suspend + 0x220);;
@@ -456,7 +519,10 @@ static int __power_down(unsigned long arg)
 		lldebugout("Fail, inavalid suspend callee\n");
 		return 0;
 	}
-	lldebugout("suspend machine\n", __func__);
+
+	suspend_cpu_enter();
+
+	lldebugout("suspend machine\n");
 
 	dmb();
 	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
@@ -536,7 +602,7 @@ static int suspend_enter(suspend_state_t state)
 	suspend_clock(SUSPEND_SUSPEND);
 	suspend_gpio(SUSPEND_SUSPEND);
 	suspend_alive(SUSPEND_SUSPEND);
-	suspend_l2cache(SUSPEND_SUSPEND);
+
 #ifndef CONFIG_S5P6818_PM_IDLE
 	suspend_mark(SUSPEND_SUSPEND);
 #endif
@@ -557,7 +623,6 @@ static int suspend_enter(suspend_state_t state)
 #ifndef CONFIG_S5P6818_PM_IDLE
 	suspend_mark(SUSPEND_RESUME);
 #endif
-	suspend_l2cache(SUSPEND_RESUME);
 
 	resume_machine();
 
@@ -613,6 +678,8 @@ static int __init suspend_ops_init(void)
 		dst[i] = src[i];
 
 	suspend_set_ops(&suspend_ops);
+	/* prepare GPIO input mode, when suspending */
+	prepare_gpio_suspend();
 
 #ifndef CONFIG_S5P6818_PM_IDLE
 	core_do_suspend = __arm_ioremap_exec(0xffff0000, 0x10000, 0);
