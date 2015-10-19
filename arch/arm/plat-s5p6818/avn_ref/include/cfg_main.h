@@ -198,8 +198,8 @@
 #define USERDEF_KEY3							KEY_F3
 #define USERDEF_KEY4							KEY_F4
 */
-/* #define USERDEF_KEY1							KEY_BACK */
-#define USERDEF_KEY1							KEY_F1 
+#define USERDEF_KEY1							KEY_BACK
+/* #define USERDEF_KEY1							KEY_F1 */
 #define USERDEF_KEY2							KEY_VOLUMEDOWN
 #define USERDEF_KEY3							KEY_VOLUMEUP
 #define USERDEF_KEY4							KEY_HOMEPAGE
