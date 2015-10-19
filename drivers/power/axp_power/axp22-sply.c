@@ -463,6 +463,13 @@ static void axp_charger_update_state(struct axp_charger *charger)
 	axp_reads(charger->master,0xe4,2,val);
 	charger->OCV_percentage = (val[0] & 0x7f);
 	charger->Coulumb_percentage = (val[1] & 0x7f);
+
+#if 1
+	if(charger->ac_valid)
+		axp_update(charger->master, AXP22_CHARGE_CONTROL3, (AC_LIMIT_CURRENT_1500 -200001)/150000, 0x0F);
+	else
+		axp_update(charger->master, AXP22_CHARGE_CONTROL3, (AC_LIMIT_CURRENT_500 -200001)/150000, 0x0F);
+#endif
 }
 
 static void axp_charger_update(struct axp_charger *charger)
@@ -852,6 +859,9 @@ static int axp_usb_limit_set(struct axp_charger *charger)
 		{
 			val |= 0x03;
 			charger->usb_charge_type = POWER_SUPPLY_PROP_AC_USB;
+#if 1
+			axp_update(charger->master, AXP22_CHARGE_CONTROL3, (AC_LIMIT_CURRENT_1500 -200001)/150000, 0x0F);
+#endif
 		}
 	}
 	else
@@ -897,6 +907,7 @@ static void axp_change(struct axp_charger *charger, unsigned long event)
 	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 	axp_charger_update_state(charger);
 	axp_charger_update(charger);
+	DBG_PSY_MSG("charger->ac_valid  = %d\n",charger->ac_valid);
 	DBG_PSY_MSG("charger->usb_valid = %d\n",charger->usb_valid);
 
 	if(event & AXP22_IRQ_EXTLOWARN2)
