@@ -1850,81 +1850,65 @@ static void stmmac_init_tx_coalesce(struct stmmac_priv *priv)
 }
 
 #ifdef CONFIG_NXPMAC_MII_SYSFS
-#define MIIREG_NONE		99
-static unsigned int miireg = MIIREG_NONE;
-
-static ssize_t miireg_show(struct kobject *kobj,
-			struct kobj_attribute *attr, char *buf)
-{
-	if (miireg == MIIREG_NONE)
-		return sprintf(buf, "-\n");
-	else
-		return sprintf(buf, "0x%x\n", miireg);
-}
-
-static ssize_t miireg_store(struct kobject *kobj,
-			struct kobj_attribute *attr, const char *buf, size_t n)
-{
-	unsigned long val;
-
-	int rc = kstrtoul(buf, 0, &val);
-	if (rc < 0)
-		return rc;
-
-	miireg = (uint32_t)val;
-
-	return n;
-}
-
-static ssize_t miidata_show(struct kobject *kobj,
-			struct kobj_attribute *attr, char *buf)
-{
-	struct stmmac_priv *priv = container_of(kobj, struct stmmac_priv, kobj);
-	int data;
-
-	if (!priv->phydev)
-		return 0;
-
-	if (miireg == MIIREG_NONE)
-		return sprintf(buf, "-\n");
-
-	data = phy_read(priv->phydev, miireg);
-
-	return sprintf(buf, "0x%x\n", data);
-}
-
-static ssize_t miidata_store(struct kobject *kobj,
-			struct kobj_attribute *attr, const char *buf, size_t n)
-{
-	struct stmmac_priv *priv = container_of(kobj, struct stmmac_priv, kobj);
-	unsigned long val;
-	int rc = kstrtoul(buf, 0, &val);
-
-	if (rc < 0)
-		return rc;
-
-	if (!priv->phydev)
-		return 0;
-
-	if (miireg == MIIREG_NONE)
-		return 0;
-
-	pr_debug("  %s ... val: 0x%lx\n", __func__, val);
-
-	phy_write(priv->phydev, miireg, (u16)val);
-	return n;
-}
 
 #define MIIREG_ATTR_RW(type)	__ATTR(type, S_IRUGO | S_IWUSR, type##_show, type##_store)
 #define MIIREG_ATTR_RO(type)	__ATTR(type, S_IRUGO,           type##_show, type##_store)
 
-static struct kobj_attribute miireg_attr = MIIREG_ATTR_RW(miireg);
-static struct kobj_attribute miidata_attr = MIIREG_ATTR_RW(miidata);
+
+//echo "read 0x0" > phychip
+//echo "write 0x0 0x4100" > phychip
+
+static ssize_t phyreg_store(struct kobject *kobj,
+			struct kobj_attribute *attr, const char *buf, size_t n)
+{
+	struct stmmac_priv *priv = container_of(kobj, struct stmmac_priv, kobj);
+	unsigned int reg;
+	unsigned int data;
+
+	char cmd[10] = {0};
+	int is_write = 0;
+	int is_read = 0;
+
+
+	if (sscanf(buf, "%s %d", cmd, &reg) != 2) {
+		pr_err("wrong command.\n");
+		return 0;
+	}
+	
+	if (strncmp("write", cmd, 5) == 0)
+		is_write = 1;
+	else if (strncmp("read", cmd, 4) == 0)
+		is_read = 1;
+	else
+		return 0;
+	
+
+	if (!priv->phydev)
+		return 0;
+
+	if (is_read) {
+		data = phy_read(priv->phydev, (u16)reg);
+		pr_info("  read %d 0x%x\n", reg, data);
+	}
+
+	if (is_write) {
+		sscanf(buf, "%s %d %x", cmd, &reg, &data);
+		phy_write(priv->phydev, (u16)reg, (u16)data);
+		pr_info("  write %d 0x%x\n", reg, data);
+	}
+
+	return n;
+}
+
+//#define PHYREG_ATTR_RW(type)	__ATTR(type, S_IRUGO | S_IWUSR, type##_show, type##_store)
+//#define PHYREG_ATTR_RO(type)	__ATTR(type, S_IRUGO,           type##_show, NULL)
+#define PHYREG_ATTR_WO(type)	__ATTR(type,           S_IWUSR, NULL, type##_store)
+
+static struct kobj_attribute phyreg_attr = PHYREG_ATTR_WO(phyreg);
 
 /* sys attribte group */
 static struct attribute *attrs[] = {
-	&miireg_attr.attr,
-	&miidata_attr.attr,
+	&phyreg_attr.attr,
 	NULL,
 };
 
