@@ -14,11 +14,12 @@
 //--------------------------------------------------------------------
 //
 //
+//10-19-2015			modify
 //02-15-2015			modify	
 //
 ///////////////////////////////////////////////////////////////////////
 
-#define AXP228_BATTERY_VERSION "AXP228_BATTERY_VERSION:(2015.02.15:modify)"
+#define AXP228_BATTERY_VERSION "AXP228_BATTERY_VERSION:(2015.10.19:modify)"
 
 #include <linux/kernel.h>
 #include <linux/init.h>
