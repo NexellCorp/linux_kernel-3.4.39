@@ -216,7 +216,10 @@ static void pwm_set_device(struct pwm_device *pwm)
 	PWM_RESET();
 
 	if (pwm->counter == pwm->compare || 0 == pwm->compare) {
-		nxp_soc_gpio_set_out_value(pwm->io, (0 == pwm->compare ? 0 : 1));
+		if (pwm->invert)
+			nxp_soc_gpio_set_out_value(pwm->io, (0 == pwm->compare ? 1 : 0));
+		else
+			nxp_soc_gpio_set_out_value(pwm->io, (0 == pwm->compare ? 0 : 1));
 		nxp_soc_gpio_set_io_dir(pwm->io, 1);
 		nxp_soc_gpio_set_io_func(pwm->io, pwm->fn_io);
 
