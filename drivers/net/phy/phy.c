@@ -69,54 +69,6 @@ void phy_print_status(struct phy_device *phydev)
 }
 EXPORT_SYMBOL(phy_print_status);
 
-#ifdef CFG_ETHER_LOOPBACK_MODE
-/**
- * @speed: 0: disable, 1: 10M, 2: 100M, 3: 1000M
- */
-static int
-nxpmac_set_phy_loopback(struct phy_device *phydev, int speed)
-{
-	//unsigned long flags;
-
-	if (phydev == NULL)
-		return -1;
-
-	if (speed <= 0 || speed > 3)
-		return -1;
-
-	//spin_lock_irqsave(&priv->lock, flags);
-
-	/* disable PCS loopback */
-	phy_write(phydev, 31, 0);
-	phy_write(phydev, 0, 0x1140);
-	msleep(200);
-
-	/* enable PCS loopback */
-	phy_write(phydev, 31, 0);
-	phy_write(phydev, 0, 0x8000);
-	msleep(200);
-	switch (speed) {
-	case 1:	/* 10M */
-		phy_write(phydev, 0, 0x4100);
-		break;
-	case 2: /* 100M */
-		phy_write(phydev, 0, 0x6100);
-		break;
-	case 3: /* 1000M */
-		phy_write(phydev, 0, 0x4140);
-		break;
-	default:
-		break;
-	}
-	msleep(200);
-	//phy_write(phydev, 0, 0x8000);
-
-	//spin_unlock_irqrestore(&priv->lock, flags);
-
-	return 0;
-}
-#endif /* CFG_ETHER_LOOPBACK_MODE */
-
 
 /**
  * phy_clear_interrupt - Ack the phy device's interrupt
@@ -657,7 +609,6 @@ int phy_start_interrupts(struct phy_device *phydev)
 
 	atomic_set(&phydev->irq_disable, 0);
 	if (request_irq(phydev->irq, phy_interrupt,
-				//IRQF_TRIGGER_LOW | IRQF_SHARED,
 				IRQF_SHARED,
 				"phy_interrupt",
 				phydev) < 0) {
@@ -869,7 +820,7 @@ void phy_state_machine(struct work_struct *work)
 
 			break;
 		case PHY_AN:
-#ifdef CFG_ETHER_LOOPBACK_MODE
+#if defined(CFG_ETHER_LOOPBACK_MODE) && CFG_ETHER_LOOPBACK_MODE >= 1
 			nxpmac_set_phy_loopback(phydev, CFG_ETHER_LOOPBACK_MODE);
 #endif
 			err = phy_read_status(phydev);
@@ -897,7 +848,7 @@ void phy_state_machine(struct work_struct *work)
 				phydev->state = PHY_RUNNING;
 				netif_carrier_on(phydev->attached_dev);
 				phydev->adjust_link(phydev->attached_dev);
-#ifdef CFG_ETHER_LOOPBACK_MODE
+#if defined(CFG_ETHER_LOOPBACK_MODE) && CFG_ETHER_LOOPBACK_MODE >= 1
 				return ;
 #endif
 
