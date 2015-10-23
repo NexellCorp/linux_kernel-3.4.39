@@ -359,10 +359,10 @@ static int display_framerate_jiffies(int module, struct disp_vsync_info *psync)
 	fps	 = pixclk ? ((pixclk/hpix)/vpix) : 60;
 	fps  = fps ? fps : 60;
 	rate = 1000/fps;
-	rate_jiffies = msecs_to_jiffies(rate) + 2;	/* +1 jiffies */
+	rate_jiffies = msecs_to_jiffies(rate) * 2;	/* +1 jiffies */
 
-	printk("Display.%d fps=%2ld (%ld ms), wait=%2ld jiffies, Pixelclk=%ldhz\n",
-		module, fps, rate, rate_jiffies, pixclk);
+	printk("Display.%d fps=%2ld (%ld ms), wait=%2ld jiffies(%d), Pixelclk=%ldhz\n",
+		module, fps, rate, rate_jiffies, HZ, pixclk);
 
 	return rate_jiffies;
 }
