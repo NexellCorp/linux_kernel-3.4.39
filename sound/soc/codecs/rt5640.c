@@ -3489,12 +3489,11 @@ static ssize_t rt5640_aux_vol_store(struct device *dev,
 		aux_vol_val = value;
 	}
 
-	vol_level = (aux_vol_val * 1000) / 3125 - 1;
-	if (vol_level < 0) vol_level = 0;
+	vol_level = 8 - (aux_vol_val / 15);
 	pr_debug("\033[33m\33[1m[%s] vol_level : %d \033[0m\r\n", __FUNCTION__, vol_level);
 
 	snd_soc_update_bits(codec, RT5640_INL_INR_VOL,
-		RT5640_INL_VOL_MASK | RT5640_INR_VOL_MASK, ((0x1f - vol_level) << RT5640_INL_VOL_SFT) | ((0x1f - vol_level) << RT5640_INR_VOL_SFT));
+		RT5640_INL_VOL_MASK | RT5640_INR_VOL_MASK, (vol_level << RT5640_INL_VOL_SFT) | (vol_level << RT5640_INR_VOL_SFT));
 
 	mutex_unlock(&sysfs_lock);
 	return status ? : count;
@@ -3593,12 +3592,11 @@ static ssize_t rt5640_aud_vol_store(struct device *dev,
 		aud_vol_val = value;
 	}
 
-	vol_level = (aud_vol_val * 1000) / 2500 - 1;
-	if (vol_level < 0) vol_level = 0;
+	vol_level = 8 - (aud_vol_val / 15);
 	pr_debug("\033[33m\33[1m[%s] vol_level : %d \033[0m\r\n", __FUNCTION__, vol_level);
 
 	snd_soc_update_bits(codec, RT5640_HP_VOL,
-		(0x3f << 8) | (0x3f << 0), ((0x27 - vol_level) << 8) | ((0x27 - vol_level) << 0));
+		(0x3f << 8) | (0x3f << 0), (vol_level << 8) | (vol_level << 0));
 
 	mutex_unlock(&sysfs_lock);
 	return status ? : count;

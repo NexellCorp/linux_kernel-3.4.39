@@ -95,12 +95,11 @@ static ssize_t alc5623_aud_vol_store(struct device *dev,
 		aud_vol_val = value;
 	}
 
-	vol_level = (aud_vol_val * 1000) / 3125 - 1;
-	if (vol_level < 0) vol_level = 0;
+	vol_level = aud_vol_val / 15;	
 	pr_debug("\033[33m\33[1m[%s] vol_level : %d \033[0m\r\n", __FUNCTION__, vol_level);
 
 	snd_soc_update_bits(codec, ALC5623_SPK_OUT_VOL,
-		(0x1f << 8) | (0x1f << 0), ((0x1f - vol_level) << 8) | ((0x1f - vol_level) << 0));
+		(0x1f << 8) | (0x1f << 0), (vol_level << 8) | (vol_level << 0));
 
 	mutex_unlock(&sysfs_lock);
 	return status ? : count;
