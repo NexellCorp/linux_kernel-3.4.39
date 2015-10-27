@@ -148,9 +148,9 @@ long iuihid_ioctl(struct file * file,  unsigned int cmd, unsigned long arg)
 					receive, 1024, &actual_length, USB_CTRL_GET_TIMEOUT);
 			if (ret < 0) {
 				if (ret == -110)
-					printk("ioctl receive timeout error %s %d\n", __func__, ret);
+					pr_debug("ioctl receive timeout error %s %d\n", __func__, ret);
 				else
-					printk("============ERROR============%s %d\n", __func__, ret);
+					pr_debug("============ERROR============%s %d\n", __func__, ret);
 			}
 			else {
 				pr_debug("===========SUCCESS============ %s %d\n", __func__, ret);
