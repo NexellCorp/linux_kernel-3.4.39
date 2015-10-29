@@ -568,6 +568,20 @@ config VIDEO_MT9D111_CAM
 	  This is a Video4Linux2 sensor-level driver for the Micron
 	  MT9D111 1600x1200 CMOS sensor.
 
+config VIDEO_DS90UB914Q
+    tristate "TI DS90UB914Q sensor support(nexell work)"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+	  This is a Video4Linux2 sensor-level driver for TI
+	  DS90UB914Q Serializer and Deserializer sensor.
+
+config VIDEO_NVP6114A
+    tristate "Nextchip NVP6114A sensor support(nexell work)"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+	  This is a Video4Linux2 sensor-level driver for Nextchip
+	  NVP6114A AHD sensor.
+
 source "drivers/media/video/thine/Kconfig"
 
 config VIDEO_TCM825X

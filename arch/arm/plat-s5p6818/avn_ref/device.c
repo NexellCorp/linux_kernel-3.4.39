@@ -764,7 +764,7 @@ static int camera_common_set_clock(ulong clk_rate)
 static bool is_tw9900_port_configured = false;
 static void tw9900_vin_setup_io(int module, bool force)
 {
-	printk(KERN_INFO "%s: module -> %d, force -> %d\n", __func__, module, ((force == true) ? 1 : 0));
+//	printk(KERN_INFO "%s: module -> %d, force -> %d\n", __func__, module, ((force == true) ? 1 : 0));
 
 #if !defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
     if (!force && is_tw9900_port_configured)
@@ -776,7 +776,7 @@ static void tw9900_vin_setup_io(int module, bool force)
 
         /* VIP0:0 = VCLK, VID0 ~ 7 */
         const u_int port[][2] = {
-#if 0	//vid0
+#if 1	//vid0
 			/* VCLK, HSYNC, VSYNC */
             { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
@@ -788,7 +788,7 @@ static void tw9900_vin_setup_io(int module, bool force)
             { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
 #endif
 
-#if 1 //vid1
+#if 0 //vid1
             /* VCLK, HSYNC, VSYNC */
 			{ PAD_GPIO_A + 28, NX_GPIO_PADFUNC_1 },
             //{ PAD_GPIO_E + 13, NX_GPIO_PADFUNC_2 },
@@ -814,7 +814,7 @@ static void tw9900_vin_setup_io(int module, bool force)
 #endif
         };
 
-        printk("%s\n", __func__);
+        //printk("%s\n", __func__);
 
         pad = (u_int *)port;
         len = sizeof(port)/sizeof(port[0]);
@@ -854,7 +854,7 @@ static void camera_common_vin_setup_io(int module, bool force)
             { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
         };
 
-        printk("%s\n", __func__);
+        //printk("%s\n", __func__);
 
         pad = (u_int *)port;
         len = sizeof(port)/sizeof(port[0]);
@@ -900,7 +900,7 @@ static void camera_power_control(int enable)
         return;
     }
 
-    printk("%s: %d\n", __func__, enable);
+    //printk("%s: %d\n", __func__, enable);
     if (enable) {
         regulator_enable(cam_core_18V);
         regulator_enable(cam_io_28V);
@@ -918,8 +918,8 @@ static void camera_power_control(int enable)
     camera_power_enabled = enable ? true : false;
 }
 
-static bool is_back_camera_enabled = false;
-static bool is_back_camera_power_state_changed = false;
+//static bool is_back_camera_enabled = false;
+//static bool is_back_camera_power_state_changed = false;
 static bool is_front_camera_enabled = false;
 static bool is_front_camera_power_state_changed = false;
 
@@ -932,7 +932,7 @@ static int tw9900_power_enable(bool on)
 		unsigned int nMUX	= 0; 
 		unsigned int disMUX	= 0; 
 
-		printk("%s: on %d\n", __func__, on); 
+		//printk("%s: on %d\n", __func__, on); 
 
 		/* Disable MUX */
 		disMUX = (PAD_GPIO_C + 9);
@@ -967,6 +967,8 @@ static int tw9900_power_enable(bool on)
 
 
 static int front_camera_power_enable(bool on);
+
+#if 0
 static int back_camera_power_enable(bool on)
 {
 #if 0
@@ -1027,14 +1029,14 @@ static bool back_camera_power_state_changed(void)
 {
     return is_back_camera_power_state_changed;
 }
+#endif
 
 static int front_camera_power_enable(bool on)
 {
 #if defined(CONFIG_VIDEO_TW9992)
 	unsigned int reset_io = (PAD_GPIO_B + 23);
-	int i=0;
 
-    printk("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
+    //printk("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
 
     if (on) {
 		if (!is_front_camera_enabled)
@@ -1067,6 +1069,60 @@ static int front_camera_power_enable(bool on)
 #endif
 
     return 0;
+}
+
+static int ds90ub914q_power_enable(bool on)
+{
+	u32 pwn		=	(PAD_GPIO_E + 12);
+	u32 mux		=	(PAD_GPIO_E + 16);
+	u32 disMux	=	(PAD_GPIO_C +  9);
+
+	if( on )
+	{
+		//printk("%s :  enable : %d\n", __func__, on);
+
+		nxp_soc_gpio_set_out_value(pwn, 0);
+		nxp_soc_gpio_set_io_dir(pwn, 1);
+		nxp_soc_gpio_set_io_func(pwn, NX_GPIO_PADFUNC_0);
+		mdelay(1);
+
+		nxp_soc_gpio_set_out_value(mux, 1);
+		nxp_soc_gpio_set_io_dir(mux, 1);
+		nxp_soc_gpio_set_io_func(mux, NX_GPIO_PADFUNC_0);
+		mdelay(1);
+
+		nxp_soc_gpio_set_out_value(disMux, 1);
+		nxp_soc_gpio_set_io_dir(disMux, 1);
+		nxp_soc_gpio_set_io_func(disMux, NX_GPIO_PADFUNC_1);
+		mdelay(1);
+
+		mdelay(10);
+	}
+
+	return 0;	
+}
+
+static int nvp6114a_power_enable(bool on)
+{
+	u32 reset	=	(PAD_GPIO_B + 14);
+
+	if( on )
+	{
+		//printk("%s :  enable : %d\n", __func__, on);
+
+		nxp_soc_gpio_set_out_value(reset, 1);
+		nxp_soc_gpio_set_io_dir(reset, 1);
+		nxp_soc_gpio_set_io_func(reset, NX_GPIO_PADFUNC_2);
+		mdelay(1);
+
+		nxp_soc_gpio_set_out_value(reset, 0);
+		mdelay(1);
+
+		nxp_soc_gpio_set_out_value(reset, 1);
+		mdelay(10);
+	}
+
+	return 0;	
 }
 
 static bool front_camera_power_state_changed(void)
@@ -1125,6 +1181,22 @@ struct nxp_mipi_csi_platformdata front_plat_data = {
 
 #endif
 
+#if defined(CONFIG_VIDEO_DS90UB914Q)
+static struct i2c_board_info ds90ub914q_i2c_boardinfo[] = {
+    {
+        I2C_BOARD_INFO("DS90UB914Q", 0xC0>>1),
+    },
+};
+#endif
+
+#if defined(CONFIG_VIDEO_NVP6114A)
+static struct i2c_board_info nvp6114a_i2c_boardinfo[] = {
+    {
+        I2C_BOARD_INFO("NVP6114A", 0x64>>1),
+    },
+};
+#endif
+
 static struct nxp_v4l2_i2c_board_info sensor[] = {
     {
         .board_info = &tw9900_i2c_boardinfo[0],
@@ -1136,9 +1208,90 @@ static struct nxp_v4l2_i2c_board_info sensor[] = {
         .i2c_adapter_id = MDEC_HDCAM_HMRX_AUDIO2_I2CBUS,
     },
 #endif
+#if defined(CONFIG_VIDEO_DS90UB914Q)
+	{
+	  .board_info = &ds90ub914q_i2c_boardinfo[0],
+	  .i2c_adapter_id = DES_I2CBUS,
+	},
+#endif
+#if defined(CONFIG_VIDEO_NVP6114A)
+	{
+	  .board_info = &nvp6114a_i2c_boardinfo[0],
+	  .i2c_adapter_id = MDEC_HDCAM_HMRX_AUDIO2_I2CBUS,
+	},
+#endif
 };
-
 static struct nxp_capture_platformdata capture_plat_data[] = {
+#if defined(CONFIG_VIDEO_NVP6114A)
+  { 
+	/* camera 656 interface */ 
+	.module = 2,
+	.sensor = &sensor[3],
+	.type = NXP_CAPTURE_INF_PARALLEL,
+	.parallel = {
+	  /* for 656 */
+	  .is_mipi        = false,
+	  .external_sync  = false, /* 656 interface */
+	  .h_active       = 704,
+	  .h_frontporch   = 7,
+	  .h_syncwidth    = 1,
+	  .h_backporch    = 10,
+	  .v_active       = 480,
+	  .v_frontporch   = 0,
+	  .v_syncwidth    = 2,
+	  .v_backporch    = 3,
+	  .clock_invert   = false,
+	  .port           = 0,
+	  .data_order     = NXP_VIN_CBY0CRY1,
+	  .interlace      = true,
+	  .clk_rate       = 27000000,
+	  .late_power_down = false,
+	  .power_enable   = nvp6114a_power_enable,
+	  .power_state_changed = NULL,
+	  .set_clock      = NULL,
+	  .setup_io       = camera_common_vin_setup_io,
+	},
+	.deci = {
+	  .start_delay_ms = 0,
+	  .stop_delay_ms  = 0,
+	},
+  },
+#endif
+#if defined(CONFIG_VIDEO_DS90UB914Q)
+  { 
+	/* camera 656 interface */ 
+	.module = 2,
+	.sensor = &sensor[2],
+	.type = NXP_CAPTURE_INF_PARALLEL,
+	.parallel = {
+	  /* for 656 */
+	  .is_mipi        = false,
+	  .external_sync  = false, /* 656 interface */
+	  .h_active       = 720,
+	  .h_frontporch   = 7,
+	  .h_syncwidth    = 1,
+	  .h_backporch    = 10,
+	  .v_active       = 480,
+	  .v_frontporch   = 0,
+	  .v_syncwidth    = 1,
+	  .v_backporch    = 0,
+	  .clock_invert   = false,
+	  .port           = 0,
+	  .data_order     = NXP_VIN_CBY0CRY1,
+	  .interlace      = false,
+	  .clk_rate       = 24000000,
+	  .late_power_down = false,
+	  .power_enable   = ds90ub914q_power_enable,
+	  .power_state_changed = NULL,
+	  .set_clock      = NULL,
+	  .setup_io       = camera_common_vin_setup_io,
+	},
+	.deci = {
+	  .start_delay_ms = 0,
+	  .stop_delay_ms  = 0,
+	},
+  },
+#endif
 #if defined(CONFIG_VIDEO_TW9900)
 	 { 
 		/* back_camera 656 interface */ 
@@ -1327,7 +1480,7 @@ static int _sensor_power_enable(bool enable)
 
 	if( enable ) {
 
-		printk("%s : enable : %d\n", __func__, enable);
+//		printk("%s : enable : %d\n", __func__, enable);
 
 		nxp_soc_gpio_set_out_value(disMux, 1);
 		nxp_soc_gpio_set_io_dir(disMux, 1);
@@ -1398,7 +1551,7 @@ static void _sensor_setup_io(void)
 #endif
 	};
 
-	printk("%s\n", __func__); 
+//	printk("%s\n", __func__); 
 
     pad = (u_int *)port;
     len = sizeof(port)/sizeof(port[0]);
@@ -1413,7 +1566,7 @@ static void _sensor_setup_io(void)
 
 static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data, void *mem)
 {
-	printk("%s\n", __func__);
+	//printk("%s\n", __func__);
 
     memset(mem, 0, plat_data->width*plat_data->height*4);
     /* draw redbox at (0, 0) -- (50, 50) */

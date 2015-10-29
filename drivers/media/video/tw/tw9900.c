@@ -87,6 +87,9 @@ static struct reg_val _sensor_init_data[] =
 #define REARCAM_BACKDETECT_TIME	10
 #define REARCAM_MPOUT_TIME		300
 
+/* this value is used to detect on/off for back gear switch by uevent. */
+struct switch_dev *backgear_switch = NULL;
+
 static struct tw9900_state _state;
 static int rearcam_brightness_tbl[12] = {30, -15, -12, -9, -6, -3, 0, 10, 20, 30, 35, 40};
 
@@ -557,6 +560,8 @@ static int tw9900_probe(struct i2c_client *client, const struct i2c_device_id *i
     state->switch_dev.name = "rearcam";
     switch_dev_register(&state->switch_dev);
     switch_set_state(&state->switch_dev, 0);
+
+	backgear_switch = &state->switch_dev;
 
     INIT_DELAYED_WORK(&_state.work, _work_handler);
 
