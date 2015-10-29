@@ -5,6 +5,7 @@
 #include <linux/platform_device.h>
 #include <linux/workqueue.h>
 #include <linux/i2c.h>
+#include <linux/switch.h>
 
 #include <linux/dma-buf.h>
 #include <linux/nxp_ion.h>
@@ -20,6 +21,8 @@
 #ifndef MLC_LAYER_RGB_OVERLAY
 #define MLC_LAYER_RGB_OVERLAY 0
 #endif
+
+extern struct switch_dev *backgear_switch;
 
 static struct nxp_backward_camera_context {
     struct nxp_backward_camera_platform_data *plat_data;
@@ -626,6 +629,14 @@ static inline bool _is_running(struct nxp_backward_camera_context *me)
 #endif
 }
 
+static void _backgear_switch(int on)
+{
+	if( backgear_switch != NULL )
+		switch_set_state(backgear_switch, on);	
+	else
+		printk("%s - backgear switch is NULL!!!\n", __func__);
+}
+
 static void _decide(struct nxp_backward_camera_context *me)
 {
     /*me->running = NX_MLC_GetLayerEnable(me->plat_data->mlc_module_num, 3); // video layer*/
@@ -633,9 +644,15 @@ static void _decide(struct nxp_backward_camera_context *me)
     me->backgear_on = _is_backgear_on(me->plat_data);
 	//printk("%s: running %d, backgear on %d\n", __func__, me->running, me->backgear_on);
     if (me->backgear_on && !me->running)
+	{
         _turn_on(me);
+		_backgear_switch(1);
+	}
     else if (me->running && !me->backgear_on)
+	{
         _turn_off(me);
+		_backgear_switch(0);
+	}
 }
 
 static irqreturn_t _irq_handler(int irq, void *devdata)
@@ -816,8 +833,6 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
     struct nxp_backward_camera_platform_data *pdata = pdev->dev.platform_data;
     struct nxp_backward_camera_context *me = &_context;
 
-	printk("+++ %s +++\n", __func__);
-
     me->plat_data = pdata;
     me->irq = IRQ_GPIO_START + pdata->backgear_gpio_num;
 
@@ -845,8 +860,6 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
     _decide(me);
 
     me->my_device = pdev;
-
-	printk("--- %s ---\n", __func__);
 
 #ifdef CONFIG_PM
     INIT_DELAYED_WORK(&me->resume_work, _resume_work);
