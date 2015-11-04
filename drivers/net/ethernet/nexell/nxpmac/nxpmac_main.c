@@ -3078,6 +3078,8 @@ static void stmmac_exit_fs(struct net_device *dev)
 	struct stmmac_priv *priv = netdev_priv(dev);
 
 	debugfs_remove_recursive(priv->dbgfs_dir);
+
+	priv->dbgfs_initialized = 0;
 }
 #endif /* CONFIG_NXPMAC_DEBUG_FS */
 
