@@ -33,6 +33,8 @@
 
 #define RTL8211E_INER_LINK_STATUS	0x400
 
+#define RTL8211E_PGSR		0x1f
+
 #define CTRL1000_PREFER_MASTER		(1 << 10)
 #define CTRL1000_CONFIG_MASTER		(1 << 11)
 #define CTRL1000_MANUAL_CONFIG		(1 << 12)
@@ -58,6 +60,11 @@ static int rtl821x_ack_interrupt(struct phy_device *phydev)
 	int err;
 
 	err = phy_read(phydev, RTL821x_INSR);
+
+	if (err & 0x300) {								/* False Carrier or Symbol Error */
+		phy_write(phydev, RTL8211E_PGSR, 0x0000);	/* phy reset */
+		phy_write(phydev, 0, 0x8000);
+	}
 
 	return (err < 0) ? err : 0;
 }
@@ -102,7 +109,7 @@ static int rtl8211e_config_intr(struct phy_device *phydev)
 
 	if (phydev->interrupts == PHY_INTERRUPT_ENABLED)
 		err = phy_write(phydev, RTL821x_INER,
-				RTL8211E_INER_LINK_STATUS);
+				RTL8211E_INER_LINK_STATUS | 0x300);
 	else
 		err = phy_write(phydev, RTL821x_INER, 0);
 
