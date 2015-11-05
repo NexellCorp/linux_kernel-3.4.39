@@ -251,6 +251,12 @@
 #define	CFG_ADC_SAMPLE_RATE						(700 * 1000)
 
 /*------------------------------------------------------------------------------
+ * 	PMIC
+ */
+//#define CONFIG_ENABLE_INIT_VOLTAGE					/* Enalbe init voltage for ARM, CORE */
+
+
+/*------------------------------------------------------------------------------
  * 	Suspend mode
  */
 
