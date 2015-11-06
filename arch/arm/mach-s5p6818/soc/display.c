@@ -1086,9 +1086,9 @@ int  nxp_soc_disp_rgb_set_format(int module, int layer, unsigned int format,
 		EnAlpha = CTRUE;
 
     /* psw0523 fix for video -> prgb setting ordering */
-	NX_MLC_SetTransparency(module, layer, CFALSE, prgb->color.transcolor);
+	/* NX_MLC_SetTransparency(module, layer, CFALSE, prgb->color.transcolor); */
 	NX_MLC_SetColorInversion(module, layer, CFALSE, prgb->color.invertcolor);
-	NX_MLC_SetAlphaBlending(module, layer, CFALSE, prgb->color.alphablend);
+	NX_MLC_SetAlphaBlending(module, layer, EnAlpha, prgb->color.alphablend);
 	NX_MLC_SetFormatRGB(module, layer, (NX_MLC_RGBFMT)format);
 	NX_MLC_SetRGBLayerInvalidPosition(module, layer, 0, 0, 0, 0, 0, CFALSE);
 	NX_MLC_SetRGBLayerInvalidPosition(module, layer, 1, 0, 0, 0, 0, CFALSE);
