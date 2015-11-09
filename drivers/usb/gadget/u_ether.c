@@ -12,6 +12,7 @@
  */
 
 /* #define VERBOSE_DEBUG */
+#define CONFIG_USB_ANDROID_RNDIS_DWORD_ALIGNED // fix unaligned buffer
 
 #include <linux/kernel.h>
 #include <linux/gfp.h>
