@@ -34,8 +34,8 @@
 #define	UART_DEBUG_BAUDRATE			CFG_UART_DEBUG_BAUDRATE
 #if	defined  (CONFIG_DEBUG_NXP_UART_CH0)
 	#define	UART_PHYS_BASE		IO_ADDRESS(PHY_BASEADDR_UART0)
-	#define	UART_CLKG_BASE		IO_ADDRESS(PHY_BASEADDR_CLKGEN25)
-	#define	RESET_UART_ID		RESET_ID_UART3
+	#define	UART_CLKG_BASE		IO_ADDRESS(PHY_BASEADDR_CLKGEN22)
+	#define	RESET_UART_ID		RESET_ID_UART0
 	#define	TIEOFF_USESMC		TIEOFFINDEX_OF_UART0_USESMC		/* Use UART for SmartCard Interface */
 	#define	TIEOFF_SMCTXENB		TIEOFFINDEX_OF_UART0_SMCTXENB	/* SmartCard Interface TX mode enable */
 	#define	TIEOFF_SMCRXENB		TIEOFFINDEX_OF_UART0_SMCRXENB	/* SmartCard Interface RX mode enable */
@@ -77,8 +77,8 @@
 	#define	TIEOFF_SMCRXENB		TIEOFFINDEX_OF_UART5_SMCRXENB
 #else
 	#define	UART_PHYS_BASE		IO_ADDRESS(PHY_BASEADDR_UART0)
-	#define	UART_CLKG_BASE		IO_ADDRESS(PHY_BASEADDR_CLKGEN25)
-	#define	RESET_UART_ID		RESET_ID_UART3
+	#define	UART_CLKG_BASE		IO_ADDRESS(PHY_BASEADDR_CLKGEN22)
+	#define	RESET_UART_ID		RESET_ID_UART0
 	#define	TIEOFF_USESMC		TIEOFFINDEX_OF_UART0_USESMC		/* Use UART for SmartCard Interface */
 	#define	TIEOFF_SMCTXENB		TIEOFFINDEX_OF_UART0_SMCTXENB	/* SmartCard Interface TX mode enable */
 	#define	TIEOFF_SMCRXENB		TIEOFFINDEX_OF_UART0_SMCRXENB	/* SmartCard Interface RX mode enable */
@@ -251,8 +251,7 @@ inline static void uart_putc(char ch)
 {
 	struct s5p_uart *uart = (struct s5p_uart *)UART_PHYS_BASE;
 	unsigned int mask = 0x8;
-	return;
-	printk("\e[31m %p\e[0m \n",uart);
+	
 	/* wait for room in the tx FIFO */
 	while ((readl(&uart->ufstat) & TX_FIFO_FULL_MASK)) {
 		if (readl(&uart->uerstat) & mask)

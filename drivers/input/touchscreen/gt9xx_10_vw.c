@@ -278,7 +278,7 @@ static void gtp_key_up(struct goodix_ts_data* ts)
 	{
 		if(touch_key_state[i])
 		{
-			printk("key %d up\n",pkeyid[i]);
+			//printk("key %d up\n",pkeyid[i]);
 			input_report_key(ts->input_dev,  pkeyid[i], 0);
 			touch_key_state[i]=0;
 		}
@@ -314,7 +314,7 @@ static void gtp_key_down(struct goodix_ts_data* ts,s32 id,s32 x,s32 y,s32 w)
 		else keyid=0xff;
 		if(keyid!=0xff)
 		{
-			printk("key %d down\n",pkeyid[keyid]);
+			//printk("key %d down\n",pkeyid[keyid]);
 			input_report_key(ts->input_dev, pkeyid[keyid], 1);
 			touch_key_state[keyid]=1;
 		}
@@ -342,7 +342,7 @@ static void gtp_touch_down(struct goodix_ts_data* ts,s32 id,s32 x,s32 y,s32 w)
 #if GTP_CHANGE_X2Y
     GTP_SWAP(x, y);
 #endif
-	printk("display : x=%d,y=%d\n",x,y);
+//	printk("display : x=%d,y=%d\n",x,y);
 #if GTP_ICS_SLOT_REPORT
     input_mt_slot(ts->input_dev, id);
     input_report_abs(ts->input_dev, ABS_MT_TRACKING_ID, id);
@@ -625,7 +625,7 @@ Output:
 void gtp_reset_guitar(struct i2c_client *client, s32 ms)
 {
     GTP_DEBUG_FUNC();
-
+/*
     GTP_GPIO_OUTPUT(GTP_RST_PORT, 0);   //begin select I2C slave addr
     msleep(ms);
     GTP_GPIO_OUTPUT(GTP_INT_PORT, client->addr == 0x14 ? 1 : 0);
@@ -639,6 +639,19 @@ void gtp_reset_guitar(struct i2c_client *client, s32 ms)
     GTP_GPIO_AS_INPUT(GTP_RST_PORT);    //end select I2C slave addr
 
     gtp_int_sync(50);
+*/
+    GTP_GPIO_OUTPUT(GTP_RST_PORT, 0);   //begin select I2C slave addr
+    msleep(ms);
+    GTP_GPIO_OUTPUT(GTP_INT_PORT, client->addr == 0x14);
+
+    msleep(2);
+    GTP_GPIO_OUTPUT(GTP_RST_PORT, 1);
+
+    msleep(6);                          //must > 3ms
+
+    GTP_GPIO_OUTPUT(GTP_INT_PORT, 0);
+    msleep(50);
+    GTP_GPIO_AS_INT(GTP_INT_PORT);
 }
 #ifdef CONFIG_HAS_EARLYSUSPEND
 
@@ -991,7 +1004,7 @@ static s8 gtp_request_io_port(struct goodix_ts_data *ts)
 //    GTP_GPIO_OUTPUT(GTP_INT_PORT, 0);
 
 	GTP_GPIO_REQUEST(GTP_INT_PORT, "GTP_INT_IRQ");
-    GTP_GPIO_AS_INT(GTP_INT_PORT);
+//    GTP_GPIO_AS_INT(GTP_INT_PORT);
     ts->client->irq = GTP_INT_IRQ;
 
 #if 1  //for TNN
@@ -1033,7 +1046,7 @@ static s8 gtp_request_irq(struct goodix_ts_data *ts)
     s32 ret = -1;
     const u8 irq_table[] = GTP_IRQ_TAB;
 
-    GTP_DEBUG("INT trigger type:%x", ts->int_trigger_type);
+    printk("INT trigger type:%x", ts->int_trigger_type);
 
     ret  = request_irq(ts->client->irq,
                        goodix_ts_irq_handler,
@@ -1042,6 +1055,7 @@ static s8 gtp_request_irq(struct goodix_ts_data *ts)
                        ts);
     if (ret)
     {
+    	printk("######INT trigger type error\n");
         GTP_ERROR("Request IRQ failed!ERRNO:%d.", ret);
         GTP_GPIO_AS_INPUT(GTP_INT_PORT);
         GTP_GPIO_FREE(GTP_INT_PORT);
@@ -1506,7 +1520,7 @@ static void __exit goodix_ts_exit(void)
     }
 }
 
-late_initcall(goodix_ts_init);
+module_init(goodix_ts_init);
 module_exit(goodix_ts_exit);
 
 MODULE_DESCRIPTION("GTP Series Driver");

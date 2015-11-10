@@ -181,6 +181,53 @@ static struct platform_device dm9000_plat_device = {
 };
 #endif	/* CONFIG_DM9000 || CONFIG_DM9000_MODULE */
 
+
+/*------------------------------------------------------------------------------
+ * MPEGTS platform device
+ */
+#if defined(CONFIG_NXP_MP2TS_IF)
+#include <mach/nxp_mp2ts.h>
+
+#define NXP_TS_PAGE_NUM_0       (36)	// Variable
+#define NXP_TS_BUF_SIZE_0       (TS_PAGE_SIZE * NXP_TS_PAGE_NUM_0)
+
+#define NXP_TS_PAGE_NUM_1       (36)	// Variable
+#define NXP_TS_BUF_SIZE_1       (TS_PAGE_SIZE * NXP_TS_PAGE_NUM_1)
+
+#define NXP_TS_PAGE_NUM_CORE    (36)	// Variable
+#define NXP_TS_BUF_SIZE_CORE    (TS_PAGE_SIZE * NXP_TS_PAGE_NUM_CORE)
+
+
+static struct nxp_mp2ts_dev_info mp2ts_dev_info[2] = {
+    {
+        .demod_irq_num = CFG_GPIO_DEMOD_0_IRQ_NUM,
+        .demod_rst_num = CFG_GPIO_DEMOD_0_RST_NUM,
+        .tuner_rst_num = CFG_GPIO_TUNER_0_RST_NUM,
+    },
+    {
+        .demod_irq_num = CFG_GPIO_DEMOD_1_IRQ_NUM,
+        .demod_rst_num = CFG_GPIO_DEMOD_1_RST_NUM,
+        .tuner_rst_num = CFG_GPIO_TUNER_1_RST_NUM,
+    },
+};
+
+static struct nxp_mp2ts_plat_data mpegts_plat_data = {
+    .dev_info       = mp2ts_dev_info,
+    .ts_dma_size[0] = -1,                   // TS ch 0 - Static alloc size.
+    .ts_dma_size[1] = NXP_TS_BUF_SIZE_1,    // TS ch 1 - Static alloc size.
+    .ts_dma_size[2] = -1,                   // TS core - Static alloc size.
+};
+
+static struct platform_device mpegts_plat_device = {
+    .name	= DEV_NAME_MPEGTSI,
+    .id		= 0,
+    .dev	= {
+        .platform_data = &mpegts_plat_data,
+    },
+};
+#endif  /* CONFIG_NXP_MP2TS_IF */
+
+
 /*------------------------------------------------------------------------------
  * DISPLAY (LVDS) / FB
  */
@@ -229,9 +276,9 @@ static struct platform_device *fb_devices[] = {
 
 static struct platform_pwm_backlight_data bl_plat_data = {
 	.pwm_id			= CFG_LCD_PRI_PWM_CH,
-	.max_brightness = 200,	/* 255 is 100%, set over 100% */
-	.dft_brightness = 135,	/* 50% */
-	.lth_brightness = 70,	/* about to 5% */
+	.max_brightness = 255,	/* 255 is 100%, set over 100% */
+	.dft_brightness = 128,	/* 50% */
+	.lth_brightness = 75,	/* about to 5% */
 	.pwm_period_ns	= 1000000000/CFG_LCD_PRI_PWM_FREQ,
 };
 
@@ -521,6 +568,29 @@ static struct platform_device key_plat_device = {
 	},
 };
 #endif	/* CONFIG_KEYBOARD_NXP_KEY || CONFIG_KEYBOARD_NXP_KEY_MODULE */
+
+
+
+
+
+#if defined(CONFIG_FCI_FC8300)
+#include <linux/i2c.h>
+
+#define	FC8300_I2C_BUS		(1)
+
+/* CODEC */
+static struct i2c_board_info __initdata fc8300_i2c_bdi = {
+	.type	= "fc8300_i2c",
+	.addr	= (0x58>>1),
+};
+
+static struct platform_device fc8300_dai = {
+	.name			= "fc8300_i2c",
+	.id				= 0,
+};
+#endif
+
+
 
 #if defined(CONFIG_SND_CODEC_RT5640)
 #include <linux/i2c.h>
@@ -1544,6 +1614,13 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(MP8845C_I2C_BUS1, &mp8845c_regulators[1], 1);
 #endif
 
+#if defined(CONFIG_FCI_FC8300)
+	printk("plat: add device fc8300 I2C\n");
+	i2c_register_board_info(FC8300_I2C_BUS, &fc8300_i2c_bdi, 1);
+	platform_device_register(&fc8300_dai);
+#endif
+
+
 #if defined(CONFIG_SND_CODEC_RT5640) || defined(CONFIG_SND_CODEC_RT5640_MODULE)
 	printk("plat: add device asoc-rt5640\n");
 	i2c_register_board_info(RT5640_I2C_BUS, &rt5640_i2c_bdi, 1);
@@ -1565,6 +1642,11 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)
     printk("plat: add device nxp-v4l2\n");
     platform_device_register(&nxp_v4l2_dev);
+#endif
+
+#if defined(CONFIG_NXP_MP2TS_IF)
+	printk("plat: add device misc mpegts\n");
+	platform_device_register(&mpegts_plat_device);
 #endif
 
 #if defined(CONFIG_SPI_SPIDEV) || defined(CONFIG_SPI_SPIDEV_MODULE)

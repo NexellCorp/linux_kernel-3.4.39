@@ -69,7 +69,7 @@
  * 	Display (DPC and MLC)
  */
 /* Primary */
-#define CFG_DISP_PRI_SCREEN_LAYER               0
+#define CFG_DISP_PRI_SCREEN_LAYER               1
 #define CFG_DISP_PRI_SCREEN_RGB_FORMAT          MLC_RGBFMT_A8R8G8B8
 #define CFG_DISP_PRI_SCREEN_PIXEL_BYTE	        4
 #define CFG_DISP_PRI_SCREEN_COLOR_KEY	        0x090909
@@ -117,7 +117,7 @@
 /*------------------------------------------------------------------------------
  *  LVDS
  */
-#define CFG_DISP_LVDS_LCD_FORMAT                LVDS_LCDFORMAT_JEIDA
+#define CFG_DISP_LVDS_LCD_FORMAT                LVDS_LCDFORMAT_VESA
 
 
 
@@ -192,19 +192,50 @@
 /*------------------------------------------------------------------------------
  * 	Keypad
  */
-#define USERDEF_KEY1							59  /* F1 */
-#define USERDEF_KEY2							60  /* F2 */
-#define USERDEF_KEY3							61  /* F3 */
-#define USERDEF_KEY4							62  /* F4 */
+/**
+#define USERDEF_KEY1							KEY_F1
+#define USERDEF_KEY2							KEY_F2
+#define USERDEF_KEY3							KEY_F3
+#define USERDEF_KEY4							KEY_F4
+*/
+#define USERDEF_KEY1							KEY_BACK
+/* #define USERDEF_KEY1							KEY_F1 */
+#define USERDEF_KEY2							KEY_VOLUMEDOWN
+#define USERDEF_KEY3							KEY_VOLUMEUP
+#define USERDEF_KEY4							KEY_HOMEPAGE
 
-#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0, PAD_GPIO_ALV + 1, PAD_GPIO_ALV + 2, PAD_GPIO_ALV + 3, PAD_GPIO_ALV + 4}
-#define CFG_KEYPAD_KEY_CODE						{ KEY_POWER, USERDEF_KEY1, USERDEF_KEY2, USERDEF_KEY3, USERDEF_KEY4 }
+
+#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0, PAD_GPIO_ALV + 1, PAD_GPIO_ALV + 2, /* PAD_GPIO_ALV + 3,*/ PAD_GPIO_ALV + 4}
+#define CFG_KEYPAD_KEY_CODE						{ KEY_POWER, USERDEF_KEY1, USERDEF_KEY2, /* USERDEF_KEY3, */ USERDEF_KEY4 }
 #define CFG_KEYPAD_REPEAT						CFALSE /* 0: Repeat Off 1 : Repeat On */
 
 /*------------------------------------------------------------------------------
  * 	SDHC
  */
 #define	CFG_SDMMC0_DETECT_IO					(PAD_GPIO_E + 31)	/* external cd */
+
+/*------------------------------------------------------------------------------
+ *  MPEGTSIF
+ */
+#define CFG_MPEGTS_MASTER_MODE					1
+#define CFG_MPEGTS_SLAVE_MODE					0
+#define CFG_MPEGTS_CLOCKPOL						1		/* 0: invert,     1: bypass */
+#define CFG_MPEGTS_DATAPOL						1		/* 0: active low, 1: active high */
+#define CFG_MPEGTS_SYNCPOL						1		/* 0: active low, 1: active high */
+#define CFG_MPEGTS_ERRORPOL						1		/* 0: active low, 1: active high */
+#define CFG_MPEGTS_DATAWIDTH					0		/* 0: 8bit, 1: 1bit */
+#define CFG_MPEGTS_WORDCNT						47		/* 1 ~ 64 */
+
+/*------------------------------------------------------------------------------
+ *  MP2TS (Tuner & Demodule)
+ */
+#define CFG_GPIO_DEMOD_0_IRQ_NUM				(-1)	//(IRQ_GPIO_C_START + 10)
+#define CFG_GPIO_DEMOD_0_RST_NUM				(PAD_GPIO_A + 23)
+#define CFG_GPIO_TUNER_0_RST_NUM				(-1)
+
+#define CFG_GPIO_DEMOD_1_IRQ_NUM				(-1)
+#define CFG_GPIO_DEMOD_1_RST_NUM				(-1)
+#define CFG_GPIO_TUNER_1_RST_NUM				(-1)
 
 /*------------------------------------------------------------------------------
  * 	DWCOTG
@@ -218,6 +249,12 @@
  * 	ADC
  */
 #define	CFG_ADC_SAMPLE_RATE						(700 * 1000)
+
+/*------------------------------------------------------------------------------
+ * 	PMIC
+ */
+//#define CONFIG_ENABLE_INIT_VOLTAGE					/* Enalbe init voltage for ARM, CORE */
+
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode
