@@ -29,6 +29,7 @@
 #include "vpu_hw_interface.h"			//	Register Access
 //#include "../firmware/blackbird.h"	//	v2.1.9
 #include "../firmware/blackbird_v2.3.10.h"	//	v2.3.10
+//#include "../firmware/coda960_v3.1.13.h"		// new version
 #include "../include/nx_vpu_api.h"
 #include "../include/nx_vpu_config.h"
 
@@ -44,6 +45,7 @@
 #define	DBG_CLOCK		0
 #define DBG_USERDATA	0
 #define DBG_REGISTER    0
+#define DBG_ES_ADDR		0
 
 
 #include "nx_vpu_gdi.h"
@@ -108,7 +110,6 @@ static NX_VPU_RET VPU_DecRegisterFrameBufCommand( NX_VpuCodecInst *pInst, VPU_DE
 static NX_VPU_RET VPU_DecStartOneFrameCommand(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME_ARG *pArg);
 static NX_VPU_RET VPU_DecGetOutputInfo(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME_ARG *pArg);
 static NX_VPU_RET VPU_DecCloseCommand(NX_VpuCodecInst *pInst);
-
 
 static int swap_endian(unsigned char *data, int len);
 //static void DumpData( void *data, int len );
@@ -611,6 +612,8 @@ int VPU_SWReset(int resetMode)
 		VpuWriteReg(BIT_SW_RESET, 0x00);
 		return VPU_RET_ERR_TIMEOUT;
 	}
+
+	VpuWriteReg(BIT_USE_NX_EXPND, USE_NX_EXPND);
 
 	VpuWriteReg(BIT_SW_RESET, 0);
 
@@ -1871,10 +1874,9 @@ NX_VPU_RET	NX_VpuDecOpen( VPU_OPEN_ARG *openArg, void *drvHandle, NX_VPU_INST_HA
 	}
 	else
 	{
-		NX_ErrMsg(("NX_VpuEncOpen() failed. Cannot support codec standard(%d)\n", openArg->codecStd));
+		NX_ErrMsg(("NX_VpuDecOpen() failed. Cannot support codec standard(%d)\n", openArg->codecStd));
 		return VPU_RET_ERR_PARAM;
 	}
-
 
 	//	Set Base Information
 	hInst->inUse = 1;
@@ -1957,7 +1959,6 @@ NX_VPU_RET	NX_VpuDecOpen( VPU_OPEN_ARG *openArg, void *drvHandle, NX_VPU_INST_HA
 	FUNCOUT();
 	return VPU_RET_OK;
 }
-
 
 static int FillBuffer(NX_VPU_INST_HANDLE handle, unsigned char *stream, int size)
 {
@@ -2367,6 +2368,7 @@ static NX_VPU_RET VPU_DecSeqInitCommand(NX_VpuCodecInst *pInst, VPU_DEC_SEQ_INIT
 	//printk("CurPC = %x, WR = %x, RD =  %x, Idx = %d \n", VpuReadReg(BIT_CUR_PC), VpuReadReg(BIT_WR_PTR), VpuReadReg(BIT_RD_PTR), pInst->instIndex );
 
 #if (DBG_REGISTER)
+	{
 		int i;
 		VpuWriteReg(BIT_BIT_STREAM_PARAM, 0 );
 
@@ -2683,8 +2685,6 @@ static NX_VPU_RET VPU_DecRegisterFrameBufCommand( NX_VpuCodecInst *pInst, VPU_DE
 	return VPU_RET_OK;
 }
 
-
-
 static NX_VPU_RET VPU_DecGetOutputInfo(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME_ARG *pArg)
 {
 	VpuDecInfo *pInfo = &pInst->codecInfo.decInfo;
@@ -2713,26 +2713,23 @@ static NX_VPU_RET VPU_DecGetOutputInfo(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME
 
 	//if (pArg->indexFrameDecoded >= 0 && pArg->indexFrameDecoded < MAX_REG_FRAME)
 	{
-		if( pInst->codecMode == VPX_DEC )
+		if( (pInst->codecMode == VPX_DEC) && (pInst->auxMode == VPX_AUX_VP8) )
 		{
-			if ( pInst->auxMode == VPX_AUX_VP8 )
-			{
-				// VP8 specific header information
-				// h_scale[31:30] v_scale[29:28] pic_width[27:14] pic_height[13:0]
-				val = VpuReadReg(RET_DEC_PIC_VP8_SCALE_INFO);
-				pArg->vp8ScaleInfo.hScaleFactor = (val >> 30) & 0x03;
-				pArg->vp8ScaleInfo.vScaleFactor = (val >> 28) & 0x03;
-				pArg->vp8ScaleInfo.picWidth = (val >> 14) & 0x3FFF;
-				pArg->vp8ScaleInfo.picHeight = (val >> 0) & 0x3FFF;
-				// ref_idx_gold[31:24], ref_idx_altr[23:16], ref_idx_last[15: 8],
-				// version_number[3:1], show_frame[0]
-				val = VpuReadReg(RET_DEC_PIC_VP8_PIC_REPORT);
-				pArg->vp8PicInfo.refIdxGold = (val >> 24) & 0x0FF;
-				pArg->vp8PicInfo.refIdxAltr = (val >> 16) & 0x0FF;
-				pArg->vp8PicInfo.refIdxLast = (val >> 8) & 0x0FF;
-				pArg->vp8PicInfo.versionNumber = (val >> 1) & 0x07;
-				pArg->vp8PicInfo.showFrame = (val >> 0) & 0x01;
-			}
+			// VP8 specific header information
+			// h_scale[31:30] v_scale[29:28] pic_width[27:14] pic_height[13:0]
+			val = VpuReadReg(RET_DEC_PIC_VP8_SCALE_INFO);
+			pArg->vp8ScaleInfo.hScaleFactor = (val >> 30) & 0x03;
+			pArg->vp8ScaleInfo.vScaleFactor = (val >> 28) & 0x03;
+			pArg->vp8ScaleInfo.picWidth = (val >> 14) & 0x3FFF;
+			pArg->vp8ScaleInfo.picHeight = (val >> 0) & 0x3FFF;
+			// ref_idx_gold[31:24], ref_idx_altr[23:16], ref_idx_last[15: 8],
+			// version_number[3:1], show_frame[0]
+			val = VpuReadReg(RET_DEC_PIC_VP8_PIC_REPORT);
+			pArg->vp8PicInfo.refIdxGold = (val >> 24) & 0x0FF;
+			pArg->vp8PicInfo.refIdxAltr = (val >> 16) & 0x0FF;
+			pArg->vp8PicInfo.refIdxLast = (val >> 8) & 0x0FF;
+			pArg->vp8PicInfo.versionNumber = (val >> 1) & 0x07;
+			pArg->vp8PicInfo.showFrame = (val >> 0) & 0x01;
 		}
 
 		//default value
@@ -2787,6 +2784,7 @@ static NX_VPU_RET VPU_DecGetOutputInfo(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME
 	{
 		pArg->progressiveFrame  = (val >> 23) & 0x0003;
 		pArg->isInterace = (pArg->progressiveFrame == 0) ? (1) : (0);
+		pArg->picStructure  = (val >> 19) & 0x0003;
 	}
 
 	if (pArg->isInterace)
@@ -2794,8 +2792,10 @@ static NX_VPU_RET VPU_DecGetOutputInfo(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME
 		pArg->topFieldFirst     = (val >> 21) & 0x0001;	// TopFieldFirst[21]
 		pArg->picTypeFirst      = (val & 0x38) >> 3;	// pic_type of 1st field
 		pArg->picType           = val & 0x7;			// pic_type of 2nd field
+		pArg->npf               = (val >> 15) & 1;
 	}
 	else {
+		pArg->topFieldFirst     = 0;
 		pArg->picTypeFirst   = 6;	// no meaning
 		pArg->picType = val & 0x7;
 	}
@@ -2805,10 +2805,11 @@ static NX_VPU_RET VPU_DecGetOutputInfo(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME
 		if (val & 0x40) { // 6th bit
 			if (pArg->isInterace)
 			{
-				pArg->picTypeFirst = 5;		//	IDR
+				pArg->picTypeFirst = 6;		//	IDR
+				pArg->picType = 6;
 			}
 			else
-				pArg->picType = 5;			//	IDR
+				pArg->picType = 6;			//	IDR
 		}
 	}
 
@@ -3020,8 +3021,6 @@ static NX_VPU_RET VPU_DecGetOutputInfo(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME
 	return VPU_RET_OK;
 }
 
-
-
 static NX_VPU_RET VPU_DecStartOneFrameCommand(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME_ARG *pArg)
 {
 	VpuDecInfo *pInfo = &pInst->codecInfo.decInfo;
@@ -3126,6 +3125,7 @@ static NX_VPU_RET VPU_DecStartOneFrameCommand(NX_VpuCodecInst *pInst, VPU_DEC_DE
 	pInfo->clearDisplayIndexes = 0;
 
 	if( pArg->eos )
+	//if ( (pArg->strmDataSize == 0) || (pArg->strmData == NULL) )
 		pInfo->streamEndflag |= 1<<2;
 	else
 		pInfo->streamEndflag &= ~(1<<2);
@@ -3146,6 +3146,17 @@ static NX_VPU_RET VPU_DecStartOneFrameCommand(NX_VpuCodecInst *pInst, VPU_DEC_DE
 
 	val = pInfo->streamEndian;
 	VpuWriteReg(BIT_BIT_STREAM_CTRL, val);
+
+#if (DBG_REGISTER)
+	{
+		int reg;
+		NX_DbgMsg( DBG_REGISTER, ("[DEC_FRAME]\n") );
+		for (reg = 0x180 ; reg < 0x200 ; reg += 16)
+		{
+			NX_DbgMsg( DBG_REGISTER, ("[Addr = %3x]%x %x %x %x \n", reg, VpuReadReg(BIT_BASE + reg), VpuReadReg(BIT_BASE + reg + 4), VpuReadReg(BIT_BASE + reg + 8), VpuReadReg(BIT_BASE + reg + 12)) );
+		}
+	}
+#endif
 
 	VpuBitIssueCommand(pInst, PIC_RUN);
 
