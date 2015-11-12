@@ -308,6 +308,7 @@ typedef struct
 	int repeatFirstField;
 	int progressiveFrame;
 	int fieldSequence;
+	int npf;
 
 	int isSuccess;
 
