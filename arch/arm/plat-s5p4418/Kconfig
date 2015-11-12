@@ -24,11 +24,6 @@ choice
 		help
    	 		Support for the AVN reference board.
 
-	config PLAT_S5P4418_TK_AVN
-		bool "DRONEL: Android tk_anv board"
-		help
-			Support for the tk_avn board.
-
 endchoice
 
 #
