@@ -112,7 +112,6 @@ unsigned char mtv_spi_read(int demod_no, unsigned char reg)
 	};
 	struct mtv_cb * mtv_cb_ptr = mtv_cb_ptrs[demod_no];
 
-	printk(KERN_DEBUG "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] <<<< \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
 	spi_message_init(&msg);
 	out_buf[0] = RAONTV_CHIP_ADDR;
 	out_buf[1] = reg;	
@@ -135,7 +134,6 @@ unsigned char mtv_spi_read(int demod_no, unsigned char reg)
 		DMBERR("error: %d\n", ret);  
 		return 0xFF;
 	}
-	printk(KERN_DEBUG "## \e[31m PJSMSG \e[0m [%s():%s:%d\t]  \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
 
 	return in_buf[1];
 }
@@ -154,8 +152,6 @@ void mtv_spi_write(int demod_no, unsigned char reg, unsigned char val)
 	int ret;
 	struct mtv_cb * mtv_cb_ptr = mtv_cb_ptrs[demod_no];
 
-	printk(KERN_DEBUG "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] <<<< \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
-
 	spi_message_init(&msg);
 
 	out_buf[0] = RAONTV_CHIP_ADDR;
@@ -171,8 +167,6 @@ void mtv_spi_write(int demod_no, unsigned char reg, unsigned char val)
 	{
 		DMBERR("error: %d\n", ret);  
 	}
-	printk(KERN_DEBUG "## \e[31m PJSMSG \e[0m [%s():%s:%d\t]  \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
-
 }
 
 
@@ -181,7 +175,6 @@ static int mtv_spi_probe_0(struct spi_device *spi)
 	int ret;
 	struct mtv_cb * mtv_cb_ptr = mtv_cb_ptrs[0];
 	
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t]  \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
 	DMBMSG("MTV spi 0 ENTERED!!!!!!!!!!!!!!\n");
 	
 	spi->bits_per_word = 8;
@@ -221,7 +214,6 @@ static int mtv_spi_probe_1(struct spi_device *spi)
 	int ret;
 	struct mtv_cb * mtv_cb_ptr = mtv_cb_ptrs[1];
 	
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t]  \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
 	DMBMSG("MTV spi 1 ENTERED!!!!!!!!!!!!!!\n");
 	
 	spi->bits_per_word = 8;
