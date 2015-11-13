@@ -99,7 +99,8 @@ static struct rt5640_init_reg init_list[] = {
 	{RT5640_STO_DAC_MIXER	, 0x1414},//Dig inf 1 -> Sto DAC mixer -> DACL
 	{RT5640_OUT_L3_MIXER	, 0x01fe},//DACL1 -> OUTMIXL
 	{RT5640_OUT_R3_MIXER	, 0x01fe},//DACR1 -> OUTMIXR
-	{RT5640_HP_VOL		, 0x8888},//OUTMIX -> HPVOL
+//	{RT5640_HP_VOL		, 0x8888},//OUTMIX -> HPVOL
+	{RT5640_HP_VOL		, 0x8d8d},//OUTMIX -> HPVOL // fix volume max
 	{RT5640_HPO_MIXER	, 0xc000},//HPVOL -> HPOLMIX
 //	{RT5640_HPO_MIXER	, 0xa000},//DAC1 -> HPOLMIX
 //	{RT5640_CHARGE_PUMP	, 0x0f00},
@@ -177,7 +178,8 @@ static int rt5640_index_sync(struct snd_soc_codec *codec)
 static const u16 rt5640_reg[RT5640_VENDOR_ID2 + 1] = {
 	[RT5640_RESET] = 0x000c,
 	[RT5640_SPK_VOL] = 0xc8c8,
-	[RT5640_HP_VOL] = 0xc8c8,
+//	[RT5640_HP_VOL] = 0xc8c8,
+	[RT5640_HP_VOL] = 0xcdcd, // fix volume max
 	[RT5640_OUTPUT] = 0xc8c8,
 	[RT5640_MONO_OUT] = 0x8000,
 	[RT5640_INL_INR_VOL] = 0x0808,
