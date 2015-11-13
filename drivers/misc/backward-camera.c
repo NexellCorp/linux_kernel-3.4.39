@@ -898,7 +898,8 @@ static int __init backward_camera_init(void)
     return platform_driver_register(&backward_camera_driver);
 }
 
-subsys_initcall(backward_camera_init);
+module_init(backward_camera_init);
+//subsys_initcall(backward_camera_init);
 
 MODULE_AUTHOR("swpark <swpark@nexell.co.kr>");
 MODULE_DESCRIPTION("Backward Camera Driver for Nexell");

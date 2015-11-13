@@ -2211,6 +2211,10 @@ struct platform_device backward_camera_device = {
         .platform_data	= &backward_camera_plat_data,
     }
 };
+
+#ifdef CONFIG_SLSIAP_NXPBOOT
+extern void register_backward_camera(struct platform_device *device);
+#endif
 #endif
 
 /*------------------------------------------------------------------------------
@@ -2345,11 +2349,14 @@ void __init nxp_board_devices_register(void)
     platform_device_register(&hdmi_cec_device);
 #endif
 
-/*#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)*/
-	/*printk("plat: register device backward-camera platform device to tnn-boot\n");*/
-	/*platform_device_register(&backward_camera_device);*/
-/*#endif*/
-
+#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+	printk("plat: register device backward-camera platform device to tnn-boot\n");
+#if 0//def CONFIG_SLSIAP_NXPBOOT
+    register_backward_camera(&backward_camera_device);
+#else
+    platform_device_register(&backward_camera_device);
+#endif
+#endif
 //s tnn, nplat
 #if defined(CONFIG_PPM_NEXELL)
     printk("plat: add device ppm\n");

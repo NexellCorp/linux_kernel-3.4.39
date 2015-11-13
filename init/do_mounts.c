@@ -505,6 +505,9 @@ void __init mount_root(void)
 /*
  * Prepare the namespace - decide what/where to mount, load ramdisks, etc.
  */
+#ifdef CONFIG_SLSIAP_NXPBOOT
+extern void start_nxp_load(void);
+#endif
 void __init prepare_namespace(void)
 {
 	int is_floppy;
@@ -562,10 +565,14 @@ out:
 	sys_mount(".", "/", NULL, MS_MOVE, NULL);
 	sys_chroot((const char __user __force *)".");
 
+#ifdef CONFIG_SLSIAP_NXPBOOT
+    start_nxp_load();
+#endif
+
     // psw0523 add
     /*extern void start_gsl_init_thread(void);*/
     /*start_gsl_init_thread();*/
-#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+#if 0//defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
 extern struct platform_device backward_camera_device;
 extern int platform_device_register(struct platform_device *);
     printk("%s: register device backward-camera platform device\n", __func__);

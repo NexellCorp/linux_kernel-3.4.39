@@ -820,8 +820,14 @@ static void __init do_pre_smp_initcalls(void)
 		do_one_initcall(*fn);
 }
 
+#ifdef CONFIG_SLSIAP_NXPBOOT
+extern void start_nxp_animation(void);
+#endif
 static void run_init_process(const char *init_filename)
 {
+#ifdef CONFIG_SLSIAP_NXPBOOT
+    start_nxp_animation();
+#endif
 	argv_init[0] = init_filename;
 	kernel_execve(init_filename, argv_init, envp_init);
 }

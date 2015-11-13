@@ -63,3 +63,4 @@ obj-$(CONFIG_TDMB_MTV818_TPEG)      	+= mtv818/tpeg/
 #obj-$(CONFIG_CAR_AVN)        	+= caravn/
 obj-$(CONFIG_SLSIAP_BACKWARD_CAMERA) += backward-camera.o
 obj-y				+= coda960/
+obj-$(CONFIG_SLSIAP_NXPBOOT)   += nxp-boot.o
