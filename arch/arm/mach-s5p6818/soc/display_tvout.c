@@ -841,11 +841,6 @@ static struct disp_process_ops tvout_ops = {
     .enable = tvout_enable,
 };
 
-    /* if (enable) { */
-    /*     nxp_soc_disp_device_connect_to(DISP_DEVICE_TVOUT, DISP_DEVICE_SYNCGEN1, NULL); */
-    /* } else { */
-    /*     nxp_soc_disp_device_disconnect(DISP_DEVICE_TVOUT, DISP_DEVICE_SYNCGEN1); */
-    /* } */
 static struct switch_dev tvout_switch;
 static ssize_t _enable_tvout(struct device *pdev,
         struct device_attribute *attr, const char *buf, size_t n)
