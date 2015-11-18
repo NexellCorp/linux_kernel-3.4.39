@@ -98,6 +98,19 @@ void tw9900_external_set_brightness(char brightness) {
 }
 EXPORT_SYMBOL(tw9900_external_set_brightness);
 
+static irqreturn_t _irq_handler(int, void *);
+
+int register_backward_irq(void)
+{
+   int ret = request_irq(IRQ_GPIO_START + CFG_BACKWARD_GEAR, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);
+   if (ret<0) {
+    	pr_err("%s: failed to request_irq(irqnum %d), ret : %d\n", __func__, IRQ_ALIVE_1, ret);
+   		return -1;
+   }
+
+   return 0;
+}
+
 /**
  * util functions
  */
@@ -443,13 +456,14 @@ static void _work_handler(struct work_struct *work)
 	}
 }
 
+
 static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 {
 	printk("%s : enable : %d, state : %d\n", __func__, enable, _state.first);
     if (enable) {
         if (_state.first) 
 		{
-#if 1
+#if 0
       	 	int ret = request_irq(IRQ_GPIO_START + CFG_BACKWARD_GEAR, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);
         	if (ret<0) {
          		pr_err("%s: failed to request_irq(irqnum %d), ret : %d\n", __func__, IRQ_ALIVE_1, ret);

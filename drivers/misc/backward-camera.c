@@ -22,7 +22,13 @@
 #define MLC_LAYER_RGB_OVERLAY 0
 #endif
 
+#define ENABLE_UEVENT  0
+
+#if ENABLE_UEVENT
 extern struct switch_dev *backgear_switch;
+#endif
+
+extern int register_backward_irq();
 
 static struct nxp_backward_camera_context {
     struct nxp_backward_camera_platform_data *plat_data;
@@ -629,6 +635,8 @@ static inline bool _is_running(struct nxp_backward_camera_context *me)
 #endif
 }
 
+
+#if ENABLE_UEVENT
 static void _backgear_switch(int on)
 {
 	if( backgear_switch != NULL )
@@ -636,6 +644,7 @@ static void _backgear_switch(int on)
 	else
 		printk("%s - backgear switch is NULL!!!\n", __func__);
 }
+#endif
 
 static void _decide(struct nxp_backward_camera_context *me)
 {
@@ -646,12 +655,17 @@ static void _decide(struct nxp_backward_camera_context *me)
     if (me->backgear_on && !me->running)
 	{
         _turn_on(me);
+
+#if ENABLE_UEVENT
 		_backgear_switch(1);
+#endif
 	}
     else if (me->running && !me->backgear_on)
 	{
         _turn_off(me);
+#if ENABLE_UEVENT
 		_backgear_switch(0);
+#endif
 	}
 }
 
@@ -827,6 +841,60 @@ static const struct dev_pm_ops nxp_backward_camera_pm_ops = {
 #define NXP_BACKWARD_CAMERA_PMOPS       NULL
 #endif
 
+bool is_backward_camera_on(void);
+void backward_camera_remove(void);
+
+static ssize_t _stop_backward_camera(struct device *pdev, 
+        struct device_attribute *attr, const char *buf, size_t n)
+{
+    struct nxp_backward_camera_context *me = &_context;
+    int module = me->plat_data->vip_module_num;
+
+    if (module == 2) {
+        while (is_backward_camera_on()) {
+            printk("wait backward camera stopping...\n");
+            schedule_timeout_interruptible(HZ/5);
+        }
+        backward_camera_remove();
+        register_backward_irq();
+        printk("end of backward_camera_remove()\n");
+    }
+
+    return n;
+}
+
+static struct device_attribute backward_camera_attr = __ATTR(stop, 0664, NULL, _stop_backward_camera);
+
+static struct attribute *attrs[] = {
+    &backward_camera_attr.attr,
+    NULL,
+};
+
+static struct attribute_group attr_group = {
+    .attrs = (struct attribute **)attrs,
+};
+
+static int _create_sysfs(void)
+{
+    struct kobject *kobj = NULL;
+    int ret = 0;
+    
+    kobj = kobject_create_and_add("backward_camera", &platform_bus.kobj);
+    if (!kobj) {
+        printk(KERN_ERR "Fail, create kobject for backward camera\n");
+        return -ret;
+    }
+
+    ret = sysfs_create_group(kobj, &attr_group);
+    if (ret) {
+        printk(KERN_ERR "Fail, create sysfs group for backward camera\n");
+        kobject_del(kobj);
+        return -ret;
+    }
+
+    return 0;
+}
+
 static int nxp_backward_camera_probe(struct platform_device *pdev)
 {
     int ret;
@@ -860,6 +928,11 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
     _decide(me);
 
     me->my_device = pdev;
+
+    if (_create_sysfs()) {
+        printk(KERN_ERR "failed to create sysfs for backward camera\n");
+        return -1;
+    }
 
 #ifdef CONFIG_PM
     INIT_DELAYED_WORK(&me->resume_work, _resume_work);

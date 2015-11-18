@@ -1069,6 +1069,7 @@ static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
         }
 
 #ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+#if 0
 		if( module == 2 ){
 			while (is_backward_camera_on()) {
 				printk("wait backward camera stopping...\n");
@@ -1077,6 +1078,7 @@ static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
 			backward_camera_remove();
 			printk("end of backword_camera_remove()\n");
 		}
+#endif        
 #endif
 
         _configure(me, enable);
