@@ -21,13 +21,17 @@
 #define MLC_LAYER_RGB_OVERLAY 0
 #endif
 
+#define SYNC_CHECK_PLL_DELAY_MS		100
+#define WORK_HANDLER_DELAY_MS		0
+
 static struct nxp_backward_camera_context {
     struct nxp_backward_camera_platform_data *plat_data;
     int irq;
     bool running;
     bool backgear_on;
     bool is_first;
-    struct work_struct work;
+    bool is_preview_on;
+    struct delayed_work delay_work;
     struct i2c_client *client;
 #ifdef CONFIG_PM
     struct delayed_work resume_work;
@@ -239,10 +243,10 @@ static void _vip_hw_set_sensor_param(int module, struct nxp_backward_camera_plat
                 0,
                 param->interlace,
                 CFALSE);
-        {
-            NX_VIP_RegisterSet *pREG =
-                (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
-        }
+        //{
+        //    NX_VIP_RegisterSet *pREG =
+        //        (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
+        //}
 
         NX_VIP_SetDValidMode(module,
                 CFALSE,
@@ -598,6 +602,22 @@ static inline bool _is_backgear_on(struct nxp_backward_camera_context *me)
 #endif
 }
 
+static inline bool _is_camera_on(struct nxp_backward_camera_context *me)
+{
+	// read status
+	u8 data = 0;
+	_i2c_read_byte(me->client, 0x01, &data);
+	//printk(KERN_ERR "%s: data 0x%x\n", __func__, data);
+
+	if (data & 0x80)
+		return false;
+
+	if ((data & 0x40) && (data & 0x08))
+		return true;
+
+	return false;
+}
+
 static inline bool _is_running(struct nxp_backward_camera_context *me)
 {
 #if 0
@@ -620,21 +640,47 @@ static void _decide(struct nxp_backward_camera_context *me)
     me->backgear_on = _is_backgear_on(me->plat_data);
 	//printk("%s: running %d, backgear on %d\n", __func__, me->running, me->backgear_on);
     if (me->backgear_on && !me->running)
+    {
         _turn_on(me);
+		me->is_preview_on = true;
+    }
     else if (me->running && !me->backgear_on)
+    {
+		me->is_preview_on = false;
         _turn_off(me);
+    }
 }
 
 static irqreturn_t _irq_handler(int irq, void *devdata)
 {
     struct nxp_backward_camera_context *me = devdata;
-    schedule_work(&me->work);
+    //schedule_work(&me->delay_work);
+
+    __cancel_delayed_work(&me->delay_work);
+    schedule_delayed_work(&me->delay_work, msecs_to_jiffies(WORK_HANDLER_DELAY_MS));
+
     return IRQ_HANDLED;
 }
 
-static void _work_handler(struct work_struct *work)
+static void _delay_work_handler(struct work_struct *work)
 {
-    _decide(&_context);
+	static int sync_check_time_out = 0;
+	bool is_rear_gear_on = false;
+	bool is_video_sync_on = false;
+
+	is_rear_gear_on = _is_backgear_on(_context.plat_data);
+	is_video_sync_on = _is_camera_on(&_context);
+
+	printk(KERN_ERR "## %s() rear_gear_on:%d, video_sync_on:%d \n", __func__, is_rear_gear_on, is_video_sync_on, sync_check_time_out);
+
+	if (is_rear_gear_on && !is_video_sync_on && (sync_check_time_out <= 10)) {
+		__cancel_delayed_work(&_context.delay_work);
+		schedule_delayed_work(&_context.delay_work, msecs_to_jiffies(SYNC_CHECK_PLL_DELAY_MS));
+		sync_check_time_out ++;
+	} else {
+		_decide(&_context);
+		sync_check_time_out = 0;
+	}
 }
 
 extern struct ion_device *get_global_ion_device(void);
@@ -811,7 +857,7 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
     _allocate_memory(me);
 	_vip_run(me->plat_data->vip_module_num);
 
-    INIT_WORK(&me->work, _work_handler);
+    INIT_DELAYED_WORK(&me->delay_work, _delay_work_handler);
 #if 1
     ret = request_irq(me->irq, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "backward-camera", me);
     if (ret) {
@@ -824,7 +870,10 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
 
 	me->removed = false;
 
-    _decide(me);
+    //_decide(me);
+    // schedule_delayed_work(&me->delay_work, msecs_to_jiffies(300));
+	_delay_work_handler(NULL);
+
 
     me->my_device = pdev;
 
@@ -884,6 +933,12 @@ bool is_backward_camera_on(void)
 #endif
 }
 
+bool is_preview_display_on(void)
+{
+	struct nxp_backward_camera_context *me = &_context;
+	return me->is_preview_on;
+}
+
 void backward_camera_remove(void)
 {
     struct nxp_backward_camera_context *me = &_context;
@@ -891,6 +946,7 @@ void backward_camera_remove(void)
 }
 
 EXPORT_SYMBOL(is_backward_camera_on);
+EXPORT_SYMBOL(is_preview_display_on);
 EXPORT_SYMBOL(backward_camera_remove);
 
 static int __init backward_camera_init(void)

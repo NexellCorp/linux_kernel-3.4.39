@@ -134,7 +134,7 @@ static struct nxp_boot_context {
 extern struct ion_device *get_global_ion_device(void);
 
 #ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
-extern bool is_backward_camera_on(void);
+extern bool is_preview_display_on(void);
 #endif
 
 #ifdef FEATURE_SPLASH_IMAGE
@@ -567,7 +567,11 @@ static int _anim_thread(void *arg)
 
 	while (1) 
 	{
-		if(!is_backward_camera_on() && !bmp_load)
+		if(
+#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+			!is_preview_display_on() && 
+#endif
+			!bmp_load)
 		{
 			ret = _display_bmp(me, "logo.bmp");
 			if(ret < 0) break;
