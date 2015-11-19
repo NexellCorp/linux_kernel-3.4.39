@@ -955,19 +955,20 @@ static int nxp_backward_camera_remove(struct platform_device *pdev)
 	struct nxp_backward_camera_context *me = &_context;
 	if( me->removed == false ) {
 		printk(KERN_ERR "%s\n", __func__);
-		if( me->is_on ) {
-			_mlc_overlay_stop(me->plat_data->mlc_module_num);
-			_mlc_video_stop(me->plat_data->mlc_module_num);
-			_vip_stop(me->plat_data->vip_module_num);	
-		}
+
+		_mlc_overlay_stop(me->plat_data->mlc_module_num);
+		_mlc_video_stop(me->plat_data->mlc_module_num);
+		_vip_stop(me->plat_data->vip_module_num);	
+
 		_free_buffer(me);
 		free_irq(_context.irq, &_context);
+
+        // TODO : To this routine : may not arise event for irq restart term
+
 		me->removed = true;
 	}
 	return 0;
 }
-
-
 #endif
 
 static struct platform_driver backward_camera_driver = {
