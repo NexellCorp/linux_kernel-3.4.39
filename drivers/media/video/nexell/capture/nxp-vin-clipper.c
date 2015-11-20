@@ -1008,8 +1008,12 @@ static int nxp_vin_clipper_s_power(struct v4l2_subdev *sd, int on)
 		  _hw_set_clock(me, false);
 	  }
 #else
-	if( module != 2)
-	{
+#if defined(CONFIG_ARCH_S5P6818)
+	if( module != 2) {
+#endif
+#if defined(CONFIG_ARCH_S5P4418)
+	if( module != 1) {
+#endif
 	  if (on) {
 		  if (me->platdata->setup_io)
 			  me->platdata->setup_io(module, false);

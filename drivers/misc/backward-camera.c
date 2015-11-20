@@ -850,7 +850,14 @@ static ssize_t _stop_backward_camera(struct device *pdev,
     struct nxp_backward_camera_context *me = &_context;
     int module = me->plat_data->vip_module_num;
 
+    printk(KERN_ERR "%s : module : %d\n", __func__, module);
+
+#if defined(CONFIG_ARCH_S5P6818)
     if (module == 2) {
+#endif
+#if defined(CONFIG_ARCH_S5P4418)
+    if (module == 1) {
+#endif
         while (is_backward_camera_on()) {
             printk("wait backward camera stopping...\n");
             schedule_timeout_interruptible(HZ/5);
