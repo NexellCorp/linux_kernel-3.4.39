@@ -82,8 +82,12 @@ static struct reg_val _sensor_init_data[] =
 #define MUX0					0
 #define MUX1 					1
 #define SV_DET					0x16
-#define REARCAM_BACKDETECT_TIME	700
+//#define REARCAM_BACKDETECT_TIME	300
+#define REARCAM_BACKDETECT_TIME	10
 #define REARCAM_MPOUT_TIME		300
+
+/* this value is used to detect on/off for back gear switch by uevent. */
+struct switch_dev *backgear_switch = NULL;
 
 static struct tw9900_state _state;
 static int rearcam_brightness_tbl[12] = {30, -15, -12, -9, -6, -3, 0, 10, 20, 30, 35, 40};
@@ -337,7 +341,7 @@ static inline bool _is_backgear_on(void)
 {
     int val = nxp_soc_gpio_get_in_value(CFG_BACKWARD_GEAR);
 
-    if (val)
+    if (!val)
     {
     	//NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_CAM_PWR_EN), PAD_GET_BITNO(CFG_IO_CAM_PWR_EN), 1);
 		//_i2c_write_byte(_state.i2c_client, 0x02, 0x44);
@@ -389,12 +393,18 @@ static inline bool _is_camera_on(void)
 
 static irqreturn_t _irq_handler(int irq, void *devdata)
 {
+//	printk("%s : switch value : %d, backgear on : %d\n", __func__, switch_get_state(&_state.switch_dev), _is_backgear_on());
+#if 0
     __cancel_delayed_work(&_state.work);
     if (switch_get_state(&_state.switch_dev) && !_is_backgear_on()) {
         switch_set_state(&_state.switch_dev, 0);
     } else if (!switch_get_state(&_state.switch_dev) && _is_backgear_on()) {
         schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
     }
+#else
+    __cancel_delayed_work(&_state.work);
+    schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
+#endif
 
     return IRQ_HANDLED;
 }
@@ -431,31 +441,35 @@ static void _work_handler(struct work_struct *work)
 
 static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 {
+	printk("%s : enable : %d, state : %d\n", __func__, enable, _state.first);
     if (enable) {
         if (_state.first) 
 		{
+#if 1
       	 	int ret = request_irq(IRQ_GPIO_START + CFG_BACKWARD_GEAR, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);
-        	if (ret) {
-         		pr_err("%s: failed to request_irq(irqnum %d)\n", __func__, IRQ_ALIVE_4);
+        	if (ret<0) {
+         		pr_err("%s: failed to request_irq(irqnum %d), ret : %d\n", __func__, IRQ_ALIVE_1, ret);
          		return -1;
           	}
+#endif
 #if 0
-					ret = request_irq(IRQ_ALIVE_4, _irq_handler3, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900-mpout", &_state);
-					if (ret) {
-							pr_err("%s: failed to request_irq (irqnum %d)\n", __func__, IRQ_ALIVE_4);
-							return -1;
-					}
+			ret = request_irq(IRQ_ALIVE_4, _irq_handler3, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900-mpout", &_state);
+			if (ret) {
+				pr_err("%s: failed to request_irq (irqnum %d)\n", __func__, IRQ_ALIVE_4);
+				return -1;
+			}
 #endif
 
-#if 0
+#if !defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+
 			int  i=0;
 			struct tw9900_state *me = &_state;
 			struct reg_val *reg_val = _sensor_init_data;
 
-			printk("[%s] line : %d\n", __func__, __LINE__);
-
 			while( reg_val->reg != 0xff)
 			{
+				printk("%s : reg : 0x%02X, val : 0x%02X\n", __func__, reg_val->reg, reg_val->val);
+
 				_i2c_write_byte(me->i2c_client, reg_val->reg, reg_val->val);
 				mdelay(10);
 				i++;
@@ -541,6 +555,8 @@ static int tw9900_probe(struct i2c_client *client, const struct i2c_device_id *i
     state->switch_dev.name = "tw9900";
     switch_dev_register(&state->switch_dev);
     switch_set_state(&state->switch_dev, 0);
+
+	backgear_switch = &state->switch_dev;
 
     INIT_DELAYED_WORK(&_state.work, _work_handler);
 

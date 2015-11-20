@@ -22,7 +22,7 @@
 #endif
 
 #define SYNC_CHECK_PLL_DELAY_MS		100
-#define WORK_HANDLER_DELAY_MS		0
+#define WORK_HANDLER_DELAY_MS		50
 
 static struct nxp_backward_camera_context {
     struct nxp_backward_camera_platform_data *plat_data;
