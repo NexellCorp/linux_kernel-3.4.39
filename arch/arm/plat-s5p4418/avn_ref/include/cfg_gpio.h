@@ -228,7 +228,7 @@
 #define PAD_GPIOALV0    (PAD_MODE_INT | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
 #define PAD_GPIOALV1    (PAD_MODE_INT | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
 #define PAD_GPIOALV2    (PAD_MODE_INT | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
-#define PAD_GPIOALV3    (PAD_MODE_INT | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
+#define PAD_GPIOALV3    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
 #define PAD_GPIOALV4    (PAD_MODE_INT | PAD_LEVEL_LOW  | PAD_PULL_UP )				//
 #define PAD_GPIOALV5    (PAD_MODE_OUT | PAD_LEVEL_LOW  | PAD_PULL_OFF)				//
 
@@ -244,9 +244,17 @@
 #define CFG_IO_AUDIO_RT5623_AMP_POWER              (PAD_GPIO_D + 24)
 
 /*------------------------------------------------------------------------------
- * 	Backward Camera
+ *	Backward Camera	
  */
-#define	CFG_BACKWARD_GEAR					(PAD_GPIO_ALV + 1)
+
+#define CFG_BACKWARD_GEAR					(PAD_GPIO_ALV + 3)
+
+/*------------------------------------------------------------------------------
+ *  CAMERA Back Power Down
+ */
+
+#define CFG_IO_CAMERA_BACK_POWER_DOWN     	((PAD_GPIO_E + 12) | PAD_FUNC_ALT0)        /* GPIO */
+
 
 
 
