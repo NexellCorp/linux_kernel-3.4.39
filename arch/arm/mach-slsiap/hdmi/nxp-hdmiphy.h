@@ -16,6 +16,8 @@ struct nxp_hdmiphy {
     int (*resume)(struct nxp_hdmiphy *);
 
     u8 *preset;
+
+    bool enabled;
 };
 
 /**

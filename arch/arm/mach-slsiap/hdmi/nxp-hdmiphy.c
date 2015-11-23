@@ -6,6 +6,9 @@
 #include <linux/videodev2.h>
 #include <linux/delay.h>
 
+// for setting TX_AMP_LVL[0:4] : 5bit, 0 ~ 31
+#include <linux/platform_device.h>
+
 /* for prototype */
 #include <nx_hdmi.h>
 
@@ -143,6 +146,7 @@ static int _hdmiphy_clk_enable(struct nxp_hdmiphy *me, int enable)
     return 0;
 }
 
+static int _write_tx_level(int level);
 static int _hdmiphy_reg_set(struct nxp_hdmiphy *me,
         const u8 *data, size_t size)
 {
@@ -169,6 +173,11 @@ static int _hdmiphy_reg_set(struct nxp_hdmiphy *me,
         NX_HDMI_SetReg(0, reg_addr, data[i]);
 #endif
     }
+
+#ifdef CFG_HDMIPHY_TX_LEVEL
+    _write_tx_level(CFG_HDMIPHY_TX_LEVEL);
+#endif
+
     NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, 0x80);
 #if defined (CONFIG_ARCH_S5P4418)
     NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, 0x80);
@@ -177,6 +186,131 @@ static int _hdmiphy_reg_set(struct nxp_hdmiphy *me,
 #if defined (CONFIG_ARCH_S5P4418)
     NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (1<<7));
 #endif
+    return 0;
+}
+
+/**
+ * for sysfs control of TX_AMP_LVL[0:4] : 5bit, 0 ~ 31
+ */
+struct nxp_hdmiphy *_me = NULL;
+static int _read_tx_level(void)
+{
+    if (!_me->enabled)
+        return -1;
+    else {
+        int level = 0;
+        u32 val = NX_HDMI_GetReg(0, HDMI_PHY_Reg3C);
+        level = (val & 0x80) >> 7;
+        val = NX_HDMI_GetReg(0, HDMI_PHY_Reg40);
+        val &= 0x0f;
+        val <<= 1;
+        level |= val;
+        return level;
+    }
+}
+
+static int _write_tx_level(int level)
+{
+    if (level > 31) {
+        printk(KERN_ERR "Invalid level %d\n", level);
+        printk(KERN_ERR "Valid HDMIPHY TX LEVEL range : 0 ~ 31\n");
+        return -1;
+    }
+
+    if (!_me->enabled)
+        return -1;
+    else {
+        u32 val;
+        u32 regval;
+        int cur_val = _read_tx_level();
+        if (cur_val == level) {
+            printk("%s: same to current tx level %d\n", __func__, cur_val);
+            return 0;
+        }
+
+        NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (0<<7));
+#if defined (CONFIG_ARCH_S5P4418)
+        NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (0<<7));
+#endif
+
+        regval = NX_HDMI_GetReg(0, HDMI_PHY_Reg3C);
+#if defined (CONFIG_ARCH_S5P4418)
+        regval = NX_HDMI_GetReg(0, HDMI_PHY_Reg3C);
+#endif
+        val = level & 0x1;
+        val <<= 7;
+        regval &= ~0x80;
+        regval |= val;
+        pr_debug("[HDMIPHY] write reg3c: 0x%x\n", regval);
+        NX_HDMI_SetReg(0, HDMI_PHY_Reg3C, regval);
+#if defined (CONFIG_ARCH_S5P4418)
+        NX_HDMI_SetReg(0, HDMI_PHY_Reg3C, regval);
+#endif
+        
+        regval = NX_HDMI_GetReg(0, HDMI_PHY_Reg40);
+#if defined (CONFIG_ARCH_S5P4418)
+        regval = NX_HDMI_GetReg(0, HDMI_PHY_Reg40);
+#endif
+        val = (level & 0x1f) >> 1;
+        regval &= ~0x0f;
+        regval |= val;
+        pr_debug("[HDMIPHY] write reg40: 0x%x\n", regval);
+        NX_HDMI_SetReg(0, HDMI_PHY_Reg40, regval);
+#if defined (CONFIG_ARCH_S5P4418)
+        NX_HDMI_SetReg(0, HDMI_PHY_Reg40, regval);
+#endif
+
+        NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (1<<7));
+#if defined (CONFIG_ARCH_S5P4418)
+        NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (1<<7));
+#endif
+        return 0;
+    }
+}
+
+static ssize_t tx_level_show(struct device *pdev, struct device_attribute *attr, char *buf)
+{
+    int tx_level = _read_tx_level();
+    return scnprintf(buf, PAGE_SIZE, "%d\n", tx_level);
+}
+
+static ssize_t tx_level_store(struct device *pdev, struct device_attribute *attr, const char *buf, size_t n)
+{
+    int tx_level;
+    sscanf(buf, "%d", &tx_level);
+    _write_tx_level(tx_level);
+    return n;
+}
+
+static struct device_attribute tx_level_attr = __ATTR(tx_level, 0666, tx_level_show, tx_level_store);
+
+static struct attribute *attrs[] = {
+    &tx_level_attr.attr,
+    NULL,
+};
+
+static struct attribute_group attr_group = {
+    .attrs = (struct attribute **)attrs,
+};
+
+static int _init_sysfs(void)
+{
+    int ret = 0;
+    struct kobject *kobj = NULL;
+
+    kobj = kobject_create_and_add("hdmiphy", &platform_bus.kobj);
+    if (!kobj) {
+        printk(KERN_ERR "%s: failed to kobject_create_and_add for hdmiphy\n", __func__);
+        return -EINVAL;
+    }
+
+    ret = sysfs_create_group(kobj, &attr_group);
+    if (ret) {
+        printk(KERN_ERR "%s: failed to sysfs_create_group for hdmiphy\n", __func__);
+        kobject_del(kobj);
+        return -ret;
+    }
+
     return 0;
 }
 
@@ -222,7 +356,9 @@ static int nxp_hdmiphy_s_stream(struct nxp_hdmiphy *me, int enable)
             pr_err("%s: failed to _hdmiphy_reg_set()\n", __func__);
             return ret;
         }
+        me->enabled = true;
     } else {
+        me->enabled = false;
         _hdmiphy_reset(me);
     }
 
@@ -255,6 +391,9 @@ int nxp_hdmiphy_init(struct nxp_hdmiphy *me)
     me->s_stream = nxp_hdmiphy_s_stream;
     me->suspend = nxp_hdmiphy_suspend;
     me->resume = nxp_hdmiphy_resume;
+
+    _init_sysfs();
+    _me = me;
 
     return ret;
 }
