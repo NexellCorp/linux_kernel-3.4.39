@@ -21,3 +21,10 @@ config NXP_HDMI_USE_HDCP
     default n
     ---help---
       Say y here to enable hdcp module
+
+config NXP_HDMI_USE_EDID
+    depends on NXP_OUT_HDMI
+    bool "HDMI use EDID block"
+    default y
+    ---help---
+      Say y here to enable edid module

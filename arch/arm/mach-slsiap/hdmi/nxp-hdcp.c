@@ -1,5 +1,3 @@
-#define DEBUG 1
-
 #include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/io.h>
@@ -12,6 +10,8 @@
 #include <mach/nxp-v4l2-platformdata.h>
 
 #include "nxp-v4l2-common.h"
+
+#include <nx_hdmi.h>
 
 #include <mach/hdmi/regs-hdmi.h>
 #include <mach/hdmi/hdmi-priv.h>
@@ -66,19 +66,65 @@
 
 #define nxp_hdcp_to_parent(me)       \
            container_of(me, struct nxp_hdmi, hdcp)
-/* TODO */
-#if 0
-#define IS_HDMI_RUNNING(me) \
-            nxp_hdcp_to_parent(me)->is_streaming(nxp_hdcp_to_parent(me))
+
+/* #define IS_HDMI_RUNNING(me) hdmi_hpd_status() */
+#define IS_HDMI_RUNNING(me) true
+
+/* #define DEBUG_KEY */
+/* #define DEBUG_I2C */
+#define DEBUG_BKSV
+#define DEBUG_AKSV
+/* #define DEBUG_RI */
+/* #define DEBUG_REPEATER */
+/* #define DEBUG_EVENT */
+/* #define DEBUG_ALL */
+
+#if defined(DEBUG_KEY) || defined(DEBUG_ALL)
+#define dbg_key(a...) printk(a)
 #else
-#define IS_HDMI_RUNNING(me) hdmi_hpd_status()
+#define dbg_key(a...)
+#endif
+
+#if defined(DEBUG_I2C) || defined(DEBUG_ALL)
+#define dbg_i2c(a...) printk(a)
+#else
+#define dbg_i2c(a...)
+#endif
+
+#if defined(DEBUG_BKSV) || defined(DEBUG_ALL)
+#define dbg_bksv(a...) printk(a)
+#else
+#define dbg_bksv(a...)
+#endif
+
+#if defined(DEBUG_AKSV) || defined(DEBUG_ALL)
+#define dbg_aksv(a...) printk(a)
+#else
+#define dbg_aksv(a...)
+#endif
+
+#if defined(DEBUG_RI) || defined(DEBUG_ALL)
+#define dbg_ri(a...) printk(a)
+#else
+#define dbg_ri(a...)
+#endif
+
+#if defined(DEBUG_REPEATER) || defined(DEBUG_ALL)
+#define dbg_repeater(a...) printk(a)
+#else
+#define dbg_repeater(a...)
+#endif
+
+#if defined(DEBUG_EVENT) || defined(DEBUG_ALL)
+#define dbg_event(a...) printk(a)
+#else
+#define dbg_event(a...)
 #endif
 
 /**
  * internal functions
  */
-static int
-_hdcp_i2c_read(struct nxp_hdcp *me, u8 offset, int bytes, u8 *buf)
+static int _hdcp_i2c_read(struct nxp_hdcp *me, u8 offset, int bytes, u8 *buf)
 {
     struct i2c_client *client = me->client;
     int ret, cnt = 0;
@@ -120,7 +166,7 @@ _hdcp_i2c_read(struct nxp_hdcp *me, u8 offset, int bytes, u8 *buf)
     if (cnt == DDC_RETRY_CNT)
         goto ddc_read_err;
 
-    printk("%s: read data ok\n", __func__);
+    dbg_i2c("%s: read data ok\n", __func__);
 
     return 0;
 
@@ -156,7 +202,7 @@ static int _hdcp_i2c_write(struct nxp_hdcp *me, u8 offset, int bytes, u8 *buf)
     if (cnt == DDC_RETRY_CNT)
         goto ddc_write_err;
 
-    printk("%s: write data ok\n", __func__);
+    dbg_i2c("%s: write data ok\n", __func__);
     return 0;
 
 ddc_write_err:
@@ -174,11 +220,24 @@ static void _hdcp_encryption(struct nxp_hdcp *me, bool on)
     hdmi_mute(!on);
 }
 
+__attribute__((__unused__)) static int _hdcp_dump_key(struct nxp_hdcp *me, int size, int reg, int offset)
+{
+    u8 buf[MAX_KEY_SIZE];
+    int i;
+
+    memset(buf, 0, sizeof(buf));
+    hdmi_read_bytes(reg, buf, size);
+
+    for (i = 0; i < size + 1; i++) 
+        printk("%s[%d] : 0x%02x\n", offset == HDCP_AN ? "An" : "Aksv", i, buf[i]);
+
+    return 0;
+}
+
 static int _hdcp_write_key(struct nxp_hdcp *me, int size, int reg, int offset)
 {
     u8 buf[MAX_KEY_SIZE];
     int cnt, zero = 0;
-    int i;
 
     memset(buf, 0, sizeof(buf));
     hdmi_read_bytes(reg, buf, size);
@@ -188,8 +247,7 @@ static int _hdcp_write_key(struct nxp_hdcp *me, int size, int reg, int offset)
             zero++;
 
     if (zero == size) {
-        pr_err("%s: %s is null\n", __func__,
-                offset == HDCP_AN ? "An" : "Aksv");
+        pr_err("%s: %s is null\n", __func__, offset == HDCP_AN ? "An" : "Aksv");
         goto write_key_err;
     }
 
@@ -198,10 +256,13 @@ static int _hdcp_write_key(struct nxp_hdcp *me, int size, int reg, int offset)
         goto write_key_err;
     }
 
-#ifdef DEBUG
-    for (i = 0; i < size + 1; i++) {
-        printk("%s: %s[%d] : 0x%02x\n", __func__,
-                offset == HDCP_AN ? "An" : "Aksv", i, buf[i]);
+#ifdef DEBUG_AKSV
+    {
+        int i;
+        for (i = 0; i < size; i++) {
+            printk("%s: %s[%d] : 0x%02x\n", __func__,
+                    offset == HDCP_AN ? "An" : "Aksv", i, buf[i]);
+        }
     }
 #endif
 
@@ -225,7 +286,7 @@ static int _hdcp_read_bcaps(struct nxp_hdcp *me)
         return -ENODEV;
     }
 
-    printk("%s: bcaps 0x%x\n", __func__, bcaps);
+    dbg_bksv("%s: bcaps 0x%x\n", __func__, bcaps);
     hdmi_writeb(HDMI_HDCP_BCAPS, bcaps);
 
     if (bcaps & HDMI_HDCP_BCAPS_REPEATER)
@@ -233,9 +294,9 @@ static int _hdcp_read_bcaps(struct nxp_hdcp *me)
     else
         me->is_repeater = false;
 
-    printk("%s: device is %s\n", __func__,
+    dbg_bksv("%s: device is %s\n", __func__,
             me->is_repeater ? "REPEAT" : "SINK");
-    printk("%s: [i2c] bcaps : 0x%02x\n", __func__, bcaps);
+    dbg_bksv("%s: [i2c] bcaps : 0x%02x\n", __func__, bcaps);
 
     return 0;
 }
@@ -255,7 +316,7 @@ static int _hdcp_read_bksv(struct nxp_hdcp *me)
             return -ETIMEDOUT;
         }
 
-#ifdef DEBUG
+#ifdef DEBUG_BKSV
         for (i = 0; i < BKSV_SIZE; i++) {
             printk("%s: i2c read: bksv[%d]: 0x%x\n",
                     __func__, i, bksv[i]);
@@ -277,20 +338,12 @@ static int _hdcp_read_bksv(struct nxp_hdcp *me)
             return -ENODEV;
         }
 
-#if 0
         if ((zero == 20) && (one == 20)) {
             hdmi_write_bytes(HDMI_HDCP_BKSV_(0), bksv, BKSV_SIZE);
             break;
         }
-#else
-        {
-            u8 bksvs[BKSV_SIZE] = {0xcd, 0x1a, 0xf2, 0x1e, 0x51};
-            hdmi_write_bytes(HDMI_HDCP_BKSV_(0), bksvs, BKSV_SIZE);
-            break;
-        }
-#endif
 
-        printk("%s: invalid bksv, retry : %d\n", __func__, cnt);
+        pr_err("%s: invalid bksv, retry : %d\n", __func__, cnt);
 
         msleep(BKSV_DELAY);
         cnt++;
@@ -301,7 +354,8 @@ static int _hdcp_read_bksv(struct nxp_hdcp *me)
         return -ETIMEDOUT;
     }
 
-    printk("%s: bksv read OK, retry : %d\n", __func__, cnt);
+    dbg_bksv("%s: bksv read OK, retry : %d\n", __func__, cnt);
+
     return 0;
 }
 
@@ -318,9 +372,9 @@ static int _hdcp_read_ri(struct nxp_hdcp *me)
         return -ETIMEDOUT;
     }
 
-    printk("%s: Rx -> rj[0]: 0x%02x, rj[1]: 0x%02x\n", __func__,
+    dbg_ri("%s: Rx -> rj[0]: 0x%02x, rj[1]: 0x%02x\n", __func__,
             rj[0], rj[1]);
-    printk("%s: Tx -> ri[0]: 0x%02x, ri[1]: 0x%02x\n", __func__,
+    dbg_ri("%s: Tx -> ri[0]: 0x%02x, ri[1]: 0x%02x\n", __func__,
             ri[0], ri[1]);
 
     if ((ri[0] == rj[0]) && (ri[1] == rj[1]) && (ri[0] | ri[1]))
@@ -331,19 +385,20 @@ static int _hdcp_read_ri(struct nxp_hdcp *me)
         goto compare_err;
     }
 
-    printk("%s: ri and rj are matched\n", __func__);
+    dbg_ri("%s: ri and rj are matched\n", __func__);
     return 0;
 
 compare_err:
     me->event = HDCP_EVENT_STOP;
     me->auth_state = NOT_AUTHENTICATED;
+
     msleep(10);
+
     return -EINVAL;
 }
 
 static void _hdcp_sw_reset(struct nxp_hdcp *me)
 {
-#if 0
     u32 val = hdmi_get_int_mask();
 
     hdmi_set_int_mask(HDMI_INTC_EN_HPD_PLUG, false);
@@ -358,7 +413,6 @@ static void _hdcp_sw_reset(struct nxp_hdcp *me)
         hdmi_set_int_mask(HDMI_INTC_EN_HPD_PLUG, true);
     if (val & HDMI_INTC_EN_HPD_UNPLUG)
         hdmi_set_int_mask(HDMI_INTC_EN_HPD_UNPLUG, true);
-#endif
 }
 
 static int _hdcp_reset_auth(struct nxp_hdcp *me)
@@ -367,8 +421,6 @@ static int _hdcp_reset_auth(struct nxp_hdcp *me)
 
     if (!IS_HDMI_RUNNING(me))
         return -ENODEV;
-
-    mutex_lock(&me->mutex);
 
     me->event      = HDCP_EVENT_STOP;
     me->auth_state = NOT_AUTHENTICATED;
@@ -397,180 +449,121 @@ static int _hdcp_reset_auth(struct nxp_hdcp *me)
     hdmi_write_mask(HDMI_STATUS_EN, ~0, val);
     hdmi_write_mask(HDMI_HDCP_CTRL1, ~0, HDMI_HDCP_CP_DESIRED_EN);
 
-    mutex_unlock(&me->mutex);
-
     return 0;
 }
 
-// this is test
 #define HDCP_KEY_SIZE 288
 
-// golden key
-static const unsigned char _hdcp_golden_key[HDCP_KEY_SIZE] = {
-    0x14,0xF7,0x61,0x03,0xB7,0x69,0x1E,0x13,0x8F,0x58,0xA4,0x4D,0x09,0x50,0xE6,0x58,//10
-    0x35,0x82,0x1F,0x0D,0x98,0xB9,0xAB,0x47,0x6A,0x8A,0xCA,0xC5,0xCB,0x52,0x1B,0x18,//20
-    0xF3,0xB4,0xD8,0x96,0x68,0x7F,0x14,0xFB,0x81,0x8F,0x48,0x78,0xC9,0x8B,0xE0,0x41,//30
-    0x2C,0x11,0xC8,0x64,0xD0,0xA0,0x44,0x20,0x24,0x28,0x5A,0x9D,0xB3,0x6B,0x56,0xAD,//40
-    0xBD,0xB2,0x28,0xB9,0xF6,0xE4,0x6C,0x4A,0x7B,0xA4,0x91,0x58,0x9D,0x5E,0x20,0xF8,//50
-    0x00,0x56,0xA0,0x3F,0xEE,0x06,0xB7,0x7F,0x8C,0x28,0xBC,0x7C,0x9D,0x8C,0x2D,0xC0,//60
-    0x05,0x9F,0x4B,0xE5,0x61,0x12,0x56,0xCB,0xC1,0xCA,0x8C,0xDE,0xF0,0x74,0x6A,0xDB,//70
-    0xFC,0x0E,0xF6,0xB8,0x3B,0xD7,0x2F,0xB2,0x16,0xBB,0x2B,0xA0,0x98,0x54,0x78,0x46,//80
-    0x8E,0x2F,0x48,0x38,0x47,0x27,0x62,0x25,0xAE,0x66,0xF2,0xDD,0x23,0xA3,0x52,0x49,//90
-    0x3D,0x54,0x3A,0x7B,0x76,0x31,0xD2,0xE2,0x25,0x61,0xE6,0xED,0x1A,0x58,0x4D,0xF7,//a0
-    0x22,0x7B,0xBF,0x82,0x60,0x32,0x6B,0xCE,0x30,0x35,0x46,0x1B,0xF6,0x6B,0x97,0xD7,//b0
-    0xF0,0x09,0x04,0x36,0xF9,0x49,0x8D,0x61,0x05,0xE1,0xA1,0x06,0x34,0x05,0xD1,0x9D,//c0
-    0x8E,0xC9,0x90,0x61,0x42,0x94,0x67,0xC3,0x20,0xC3,0x4F,0xAC,0xCE,0x51,0x44,0x96,//d0
-    0x8A,0x8C,0xE1,0x04,0x45,0x90,0x3E,0xFC,0x2D,0x9C,0x57,0x10,0x00,0x29,0x80,0xB1,//e0
-    0xE5,0x69,0x3B,0x94,0xD7,0x43,0x7B,0xDD,0x5B,0xEA,0xC7,0x54,0xBA,0x90,0xC7,0x87,//f0
-    0x58,0xFB,0x74,0xE0,0x1D,0x4E,0x36,0xFA,0x5C,0x93,0xAE,0x11,0x9A,0x15,0x5E,0x07,//100
-    0x03,0x01,0xFB,0x78,0x8A,0x40,0xD3,0x05,0xB3,0x4D,0xA0,0xD7,0xA5,0x59,0x00,0x40,//110
-    0x9E,0x2C,0x4A,0x63,0x3B,0x37,0x41,0x20,0x56,0xB4,0xBB,0x73,0x25,0x00,0x00,0x00,//120
-};
-// public key (0x0) encrypted key
-static const unsigned char _hdcp_encrypted_by_0_key[HDCP_KEY_SIZE] = {
-    0x3B,0x13,0x2F,0xE0,0xAE,0x1C,0x6C,0x5E,0x16,0xFC,0x61,0xEC,0xC5,0x3D,0xE4,0x8B,//20
-    0xEC,0x30,0x4F,0x05,0x78,0x5D,0x56,0x19,0x84,0x65,0x20,0x6D,0xDA,0xBF,0x8D,0x1B,//30
-    0x2F,0x4E,0xC6,0xE8,0x61,0x85,0x63,0x64,0x68,0xF7,0x14,0x11,0x19,0x02,0x60,0xAF,//40
-    0xCE,0xD4,0x2D,0xE1,0x17,0x87,0xB8,0xCF,0x2D,0x04,0x2A,0x94,0x65,0x9B,0xB5,0x25,//50
-    0x91,0x5F,0x65,0x31,0x1A,0x4A,0x98,0x4B,0x4F,0xEC,0x47,0xF0,0xF8,0x45,0x26,0xC6,//60
-    0x44,0x04,0xAD,0xAD,0xA5,0x6E,0x57,0x04,0x5D,0x69,0x96,0x47,0x24,0xEC,0x70,0xB7,//70
-    0x7B,0x3A,0xF3,0x3F,0x7A,0x05,0xE9,0x7E,0xEA,0x6D,0xEB,0x0A,0x99,0xF3,0x67,0x37,//80
-    0x78,0xC3,0x19,0x45,0xC5,0x83,0x15,0x17,0xEB,0x44,0x80,0xE3,0x63,0x0A,0x30,0xE3,//90
-    0xAC,0xD9,0x95,0xE9,0xC4,0xBE,0x8A,0x4F,0x4D,0x5F,0x51,0xA2,0xF2,0x5B,0x5E,0x59,//a0
-    0xD0,0x17,0x36,0x78,0x7C,0xEB,0xFD,0x0A,0x89,0x52,0x07,0x5F,0x91,0xE7,0xF0,0xAF,//b0
-    0x68,0x62,0xDC,0x43,0xE2,0x9C,0x72,0xE9,0x91,0x5C,0xC2,0x43,0x3A,0x9B,0x01,0x30,//c0
-    0xF5,0x39,0x7A,0x8C,0x2E,0x31,0x2C,0xC1,0x67,0xC2,0xFA,0x56,0x41,0xAA,0x84,0xCC,//d0
-    0xF9,0x0C,0x4B,0x3A,0xE7,0x01,0x24,0x30,0x7A,0x1A,0xA5,0x31,0x8E,0x63,0xCD,0xA2,//e0
-    0xA7,0x8A,0xE9,0xC4,0x0B,0x01,0x66,0x8B,0xBF,0xA1,0x3D,0x18,0x67,0xAE,0x8C,0x35,//f0
-    0x01,0xEC,0x4C,0xD2,0x2E,0x0E,0x4F,0xBA,0xC5,0xA3,0xD1,0xE8,0x3E,0xD3,0x94,0x9D,//100
-    0x70,0x91,0xA0,0xE6,0x5E,0xBA,0xD4,0x60,0x89,0x0A,0x14,0xB7,0x7F,0xF1,0xD0,0x86,//110
-    0x56,0xDA,0x7F,0x42,0x88,0xAA,0xE1,0xF6,0x32,0x30,0xFC,0x16,0x37,0x0C,0x20,0x3D,//120
-    0x9D,0xB2,0x6E,0xE9,0x76,0x99,0x0E,0x31,0x06,0xED,0x6A,0x9C,0xD6,0x1A,0x4C,0x04,//130
-};
-// public key(guid) encrypted key
-static const unsigned char _hdcp_encrypted_by_guid_key[HDCP_KEY_SIZE] = {
-    0xC7,0xF6,0xFB,0x0E,0x16,0x61,0xE4,0x8B,0xE4,0x29,0x7A,0xF8,0xAF,0x59,0x74,0xD7,//20
-    0x07,0x7A,0x1B,0x09,0x85,0xF1,0xE5,0x47,0xED,0xCE,0x08,0x18,0x35,0x25,0x12,0x7F,//30
-    0xCA,0xAD,0x98,0x7C,0xB2,0xA4,0x85,0xBD,0x28,0x85,0x10,0xFB,0x28,0xB7,0xFA,0xE4,//40
-    0xD1,0x77,0x61,0x07,0xA6,0x53,0x97,0x41,0x00,0x06,0xDE,0x55,0x87,0xE3,0xF9,0x53,//50
-    0x6D,0x10,0x84,0xCD,0xBD,0x17,0x5A,0xFD,0xD2,0xF3,0x9A,0x86,0x9D,0x2A,0x45,0xC3,//60
-    0x7B,0xB9,0x68,0x9D,0xA3,0x90,0x09,0x91,0xBC,0x70,0xF7,0x28,0x49,0xEE,0x31,0xCC,//70
-    0x5E,0xC6,0x5C,0x9A,0x75,0x76,0x88,0xF9,0x7C,0x0F,0xDF,0x61,0x08,0xC2,0x29,0x77,//80
-    0xF4,0x4E,0x8C,0xE4,0x43,0x34,0x39,0x46,0xA8,0xF9,0xFE,0xD4,0xA3,0x58,0x6F,0xBC,//90
-    0x43,0x63,0x23,0xB8,0x90,0xDC,0x59,0xA1,0x93,0x23,0x84,0x1C,0x77,0x3D,0xD4,0x68,//a0
-    0x41,0xF5,0x32,0x0E,0x23,0x7E,0x38,0x16,0x91,0x04,0xAF,0xA5,0x32,0x42,0x57,0x04,//b0
-    0x6F,0x10,0xCF,0x51,0xC8,0x84,0xA0,0x89,0x16,0x42,0xE4,0x2B,0xEB,0x1E,0x55,0x1E,//c0
-    0xCF,0x2C,0x7E,0x1D,0xEE,0x02,0xE4,0xDB,0x4B,0xE4,0x8C,0x87,0x1E,0x85,0x2E,0x92,//d0
-    0x80,0xCA,0xCB,0xF6,0x16,0x84,0xC7,0xD6,0xD8,0xEA,0xF7,0xA9,0xCA,0x6E,0xC2,0xB2,//e0
-    0xC7,0x8F,0x2E,0x2E,0xF1,0x5F,0xF4,0x98,0xC7,0x30,0x41,0x66,0xBC,0xBE,0x0B,0x70,//f0
-    0xD7,0x5E,0x65,0xEF,0x64,0x91,0xCF,0xA9,0x78,0x40,0x58,0x43,0x42,0x04,0x05,0x58,//100
-    0xCF,0x5D,0x27,0x52,0x6C,0x75,0x4F,0xE5,0xAA,0x8F,0x53,0x87,0x09,0x47,0x1A,0xA7,//110
-    0x74,0x5D,0xC5,0x1E,0xED,0x97,0xFF,0x57,0xBB,0x5C,0x8B,0x22,0x31,0xD9,0x99,0x48,//120
-    0x8E,0x2B,0x66,0xFD,0x15,0xF8,0x5D,0xD2,0x6E,0xE2,0xD7,0x93,0x6F,0x3E,0xFB,0x76,//130
+/* this is not real key !!! */
+static unsigned char _hdcp_encrypted_table[] ={ 
+    0x93,0xB4,0x09,0x96,0x94,0x5D,0x15,0x2B,0x4D,0xA5,0xC6,0x58,0xC5,0xBE,0x41,0x40,//10
+    0xF3,0xCD,0xCF,0xF9,0xD2,0x06,0x5B,0xDF,0xC2,0x41,0x32,0xFE,0x03,0xF2,0xA8,0x48,//20
+    0x87,0x7B,0xD2,0x43,0xFB,0x74,0x2F,0xC8,0x07,0x1C,0x9D,0x46,0xA3,0x93,0x9D,0x28,//30
+    0x8F,0xB2,0xA0,0xDB,0x87,0xCC,0x56,0x28,0x50,0xD8,0x57,0x29,0xB6,0x3C,0x9E,0xC3,//40
+    0x69,0x6C,0xB3,0xC7,0xC0,0x97,0xE2,0xA6,0xB7,0x6E,0x74,0xC8,0x74,0x19,0xEB,0x62,//50
+    0xAB,0x55,0x36,0x20,0xCF,0xF7,0xC6,0xD9,0x2C,0x77,0xA6,0x9A,0x76,0x07,0x3C,0x5A,//60
+    0x26,0x62,0xBB,0xA4,0x7A,0x01,0xFC,0x51,0x68,0x46,0x21,0x83,0xFF,0x4D,0xC7,0x78,//70
+    0x28,0xEA,0xAC,0xFD,0x44,0xB6,0xD7,0xA7,0x04,0xC4,0xC8,0xE1,0xAB,0x8D,0xE7,0x7E,//80
+    0xFF,0x8D,0x2D,0xC3,0x6C,0xD1,0x67,0x6E,0xFC,0xD8,0xD9,0xC1,0x00,0xB4,0x12,0x06,//90
+    0x9D,0x8F,0x00,0x93,0xF4,0xAE,0x69,0x43,0xA0,0x27,0xA9,0x9C,0x03,0x4A,0x1D,0x94,//a0
+    0x3A,0xB2,0x2E,0xD2,0x57,0x5C,0x38,0x07,0x6A,0x93,0xAF,0xD2,0x12,0x4C,0x76,0x02,//b0
+    0x72,0x78,0x4D,0x18,0xD6,0x3A,0x0B,0x25,0x94,0x55,0xB5,0xDA,0x8F,0xD1,0x2B,0xA4,//c0
+    0x26,0xB2,0x42,0x8F,0xC9,0xCB,0xDA,0xEE,0x8D,0xF3,0x1F,0xF5,0xBD,0x7B,0xA7,0x4C,//d0
+    0x24,0x34,0x8F,0x25,0xB5,0xF8,0xDB,0xAB,0xCA,0x8B,0xB6,0x34,0x91,0x38,0xA2,0xDC,//e0
+    0xA9,0x91,0x39,0x0E,0x16,0x96,0x0E,0x2D,0xF1,0xB2,0x2F,0xB6,0xD5,0xAC,0xC6,0xD1,//f0
+    0x81,0xED,0x36,0x07,0xBA,0x49,0x5B,0x3A,0x53,0x47,0x69,0x39,0x3E,0xBA,0xC6,0x14,//100
+    0x3C,0xAC,0x84,0x63,0xD7,0xFB,0x84,0xB5,0x18,0xB3,0xE2,0x96,0x61,0xBD,0xF1,0x23,//110
+    0x2D,0x58,0xF5,0xFA,0x98,0xA8,0xA2,0x7E,0xBA,0x69,0xAA,0x5B,0x0D,0x7E,0x11,0xEE,//120
+    0x53,0x8D,0xF4,0x8E,0x2C,0xA5,0x47,0xB9,0xE2,0xB7,0x8C,0xC1,0x70,0xC9,0xCA,0x59,//130
+    0x35,0xD5,0x7E,0x1D,0xF9,0x93,0x0F,0x6D,0x0C,0x7C,0xA8,0x79,0x06,0x29,0xD2,0x7F,//140
 };
 
-	    U32 encrypted[400] =
-	    	{ 0x48, 0xf8, 0x11, 0xb6, 0x85, 0x66, 0x9b, 0x65,
-	    	  0x0b, 0x9f, 0x5a, 0x01, 0xb4, 0x43, 0xaf, 0xd7,
-	    	  0x34, 0xeb, 0xbe, 0xe0, 0x52, 0xfb, 0x85, 0xfe,
-	    	  0xfa, 0xb1, 0x2f, 0xe4, 0xc3, 0xce, 0xa9, 0x27,
-	    	  0x33, 0x74, 0x97, 0xd8, 0xfc, 0x62, 0xb8, 0x92,
-	    	  0x4a, 0xb6, 0xce, 0x7b, 0xb8, 0xda, 0x67, 0xbf,
-	    	  0xda, 0xea, 0xbf, 0xa9, 0xc0, 0x2a, 0xc8, 0xf6,
-	    	  0x44, 0x41, 0x5a, 0x10, 0x59, 0x88, 0x54, 0xcf,
-	    	  0x51, 0x91, 0x12, 0xd5, 0xa8, 0x41, 0x3a, 0x8a,
-	    	  0x88, 0xd1, 0x5a, 0x9a, 0x55, 0xc1, 0xbb, 0x5e,
-	    	  0x8a, 0xa0, 0x84, 0x1b, 0xa8, 0xea, 0x31, 0x59,
-	    	  0xea, 0x71, 0x0c, 0xcf, 0x59, 0xf5, 0xa8, 0x32,
-	    	  0x57, 0xbb, 0xd4, 0xa0, 0x5b, 0x88, 0x44, 0x66,
-	    	  0xd6, 0x80, 0xfa, 0xe9, 0x18, 0xe0, 0x50, 0x73,
-	    	  0x92, 0x63, 0xe1, 0x5c, 0x13, 0xbf, 0x7d, 0x0d,
-	    	  0x70, 0x0b, 0xf8, 0x25, 0x4a, 0x3b, 0x9c, 0x17,
-	    	  0x56, 0xb3, 0x71, 0x2b, 0xfe, 0x3c, 0xcb, 0x7c,
-	    	  0x19, 0x28, 0x53, 0xa7, 0x5c, 0x57, 0x47, 0xe3,
-	    	  0xe1, 0x4c, 0x76, 0x62, 0x0a, 0x40, 0x30, 0xcf,
-	    	  0xbe, 0x51, 0xaf, 0x0d, 0x11, 0x73, 0xd6, 0x6a,
-	    	  0xc2, 0xbf, 0x4f, 0xc1, 0x88, 0x8d, 0x14, 0xa6,
-	    	  0xd1, 0x92, 0x6c, 0xf7, 0x8a, 0xe6, 0x9c, 0x96,
-	    	  0xc5, 0xc4, 0x5c, 0x36, 0xf6, 0xfb, 0x39, 0xf4,
-	    	  0x79, 0x3f, 0x7a, 0x30, 0x71, 0x5e, 0x3e, 0xfe,
-	    	  0xf3, 0x4d, 0x0c, 0x02, 0x55, 0xeb, 0x08, 0x24,
-	    	  0x5f, 0x64, 0xd7, 0xcf, 0xf3, 0x48, 0x35, 0x03,
-	    	  0xc4, 0xc8, 0x29, 0xf7, 0x9d, 0xcf, 0x21, 0xb8,
-	    	  0x67, 0x05, 0xc6, 0x47, 0x05, 0x1b, 0x5f, 0xf3,
-	    	  0xa7, 0xbc, 0x23, 0xf0, 0x09, 0xc4, 0x90, 0x44,
-	    	  0x5d, 0x3f, 0xf9, 0x79, 0x74, 0xea, 0x7b, 0x42,
-	    	  0x57, 0x88, 0xce, 0x32, 0x43, 0xa5, 0xf4, 0x4e,
-	    	  0x05, 0xc9, 0x73, 0xc2, 0x49, 0x94, 0x85, 0x5c,
-	    	  0xa2, 0x11, 0x91, 0x1f, 0x9e, 0xe3, 0x21, 0xbe,
-	    	  0xe9, 0x36, 0x52, 0xec, 0x4b, 0xa6, 0x7d, 0xf6,
-	    	  0x8a, 0x85, 0xb9, 0xe1, 0xc7, 0x6e, 0x6b, 0x08,
-	    	  0x9d, 0xf2, 0xee, 0x7d, 0x28, 0xbd, 0xf0, 0x9d } ;
+#include <linux/uaccess.h>
+#include <linux/fs.h>
+#include <linux/syscalls.h>
+
+#define ENCRYPTED_FILE "/data/ENCRYPTED_HDCP_KEY_TABLE.bin"
+
+static int _hdcp_read_keytable(struct nxp_hdcp *me, unsigned char *buf)
+{
+    char *file = ENCRYPTED_FILE;
+    struct file *fp = NULL;
+    int ret = 0;
+    fp = filp_open(file, O_RDONLY, 0);
+    if (IS_ERR(fp)) {
+        pr_err("%s: failed to filp_open for %s\n", __func__, file);
+        return -EINVAL;
+    }
+    dbg_key("%s: succeed to file_open for %s\n", __func__, file);
+
+    ret = kernel_read(fp, 0, buf, HDCP_KEY_SIZE);
+    if (ret != HDCP_KEY_SIZE) {
+        pr_err(KERN_ERR "%s: read error(%d/%d)\n", __func__, ret, HDCP_KEY_SIZE);
+        ret = -EINVAL;
+    }
+    ret = 0;
+
+    if (fp)
+        filp_close(fp, NULL);
+
+#ifdef DEBUG_KEY
+    {
+        int i;
+        printk("HDCP ENCRYPTED TABLE ====> \n");
+        for (i = 0; i < HDCP_KEY_SIZE; i++) {
+            printk("0x%2x,", buf[i]);
+            if ((i % 16) == 15) {
+                printk("\n");
+            }
+        }
+        printk("\n<====\n");
+    }
+#endif
+
+    return ret;
+}
 
 static int _hdcp_loadkey(struct nxp_hdcp *me)
 {
-    /* TODO */
-#if 0
-    u32 val;
-    int cnt = 0;
+    int i;
 
-    hdmi_write_mask(HDMI_EFUSE_CTRL, ~0, HDMI_EFUSE_CTRL_HDCP_KEY_READ);
-
-    do {
-        val = hdmi_readb(HDMI_EFUSE_STATUS);
-        if (val & HDMI_EFUSE_ECC_DONE)
-            break;
-        cnt++;
-        mdelay(1);
-    } while (cnt < KEY_LOAD_RETRY_CNT);
-
-    if (cnt == KEY_LOAD_RETRY_CNT) {
-        pr_err("%s: error HDMI_EFUSE_ECC_DONE\n", __func__);
-        return -ETIMEDOUT;
-    }
-
-    val = hdmi_readb(HDMI_EFUSE_STATUS);
-    if (val & HDMI_EFUSE_ECC_FAIL) {
+    u32 val = hdmi_readb(HDMI_HDCP_KEY_LOAD);
+    if (!(val & 1)) {
         pr_err("%s: HDMI_EFUSE_ECC_FAIL\n", __func__);
         return -1;
     }
 
-    printk("%s: load key is ok\n", __func__);
-#else
-#if 0
-    int i = 0;
-    /*const char *hdcp_key_table = _hdcp_encrypted_by_guid_key;*/
-    const char *hdcp_key_table = _hdcp_encrypted_by_0_key;
-    for (i = 0; i < HDCP_KEY_SIZE; i++) {
-         hdmi_writeb(HDMI_AES_DATA, hdcp_key_table[i]);
+    if (_hdcp_read_keytable(me, _hdcp_encrypted_table)) {
+        pr_err("%s: failed to _hdcp_read_keytable\n", __func__);
+        return -1;
     }
-    hdmi_writeb(HDMI_AES_START, 0x01);
+
+    dbg_key("AES_DATA_SIZE_L --> 0x%02x\n", hdmi_readb(HDMI_LINK_AES_DATA_SIZE_L));
+    dbg_key("AES_DATA_SIZE_H --> 0x%02x\n", hdmi_readb(HDMI_LINK_AES_DATA_SIZE_H));
+    for (i = 0; i < HDCP_KEY_SIZE; i++)
+        hdmi_writeb(HDMI_LINK_AES_DATA, _hdcp_encrypted_table[i]);
+
+#ifdef DEBUG_KEY
+    {
+        u8 read_buf[HDCP_KEY_SIZE] = {0, };
+        printk("DUMP HDCP ENCRYPTED TABLE from HDMI_LINK_AES_DATA ====> \n");
+        for (i = 0; i < HDCP_KEY_SIZE; i++) {
+            read_buf[i] = hdmi_readb(HDMI_LINK_AES_DATA);
+            printk("0x%02x,", read_buf[i]);
+            if ((i % 16) == 15)
+                printk("\n");
+        }
+        printk("\n<====\n");
+    }
+#endif
+
+    hdmi_writeb(HDMI_LINK_AES_START, 0x01);
+
     do {
-        if(!hdmi_readb(HDMI_AES_START))
-            break;
-    } while (1);
-#else
+        val = hdmi_readb(HDMI_LINK_AES_START);
+        dbg_key("%s: AES_START --> 0x%02x\n", __func__, val);
+    } while (val != 0x00);
 
-    U32 r_di;
-    u32 regvalue;
-    u32 cnt;
-    for (cnt=0; cnt<288; cnt = cnt+1)
-    {
-        r_di = encrypted[cnt];
-        hdmi_writeb (HDMI_AES_DATA, r_di);
-    }
-
-    //NX_CONSOLE_Printf ("\n[DEBUG] ###############  AES Start  ################");
-    hdmi_writeb(HDMI_AES_START, 0x01);
-
-    regvalue = hdmi_readb(HDMI_AES_START );
-    while( regvalue != 0x00 )
-    {
-        // decrypt°¡ ¿Ï·áµÇ¸é 0¹ø ºñÆ®°¡ 0ÀÌ µÈ´Ù. ( AES decryption complete )
-        regvalue = hdmi_readb(HDMI_AES_START );
-    }
-#endif
-#endif
     return 0;
 }
 
@@ -597,13 +590,13 @@ static int _hdcp_start_encryption(struct nxp_hdcp *me)
         return -ETIMEDOUT;
     }
 
-    printk("%s: encryption is start\n", __func__);
+    dbg_ri("HDCP encryption is started\n");
     return 0;
 }
 
 static int _hdcp_check_repeater(struct nxp_hdcp *me)
 {
-    int val, i;
+    int val;
     int cnt = 0, cnt2 = 0;
 
     u8 bcaps = 0;
@@ -636,7 +629,7 @@ static int _hdcp_check_repeater(struct nxp_hdcp *me)
         goto check_repeater_err;
     }
 
-    printk("%s: repeater : ksv fifo ready\n", __func__);
+    dbg_repeater("%s: repeater : ksv fifo ready\n", __func__);
 
     if (_hdcp_i2c_read(me, HDCP_BSTATUS, BSTATUS_SIZE, status) < 0) {
         ret = -ETIMEDOUT;
@@ -654,11 +647,11 @@ static int _hdcp_check_repeater(struct nxp_hdcp *me)
     hdmi_writeb(HDMI_HDCP_BSTATUS_0, status[0]);
     hdmi_writeb(HDMI_HDCP_BSTATUS_1, status[1]);
 
-    printk("%s: status[0] :0x%02x\n", __func__, status[0]);
-    printk("%s: status[1] :0x%02x\n", __func__, status[1]);
+    dbg_repeater("%s: status[0] :0x%02x\n", __func__, status[0]);
+    dbg_repeater("%s: status[1] :0x%02x\n", __func__, status[1]);
 
     dev_cnt = status[0] & 0x7f;
-    printk("%s: repeater : dev cnt = %d\n", __func__, dev_cnt);
+    dbg_repeater("%s: repeater : dev cnt = %d\n", __func__, dev_cnt);
 
     if (dev_cnt) {
         if (_hdcp_i2c_read(me, HDCP_KSVFIFO, dev_cnt * HDCP_KSV_SIZE,
@@ -705,9 +698,12 @@ static int _hdcp_check_repeater(struct nxp_hdcp *me)
         goto check_repeater_err;
     }
 
-#ifdef DEBUG
-    for (i = 0; i < SHA_1_HASH_SIZE; i++)
-        printk("%s: [i2c] SHA-1 rx :: %02x\n", __func__, rx_v[i]);
+#ifdef DEBUG_REPEATER
+    {
+        int i;
+        for (i = 0; i < SHA_1_HASH_SIZE; i++)
+            printk("%s: [i2c] SHA-1 rx :: %02x\n", __func__, rx_v[i]);
+    }
 #endif
 
     hdmi_write_bytes(HDMI_HDCP_SHA1_(0), rx_v, SHA_1_HASH_SIZE);
@@ -715,7 +711,7 @@ static int _hdcp_check_repeater(struct nxp_hdcp *me)
     val = hdmi_readb(HDMI_HDCP_SHA_RESULT);
     if (val & HDMI_HDCP_SHA_VALID_RD) {
         if (val & HDMI_HDCP_SHA_VALID) {
-            printk("%s: SHA-1 result is ok\n", __func__);
+            dbg_repeater("%s: SHA-1 result is ok\n", __func__);
             hdmi_writeb(HDMI_HDCP_SHA_RESULT, 0x0);
         } else {
             pr_err("%s: SHA-1 result is not valid\n", __func__);
@@ -730,7 +726,7 @@ static int _hdcp_check_repeater(struct nxp_hdcp *me)
         goto check_repeater_err;
     }
 
-    printk("%s: check repeater is ok\n", __func__);
+    dbg_repeater("%s: check repeater is ok\n", __func__);
     return 0;
 
 check_repeater_err:
@@ -753,7 +749,8 @@ static int _hdcp_bksv(struct nxp_hdcp *me)
     hdmi_writeb(HDMI_HDCP_CHECK_RESULT, HDMI_HDCP_CLR_ALL_RESULTS);
 
     me->auth_state = BKSV_READ_DONE;
-    printk("%s: bksv start is ok\n", __func__);
+    dbg_bksv("%s: bksv start is ok\n", __func__);
+
     return 0;
 
 bksv_start_err:
@@ -766,7 +763,7 @@ static int _hdcp_second_auth(struct nxp_hdcp *me)
 {
     int ret = 0;
 
-    printk("%s\n", __func__);
+    dbg_repeater("%s\n", __func__);
 
     if (!me->is_start) {
         pr_err("%s: hdcp is not started\n", __func__);
@@ -816,13 +813,13 @@ static int _hdcp_second_auth(struct nxp_hdcp *me)
         return -EINVAL;
     }
 
-    printk("%s: second authentication is OK\n", __func__);
+    dbg_repeater("%s: second authentication is OK\n", __func__);
     return 0;
 }
 
 static int _hdcp_write_aksv(struct nxp_hdcp *me)
 {
-    printk("%s\n", __func__);
+    dbg_aksv("%s\n", __func__);
 
     if (me->auth_state != BKSV_READ_DONE) {
         pr_err("%s: bksv is not ready\n", __func__);
@@ -840,7 +837,7 @@ static int _hdcp_write_aksv(struct nxp_hdcp *me)
     }
 
     me->auth_state = AN_WRITE_DONE;
-    printk("%s: write AN is done\n", __func__);
+    dbg_aksv("%s: write AN is done\n", __func__);
 
     if (_hdcp_write_key(me, AKSV_SIZE, HDMI_HDCP_AKSV_(0), HDCP_AKSV) < 0) {
         pr_err("%s: failed to _hdcp_write_key() HDCP_AKSV\n", __func__);
@@ -851,17 +848,29 @@ static int _hdcp_write_aksv(struct nxp_hdcp *me)
 
     me->auth_state = AKSV_WRITE_DONE;
 
-    printk("%s success!!!\n", __func__);
+    dbg_aksv("%s success!!!\n", __func__);
     return 0;
 }
 
 static int _hdcp_check_ri(struct nxp_hdcp *me)
 {
-    printk("%s\n", __func__);
+    dbg_ri("%s\n", __func__);
 
     if (me->auth_state < AKSV_WRITE_DONE) {
+        int retry = 300;
         pr_err("%s: ri check is not ready\n", __func__);
-        return -EINVAL;
+        printk("%s: wait for state AKSV_WRITE_DONE for 3second\n", __func__);
+        while (retry--) {
+            msleep(10);
+            if (me->auth_state >= AKSV_WRITE_DONE) {
+                printk("state changed to 0x%x\n", me->auth_state);
+                break;
+            }
+        }
+        if (retry <= 0) {
+            pr_err("%s: timeout wait for state AKSV_WRITE_DONE\n", __func__);
+            return -EINVAL;
+        }
     }
 
     if (!IS_HDMI_RUNNING(me)) {
@@ -881,8 +890,22 @@ static int _hdcp_check_ri(struct nxp_hdcp *me)
         _hdcp_start_encryption(me);
     }
 
-    printk("%s: ri check is OK\n", __func__);
+    dbg_ri("%s: ri check is OK\n", __func__);
     return 0;
+}
+
+static unsigned int _hdcp_clear_event(unsigned int event)
+{
+    unsigned int my_event = event;
+    if (my_event & HDCP_EVENT_READ_BKSV_START)
+        my_event &= ~HDCP_EVENT_READ_BKSV_START;
+    if (my_event & HDCP_EVENT_WRITE_AKSV_START)
+        my_event &= ~HDCP_EVENT_WRITE_AKSV_START;
+    if (my_event & HDCP_EVENT_SECOND_AUTH_START)
+        my_event &= ~HDCP_EVENT_SECOND_AUTH_START;
+    if (my_event & HDCP_EVENT_CHECK_RI_START)
+        my_event &= ~HDCP_EVENT_CHECK_RI_START;
+    return my_event;
 }
 
 /**
@@ -891,6 +914,8 @@ static int _hdcp_check_ri(struct nxp_hdcp *me)
 static void _hdcp_work(struct work_struct *work)
 {
     struct nxp_hdcp *me = container_of(work, struct nxp_hdcp, work);
+    unsigned long flags;
+    unsigned int event;
 
     if (!me->is_start)
         return;
@@ -898,35 +923,41 @@ static void _hdcp_work(struct work_struct *work)
     if (!IS_HDMI_RUNNING(me))
         return;
 
-    if (me->event & HDCP_EVENT_READ_BKSV_START) {
+    dbg_event("%s entered\n", __func__);
+
+    spin_lock_irqsave(&me->lock, flags);
+    event = me->event;
+    me->event = _hdcp_clear_event(event);
+    spin_unlock_irqrestore(&me->lock, flags);
+
+    dbg_event("event --> 0x%x\n", event);
+
+    mutex_lock(&me->mutex);
+
+    if (event & HDCP_EVENT_READ_BKSV_START) {
         if (_hdcp_bksv(me) < 0)
             goto work_err;
         else
-            me->event &= ~HDCP_EVENT_READ_BKSV_START;
+            event &= ~HDCP_EVENT_READ_BKSV_START;
     }
 
-    if (me->event & HDCP_EVENT_SECOND_AUTH_START) {
+    if (event & HDCP_EVENT_SECOND_AUTH_START) {
         if (_hdcp_second_auth(me) < 0)
             goto work_err;
-        else
-            me->event &= ~HDCP_EVENT_SECOND_AUTH_START;
     }
 
-    if (me->event & HDCP_EVENT_WRITE_AKSV_START) {
+    if (event & HDCP_EVENT_WRITE_AKSV_START) {
         if (_hdcp_write_aksv(me) < 0)
             goto work_err;
-        else
-            me->event &= HDCP_EVENT_WRITE_AKSV_START;
     }
 
-    if (me->event & HDCP_EVENT_CHECK_RI_START) {
+    if (event & HDCP_EVENT_CHECK_RI_START) {
         if (_hdcp_check_ri(me) < 0)
             goto work_err;
-        else
-            me->event &= ~HDCP_EVENT_CHECK_RI_START;
     }
 
-    return;
+    goto MUTEX_UNLOCK_STAGE;
+
 work_err:
     if (!me->is_start)
         return;
@@ -934,33 +965,38 @@ work_err:
         return;
 
     _hdcp_reset_auth(me);
-    ;
+
+MUTEX_UNLOCK_STAGE:
+    mutex_unlock(&me->mutex);
+    dbg_event("%s exit\n", __func__);
+    return;
 }
 
 /**
  * member functions
  */
 
-static irqreturn_t
-nxp_hdcp_irq_handler(struct nxp_hdcp *me)
+static irqreturn_t nxp_hdcp_irq_handler(struct nxp_hdcp *me)
 {
     u32 event = 0;
     u8 flag;
 
     if (!IS_HDMI_RUNNING(me)) {
+        spin_lock(&me->lock);
         me->event       = HDCP_EVENT_STOP;
+        spin_unlock(&me->lock);
         me->auth_state  = NOT_AUTHENTICATED;
+        pr_err("%s: hdmi is not running\n", __func__);
         return IRQ_HANDLED;
     }
 
     flag = hdmi_readb(HDMI_STATUS);
 
-    printk("%s: flag 0x%x\n", __func__, flag);
+    dbg_event("=====> %s: flag 0x%x\n", __func__, flag);
 
     if (flag & HDMI_WTFORACTIVERX_INT_OCC) {
         event |= HDCP_EVENT_READ_BKSV_START;
-        /*hdmi_write_mask(HDMI_STATUS, ~0, HDMI_WTFORACTIVERX_INT_OCC);*/
-        hdmi_write(HDMI_STATUS, (1<<0));
+        hdmi_write_mask(HDMI_STATUS, ~0, HDMI_WTFORACTIVERX_INT_OCC);
         hdmi_write(HDMI_HDCP_I2C_INT, 0x0);
     }
 
@@ -971,7 +1007,7 @@ nxp_hdcp_irq_handler(struct nxp_hdcp *me)
     }
 
     if (flag & HDMI_UPDATE_RI_INT_OCC) {
-        event |= HDCP_EVENT_WRITE_AKSV_START;
+        event |= HDCP_EVENT_CHECK_RI_START;
         hdmi_write_mask(HDMI_STATUS, ~0, HDMI_UPDATE_RI_INT_OCC);
         hdmi_write(HDMI_HDCP_RI_INT, 0x0);
     }
@@ -988,7 +1024,10 @@ nxp_hdcp_irq_handler(struct nxp_hdcp *me)
     }
 
     if (IS_HDMI_RUNNING(me)) {
+        spin_lock(&me->lock);
         me->event |= event;
+        spin_unlock(&me->lock);
+        dbg_event("<==== event: 0x%x\n", event);
         queue_work(me->wq, &me->work);
     } else {
         me->event = HDCP_EVENT_STOP;
@@ -1004,22 +1043,21 @@ static int nxp_hdcp_prepare(struct nxp_hdcp *me)
     if (!me->wq)
         return -ENOMEM;
 
-    printk("%s\n", __func__);
     INIT_WORK(&me->work, _hdcp_work);
     return 0;
 }
 
-#if 1
-// org code
 static int nxp_hdcp_start(struct nxp_hdcp *me)
 {
-    if (me->is_start)
+    if (me->is_start) {
+        printk(KERN_ERR "%s: called duplicate\n", __func__);
         return 0;
+    }
+
+    printk("%s entered\n", __func__);
 
     me->event = HDCP_EVENT_STOP;
     me->auth_state = NOT_AUTHENTICATED;
-
-    pr_debug("%s\n", __func__);
 
     _hdcp_sw_reset(me);
     _hdcp_encryption(me, false);
@@ -1033,131 +1071,32 @@ static int nxp_hdcp_start(struct nxp_hdcp *me)
 
     hdmi_write(HDMI_GCP_CON, HDMI_GCP_CON_NO_TRAN);
     hdmi_write(HDMI_STATUS_EN, HDMI_INT_EN_ALL);
-
     hdmi_write(HDMI_HDCP_CTRL1, HDMI_HDCP_CP_DESIRED_EN);
+
     me->is_start = true;
 
-    hdmi_set_int_mask(HDMI_INTC_EN_HDCP, 1);
+    hdmi_set_int_mask(HDMI_INTC_EN_HDCP, true);
+
+    printk("%s exit\n", __func__);
 
     return 0;
 }
 
-#else
-// test code
-#if 1
-#include <mach/platform.h>
-#endif
-static int nxp_hdcp_start(struct nxp_hdcp *me)
-{
-    if (me->is_start)
-        return 0;
-
-    me->event = HDCP_EVENT_STOP;
-    me->auth_state = NOT_AUTHENTICATED;
-
-    printk("%s\n", __func__);
-
-    /*_hdcp_sw_reset(me);*/
-    /*_hdcp_encryption(me, false);*/
-
-    // test code : pclk to 12MHz
-#if 0
-    {
-        volatile struct NX_CLKPWR_RegisterSet *clkpwr;
-        volatile u32 *clkpwr_reg;
-        volatile u32 *pllset_reg;
-        clkpwr = (volatile struct NX_CLKPWR_RegisterSet*)IO_ADDRESS(PHY_BASEADDR_CLKPWR_MODULE);
-        clkpwr_reg = (volatile u32 *)clkpwr;
-        pllset_reg = (clkpwr_reg + 2 + 0);
-        *pllset_reg &= ~(1 << 28);
-        *clkpwr_reg  = (1 << 0);
-        while(*clkpwr_reg & (1<<31));
-    }
-#endif
-
-    // randomness
-    hdmi_write(HDMI_AN_SEED_SEL, 0xFE);
-    hdmi_write(HDMI_AN_SEED_0, 0x00);
-    hdmi_write(HDMI_AN_SEED_1, 0x00);
-    hdmi_write(HDMI_AN_SEED_2, 0x80);
-    hdmi_write(HDMI_AN_SEED_3, 0x00);
-
-    msleep(120);
-
-    if (_hdcp_loadkey(me) < 0) {
-        pr_err("%s: failed to _hdcp_loadkey()\n", __func__);
-        return -1;
-    }
-
-    hdmi_write(HDMI_HDCP_OFFSET_TX_0, 0x00);
-    hdmi_write(HDMI_HDCP_OFFSET_TX_1, 0xa0);
-    hdmi_write(HDMI_HDCP_OFFSET_TX_2, 0x00);
-    hdmi_write(HDMI_HDCP_OFFSET_TX_3, 0x00);
-    hdmi_write(HDMI_HDCP_CYCLE_AA, 0x8f);
-
-    hdmi_write(HDMI_HDCP_BCAPS, 0x40);
-
-    hdmi_write(HDMI_HDCP_SHA1_REN0, 0xf8);
-    hdmi_write(HDMI_HDCP_SHA1_REN1, 0xbf);
-
-    /*hdmi_write(HDMI_GCP_CON, HDMI_GCP_CON_NO_TRAN);*/
-    /*hdmi_write(HDMI_STATUS_EN, HDMI_INT_EN_ALL);*/
-    hdmi_write(HDMI_STATUS_EN, 0x17);
-    printk("STATUS_EN 0x%x\n", hdmi_readb(HDMI_STATUS_EN));
-
-    /*hdmi_write(HDMI_HDCP_CTRL1, HDMI_HDCP_CP_DESIRED_EN);*/
-    hdmi_write(HDMI_HDCP_CTRL1, 0x82);
-    me->is_start = true;
-
-    hdmi_set_int_mask(HDMI_INTC_EN_HDCP, 1);
-
-    // this is test
-#if 0
-    {
-        U32 regvalue = hdmi_readb( HDMI_STATUS) & 0x01; // ´ëÃ¼°¡´ÉÇÑÁö?
-        while( (regvalue & 0x01) == 0)
-            regvalue = hdmi_readb( HDMI_STATUS) & 0x01; // ´ëÃ¼°¡´ÉÇÑÁö?
-
-        hdmi_writeb(HDMI_HDCP_CHECK_RESULT, 0x00);
-        hdmi_writeb(HDMI_HDCP_I2C_INT, 0x00);
-        hdmi_writeb(HDMI_STATUS, 0x01);
-
-        hdmi_writeb(HDMI_HDCP_BKSV_(0), 0xcd);
-        hdmi_writeb(HDMI_HDCP_BKSV_(1), 0x1a);
-        hdmi_writeb(HDMI_HDCP_BKSV_(2), 0xf2);
-        hdmi_writeb(HDMI_HDCP_BKSV_(3), 0x1e);
-        hdmi_writeb(HDMI_HDCP_BKSV_(4), 0x51);
-
-        hdmi_writeb(HDMI_HDCP_BCAPS, 0x40);
-
-
-        regvalue =  hdmi_readb(HDMI_HDCP_AN_INT ) >> 0;
-        while( (regvalue & 0x01) == 0 )
-        {
-            regvalue =  hdmi_readb(HDMI_HDCP_AN_INT ) >> 0;
-            printk("hdcp an int 0x%x, status 0x%x\n", regvalue, hdmi_readb(HDMI_STATUS));
-        }
-    }
-#endif
-
-    return 0;
-}
-#endif
 
 static int nxp_hdcp_stop(struct nxp_hdcp *me)
 {
     u32 val;
 
-    if (!me->start)
+    if (!me->is_start)
         return 0;
 
-    printk("%s\n", __func__);
+    printk("%s enterd\n", __func__);
 
     /* first stop workqueue */
-    /*cancel_work_sync(&me->work);*/
+    cancel_work_sync(&me->work);
     flush_work(&me->work);
 
-    /*hdmi_set_int_mask(HDMI_INTC_EN_HDCP, 0);*/
+    hdmi_set_int_mask(HDMI_INTC_EN_HDCP, false);
 
     me->event       = HDCP_EVENT_STOP;
     me->auth_state  = NOT_AUTHENTICATED;
@@ -1165,7 +1104,7 @@ static int nxp_hdcp_stop(struct nxp_hdcp *me)
 
     hdmi_writeb(HDMI_HDCP_CTRL1, 0x0);
 
-    /*hdmi_sw_hpd_enable(false);*/
+    hdmi_sw_hpd_enable(false);
 
     val = HDMI_UPDATE_RI_INT_EN | HDMI_WRITE_INT_EN |
         HDMI_WATCHDOG_INT_EN | HDMI_WTFORACTIVERX_INT_EN;
@@ -1178,7 +1117,10 @@ static int nxp_hdcp_stop(struct nxp_hdcp *me)
 
     hdmi_writeb(HDMI_HDCP_CHECK_RESULT, HDMI_HDCP_CLR_ALL_RESULTS);
 
-    me->start = 0;
+    // restore inten to default
+    NX_HDMI_SetReg(0, HDMI_LINK_INTC_CON_0, (1<<6)|(1<<3)|(1<<2));
+
+    printk("%s exit\n", __func__);
 
     return 0;
 }
@@ -1201,13 +1143,11 @@ static int nxp_hdcp_resume(struct nxp_hdcp *me)
 static int __devinit _hdcp_i2c_probe(struct i2c_client *client,
         const struct i2c_device_id *dev_id)
 {
-    printk("%s\n", __func__);
     return 0;
 }
 
 static int _hdcp_i2c_remove(struct i2c_client *client)
 {
-    printk("%s\n", __func__);
     return 0;
 }
 
@@ -1233,8 +1173,6 @@ int nxp_hdcp_init(struct nxp_hdcp *me, struct nxp_v4l2_i2c_board_info *i2c_info)
 {
     int ret = 0;
 
-    printk("%s\n", __func__);
-
     memset(me, 0, sizeof(struct nxp_hdcp));
 
     ret = i2c_add_driver(&_hdcp_driver);
@@ -1257,14 +1195,13 @@ int nxp_hdcp_init(struct nxp_hdcp *me, struct nxp_v4l2_i2c_board_info *i2c_info)
     me->resume  = nxp_hdcp_resume;
 
     mutex_init(&me->mutex);
+    spin_lock_init(&me->lock);
 
     return 0;
 }
 
 void nxp_hdcp_cleanup(struct nxp_hdcp *me)
 {
-    printk("%s\n", __func__);
-
     i2c_del_driver(&_hdcp_driver);
 
     if (me->client) {

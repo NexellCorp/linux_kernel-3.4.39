@@ -97,6 +97,7 @@ const struct hdmiphy_preset hdmiphy_preset[] = {
 	{ V4L2_DV_720P50, hdmiphy_preset74_25 },
 	{ V4L2_DV_720P59_94, hdmiphy_preset74_175 },
 	{ V4L2_DV_720P60, hdmiphy_preset74_25 },
+    { V4L2_DV_1080P24, hdmiphy_preset74_25 },
 	{ V4L2_DV_1080P50, hdmiphy_preset148_5 },
 	{ V4L2_DV_1080P59_94, hdmiphy_preset148_352 },
 	{ V4L2_DV_1080P60, hdmiphy_preset148_5 },
@@ -125,7 +126,7 @@ static int _hdmiphy_enable_pad(struct nxp_hdmiphy *me)
 static int _hdmiphy_reset(struct nxp_hdmiphy *me)
 {
     pr_debug("%s\n", __func__);
-#if defined (CONFIG_ARCH_NXP4330)
+#if defined (CONFIG_ARCH_S5P4418)
     NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_PHY), RSTCON_nDISABLE);
 #elif defined (CONFIG_ARCH_S5P6818)
 	NX_RSTCON_SetRST(NX_HDMI_GetResetNumber(0, i_nRST_PHY), RSTCON_ASSERT);
@@ -149,19 +150,33 @@ static int _hdmiphy_reg_set(struct nxp_hdmiphy *me,
     u32 reg_addr;
     pr_debug("%s\n", __func__);
 
-    // for s5p6818
-    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (0<<7)); //NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (0<<7));
-    NX_HDMI_SetReg(0, HDMI_PHY_Reg04, (0<<4)); //NX_HDMI_SetReg(0, HDMI_PHY_Reg04, (0<<4));
-    NX_HDMI_SetReg(0, HDMI_PHY_Reg24, (1<<7)); //NX_HDMI_SetReg(0, HDMI_PHY_Reg24, (1<<7));
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (0<<7));
+#if defined (CONFIG_ARCH_S5P4418)
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (0<<7));
+#endif
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg04, (0<<4));
+#if defined (CONFIG_ARCH_S5P4418)
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg04, (0<<4));
+#endif
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg24, (1<<7));
+#if defined (CONFIG_ARCH_S5P4418)
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg24, (1<<7));
+#endif
 
     for (i = 0, reg_addr = HDMI_PHY_Reg04; i < size; i++, reg_addr += 4) {
         NX_HDMI_SetReg(0, reg_addr, data[i]);
-        // for s5p6818
-        /*NX_HDMI_SetReg(0, reg_addr, data[i]);*/
-        /*printk("reg 0x%x: write 0x%x, read 0x%x\n", reg_addr, data[i], NX_HDMI_GetReg(0, reg_addr));*/
+#if defined (CONFIG_ARCH_S5P4418)
+        NX_HDMI_SetReg(0, reg_addr, data[i]);
+#endif
     }
-    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, 0x80); //NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, 0x80);
-    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (1<<7)); //NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (1<<7));
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, 0x80);
+#if defined (CONFIG_ARCH_S5P4418)
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, 0x80);
+#endif
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (1<<7));
+#if defined (CONFIG_ARCH_S5P4418)
+    NX_HDMI_SetReg(0, HDMI_PHY_Reg7C, (1<<7));
+#endif
     return 0;
 }
 
@@ -170,10 +185,7 @@ static int _hdmiphy_reg_set(struct nxp_hdmiphy *me,
  */
 static int nxp_hdmiphy_s_power(struct nxp_hdmiphy *me, int on)
 {
-    //int ret;
-
     pr_debug("%s: %d\n", __func__, on);
-
     if (on) {
         _hdmiphy_enable_pad(me);
         _hdmiphy_reset(me);
@@ -187,7 +199,6 @@ static int nxp_hdmiphy_s_dv_preset(struct nxp_hdmiphy *me,
         struct v4l2_dv_preset *preset)
 {
     const u8 *data;
-
     pr_debug("%s: preset(%d)\n", __func__, preset->preset);
 
     data = _hdmiphy_preset2conf(preset->preset);;
@@ -197,7 +208,6 @@ static int nxp_hdmiphy_s_dv_preset(struct nxp_hdmiphy *me,
     }
 
     me->preset = (u8 *)data;
-
     return 0;
 }
 

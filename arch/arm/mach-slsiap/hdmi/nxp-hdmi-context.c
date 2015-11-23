@@ -86,7 +86,7 @@ static void _hdmi_initialize(struct nxp_hdmi_context *me)
         /**
          * [SEQ 4] release the resets of HDMI.i_PHY_nRST and HDMI.i_nRST
          */
-#if defined (CONFIG_ARCH_NXP4330)
+#if defined (CONFIG_ARCH_S5P4418)
         NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_PHY), RSTCON_nDISABLE);
         NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST), RSTCON_nDISABLE);
 
@@ -132,7 +132,7 @@ static inline bool _wait_for_ecid_ready(void)
 
 static inline void _hdmi_reset(struct nxp_hdmi_context *me)
 {
-#if defined (CONFIG_ARCH_NXP4330)
+#if defined (CONFIG_ARCH_S5P4418)
     NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_VIDEO), RSTCON_nDISABLE);
     NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_SPDIF), RSTCON_nDISABLE);
     NX_RSTCON_SetnRST(NX_HDMI_GetResetNumber(0, i_nRST_TMDS), RSTCON_nDISABLE);
@@ -277,6 +277,19 @@ static int _get_vsync_info(struct nxp_hdmi_context *me)
         vsync->h_sync_width = 44;
         vsync->h_back_porch = 148;
         vsync->h_front_porch = 88;
+        vsync->h_sync_invert = 0;
+        vsync->v_active_len = 1080;
+        vsync->v_sync_width = 5;
+        vsync->v_back_porch = 36;
+        vsync->v_front_porch = 4;
+        vsync->v_sync_invert = 0;
+        break;
+
+    case V4L2_DV_1080P24:
+        vsync->h_active_len = 1920;
+        vsync->h_sync_width = 44;
+        vsync->h_back_porch = 148;
+        vsync->h_front_porch = 638;
         vsync->h_sync_invert = 0;
         vsync->v_active_len = 1080;
         vsync->v_sync_width = 5;
@@ -769,7 +782,7 @@ static void _hdmi_hpd_changed(struct nxp_hdmi_context *me, int state)
         return;
 
     if (state) {
-#ifndef CONFIG_PLAT_S5P6818_DRONEL
+#ifdef CONFIG_NXP_HDMI_USE_EDID
         /* connected */
         ret = me->edid.update(&me->edid);
         if (ret < 0) {
@@ -855,8 +868,9 @@ int hdmi_init_context(struct nxp_hdmi_context *me,
 
     me->initialized = false;
     me->irq = NX_HDMI_GetInterruptNumber(0);
-    // psw0523 add for s5p6818
+#ifdef CONFIG_ARCH_S5P6818
     me->irq += 32;
+#endif
     atomic_set(&me->state, HDMI_UNPLUGGED);
 
     me->audio_enable = true;
