@@ -21,7 +21,8 @@
 static int nxp_tvout_s_stream(struct v4l2_subdev *sd, int enable)
 {
     printk("%s: %d\n", __func__, enable);
-    nxp_soc_disp_device_enable_all(DISP_DEVICE_SYNCGEN1, enable);
+    /* nxp_soc_disp_device_enable_all(DISP_DEVICE_SYNCGEN1, enable); */
+    nxp_soc_disp_device_enable_all(1, enable);
     return 0;
 }
 

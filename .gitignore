@@ -17,3 +17,5 @@ include/generated
 include/linux/version.h
 arch/arm/kernel/asm-offsets.s
 kernel/bounds.s
+*.order
+*.builtin

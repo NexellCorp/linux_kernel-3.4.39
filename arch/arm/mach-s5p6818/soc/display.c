@@ -607,7 +607,6 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 	int clk_dly_lv0 = psgen->clk_delay_lv0;
 	int clk_dly_lv1 = psgen->clk_delay_lv1;
 
-#if 0
 	int 	   invert_field = psgen->invert_field;
 	int 		 swap_RB    = psgen->swap_RB;
 	unsigned int yc_order   = psgen->yc_order;
@@ -615,9 +614,11 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 	int vclk_select = psgen->vclk_select;
 	int vclk_invert = psgen->clk_inv_lv0 | psgen->clk_inv_lv1;
 	CBOOL EmbSync = (out_format == DPC_FORMAT_CCIR656 ? CTRUE : CFALSE);
-#endif
+
 	CBOOL RGBMode = CFALSE;
 	NX_DPC_DITHER RDither, GDither, BDither;
+
+	bool LCD_out = 	pdev->dev_out == DISP_DEVICE_LCD ? true : false;
 
 	/* set delay mask */
 	if (delay_mask & DISP_SYNCGEN_DELAY_RGB_PVD)
@@ -669,20 +670,19 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 	NX_DPC_SetClockOutDelay(module, 1, clk_dly_lv1);
 
 	/* LCD out */
-#if 0
-	NX_DPC_SetMode(module, out_format, interlace, invert_field, RGBMode,
-			swap_RB, yc_order, EmbSync, EmbSync, vclk_select, vclk_invert, CFALSE);
-	NX_DPC_SetHSync(module,  psync->h_active_len,
-			psync->h_sync_width,  psync->h_front_porch,  psync->h_back_porch,  psync->h_sync_invert);
-	NX_DPC_SetVSync(module,
-			psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch,
-			psync->v_sync_invert,
-			psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch);
-	NX_DPC_SetVSyncOffset(module, v_vso, v_veo, e_vso, e_veo);
-	NX_DPC_SetDelay (module, rgb_pvd, hsync_cp1, vsync_fram, de_cp2);
- 	NX_DPC_SetDither(module, RDither, GDither, BDither);
-#else
-    {
+	if (LCD_out) {
+		NX_DPC_SetMode(module, out_format, interlace, invert_field, RGBMode,
+				swap_RB, yc_order, EmbSync, EmbSync, vclk_select, vclk_invert, CFALSE);
+		NX_DPC_SetHSync(module,  psync->h_active_len,
+				psync->h_sync_width,  psync->h_front_porch,  psync->h_back_porch,  psync->h_sync_invert);
+		NX_DPC_SetVSync(module,
+				psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch,
+				psync->v_sync_invert,
+				psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch);
+		NX_DPC_SetVSyncOffset(module, v_vso, v_veo, e_vso, e_veo);
+		NX_DPC_SetDelay (module, rgb_pvd, hsync_cp1, vsync_fram, de_cp2);
+ 		NX_DPC_SetDither(module, RDither, GDither, BDither);
+	} else {
         POLARITY FieldPolarity = POLARITY_ACTIVEHIGH;
         POLARITY HSyncPolarity = POLARITY_ACTIVEHIGH;
         POLARITY VSyncPolarity = POLARITY_ACTIVEHIGH;
@@ -707,7 +707,6 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
         NX_DPC_SetDither(module, RDither, GDither, BDither);
         NX_DPC_SetQuantizationMode(module, QMODE_256, QMODE_256 );
     }
-#endif
 
 	DBGOUT("%s: display.%d (x=%4d, hfp=%3d, hbp=%3d, hsw=%3d)\n",
 		__func__, module, psync->h_active_len, psync->h_front_porch,
@@ -752,12 +751,6 @@ static int  disp_syncgen_enable(struct disp_process_dev *pdev, int enable)
 	} else {
 		/* set irq wait time */
 		if (!(PROC_STATUS_READY & pdev->status)) {
-            if (pdev->dev_id == DISP_DEVICE_TVOUT) {
-                disp_multily_enable(info, enable);
-                pdev->status |=  PROC_STATUS_ENABLE;
-                disp_syncgen_irqenable(info->module, 1);
-                return 0;
-            }
 			printk(KERN_ERR "Fail, %s not set sync ...\n", dev_to_str(pdev->dev_id));
 			return -EINVAL;
 		}
@@ -1348,6 +1341,18 @@ void nxp_soc_disp_video_set_address(int module, unsigned int lu_a, unsigned int 
 	DBGOUT("%s: %s, lua=0x%x, cba=0x%x, cra=0x%x (lus=%d, cbs=%d, crs=%d), wait=%d\n",
 		__func__, pvid->name, lu_a, cb_a, cr_a, lu_s, cb_s, cr_s, waitvsync);
 
+    // psw0523 add for video source crop
+    if (pvid->en_source_crop) {
+        if (FOURCC_YUYV == pvid->format) {
+            lu_a += (pvid->src_crop_top * lu_s) + (pvid->src_crop_left << 1);
+        } else {
+            lu_a += (pvid->src_crop_top * lu_s) + pvid->src_crop_left;
+            cb_a += (pvid->src_crop_top * cb_s) + (pvid->src_crop_left >> 1);
+            cr_a += (pvid->src_crop_top * cr_s) + (pvid->src_crop_left >> 1);
+        }
+    }
+    // end psw0523
+    
 	if (FOURCC_YUYV == pvid->format) {
 		NX_MLC_SetVideoLayerAddressYUYV(module, lu_a, lu_s);
 	} else {
@@ -1412,6 +1417,13 @@ int nxp_soc_disp_video_set_position(int module, int left, int top,
 
 	pvid->hFilter = hf;
 	pvid->vFilter = vf;
+
+    /* psw0523 add for source crop : backup dstw */
+    pvid->left   = left;
+    pvid->top    = top;
+    pvid->right  = right;
+    pvid->bottom = bottom;
+    /* end psw0523 */
 
 	/* set scale */
 	NX_MLC_SetVideoLayerScale(module, srcw, srch, dstw, dsth,
