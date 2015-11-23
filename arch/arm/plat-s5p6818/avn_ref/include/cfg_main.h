@@ -255,6 +255,8 @@
  */
 //#define CONFIG_ENABLE_INIT_VOLTAGE					/* Enalbe init voltage for ARM, CORE */
 
+/* HDMIPHY TX Level : 0 ~ 31 */
+#define CFG_HDMIPHY_TX_LEVEL                    31
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode
