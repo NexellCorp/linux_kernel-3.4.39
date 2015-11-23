@@ -1086,32 +1086,15 @@ static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
 #endif
 
         _configure(me, enable);
+
         if (is_host_video) {
+            CBOOL vip_enable, deci_enable;
             ret = _register_irq_handler(me);
             if (ret < 0) {
                 pr_err("%s: failed to _register_irq_handler\n", __func__);
                 return ret;
             }
             _update_next_buffer(me);
-#if 0
-            if (NXP_ATOMIC_READ(&me->state) & NXP_VIN_STATE_RUNNING_DECIMATOR) {
-                struct v4l2_rect *c = &me->crop;
-                U32 src_width, src_height, dst_width, dst_height;
-                NX_VIP_GetDeciSource(module, &src_width, &src_height);
-                if (c->width != src_width || c->height != src_height) {
-                    NX_VIP_GetDecimation(module, &dst_width, &dst_height, NULL, NULL, NULL, NULL);
-                    if (dst_width > c->width || dst_height > c->height) {
-                        pr_err("%s: Decimator wxh(%dx%d) is bigger than clipper(%dx%d)\n", __func__, dst_width, dst_height, c->width, c->height);
-                        NX_VIP_SetDecimation(module, c->width, c->height, c->width, c->height);
-                    } else {
-                        vmsg("%s: SetDecimation: src(%dx%d), dst(%dx%d)\n", __func__, c->width, c->height, dst_width, dst_height);
-                        if (dst_width > 0 && dst_height > 0)
-                            NX_VIP_SetDecimation(module, c->width, c->height, dst_width, dst_height);
-                    }
-                }
-            }
-#else
-            CBOOL vip_enable, deci_enable;
             NX_VIP_GetVIPEnable(module, &vip_enable, NULL, NULL, &deci_enable);
             if (vip_enable && deci_enable) {
                 struct v4l2_rect *c = &me->crop;
@@ -1122,20 +1105,11 @@ static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
                     if (dst_width > c->width || dst_height > c->height) {
                         int deci_width = dst_width > c->width ? c->width : dst_width;
                         int deci_height = dst_height > c->height ? c->height : dst_height;
-                        pr_err("%s: Decimator wxh(%dx%d) is bigger than clipper(%dx%d)\n", __func__, dst_width, dst_height, c->width, c->height);
-                        /*while (!NX_VIP_GetInterruptPending(module, 1));*/
                         while (!NX_VIP_GetInterruptPendingAll(module));
-                        /*printk("OD INT\n");*/
-                        printk("ALL INT\n");
     #ifdef CONFIG_TURNAROUND_VIP_RESET
                         parent->backup_reset_restore_register(module);
     #endif
-                        /*NX_VIP_SetDecimation(module, c->width, c->height, c->width, c->height);*/
-                        printk("set decimation: %d,%d --> %d,%d\n", c->width, c->height, YUV_YSTRIDE(deci_width-127), deci_height);
                         NX_VIP_SetDecimation(module, c->width, c->height, YUV_YSTRIDE(deci_width-127), deci_height);
-    /*#ifdef CONFIG_TURNAROUND_VIP_RESET*/
-                        /*NX_VIP_SetVIPEnable(module, CTRUE, CTRUE, CFALSE, CTRUE);*/
-    /*#endif*/
                     } else {
                         vmsg("%s: SetDecimation: src(%dx%d), dst(%dx%d)\n", __func__, c->width, c->height, dst_width, dst_height);
                         if (dst_width > 0 && dst_height > 0)
@@ -1143,7 +1117,6 @@ static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
                     }
                 }
             }
-#endif
             parent->run(parent, me);
             NXP_ATOMIC_SET_MASK(NXP_VIN_STATE_RUNNING_CLIPPER, &me->state);
         } else {
@@ -1193,8 +1166,6 @@ static const struct v4l2_subdev_video_ops nxp_vin_clipper_video_ops = {
 static int nxp_vin_clipper_enum_mbus_code(struct v4l2_subdev *sd,
         struct v4l2_subdev_fh *fh, struct v4l2_subdev_mbus_code_enum *code)
 {
-    //struct nxp_vin_clipper *me = v4l2_get_subdevdata(sd);
-
     switch (code->pad) {
     case NXP_VIN_PAD_SINK:
         if (code->index != 0)
@@ -1222,9 +1193,7 @@ static int nxp_vin_clipper_get_fmt(struct v4l2_subdev *sd,
         struct v4l2_subdev_fh *fh, struct v4l2_subdev_format *format)
 {
     struct nxp_vin_clipper *me = v4l2_get_subdevdata(sd);
-
     format->format = *_get_pad_format(me, fh, format->pad, format->which);
-
     return 0;
 }
 
@@ -1541,7 +1510,7 @@ int nxp_vin_clipper_init(struct nxp_vin_clipper *me,
 
     if (likely(!ret)) {
         NXP_ATOMIC_SET(&me->state, NXP_VIN_STATE_INIT);
-        INIT_LIST_HEAD(&me->buffer_list);
+            INIT_LIST_HEAD(&me->buffer_list);
         me->platdata = platdata;
         spin_lock_init(&me->slock);
         me->buffer_count = 0;
