@@ -35,6 +35,7 @@ struct nxp_hdcp {
     bool is_repeater;
     bool is_start;
 
+    spinlock_t lock;
     enum hdcp_event event;
     enum hdcp_auth_state auth_state;
 
