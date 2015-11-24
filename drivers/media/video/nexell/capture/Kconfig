@@ -12,6 +12,13 @@ config NXP_CAPTURE_MIPI_CSI
     ---help---
       Say y here to enable capture mipi csi interface
 
+config NXP_MIPI_CSI_USE_AUTOCLK
+    depends on NXP_CAPTURE_MIPI_CSI
+    bool "Enable auto clock setting of mipi csi"
+    default n
+    ---help---
+      Say y here to enable auto setting of mipi csi clk source/divider by calculation of resoultion"
+
 config TURNAROUND_VIP_RESET
     bool "Apply turnaround vip reset"
     default n

@@ -103,6 +103,80 @@ static const struct nxp_csi_pix_format supported_formats[] = {
 #define _csi_write(me, r, v) writel(v, me->regs + r)
 #define _csi_read(me, r)     readl(me->regs + r)
 
+#if defined(CONFIG_NXP_MIPI_CSI_USE_AUTOCLK)
+
+#include <linux/clk.h>
+
+struct clk_calc {
+    unsigned int source;
+    unsigned int div; // must be even
+};
+
+static void _get_dvfs_clk(char *p)
+{
+    sprintf(p, "pll%d", CONFIG_NXP_CPUFREQ_PLLDEV);
+}
+
+// success : return 0
+static int _calc_clk(unsigned int index, char *clk_src, int width, int height, struct clk_calc *calc)
+{
+    // width * height * pixel_byte(2) * frame_rate(30) * 4
+    unsigned long want = width * height * 2 * 30 * 4;
+    unsigned long rate = 0;
+    unsigned int div;
+    int ret = 0;
+
+    struct clk *clk = clk_get(NULL, clk_src);
+    if (!clk) {
+        printk(KERN_ERR "%s: failed to clk_get for %s\n", __func__, clk_src);
+        ret = -EINVAL;
+        goto CLK_PUT_OUT;
+    }
+
+    rate = clk_get_rate(clk);
+
+    if (rate < want) {
+        ret = -EINVAL;
+        goto CLK_PUT_OUT;
+    }
+
+    for (div = 0; (div * want) <= rate; div += 2);
+
+    if (div > 2)
+        div -= 2;
+
+    printk("%s: want %ld ===> FOUND source %d, div %d\n", __func__, want, index, div);
+    calc->source = index; 
+    calc->div = div;
+
+CLK_PUT_OUT:
+    clk_put(clk);
+    return ret;
+}
+
+static int _get_clk(int width, int height, struct clk_calc *calc)
+{
+    char *plls[] = { "pll0", "pll1", "pll2", "pll3" };
+    char exclude_pll[5] = {0, };
+    int i;
+    int ret;
+    
+    _get_dvfs_clk(exclude_pll);
+    printk("%s: exclude pll %s\n", __func__, exclude_pll);
+
+    for (i = 0; i < 4; i++) {
+        if (strncmp(plls[i], exclude_pll, 4)) {
+            ret = _calc_clk(i, plls[i], width, height, calc);
+            if (!ret)
+                break;
+        }
+    }
+
+    return ret;
+}
+
+#endif
+
 /* one shot setting */
 static void _hw_run(struct nxp_csi *me)
 {
@@ -156,14 +230,39 @@ static void _hw_run(struct nxp_csi *me)
 
     NX_CLKGEN_SetClockDivisorEnable(NX_MIPI_GetClockNumber(me->module), CFALSE);
     /* TODO : use clk_get(), clk_get_rate() for dynamic clk binding */
+#if defined(CONFIG_NXP_MIPI_CSI_USE_AUTOCLK)
+    {
+        struct clk_calc clk_calc;
+        int ret;
+        memset(&clk_calc, 0, sizeof(struct clk_calc));
+        ret = _get_clk(me->format.width, me->format.height, &clk_calc);
+        if (ret) {
+#if defined(CFG_MIPI_CSI_CLK_SOURCE) && defined(CFG_MIPI_CSI_CLK_DIV)
+            ClkSrc = CFG_MIPI_CSI_CLK_SOURCE;
+            Divisor = CFG_MIPI_CSI_CLK_DIV;
+#endif
+            NX_CLKGEN_SetClockSource(NX_MIPI_GetClockNumber(me->module), 0, ClkSrc); // use pll2 -> current 295MHz
+            NX_CLKGEN_SetClockDivisor(NX_MIPI_GetClockNumber(me->module), 0, Divisor);
+        } else {
+            NX_CLKGEN_SetClockSource(NX_MIPI_GetClockNumber(me->module), 0, clk_calc.source); // use pll2 -> current 295MHz
+            NX_CLKGEN_SetClockDivisor(NX_MIPI_GetClockNumber(me->module), 0, clk_calc.div);
+        }
+    }
+#else
+#if defined(CFG_MIPI_CSI_CLK_SOURCE) && defined(CFG_MIPI_CSI_CLK_DIV)
+    NX_CLKGEN_SetClockSource(NX_MIPI_GetClockNumber(me->module), 0, CFG_MIPI_CSI_CLK_SOURCE); // use pll2 -> current 295MHz
+    NX_CLKGEN_SetClockDivisor(NX_MIPI_GetClockNumber(me->module), 0, CFG_MIPI_CSI_CLK_DIV);
+#else
 #if defined(CONFIG_VIDEO_TW9992)
     NX_CLKGEN_SetClockSource(NX_MIPI_GetClockNumber(me->module), 0, ClkSrc); // use pll2 -> current 295MHz
     NX_CLKGEN_SetClockDivisor(NX_MIPI_GetClockNumber(me->module), 0, Divisor);
 #else
     NX_CLKGEN_SetClockSource(NX_MIPI_GetClockNumber(me->module), 0, 2); // use pll2 -> current 295MHz
     NX_CLKGEN_SetClockDivisor(NX_MIPI_GetClockNumber(me->module), 0, 2);
-#endif
-    /* NX_CLKGEN_SetClockDivisor(NX_MIPI_GetClockNumber(me->module), 0, 6); */
+#endif // CONFIG_VIDEO_TW9992
+#endif // CFG_MIPI_CSI_CLK_SOURCE && CFG_MIPI_CSI_CLK_DIV
+#endif // CONFIG_NXP_MIPI_CSI_USE_AUTOCLK
+
     NX_CLKGEN_SetClockDivisorEnable(NX_MIPI_GetClockNumber(me->module), CTRUE);
 
     NX_MIPI_CSI_SetParallelDataAlignment32(me->module, 1, CFALSE);
@@ -345,7 +444,7 @@ static void _hw_stop_stream(struct nxp_csi *me)
 /**
  * irq handler
  */
-static irqreturn_t nxp_csi_irq_handler(int irq, void *dev_id)
+__attribute__((__unused__)) static irqreturn_t nxp_csi_irq_handler(int irq, void *dev_id)
 {
     /* only report error */
     struct nxp_csi *me = dev_id;
