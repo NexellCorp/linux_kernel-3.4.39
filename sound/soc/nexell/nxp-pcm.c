@@ -165,9 +165,13 @@ static void nxp_pcm_dma_clear(struct snd_pcm_substream *substream)
 {
 	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
+	unsigned offset = prtd->offset;
 	int length = snd_pcm_lib_period_bytes(substream);
-	unsigned offset = prtd->offset - length;
 	void *src_addr = NULL;
+
+	if (offset == 0)
+			offset = snd_pcm_lib_buffer_bytes(substream);
+	offset  -= length;
 	src_addr = (void*)(runtime->dma_area + offset);
 
 	if ((prtd->dma_chan->chan_id >= DMA_PERIPHERAL_ID_I2S0_TX) 
@@ -189,8 +193,9 @@ static void nxp_pcm_dma_complete(void *arg)
 	long long new = ktime_to_us(ktime_get());
 	long long period_us = prtd->period_time_us;
 	int over_samples = div64_s64((new - ts), period_us);
+#if !defined (CONFIG_CPU_S5P4418_SMP_ISR)
 	int i;
-
+#endif
 
 	/* i2s master mode */
 	if(prtd->dma_param->real_clock != 0) {
