@@ -332,6 +332,8 @@ static void nxp_fb_copy_boot_logo(struct nxp_fb_param *par, int size)
 	void *virt = NULL;
 	struct page *page;
 
+	size = PAGE_ALIGN(size);
+
 	phys = nxp_fb_dev_get_addr(par);
 
 	if (phys) {
@@ -563,7 +565,7 @@ static int nxp_fb_setup_param(int fb, struct fb_info *info, void *data)
 	dev->x_resol 	  = x_resol;
 	dev->y_resol 	  = y_resol;
 	dev->x_virt		  = x_resol;
-	dev->y_virt		  = y_resol * plat->buffers;
+	dev->y_virt		  = PAGE_ALIGN(y_resol * plat->buffers);
 	dev->buffer_num	  = plat->buffers;
 	dev->pixelbit 	  = plat->bitperpixel;
 	dev->format		  = plat->format;
@@ -999,7 +1001,7 @@ static int nxp_fb_set_par(struct fb_info *info)
         dev->y_resol     = var->yres;
         dev->pixelbit    = var->bits_per_pixel;
         dev->x_virt	     = dev->x_resol;
-        dev->y_virt	     = dev->y_resol * dev->buffer_num;
+        dev->y_virt	     = PAGE_ALIGN(dev->y_resol * dev->buffer_num);
         dev->fb_pan_phys = dev->fb_phy_base;	/* pan restore */
 
         nxp_fb_setup_info(info);
