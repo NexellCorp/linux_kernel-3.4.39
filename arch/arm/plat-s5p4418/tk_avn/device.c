@@ -1457,6 +1457,8 @@ static struct nxp_v4l2_i2c_board_info sensor[] = {
     },
 };
 
+static int _sensor_power_enable(bool enable); 
+static void _sensor_setup_io(void);
 
 static struct nxp_capture_platformdata capture_plat_data[] = {
 #if defined(CONFIG_VIDEO_TW9900)
@@ -1483,44 +1485,10 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .interlace      			= true,
             .clk_rate       			= 24000000,
             .late_power_down 			= false,
-            .power_enable   			= back_camera_power_enable,
-            .power_state_changed 		= back_camera_power_state_changed,
+            .power_enable   			= NULL, //_sensor_power_enable,
+            .power_state_changed 		= NULL,
             .set_clock      			= NULL,
-            .setup_io       			= camera_common_vin_setup_io,
-        },
-        .deci = {
-            .start_delay_ms = 0,
-            .stop_delay_ms  = 0,
-        },
-    },
-#endif
-#if defined(CONFIG_VIDEO_SP0828)
-    {
-        /* front_camera 601 interface */
-        .module = 0,
-        .sensor = &sensor[1],
-        .type = NXP_CAPTURE_INF_PARALLEL,
-        .parallel = {
-            .is_mipi        = false,
-            .external_sync  = true,
-            .h_active       = 640,
-            .h_frontporch   = 0,
-            .h_syncwidth    = 0,
-            .h_backporch    = 2,
-            .v_active       = 480,
-            .v_frontporch   = 0,
-            .v_syncwidth    = 0,
-            .v_backporch    = 2,
-            .clock_invert   = false,
-            .port           = 0,
-            .data_order     = NXP_VIN_CBY0CRY1,
-            .interlace      = false,
-            .clk_rate       = 24000000,
-            .late_power_down = true,
-            .power_enable   = front_camera_power_enable,
-            .power_state_changed = front_camera_power_state_changed,
-            .set_clock      = camera_common_set_clock,
-            .setup_io       = camera_common_vin_setup_io,
+            .setup_io       			= NULL, //_sensor_setup_io,
         },
         .deci = {
             .start_delay_ms = 0,

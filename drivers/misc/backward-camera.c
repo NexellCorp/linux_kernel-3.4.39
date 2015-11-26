@@ -5,6 +5,7 @@
 #include <linux/platform_device.h>
 #include <linux/workqueue.h>
 #include <linux/i2c.h>
+#include <linux/switch.h>
 
 #include <linux/dma-buf.h>
 #include <linux/nxp_ion.h>
@@ -23,6 +24,10 @@
 
 #define SYNC_CHECK_PLL_DELAY_MS		100
 #define WORK_HANDLER_DELAY_MS		50
+
+extern struct switch_dev *backgear_switch;
+
+extern int register_backward_irq(int irq);
 
 static struct nxp_backward_camera_context {
     struct nxp_backward_camera_platform_data *plat_data;
@@ -633,6 +638,14 @@ static inline bool _is_running(struct nxp_backward_camera_context *me)
 #endif
 }
 
+static void _backgear_switch(int on)
+{
+	if( backgear_switch != NULL )
+		switch_set_state(backgear_switch, on);	
+	else
+		printk("%s - backgear switch is NULL!!!\n", __func__);
+}
+
 static void _decide(struct nxp_backward_camera_context *me)
 {
     /*me->running = NX_MLC_GetLayerEnable(me->plat_data->mlc_module_num, 3); // video layer*/
@@ -643,11 +656,13 @@ static void _decide(struct nxp_backward_camera_context *me)
     {
         _turn_on(me);
 		me->is_preview_on = true;
+		//_backgear_switch(1);
     }
     else if (me->running && !me->backgear_on)
     {
 		me->is_preview_on = false;
         _turn_off(me);
+		//_backgear_switch(0);
     }
 }
 
@@ -671,7 +686,7 @@ static void _delay_work_handler(struct work_struct *work)
 	is_rear_gear_on = _is_backgear_on(_context.plat_data);
 	is_video_sync_on = _is_camera_on(&_context);
 
-	printk(KERN_ERR "## %s() rear_gear_on:%d, video_sync_on:%d \n", __func__, is_rear_gear_on, is_video_sync_on, sync_check_time_out);
+	printk(KERN_ERR "## %s() rear_gear_on:%d, video_sync_on:%d \n", __func__, is_rear_gear_on, is_video_sync_on);
 
 	if (is_rear_gear_on && !is_video_sync_on && (sync_check_time_out <= 10)) {
 		__cancel_delayed_work(&_context.delay_work);
@@ -840,6 +855,69 @@ static const struct dev_pm_ops nxp_backward_camera_pm_ops = {
 #define NXP_BACKWARD_CAMERA_PMOPS       NULL
 #endif
 
+bool is_backward_camera_on(void);
+void backward_camera_remove(void);
+
+static ssize_t _stop_backward_camera(struct device *pdev, 
+        struct device_attribute *attr, const char *buf, size_t n)
+{
+    struct nxp_backward_camera_context *me = &_context;
+    int module = me->plat_data->vip_module_num;
+
+    printk(KERN_ERR "%s : module : %d\n", __func__, module);
+
+#if defined(CONFIG_ARCH_S5P6818)
+    if (module == 2)
+#endif
+#if defined(CONFIG_ARCH_S5P4418)
+    if (module == 1)
+#endif
+	{
+        while (is_backward_camera_on()) 
+		{
+            printk("wait backward camera stopping...\n");
+            schedule_timeout_interruptible(HZ/5);
+        }
+        backward_camera_remove();
+        register_backward_irq(me->irq);
+        printk("end of backward_camera_remove()\n");
+    }
+
+    return n;
+}
+
+static struct device_attribute backward_camera_attr = __ATTR(stop, 0664, NULL, _stop_backward_camera);
+
+static struct attribute *attrs[] = {
+    &backward_camera_attr.attr,
+    NULL,
+};
+
+static struct attribute_group attr_group = {
+    .attrs = (struct attribute **)attrs,
+};
+
+static int _create_sysfs(void)
+{
+    struct kobject *kobj = NULL;
+    int ret = 0;
+    
+    kobj = kobject_create_and_add("backward_camera", &platform_bus.kobj);
+    if (!kobj) {
+        printk(KERN_ERR "Fail, create kobject for backward camera\n");
+        return -ret;
+    }
+
+    ret = sysfs_create_group(kobj, &attr_group);
+    if (ret) {
+        printk(KERN_ERR "Fail, create sysfs group for backward camera\n");
+        kobject_del(kobj);
+        return -ret;
+    }
+
+    return 0;
+}
+
 static int nxp_backward_camera_probe(struct platform_device *pdev)
 {
     int ret;
@@ -877,6 +955,11 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
 
     me->my_device = pdev;
 
+    if (_create_sysfs()) {
+        printk(KERN_ERR "failed to create sysfs for backward camera\n");
+        return -1;
+    }
+
 #ifdef CONFIG_PM
     INIT_DELAYED_WORK(&me->resume_work, _resume_work);
 #endif
@@ -898,11 +981,11 @@ static int nxp_backward_camera_remove(struct platform_device *pdev)
 	struct nxp_backward_camera_context *me = &_context;
 	if( me->removed == false ) {
 		printk(KERN_ERR "%s\n", __func__);
-		if( me->is_on ) {
-			_mlc_overlay_stop(me->plat_data->mlc_module_num);
-			_mlc_video_stop(me->plat_data->mlc_module_num);
-			_vip_stop(me->plat_data->vip_module_num);	
-		}
+
+		_mlc_overlay_stop(me->plat_data->mlc_module_num);
+		_mlc_video_stop(me->plat_data->mlc_module_num);
+		_vip_stop(me->plat_data->vip_module_num);	
+
 		_free_buffer(me);
 		free_irq(_context.irq, &_context);
 		me->removed = true;
