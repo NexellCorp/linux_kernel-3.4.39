@@ -979,15 +979,18 @@ static int nxp_backward_camera_remove(struct platform_device *pdev)
 static int nxp_backward_camera_remove(struct platform_device *pdev)
 {
 	struct nxp_backward_camera_context *me = &_context;
-	if( me->removed == false ) {
+	if( me->removed == false ) 
+	{
 		printk(KERN_ERR "%s\n", __func__);
+		free_irq(_context.irq, &_context);
+
+		__cancel_delayed_work(&me->delay_work);
 
 		_mlc_overlay_stop(me->plat_data->mlc_module_num);
 		_mlc_video_stop(me->plat_data->mlc_module_num);
 		_vip_stop(me->plat_data->vip_module_num);	
 
 		_free_buffer(me);
-		free_irq(_context.irq, &_context);
 		me->removed = true;
 	}
 	return 0;
