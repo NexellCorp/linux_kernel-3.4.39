@@ -14,6 +14,9 @@
  * option) any later version.
  *
  */
+
+//#define __TRACE__
+
 #include <linux/kernel.h>
 #include <linux/string.h>
 #include <linux/errno.h>
@@ -38,17 +41,6 @@
 MODULE_DESCRIPTION("PHY library");
 MODULE_AUTHOR("Andy Fleming");
 MODULE_LICENSE("GPL");
-
-//#define __TRACE__
-#ifdef __TRACE__
-#define __trace(args, ...)	\
-	do { \
-		printk("  [%s %d] " args, __func__, __LINE__, ##__VA_ARGS__);\
-	} while(0)
-#else
-#define __trace(args, ...)	do { } while (0)
-#endif
-
 
 void phy_device_free(struct phy_device *phydev)
 {
@@ -667,6 +659,7 @@ static int genphy_setup_forced(struct phy_device *phydev)
 	int err;
 	int ctl = 0;
 
+	__trace("speed: %d, duplex: %d\n", phydev->speed, phydev->duplex);
 	phydev->pause = phydev->asym_pause = 0;
 
 	if (SPEED_1000 == phydev->speed)
@@ -719,6 +712,8 @@ EXPORT_SYMBOL(genphy_restart_aneg);
 int genphy_config_aneg(struct phy_device *phydev)
 {
 	int result;
+
+	__trace("phydev autoneg: %d\n", phydev->autoneg);
 
 	if (AUTONEG_ENABLE != phydev->autoneg)
 		return genphy_setup_forced(phydev);

@@ -15,6 +15,9 @@
  * option) any later version.
  *
  */
+
+//#define __TRACE__
+
 #include <linux/kernel.h>
 #include <linux/string.h>
 #include <linux/errno.h>
@@ -41,16 +44,6 @@
 #include <mach/platform.h>
 #include <mach/devices.h>
 #include <mach/soc.h>
-
-//#define __TRACE__
-#ifdef __TRACE__
-#define __trace(args, ...)	\
-	do { \
-		printk("  [%s %d] " args, __func__, __LINE__, ##__VA_ARGS__);\
-	} while(0)
-#else
-#define __trace(args, ...)	do { } while (0)
-#endif
 
 /**
  * phy_print_status - Convenience function to print out the current phy status
@@ -454,6 +447,7 @@ int phy_start_aneg(struct phy_device *phydev)
 
 	mutex_lock(&phydev->lock);
 
+	__trace("phydev autoneg: %d\n", phydev->autoneg);
 	if (AUTONEG_DISABLE == phydev->autoneg)
 		phy_sanitize_settings(phydev);
 
@@ -462,6 +456,7 @@ int phy_start_aneg(struct phy_device *phydev)
 	if (err < 0)
 		goto out_unlock;
 
+	__trace("phy state: %d\n", phydev->state);
 	if (phydev->state != PHY_HALTED) {
 		if (AUTONEG_ENABLE == phydev->autoneg) {
 			phydev->state = PHY_AN;

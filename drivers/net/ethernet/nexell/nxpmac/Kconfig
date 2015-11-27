@@ -36,6 +36,51 @@ config NXPMAC_PCI
 
 	  If unsure, say N.
 
+choice
+    prompt "Select NXPMAC TX CLK"
+    depends on NXPMAC_ETH
+    default CLK_SRC_EXT
+
+config CLK_SRC_0
+	bool "PLL 0"
+
+config CLK_SRC_1
+	bool "PLL 1"
+
+config CLK_SRC_2
+	bool "PLL 2"
+
+config CLK_SRC_3
+	bool "PLL 3"
+
+config CLK_SRC_EXT
+	bool "external rx clk"
+
+endchoice
+
+config NXPMAC_TX_CLK
+    int 
+    default 0 if CLK_SRC_0
+    default 1 if CLK_SRC_1
+    default 2 if CLK_SRC_2
+    default 3 if CLK_SRC_3
+	default 4 if CLK_SRC_EXT
+
+if NXPMAC_TX_CLK != CLK_SRC_EXT
+
+config NXPMAC_TX_CLK_SHIFT
+	bool "NXPMAC TX CLK shift" if NXPMAC_TX_CLK != 4
+
+config NXPMAC_TX_CLK_DELAY
+	bool "NXPMAC TX CLK delay"
+	default n
+	---help---
+	  Using TX CLK delay
+
+
+endif # NXPMAC_TX_CLK
+
+
 config NXPMAC_DEBUG_FS
 	bool "Enable monitoring via sysFS "
 	default n

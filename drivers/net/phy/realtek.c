@@ -13,6 +13,9 @@
  * option) any later version.
  *
  */
+
+//#define __TRACE__
+
 #include <linux/phy.h>
 #include <linux/module.h>
 
@@ -61,10 +64,13 @@ static int rtl821x_ack_interrupt(struct phy_device *phydev)
 
 	err = phy_read(phydev, RTL821x_INSR);
 
+	// [ADD] by freestyle
 	if (err & 0x300) {								/* False Carrier or Symbol Error */
-		phy_write(phydev, RTL8211E_PGSR, 0x0000);	/* phy reset */
-		phy_write(phydev, 0, 0x8000);
+		genphy_update_link(phydev);
 	}
+
+	__trace("err:%x\n", err);
+	// [ADD]
 
 	return (err < 0) ? err : 0;
 }
@@ -101,6 +107,25 @@ static int rtl8211b_config_intr(struct phy_device *phydev)
 		err = phy_write(phydev, RTL821x_INER, 0);
 
 	return err;
+}
+
+static int rtl8211e_config_aneg(struct phy_device *phydev)
+{
+	int err;
+
+	/* Isolate the PHY */
+	err = phy_write(phydev, MII_BMCR, BMCR_ISOLATE);
+
+	if (err < 0)
+		return err;
+
+	/* Configure the new settings */
+	err = genphy_config_aneg(phydev);
+
+	if (err < 0)
+		return err;
+
+	return 0;
 }
 
 static int rtl8211e_config_intr(struct phy_device *phydev)
@@ -157,7 +182,7 @@ static struct phy_driver rtl8211e_driver = {
 	.features	= PHY_GBIT_FEATURES,
 	.flags		= PHY_HAS_INTERRUPT,
 	.config_init	= rtl8211e_config_init,
-	.config_aneg	= genphy_config_aneg,
+	.config_aneg	= rtl8211e_config_aneg,
 	.read_status	= genphy_read_status,
 	.ack_interrupt	= rtl821x_ack_interrupt,
 	.config_intr	= rtl8211e_config_intr,

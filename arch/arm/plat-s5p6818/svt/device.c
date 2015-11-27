@@ -210,14 +210,14 @@ static struct stmmac_mdio_bus_data nxpmac0_mdio_bus = {
 };
 
 static struct plat_stmmacenet_data nxpmac_plat_data = {
-    .phy_addr = 3,// 7 for 8211 3 for 8201
-    .clk_csr = 0x4, // PCLK 150~250 Mhz
-    .speed = SPEED_1000,	// SPEED_1000
+    .phy_addr = 3,		/* hw config */
+    .clk_csr = 0x4,		/* PCLK 150~250 Mhz */
     .interface = PHY_INTERFACE_MODE_RGMII,
-	.autoneg = AUTONEG_ENABLE, //AUTONEG_ENABLE or AUTONEG_DISABLE
+	.autoneg = AUTONEG_ENABLE, /* AUTONEG_ENABLE or AUTONEG_DISABLE */
+    .speed = SPEED_1000,/* speed & duplex settings apply only when AUTONEG_DISABLE */
 	.duplex = DUPLEX_FULL,
 	.pbl = 16,          /* burst 16 */
-	.has_gmac = 1,      /* GMAC ethernet    */
+	.has_gmac = 1,      /* GMAC ethernet */
 	.enh_desc = 1,
 	.mdio_bus_data = &nxpmac0_mdio_bus,
 	//.init = &nxpmac_init,

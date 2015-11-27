@@ -28,6 +28,8 @@
 	https://bugzilla.stlinux.com/
 *******************************************************************************/
 
+//#define __TRACE__
+
 #include <linux/clk.h>
 #include <linux/kernel.h>
 #include <linux/interrupt.h>
@@ -65,14 +67,14 @@
 #define pr_debug	printk
 */
 
-#define __TRACE__
-#ifdef __TRACE__
-#define __trace(args, ...)	\
-	do { \
-		printk("  [%s %d] " args, __func__, __LINE__, ##__VA_ARGS__);\
+//#define __NX_DEBUG__
+#ifdef __NX_DEBUG__
+#define nx_debug(args, ...)	\
+	do {	\
+		printk(args, ##__VAR_ARGS__);	\
 	} while(0)
 #else
-#define __trace(args, ...)	do { } while (0)
+#define nx_debug(args, ...)	do { } while(0)
 #endif
 
 /*
@@ -819,15 +821,91 @@ static void stmmac_check_pcs_mode(struct stmmac_priv *priv)
 		    (interface == PHY_INTERFACE_MODE_RGMII_ID) ||
 		    (interface == PHY_INTERFACE_MODE_RGMII_RXID) ||
 		    (interface == PHY_INTERFACE_MODE_RGMII_TXID)) {
-			pr_debug("STMMAC: PCS RGMII support enable\n");
+			pr_debug("NXPMAC: PCS RGMII support enable\n");
 			priv->pcs = STMMAC_PCS_RGMII;
 		} else if (interface == PHY_INTERFACE_MODE_SGMII) {
-			pr_debug("STMMAC: PCS SGMII support enable\n");
+			pr_debug("NXPMAC: PCS SGMII support enable\n");
 			priv->pcs = STMMAC_PCS_SGMII;
 		}
 	}
 }
 
+
+static int stmmac_init_phy_internal(struct stmmac_priv *priv, int is_resume)
+{
+	struct phy_device *phydev;
+
+	int speed_wanted = -1;
+	int duplex_wanted = -1;
+	int advertising_wanted = -1;
+
+	static int init_once = 1;
+
+
+	if (!priv)
+		return -EINVAL;
+
+	phydev = priv->phydev;
+
+	if (init_once) {
+		if (priv->plat->autoneg == AUTONEG_ENABLE)
+			return 0;
+
+		if (!priv->plat->speed || !priv->plat->duplex)
+			return 0;
+	}
+	else {
+		if (phydev->autoneg == AUTONEG_ENABLE)
+			return 0;
+	}
+
+	if (init_once && !is_resume) {
+		phydev->autoneg = priv->plat->autoneg;
+		phydev->speed   = priv->plat->speed;
+		phydev->duplex  = priv->plat->duplex;
+
+		init_once = 0;
+	}
+
+
+	/* update 'Advertised link modes' */
+	speed_wanted = phydev->speed;
+	duplex_wanted = phydev->duplex;
+
+	if (speed_wanted == SPEED_10 && duplex_wanted == DUPLEX_HALF)
+		advertising_wanted = ADVERTISED_10baseT_Half;
+	else if (speed_wanted == SPEED_10 &&
+			duplex_wanted == DUPLEX_FULL)
+		advertising_wanted = ADVERTISED_10baseT_Full;
+	else if (speed_wanted == SPEED_100 &&
+			duplex_wanted == DUPLEX_HALF)
+		advertising_wanted = ADVERTISED_100baseT_Half;
+	else if (speed_wanted == SPEED_100 &&
+			duplex_wanted == DUPLEX_FULL)
+		advertising_wanted = ADVERTISED_100baseT_Full;
+	else if (speed_wanted == SPEED_1000 &&
+			duplex_wanted == DUPLEX_HALF)
+		advertising_wanted = ADVERTISED_1000baseT_Half;
+	else if (speed_wanted == SPEED_1000 &&
+			duplex_wanted == DUPLEX_FULL)
+		advertising_wanted = ADVERTISED_1000baseT_Full;
+	else if (speed_wanted == SPEED_2500 &&
+			duplex_wanted == DUPLEX_FULL)
+		advertising_wanted = ADVERTISED_2500baseX_Full;
+	else if (speed_wanted == SPEED_10000 &&
+			duplex_wanted == DUPLEX_FULL)
+		advertising_wanted = ADVERTISED_10000baseT_Full;
+	else
+		/* auto negotiate without forcing,
+		 * all supported speed will be assigned below
+		 */
+		advertising_wanted = 0;
+
+	phydev->advertising = advertising_wanted;
+
+
+	return 0;
+}
 
 /**
  * stmmac_init_phy - PHY initialization
@@ -844,7 +922,6 @@ static int stmmac_init_phy(struct net_device *dev)
 	char phy_id_fmt[MII_BUS_ID_SIZE + 3];
 	char bus_id[MII_BUS_ID_SIZE];
 	int interface = priv->plat->interface;
-	unsigned bmcr = 0;
 
 	priv->oldlink = 0;
 	priv->speed = 0;
@@ -862,6 +939,11 @@ static int stmmac_init_phy(struct net_device *dev)
 	pr_debug("stmmac_init_phy:  trying to attach to %s\n", phy_id_fmt);
 
 	phydev = phy_connect(dev, phy_id_fmt, &stmmac_adjust_link, 0, interface);
+	// [ADD] by freestyle
+	__trace("%s phydev->autoneg: %x\n", __func__, phydev->autoneg);
+	//if (phydev->autoneg == AUTONEG_DISABLE)
+		phy_stop(phydev);
+	// [ADD]
 
 	if (IS_ERR(phydev)) {
 		pr_err("%s: Could not attach to PHY\n", dev->name);
@@ -873,43 +955,6 @@ static int stmmac_init_phy(struct net_device *dev)
 		(interface == PHY_INTERFACE_MODE_RMII))
 		phydev->advertising &= ~(SUPPORTED_1000baseT_Half | SUPPORTED_1000baseT_Full);
 
-	// by freestyle
-	// phydev->advertising = SUPPORTED_100baseT_Full;
-
-#if 1 // add by kook
-	if (priv->plat->autoneg == AUTONEG_ENABLE)
-	{
-		unsigned giga_ctrl = 0;
-		unsigned auto_nego;
-
-		auto_nego = phy_read(phydev, MII_ADVERTISE) | ADVERTISE_ALL | 0x01;
-		auto_nego |= ADVERTISE_PAUSE_CAP | ADVERTISE_PAUSE_ASYM;
-
-		giga_ctrl = phy_read(phydev, MII_CTRL1000); // &= ~(ADVERTISE_1000FULL | ADVERTISE_1000HALF);
-		bmcr = BMCR_ANENABLE | BMCR_ANRESTART;
-
-		phy_write(phydev, MII_ADVERTISE, auto_nego);
-		phy_write(phydev, MII_CTRL1000, giga_ctrl);
-	}
-	else
-	{
-		if (priv->plat->speed == SPEED_10)
-			bmcr = 0;
-		else if (priv->plat->speed == SPEED_100)
-			bmcr = BMCR_SPEED100;
-		else if (priv->plat->speed == SPEED_1000)
-			bmcr = BMCR_SPEED1000;
-
-		if (priv->plat->duplex == DUPLEX_FULL)
-			bmcr |= BMCR_FULLDPLX;
-	}
-
-	phy_write(phydev, MII_BMCR, bmcr);
-#endif
-
-	phydev->autoneg = priv->plat->autoneg;
-	phydev->speed   = priv->plat->speed;
-	phydev->duplex  = priv->plat->duplex;
 
 	/*
 	 * Broken HW is sometimes missing the pull-up resistor on the
@@ -926,6 +971,12 @@ static int stmmac_init_phy(struct net_device *dev)
 		 " Link = %d\n", dev->name, phydev->phy_id, phydev->link);
 
 	priv->phydev = phydev;
+	// [ADD] by freestyle
+	stmmac_init_phy_internal(priv, 0);
+	if (phydev->autoneg == AUTONEG_DISABLE)
+		phy_start_aneg(phydev);
+	phy_start(phydev);
+	// [ADD]
 
 	return 0;
 }
@@ -1931,6 +1982,67 @@ err_group_create:
 }
 #endif /* CONFIG_NXPMAC_MII_SYSFS */
 
+
+#if (CONFIG_NXPMAC_TX_CLK < 4)
+#define NXPMAC_PLL_DEV CONFIG_NXPMAC_TX_CLK
+
+const char *mac_pll[] = { "pll0", "pll1", "pll2", "pll3" };
+
+int nxpmac_tx_clk_setting(void *bsp_priv, int speed)
+{
+	struct clk *clk;
+	unsigned long pllhz;
+
+	int divisor = -1;
+
+
+	/* get pll hz. */
+	clk = clk_get(NULL, mac_pll[NXPMAC_PLL_DEV]), pllhz = clk_get_rate(clk), clk_put(clk);
+
+	nx_debug("pllhz: %lu\n", pllhz);
+
+	pllhz = pllhz / 1000 / 1000;
+	if (pllhz > 250)
+		pllhz = 500;
+	else
+		pllhz = 250;
+
+	if (SPEED_10 == speed) {
+		divisor = (int)(pllhz / 2.5);
+	}
+	else if (SPEED_100 == speed) {
+		divisor = (int)(pllhz / 25);
+	}
+	else if (SPEED_1000 == speed) {
+		divisor = (int)(pllhz / 125);
+	}
+
+	nx_debug("divisor: %d\n", divisor);
+
+
+	if (divisor == -1)
+		return -EINVAL;
+
+	NX_CLKGEN_SetClockDivisorEnable( CLOCKINDEX_OF_DWC_GMAC_MODULE, CFALSE);
+
+	NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, NXPMAC_PLL_DEV);
+	NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, divisor);
+	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);
+
+	#ifdef CONFIG_NXPMAC_TX_CLK_SHIFT
+	NX_CLKGEN_SetClockOutShift( CLOCKINDEX_OF_DWC_GMAC_MODULE, CTRUE );
+	#endif
+	#ifdef CONFIG_NXPMAC_TX_CLK_DELAY
+	NX_CLKGEN_SetClockOutDelay( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0x1f );	
+	#endif
+
+	NX_CLKGEN_SetClockDivisorEnable( CLOCKINDEX_OF_DWC_GMAC_MODULE, CTRUE);
+
+
+	return 0;
+}
+#endif
+
 static int nxp_plat_initialize(void)
 {
     u32 addr;
@@ -1942,8 +2054,7 @@ static int nxp_plat_initialize(void)
 
 	NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 4);     // Sync mode for 100 & 10Base-T : External RX_clk
 	NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);    // Sync mode for 100 & 10Base-T
-
-	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);    // TX Clk invert off : 100 & 10Base-T
+	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);
 
 	NX_CLKGEN_SetClockDivisorEnable( CLOCKINDEX_OF_DWC_GMAC_MODULE, CTRUE);
 
@@ -3336,6 +3447,11 @@ int stmmac_resume(struct net_device *ndev)
 	netif_start_queue(ndev);
 
 	spin_unlock_irqrestore(&priv->lock, flags);
+
+	// [ADD] by freestyle
+	//stmmac_init_phy_internal(priv, 1);
+	phy_start_aneg(priv->phydev);
+	// [ADD]
 
 	if (priv->phydev)
 		phy_start(priv->phydev);

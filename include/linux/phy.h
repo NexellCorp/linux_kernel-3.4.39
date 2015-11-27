@@ -538,4 +538,16 @@ int __init mdio_bus_init(void);
 void mdio_bus_exit(void);
 
 extern struct bus_type mdio_bus_type;
+
+
+#ifdef __TRACE__
+#define __trace(args, ...)	\
+	do { \
+		printk("  [%s %d] " args, __func__, __LINE__, ##__VA_ARGS__);\
+	} while(0)
+#else
+#define __trace(args, ...)	do { } while (0)
+#endif
+
+
 #endif /* __PHY_H */
