@@ -276,8 +276,10 @@ static void spdif_stop(struct nxp_spdif_snd_param *par, int stream)
 
 	par->status &= ~SNDDEV_STATUS_PLAY;
 
+#if !defined(CONFIG_NXP_DISPLAY_MIPI)
 	if (par->hdmi_out)
 		writel(readl(hdmi) & ~(1<<2), hdmi);	/* clk disable */
+#endif
 }
 
 static int nxp_spdif_check_param(struct nxp_spdif_snd_param *par)
