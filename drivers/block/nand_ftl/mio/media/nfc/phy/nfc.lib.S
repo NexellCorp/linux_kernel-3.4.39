@@ -1,37 +1,6 @@
 #include <linux/linkage.h>
 #include <asm/assembler.h>
 
-  .globl burst_read
-  .align 4,0x90
-
-
-burst_read:								
-            PUSH	{r4-r7}
-            MOVS    r3, r2, LSR #2      
-
-            BEQ     copywords           
-quadcopy:
-            LDMIA   r1,  {r4-r7}        
-            STMIA   r0!, {r4-r7}        
-            SUBS    r3, r3, #1          
-            BNE     quadcopy            
-copywords: 
-            ANDS    r2, r2, #3          
-            BEQ     stop                
-wordcopy:
-            LDR     r3, [r1], #4        
-            STR     r3, [r0], #4        
-            SUBS    r2, r2, #1          
-            BNE     wordcopy            
-stop:
-            POP		{r4-r7}
-			MOV		pc, lr
-
-.type burst_read, #function
-
-
-
-
 ENTRY(__nfc_readsl)
 		teq	r2, #0		@ do we have to check for the zero len?
 		moveq	pc, lr
