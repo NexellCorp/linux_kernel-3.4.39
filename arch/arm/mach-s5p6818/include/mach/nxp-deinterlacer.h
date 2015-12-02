@@ -48,6 +48,7 @@ typedef struct
 	int width;
 	int height;
 	int plane_mode;
+	int dst_idx;
 
 	frame_data dst_bufs[DST_BUFFER_COUNT];
 	frame_data src_bufs[SRC_BUFFER_COUNT];
