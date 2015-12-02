@@ -1036,7 +1036,7 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
     if (me->audio_enable)
         hdmi_audio_enable(true);
 
-    /* hdmi_set_dvi_mode(me->is_dvi); */
+    hdmi_set_dvi_mode(me->is_dvi);
 
     _hdmi_enable(me);
 
