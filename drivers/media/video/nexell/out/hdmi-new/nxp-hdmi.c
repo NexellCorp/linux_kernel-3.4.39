@@ -147,15 +147,16 @@ static int nxp_hdmi_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
         break;
 
     case V4L2_CID_HDMI_ON_OFF:
-        printk("%s: V4L2_CID_HDMI_ON_OFF val %d\n", __func__, ctrl->value);
         if (ctrl->value > 0) {
             u32 regval = NX_HDMI_GetReg(0, HDMI_LINK_HDMI_CON_0);
             regval |= 0x01;
             NX_HDMI_SetReg(0, HDMI_LINK_HDMI_CON_0, regval);
+            printk("HDMI ON\n");
         } else {
             u32 regval = NX_HDMI_GetReg(0, HDMI_LINK_HDMI_CON_0);
             regval &= ~0x01;
             NX_HDMI_SetReg(0, HDMI_LINK_HDMI_CON_0, regval);
+            printk("HDMI OFF\n");
         }
         break;
 

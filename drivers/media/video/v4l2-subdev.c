@@ -151,8 +151,16 @@ static long subdev_do_ioctl(struct file *file, unsigned int cmd, void *arg)
 	case VIDIOC_G_CTRL:
 		return v4l2_g_ctrl(vfh->ctrl_handler, arg);
 
-	case VIDIOC_S_CTRL:
-		return v4l2_s_ctrl(vfh, vfh->ctrl_handler, arg);
+	case VIDIOC_S_CTRL: {
+        // patch for SLSIAP, connect s_ctrl path to subdev_call (primarily for HDMI)
+        int ret = v4l2_s_ctrl(vfh, vfh->ctrl_handler, arg);
+        if (ret != 0) {
+            struct v4l2_control *p = arg;
+            return v4l2_subdev_call(sd, core, s_ctrl, p);
+        } else {
+            return ret;
+        }
+    }
 
 	case VIDIOC_G_EXT_CTRLS:
 		return v4l2_g_ext_ctrls(vfh->ctrl_handler, arg);
