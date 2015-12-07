@@ -488,20 +488,14 @@ static void _config_hdmi(struct nxp_hdmi_context *me)
     NX_HDMI_SetReg(0, HDMI_LINK_H_LINE_0, h_line%256);
     NX_HDMI_SetReg(0, HDMI_LINK_H_LINE_1, h_line>>8);
 
-    // TODO : why need this code ?
-#if 0
-    if (vsync->h_active_len == 1280) {
+    // 480p, 576p : invert VSYNC, HSYNC
+    if (vsync->h_active_len == 720) {
         NX_HDMI_SetReg(0, HDMI_LINK_HSYNC_POL, 0x1);
         NX_HDMI_SetReg(0, HDMI_LINK_VSYNC_POL, 0x1);
     } else {
         NX_HDMI_SetReg(0, HDMI_LINK_HSYNC_POL, 0x0);
         NX_HDMI_SetReg(0, HDMI_LINK_VSYNC_POL, 0x0);
     }
-#else
-    NX_HDMI_SetReg(0, HDMI_LINK_HSYNC_POL, 0x0);
-    NX_HDMI_SetReg(0, HDMI_LINK_VSYNC_POL, 0x0);
-#endif
-    // end TODO
 
     NX_HDMI_SetReg(0, HDMI_LINK_INT_PRO_MODE, 0x0);
 
