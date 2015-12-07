@@ -77,7 +77,7 @@
 /* #define DEBUG_RI */
 /* #define DEBUG_REPEATER */
 /* #define DEBUG_EVENT */
-/* #define DEBUG_ALL */
+#define DEBUG_ALL
 
 #if defined(DEBUG_KEY) || defined(DEBUG_ALL)
 #define dbg_key(a...) printk(a)
