@@ -179,7 +179,7 @@ static int _hw_init(struct nxp_scaler *me)
     NX_SCALER_Initialize();
     vmsg("%s: SCALER REGISTER PHY 0x%x, VIR 0x%x\n", __func__, NX_SCALER_GetPhysicalAddress(0),
             (U32)IO_ADDRESS(NX_SCALER_GetPhysicalAddress(0)));
-    NX_SCALER_SetBaseAddress(0, IO_ADDRESS(NX_SCALER_GetPhysicalAddress(0)));
+    NX_SCALER_SetBaseAddress(0, (void*)IO_ADDRESS(NX_SCALER_GetPhysicalAddress(0)));
 
     /* NX_SCALER_OpenModule(0); */
 
@@ -188,7 +188,7 @@ static int _hw_init(struct nxp_scaler *me)
     me->irq += 32;
 #endif
 
-    NX_CLKGEN_SetBaseAddress(NX_SCALER_GetClockNumber(0), IO_ADDRESS(NX_CLKGEN_GetPhysicalAddress(NX_SCALER_GetClockNumber(0))));
+    NX_CLKGEN_SetBaseAddress(NX_SCALER_GetClockNumber(0), (void*)IO_ADDRESS(NX_CLKGEN_GetPhysicalAddress(NX_SCALER_GetClockNumber(0))));
     NX_CLKGEN_SetClockBClkMode(NX_SCALER_GetClockNumber(0), NX_BCLKMODE_ALWAYS);
 
     #if defined(CONFIG_ARCH_S5P4418)
@@ -1199,13 +1199,59 @@ error_video:
 static int _run_step(struct nxp_scaler *me, struct nxp_scaler_ioctl_data *data);
 #endif
 
+static bool _is_running(struct nxp_scaler *me)
+{
+#if 0
+    unsigned long flags;
+    int val;
+
+    spin_lock_irqsave(&me->running_lock, flags);
+    printk("%s %p\n", __func__, me);
+    val = NXP_ATOMIC_READ(&me->running);
+    spin_unlock_irqrestore(&me->running_lock, flags);
+    return val == 1;
+#else
+    int val = NXP_ATOMIC_READ(&me->running);
+    return val == 1;
+#endif
+}
+
+static void _set_running(struct nxp_scaler *me)
+{
+#if 0
+    unsigned long flags;
+
+    spin_lock_irqsave(&me->running_lock, flags);
+    printk("%s %p\n", __func__, me);
+    NXP_ATOMIC_SET(&me->running, 1);
+    spin_unlock_irqrestore(&me->running_lock, flags);
+#else
+    NXP_ATOMIC_SET(&me->running, 1);
+#endif
+}
+
+static void _clear_running(struct nxp_scaler *me)
+{
+#if 0
+    unsigned long flags;
+
+    spin_lock_irqsave(&me->running_lock, flags);
+    printk("%s %p\n", __func__, me);
+    NXP_ATOMIC_SET(&me->running, 0);
+    spin_unlock_irqrestore(&me->running_lock, flags);
+#else
+    NXP_ATOMIC_SET(&me->running, 0);
+#endif
+}
+
 #ifdef CONFIG_ENABLE_SCALER_MISC_DEVICE
 static irqreturn_t _irq_handler_misc(int irq, void *param)
 {
     struct nxp_scaler *me = (struct nxp_scaler *)param;
 #ifdef CONFIG_USE_SCALER_COMMAND_BUFFER
     NX_SCALER_ClearInterruptPending(0, NX_SCALER_INT_CMD_PROC);
-    NXP_ATOMIC_SET(&me->running, 0);
+    /*NXP_ATOMIC_SET(&me->running, 0);*/
+    _clear_running(me);
     wake_up_interruptible(&me->wq_end);
     wake_up_interruptible(&me->wq_start);
 #else
@@ -1504,15 +1550,26 @@ static int _run_step(struct nxp_scaler *me, struct nxp_scaler_ioctl_data *data)
 static int _set_and_run(struct nxp_scaler *me, struct nxp_scaler_ioctl_data *data)
 {
 #ifdef CONFIG_USE_SCALER_COMMAND_BUFFER
-    if (NXP_ATOMIC_READ(&me->running) == 1) {
-        /* printk("wait start\n"); */
-        if (!wait_event_interruptible_timeout(me->wq_start, NXP_ATOMIC_READ(&me->running) == 0, WAIT_TIMEOUT_HZ)) {
+    /*if (NXP_ATOMIC_READ(&me->running) == 1) {*/
+    unsigned long flags;
+
+    spin_lock_irqsave(&me->running_lock, flags);
+    if (_is_running(me)) {
+         vmsg("wait start\n");
+        /*if (!wait_event_interruptible_timeout(me->wq_start, NXP_ATOMIC_READ(&me->running) == 0, WAIT_TIMEOUT_HZ)) {*/
+         spin_unlock_irqrestore(&me->running_lock, flags);
+        if (!wait_event_interruptible_timeout(me->wq_start, _is_running(me) == false, WAIT_TIMEOUT_HZ)) {
+            spin_unlock_irqrestore(&me->running_lock, flags);
             printk("wait timeout for starting\n");
             /*return -EBUSY;*/
             return 0;
         }
+        spin_lock_irqsave(&me->running_lock, flags);
     }
-    NXP_ATOMIC_SET(&me->running, 1);
+    _set_running(me);
+    spin_unlock_irqrestore(&me->running_lock, flags);
+
+    /*NXP_ATOMIC_SET(&me->running, 1);*/
     _make_command_buffer_misc(me, data);
     NX_SCALER_SetCmdBufAddr(0, me->command_buffer_phy);
     NX_SCALER_SetInterruptEnable(0, NX_SCALER_INT_CMD_PROC, CTRUE);
@@ -1531,7 +1588,8 @@ static int _set_and_run(struct nxp_scaler *me, struct nxp_scaler_ioctl_data *dat
         // psw0523 add for scaler not reworking bug
 #if 1
         printk("cleanup scaler!!!\n");
-        NXP_ATOMIC_SET(&me->running, 0);
+        /*NXP_ATOMIC_SET(&me->running, 0);*/
+        _clear_running(me);
 
         NX_SCALER_Stop(0);
         NX_SCALER_SetInterruptEnableAll(0, CFALSE);
@@ -1552,6 +1610,7 @@ static int _set_and_run(struct nxp_scaler *me, struct nxp_scaler_ioctl_data *dat
         /*wake_up_interruptible(&me->wq_start);*/
 #endif
     }
+    vmsg("end scaler\n");
     return 0;
 }
 
