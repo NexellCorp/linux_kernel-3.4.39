@@ -665,7 +665,7 @@ static int back_camera_power_enable(bool on)
             mdelay(1);
             nxp_soc_gpio_set_out_value(reset_io, 1);
             /* mdelay(100); */
-            mdelay(1);
+            mdelay(10);
             is_back_camera_enabled = true;
             is_back_camera_power_state_changed = true;
         } else {
