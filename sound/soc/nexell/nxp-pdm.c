@@ -132,6 +132,10 @@ static int nxp_pdm_check_param(struct nxp_pdm_snd_param *par)
 	unsigned int base = par->base_addr;
 	struct clk *pclk = NULL;
 
+	int NumOfClock, OverSampleRate;
+	float GAIN, COEFF0,	COEFF1, POW;
+	short GAINx4, GAINx2, GAINxM4, GAINxM2, Coeff0, Coeff1;
+ 
 	pclk = clk_get(NULL, "pclk");
 	request = clk_get_rate(pclk);
 
@@ -161,30 +165,67 @@ static int nxp_pdm_check_param(struct nxp_pdm_snd_param *par)
 	pdm->CTRL1 &= ~(0x7<<16);
 	pdm->CTRL1 |= 0 << 16;
 	
-	// number of clock
+	printk("PDM sample_rate : %d\n", __func__, par->sample_rate);
+	switch (par->sample_rate) {
+		case 16000:
+			// if 16 kHZ
+			NumOfClock = 49;     // 200 Mhz / 49 / 2 = 2.04 Mhz
+			OverSampleRate = 128; // 2.04 Mhz / 128 = 15.9 kHz 
+			GAIN   	= (6.708845533e+03);
+			COEFF0 	= (-0.9657674512  );
+			COEFF1 	= ( 1.9651712234  );
+			break;
+		case 48000:
+			// if 48 kHz
+			NumOfClock = 36; // 200 MHz / 36 / 2 = 2.7777 Mhz
+			OverSampleRate = 58; // 2.7777 Mhz / 58 = 47.8kHz : OverSample never larger than 128
+			GAIN   	= (1.237224049e+04);
+			COEFF0 	= (-0.9747336617  );
+			COEFF1 	= ( 1.9744103573  );
+			break;
+		default:
+			// if 48 kHz by default
+			NumOfClock = 36; // 200 MHz / 36 / 2 = 2.7777 Mhz
+			OverSampleRate = 58; // 2.7777 Mhz / 58 = 47.8kHz : OverSample never larger than 128
+			GAIN   	= (1.237224049e+04);
+			COEFF0 	= (-0.9747336617  );
+			COEFF1 	= ( 1.9744103573  );
+			break;
+	}
+
+//////////////////////////////////////////
 	pdm->CTRL1 &= ~(0xff<<8);
-	pdm->CTRL1 |= 35 << 8;
+	pdm->CTRL1 |= (NumOfClock - 1) << 8;
 
 	// sample position
 	pdm->CTRL1 &= ~(0xff<<0);
 	pdm->CTRL1 |= 0 << 0;
 	writel(pdm->CTRL1, (base+PDM_CTRL1_OFFSET));
 
+	POW 	= (1<<20)          ;
+
+	GAINx4  = ( 4.0 * POW ) / GAIN;
+	GAINx2  = ( 2.0 * POW ) / GAIN;
+	GAINxM4 = (-4.0 * POW ) / GAIN;
+	GAINxM2 = (-2.0 * POW ) / GAIN;
+	Coeff0  = (   COEFF0 * 8192.0);
+	Coeff1  = (   COEFF1 * 8192.0) + 0.5;
+
 	// gain0
-	pdm->GAIN0 = (0x2a6 << 16) | (0x154 << 0);
+	pdm->GAIN0 = ((GAINx4& 0xffff) << 16) | ((GAINx2& 0xffff) << 0);
 	writel(pdm->GAIN0, (base+PDM_GAIN0_OFFSET));
 
 	// gain1
-	pdm->GAIN1 = (0xfd5a << 16) | (0xfeac << 0);
+	pdm->GAIN1 = ((GAINxM4& 0xffff) << 16) | ((GAINxM2& 0xffff) << 0);
 	writel(pdm->GAIN1, (base+PDM_GAIN1_OFFSET));
 
 	// coeff
-	pdm->COEFF = (0x3f2e << 16) | (0xe0cf << 0);
+	pdm->COEFF = ((Coeff1& 0xffff) << 16) | ((Coeff0& 0xffff) << 0);
 	writel(pdm->COEFF, (base+PDM_COEFF_OFFSET));
 
 	// over sample
 	pdm->CTRL &= ~(0x7f<<16);
-	pdm->CTRL |= 57 << 16;
+	pdm->CTRL |= (OverSampleRate-1) << 16;
 
 	// strobe shift
 	pdm->CTRL &= ~(0x1f<<8);
@@ -381,7 +422,7 @@ static struct snd_soc_dai_driver pdm_dai_driver = {
 		.channels_max 	= 4,
 		.formats		= SND_SOC_PDM_FORMATS,
 		.rates			= SND_SOC_PDM_RATES,
-		.rate_min 		= 0,
+		.rate_min 		= 16000,
 		.rate_max 		= 48000,
 		},
 	.probe 		= nxp_pdm_dai_probe,
