@@ -322,6 +322,14 @@ void nxp_cpu_reset(char str, const char *cmd)
 		printk("recovery sign [0x%x:0x%x] \n", SCR_RESET_SIG_READ, readl(SCR_RESET_SIG_READ));
 	}
 
+    if (cmd && !strcmp(cmd, "update")) {
+		__raw_writel(UPDATE_SIGNATURE, SCR_RESET_SIG_SET);
+		__raw_readl (SCR_RESET_SIG_READ);       /* verify */
+		printk("update sign [0x%x:0x%x] \n", SCR_RESET_SIG_READ, readl(SCR_RESET_SIG_READ));
+	}
+
+
+
 	NX_ALIVE_SetWriteEnable(CFALSE);	/* close alive gate */
 	NX_CLKPWR_SetSoftwareResetEnable(CTRUE);
 	NX_CLKPWR_DoSoftwareReset();
