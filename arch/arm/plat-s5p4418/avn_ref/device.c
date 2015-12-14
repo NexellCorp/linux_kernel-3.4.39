@@ -1038,7 +1038,7 @@ static int front_camera_power_enable(bool on)
 #if defined(CONFIG_VIDEO_TW9992)
 	unsigned int reset_io = (PAD_GPIO_B + 23);
 
-    //printk("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
+    printk("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
 
     if (on) {
 		if (!is_front_camera_enabled)
@@ -1141,7 +1141,7 @@ static struct i2c_board_info tw9900_i2c_boardinfo[] = {
 
 #if defined(CONFIG_VIDEO_TW9992)
 
-#define FRONT_CAM_WIDTH		720
+#define FRONT_CAM_WIDTH		704
 #define FRONT_CAM_HEIGHT	480
 
 static void front_vin_setup_io(int module, bool force)
@@ -1333,7 +1333,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 #if defined(CONFIG_VIDEO_TW9992)
 {
         /* front_camera 601 interface */
-        .module = 0,
+        .module = 1,
         .sensor = &sensor[1],
         .type = NXP_CAPTURE_INF_CSI,
         .parallel = {
@@ -1746,8 +1746,55 @@ static void _sensor_setup_io(void)
     }    
 }
 
+struct nxp_vendor_context {
+};
+
+static struct nxp_vendor_context _nxp_vendor_context;
+
+static bool _alloc_vendor_context(void *ctx)
+{
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+
+    printk(KERN_ERR "+++ %s ---\n", __func__);
+
+    return true;
+}
+
+static bool _pre_turn_on(void *ctx)
+{
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+
+    printk(KERN_ERR "+++ %s ---\n", __func__);
+
+    return true;
+}
+
+static void _post_turn_off(void *ctx)
+{
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+
+    printk(KERN_ERR "+++ %s ---\n", __func__);
+}
+
+static void _free_vendor_context(void *ctx)
+{
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+
+    printk(KERN_ERR "+++ %s ---\n", __func__);
+}
+
+static bool _decide(void *ctx)
+{
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+
+    printk(KERN_ERR "+++ %s ---\n", __func__);
+
+    return true;
+}
+
 // This is callback function for rgb overlay drawing
-static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data, void *mem)
+//static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data, void *mem)
+static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data, void *ctx, void *mem)
 {
     printk("%s\n", __func__);
 #if 1
@@ -1770,57 +1817,65 @@ static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_dat
 #define BACKWARD_CAM_HEIGHT 480
 
 static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
-    .backgear_gpio_num  = CFG_BACKWARD_GEAR,
-    .active_high        = false,
-    //.active_high        = true,
-    .vip_module_num     = 1,
-    .mlc_module_num     = 0,
+    .backgear_gpio_num      = CFG_BACKWARD_GEAR,
+    .active_high            = false,
+    //.active_high          = true,
+    .vip_module_num         = 1,
+    .mlc_module_num         = 0,
+
+    //vendor context
+    .vendor_context         = &_nxp_vendor_context,
+    .alloc_vendor_context   = _alloc_vendor_context,
+    .free_vendor_context    = _free_vendor_context,
+    .pre_turn_on            = _pre_turn_on,
+    .post_turn_off          = _post_turn_off,
+    .decide                 = _decide,
+
+    //activation
+    .turn_on_delay_ms       = 700, 
 
     // sensor
-    .i2c_bus            = TW9900_CS4955_HUB_I2CBUS,
-    .chip_addr          = 0x88 >> 1,
-    .reg_val            = _sensor_init_data,
-    .power_enable       = _sensor_power_enable,
-    .set_clock          = NULL,
-    .setup_io           = _sensor_setup_io,
+    .i2c_bus                = TW9900_CS4955_HUB_I2CBUS,
+    .chip_addr              = 0x88 >> 1,
+    .reg_val                = _sensor_init_data,
+    .power_enable           = _sensor_power_enable,
+    .set_clock              = NULL,
+    .setup_io               = _sensor_setup_io,
 
     // vip
-    .port               = 0,
-    .external_sync      = false,
-    .is_mipi            = false,
-    .h_active           = BACKWARD_CAM_WIDTH,
-    .h_frontporch       = 7,
-    .h_syncwidth        = 1,
-    .h_backporch        = 10,
-    .v_active           = BACKWARD_CAM_HEIGHT,
-    .v_frontporch       = 0,
-    .v_syncwidth        = 2,
-    .v_backporch        = 3,
-    .data_order         = 0,
-    .interlace          = true,
-#if 0
-    .lu_addr            = 0x7FD28000,
-    .cb_addr            = 0x7FD7A800,
-    .cr_addr            = 0x7FD91000,
-#else
+    .port                   = 0,
+    .external_sync          = false,
+    .is_mipi                = false,
+    .h_active               = BACKWARD_CAM_WIDTH,
+    .h_frontporch           = 7,
+    .h_syncwidth            = 1,
+    .h_backporch            = 10,
+    .v_active               = BACKWARD_CAM_HEIGHT,
+    .v_frontporch           = 0,
+    .v_syncwidth            = 2,
+    .v_backporch            = 3,
+    .data_order             = 0,
+    .interlace              = true,
+
+    // deinterlace
+    .use_deinterlacer       = false,
+    //.use_deinterlacer       = true,
+    .devide_frame           = false, // Data Sequence : TW9900 : (odd-even-odd ~ even) per frame = false,
+    .is_odd_first           = true,
+
     .lu_addr            = 0,
     .cb_addr            = 0,
     .cr_addr            = 0,
-#endif
 
-    .lu_stride          = 704,
-    //.lu_stride          = 768,
-    .cb_stride          = 384,
-    .cr_stride          = 384,
+    .lu_stride          = 0,
+    .cb_stride          = 0,
+    .cr_stride          = 0,
 
     .rgb_format         = MLC_RGBFMT_A8R8G8B8,
     .width              = 1024,
     .height             = 600,
-#if 0
-    .rgb_addr           = 0x7FDA8000,
-#else
     .rgb_addr           = 0,
-#endif
+
     .draw_rgb_overlay   = _draw_rgb_overlay,
 };
 
