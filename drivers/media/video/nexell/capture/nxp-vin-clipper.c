@@ -36,6 +36,7 @@
 #ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
 extern bool is_backward_camera_on(void);
 extern void backward_camera_remove(void);
+extern int get_backward_module_num(void);
 #endif
 
 #ifdef DEBUG_SYNC
@@ -1008,8 +1009,9 @@ static int nxp_vin_clipper_s_power(struct v4l2_subdev *sd, int on)
 		  _hw_set_clock(me, false);
 	  }
 #else
+
 #if defined(CONFIG_ARCH_S5P6818)
-	if( module != 2) {
+	if( module != get_backward_module_num()) {
 #endif
 #if defined(CONFIG_ARCH_S5P4418)
 	if( module != 1) {
