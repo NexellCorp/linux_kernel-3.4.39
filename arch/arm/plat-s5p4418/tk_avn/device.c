@@ -268,11 +268,23 @@ extern void init_bcm_wifi(void);
 #if (CFG_BUS_RECONFIG_ENB == 1)
 #include <mach/s5p4418_bus.h>
 
-const u16 g_DrexQoS[2] = {
-	0x100,		// S0
-	0xFFF		// S1, Default value
+const u8 g_DrexBRB_RD[2] = {
+	0x1,            // Port0
+	0xF             // Port1
 };
 
+const u8 g_DrexBRB_WR[2] = {
+	0x1,            // Port0
+	0xF             // Port1
+};
+
+const u16 g_DrexQoS[2] = {
+	0x100,          // S0
+	0xFFF           // S1, Default value
+};
+
+
+#if (CFG_BUS_RECONFIG_TOPBUSSI == 1)
 const u8 g_TopBusSI[8] = {
 	TOPBUS_SI_SLOT_DMAC0,
 	TOPBUS_SI_SLOT_USBOTG,
@@ -283,33 +295,53 @@ const u8 g_TopBusSI[8] = {
 	TOPBUS_SI_SLOT_USBHOST1,
 	TOPBUS_SI_SLOT_USBOTG
 };
+#endif
 
+#if (CFG_BUS_RECONFIG_TOPBUSQOS == 1)
+const u8 g_TopQoSSI[2] = {
+	1,      // Tidemark
+	(1<<TOPBUS_SI_SLOT_DMAC0) |     // Control
+	(1<<TOPBUS_SI_SLOT_MP2TS) |
+	(1<<TOPBUS_SI_SLOT_DMAC1) |
+	(1<<TOPBUS_SI_SLOT_SDMMC) |
+	(1<<TOPBUS_SI_SLOT_USBOTG) |
+	(1<<TOPBUS_SI_SLOT_USBHOST0) |
+	(1<<TOPBUS_SI_SLOT_USBHOST1)
+};
+#endif
+
+#if (CFG_BUS_RECONFIG_BOTTOMBUSSI == 1)
 const u8 g_BottomBusSI[8] = {
-	BOTBUS_SI_SLOT_1ST_ARM,
-	BOTBUS_SI_SLOT_MALI,
-	BOTBUS_SI_SLOT_DEINTERLACE,
-	BOTBUS_SI_SLOT_1ST_CODA,
-	BOTBUS_SI_SLOT_2ND_ARM,
-	BOTBUS_SI_SLOT_SCALER,
-	BOTBUS_SI_SLOT_TOP,
-	BOTBUS_SI_SLOT_2ND_CODA
+        BOTBUS_SI_SLOT_1ST_ARM,
+        BOTBUS_SI_SLOT_MALI,
+        BOTBUS_SI_SLOT_DEINTERLACE,
+        BOTBUS_SI_SLOT_1ST_CODA,
+        BOTBUS_SI_SLOT_2ND_ARM,
+        BOTBUS_SI_SLOT_SCALER,
+        BOTBUS_SI_SLOT_TOP,
+        BOTBUS_SI_SLOT_2ND_CODA
 };
+#endif
 
+#if (CFG_BUS_RECONFIG_BOTTOMBUSQOS == 1)
 const u8 g_BottomQoSSI[2] = {
-	1,	// Tidemark
-	(1<<BOTBUS_SI_SLOT_1ST_ARM) |	// Control
-	(1<<BOTBUS_SI_SLOT_2ND_ARM) |
-	(1<<BOTBUS_SI_SLOT_MALI) |
-	(1<<BOTBUS_SI_SLOT_TOP) |
-	(1<<BOTBUS_SI_SLOT_DEINTERLACE) |
-	(1<<BOTBUS_SI_SLOT_1ST_CODA)
+	1,      // Tidemark
+	(1<<BOTBUS_SI_SLOT_1ST_ARM) |   // Control
+		(1<<BOTBUS_SI_SLOT_2ND_ARM) |
+		(1<<BOTBUS_SI_SLOT_MALI) |
+		(1<<BOTBUS_SI_SLOT_TOP) |
+		(1<<BOTBUS_SI_SLOT_DEINTERLACE) |
+		(1<<BOTBUS_SI_SLOT_1ST_CODA)
 };
+#endif
 
+#if (CFG_BUS_RECONFIG_DISPBUSSI == 1)
 const u8 g_DispBusSI[3] = {
 	DISBUS_SI_SLOT_1ST_DISPLAY,
 	DISBUS_SI_SLOT_2ND_DISPLAY,
-	DISBUS_SI_SLOT_2ND_DISPLAY  //DISBUS_SI_SLOT_GMAC
+	DISBUS_SI_SLOT_2ND_DISPLAY		// DISBUS_SI_SLOT_GMAC
 };
+#endif
 #endif	/* #if (CFG_BUS_RECONFIG_ENB == 1) */
 
 /*------------------------------------------------------------------------------
@@ -1896,6 +1928,36 @@ void nxp_otgvbus_pwr_set(int enable)
 }
 EXPORT_SYMBOL(nxp_otgvbus_pwr_set);
 #endif
+
+#if 0//defined(CONFIG_I2C_NXP)
+#define I2CUDELAY(x)	1000000/x
+/* gpio i2c 3 */
+#define	I2C3_SCL	PAD_GPIO_D + 2
+#define	I2C3_SDA	PAD_GPIO_D + 3
+
+static struct i2c_gpio_platform_data nxp_i2c_gpio_port3 = {
+	.sda_pin	= I2C3_SDA,
+	.scl_pin	= I2C3_SCL,
+	.udelay		= I2CUDELAY(CFG_I2C0_CLK),				/* Gpio_mode CLK Rate = 1/( udelay*2) * 1000000 */
+
+	.timeout	= 10,
+};
+
+
+static struct platform_device i2c_device_ch3 = {
+	.name	= "i2c-gpio",
+	.id		= 3,
+	.dev    = {
+		.platform_data	= &nxp_i2c_gpio_port3,
+	},
+};
+
+static struct platform_device *i2c_devices[] = {
+	&i2c_device_ch3,
+};
+#endif /* CONFIG_I2C_NXP */
+
+
 /*------------------------------------------------------------------------------
  * Backward Camera driver
  */
@@ -2255,6 +2317,10 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_NXP_HDMI_CEC)
     printk("plat: add device hdmi-cec\n");
     platform_device_register(&hdmi_cec_device);
+#endif
+
+#if 0//defined(CONFIG_I2C_NXP)
+    platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif
 
 #if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
