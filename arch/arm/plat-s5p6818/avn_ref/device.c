@@ -1564,9 +1564,53 @@ static void _sensor_setup_io(void)
     }    
 }
 
-static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data, void *mem)
+struct nxp_vendor_context {
+};
+
+static struct nxp_vendor_context _nxp_vendor_context;
+
+static bool _alloc_vendor_context(void *ctx)
 {
-	//printk("%s\n", __func__);
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+
+    printk(KERN_ERR "+++ %s ---\n", __func__);
+
+    return true;
+}
+
+static bool _pre_turn_on(void *ctx)
+{
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+
+    printk(KERN_ERR "+++ %s ---\n", __func__);
+
+    return true;
+}
+
+static void _post_turn_off(void *ctx)
+{
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+
+    printk(KERN_ERR "+++ %s ---\n", __func__);
+}
+
+static void _free_vendor_context(void *ctx)
+{
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+
+    printk(KERN_ERR "+++ %s ---\n", __func__);
+}
+
+static bool _decide(void *ctx)
+{
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+
+    printk(KERN_ERR "+++ %s ---\n", __func__);
+
+    return true;
+}
+
+static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data, void *ctx, void *mem) { //printk("%s\n", __func__);
 
     memset(mem, 0, plat_data->width*plat_data->height*4);
     /* draw redbox at (0, 0) -- (50, 50) */
@@ -1582,66 +1626,276 @@ static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_dat
     }
 }
 
+#define TW9900 0
+#define TW9992 1
+
+#define BACKWARD_SEL    TW9900
+
+#if (BACKWARD_SEL == TW9900)
+
 #define BACKWARD_CAM_WIDTH  704
 #define BACKWARD_CAM_HEIGHT 480
 
 static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .backgear_gpio_num  = CFG_BACKWARD_GEAR,
-   	.active_high        = false,
-    //.active_high        = true,
-    //.vip_module_num     = 0,
-    .vip_module_num     = 2,
-    .mlc_module_num     = 0,
+   	.active_high            = false,
+    //.active_high          = true,
+    //.vip_module_num       = 0,
+    .vip_module_num         = 2,
+    .mlc_module_num         = 0,
+    
+    //vendor context
+    .vendor_context         = &_nxp_vendor_context,
+    .alloc_vendor_context   = _alloc_vendor_context,
+    .free_vendor_context    = _free_vendor_context,
+    .pre_turn_on            = _pre_turn_on,
+    .post_turn_off          = _post_turn_off,
+    .decide                 = _decide,
+
+    //activation
+    .turn_on_delay_ms       = 700,
 
     // sensor
-    .i2c_bus            = TW9900_CS4955_HUB_I2CBUS,
-    //.chip_addr          = 0x8A >> 1,
-   	.chip_addr          = 0x88 >> 1,
-    .reg_val            = _sensor_init_data,
-    .power_enable       = _sensor_power_enable,
-    .set_clock          = NULL,
-    .setup_io           = _sensor_setup_io,
+    .i2c_bus                = TW9900_CS4955_HUB_I2CBUS,
+    //.chip_addr            = 0x8A >> 1,
+   	.chip_addr              = 0x88 >> 1,
+    .reg_val                = _sensor_init_data,
+    .power_enable           = _sensor_power_enable,
+    .set_clock              = NULL,
+    .setup_io               = _sensor_setup_io,
 
     // vip
-    .port               = 0,
-    .external_sync      = false,
-    .is_mipi            = false,
-    .h_active           = BACKWARD_CAM_WIDTH,
-    .h_frontporch       = 7,
-    .h_syncwidth        = 1,
-    .h_backporch        = 10,
-    .v_active           = BACKWARD_CAM_HEIGHT,
-    .v_frontporch       = 0,
-    .v_syncwidth        = 2,
-    .v_backporch        = 3,
-    .data_order         = 0,
-    .interlace          = true,
+    .port                   = 0,
+    .external_sync          = false,
+    .is_mipi                = false,
+    .h_active               = BACKWARD_CAM_WIDTH,
+    .h_frontporch           = 7,
+    .h_syncwidth            = 1,
+    .h_backporch            = 10,
+    .v_active               = BACKWARD_CAM_HEIGHT,
+    .v_frontporch           = 0,
+    .v_syncwidth            = 2,
+    .v_backporch            = 3,
+    .data_order             = 0,
+    .interlace              = true,
 
-#if 0
-	.lu_addr			= 0x7FD28000,
-	.cb_addr			= 0x7FD7A800,
-	.cr_addr			= 0x7FD91000,
-#else
+    // deinterlace
+    .use_deinterlacer       = false,
+    //.use_deinterlacer       = true,
+    .devide_frame           = false, // Data Sequence : TW9900 : (odd-even-odd ~ even) per frame = false, TW9992 : (odd-even) = odd(width*(height/2)) - even(width*(height/2)) per frame = true, frame(9900 vs 9992) 
+    .is_odd_first           = true,
+
+    .lu_addr                = 0,
+    .cb_addr                = 0,
+    .cr_addr                = 0,
+
+    .lu_stride              = 0,
+    .cb_stride              = 0,
+    .cr_stride              = 0,
+
+    .rgb_format             = MLC_RGBFMT_A8R8G8B8,
+
+    .width                  = 1024,
+    .height                 = 600,
+    .rgb_addr               = 0,
+
+    .draw_rgb_overlay       = _draw_rgb_overlay,
+};
+
+#elif (BACKWARD_SEL == TW9992)
+
+static struct reg_val _tw9992_sensor_init_data[] =
+{
+ 	{0x00, 0x92},
+	{0x01, 0x00},
+//	{0x02, 0x46},	//INPUT6
+	{0x02, 0x44},	//INPUT4
+//	{0x02, 0x40},	//INPUT0
+	{0x03, 0x78},
+	{0x04, 0x00},
+	{0x05, 0x09},
+	{0x06, 0x00},
+	{0x07, 0x02},
+	{0x08, 0x11},//0x12,
+	{0x09, 0xF0},
+	{0x0A, 0x09},
+	{0x0B, 0xD0},//0xD1,
+	{0x0C, 0xCC},
+	{0x0D, 0x00},
+	{0x10, 0xF0},
+	{0x11, 0x60},
+	{0x12, 0x03},//0x11,
+	{0x13, 0x80},
+	{0x14, 0x80},
+	{0x15, 0x00},
+	{0x17, 0x31},//0x80,
+	{0x18, 0x44},
+	{0x19, 0x06},
+	{0x1A, 0x10},
+	{0x1B, 0x00},
+	{0x1C, 0x08},//0x08,
+	{0x1D, 0x7F},
+	{0x1F, 0x00},
+	{0x20, 0x30},
+	{0x21, 0x22},
+	{0x22, 0xF0},
+	{0x23, 0xD8},
+	{0x24, 0xBC},
+	{0x25, 0xB8},
+	{0x26, 0x44},
+	{0x27, 0x38},
+	{0x28, 0x00},
+	{0x29, 0x00},
+	{0x2A, 0x78},
+	{0x2B, 0x44},
+	{0x2C, 0x30},
+	{0x2D, 0x14},
+	{0x2E, 0xA5},
+	{0x2F, 0xE0},
+	{0x30, 0x00},
+	{0x31, 0x10},
+	{0x32, 0xFF},
+	{0x33, 0x05},
+	{0x34, 0x1A},
+	{0x35, 0x00},
+	{0x36, 0x7A},			//0x5A, requested by Daniel Kim, 09242014
+	{0x37, 0x18},
+	{0x38, 0xDD},
+	{0x39, 0x00},
+	{0x3A, 0x71},//0x30,
+	{0x3B, 0x3C},//0x00,
+	{0x3C, 0x00},
+	{0x3D, 0x00},
+	{0x3F, 0x1A},
+	{0x40, 0x80},
+	{0x41, 0x00},
+	{0x42, 0x00},
+	{0x48, 0x02},
+	{0x49, 0x00},
+	{0x4A, 0x81},
+	{0x4B, 0x0A},
+	{0x4C, 0x00},
+	{0x4D, 0x01},
+	{0x4E, 0x01},
+	{0x50, 0x00},
+	{0x51, 0x00},
+	{0x52, 0x00},
+	{0x53, 0x00},
+	{0x54, 0x06},
+	{0x55, 0x00},
+	{0x56, 0x00},
+	{0x57, 0x00},
+	{0x58, 0x00},
+	{0x60, 0x00},
+	{0x61, 0x00},
+	{0x62, 0x00},
+	{0x63, 0x00},
+	{0xC0, 0x06},
+	{0xC1, 0x20},
+
+	{0x71, 0xA5},
+	{0x72, 0xA0},
+	{0xA2, 0x30},
+	{0x70, 0x01}, //start with MIPI Normal operation
+
+	{0x07, 0x02}, //using Shadow Register so no Input cropping setting for NTSC
+	{0x08, 0x15},
+	{0x09, 0xf0},
+	{0x0a, 0x14},
+	{0x0b, 0xd0},
+	{0x06, 0x80},
+   
+    END_MARKER
+};
+
+static int _tw9992_sensor_power_enable(bool enable)
+{
+	u32 reset_io = (PAD_GPIO_B + 23);
+
+    if (enable) {
+        // reset to high
+        nxp_soc_gpio_set_out_value(reset_io & 0xff, 1);
+        nxp_soc_gpio_set_io_dir(reset_io & 0xff, 1);
+        nxp_soc_gpio_set_io_func(reset_io & 0xff, nxp_soc_gpio_get_altnum(reset_io));
+        mdelay(1);
+
+        // reset to low
+        nxp_soc_gpio_set_out_value(reset_io & 0xff, 0);
+        mdelay(10);
+
+        // reset to high
+        nxp_soc_gpio_set_out_value(reset_io & 0xff, 1);
+        mdelay(10);
+    }
+
+    return 0;
+}
+
+#define BACKWARD_CAM_WIDTH  720
+#define BACKWARD_CAM_HEIGHT 480
+
+static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
+    .backgear_gpio_num  = CFG_BACKWARD_GEAR,
+    .active_high        = false,
+    .vip_module_num     = 0, 
+    .mlc_module_num     = 0, 
+
+    //vendor context
+    .vendor_context         = &_nxp_vendor_context,
+    .alloc_vendor_context   = _alloc_vendor_context,
+    .free_vendor_context    = _free_vendor_context,
+    .pre_turn_on            = _pre_turn_on,
+    .post_turn_off          = _post_turn_off,
+    .decide                 = _decide,
+
+    //activation
+    .turn_on_delay_ms       = 700,
+
+    // sensor
+    .i2c_bus            = MDEC_HDCAM_HMRX_AUDIO2_I2CBUS,
+    .chip_addr          = 0x7a >> 1,
+    .reg_val            = _tw9992_sensor_init_data,
+    .power_enable       = _tw9992_sensor_power_enable,
+    .set_clock          = NULL,
+    .setup_io           = NULL,
+
+    // vip
+    .port               = NX_VIP_INPUTPORT_B,
+    .external_sync      = true,
+    .is_mipi            = true,
+    .h_active           = BACKWARD_CAM_WIDTH,
+    .h_frontporch       = 4,
+    .h_syncwidth        = 4,
+    .h_backporch        = 4,
+    .v_active           = BACKWARD_CAM_HEIGHT,
+    .v_frontporch       = 1,
+    .v_syncwidth        = 1,
+    .v_backporch        = 1,
+    .data_order         = NXP_VIN_CBY0CRY1,
+    .interlace          = false,
+
+    // deinterlace
+    //.use_deinterlacer       = false,
+    .use_deinterlacer       = true,
+    .devide_frame           = true, // even/odd, frame(9900 vs 9992) 
+    .is_odd_first           = false,
+
     .lu_addr            = 0,
     .cb_addr            = 0,
     .cr_addr            = 0,
-#endif
 
-    //.lu_stride          = BACKWARD_CAM_WIDTH,
-    .lu_stride          = 768,
-    .cb_stride          = 384,
-    .cr_stride          = 384,
+    .lu_stride          = 0, 
+    .cb_stride          = 0, 
+    .cr_stride          = 0, 
 
     .rgb_format         = MLC_RGBFMT_A8R8G8B8,
     .width              = 1024,
-    .height             = 600,
-#if 0
-    .rgb_addr           = 0x7FDA8000,
-#else
+    .height             = 600, 
     .rgb_addr           = 0,
-#endif
     .draw_rgb_overlay   = _draw_rgb_overlay,
 };
+
+#endif
 
 /*static struct platform_device backward_camera_device = {*/
 struct platform_device backward_camera_device = {

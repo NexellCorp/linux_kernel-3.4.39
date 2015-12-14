@@ -29,6 +29,8 @@
 #include <linux/completion.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
+#include <linux/switch.h>
+
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
 #include <media/v4l2-ctrls.h>
@@ -325,6 +327,8 @@ struct tw9992_state {
 	struct tw9992_platform_data 	*pdata;
 	struct media_pad	 	pad; /* for media deivce pad */
 	struct v4l2_subdev 		sd;
+    struct switch_dev       switch_dev;
+
 	struct exynos_md		*mdev; /* for media deivce entity */
 	struct v4l2_pix_format		pix;
 	struct v4l2_mbus_framefmt	ffmt[2]; /* for media deivce fmt */
@@ -369,6 +373,9 @@ struct tw9992_state {
     /* standard control */
     struct v4l2_ctrl *ctrl_brightness;
     char brightness;
+
+    /* nexell: detect worker */
+    struct delayed_work work;
 };
 
 static const struct v4l2_fmtdesc capture_fmts[] = {
@@ -380,6 +387,120 @@ static const struct v4l2_fmtdesc capture_fmts[] = {
 		.pixelformat	= V4L2_PIX_FMT_JPEG,
 	},
 };
+
+struct tw9992_state *_state = NULL;
+#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+
+#define REARCAM_BACKDETECT_TIME 10
+#define REARCAM_MPOUT_TIME      300
+
+#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+extern int get_backward_module_num(void);
+#endif
+
+
+static int tw9992_i2c_read_byte(struct i2c_client *, u8, u8 *);
+
+static inline bool _is_backgear_on(void)
+{
+    int val = nxp_soc_gpio_get_in_value(CFG_BACKWARD_GEAR);
+    if (!val) {
+
+        //NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_CAM_PWR_EN), PAD_GET_BITNO(CFG_IO_CAM_PWR_EN), 1);
+        //_i2c_write_byte(_state.i2c_client, 0x02, 0x44);
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static inline bool _is_camera_on(void)
+{
+    u8 data;
+    u8 cin;
+    extern int mux_status;
+
+    tw9992_i2c_read_byte(_state->i2c_client, 0x03, &data);
+    //printk(KERN_ERR "%s: data 0x%x\n", __func__, data);
+
+#if 0
+    NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_CAM_PWR_EN), PAD_GET_BITNO(CFG_IO_CAM_PWR_EN), 1);
+    tw9992_i2c_write_byte(me->i2c_client, 0x02, 0x40);
+
+    if(mux_status == MUX0)
+    {   
+        _i2c_read_byte(_state.i2c_client, SV_DET, &cin0);
+        printk(KERN_ERR "%s: cin0 0x%x\n", __func__, cin0);
+        cin0 &= (1<<6);
+        if(cin0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+#endif
+
+    if (data & 0x80)
+        return false;
+
+    if ((data & 0x40) && (data & 0x08))
+        return true;
+
+    return false;
+}
+
+static irqreturn_t _irq_handler(int irq, void *devdata)
+{
+    printk("IRQ1\n");
+    __cancel_delayed_work(&_state->work);
+    if (switch_get_state(&_state->switch_dev) && !_is_backgear_on()) {
+        printk(KERN_ERR "BACKGEAR OFF\n");
+        switch_set_state(&_state->switch_dev, 0);
+    } else if (!switch_get_state(&_state->switch_dev) && _is_backgear_on()) {
+        schedule_delayed_work(&_state->work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
+    }
+
+    return IRQ_HANDLED;
+}
+
+
+int register_backward_irq_tw9992(void)
+{
+    int ret=0;
+
+#if 0
+    _state->switch_dev.name = "rearcam";
+    switch_dev_register(&_state->switch_dev);
+    switch_set_state(&_state->switch_dev, 0);
+#endif
+
+    ret = request_irq(IRQ_GPIO_START + CFG_BACKWARD_GEAR, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);
+    if (ret<0) {
+        pr_err("%s: failed to request_irq(irqnum %d), ret : %d\n", __func__, IRQ_ALIVE_1, ret);
+        return -1; 
+    }   
+
+    return 0;
+}
+
+static void _work_handler(struct work_struct *work) 
+{ 
+    if (_is_backgear_on() && _is_camera_on()) { 
+        printk(KERN_ERR "BACK GEAR ON && CAMERA ON\n"); 
+        switch_set_state(&_state->switch_dev, 1); 
+        return; 
+    } else if (switch_get_state(&_state->switch_dev)) { 
+        printk(KERN_ERR "BACKGEAR OFF\n"); 
+        switch_set_state(&_state->switch_dev, 0); 
+    } 
+    else if (_is_backgear_on()) 
+    { 
+        schedule_delayed_work(&_state->work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME)); 
+        printk(KERN_ERR "Rearcam check\n"); 
+    } 
+} 
+#endif
 
 static inline struct tw9992_state *ctrl_to_me(struct v4l2_ctrl *ctrl)
 {
@@ -1744,6 +1865,18 @@ static int tw9992_probe(struct i2c_client *client,
         return ret;
     }
     state->i2c_client = client;
+
+#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+    state->switch_dev.name = "rearcam_tw9992";
+    switch_dev_register(&state->switch_dev);
+    switch_set_state(&state->switch_dev, 0);
+
+    INIT_DELAYED_WORK(&state->work, _work_handler);
+
+    _state = state;
+#endif
+
+
     return 0;
 }
 
