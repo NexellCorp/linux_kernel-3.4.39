@@ -505,7 +505,7 @@ static int __devinit nxp_wdt_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_WDT_TASK
 	wdt_wqueue = create_singlethread_workqueue("nxp_wdt_task_wqueue");
-	INIT_DELAYED_WORK_DEFERRABLE(&wdt_task_work, nxp_wdt_task_work);
+	INIT_DELAYED_WORK(&wdt_task_work, nxp_wdt_task_work);
 	nxp_wdt_start(&nxp_wdd);
     queue_delayed_work(wdt_wqueue, &wdt_task_work, msecs_to_jiffies(CONFIG_DEFAULT_WDT_TASK_TIMEOUT-1)*1000);
 #endif
