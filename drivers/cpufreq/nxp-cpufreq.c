@@ -1027,8 +1027,6 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 	printk("DVFS: cpu %s with PLL.%d [tables=%d]\n",
 		dvfs->volt?"DVFS":"DFS", pdata->pll_dev, dvfs->table_size);
 
-	ret = cpufreq_register_driver(&nxp_cpufreq_driver);
-
 	/* change boot frequency & voltage */
 	if (!ret && dvfs->volt) {
 		freqs.cpu = 0;
@@ -1037,6 +1035,8 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 		nxp_cpufreq_change_frequency(dvfs, &freqs, false);
 		dvfs->boot_voltage = regulator_get_voltage(dvfs->volt);
 	}
+
+	ret = cpufreq_register_driver(&nxp_cpufreq_driver);
 
 	return ret;
 
