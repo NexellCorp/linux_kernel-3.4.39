@@ -1036,9 +1036,7 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 		dvfs->boot_voltage = regulator_get_voltage(dvfs->volt);
 	}
 
-	ret = cpufreq_register_driver(&nxp_cpufreq_driver);
-
-	return ret;
+	return cpufreq_register_driver(&nxp_cpufreq_driver);
 
 err_free_table:
 	if (dvfs)
