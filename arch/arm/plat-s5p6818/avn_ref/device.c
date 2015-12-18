@@ -1610,7 +1610,9 @@ static bool _decide(void *ctx)
     return true;
 }
 
-static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data, void *ctx, void *mem) { //printk("%s\n", __func__);
+static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data, void *ctx, void *mem) 
+{ 
+    //printk("%s\n", __func__);
 
     memset(mem, 0, plat_data->width*plat_data->height*4);
     /* draw redbox at (0, 0) -- (50, 50) */
