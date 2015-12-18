@@ -19,7 +19,10 @@
 #include <mach/nxp-backward-camera.h>
 
 #include <nx_deinterlace.h>
+
+#if defined(CONFIG_ARCH_S5P6818)
 #include <mach/nxp-deinterlacer.h>
+#endif
 
 #include <../drivers/gpu/ion/ion_priv.h>
 
