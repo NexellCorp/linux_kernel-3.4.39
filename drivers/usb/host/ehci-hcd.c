@@ -1530,7 +1530,7 @@ err_debug:
 	clear_bit(USB_EHCI_LOADED, &usb_hcds_loaded);
 	return retval;
 }
-#if 0//def CONFIG_DEFERRED_INIT_CALL
+#ifdef CONFIG_DEFERRED_INIT_CALL
 deferred_module_init(ehci_hcd_init);
 #else
 module_init(ehci_hcd_init);
