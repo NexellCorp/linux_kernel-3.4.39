@@ -741,7 +741,11 @@ static irqreturn_t _hdmi_irq_handler(int irq, void *dev_data)
 #endif
 
     if (flag & (HDMI_INTC_FLAG_HPD_UNPLUG | HDMI_INTC_FLAG_HPD_PLUG))
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+		queue_delayed_work(system_nrt_wq, &me->hpd_work, msecs_to_jiffies(10));
+#else
         queue_delayed_work(system_nrt_wq, &me->hpd_work, msecs_to_jiffies(1000));
+#endif
 
     spin_lock(&me->lock_callback);
     if (!list_empty(&me->callback_list)) {
@@ -1033,6 +1037,9 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
     /* hdmi_set_dvi_mode(me->is_dvi); */
 
     _hdmi_enable(me);
+
+	if (me->is_dvi)
+		hdmi_write(HDMI_GCP_CON, HDMI_GCP_CON_NO_TRAN);
 
     /*mdelay(5);*/
 

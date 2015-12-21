@@ -28,3 +28,10 @@ config NXP_HDMI_USE_EDID
     default y
     ---help---
       Say y here to enable edid module
+
+config PATCH_HDMI_COMPLIANCE_TEST
+    depends on NXP_OUT_HDMI
+    bool "Enable Patch for HDMI Compliance Test"
+    default n
+    ---help---
+      Say y here to enable patch code for HDMI Compliance Test
