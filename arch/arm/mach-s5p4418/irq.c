@@ -242,7 +242,7 @@ static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 	int cpu, n;
 	static u32 vic_nr[4] = { 0, 1, 0, 1};
 #if defined (CONFIG_CPU_S5P4418_SMP_ISR)
-	static u32 vic_mask[2] = { 0, } ;
+	static u32 vic_mask[3] = { 0, } ;
 #endif
 
 #if (DEBUG_TIMESTAMP)
@@ -285,8 +285,8 @@ static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 		}
 	}
 #if defined (CONFIG_CPU_S5P4418_SMP_ISR)
-	pr_debug("%s: cpu.%d vic[%s] gic irq=%d, vic=%d, stat=0x%02x [0x%08x:0x%08x]\n",
-		__func__, cpu, i?"1":"0", gic, irq, pend, vic_mask[0], vic_mask[1]);
+	pr_debug("%s: cpu.%d vic[%s] gic irq=%d, vic=%d, stat=0x%02x [0x%08x:0x%08x:0x%08x]\n",
+		__func__, cpu, i?"1":"0", gic, irq, pend, vic_mask[0], vic_mask[1], vic_mask[2]);
 #endif
 
 	if (0 == pend)
@@ -295,12 +295,12 @@ static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 irq_hnd:
 #if defined (CONFIG_CPU_S5P4418_SMP_ISR)
 	raw_spin_lock(&smp_irq_lock);
-	if (vic_mask[irq>>8] & (1<<(irq&0x1f))) {
+	if (vic_mask[irq>>5] & (1<<(irq&0x1f))) {
 		writel_relaxed(31, GIC_CPUI_BASE + GIC_CPU_EOI);
 		raw_spin_unlock(&smp_irq_lock);
 		return;
 	}
-	vic_mask[irq>>8] |= (1<<(irq&0x1f));
+	vic_mask[irq>>5] |= (1<<(irq&0x1f));
 	raw_spin_unlock(&smp_irq_lock);
 #endif
 
@@ -313,7 +313,7 @@ irq_hnd:
 
 #if defined (CONFIG_CPU_S5P4418_SMP_ISR)
 	raw_spin_lock(&smp_irq_lock);
-	vic_mask[irq>>8] &= ~(1<<(irq&0x1f));
+	vic_mask[irq>>5] &= ~(1<<(irq&0x1f));
 	raw_spin_unlock(&smp_irq_lock);
 #endif
 
@@ -416,6 +416,7 @@ static void alive_ack_irq(struct irq_data *d)
 	/* alive ack : irq pend clear */
 	writel((1<<bit), base + ALIVE_INT_STATUS);
 	readl(base + ALIVE_INT_STATUS);
+	dmb();
 }
 
 static void alive_mask_irq(struct irq_data *d)
@@ -437,6 +438,7 @@ static void alive_unmask_irq(struct irq_data *d)
 	/* alive unmask : irq set (enable) */
 	writel((1<<bit), base + ALIVE_INT_SET);
 	readl(base + ALIVE_INT_SET_READ);
+	dmb();
 }
 
 static int alive_set_type_irq(struct irq_data *d, unsigned int type)
