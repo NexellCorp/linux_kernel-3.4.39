@@ -9,6 +9,9 @@ struct i2c_client;
 struct mutex;
 struct nxp_hdmi;
 struct nxp_v4l2_i2c_board_info;
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+struct timer_list;
+#endif
 
 enum hdcp_event {
 	HDCP_EVENT_STOP			= 1 << 0,
@@ -35,6 +38,11 @@ struct nxp_hdcp {
     bool is_repeater;
     bool is_start;
 
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+	bool is_err;
+	int err_num;
+#endif
+
     spinlock_t lock;
     enum hdcp_event event;
     enum hdcp_auth_state auth_state;
@@ -53,6 +61,8 @@ struct nxp_hdcp {
     struct i2c_client *client;
 
     struct mutex mutex;
+
+	struct timer_list timer;
 };
 
 /**

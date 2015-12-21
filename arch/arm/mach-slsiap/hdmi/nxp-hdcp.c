@@ -6,6 +6,9 @@
 #include <linux/workqueue.h>
 #include <linux/slab.h>
 #include <linux/mutex.h>
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+#include <linux/timer.h>
+#endif
 
 #include <mach/nxp-v4l2-platformdata.h>
 
@@ -67,8 +70,11 @@
 #define nxp_hdcp_to_parent(me)       \
            container_of(me, struct nxp_hdmi, hdcp)
 
-/* #define IS_HDMI_RUNNING(me) hdmi_hpd_status() */
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+#define IS_HDMI_RUNNING(me) hdmi_hpd_status()
+#else
 #define IS_HDMI_RUNNING(me) true
+#endif
 
 /* #define DEBUG_KEY */
 /* #define DEBUG_I2C */
@@ -159,6 +165,12 @@ static int _hdcp_i2c_read(struct nxp_hdcp *me, u8 offset, int bytes, u8 *buf)
             me->auth_state == SECOND_AUTHENTICATION_DONE)
             goto ddc_read_err;
 
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+		// patch for HDMI Compliance Test, 1B-02
+        if (!IS_HDMI_RUNNING(me))
+			return 0;
+#endif
+
         msleep(DDC_DELAY);
         cnt++;
     } while (cnt < DDC_RETRY_CNT);
@@ -248,6 +260,21 @@ static int _hdcp_write_key(struct nxp_hdcp *me, int size, int reg, int offset)
 
     if (zero == size) {
         pr_err("%s: %s is null\n", __func__, offset == HDCP_AN ? "An" : "Aksv");
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+		// patch for HDMI Compliance Test, 1A-07
+        if (me->is_err) {
+            printk("%s: patch for 1A-07, if AN is null reset err\n", __func__);
+
+            me->event      = HDCP_EVENT_STOP;
+            me->auth_state = NOT_AUTHENTICATED;
+
+            me->event |= HDCP_EVENT_READ_BKSV_START;
+            me->is_err = true;
+            dbg_event("restart first authentication --> READ BKSV START\n");
+            queue_work(me->wq, &me->work);
+            return 0;
+        }
+#endif
         goto write_key_err;
     }
 
@@ -297,6 +324,14 @@ static int _hdcp_read_bcaps(struct nxp_hdcp *me)
     dbg_bksv("%s: device is %s\n", __func__,
             me->is_repeater ? "REPEAT" : "SINK");
     dbg_bksv("%s: [i2c] bcaps : 0x%02x\n", __func__, bcaps);
+
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+	// patch for HDMI Compliance Test, 1B-02
+    if (!IS_HDMI_RUNNING(me)) {
+        pr_err("%s: hdmi is not streaming!!!\n", __func__);
+        return -ENODEV;
+    }
+#endif
 
     return 0;
 }
@@ -381,6 +416,11 @@ static int _hdcp_read_ri(struct nxp_hdcp *me)
         hdmi_writeb(HDMI_HDCP_CHECK_RESULT, HDMI_HDCP_RI_MATCH_RESULT_Y);
     else {
         hdmi_writeb(HDMI_HDCP_CHECK_RESULT, HDMI_HDCP_RI_MATCH_RESULT_N);
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+		// patch for HDMI Compliance Test, 1B-02
+		pr_err("ENCRYPTION OFF\n");
+		_hdcp_encryption(me, false);
+#endif
         pr_err("%s: compare error\n", __func__);
         goto compare_err;
     }
@@ -449,6 +489,23 @@ static int _hdcp_reset_auth(struct nxp_hdcp *me)
     hdmi_write_mask(HDMI_STATUS_EN, ~0, val);
     hdmi_write_mask(HDMI_HDCP_CTRL1, ~0, HDMI_HDCP_CP_DESIRED_EN);
 
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+	// patch for HDMI Compliance Test, 1A-06, 1A-07, 1A-07a
+	if (hdmi_hpd_status()) {
+		if (me->err_num == -EINVAL) {
+			me->event |= HDCP_EVENT_READ_BKSV_START;
+			me->is_err = true;
+			dbg_event("restart first authentication --> READ BKSV START\n");
+			queue_work(me->wq, &me->work);
+		} else if (me->err_num == -ETIMEDOUT) {
+			// for 1A-07a 
+			printk("%s: set timer after 2.5 seconds\n", __func__);
+			mod_timer(&me->timer, jiffies + msecs_to_jiffies(2500));
+		}
+	}
+#endif
+
+    printk("%s exit\n", __func__);
     return 0;
 }
 
@@ -611,14 +668,37 @@ static int _hdcp_check_repeater(struct nxp_hdcp *me)
     memset(rx_v, 0, sizeof(rx_v));
     memset(ksv_list, 0, sizeof(ksv_list));
 
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+	// patch for HDMI Compliance Test, 1B-02
+    if (!IS_HDMI_RUNNING(me)) {
+        pr_err("%s: hdmi is not running\n", __func__);
+        return -EINVAL;
+    }
+#endif
+
     do {
         if (_hdcp_read_bcaps(me) < 0)
             goto check_repeater_err;
 
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+        // patch for HDMI Compliance Test, 1B-02
+        if (!IS_HDMI_RUNNING(me)) {
+            pr_err("%s: hdmi is not running\n", __func__);
+            return -EINVAL;
+        }
+#endif
         bcaps = hdmi_readb(HDMI_HDCP_BCAPS);
 
         if (bcaps & KSV_FIFO_READY)
             break;
+
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+        // patch for HDMI Compliance Test, 1B-02
+        if (!IS_HDMI_RUNNING(me)) {
+            pr_err("%s: hdmi is not running\n", __func__);
+            return -EINVAL;
+        }
+#endif
 
         msleep(KSV_FIFO_CHK_DELAY);
         cnt++;
@@ -754,6 +834,15 @@ static int _hdcp_bksv(struct nxp_hdcp *me)
     return 0;
 
 bksv_start_err:
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+    // patch for HDMI Compliance Test, 1B-02
+    if (me->is_err) {
+        me->is_err = 0;
+        me->event      = HDCP_EVENT_STOP;
+        me->auth_state = NOT_AUTHENTICATED;
+        return 0;
+    }
+#endif
     pr_err("%s: failed to start bskv\n", __func__);
     msleep(100);
     return -1;
@@ -844,7 +933,12 @@ static int _hdcp_write_aksv(struct nxp_hdcp *me)
         return -EINVAL;
     }
 
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+	// patch for HDMI Compliance Test, 1B-02
+	msleep(200);
+#else
     msleep(100);
+#endif
 
     me->auth_state = AKSV_WRITE_DONE;
 
@@ -854,6 +948,10 @@ static int _hdcp_write_aksv(struct nxp_hdcp *me)
 
 static int _hdcp_check_ri(struct nxp_hdcp *me)
 {
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+	// patch for HDMI Compliance Test, 1A-07
+	int ret = 0;
+#endif
     dbg_ri("%s\n", __func__);
 
     if (me->auth_state < AKSV_WRITE_DONE) {
@@ -875,13 +973,22 @@ static int _hdcp_check_ri(struct nxp_hdcp *me)
 
     if (!IS_HDMI_RUNNING(me)) {
         pr_err("%s: hdmi is not running\n", __func__);
-        return -EINVAL;
+        return -ENODEV;
     }
 
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+	// patch for HDMI Compliance Test, 1A-07
+	ret = _hdcp_read_ri(me);
+	if (ret != 0) {
+        pr_err("%s: failed to _hdcp_read_ri(), ret %d\n", __func__, ret);
+		return ret;
+	}
+#else
     if (_hdcp_read_ri(me) < 0) {
         pr_err("%s: failed to _hdcp_read_ri()\n", __func__);
         return -EINVAL;
     }
+#endif
 
     if (me->is_repeater)
         me->auth_state = SECOND_AUTHENTICATION_RDY;
@@ -952,9 +1059,30 @@ static void _hdcp_work(struct work_struct *work)
     }
 
     if (event & HDCP_EVENT_CHECK_RI_START) {
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+        // patch for HDMI Compliance Test, 1A-07
+        int ret = _hdcp_check_ri(me);
+        if (ret < 0) {
+            me->err_num = ret;
+            goto work_err;
+        }
+#else
         if (_hdcp_check_ri(me) < 0)
             goto work_err;
+#endif
     }
+
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+    // patch for HDMI Compliance Test, 1A-07
+    if (me->is_err) {
+        me->is_err = false;
+        if (IS_HDMI_RUNNING(me)) {
+            me->event |= HDCP_EVENT_WRITE_AKSV_START;
+            dbg_event("FORCE START WRITE_AKSV_START\n");
+            queue_work(me->wq, &me->work);
+        }
+    }
+#endif
 
     goto MUTEX_UNLOCK_STAGE;
 
@@ -1092,6 +1220,11 @@ static int nxp_hdcp_stop(struct nxp_hdcp *me)
 
     printk("%s enterd\n", __func__);
 
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+    // patch for HDMI Compliance Test, 1A-07a
+    del_timer(&me->timer);
+#endif
+
     /* first stop workqueue */
     cancel_work_sync(&me->work);
     flush_work(&me->work);
@@ -1166,6 +1299,26 @@ static struct i2c_driver _hdcp_driver = {
     .remove    = _hdcp_i2c_remove,
 };
 
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+// patch for HDMI Compliance Test, 1A-07a
+static void timer_handler(unsigned long priv)
+{
+    struct nxp_hdcp *me = (struct nxp_hdcp *)priv;
+
+	if (!me)
+		BUG();
+
+	if (IS_HDMI_RUNNING(me) &&
+		me->event == HDCP_EVENT_STOP &&
+		me->auth_state == NOT_AUTHENTICATED) {
+			me->event |= HDCP_EVENT_READ_BKSV_START;
+			me->is_err = true;
+			dbg_event("timer ---> READ BKSV START\n");
+			queue_work(me->wq, &me->work);
+	}
+}
+#endif
+
 /**
  * public api
  */
@@ -1196,6 +1349,11 @@ int nxp_hdcp_init(struct nxp_hdcp *me, struct nxp_v4l2_i2c_board_info *i2c_info)
 
     mutex_init(&me->mutex);
     spin_lock_init(&me->lock);
+
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+    // patch for HDMI Compliance Test, 1A-07a
+    setup_timer(&me->timer, timer_handler, (long)me);
+#endif
 
     return 0;
 }

@@ -49,55 +49,6 @@ static struct edid_preset {
 /**
  * internal function
  */
-#if 0
-static int _edid_i2c_read(struct nxp_edid *me, u8 segment, u8 offset,
-        u8 *buf, size_t len)
-{
-    struct i2c_client *client = me->client;
-    int cnt = 0;
-    int ret;
-    unsigned char start = segment * EDID_BLOCK_SIZE;
-    struct i2c_msg msg[] = {
-        {
-            .addr = EDID_ADDR,
-            .flags = 0,
-            .len  = 1,
-            .buf  = &start,
-        },
-        {
-            .addr = EDID_ADDR,
-            .flags = I2C_M_RD,
-            .len  = len,
-            .buf  = buf,
-        }
-    };
-
-    pr_debug("%s\n", __func__);
-    if (!client) {
-        pr_err("%s: No i2c client\n", __func__);
-        return -ENODEV;
-    }
-
-    do {
-        ret = i2c_transfer(client->adapter, msg, ARRAY_SIZE(msg));
-        if (ret == ARRAY_SIZE(msg))
-            break;
-
-        pr_err("%s: can't read data, retry %d\n", __func__, cnt);
-        msleep(25);
-        cnt++;
-        // psw0523 test
-    } while (cnt < EDID_MAX_I2C_RETRY_CNT);
-    /* } while (1); */
-
-    if (cnt == EDID_MAX_I2C_RETRY_CNT) {
-        pr_err("%s: read timeout\n", __func__);
-        return -ETIMEDOUT;
-    }
-
-    return 0;
-}
-#else
 static int _edid_i2c_read(struct nxp_edid *me, u8 segment, u8 offset,
 						   u8 *buf, size_t len)
 {
@@ -145,6 +96,20 @@ static int _edid_i2c_read(struct nxp_edid *me, u8 segment, u8 offset,
 
 	return 0;
 }
+
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+#define EDID_HEADER_SIZE 8
+static bool _is_edid_header_valid(u8 *buf)
+{
+    const u8 header[EDID_HEADER_SIZE] = {0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00};
+    int i;
+    for (i = 0; i < EDID_HEADER_SIZE; i++) {
+        if (header[i] != buf[i])
+            return false;
+    }
+    return true;
+}
+
 #endif
 
 static int _edid_read_block(struct nxp_edid *me, int block, u8 *buf, size_t len)
@@ -166,6 +131,21 @@ static int _edid_read_block(struct nxp_edid *me, int block, u8 *buf, size_t len)
         printk("%s: failed to _edid_i2c_read ret %d\n", __func__, ret);
         return ret;
     }
+
+    // psw0523 test code making EDID all zeros for HDMI Compliance Test
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+#if 0
+    for (i = 0; i < EDID_BLOCK_SIZE; i++)
+        buf[i] = 0;
+#endif
+#endif
+
+#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
+    if (!_is_edid_header_valid(buf)) {
+        printk(KERN_ERR "%s: edid header is invalid!!!\n", __func__);
+        return -EINVAL;
+    }
+#endif
 
     for (i = 0; i < EDID_BLOCK_SIZE; i++)
         sum += buf[i];
@@ -387,9 +367,7 @@ static u32 nxp_edid_preferred_preset(struct nxp_edid *me)
 static bool nxp_edid_supports_hdmi(struct nxp_edid *me)
 {
     pr_debug("%s\n", __func__);
-    // fix : some hdmi monitor does not set this flag --> always return true
-    /*return me->edid_misc & FB_MISC_HDMI;*/
-    return true;
+    return me->edid_misc & FB_MISC_HDMI;
 }
 
 static int nxp_edid_max_audio_channels(struct nxp_edid *me)
