@@ -963,7 +963,6 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 	unsigned long (*dvfs_tables)[2] = (unsigned long(*)[2])dvfs_freq_voltage;
 	struct cpufreq_dvfs_info *dvfs = NULL;
 	struct cpufreq_frequency_table *freq_table = NULL;
-	struct cpufreq_freqs freqs;
 	int cpu = raw_smp_processor_id();
 	char name[16];
 	int table_size = 0, ret = 0;
@@ -1027,16 +1026,21 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 	printk("DVFS: cpu %s with PLL.%d [tables=%d]\n",
 		dvfs->volt?"DVFS":"DFS", pdata->pll_dev, dvfs->table_size);
 
+	ret = cpufreq_register_driver(&nxp_cpufreq_driver);
+
 	/* change boot frequency & voltage */
+#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE
 	if (!ret && dvfs->volt) {
+		struct cpufreq_freqs freqs;
 		freqs.cpu = 0;
 		freqs.new = dvfs->boot_frequency;
 		freqs.old = clk_get_rate(dvfs->clk)/1000;
 		nxp_cpufreq_change_frequency(dvfs, &freqs, false);
 		dvfs->boot_voltage = regulator_get_voltage(dvfs->volt);
 	}
+#endif
 
-	return cpufreq_register_driver(&nxp_cpufreq_driver);
+	return ret;
 
 err_free_table:
 	if (dvfs)
