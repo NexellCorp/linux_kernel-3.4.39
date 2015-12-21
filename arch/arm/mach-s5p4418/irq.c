@@ -329,6 +329,7 @@ irq_eoi:
 	writel_relaxed(31, GIC_CPUI_BASE + GIC_CPU_EOI);
 	return;
 }
+
 static void __init __gic_init(void __iomem *dist_base, void __iomem *cpu_base)
 {
 	int irq = IRQ_GIC_PPI_VIC;
