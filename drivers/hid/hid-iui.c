@@ -27,13 +27,16 @@
 /*
 #define pr_debug	printk
 */
+//#define PACKET_DEBUG
 
 #define IUIHID_DEV_NAME        "iuihid"
 #define IUIHID_DEV_MAJOR       206
 #define IUIHID_DEV_MINOR       1
 
+#define RECV_PCK_SIZE		  1024+64
+
 static struct class *iuihid_class;
-static struct hid_device *iui_dev;
+static struct hid_device *iui_dev = NULL;
 static struct device *iui_udev;
 
 //function proto types
@@ -103,19 +106,30 @@ static bool send_packet(char *buf, int len)
 
 long iuihid_ioctl(struct file * file,  unsigned int cmd, unsigned long arg)
 {
+	if (iui_dev == NULL) {
+		pr_debug("iui_dev is not connected\n");
+		return -ENODEV;
+	}
+
 	struct usb_interface *intf = to_usb_interface(iui_dev->dev.parent);
     struct usb_device *dev = interface_to_usbdev(intf);
 
 	int ret = 0;
 	int actual_length;
-	//int i = 0;
+#ifdef PACKET_DEBUG
+	int i = 0;
+#endif
 	void __user *argp = (void __user *)arg;
-	char *receive = kmalloc(1024, GFP_KERNEL);
 
-    struct iui_packet {
-		char *buf;
+    struct iui_send_packet {
 		int len;
+		char *buf;
 	} packet;
+
+	struct iui_recv_packet {
+		int len;
+		char buf[RECV_PCK_SIZE];
+	} recv_packet;
 
 	pr_debug("++++%s(%d)\r\n",__func__,cmd);
 
@@ -126,11 +140,11 @@ long iuihid_ioctl(struct file * file,  unsigned int cmd, unsigned long arg)
 				printk("%s ERROR!!!!!!!!!!!\n", __func__);
 				return -EFAULT;
 			}
-/*
+#ifdef PACKET_DEBUG
 			for(i = 0; i < packet.len; i++)
 				printk("[%x]", packet.buf[i]);
 			printk("\nsize %d", packet.len);
-*/			
+#endif
     		char *test = kmalloc(packet.len, GFP_KERNEL);
 			memcpy(test, packet.buf, packet.len);
 			send_packet(test, packet.len);
@@ -144,8 +158,9 @@ long iuihid_ioctl(struct file * file,  unsigned int cmd, unsigned long arg)
 			pr_debug("IOCTL_GET_VERSION\n");
 			break;
 		case 3: /*IIF_IOCTL_GET_MESSAGE*/
+			memset(recv_packet.buf, 0, RECV_PCK_SIZE);
 			ret = usb_interrupt_msg(dev, usb_rcvintpipe(dev, 3),
-					receive, 1024, &actual_length, USB_CTRL_GET_TIMEOUT);
+					recv_packet.buf, RECV_PCK_SIZE, &recv_packet.len, USB_CTRL_GET_TIMEOUT);
 			if (ret < 0) {
 				if (ret == -110)
 					pr_debug("ioctl receive timeout error %s %d\n", __func__, ret);
@@ -154,13 +169,13 @@ long iuihid_ioctl(struct file * file,  unsigned int cmd, unsigned long arg)
 			}
 			else {
 				pr_debug("===========SUCCESS============ %s %d\n", __func__, ret);
-				copy_to_user((void __user *)arg, receive, actual_length);
-/*
+				copy_to_user((void __user *)arg, &recv_packet, recv_packet.len+sizeof(recv_packet.len));
+#ifdef PACKET_DEBUG
 				printk("actual_length %d\n", actual_length);
 				for (i = 0; i < actual_length; i++) {
-					printk("[%x]", *receive++);					
+					printk("[%x]", *recv_packet.buf++);					
 				}
-*/				
+#endif
 			}
 
 			break;
@@ -169,7 +184,6 @@ long iuihid_ioctl(struct file * file,  unsigned int cmd, unsigned long arg)
 	}
 
     pr_debug("%s--\r\n",__func__);
-	kfree(receive);
  
 	return ret;
 }
@@ -244,6 +258,8 @@ static void iuihid_remove(struct hid_device *hdev)
 {
 	struct iuihid_sc *isc = hid_get_drvdata(hdev);
 	char *envp[] = {"change@/devices/virtual/iuihid/iuihid", NULL};
+
+	iui_dev = NULL;
 
 	kobject_uevent_env(&iui_udev->kobj, KOBJ_CHANGE, envp);
 
