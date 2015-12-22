@@ -169,6 +169,9 @@ long iuihid_ioctl(struct file * file,  unsigned int cmd, unsigned long arg)
 			}
 			else {
 				pr_debug("===========SUCCESS============ %s %d\n", __func__, ret);
+				if (recv_packet.len > 1024) {
+					memcpy(&recv_packet.buf[768], &recv_packet.buf[770], recv_packet.len - 768);
+				}
 				copy_to_user((void __user *)arg, &recv_packet, recv_packet.len+sizeof(recv_packet.len));
 #ifdef PACKET_DEBUG
 				printk("actual_length %d\n", actual_length);
