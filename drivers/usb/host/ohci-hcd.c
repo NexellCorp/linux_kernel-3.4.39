@@ -1269,7 +1269,11 @@ static int __init ohci_hcd_mod_init(void)
 	clear_bit(USB_OHCI_LOADED, &usb_hcds_loaded);
 	return retval;
 }
+#ifdef CONFIG_DEFERRED_INIT_CALL
+deferred_module_init(ohci_hcd_mod_init);
+#else
 module_init(ohci_hcd_mod_init);
+#endif
 
 static void __exit ohci_hcd_mod_exit(void)
 {
