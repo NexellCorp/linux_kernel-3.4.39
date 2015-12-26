@@ -34,7 +34,7 @@
 #include <mach/soc.h>
 #include <mach/pdm.h>
 
-#include "nxp-pdm.h"
+#include "nxp-dummy-pdm.h"
 
 /*
 #define pr_debug(msg...)		printk(KERN_INFO msg)
@@ -47,7 +47,7 @@
 #define	PDM_BUS_WIDTH			4	// Byte
 #define	PDM_MAX_BURST			32	// Byte
 
-//#define PDM_IRQ_COUNT			8
+#define PDM_IRQ_COUNT			8
 
 /*
  * PDM register
@@ -70,6 +70,7 @@ struct pdm_register {
 #define	PDM_CTRL1_OFFSET		(0x14)
 #define	PDM_INTC_OFFSET			(0x18)
 
+extern void dummy_pdm_complete(void);
 /*
  * parameters
  */
@@ -87,23 +88,26 @@ struct nxp_pdm_snd_param {
 	struct pdm_register pdm;
 };
 
+unsigned int intc1_base = 0;
+
 static void inline pdm_reset(struct nxp_pdm_snd_param *par)
 {
-	nxp_soc_peri_reset_set(RESET_ID_PDM);
+	//nxp_soc_peri_reset_set(RESET_ID_PDM);
 }
 
 static int  pdm_start(struct nxp_pdm_snd_param *par, int stream)
 {
-	struct pdm_register *pdm = &par->pdm;
-	unsigned int base = par->base_addr;
+	//struct pdm_register *pdm = &par->pdm;
+	//unsigned int base = par->base_addr;
 
 	pr_debug("%s\n", __func__);
 
-	NX_PDM_ClearInterruptPendingAll(0);
+	//NX_PDM_ClearInterruptPendingAll(0);
 
 	// pdm start
-	pdm->CTRL |= 0x1<<1;
-	writel(pdm->CTRL, (base+PDM_CTRL_OFFSET));
+	//pdm->CTRL |= 0x1<<1;
+	//writel(pdm->CTRL, (base+PDM_CTRL_OFFSET));
+	//writel(0x10000000, (intc1_base+0x18));
 	
 	par->status |= SNDDEV_STATUS_CAPT;
 	return 0;
@@ -111,48 +115,49 @@ static int  pdm_start(struct nxp_pdm_snd_param *par, int stream)
 
 static void pdm_stop(struct nxp_pdm_snd_param *par, int stream)
 {
-	struct pdm_register *pdm = &par->pdm;
-	unsigned int base = par->base_addr;
-	pdm->CTRL = readl(par->base_addr+PDM_CTRL_OFFSET);
+	//struct pdm_register *pdm = &par->pdm;
+	//unsigned int base = par->base_addr;
+	//pdm->CTRL = readl(par->base_addr+PDM_CTRL_OFFSET);
 	
 	pr_debug("%s\n", __func__);
 
 	// pdm stop
-	pdm->CTRL &= ~(0x1<<1);
-	writel(pdm->CTRL, (base+PDM_CTRL_OFFSET));
+	//pdm->CTRL &= ~(0x1<<1);
+	//writel(pdm->CTRL, (base+PDM_CTRL_OFFSET));
+	//writel(0x10000000, (intc1_base+0x18));
 
 	par->status &= ~SNDDEV_STATUS_CAPT;
 }
 
 static int nxp_pdm_check_param(struct nxp_pdm_snd_param *par)
 {
-	struct pdm_register *pdm = &par->pdm;
+	//struct pdm_register *pdm = &par->pdm;
     struct nxp_pcm_dma_param *dmap = &par->dma;	
-	unsigned long request = 0;
-	unsigned int base = par->base_addr;
-	struct clk *pclk = NULL;
+	//unsigned long request = 0;
+	//unsigned int base = par->base_addr;
+	//struct clk *pclk = NULL;
 
-	int NumOfClock, OverSampleRate;
-	float GAIN, COEFF0,	COEFF1, POW;
-	short GAINx4, GAINx2, GAINxM4, GAINxM2, Coeff0, Coeff1;
- 
+	//int NumOfClock, OverSampleRate;
+	//float GAIN, COEFF0,	COEFF1, POW;
+	//short GAINx4, GAINx2, GAINxM4, GAINxM2, Coeff0, Coeff1;
+/* 
 	pclk = clk_get(NULL, "pclk");
 	request = clk_get_rate(pclk);
 
 	pdm->CTRL = readl(par->base_addr+PDM_CTRL_OFFSET);
 	pdm->CTRL1 = readl(par->base_addr+PDM_CTRL_OFFSET);
-
+*/
 	dmap->real_clock = par->sample_rate;
-
+/*
     par->clk_rate = clk_set_rate(par->clk, request);
 	printk(KERN_INFO "pdm-rec: PDM CLK=%ldhz \n", par->clk_rate);
 
 	pdm_reset(par);
 
 	clk_enable(par->clk);
-
+*/
 	par->status |= SNDDEV_STATUS_POWER;
-
+/*
 	// dma mode default(single mode)
 	pdm->CTRL &= ~(0x1 << 2);
 	writel(pdm->CTRL, (base+PDM_CTRL_OFFSET));
@@ -241,7 +246,7 @@ static int nxp_pdm_check_param(struct nxp_pdm_snd_param *par)
 	// init reset
 	pdm->CTRL &= ~(0x1);
 	writel(pdm->CTRL, (base+PDM_CTRL_OFFSET));
-
+*/
 	return 0;
 }
 
@@ -250,32 +255,34 @@ static int nxp_pdm_set_plat_param(struct nxp_pdm_snd_param *par, void *data)
 	struct platform_device *pdev = data;
 	struct nxp_pdm_plat_data *plat = pdev->dev.platform_data;
 	struct nxp_pcm_dma_param *dma = &par->dma;
-	unsigned int phy_base = PDM_BASEADDR;
-	int ret = 0;
+	//unsigned int phy_base = PDM_BASEADDR;
+	unsigned int phy_base = PHY_BASEADDR_INTC1;
+	//int ret = 0;
 
     par->sample_rate = plat->sample_rate ? plat->sample_rate : DEF_SAMPLE_RATE;
-	par->base_addr = IO_ADDRESS(phy_base);
+	//par->base_addr = IO_ADDRESS(phy_base);
+	intc1_base = IO_ADDRESS(phy_base);
 	spin_lock_init(&par->lock);
-
+#if 1 
 	if (!plat->dma_ch)
 		return -EINVAL;
 
-	dma->active = true;
-	dma->dma_filter = plat->dma_filter;
+	//dma->active = true;
+	//dma->dma_filter = plat->dma_filter;
 	dma->dma_ch_name = (char*)(plat->dma_ch);
-	dma->peri_addr = phy_base + PDM_DATA_OFFSET;	/* PDM DAT */
+	//dma->peri_addr = phy_base + PDM_DATA_OFFSET;	/* PDM DAT */
 	dma->bus_width_byte = PDM_BUS_WIDTH;
 	dma->max_burst_byte = PDM_MAX_BURST;
 	pr_debug("pdm-rec: %s, %s dma, addr 0x%x, bus %dbyte, burst %dbyte\n",
 		STREAM_STR(1), dma->dma_ch_name, dma->peri_addr,
 		dma->bus_width_byte, dma->max_burst_byte);
 
-	par->clk = clk_get(&pdev->dev, NULL);
-	if (IS_ERR(par->clk)) {
-		ret = PTR_ERR(par->clk);
-		return ret;
-	}
-
+	//par->clk = clk_get(&pdev->dev, NULL);
+	//if (IS_ERR(par->clk)) {
+	//	ret = PTR_ERR(par->clk);
+	//	return ret;
+	//}
+#endif 
 	return nxp_pdm_check_param(par);
 }
 
@@ -346,9 +353,9 @@ static int nxp_pdm_trigger(struct snd_pcm_substream *substream,
 static int nxp_pdm_hw_params(struct snd_pcm_substream *substream,
 				 struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
 {
-	struct nxp_pdm_snd_param *par = snd_soc_dai_get_drvdata(dai);
-	struct pdm_register *pdm = &par->pdm;
-	unsigned int base = par->base_addr;
+	//struct nxp_pdm_snd_param *par = snd_soc_dai_get_drvdata(dai);
+	//struct pdm_register *pdm = &par->pdm;
+	//unsigned int base = par->base_addr;
 	unsigned int format = params_format(params);
 	unsigned int channels = params_channels(params);
 
@@ -363,13 +370,13 @@ static int nxp_pdm_hw_params(struct snd_pcm_substream *substream,
 	switch (channels) {
 		case 2:
 			// dma mode single
-			pdm->CTRL &= ~(0x1 << 2);
-			writel(pdm->CTRL, (base+PDM_CTRL_OFFSET));
+			//pdm->CTRL &= ~(0x1 << 2);
+			//writel(pdm->CTRL, (base+PDM_CTRL_OFFSET));
 			break;
 		case 4:
 			// dma mode dual
-			pdm->CTRL |= (0x1 << 2);
-			writel(pdm->CTRL, (base+PDM_CTRL_OFFSET));
+			//pdm->CTRL |= (0x1 << 2);
+			//writel(pdm->CTRL, (base+PDM_CTRL_OFFSET));
 			break;
 		default:
 			break;
@@ -396,11 +403,11 @@ static int nxp_pdm_dai_suspend(struct snd_soc_dai *dai)
 
 static int nxp_pdm_dai_resume(struct snd_soc_dai *dai)
 {
-	struct nxp_pdm_snd_param *par = snd_soc_dai_get_drvdata(dai);
+	//struct nxp_pdm_snd_param *par = snd_soc_dai_get_drvdata(dai);
 
 	PM_DBGOUT("%s\n", __func__);
 
-	pdm_reset(par);
+	//pdm_reset(par);
 
 	return 0;
 }
@@ -435,7 +442,10 @@ static struct snd_soc_dai_driver pdm_dai_driver = {
 #if defined(PDM_IRQ_COUNT)
 static irqreturn_t nxp_pdm_irq(int irq, void *dev_id)
 {
-	NX_PDM_ClearInterruptPendingAll(0);
+	//NX_PDM_ClearInterruptPendingAll(0);
+	writel(0xffffffff, (intc1_base+0x1c));
+
+	dummy_pdm_complete();
 
 	return IRQ_HANDLED;
 }
@@ -496,7 +506,7 @@ static struct platform_driver pdm_driver = {
 	.probe  = nxp_pdm_probe,
 	.remove = nxp_pdm_remove,
 	.driver = {
-	.name 	= DEV_NAME_PDM,
+	.name 	= DEV_NAME_DUMMY_PDM,
 	.owner 	= THIS_MODULE,
 	},
 };
@@ -515,6 +525,6 @@ module_init(nxp_pdm_init);
 module_exit(nxp_pdm_exit);
 
 MODULE_AUTHOR("hsjung <hsjung@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound PDM recorder driver for the SLSI");
+MODULE_DESCRIPTION("Sound Dummy PDM recorder driver for the SLSI");
 MODULE_LICENSE("GPL");
 

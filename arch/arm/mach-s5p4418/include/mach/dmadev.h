@@ -97,5 +97,6 @@
 #define	DMA_PERIPHERAL_NAME_CRYPTO_BW			"crypto_bw"         // ID: 28
 #define	DMA_PERIPHERAL_NAME_CRYPTO_HR			"crypto_hr"         // ID: 29
 #define	DMA_PERIPHERAL_NAME_PDM					"pdm"               // ID: 30
+#define	DMA_PERIPHERAL_NAME_DUMMY_PDM			"dummy_pdm"         // ID: 31
 
 #endif //__DMADEV_H__

@@ -24,7 +24,7 @@
 #include <sound/soc.h>
 #include <sound/soc-dai.h>
 #include <mach/platform.h>
-#include "nxp-pdm.h"
+#include "nxp-dummy-pdm.h"
 #include "nxp-pcm.h"
 
 /*
@@ -40,7 +40,7 @@
 static struct snd_soc_codec_driver soc_codec_pdm_rec;
 
 static struct snd_soc_dai_driver rec_dai = {
-	.name		= "dit-mulch-recorder",
+	.name		= "dit-dummy-mulch-recorder",
 	.capture 	= {
 	.stream_name	= "Capture",
 	.channels_min	= 2,
@@ -69,7 +69,7 @@ static struct platform_driver pdm_rec = {
 	.probe		= pdm_rec_probe,
 	.remove		= pdm_rec_remove,
 	.driver		= {
-		.name	= "pdm-dit-recorder",
+		.name	= "dummy-pdm-dit-recorder",
 		.owner	= THIS_MODULE,
 	},
 };
@@ -86,15 +86,15 @@ MODULE_LICENSE("GPL");
 static struct snd_soc_dai_link pdmrec_dai_link = {
 	.name 			= "PDM Rec",
 	.stream_name 	= "PDM PCM Capture",
-	.cpu_dai_name 	= DEV_NAME_PDM,			/* pdm_driver name */
+	.cpu_dai_name 	= DEV_NAME_DUMMY_PDM,	/* pdm_driver name */
 	.platform_name  = DEV_NAME_PCM,			/* nxp_snd_pcm_driver name */
-	.codec_dai_name = "dit-mulch-recorder",
-	.codec_name 	= "pdm-dit-recorder",
+	.codec_dai_name = "dit-dummy-mulch-recorder",
+	.codec_name 	= "dummy-pdm-dit-recorder",
 	.symmetric_rates = 1,
 };
 
 static struct snd_soc_card pdmrec_card = {
-	.name 			= "PDM-Recorder",		/* proc/asound/cards */
+	.name 			= "Dummy-PDM-Recorder",		/* proc/asound/cards */
 	.dai_link 		= &pdmrec_dai_link,
 	.num_links 		= 1,
 };
@@ -150,7 +150,7 @@ static int pdmrec_remove(struct platform_device *pdev)
 
 static struct platform_driver pdmrec_driver = {
 	.driver		= {
-		.name	= "pdm-recorder",
+		.name	= "dummy-pdm-recorder",
 		.owner	= THIS_MODULE,
 		.pm 	= &snd_soc_pm_ops,	/* for suspend */
 	},
@@ -160,6 +160,6 @@ static struct platform_driver pdmrec_driver = {
 module_platform_driver(pdmrec_driver);
 
 MODULE_AUTHOR("hsjung <hsjung@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound PDM recorder driver for the SLSI");
+MODULE_DESCRIPTION("Sound Dummy PDM recorder driver for the SLSI");
 MODULE_LICENSE("GPL");
 

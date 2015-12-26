@@ -83,6 +83,15 @@ config SND_PDM_REC
 	select SND_NXP_PDM
 	default n
 
+config SND_NXP_DUMMY_PDM
+	tristate
+
+config SND_DUMMY_PDM_REC
+	tristate "Dummy PDM record (PCM) without PDM IP"
+	depends on SND_NXP_SOC
+	select SND_NXP_DUMMY_PDM
+	default n
+
 config SND_CODEC_NULL
 	tristate "I2S audio null codec."
 	depends on SND_NXP_I2S

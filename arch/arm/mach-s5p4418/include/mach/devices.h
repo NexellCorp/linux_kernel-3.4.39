@@ -63,6 +63,7 @@
 #define DEV_NAME_CRYPTO         "nxp-crypto"
 #define DEV_NAME_SCALER         "nxp-scaler"
 #define DEV_NAME_PDM            "nxp-pdm"
+#define DEV_NAME_DUMMY_PDM		"nxp-dummy-pdm"
 #define DEV_NAME_SPI            "nxp-spi"
 #define DEV_NAME_ADC            "nxp-adc"
 #define DEV_NAME_CPUFREQ        "nxp-cpufreq"
@@ -136,6 +137,13 @@ struct nxp_spdif_plat_data {
 
 /* PDM */
 struct nxp_pdm_plat_data {
+    int sample_rate;
+    bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
+    const char *dma_ch;
+};
+
+/* DUMMY_PDM */
+struct nxp_dummy_pdm_plat_data {
     int sample_rate;
     bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
     const char *dma_ch;

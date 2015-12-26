@@ -151,6 +151,7 @@ static void nxp_pcm_file_mem_write(struct snd_pcm_substream *substream)
 	#else
 		src_addr = (void*)(runtime->dma_area + offset);
 	#endif
+        pr_debug("%s %p %p %u %d\n", __func__, src_addr, dst_addr, offset, length);
 		memcpy(dst_addr, src_addr, length);
 		prtd->mem_offs += length;
 		if (prtd->mem_offs >= prtd->mem_len)
@@ -177,10 +178,12 @@ static void nxp_pcm_dma_clear(struct snd_pcm_substream *substream)
 	offset  -= length;
 	src_addr = (void*)(runtime->dma_area + offset);
 
-	if ((prtd->dma_chan->chan_id >= DMA_PERIPHERAL_ID_I2S0_TX) 
-		&& (prtd->dma_chan->chan_id <= DMA_PERIPHERAL_ID_I2S2_RX)) {
-		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-			memset(src_addr, 0, length);
+	if (strcmp("dummy-pdm-recorder", dev_name(substream->pcm->card->dev))) {
+		if ((prtd->dma_chan->chan_id >= DMA_PERIPHERAL_ID_I2S0_TX) 
+			&& (prtd->dma_chan->chan_id <= DMA_PERIPHERAL_ID_I2S2_RX)) {
+			if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+				memset(src_addr, 0, length);
+			}
 		}
 	}
 }
@@ -244,6 +247,34 @@ static void nxp_pcm_dma_complete(void *arg)
 		snd_pcm_period_elapsed(substream);
 	}
 }
+
+static struct snd_pcm_substream *pdm_substream = NULL;
+void dummy_pdm_complete(void)
+{
+	struct snd_pcm_substream *substream = pdm_substream;
+	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
+	unsigned int dma_base = IO_ADDRESS(0x7FF00000);
+
+	if (substream->runtime) {
+		struct snd_pcm_runtime *runtime = substream->runtime;
+		unsigned offset = prtd->offset;
+		int length = snd_pcm_lib_period_bytes(substream);
+		void *src_addr = (void *)dma_base;
+		void *dst_addr;
+
+		if (offset == 0)
+			offset = snd_pcm_lib_buffer_bytes(substream);
+		offset  -= length;
+		dst_addr = (void*)(runtime->dma_area + offset);
+
+		pr_debug("%s %p %p %u %d\n", __func__, src_addr, dst_addr, offset, length);
+
+		memcpy(dst_addr, src_addr, length);
+	}
+
+	nxp_pcm_dma_complete(substream);
+}
+EXPORT_SYMBOL(dummy_pdm_complete);
 
 static int nxp_pcm_dma_request_channel(void *runtime_data, int stream)
 {
@@ -373,25 +404,33 @@ static int nxp_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
-		ret = nxp_pcm_dma_prepare_and_submit(substream);
-		if (ret)
-			return ret;
-		dma_async_issue_pending(prtd->dma_chan);
-		prtd->time_stamp_us = ktime_to_us(ktime_get());
+		if (strcmp("dummy-pdm-recorder", dev_name(substream->pcm->card->dev))) {
+			ret = nxp_pcm_dma_prepare_and_submit(substream);
+			if (ret)
+				return ret;
+			dma_async_issue_pending(prtd->dma_chan);
+			prtd->time_stamp_us = ktime_to_us(ktime_get());
+		}
 		break;
 
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-		dmaengine_resume(prtd->dma_chan);
+		if (strcmp("dummy-pdm-recorder", dev_name(substream->pcm->card->dev))) {
+			dmaengine_resume(prtd->dma_chan);
+		}
 		break;
 
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-		dmaengine_pause(prtd->dma_chan);
+		if (strcmp("dummy-pdm-recorder", dev_name(substream->pcm->card->dev))) {
+			dmaengine_pause(prtd->dma_chan);
+		}
 		break;
 
 	case SNDRV_PCM_TRIGGER_STOP:
-		dmaengine_terminate_all(prtd->dma_chan);
+		if (strcmp("dummy-pdm-recorder", dev_name(substream->pcm->card->dev))) {
+			dmaengine_terminate_all(prtd->dma_chan);
+		}
 		break;
 	default:
 		return -EINVAL;
@@ -423,16 +462,19 @@ static int nxp_pcm_open(struct snd_pcm_substream *substream)
 	runtime->private_data = prtd;
 
 	prtd->dma_param = snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
-	ret = nxp_pcm_dma_request_channel(prtd, substream->stream);
-	if (0 > ret)
-		return ret;
-
-	ret = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
-	if (0 > ret) {
-		nxp_pcm_dma_release_channel(prtd);
-		return ret;
+	if (strcmp("dummy-pdm-recorder", dev_name(substream->pcm->card->dev))) {
+		ret = nxp_pcm_dma_request_channel(prtd, substream->stream);
+		if (0 > ret)
+			return ret;
 	}
-
+	
+	ret = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
+	if (strcmp("dummy-pdm-recorder", dev_name(substream->pcm->card->dev))) {
+		if (0 > ret) {
+			nxp_pcm_dma_release_channel(prtd);
+			return ret;
+		}
+	}
 	/*
 	 * change period_bytes_max value for SPDIFTX
 	 * SDPIF min bus width is 2 byte for 16bit pcm
@@ -452,7 +494,9 @@ static int nxp_pcm_close(struct snd_pcm_substream *substream)
 	struct nxp_pcm_runtime_data *prtd = runtime->private_data;
 
 	pr_debug("%s %s\n", __func__, STREAM_STR(substream->stream));
-	nxp_pcm_dma_release_channel(prtd);
+	if (strcmp("dummy-pdm-recorder", dev_name(substream->pcm->card->dev))) {
+		nxp_pcm_dma_release_channel(prtd);
+	}
 	kfree(prtd);
 
 	return 0;
@@ -464,9 +508,11 @@ static int nxp_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
 	int ret;
 
-	ret = nxp_pcm_dma_slave_config(prtd, substream->stream);
-	if (0 > ret)
-		return ret;
+	if (strcmp("dummy-pdm-recorder", dev_name(substream->pcm->card->dev))) {
+		ret = nxp_pcm_dma_slave_config(prtd, substream->stream);
+		if (0 > ret)
+			return ret;
+	}
 
 	/* debug info */
 	prtd->periods = params_periods(params);
@@ -514,10 +560,14 @@ static int nxp_pcm_mmap(struct snd_pcm_substream *substream,
 		struct vm_area_struct *vma)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
+	if (strcmp("dummy-pdm-recorder", dev_name(substream->pcm->card->dev))) {
 	return dma_mmap_writecombine(substream->pcm->card->dev, vma,
 					runtime->dma_area,
 					runtime->dma_addr,
 					runtime->dma_bytes);
+	}
+	else 
+		return 0;
 }
 
 static struct snd_pcm_ops nxp_pcm_ops = {
@@ -539,20 +589,36 @@ static int nxp_pcm_preallocate_dma_buffer(struct snd_pcm *pcm, int stream)
 
 	pr_debug("%s: %s, dma_alloc_writecombine %d byte\n",
 		__func__, STREAM_STR(substream->stream), size);
+	pr_debug("pcm card device name %s\n", dev_name(pcm->card->dev));
+	if (!strcmp("dummy-pdm-recorder", dev_name(pcm->card->dev)))
+		pdm_substream = substream;
 
-	buf->dev.type = SNDRV_DMA_TYPE_DEV;
-	buf->dev.dev = pcm->card->dev;
-	buf->private_data = NULL;
-	buf->bytes = size;
-	buf->area = dma_alloc_writecombine(buf->dev.dev, size, &buf->addr, GFP_KERNEL);
-	if (!buf->area) {
-		printk(KERN_ERR "Fail, %s dma buffer allocate (%d)\n",
-			STREAM_STR(substream->stream), size);
-		return -ENOMEM;
+	if (strcmp("dummy-pdm-recorder", dev_name(pcm->card->dev))) {
+		buf->dev.type = SNDRV_DMA_TYPE_DEV;
+		buf->dev.dev = pcm->card->dev;
+		buf->private_data = NULL;
+		buf->bytes = size;
+		buf->area = dma_alloc_writecombine(buf->dev.dev, size, &buf->addr, GFP_KERNEL);
+		if (!buf->area) {
+			printk(KERN_ERR "Fail, %s dma buffer allocate (%d)\n",
+				STREAM_STR(substream->stream), size);
+			return -ENOMEM;
+		}
+	} else {
+		buf->dev.type = SNDRV_DMA_TYPE_DEV;
+		buf->dev.dev = pcm->card->dev;
+		buf->private_data = NULL;
+		buf->bytes = 65536;
+		buf->area = kmalloc(buf->bytes, GFP_KERNEL);
+		if (!buf->area) {
+			printk(KERN_ERR "Fail, %s dma buffer allocate (%d)\n",
+				STREAM_STR(substream->stream), size);
+			return -ENOMEM;
+		}
 	}
 
 	pr_debug("%s: %s, dma_alloc_writecombine %d byte, vir = 0x%x, phy = 0x%x\n",
-		__func__, STREAM_STR(substream->stream), size, (unsigned int)buf->area, buf->addr);
+		__func__, STREAM_STR(substream->stream), buf->bytes, (unsigned int)buf->area, buf->addr);
 	return 0;
 }
 
@@ -569,8 +635,13 @@ static void nxp_pcm_release_dma_buffer(struct snd_pcm *pcm, int stream)
 	if (!buf->area)
 		return;
 
-	dma_free_writecombine(pcm->card->dev, buf->bytes,
-				buf->area, buf->addr);
+	if (strcmp("dummy-pdm-recorder", dev_name(pcm->card->dev))) {
+		dma_free_writecombine(pcm->card->dev, buf->bytes,
+					buf->area, buf->addr);
+	} else {
+		kfree(buf->area);
+	}
+
 	buf->area = NULL;
 }
 
@@ -582,11 +653,13 @@ static int nxp_pcm_new(struct snd_soc_pcm_runtime *runtime)
 	struct snd_pcm *pcm = runtime->pcm;
 	int ret = 0;
 
-	/* dma mask */
-	if (!card->dev->dma_mask)
-		card->dev->dma_mask = &nxp_pcm_dmamask;
-	if (!card->dev->coherent_dma_mask)
-		card->dev->coherent_dma_mask = DMA_BIT_MASK(32);
+	if (strcmp("dummy-pdm-recorder", dev_name(pcm->card->dev))) {
+		/* dma mask */
+		if (!card->dev->dma_mask)
+			card->dev->dma_mask = &nxp_pcm_dmamask;
+		if (!card->dev->coherent_dma_mask)
+			card->dev->coherent_dma_mask = DMA_BIT_MASK(32);
+	}
 
 	if (pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream) {
 		ret = nxp_pcm_preallocate_dma_buffer(pcm, SNDRV_PCM_STREAM_PLAYBACK);

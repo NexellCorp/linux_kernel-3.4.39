@@ -94,6 +94,11 @@
 
 static struct amba_driver pl08x_amba_driver;
 
+/*
+#define dev_vdbg    dev_dbg
+#define dev_dbg(f, m...)    printk(m)
+*/
+
 /**
  * struct vendor_data - vendor-specific config parameters for PL08x derivatives
  * @channels: the number of channels available in this variant
@@ -1863,7 +1868,7 @@ static int pl08x_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
 
 		if (plchan->phychan) {
 #if defined(CONFIG_ARCH_CPU_SLSI)
-			if ((plchan->chan.chan_id >= DMA_PERIPHERAL_ID_I2S0_TX) && (plchan->chan.chan_id <= DMA_PERIPHERAL_ID_I2S2_RX)) {
+			if ((plchan->cd->min_signal >= DMA_PERIPHERAL_ID_I2S0_TX) && (plchan->cd->min_signal <= DMA_PERIPHERAL_ID_I2S2_RX)) {
 				int i = 0;
 				int timeout;
 				struct pl08x_txd *txd = plchan->at;

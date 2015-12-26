@@ -727,6 +727,26 @@ static struct platform_device pdm_rec_dai = {
 };
 #endif
 
+#if defined(CONFIG_SND_DUMMY_PDM_REC) || defined(CONFIG_SND_DUMMY_PDM_REC_MODULE)
+static struct platform_device dummy_pdm_recorder = {
+	.name	= "dummy-pdm-dit-recorder",
+	.id		= -1,
+};
+
+struct nxp_snd_dai_plat_data dummy_pdm_rec_dai_data = {
+	.sample_rate = 16000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
+};
+
+static struct platform_device dummy_pdm_rec_dai = {
+	.name	= "dummy-pdm-recorder",
+	.id		= -1,
+	.dev	= {
+		.platform_data	= &dummy_pdm_rec_dai_data,
+	}
+};
+#endif
+
 /*------------------------------------------------------------------------------
  *  * reserve mem
  *   */
@@ -2021,6 +2041,12 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device pdm capture\n");
 	platform_device_register(&pdm_recorder);
 	platform_device_register(&pdm_rec_dai);
+#endif
+
+#if defined(CONFIG_SND_DUMMY_PDM_REC) || defined(CONFIG_SND_DUMMY_PDM_REC_MODULE)
+	printk("plat: add device dummy_pdm capture\n");
+	platform_device_register(&dummy_pdm_recorder);
+	platform_device_register(&dummy_pdm_rec_dai);
 #endif
 
 #if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)
