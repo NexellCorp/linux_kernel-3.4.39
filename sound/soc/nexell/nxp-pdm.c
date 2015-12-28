@@ -102,6 +102,7 @@ static int  pdm_start(struct nxp_pdm_snd_param *par, int stream)
 	NX_PDM_ClearInterruptPendingAll(0);
 
 	// pdm start
+	pdm->CTRL = readl((base+PDM_CTRL_OFFSET));
 	pdm->CTRL |= 0x1<<1;
 	writel(pdm->CTRL, (base+PDM_CTRL_OFFSET));
 	
@@ -165,15 +166,15 @@ static int nxp_pdm_check_param(struct nxp_pdm_snd_param *par)
 	pdm->CTRL1 &= ~(0x7<<16);
 	pdm->CTRL1 |= 0 << 16;
 	
-	printk("PDM sample_rate : %d\n", __func__, par->sample_rate);
+	printk("PDM sample_rate : %d\n", par->sample_rate);
 	switch (par->sample_rate) {
 		case 16000:
 			// if 16 kHZ
-			NumOfClock = 49;     // 200 Mhz / 49 / 2 = 2.04 Mhz
+			NumOfClock = 50;     // 200 Mhz / 50 / 2 = 2.04 Mhz
 			OverSampleRate = 128; // 2.04 Mhz / 128 = 15.9 kHz 
-			GAIN   	= (6.708845533e+03);
-			COEFF0 	= (-0.9657674512  );
-			COEFF1 	= ( 1.9651712234  );
+			GAIN   	= (1.718358834e+04);
+			COEFF0 	= (-0.9785398530  );
+			COEFF1 	= ( 1.9783070727  );
 			break;
 		case 48000:
 			// if 48 kHz
@@ -199,13 +200,13 @@ static int nxp_pdm_check_param(struct nxp_pdm_snd_param *par)
 
 	// sample position
 	pdm->CTRL1 &= ~(0xff<<0);
-	pdm->CTRL1 |= 0 << 0;
+	pdm->CTRL1 |= (NumOfClock/2) << 0;
 	writel(pdm->CTRL1, (base+PDM_CTRL1_OFFSET));
 
 	POW 	= (1<<20)          ;
 
-	GAINx4  = ( 4.0 * POW ) / GAIN;
-	GAINx2  = ( 2.0 * POW ) / GAIN;
+	GAINx4  =(( 4.0 * POW ) / GAIN ) * 1.0;
+	GAINx2  =(( 2.0 * POW ) / GAIN ) * 1.0;
 	GAINxM4 = (-4.0 * POW ) / GAIN;
 	GAINxM2 = (-2.0 * POW ) / GAIN;
 	Coeff0  = (   COEFF0 * 8192.0);
@@ -359,6 +360,8 @@ static int nxp_pdm_hw_params(struct snd_pcm_substream *substream,
 		default:
 			return -EINVAL;
 	}
+
+	pdm->CTRL = readl((base+PDM_CTRL_OFFSET));
 
 	switch (channels) {
 		case 2:
