@@ -239,10 +239,8 @@ static int tw9900_set_brightness(struct v4l2_ctrl *ctrl)
     return 0;
 }
 
-#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
 static bool _is_backgear_on(void);
 static bool _is_camera_on(void);
-#endif
 
 static int tw9900_get_status(struct v4l2_ctrl *ctrl)
 {
@@ -373,7 +371,6 @@ static int tw9900_initialize_ctrls(struct tw9900_state *me)
     return 0;
 }
 
-#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
 static inline bool _is_backgear_on(void)
 {
     int val = nxp_soc_gpio_get_in_value(CFG_BACKWARD_GEAR);
@@ -479,7 +476,6 @@ static void _work_handler(struct work_struct *work)
 	}
     //printk(KERN_ERR "--- %s ---\n", __func__);
 }
-#endif
 
 static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 {

@@ -2656,9 +2656,10 @@ static ssize_t _stop_backward_camera(struct device *pdev,
 
         if (get_backward_module_num() == 0)
             register_backward_irq_tw9992();
+#if defined(CONFIG_VIDEO_TW9900)
         else
             register_backward_irq_tw9900();
-
+#endif
         printk(KERN_ERR "%s - end of backward_camera_remove()\n", __func__);
     }
 
