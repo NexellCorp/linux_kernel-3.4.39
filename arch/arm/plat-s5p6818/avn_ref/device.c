@@ -1104,12 +1104,34 @@ static int ds90ub914q_power_enable(bool on)
 
 static int nvp6114a_power_enable(bool on)
 {
-	u32 reset	=	(PAD_GPIO_B + 14);
+	u32 reset   =	(PAD_GPIO_B + 14);
+    u32 dis_mux =   (PAD_GPIO_E + 12);
+    u32	en_mux  =   (PAD_GPIO_C + 9);
+    u32	sel_in  =   (PAD_GPIO_C + 10);
 
 	if( on )
 	{
 		//printk("%s :  enable : %d\n", __func__, on);
 
+        /* Disable MUX */
+        nxp_soc_gpio_set_io_func(dis_mux, nxp_soc_gpio_get_altnum(dis_mux));
+        nxp_soc_gpio_set_io_dir(dis_mux, 1);
+        nxp_soc_gpio_set_out_value(dis_mux, 1);
+        mdelay(10);
+
+        /* Select IN */
+        nxp_soc_gpio_set_io_func(sel_in, nxp_soc_gpio_get_altnum(sel_in));
+        nxp_soc_gpio_set_io_dir(sel_in, 1);
+        nxp_soc_gpio_set_out_value(sel_in, 1);
+        mdelay(10);
+
+        /* enable MUX */
+        nxp_soc_gpio_set_io_func(en_mux, nxp_soc_gpio_get_altnum(en_mux));
+        nxp_soc_gpio_set_io_dir(en_mux, 1);
+        nxp_soc_gpio_set_out_value(en_mux, 0);
+        mdelay(10);
+
+        /* reset */
 		nxp_soc_gpio_set_out_value(reset, 1);
 		nxp_soc_gpio_set_io_dir(reset, 1);
 		nxp_soc_gpio_set_io_func(reset, NX_GPIO_PADFUNC_2);
@@ -1181,46 +1203,37 @@ struct nxp_mipi_csi_platformdata front_plat_data = {
 
 #endif
 
-#if defined(CONFIG_VIDEO_DS90UB914Q)
 static struct i2c_board_info ds90ub914q_i2c_boardinfo[] = {
     {
         I2C_BOARD_INFO("DS90UB914Q", 0xC0>>1),
     },
 };
-#endif
 
-#if defined(CONFIG_VIDEO_NVP6114A)
 static struct i2c_board_info nvp6114a_i2c_boardinfo[] = {
     {
         I2C_BOARD_INFO("NVP6114A", 0x64>>1),
     },
 };
-#endif
 
 static struct nxp_v4l2_i2c_board_info sensor[] = {
     {
         .board_info = &tw9900_i2c_boardinfo[0],
         .i2c_adapter_id = TW9900_CS4955_HUB_I2CBUS,
     },
-#if defined(CONFIG_VIDEO_TW9992)
     {
         .board_info = &front_camera_i2c_boardinfo[0],
         .i2c_adapter_id = MDEC_HDCAM_HMRX_AUDIO2_I2CBUS,
     },
-#endif
-#if defined(CONFIG_VIDEO_DS90UB914Q)
 	{
 	  .board_info = &ds90ub914q_i2c_boardinfo[0],
 	  .i2c_adapter_id = DES_I2CBUS,
 	},
-#endif
-#if defined(CONFIG_VIDEO_NVP6114A)
 	{
 	  .board_info = &nvp6114a_i2c_boardinfo[0],
 	  .i2c_adapter_id = MDEC_HDCAM_HMRX_AUDIO2_I2CBUS,
 	},
-#endif
 };
+
 static struct nxp_capture_platformdata capture_plat_data[] = {
 #if defined(CONFIG_VIDEO_NVP6114A)
   { 
@@ -1232,18 +1245,18 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 	  /* for 656 */
 	  .is_mipi        = false,
 	  .external_sync  = false, /* 656 interface */
-	  .h_active       = 704,
+	  .h_active       = 1280,
 	  .h_frontporch   = 7,
 	  .h_syncwidth    = 1,
 	  .h_backporch    = 10,
-	  .v_active       = 480,
+	  .v_active       = 720,
 	  .v_frontporch   = 0,
 	  .v_syncwidth    = 2,
 	  .v_backporch    = 3,
 	  .clock_invert   = false,
 	  .port           = 0,
 	  .data_order     = NXP_VIN_CBY0CRY1,
-	  .interlace      = true,
+	  .interlace      = false,
 	  .clk_rate       = 27000000,
 	  .late_power_down = false,
 	  .power_enable   = nvp6114a_power_enable,

@@ -13,8 +13,10 @@ struct reg_val {
 
 #define END_MARKER	{0xff, 0xff};
 
-#ifdef DEBUG_NVP6124A
-	#define vmsg(a...)	printk(a)
+#define DEBUG_NVP6114A
+
+#ifdef DEBUG_NVP6114A
+	#define vmsg(a...)	printk(KERN_ERR a)
 #else
 	#define vmsg(a...)
 #endif
