@@ -22,6 +22,8 @@
 #define vmsg(a...)
 #endif
 
+#define SENSOR_LOG  0
+
 #define NEWONE_ALIAS_TEST 0
 //#define SERDES_I2C_TEST
 
@@ -218,7 +220,9 @@ static int serialize_init(void)
 	struct i2c_client *ser_client	 = ds90ub914q.ser_client;
 	struct i2c_client *des_client    = ds90ub914q.des_client;
 
-#if 0
+#if SENSOR_LOG
+	struct i2c_client *camera_client = ds90ub914q.camera_client;
+
 	unsigned char data = 0; 
 #endif
 
@@ -255,15 +259,13 @@ static int serialize_init(void)
 	write_reg_data(des_client, des_init_data);
 	write_reg_data(ser_client, ser_init_data);
 
-#if 0
+#if SENSOR_LOG
 	if (_i2c_read_byte(ser_client, 0x0d, &data) == 0 )
 	{
 		_i2c_write_byte(ser_client, 0x0d, 0x99);
 
 		if (_i2c_read_byte(ser_client, 0x0d, &data) == 0 )
 			printk("4. ds90ub913q reg = 0x0d, data = 0x%02X\n", data);
-
-		mdelay(1000);
 	}
 
 	if (_i2c_read_byte(ser_client, 0x0d, &data) == 0 )
@@ -271,7 +273,6 @@ static int serialize_init(void)
 		printk("5. ds90ub913q reg = 0x0d, data = 0x%02X\n", data);
 	}
 
-#if 0
 	printk("DeSerializer GPO1,0 Status !!!\n");
 	if (_i2c_read_byte(des_client, 0x1d, &data) == 0 )
 		printk("ds90ub914q reg = 0x1d, data = 0x%02X\n", data);
@@ -280,22 +281,24 @@ static int serialize_init(void)
 
 	if (_i2c_read_byte(des_client, 0x1d, &data) == 0 )
 		printk("ds90ub914q reg = 0x1d, data = 0x%02X\n", data);
-#endif
+#else
+    _i2c_write_byte(ser_client, 0x0d, 0x99);
+	_i2c_write_byte(des_client, 0x1d, 0x99);
 #endif
 
-#if 0
+
+#if SENSOR_LOG 
 	printk("Serializer Status !!!\n");
 	if (_i2c_read_byte(ser_client, 0x0d, &data) == 0 )
 		printk("ds90ub913q reg = 0x0d, data = 0x%02X\n", data);
-#if 0
-	_i2c_write_byte(ser_client, 0x0d, 0xdd);
+
+	//_i2c_write_byte(ser_client, 0x0d, 0xdd);
 
 	if (_i2c_read_byte(ser_client, 0x0d, &data) == 0 )
 		printk("ds90ub913q reg = 0x0d, data = 0x%02X\n", data);
 #endif
-#endif
 
-#if 0
+#if SENSOR_LOG
 	if (_i2c_read_byte(ser_client, 0x11, &data) == 0 )
 		printk("ds90ub913q reg = 0x11, data = 0x%02X\n", data);
 	else
@@ -313,13 +316,13 @@ static int serialize_init(void)
 	_i2c_write_byte(ser_client, 0x0e, 0x99);
 	_i2c_write_byte(ser_client, 0x0e, 0x99);
 
-#if 0
+#if SENSOR_LOG 
 	if (_i2c_read_byte(ser_client, 0x03, &data) == 0 )
 	{
 		printk("ds90ub913q reg = 0x03, data = 0x%02X, CRC Error Reset = 0x%02X\n", data, (data | 0x20));
 	
-		_i2c_write_byte(ser_client, 0x03, (data | 0x20));
-		_i2c_write_byte(ser_client, 0x03, data);
+		//_i2c_write_byte(ser_client, 0x03, (data | 0x20));
+		//_i2c_write_byte(ser_client, 0x03, data);
 	}
 
 	if(_i2c_read_byte(ser_client, 0x0c, &data) == 0)
@@ -340,7 +343,7 @@ static int serialize_init(void)
 	write_reg_data(des_client, des_config_data);
 	write_reg_data(des_client, des_camera_config_data);
 
-#if 0
+#if SENSOR_LOG
 	if(_i2c_read_byte(des_client, 0x1c, &data) == 0)
 	{
 		printk("ds90ub914q reg = 0x1c, data = 0x%x\n", data);	
