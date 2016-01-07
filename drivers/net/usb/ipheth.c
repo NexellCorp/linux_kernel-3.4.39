@@ -107,6 +107,9 @@
 #define IPHETH_CARRIER_CHECK_TIMEOUT round_jiffies_relative(1 * HZ)
 #define IPHETH_CARRIER_ON       0x04
 
+struct net_device *g_netdev = NULL;
+static int create_netdev = 0;
+
 static struct usb_device_id ipheth_table[] = {
 	{ USB_DEVICE_AND_INTERFACE_INFO(
 		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE,
@@ -505,6 +508,77 @@ static const struct net_device_ops ipheth_netdev_ops = {
 };
 #endif
 
+
+static ssize_t reg_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	//struct ipheth_device *rdev = dev_get_drvdata(dev);
+	ssize_t ret;
+
+	ret = sprintf(buf, "reg_show test!!!\n");
+
+	return ret;
+}
+
+static ssize_t reg_store(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t size)
+{
+	//struct ipheth_device *rdev = dev_get_drvdata(dev);
+	ssize_t ret;
+	int val;
+
+	printk(KERN_ERR "## [%s():%s:%d\t]  \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__);
+
+	ret = kstrtoint(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+
+	if(g_netdev && (create_netdev==0))
+	{
+		create_netdev = 1;
+		val = register_netdev(g_netdev);
+		if (val) {
+			err("error registering netdev: %d", val);
+			val = -EIO;
+		}
+	}
+
+	return size;
+}
+
+static DEVICE_ATTR(regnetdev, 0664, reg_show, reg_store);
+
+static struct class *ipheth_class;
+static struct device *ipheth_udev;
+
+#if 0
+static struct kobject *ipheth_kobj;
+
+static int ipheth_sysfs_init(void)
+{
+	int ret ;
+
+	ipheth_kobj = kobject_create_and_add("ipheth", NULL);
+	if (ipheth_kobj == NULL) {
+		printk(KERN_ERR "ipheth_kobj : subsystem_register failed\n");
+		ret = -ENOMEM;
+		goto err;
+	}
+
+	ret = sysfs_create_file(ipheth_kobj, &dev_attr_regnetdev.attr);
+	if (ret) {
+		printk(KERN_ERR "sysfs_create_group failed\n");
+		goto err;
+	}
+
+	return 0 ;
+
+err:
+	return ret ;
+}
+#endif
+
 static int ipheth_probe(struct usb_interface *intf,
 			const struct usb_device_id *id)
 {
@@ -514,9 +588,8 @@ static int ipheth_probe(struct usb_interface *intf,
 	struct ipheth_device *dev;
 	struct net_device *netdev;
 	int i;
-	int retval;
+	int retval = 0;
 
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t]  \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
 	netdev = alloc_etherdev(sizeof(struct ipheth_device));
 	if (!netdev)
 		return -ENOMEM;
@@ -584,18 +657,37 @@ static int ipheth_probe(struct usb_interface *intf,
 	SET_NETDEV_DEV(netdev, &intf->dev);
 	SET_ETHTOOL_OPS(netdev, &ops);
 
-	retval = register_netdev(netdev);
+	g_netdev = netdev;
+	create_netdev = 0;
+
+#if 0// PJSIN 20160107 add-- [ 1 
+	ipheth_class = class_create(THIS_MODULE, "iOS");
+	ipheth_udev = device_create(ipheth_class, NULL, MKDEV(0, 0), NULL, "ipheth");
+
+	retval = sysfs_create_file(&ipheth_udev->kobj, &dev_attr_regnetdev.attr);
+	if (retval) {
+		printk(KERN_ERR "sysfs_create_group failed\n");
+		goto err;
+	}
+#endif// ]-- end 
+
+#if 0
+	 retval = register_netdev(netdev);
 	if (retval) {
 		err("error registering netdev: %d", retval);
 		retval = -EIO;
 		goto err_register_netdev;
 	}
+#endif
 
 	dev_info(&intf->dev, "Apple iPhone USB Ethernet device attached\n");
 	return 0;
 
+#if 0
 err_register_netdev:
 	ipheth_free_urbs(dev);
+#endif
+	
 err_alloc_urbs:
 err_get_macaddr:
 err_alloc_ctrl_buf:
@@ -611,13 +703,25 @@ static void ipheth_disconnect(struct usb_interface *intf)
 
 	dev = usb_get_intfdata(intf);
 	if (dev != NULL) {
-		unregister_netdev(dev->net);
+
+		if(create_netdev == 1)
+			unregister_netdev(dev->net);
+
+		create_netdev = 0;
+		g_netdev = NULL;
 		ipheth_kill_urbs(dev);
 		ipheth_free_urbs(dev);
 		kfree(dev->ctrl_buf);
 		free_netdev(dev->net);
 	}
 	usb_set_intfdata(intf, NULL);
+
+#if 0 
+	sysfs_remove_file(&ipheth_udev->kobj, &dev_attr_regnetdev.attr);
+	device_destroy(ipheth_class, MKDEV(0, 0));
+	class_destroy(ipheth_class);
+#endif
+
 	dev_info(&intf->dev, "Apple iPhone USB Ethernet now disconnected\n");
 }
 
@@ -632,13 +736,36 @@ static int __init ipheth_init(void)
 {
 	int retval;
 
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t]  \n", __func__, strrchr(__FILE__, '/')+1, __LINE__);
+#if 0
+	retval = ipheth_sysfs_init();
+	if (retval) {
+		err("ipheth_sysfs_init failed: %d", retval);
+		goto err;
+	}
+#else
+	ipheth_class = class_create(THIS_MODULE, "iOS");
+	ipheth_udev = device_create(ipheth_class, NULL, MKDEV(0, 0), NULL, "ipheth");
+
+	retval = sysfs_create_file(&ipheth_udev->kobj, &dev_attr_regnetdev.attr);
+	if (retval) {
+		printk(KERN_ERR "sysfs_create_group failed\n");
+		goto err;
+	}
+#endif
+
 	retval = usb_register(&ipheth_driver);
 	if (retval) {
 		err("usb_register failed: %d", retval);
-		return retval;
+		goto err1;
 	}
 	return 0;
+
+err1:
+	sysfs_remove_file(&ipheth_udev->kobj, &dev_attr_regnetdev.attr);
+err:
+	device_destroy(ipheth_class, MKDEV(0, 0));
+	class_destroy(ipheth_class);
+	return retval;
 }
 
 static void __exit ipheth_exit(void)
