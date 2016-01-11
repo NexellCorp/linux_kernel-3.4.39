@@ -861,7 +861,7 @@ static int nxe2000_i2c_probe(struct i2c_client *client,
 
 	nxe2000_gpio_init(nxe2000, pdata);
 
-	nxe2000_debuginit(nxe2000);
+//	nxe2000_debuginit(nxe2000);
 
 #ifdef CONFIG_NXE2000_WDG_TEST
 	nxe2000_watchdog_init(nxe2000);

@@ -64,4 +64,5 @@ obj-$(CONFIG_RTC_DRV_NXP)				+=  $(PROTOTYPE)/$(MODULES)/nx_rtc.o
 
 obj-$(CONFIG_PPM_NXP)					+=  $(PROTOTYPE)/$(MODULES)/nx_ppm.o
 obj-$(CONFIG_SND_NXP_PDM) 				+=  $(PROTOTYPE)/$(MODULES)/nx_pdm.o
+obj-$(CONFIG_SND_NXP_EC_PDM_SPI) 		+=  $(PROTOTYPE)/$(MODULES)/nx_ssp.o
 

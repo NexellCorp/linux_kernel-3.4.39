@@ -31,10 +31,10 @@ config SND_NXP_PLL_3
 endchoice
 
 config SND_NXP_PLLDEV
-    int 
+    int
     default 2 if SND_NXP_PLL_2
     default 3 if SND_NXP_PLL_3
-										
+
 config SND_NXP_I2S
 	tristate
 
@@ -121,3 +121,18 @@ config SND_CODEC_WM8903
 	tristate "wm8903  I2S audio codec."
 	depends on SND_NXP_I2S
 	select SND_SOC_WM8903
+
+
+config SND_NXP_EC
+	tristate "PDM/I2S Echo Canceller"
+	default n
+
+config SND_NXP_EC_PDM_VIRT
+	tristate "Virtual PDM device"
+	depends on SND_NXP_EC
+	default n
+
+config SND_NXP_EC_PDM_SPI
+	tristate "Micom SPI PDM device"
+	depends on SND_NXP_EC
+	default n

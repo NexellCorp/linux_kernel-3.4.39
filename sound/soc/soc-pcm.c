@@ -28,6 +28,8 @@
 #include <sound/soc.h>
 #include <sound/initval.h>
 
+#define	dev_dbg(f, m...)	printk(m)
+
 static int soc_pcm_apply_symmetry(struct snd_pcm_substream *substream,
 					struct snd_soc_dai *soc_dai)
 {

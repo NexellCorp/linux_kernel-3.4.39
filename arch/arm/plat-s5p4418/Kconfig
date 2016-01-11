@@ -29,6 +29,11 @@ choice
 		help
    	 		Support for the drone board.
 
+	config PLAT_S5P4418_EC
+		bool "EC: Echo cancelation for VD"
+		help
+   	 		Support for the echo cancellation board.
+
 endchoice
 
 #

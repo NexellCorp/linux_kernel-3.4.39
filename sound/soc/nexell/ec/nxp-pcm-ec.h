@@ -7,7 +7,8 @@
 
 #include <mach/devices.h>
 #include <linux/amba/pl08x.h>
-#include "nxp-i2s.h"
+#include "../nxp-i2s.h"
+#include "resample.h"
 
 #define SND_SOC_PCM_FORMATS	SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S8	|	\
 							SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_U16_LE |	\
@@ -21,30 +22,43 @@ struct nxp_pcm_dma_param {
 	int	 		bus_width_byte;
 	int	 		max_burst_byte;
 	unsigned int real_clock;
-};
-
-struct nxp_pcm_dma_area {
-	dma_addr_t		physical;		/* dma virtual addr */
-	unsigned char * virtual;		/* dma physical addr */
+	long long start_time_ns;
+	bool is_run;
 };
 
 struct nxp_pcm_runtime_data {
 	/* hw params */
+	int channels;
+	int period_size;
 	int period_bytes;
 	int periods;
 	int buffer_bytes;
-	unsigned int dma_area;	/* virtual addr */
-	unsigned int offset;
+	unsigned int sample_offset;	/* alsa buffer offset */
+	unsigned int dma_offset;	/* hw dma offset */
 	/* DMA param */
 	struct dma_chan  *dma_chan;
 	struct nxp_pcm_dma_param *dma_param;
-	/* dbg dma */
-	unsigned int mem_area;
-	long mem_len;
-	unsigned int mem_offs;
-	long long period_time_us;
-	long long time_stamp_us;
+
+	/* capture hw dma for resampler */
+	struct snd_dma_buffer dma_buffer;
+	int trans_period;
+	u64 total_counts;
+	u64 total_times;
+	struct timespec *ts;	/* periods timespec arrays */
 	void *private_data;
+	/* for resampler */
+	int devno;
+	struct task_struct *task;
+	bool task_running;
+	ReSampleContext *resampler;
+
+	int   input_rate;
+	int   output_rate;
+	bool  run_resampler;
+	bool  rate_changed;
+	int   rate_detect_cnt;
+	void *rs_buffer;	/* for resampler */
+	int dma_avail_size;
 };
 
 #define	STREAM_STR(dir)	(SNDRV_PCM_STREAM_PLAYBACK == dir ? "playback" : "capture ")
