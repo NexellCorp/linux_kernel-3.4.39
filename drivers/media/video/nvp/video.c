@@ -875,7 +875,8 @@ portx_mode:
 */
 void nvp6114a_outport_1mux(unsigned char vformat, unsigned char port1_mode, unsigned char port2_mode )
 {
-	int ch, i;
+    int ch, i;
+	unsigned char tmp=0;
 	unsigned char p1_num,p2_num,port1_vimode,port2_vimode;
 	nvp6124_video_mode vmode;
 
@@ -904,19 +905,38 @@ void nvp6114a_outport_1mux(unsigned char vformat, unsigned char port1_mode, unsi
 		nvp_i2c_write( nvp6124_slave_addr[i], 0xC3+p2_num*2, 0x32);
 		nvp_i2c_write( nvp6124_slave_addr[i], 0xC6, nvp_i2c_read( nvp6124_slave_addr[i], 0xC4));
 		nvp_i2c_write( nvp6124_slave_addr[i], 0xC7, nvp_i2c_read( nvp6124_slave_addr[i], 0xC5));
-		nvp_i2c_write( nvp6124_slave_addr[i], 0xC8, 0x00);         
 
-		nvp_i2c_write( nvp6124_slave_addr[i], 0xCA, 0xFF);    //?򿪶˿?[3:0]??ʱ??[7:4],??Ӳ?????ء?
-		
-		if(port1_vimode == NVP6124_VI_SD)
-			nvp_i2c_write( nvp6124_slave_addr[i], 0xCD+p1_num*2, 0x46);    //ʱ??Ƶ??????
-		else
-			nvp_i2c_write( nvp6124_slave_addr[i], 0xCD+p1_num*2, 0x45);
+        switch (port1_vimode) {
+            case NVP6124_VI_1080P_2530:
+                tmp = 1<<4;
+                break;
+            case NVP6124_VI_720P_2530:
+                tmp = 0x00;
+                break;
+            default:
+                tmp = 2<<4;
+        }
+		nvp_i2c_write( nvp6124_slave_addr[i], 0xC8, tmp);         
 
-		if(port2_vimode == NVP6124_VI_SD)
-			nvp_i2c_write( nvp6124_slave_addr[i], 0xCD+p2_num*2, 0x46);    //ʱ??Ƶ??????
-		else
-			nvp_i2c_write( nvp6124_slave_addr[i], 0xCD+p2_num*2, 0x45);
+		nvp_i2c_write( nvp6124_slave_addr[i], 0xCA, 0xFF);    
+
+        tmp = 0;
+        switch (port1_vimode) {
+            case NVP6124_VI_1080P_2530:
+                tmp = 0x66;
+                break;
+            case NVP6124_VI_720P_2530:
+                tmp = 0x45;
+                break;
+            case NVP6124_VI_SD:
+                tmp = 0x46;
+                break; 
+            default:
+                tmp = 0x66;
+        }
+
+        nvp_i2c_write( nvp6124_slave_addr[i], 0xCD+p1_num*2, tmp);
+        nvp_i2c_write( nvp6124_slave_addr[i], 0xCD+p2_num*2, tmp);    
   	}
 	//printk("nvp6114A_outport_1mux setting\n");
 }
@@ -929,7 +949,7 @@ portx_mode:
 */
 void nvp6114a_outport_2mux(unsigned char vformat, unsigned char port1_mode, unsigned char port2_mode )
 {
-	int ch, i;
+int ch, i;
 	unsigned char tmp=0;
 	unsigned char p1_num,p2_num,port1_vimode,port2_vimode;
 	nvp6124_video_mode vmode;
@@ -1308,7 +1328,7 @@ void nvp6124_each_mode_setting(nvp6124_video_mode *pvmode )
 					nvp_i2c_write( nvp6124_slave_addr[ch/4], 0x51+4*(ch%4),vformat==PAL?pn_value_fhd_pal[1]:pn_value_fhd_nt[1]);		
 					nvp_i2c_write( nvp6124_slave_addr[ch/4], 0x52+4*(ch%4),vformat==PAL?pn_value_fhd_pal[2]:pn_value_fhd_nt[2]);		
 					nvp_i2c_write( nvp6124_slave_addr[ch/4], 0x53+4*(ch%4),vformat==PAL?pn_value_fhd_pal[3]:pn_value_fhd_nt[3]);
-					printk("ch %d setted to 1080P %s\n", ch, vformat==PAL?"PAL":"NTSC");
+					//printk("ch %d setted to 1080P %s\n", ch, vformat==PAL?"PAL":"NTSC");
 				break;
 				default:
 					printk("ch%d wrong mode detected!!!\n", ch);
