@@ -1136,11 +1136,11 @@ static int nvp6114a_power_enable(bool on)
 		nxp_soc_gpio_set_io_dir(reset, 1);
 		nxp_soc_gpio_set_io_func(reset, NX_GPIO_PADFUNC_2);
 		mdelay(1);
-
+#if 0
 		nxp_soc_gpio_set_out_value(reset, 0);
 		mdelay(1);
-
 		nxp_soc_gpio_set_out_value(reset, 1);
+#endif
 		mdelay(10);
 	}
 
@@ -1246,10 +1246,12 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 	  .is_mipi        = false,
 	  .external_sync  = false, /* 656 interface */
 	  .h_active       = 1280,
+	  //.h_active       = 1920, /* Full HD */
 	  .h_frontporch   = 7,
 	  .h_syncwidth    = 1,
 	  .h_backporch    = 10,
 	  .v_active       = 720,
+	  //.v_active       = 1080, /* Full HD */
 	  .v_frontporch   = 0,
 	  .v_syncwidth    = 2,
 	  .v_backporch    = 3,
