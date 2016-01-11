@@ -100,7 +100,9 @@ static void ac3_5p1_mux(short *output, short *input1, short *input2, int n)
     }
 }
 
+#ifdef __KERNEL__
 int inrate;
+#endif
 
 ReSampleContext *audio_resample_init(int output_channels, int input_channels,
                                       float output_rate, float input_rate)
@@ -121,7 +123,9 @@ ReSampleContext *audio_resample_init(int output_channels, int input_channels,
       }
 
     s->ratio = (float)output_rate / (float)input_rate;
+#ifdef __KERNEL__
     inrate = (int)input_rate;
+#endif
 
     s->input_channels = input_channels;
     s->output_channels = output_channels;
