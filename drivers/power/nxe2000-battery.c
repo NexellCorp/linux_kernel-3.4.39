@@ -447,45 +447,6 @@ void nxe2000_register_dump(struct device *dev)
 }
 #endif
 
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-//#define pr_debug	printk
-
-extern int NXP_Get_BoardTemperature(void);
-extern int isCheck_ChargeStop_byResource(void);
-
-int pmic_occur_dieError=0;
-int isOccured_dieError(void)
-{
-	return pmic_occur_dieError;
-}
-EXPORT_SYMBOL_GPL(isOccured_dieError);
-
-
-char strChargingState[15][32] = {
-	"CHG OFF",
-	"Charge Ready(VADP)",
-	"Trickle Charge",
-	"Rapid Charge",
-	"Charge Complete",
-	"SUSPEND",
-	"VCHG Over Voltage",
-	"Battery Error",
-	"No Battery",
-	"Battery Over Voltage",
-	"Battery Temp Error",
-	"Die Error",
-	"Die Shutdown",
-	"No Battery2",
-	"Charge Ready(VUSB)"
-};
-
-char strSupply[3][16]={
-	"Battery",
-	"Adapter",
-	"Usb"
-};
-
-#endif
 
 
 #ifdef ENABLE_FUEL_GAUGE_FUNCTION
@@ -506,9 +467,7 @@ static int get_power_supply_Android_status(struct nxe2000_battery_info *info);
 static int measure_vsys_ADC(struct nxe2000_battery_info *info, int *data);
 static int set_low_bat_dsoc(struct nxe2000_battery_info *info, int val);
 static int Calc_Linear_Interpolation(int x0, int y0, int x1, int y1, int y);
-#ifndef CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE
 static int get_battery_temp(struct nxe2000_battery_info *info);
-#endif
 static int get_battery_temp_2(struct nxe2000_battery_info *info);
 static int check_jeita_status(struct nxe2000_battery_info *info, bool *is_jeita_updated);
 static void nxe2000_scaling_OCV_table(struct nxe2000_battery_info *info, int cutoff_vol, int full_vol, int *start_per, int *end_per);
@@ -2067,38 +2026,6 @@ static void nxe2000_charge_monitor_work(struct work_struct *work)
 	return;
 }
 
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-int nxe2000_decide_charge_byResource(struct nxe2000_battery_info *info)
-{
-	uint8_t ctrlreg;
-	int ret;
-
-	ret = nxe2000_read(info->dev->parent, NXE2000_REG_CHGCTL1, &ctrlreg);
-	if(isCheck_ChargeStop_byResource() == 0)
-	{
-		if(!(ctrlreg&0x03))
-		{
-			pr_debug("....  resume the changing\n");
-			nxe2000_set_bits(info->dev->parent, NXE2000_REG_CHGCTL1, 0x03);
-		}
-	}
-	else // Charging Stop
-	{
-		if(ctrlreg&0x03)
-		{
-			pr_debug(".... stop the charging: ctrlreg(0x%x)\n", ctrlreg);
-			nxe2000_clr_bits(info->dev->parent, NXE2000_REG_CHGCTL1, 0x03);
-		}
-
-		queue_delayed_work(info->monitor_wqueue, &info->get_charge_work,
-					 NXE2000_CHARGE_UPDATE_TIME * HZ);
-		return 0;
-	}
-
-	return 1;
-}
-#endif
-
 static void nxe2000_get_charge_work(struct work_struct *work)
 {
 	struct nxe2000_battery_info *info = container_of(work,
@@ -2111,10 +2038,6 @@ static void nxe2000_get_charge_work(struct work_struct *work)
 	int i, j;
 	int ret;
 	int capacity = 0;
-
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-	nxe2000_decide_charge_byResource(info);
-#endif
 
 	mutex_lock(&info->lock);
 
@@ -3804,25 +3727,6 @@ static int get_power_supply_status(struct nxe2000_battery_info *info)
 	charge_state = (status & 0x1F);
 	supply_state = ((status & 0xC0) >> 6);
 
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-	pr_debug("chgState(%s) supply[%d](%s) battery(%d%%) VBAT(%d)\n",
-		strChargingState[charge_state],supply_state, strSupply[supply_state],
-		0, 0);
-	if(charge_state == CHG_STATE_DIE_ERR)
-	{
-		uint8_t dieTempReg;
-		extern int NXP_Get_BoardTemperature(void);
-		ret = nxe2000_read(info->dev->parent, NXE2000_REG_CHGISET, &dieTempReg);// (info->dev->parent, NXE2000_REG_CHGISET, CHARGE_CURRENT_100MA);
-		ret = nxe2000_read(info->dev->parent, 0xB3, &dieTempReg);
-		printk("________die Error. dieTempReg:0x%x\n", dieTempReg);
-		pmic_occur_dieError=1;
-	}
-	else
-	{
-		pmic_occur_dieError=0;
-	}
-#endif
-
 	if (info->entry_factory_mode)
 			return POWER_SUPPLY_STATUS_NOT_CHARGING;
 
@@ -4657,7 +4561,6 @@ static void suspend_charge4first_soc(struct nxe2000_battery_info *info)
 	return;
 }
 
-#ifndef CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE
 static int get_battery_temp(struct nxe2000_battery_info *info)
 {
 	int ret = 0;
@@ -4687,16 +4590,9 @@ static int get_battery_temp(struct nxe2000_battery_info *info)
 
 	return ret;
 }
-#endif
 
 static int get_battery_temp_2(struct nxe2000_battery_info *info)
 {
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-	if(NXP_Get_BoardTemperature() == 0)
-		return 270;
-
-	return (10*(NXP_Get_BoardTemperature()-20));
-#else
 	uint8_t reg_buff[2];
 	long temp, temp_off, temp_gain;
 	bool temp_sign, temp_off_sign, temp_gain_sign;
@@ -4822,7 +4718,6 @@ static int get_battery_temp_2(struct nxe2000_battery_info *info)
 out:
 	new_temp = get_battery_temp(info);
 	return new_temp;
-#endif
 }
 
 static int get_time_to_empty(struct nxe2000_battery_info *info)

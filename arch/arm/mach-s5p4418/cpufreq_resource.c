@@ -86,8 +86,7 @@ EXPORT_SYMBOL_GPL(isCpuMaxFrequency);
 
 
 #define SIZE_RD_STAT 128
-extern int NXP_Get_BoardTemperature(void);
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+#if 0//defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 extern int isOccured_dieError(void);
 #endif
 
@@ -320,9 +319,9 @@ void GetCPUInfo(char *buf)
 
  	ctrl_cpuTemp.cpuUsageNx4418 = usage100;
 
-    pr_debug("cpu:%02d.%02d %% MaxCpu(%d) temperature(%d) die(%d)stop(0x%x)\n",
+    pr_debug("cpu:%02ld.%02ld %% MaxCpu(%d) temperature(%d) die(%d)stop(0x%x)\n",
     	(usage100/100), (usage100%100), curMaxCpu, ctrl_cpuTemp.board_temperature,
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+#if 0//defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
     	isOccured_dieError(),
 #else
 		0,
@@ -338,7 +337,7 @@ void GetCPUInfo(char *buf)
     ctrl_cpuTemp.m_prev.si = ctrl_cpuTemp.m_curr.si;
     ctrl_cpuTemp.m_prev.zero = ctrl_cpuTemp.m_curr.zero;
 
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+#if 0 //defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 	if(isOccured_dieError() && (ctrl_cpuTemp.board_temperature<TEMPERTURE_LIMIT_LEVEL2))
 		ctrl_cpuTemp.occuredError = 1;
 #endif
@@ -488,7 +487,7 @@ long funcGetMaxFreq(struct cpufreq_limit_data *limit)
 		ctrl_cpuTemp.waring_level = 1;
 	}
 
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+#if 0// defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 	if(isOccured_dieError() || ctrl_cpuTemp.occuredError) // DieError
 	{
 		limit->prev_max_freq = limit->min_max_freq;
@@ -540,7 +539,7 @@ long funcGetMaxFreq_OnBoost(struct cpufreq_limit_data *limit)//, int *t)
 		cpu_up_force_byResource(ctrl_cpuTemp.stopped_cpu);
 		ctrl_cpuTemp.stopped_cpu=0;
 	}
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
+#if 0 //defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE) && defined(CONFIG_BATTERY_NXE2000)
 	if(isOccured_dieError() || ctrl_cpuTemp.occuredError) // over temperature.
 		return limit->min_max_freq;
 #endif
@@ -560,11 +559,31 @@ long funcGetMaxFreq_OnBoost(struct cpufreq_limit_data *limit)//, int *t)
 	return max_freq;
 }
 
+static long get_boadr_temperature(void)
+{
+	char *file= "/sys/devices/platform/nxp-adc-tmp.0/temp_label";
+	mm_segment_t old_fs;
+	char buf[5] = {0 ,};
+	long temp;
 
+	int fd = sys_open(file, O_RDWR, 0);
+	if (0 > fd){
+		return -EINVAL;
+	}
+   	old_fs = get_fs();
+	set_fs(KERNEL_DS);
+	sys_read(fd, (void*)buf, 5);
+	temp = simple_strtol(buf, NULL, 10);
+	
+	set_fs(old_fs);
+	sys_close(fd);
+
+	return temp;
+}
 long cpuUsage_Process(struct cpufreq_limit_data *limit, int boost)
 {
-	ctrl_cpuTemp.board_temperature = NXP_Get_BoardTemperature();
-
+	ctrl_cpuTemp.board_temperature = (int)get_boadr_temperature();
+	
 	if(boost) // if over temperature, can't use max_clock.
 		return funcGetMaxFreq_OnBoost(limit);
 

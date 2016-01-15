@@ -80,21 +80,15 @@ static int tmp_table[][2] = {
 	[9] = {4200, 85}  // 9
 };
 #define TEMP_TABLAE_SIZE	ARRAY_SIZE(tmp_table)
-
-static void nxp_adc_tmp_monfn(struct work_struct *work)
+static int nxp_adc_tmp(struct nxp_adc_tmp *tmp)
 {
-	struct nxp_adc_tmp *tmp = container_of(work, struct nxp_adc_tmp, mon_work.work);
 	int i = 0, j = 0, val = 0;
 	int voltage;
 	int err = 0;
 
-	if (test_bit(STATE_SUSPEND_ENTER, &tmp->state))
-		goto exit_mon;
-
-	/* read adc and convert tmp */
 	err = iio_st_read_channel_raw(tmp->iio, &val);
 	if (0 > err)
-		goto exit_mon;
+		return -1;
 
 	tmp->adc_value = val;
 	voltage = (18*val*1000)/4096;
@@ -172,6 +166,17 @@ static void nxp_adc_tmp_monfn(struct work_struct *work)
 	pr_debug("TMU [%d] %3d:%3d (%4d)\n",
 		tmp->channel, tmp->tmp_value, tmp->tmp_max, tmp->adc_value);
 
+}
+
+static void nxp_adc_tmp_monfn(struct work_struct *work)
+{
+	struct nxp_adc_tmp *tmp = container_of(work, struct nxp_adc_tmp, mon_work.work);
+
+	if (test_bit(STATE_SUSPEND_ENTER, &tmp->state))
+		goto exit_mon;
+		nxp_adc_tmp(tmp);
+	/* read adc and convert tmp */
+
 exit_mon:
 	if (tmp->callback)
 		tmp->callback(tmp->channel, tmp->adc_value, tmp->tmp_value, true);
@@ -205,7 +210,7 @@ static ssize_t show_temp(struct device *dev,
 	struct nxp_adc_tmp *tmp = dev_get_drvdata(dev);
 	char *s = buf;
 
-	s += sprintf(s, "%4d\n", tmp->temperature);
+	s += sprintf(s, "%d\n", tmp->temperature);
 	if (s != buf)
 		*(s-1) = '\n';
 
