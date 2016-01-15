@@ -1006,6 +1006,7 @@ vector_\name:
 	@
 	stmia	sp, {r0, lr}		@ save r0, lr
 	mrs	lr, spsr
+	orr lr, lr, #64			@ fiq disable
 	str	lr, [sp, #8]		@ save spsr
 
 	@
