@@ -39,8 +39,11 @@ static inline void arch_local_irq_disable(void)
 		: "memory", "cc");
 }
 
-//#define local_fiq_enable()  __asm__("cpsie f	@ __stf" : : : "memory", "cc")
+#ifdef CONFIG_FORCE_DISABLE_FIQ
 #define local_fiq_enable()  __asm__("cpsid f	@ __stf" : : : "memory", "cc")
+#else
+#define local_fiq_enable()  __asm__("cpsie f	@ __stf" : : : "memory", "cc")
+#endif
 #define local_fiq_disable() __asm__("cpsid f	@ __clf" : : : "memory", "cc")
 #else
 
@@ -70,7 +73,6 @@ static inline void arch_local_irq_enable(void)
 	asm volatile(
 		"	mrs	%0, cpsr	@ arch_local_irq_enable\n"
 		"	bic	%0, %0, #128\n"
-		"   orr %0, %0, #64 @ fiq disable\n"
 		"	msr	cpsr_c, %0"
 		: "=r" (temp)
 		:
@@ -143,7 +145,6 @@ static inline void arch_local_irq_restore(unsigned long flags)
 {
 	asm volatile(
 		"	msr	cpsr_c, %0	@ local_irq_restore"
-		"	orr %0, %0, #64 @ fiq disable\n"
 		:
 		: "r" (flags)
 		: "memory", "cc");

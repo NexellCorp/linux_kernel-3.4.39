@@ -82,7 +82,6 @@
 #if __LINUX_ARM_ARCH__ >= 6
 	.macro	disable_irq_notrace
 	cpsid	i
-	cpsid	f
 	.endm
 
 	.macro	enable_irq_notrace
@@ -137,7 +136,6 @@
  */
 	.macro	save_and_disable_irqs, oldcpsr
 	mrs	\oldcpsr, cpsr
-	orr \oldcpsr, \oldcpsr, #64
 	disable_irq
 	.endm
 

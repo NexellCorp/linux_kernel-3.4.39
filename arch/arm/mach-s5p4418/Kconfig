@@ -56,6 +56,10 @@ choice
 		depends on SUSPEND
 endchoice
 
+config FORCE_DISABLE_FIQ
+	bool "Force disable fiq"
+	default y
+
 config CPU_S5P4418_SMP_ISR
 	bool "Support multiple interrupt service routine"
 	default y
