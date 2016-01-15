@@ -729,6 +729,8 @@ static int mp8845c_suspend(struct i2c_client *client, pm_message_t state)
 	int id_info = init_data->id;
 	int ret = 0;
 
+#if !defined(CONFIG_PLAT_S5P6818_ASB) && !defined(CONFIG_PLAT_S5P6818_SVT)
+
 	ri = find_regulator_info(id_info);
 	if (ri == NULL) {
 		dev_err(&client->dev, "%s() invalid regulator ID specified\n", __func__);
@@ -744,6 +746,7 @@ static int mp8845c_suspend(struct i2c_client *client, pm_message_t state)
 			return ret;
 		}
 	}
+#endif
 
 	return ret;
 }
