@@ -797,7 +797,6 @@ static int soc_bind_dai_link(struct snd_soc_card *card, int num)
 			if (cpu_dai->dev->of_node != dai_link->cpu_dai_of_node)
 				continue;
 		} else {
-			printk("CODECNAME ???? %s : %s\n", cpu_dai->name, dai_link->cpu_dai_name);
 			if (strcmp(cpu_dai->name, dai_link->cpu_dai_name))
 				continue;
 		}
