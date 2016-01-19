@@ -1006,6 +1006,9 @@ vector_\name:
 	@
 	stmia	sp, {r0, lr}		@ save r0, lr
 	mrs	lr, spsr
+#ifdef CONFIG_FORCE_DISABLE_FIQ
+	orr lr, lr, #64			@ fiq disable
+#endif
 	str	lr, [sp, #8]		@ save spsr
 
 	@

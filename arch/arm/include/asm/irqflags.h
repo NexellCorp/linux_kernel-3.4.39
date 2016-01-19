@@ -39,7 +39,11 @@ static inline void arch_local_irq_disable(void)
 		: "memory", "cc");
 }
 
+#ifdef CONFIG_FORCE_DISABLE_FIQ
+#define local_fiq_enable()  __asm__("cpsid f	@ __stf" : : : "memory", "cc")
+#else
 #define local_fiq_enable()  __asm__("cpsie f	@ __stf" : : : "memory", "cc")
+#endif
 #define local_fiq_disable() __asm__("cpsid f	@ __clf" : : : "memory", "cc")
 #else
 

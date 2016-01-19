@@ -426,6 +426,10 @@ void cpu_init(void)
 	      "I" (offsetof(struct stack, und[0])),
 	      PLC (PSR_F_BIT | PSR_I_BIT | SVC_MODE)
 	    : "r14");
+
+#ifdef CONFIG_FORCE_DISABLE_FIQ
+	local_fiq_disable();
+#endif
 }
 
 int __cpu_logical_map[NR_CPUS];
