@@ -21,8 +21,7 @@
 #include <sound/pcm_params.h>
 
 /* Playback(USB-IN) Default Stereo - Fl/Fr */
-/* static int p_chmask = 0x3; */
-static int p_chmask = 0x1;
+static int p_chmask = 0x3;
 module_param(p_chmask, uint, S_IRUGO);
 MODULE_PARM_DESC(p_chmask, "Playback Channel Mask");
 
@@ -261,6 +260,12 @@ agdev_iso_complete(struct usb_ep *ep, struct usb_request *req)
                 uac2->p_interval = 1000;
                 uac2->p_framesize = 2;
                 uac2->p_pktsize = 32;
+                uac2->p_pktsize_residue = 0;
+			} else if (p_srate == 16000 && p_chmask == 3) {
+                //16000, 2ch
+                uac2->p_interval = 1000;
+                uac2->p_framesize = 4;
+                uac2->p_pktsize = 64;
                 uac2->p_pktsize_residue = 0;
             }
         }
