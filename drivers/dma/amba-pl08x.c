@@ -84,6 +84,8 @@
 #include <linux/seq_file.h>
 #include <linux/slab.h>
 #include <asm/hardware/pl080.h>
+
+#undef CONFIG_ARCH_CPU_SLSI
 #if defined(CONFIG_ARCH_CPU_SLSI)
 #include <mach/devices.h>
 #endif
@@ -1867,7 +1869,7 @@ static int pl08x_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
 				int i = 0;
 				int timeout;
 				struct pl08x_txd *txd = plchan->at;
-				struct pl08x_lli *llis_va = txd->llis_va; 
+				struct pl08x_lli *llis_va = txd->llis_va;
 
 				for (i = 0; i < txd->lli_num; i++) {
 					llis_va[i].lli = 0;
