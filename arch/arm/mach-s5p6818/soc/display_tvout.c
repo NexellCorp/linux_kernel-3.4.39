@@ -784,8 +784,6 @@ static void _dpc_ntsc_on()
 
 static int tvout_enable(struct disp_process_dev *pdev, int enable)
 {
-    printk("%s entered, enable %d\n", __func__, enable);
-
     if (enable && (cur_tvout_enable_state == 0)) {
 		cur_tvout_enable_state = 1;
 
@@ -812,8 +810,14 @@ static int tvout_enable(struct disp_process_dev *pdev, int enable)
         _dpc_mode1();
         _dpc_ntsc_on();
 
+        //[KEUN]160118 dpc enable & interrupt enable
+        NX_DPC_SetDPCEnable(1, CTRUE);
+        NX_DPC_ClearInterruptPendingAll(1);
+        NX_DPC_SetInterruptEnableAll(1, CTRUE);
+
     } else if (enable == 0){
 		cur_tvout_enable_state = 0;
+
         NX_MLC_SetMLCTopControlParameter(1,
                 CTRUE, // Field Enable(interlace or progressive)
                 CFALSE, // MLC Operation Enable
@@ -830,6 +834,11 @@ static int tvout_enable(struct disp_process_dev *pdev, int enable)
         mdelay(20);
         NX_DPC_SetEncoderDACPowerEnable(1, 0);
         NX_DPC_SetRegFlush(1);
+
+        //[KEUN]160118 dpc disable & clock disable
+        NX_DPC_SetDPCEnable(1, CFALSE);
+        NX_DPC_SetClockDivisorEnable(1, CFALSE); 
+
         _dac_power_control(false);
     }
 
