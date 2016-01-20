@@ -7,6 +7,9 @@ ifeq ($(CONFIG_PLAT_S5P4418_LEPUS_QUICK),y)
 PLATBOARD :=lepus_quick
 endif
 
+ifeq ($(CONFIG_PLAT_S5P4418_X1DASH),y)
+PLATBOARD :=x1dash
+endif
 
 #
 # Build options
