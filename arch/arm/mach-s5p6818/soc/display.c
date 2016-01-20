@@ -542,18 +542,18 @@ static void disp_syncgen_initialize(void)
 
 	for (; DISPLAY_SYNCGEN_NUM > i; i++) {
 		/* BASE : MLC, PCLK/BCLK */
-		NX_MLC_SetBaseAddress(i, (U32)IO_ADDRESS(NX_MLC_GetPhysicalAddress(i)));
+		NX_MLC_SetBaseAddress(i, (void*)IO_ADDRESS(NX_MLC_GetPhysicalAddress(i)));
 		NX_MLC_SetClockPClkMode(i, NX_PCLKMODE_ALWAYS);
 		NX_MLC_SetClockBClkMode(i, NX_BCLKMODE_ALWAYS);
 
 		/* BASE : DPC, PCLK */
-		NX_DPC_SetBaseAddress(i, (U32)IO_ADDRESS(NX_DPC_GetPhysicalAddress(i)));
+		NX_DPC_SetBaseAddress(i, (void*)IO_ADDRESS(NX_DPC_GetPhysicalAddress(i)));
 		NX_DPC_SetClockPClkMode(i, NX_PCLKMODE_ALWAYS);
 	}
 
 	/* Top is one, Top's devices  */
 	NX_DISPLAYTOP_Initialize();
-	NX_DISPLAYTOP_SetBaseAddress((U32)IO_ADDRESS(NX_DISPLAYTOP_GetPhysicalAddress()));
+	NX_DISPLAYTOP_SetBaseAddress((void*)IO_ADDRESS(NX_DISPLAYTOP_GetPhysicalAddress()));
 	NX_DISPLAYTOP_OpenModule();
 	NX_DISPTOP_CLKGEN_Initialize();
 }
@@ -1348,6 +1348,18 @@ void nxp_soc_disp_video_set_address(int module, unsigned int lu_a, unsigned int 
 	DBGOUT("%s: %s, lua=0x%x, cba=0x%x, cra=0x%x (lus=%d, cbs=%d, crs=%d), wait=%d\n",
 		__func__, pvid->name, lu_a, cb_a, cr_a, lu_s, cb_s, cr_s, waitvsync);
 
+    // psw0523 add for video source crop
+    if (pvid->en_source_crop) {
+        if (FOURCC_YUYV == pvid->format) {
+            lu_a += (pvid->src_crop_top * lu_s) + (pvid->src_crop_left << 1);
+        } else {
+            lu_a += (pvid->src_crop_top * lu_s) + pvid->src_crop_left;
+            cb_a += (pvid->src_crop_top * cb_s) + (pvid->src_crop_left >> 1);
+            cr_a += (pvid->src_crop_top * cr_s) + (pvid->src_crop_left >> 1);
+        }
+    }
+    // end psw0523
+    
 	if (FOURCC_YUYV == pvid->format) {
 		NX_MLC_SetVideoLayerAddressYUYV(module, lu_a, lu_s);
 	} else {
@@ -1412,6 +1424,13 @@ int nxp_soc_disp_video_set_position(int module, int left, int top,
 
 	pvid->hFilter = hf;
 	pvid->vFilter = vf;
+
+    /* psw0523 add for source crop : backup dstw */
+    pvid->left   = left;
+    pvid->top    = top;
+    pvid->right  = right;
+    pvid->bottom = bottom;
+    /* end psw0523 */
 
 	/* set scale */
 	NX_MLC_SetVideoLayerScale(module, srcw, srch, dstw, dsth,
@@ -2587,7 +2606,7 @@ static int display_soc_resume(struct platform_device *pldev)
 	NX_MLC_SetClockBClkMode(module, NX_BCLKMODE_ALWAYS);
 
 	/* BASE : DPC, PCLK */
-	NX_DPC_SetBaseAddress(module, (U32)IO_ADDRESS(NX_DPC_GetPhysicalAddress(module)));
+	NX_DPC_SetBaseAddress(module, (void*)IO_ADDRESS(NX_DPC_GetPhysicalAddress(module)));
 	NX_DPC_SetClockPClkMode(module, NX_PCLKMODE_ALWAYS);
 
 	return 0;

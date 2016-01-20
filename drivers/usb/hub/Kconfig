@@ -1,0 +1,18 @@
+#
+# USB Imaging devices configuration
+#
+comment "USB Hub devices"
+	depends on USB
+
+config USB_HUB_USB2514
+	tristate "USB Hub USB2514 support"
+	depends on USB
+	---help---
+	  Say Y here if you want to connect this type of still camera to
+	  your computer's USB port. This driver can be used with gphoto 0.4.3
+	  and higher (look at <http://www.gphoto.org/>).
+	  To use it create a device node with "mknod /dev/mustek c 180 32" and
+	  configure it in your software.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called mdc800.

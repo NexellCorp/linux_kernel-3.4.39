@@ -44,7 +44,7 @@
 #include "nxp_adc.h"
 
 #ifdef CONFIG_ARCH_S5P4418
-#define ADC_USING_PROTOTYPE
+//#define ADC_USING_PROTOTYPE
 #else /* CONFIG_ARCH_S5P6818 */
 //#define ADC_USING_PROTOTYPE
 #endif
@@ -157,7 +157,7 @@ extern int iio_map_array_unregister(struct iio_dev *indio_dev, struct iio_map *m
 static irqreturn_t nxp_adc_isr(int irq, void *dev_id)
 {
 	struct nxp_adc_info *adc = (struct nxp_adc_info *)dev_id;
-	struct adc_register *reg = ADC_BASE;
+	struct adc_register *reg = adc->adc_base;
 
 	__raw_writel(1, &reg->ADCINTCLR);
 
@@ -167,10 +167,14 @@ static irqreturn_t nxp_adc_isr(int irq, void *dev_id)
 }
 #endif
 
-static void nxp_adc_dump_regs(void)
+/*
+ * XXX Do not use in release version XXX
+ */
+#ifdef DEBUG
+static void nxp_adc_dump_regs(struct nxp_adc_info *adc)
 {
+	struct adc_register *reg = adc->adc_base;
 	struct adc_register adc_regs;
-	struct adc_register *reg = ADC_BASE;
 
 	adc_regs.ADCCON = reg->ADCCON;
 	adc_regs.ADCDAT = reg->ADCDAT;
@@ -188,24 +192,59 @@ static void nxp_adc_dump_regs(void)
 		adc_regs.ADCCON, adc_regs.ADCDAT, adc_regs.ADCINTENB, adc_regs.ADCINTCLR, adc_regs.ADCPRESCON);
 #endif
 }
+#else
+static void nxp_adc_dump_regs(struct nxp_adc_info *adc) { }
+#endif
 
 
 #define	ADC_HW_RESET()		do { nxp_soc_peri_reset_set(RESET_ID_ADC); } while (0)
+
+
+static int __turn_around_invalid_first_read(struct nxp_adc_info *adc)
+{
+	unsigned int adcon = 0;
+	struct adc_register *reg = adc->adc_base;
+	volatile int value = 0;
+	unsigned long wait = loops_per_jiffy * (HZ/10);
+
+	adcon  = __raw_readl(&reg->ADCCON) & ~(0x07 << ASEL_BITP) & ~(0x01 << ADEN_BITP);
+	adcon |= 0 << ASEL_BITP;	// channel
+	__raw_writel(adcon, &reg->ADCCON);
+
+	adcon |= 1 << ADEN_BITP;	// start
+	__raw_writel(adcon, &reg->ADCCON);
+
+	__raw_writel(0x1, &reg->ADCINTCLR);
+	__raw_writel(0x1, &reg->ADCINTENB);
+
+	while (wait > 0) {
+		if (__raw_readl(&reg->ADCINTCLR) & (1<<AICL_BITP)) {
+			__raw_writel(0x1, &reg->ADCINTCLR);	/* pending clear */
+			value = __raw_readl(&reg->ADCDAT);	/* get value */
+			break;
+		}
+		wait--;
+	}
+	return 0;
+}
 
 #ifdef ADC_USING_PROTOTYPE
 #else
 static int setup_adc_con(struct nxp_adc_info *adc)
 {
+	struct adc_register *reg = adc->adc_base;
 	unsigned int adcon = 0;
-	unsigned int pres = 0;
-	struct adc_register *reg = ADC_BASE;
 
 #ifdef CONFIG_ARCH_S5P4418
 	adcon = ((adc->prescale & 0xFF) << APSV_BITP) |
-			(1 << APEN_BITP) |
-			(0 << ADCON_STBY) ;
+			(0 << ADCON_STBY);
+	__raw_writel(adcon, &reg->ADCCON);
+
+	adcon |= (1 << APEN_BITP);
 	__raw_writel(adcon, &reg->ADCCON);
 #else	/* CONFIG_ARCH_S5P6818 */
+	unsigned int pres = 0;
+
 	adcon = ((DATA_SEL_VAL & 0xf) << DATA_SEL_BITP) |
 			((CLK_CNT_VAL & 0xf)  << CLK_CNT_BITP) |
 			(0 << ADCON_STBY);
@@ -216,6 +255,12 @@ static int setup_adc_con(struct nxp_adc_info *adc)
 	pres |= (1 << APEN_BITP);
 	__raw_writel(pres, &reg->ADCPRESCON);
 #endif
+
+	/* *****************************************************
+	 * Turn-around invalid value after Power On
+	 * *****************************************************/
+	__turn_around_invalid_first_read(adc);
+
 
 	if (adc->support_interrupt) {
 		__raw_writel(1, &reg->ADCINTCLR);
@@ -277,7 +322,7 @@ static int nxp_adc_setup(struct nxp_adc_info *adc, struct platform_device *pdev)
 	ADC_HW_RESET();
 
 	NX_ADC_Initialize();
-	NX_ADC_SetBaseAddress(0, (U32)IO_ADDRESS(NX_ADC_GetPhysicalAddress(0)));
+	NX_ADC_SetBaseAddress(0, (void*)IO_ADDRESS(NX_ADC_GetPhysicalAddress(0)));
  	NX_ADC_OpenModule(0);
 
 	NX_ADC_SetInputChannel(0, 0);
@@ -323,18 +368,20 @@ static int nxp_read_raw(struct iio_dev *indio_dev,
 				long mask)
 {
 	struct nxp_adc_info *adc = iio_priv(indio_dev);
-	struct adc_register *reg = ADC_BASE;
+	struct adc_register *reg = adc->adc_base;
 	int ch = chan->channel;
 	unsigned long wait = loops_per_jiffy * (HZ/10);
 	volatile unsigned int adcon = 0;
-	unsigned long flags;
 	volatile int value = 0;
+	unsigned long flags = flags;
 
 	if (adc->support_interrupt) {
 		mutex_lock(&indio_dev->mlock);
 
 		adcon  = __raw_readl(&reg->ADCCON) & ~(0x07 << ASEL_BITP);
 		adcon |= ch << ASEL_BITP;	// channel
+		__raw_writel(adcon, &reg->ADCCON);
+
 		adcon |=  1 << ADEN_BITP;	// start
 		__raw_writel(adcon, &reg->ADCCON);
 
@@ -360,7 +407,7 @@ static int nxp_read_raw(struct iio_dev *indio_dev,
 			wait--;
 		}
 
-		//nxp_adc_dump_regs();
+		nxp_adc_dump_regs(adc);
 
 		if (0 >= wait) {
 			ADC_UNLOCK(&adc->lock, flags);
@@ -376,15 +423,16 @@ static int nxp_read_raw(struct iio_dev *indio_dev,
 		adcon  = __raw_readl(&reg->ADCCON) & ~(0x07 << ASEL_BITP) & ~(0x01 << ADEN_BITP);
 		adcon |= ch << ASEL_BITP;	// channel
 		__raw_writel(adcon, &reg->ADCCON);
-		adcon  = __raw_readl(&reg->ADCCON);
+
 		adcon |=  1 << ADEN_BITP;	// start
 		__raw_writel(adcon, &reg->ADCCON);
+		
+		__raw_writel(0x1, &reg->ADCINTCLR);
+		__raw_writel(0x1, &reg->ADCINTENB);
 
 		/* *****************************************************
 		 * Set register values direct for test.
 		 * *****************************************************/
-		//__raw_writel(0x1, &reg->ADCINTENB);
-		//__raw_writel(0x1, &reg->ADCINTCLR);
 		//#ifdef CONFIG_ARCH_S5P6818
 		//__raw_writel(0x80F9, &reg->ADCPRESCON);
 		//#endif
@@ -399,7 +447,7 @@ static int nxp_read_raw(struct iio_dev *indio_dev,
 			wait--;
 		}
 
-		//nxp_adc_dump_regs();
+		nxp_adc_dump_regs(adc);
 
 		*val = value;
 
@@ -434,7 +482,7 @@ static int nxp_adc_resume(struct platform_device *pdev)
 	struct nxp_adc_info *adc = iio_priv(indio_dev);
 
 #ifdef ADC_USING_PROTOTYPE
-	NX_ADC_SetBaseAddress(0, (U32)IO_ADDRESS(NX_ADC_GetPhysicalAddress(0)));
+	NX_ADC_SetBaseAddress(0, (void*)IO_ADDRESS(NX_ADC_GetPhysicalAddress(0)));
  	NX_ADC_OpenModule(0);
 
 	ADC_HW_RESET();
@@ -621,6 +669,7 @@ static int __devinit nxp_adc_probe(struct platform_device *pdev)
 	struct iio_dev *iio = NULL;
 	struct nxp_adc_info *adc = NULL;
 	struct iio_chan_spec *spec;
+	struct resource	*mem;
 	struct iio_map *map;
 	int i = 0, ret = -ENODEV;
 
@@ -631,6 +680,14 @@ static int __devinit nxp_adc_probe(struct platform_device *pdev)
 	}
 
 	adc = iio_priv(iio);
+
+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	adc->adc_base = devm_request_and_ioremap(&pdev->dev, mem);
+	if (!adc->adc_base) {
+		ret = -ENOMEM;
+		goto err_iio_free;
+	}
+
 	ret = nxp_adc_setup(adc, pdev);
 	if (0 > ret) {
 		pr_err("Fail: setup iio ADC device\n");

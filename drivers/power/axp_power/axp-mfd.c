@@ -33,35 +33,62 @@
 
 struct axp_mfd_chip *g_chip;
 
+int axp_otg_power_control(int enable)
+{
+	DBG_MSG("## [\e[31m%s\e[0m():%d] enable:%d\n", __func__, __LINE__, enable);
+
+	if (enable)
+	{
+		if (CFG_GPIO_OTG_VBUS_DET > -1)
+			gpio_set_value(CFG_GPIO_OTG_VBUS_DET, 1);
+	}
+	else
+	{
+		if (CFG_GPIO_OTG_VBUS_DET > -1)
+			gpio_set_value(CFG_GPIO_OTG_VBUS_DET, 0);
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(axp_otg_power_control);
+
+void axp_run_irq_handler(void)
+{
+	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+	(void)schedule_work(&g_chip->irq_work);
+	return;
+}
+EXPORT_SYMBOL_GPL(axp_run_irq_handler);
+
 static void axp_mfd_register_dump(struct device *dev)
 {
-	int ret=0;
-	u16 i=0;
-	u8 value=0;
+	/*int ret=0;*/
+	/*u16 i=0;*/
+	/*u8 value=0;*/
 
-	printk("##########################################################\n");
-	printk("##\e[31m %s()\e[0m                               #\n", __func__);
-	printk("##########################################################\n");
-	printk("##      0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F\n");
+	/*printk("##########################################################\n");*/
+	/*printk("##\e[31m %s()\e[0m                               #\n", __func__);*/
+	/*printk("##########################################################\n");*/
+	/*printk("##      0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F\n");*/
 
-	for(i=0; i<=0xff; i++)
-	{
-		if(i%16 == 0)
-			printk("## %02X:", i);
+	/*for(i=0; i<=0xff; i++)*/
+	/*{*/
+		/*if(i%16 == 0)*/
+			/*printk("## %02X:", i);*/
 
-		if(i%4 == 0)
-			printk(" ");
+		/*if(i%4 == 0)*/
+			/*printk(" ");*/
 
-		ret = axp_read(dev, i, &value);
-		if(!ret)
-			printk("%02x ", value);
-		else
-			printk("\e[31mxx\e[0m ");
+		/*ret = axp_read(dev, i, &value);*/
+		/*if(!ret)*/
+			/*printk("%02x ", value);*/
+		/*else*/
+			/*printk("\e[31mxx\e[0m ");*/
 
-		if((i+1)%16 == 0)
-			printk("\n");
-	}
-	printk("##########################################################\n");
+		/*if((i+1)%16 == 0)*/
+			/*printk("\n");*/
+	/*}*/
+	/*printk("##########################################################\n");*/
 }
 
 #ifdef CONFIG_DEBUG_FS
@@ -104,15 +131,6 @@ static void axp_debuginit(struct axp_mfd_chip *chip)
 }
 #endif
 
-
-void axp_run_irq_handler(void)
-{
-	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
-	(void)schedule_work(&g_chip->irq_work);
-	return;
-}
-EXPORT_SYMBOL_GPL(axp_run_irq_handler);
-
 static void axp_mfd_irq_work(struct work_struct *work)
 {
 	struct axp_mfd_chip *chip = container_of(work, struct axp_mfd_chip, irq_work);
@@ -129,7 +147,7 @@ static void axp_mfd_irq_work(struct work_struct *work)
 		if (irqs == 0){
 			break;
 		}
-		
+
 		if(irqs > 0xffffffff){
 			blocking_notifier_call_chain(&chip->notifier_list, (uint32_t)(irqs>>32), (void *)1);
 		}
@@ -344,9 +362,9 @@ static int __devinit axp_mfd_probe(struct i2c_client *client,
 
 	i2c_set_clientdata(client, chip);
 
-#ifdef ENABLE_DEBUG
-	axp_mfd_register_dump(chip->dev);
-#endif
+/*#ifdef ENABLE_DEBUG*/
+	/*axp_mfd_register_dump(chip->dev);*/
+/*#endif*/
 
 	axp_debuginit(chip);
 
@@ -357,7 +375,7 @@ static int __devinit axp_mfd_probe(struct i2c_client *client,
 	g_chip = chip;
 
 #if 1
-	ret = request_threaded_irq(gpio_to_irq(client->irq), NULL, 
+	ret = request_threaded_irq(gpio_to_irq(client->irq), NULL,
 								axp_mfd_irq_handler,
 								IRQ_TYPE_EDGE_FALLING|IRQF_DISABLED|IRQF_ONESHOT,
 								"axp_mfd", chip);

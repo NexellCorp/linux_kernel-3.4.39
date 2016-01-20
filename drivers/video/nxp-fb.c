@@ -376,6 +376,7 @@ nxp_fb_init_display(struct fb_info *info)
 
 	nxp_fb_dev_set_layer(par);
 
+    // psw0523 fix for quickbooting
 	#if defined(CONFIG_LOGO_NXP_COPY)
 	nxp_fb_copy_boot_logo(par, (xres * yres * pixel));
 	#else

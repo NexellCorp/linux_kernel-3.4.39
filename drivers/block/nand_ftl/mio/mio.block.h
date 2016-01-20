@@ -60,6 +60,15 @@
 #include <linux/vmalloc.h>
 #include <linux/mm.h>
 #include <linux/pm.h>
+#include <linux/io.h>
+#include <linux/of.h>
+
+/******************************************************************************
+ *
+ ******************************************************************************/
+//WQ : handling block request with WorkQueue. Just for test.
+//#define TRANS_USING_WQ
+//#define USING_WQ_THREAD
 
 /******************************************************************************
  *
@@ -73,6 +82,7 @@
 #define MIO_TIME_DIFF_MAX(J64)  (0xFFFFFFFFFFFFFFFF - (J64))
 #define MIO_TIME_MSEC(MS)       msecs_to_jiffies(MS)
 #define MIO_TIME_SEC(S)         msecs_to_jiffies(S * 1000)
+
 
 /******************************************************************************
  *
@@ -169,6 +179,18 @@ struct mio_state
         } lock;
 
     } transaction;
+
+#ifdef TRANS_USING_WQ
+#ifdef USING_WQ_THREAD
+	struct kthread_worker	io_worker;
+	struct task_struct	*io_thread;
+	struct kthread_work	io_work;
+
+	struct workqueue_struct *wq;
+	struct work_struct work;
+	bool bg_stop;
+#endif
+#endif
 };
 
 struct mio_device
@@ -182,4 +204,6 @@ struct mio_device
     struct gendisk * disk;
     struct mio_state * io_state;
 };
+
+MIO_BLOCK_EXT struct mio_device mio_dev;
 

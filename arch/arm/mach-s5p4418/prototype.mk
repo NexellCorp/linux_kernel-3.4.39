@@ -32,7 +32,8 @@ obj-y += \
 		$(PROTOTYPE)/$(MODULES)/nx_gpio.o		\
 		$(PROTOTYPE)/$(MODULES)/nx_alive.o		\
 		$(PROTOTYPE)/$(MODULES)/nx_clkgen.o		\
-		$(PROTOTYPE)/$(MODULES)/nx_ecid.o
+		$(PROTOTYPE)/$(MODULES)/nx_ecid.o		\
+		$(PROTOTYPE)/$(MODULES)/nx_wdt.o
 
 obj-$(CONFIG_NXP_DISPLAY)				+= 	$(PROTOTYPE)/$(MODULES)/nx_displaytop.o		\
 								   			$(PROTOTYPE)/$(MODULES)/nx_disptop_clkgen.o	\
@@ -51,7 +52,10 @@ obj-$(CONFIG_RTC_DRV_NXP)				+= 	$(PROTOTYPE)/$(MODULES)/nx_rtc.o
 obj-$(CONFIG_HAVE_PWM)					+= 	$(PROTOTYPE)/$(MODULES)/nx_pwm.o
 obj-$(CONFIG_NXP_ADC)					+= 	$(PROTOTYPE)/$(MODULES)/nx_adc.o
 obj-$(CONFIG_VIDEO_NXP_CAPTURE)			+=  $(PROTOTYPE)/$(MODULES)/nx_vip.o
+
 obj-$(CONFIG_NXP_BACKWARD_CAMERA)		+=  $(PROTOTYPE)/$(MODULES)/nx_vip.o
+obj-$(CONFIG_NXP_BACKWARD_CAMERA)		+=  $(PROTOTYPE)/$(MODULES)/nx_mlc.o
+
 obj-$(CONFIG_NXP_OUT_HDMI)				+= 	$(PROTOTYPE)/$(MODULES)/nx_hdmi.o
 obj-$(CONFIG_NXP_OUT_HDMI)				+= 	$(PROTOTYPE)/$(MODULES)/nx_ecid.o
 

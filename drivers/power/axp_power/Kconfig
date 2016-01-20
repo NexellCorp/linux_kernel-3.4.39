@@ -18,6 +18,14 @@ config KP_AXP22
 
 endchoice
 
+config AXP_REGULATOR
+	bool "AXP Regulator Driver"
+	default n
+
+config AXP_BATTERY
+	bool "AXP Battery Driver"
+	default n
+
 config AXP_DEBUG
 	bool "AXP debug interface"
 	default n

@@ -413,6 +413,44 @@ static void init_chip(struct i2c_client *client)
 	startup_chip(client);
 }
 
+// psw0523 add for quickboot
+#include <linux/kthread.h>
+static void gs_ts_work_resume(struct work_struct *work);
+static irqreturn_t gsl_ts_irq(int irq, void *dev_id);
+static struct gsl_ts *s_ts = NULL;
+static int _init_thread(void *arg)
+{
+    int rc;
+	struct gsl_ts *ts = (struct gsl_ts *)arg;
+    struct i2c_client *client = ts->client;
+
+    msleep(600);
+	init_chip(ts->client);
+	//check_mem_data(ts->client);
+
+	rc=  request_irq(client->irq, gsl_ts_irq, IRQF_TRIGGER_RISING, client->name, ts);
+	if (rc < 0) {
+		printk( "gsl_probe: request irq failed\n");
+        return -1;
+	}
+
+#ifdef GSL_MONITOR
+	printk( "gsl_ts_probe () : queue gsl_monitor_workqueue\n");
+
+	INIT_DELAYED_WORK(&gsl_monitor_work, gsl_monitor_worker);
+	gsl_monitor_workqueue = create_singlethread_workqueue("gsl_monitor_workqueue");
+	queue_delayed_work(gsl_monitor_workqueue, &gsl_monitor_work, 1000);
+#endif
+	device_enable_async_suspend(&client->dev);
+	INIT_WORK(&ts->resume_work, gs_ts_work_resume);
+}
+
+void start_gsl_init_thread(void)
+{
+    kthread_run(_init_thread, s_ts, "gsl-init-thread");
+}
+// end psw0523
+
 #if 0
 static void check_mem_data(struct i2c_client *client)
 {
@@ -995,6 +1033,9 @@ static int __devinit gsl_ts_probe(struct i2c_client *client,
 	gsl_client = client;
 
 	gslX680_init();
+
+    // psw0523 fix for quickboot
+#if 0
 	init_chip(ts->client);
 	//check_mem_data(ts->client);
 
@@ -1016,6 +1057,10 @@ static int __devinit gsl_ts_probe(struct i2c_client *client,
 #endif
 	device_enable_async_suspend(&client->dev);
 	INIT_WORK(&ts->resume_work, gs_ts_work_resume);
+#else
+    kthread_run(_init_thread, ts, "gsl-init-thread");
+    /*s_ts = ts;*/
+#endif
 
 	printk("[GSLX680] End %s\n", __func__);
 

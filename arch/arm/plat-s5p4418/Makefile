@@ -3,28 +3,8 @@
 #
 # Makefile for the Nexell platform board
 
-ifeq ($(CONFIG_PLAT_S5P4418_DRONE),y)
-PLATBOARD :=drone
-endif
-
-ifeq ($(CONFIG_PLAT_S5P4418_DRONE2),y)
-PLATBOARD :=drone2
-endif
-
-ifeq ($(CONFIG_PLAT_S5P4418_SVT),y)
-PLATBOARD :=svt
-endif
-
-ifeq ($(CONFIG_PLAT_S5P4418_ASB),y)
-PLATBOARD :=asb
-endif
-
-ifeq ($(CONFIG_PLAT_S5P4418_LEPUS),y)
-PLATBOARD :=lepus
-endif
-
-ifeq ($(CONFIG_PLAT_S5P4418_DRONEL),y)
-PLATBOARD :=dronel
+ifeq ($(CONFIG_PLAT_S5P4418_LEPUS_QUICK),y)
+PLATBOARD :=lepus_quick
 endif
 
 
@@ -32,14 +12,13 @@ endif
 # Build options
 #
 
-obj-y	:= $(PLATBOARD)/
+obj-y   := $(PLATBOARD)/
 
-KBUILD_AFLAGS 	+= -I$(srctree)/$(platdirs)common 	\
-				   -I$(srctree)/$(platdirs)$(PLATBOARD)/include
-KBUILD_CFLAGS 	+= -I$(srctree)/$(platdirs)common	\
-				   -I$(srctree)/$(platdirs)$(PLATBOARD)/include
-KBUILD_CPPFLAGS += -I$(srctree)/$(platdirs)common	\
-				   -I$(srctree)/$(platdirs)$(PLATBOARD)/include
-
+KBUILD_AFLAGS   += -I$(srctree)/$(platdirs)common   \
+                   -I$(srctree)/$(platdirs)$(PLATBOARD)/include
+KBUILD_CFLAGS   += -I$(srctree)/$(platdirs)common   \
+                   -I$(srctree)/$(platdirs)$(PLATBOARD)/include
+KBUILD_CPPFLAGS += -I$(srctree)/$(platdirs)common   \
+                   -I$(srctree)/$(platdirs)$(PLATBOARD)/include
 
 

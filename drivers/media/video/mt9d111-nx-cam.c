@@ -829,15 +829,26 @@ static int mt9d111_connected_check(struct i2c_client *client)
 	mt9d111_i2c_write_word(client, 0x65, 0xE000);
 #endif// ]-- end
 	mt9d111_i2c_write_word(client, 0xf0, 0x0000);
+	mdelay(5);
+
 	mt9d111_i2c_read_word(client, 0x00, &val);
+	mdelay(5);
+
 	mt9d111_i2c_read_word(client, 0xFF, &val1);
+	mdelay(5);
+
 	v4l_info(client,"################################## \n");
 	v4l_info(client,"#  Check for mt9d111 \n");
 	v4l_info(client,"#  Read ID : 0x00:0x%04x, 0x%04x \n", val, val1);
 	v4l_info(client,"################################## \n");
 
+	v4l_info(client,"value 0x%4X or 0x%4X\n", val, val1);
+
 	if(val != 0x1519 || val1 != 0x1519 )
 	{
+
+		v4l_info(client,"Doesn't match value 0x%4X or 0x%4X\n", val, val1);
+
 		return -1;
 	}
 	return 0;
@@ -873,6 +884,8 @@ static int mt9d111_init(struct v4l2_subdev *sd, u32 val)
 	if (!state->inited) {
 		v4l_info(client,"mt9d111_init\n");
 
+		printk(KERN_INFO "mt9d111_init\n");
+
 		start_time = get_jiffies_64(); /* read the current time */
 #if 0
 		client->addr = (0xBA>>1);
@@ -880,6 +893,7 @@ static int mt9d111_init(struct v4l2_subdev *sd, u32 val)
 
 		if(mt9d111_connected_check(client) < 0) {
 			v4l_info(client, "%s: camera not connected..\n", __func__);
+			printk(KERN_INFO "%s: camera not connected..\n", __func__);
 			return -1;
 		}
 
@@ -888,12 +902,15 @@ static int mt9d111_init(struct v4l2_subdev *sd, u32 val)
 		//err = mt9d111_write_regs(client, mt9d111_reg_init_rotate, ARRAY_SIZE(mt9d111_reg_init_rotate));
 		//err = mt9d111_write_regs(client, mt9d111_reg_init_1285x725, ARRAY_SIZE(mt9d111_reg_init_1285x725));
 
+		mdelay(60); //keun 2015.04.28
+
 		end_time = get_jiffies_64(); /* read the current time */
 		delta_jiffies = end_time - start_time;
 		printk(KERN_ERR "%s() = \e[32m%d[ms]\e[0m \n", __func__, jiffies_to_msecs(delta_jiffies));
 
 		if (err < 0) {
 			pr_err("%s: write reg error(err: %d)\n", __func__, err);
+			printk(KERN_INFO "%s: write reg error(err: %d)\n", __func__, err); 
 			return err;
 		}
 		state->inited = true;

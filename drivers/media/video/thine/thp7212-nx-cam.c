@@ -19,12 +19,11 @@
 #include <linux/moduleparam.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
-
 ///#include <media/v4l2-i2c-drv.h> //many del
 #include "thp7212-nx.h"
 #include <linux/videodev2_exynos_camera.h>
 
-#define CONFIG_PRINTK 1
+#define CONFIG_VIDEO_THP7212_V_1_1
 
 /* psw0523 add for test patron preset table */
 #define USE_PRESET
@@ -38,8 +37,6 @@
 #include <linux/workqueue.h>
 #endif
 
-//#define CONFIG_VIDEO_THP7212_DEBUG 
-#define CONFIG_VIDEO_THP7212_V_1_1
 
 #define DEFAULT_SENSOR_WIDTH		640
 #define DEFAULT_SENSOR_HEIGHT		480
@@ -80,6 +77,7 @@
 #define FIRST_SETTING_FOCUS_MODE_DELAY_MS	100
 #define SECOND_SETTING_FOCUS_MODE_DELAY_MS	200
 
+
 #ifdef CONFIG_VIDEO_THP7212_DEBUG
 enum {
 	THP7212_DEBUG_I2C		= 1U << 0,
@@ -100,7 +98,6 @@ module_param_named(debug_mask, thp7212_debug_mask, uint, S_IWUSR | S_IRUGO);
 #endif
 
 #define THP7212_VERSION_1_1	0x11
-
 
 enum thp7212_hw_power {
 	THP7212_HW_POWER_OFF,
@@ -648,6 +645,11 @@ static const struct v4l2_fmtdesc capture_fmts[] = {
 	},
 };
 
+
+//added by keun 2015.05.07
+static bool camera_initialized = false;
+
+
 static int thp7212_s_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *fmt);
 
 
@@ -684,7 +686,7 @@ int thp7212_i2c_read_data(struct i2c_client *client, unsigned int _addr, unsigne
 
 	if (cnt == 10) 
 	{
-		printk(KERN_INFO KERN_ERR "soc_i2c_read retry\n");
+		printk(KERN_ERR "soc_i2c_read retry\n");
 		return -1;
 	}
 
@@ -937,6 +939,8 @@ static unsigned int thp7212_get_height(void)
 #endif
 }
 
+
+
 static int thp7212_set_from_table(struct v4l2_subdev *sd,
 				const char *setting_name,
 				const struct thp7212_regset_table *table,
@@ -1063,7 +1067,6 @@ static int thp7212_set_jpeg_quality(struct v4l2_subdev *sd)
 		container_of(sd, struct thp7212_state, sd);
 
 	dev_err(&client->dev, "%s: jpeg.quality %d\n", __func__, state->jpeg.quality);
-
 	if (state->jpeg.quality < 0)
 		state->jpeg.quality = 0;
 	if (state->jpeg.quality > 100)
@@ -1152,7 +1155,6 @@ static int thp7212_start_capture(struct v4l2_subdev *sd)
 	 * otherwise the capture will be wrong because of the cropping
 	 */
 	dev_err(&client->dev, "%s:\n", __func__);
-
 	if (state->preview_framesize_index != THP7212_PREVIEW_VGA) {
 		int err = thp7212_set_from_table(sd, "reset crop", &state->regs->reset_crop, 1, 0);
 		if (err < 0) {
@@ -1800,7 +1802,6 @@ static void thp7212_init_parameters(struct v4l2_subdev *sd)
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 
 	dev_err(&client->dev, "%s: \n", __func__);
-
 	state->strm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	parms->capture.capturemode = 0;
 	parms->capture.timeperframe.numerator = 1;
@@ -2166,6 +2167,8 @@ static int thp7212_get_shutterspeed(struct v4l2_subdev *sd,
 	u16 read_value_2 = 0;
 	u32 read_value;
 
+	printk("LINE:%d", __LINE__);
+
 	err = thp7212_set_from_table(sd, "get shutterspeed",
 				&state->regs->get_shutterspeed, 1, 0);
 	//err |= thp7212_i2c_read_word(client, 0x0F12, &read_value_1);
@@ -2191,6 +2194,8 @@ static int thp7212_get_frame_count(struct v4l2_subdev *sd,
 		container_of(sd, struct thp7212_state, sd);
 	u16 read_value_1 = 0;
 	u32 read_value;
+
+	printk("LINE:%d", __LINE__);
 
 	err = thp7212_set_from_table(sd, "get frame count",
 				&state->regs->get_frame_count, 1, 0);
@@ -2223,7 +2228,7 @@ static void thp7212_set_preset(struct v4l2_subdev *sd, struct reg_val *preset, i
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
     struct reg_val *regval = preset;
 
-    /* printk(KERN_INFO "%s: size %d\n", __func__, size); */
+    /* printk("%s: size %d\n", __func__, size); */
     for (i = 0; i < size; i++) {
         if (regval->reg == 0xFFFF)
             mdelay(regval->val);
@@ -2231,7 +2236,7 @@ static void thp7212_set_preset(struct v4l2_subdev *sd, struct reg_val *preset, i
             //thp7212_i2c_write_word(client, regval->reg, regval->val);
         regval++;
     }
-    /* printk(KERN_INFO "preset end!!!\n"); */
+    /* printk("preset end!!!\n"); */
 }
 #endif
 
@@ -2319,9 +2324,10 @@ static int thp7212_init_regs(struct v4l2_subdev *sd)
  */
 static int thp7212_s_config(struct v4l2_subdev *sd, int irq, void *platform_data) __attribute__((unused));
 
+
 static int thp7212_power(int flag)
 {
-	printk(KERN_INFO "%s: sensor is power %s\n", __func__, flag == 1 ?"on":"off");
+	printk("%s: sensor is power %s\n", __func__, flag == 1 ?"on":"off");
 	//Attention: Power On the all the camera module when system turn on
 	//Here only control the reset&&powerdown pin
    //xiebin.wang@20110530
@@ -2351,12 +2357,12 @@ static int thp7212_s_power(struct v4l2_subdev *sd, int on)
 #if 0
 #ifdef USE_PRESET
         if (!state->initialized) {
-            printk(KERN_INFO "%s: init!\n", __func__);
+            printk("%s: init!\n", __func__);
 #ifndef USE_INITIAL_WORKER_THREAD
             state->initialized = true;
             thp7212_set_preset(sd, thp7212_reg_init, ARRAY_SIZE(thp7212_reg_init));
 #else
-            printk(KERN_INFO "queue_work ---> thp7212_init_work\n");
+            printk("queue_work ---> thp7212_init_work\n");
             queue_work(state->init_wq, &state->init_work);
 #endif
         }
@@ -2396,7 +2402,7 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 
 	dev_err(&client->dev, "%s: start\n", __func__);
 
-#if 0
+#if 1
 	unsigned int reset_en=0;
 
 	// device reset
@@ -2404,9 +2410,9 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 	nxp_soc_gpio_set_io_dir(reset_en, 1);
 	nxp_soc_gpio_set_io_func(reset_en, nxp_soc_gpio_get_altnum(reset_en));
 	nxp_soc_gpio_set_out_value(reset_en, 0);
-	mdelay(10);
+	mdelay(1);
 	nxp_soc_gpio_set_out_value(reset_en, 1);
-	mdelay(5);	
+	mdelay(2);	
 #endif
 
 	// Start C0 00 00 ram_7210.elf.s19.1 Stop 
@@ -2433,6 +2439,7 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 	}
 	// Start C0 FF 08 10 01 00 Stop 
 	{
+		mdelay(100);
 		u8 buf[] = { 0xFF, 0x08, 0x10, 0x01, 0x00 };
 		ret = thp7212_i2c_write_block(sd, buf, sizeof(buf));
 		if(ret < 0) {
@@ -2480,7 +2487,6 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 	}
 
 #endif
-
 	// Start C0 FF 00 01 Stop 
 	{
 		u8 buf[] = { 0xFF, 0x00, 0x01 };
@@ -2527,7 +2533,6 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 			}
 		}
 #endif
-
 
 //firmware verification
 #if 0
@@ -2602,6 +2607,54 @@ static int thp7212_init(struct v4l2_subdev *sd, u32 val)
 	//thp7212_i2c_read_addr16_byte(client, 0xF001, &read_value);
 //	pr_info("%s : Keun Revision : 0x %02X\n", __func__, read_value);
 #endif
+
+	return 0;
+}
+
+static int thp7212_restart(struct v4l2_subdev *sd)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	struct thp7212_state *state = container_of(sd, struct thp7212_state, sd);
+
+	int ret = 0;
+
+	dev_err(&client->dev, "%s: start\n", __func__);
+
+	// Start C0 FF 00 01 Stop 
+	{
+		u8 buf[] = { 0xFF, 0x00, 0x01 };
+		ret = thp7212_i2c_write_block(sd, buf, sizeof(buf));
+		if(ret < 0) {
+			dev_err(&client->dev, "\e[31m%s(Start C0 FF 00 01 Stop) i2c error\e[0m, ret = %d\n", __func__, ret);
+			return ret;
+		}
+	}
+
+#if 1//def CONFIG_BB_SDK_FRAME_RATE_CONTROL
+	mdelay(100);
+	// Start C0 F0 1C 0x Stop 
+	{
+		u8 buf[] = { 0xF0, 0x1C, 0x00 }; //Frame rate select 0x00-0x02 (0x00:30fps, 0x01:25fps, 0x02:20fps)
+		ret = thp7212_i2c_write_block(sd, buf, sizeof(buf));
+		if(ret < 0) {
+			dev_err(&client->dev, "\e[31m%s(Start C0 F0 1C 0x Stop) i2c error\e[0m, ret = %d\n", __func__, ret);
+			return ret;
+		}
+	}	
+#endif
+
+	mdelay(100);
+	// Start C0 F0 0B 01 Stop 
+	{
+		u8 buf[] = { 0xF0, 0x0B, 0x01 }; //	Output ON/OFF 0x00-0x01 (0x00:OFF, 0x01:ON)
+		ret = thp7212_i2c_write_block(sd, buf, sizeof(buf));
+		if(ret < 0) {
+			dev_err(&client->dev, "\e[31m%s(Start C0 F0 0B 01 Stop) i2c error\e[0m, ret = %d\n", __func__, ret);
+			return ret;
+		}
+	}
+
+	dev_err(&client->dev, "%s: end\n", __func__);
 
 	return 0;
 }
@@ -3462,7 +3515,18 @@ static int thp7212_s_stream(struct v4l2_subdev *sd, int enable)
 				break;
 		}
 #else
-		thp7212_init(sd, enable);
+		//added by keun 2015.05.07
+		if( !camera_initialized )
+		{
+			printk(KERN_INFO "Camera FW Initialization....!!!\n");
+			thp7212_init(sd, enable);
+			camera_initialized = true;
+		}
+		else
+		{
+			printk(KERN_INFO "Camera FW is already initialized....!!!\n");
+			thp7212_restart(sd);
+		}
 #endif
 		state->runmode = THP7212_RUNMODE_RUNNING;
 	} 
@@ -3541,7 +3605,10 @@ static int __find_resolution(struct v4l2_subdev *sd,
 		}
 		fsize++;
 	}
-
+	printk("LINE(%d): mf width: %d, mf height: %d, mf code: %d\n", __LINE__,
+		mf->width, mf->height, stype);
+	printk("LINE(%d): match width: %d, match height: %d, match code: %d\n", __LINE__,
+		match->width, match->height, stype);
 	if (match) {
 		mf->width  = match->width;
 		mf->height = match->height;
@@ -3549,6 +3616,8 @@ static int __find_resolution(struct v4l2_subdev *sd,
 		*type = stype;
 		return 0;
 	}
+	printk("LINE(%d): mf width: %d, mf height: %d, mf code: %d\n", __LINE__,
+		mf->width, mf->height, stype);
 
 	return -EINVAL;
 }
@@ -3670,6 +3739,7 @@ static int thp7212_link_setup(struct media_entity *entity,
 			    const struct media_pad *local,
 			    const struct media_pad *remote, u32 flags)
 {
+	printk("%s\n", __func__);
 	return 0;
 }
 
@@ -3702,6 +3772,7 @@ static int thp7212_subdev_close(struct v4l2_subdev *sd,
 			      struct v4l2_subdev_fh *fh)
 {
 	thp7212_debug(THP7212_DEBUG_I2C, "%s", __func__);
+	printk("%s", __func__);
 	return 0;
 }
 
@@ -3729,6 +3800,7 @@ static void thp7212_init_work(struct work_struct *work)
 {
     struct thp7212_state *state = container_of(work, struct thp7212_state, init_work);
     //thp7212_set_preset(&state->sd, thp7212_reg_init, ARRAY_SIZE(thp7212_reg_init));
+    printk("%s\n", __func__);
     state->initialized = true;
 }
 #endif
@@ -3792,6 +3864,7 @@ static int thp7212_probe(struct i2c_client *client,
 #endif
 
 	/* dev_dbg(&client->dev, "5MP camera THP7212 loaded.\n"); */
+	printk("13MP camera THP7212 loaded.\n");
 
     return 0;
 }
@@ -3830,16 +3903,19 @@ static struct i2c_driver thp7212_i2c_driver = {
 
 static int __init thp7212_mod_init(void)
 {
+	printk("many: %s\n",__func__);
 	return i2c_add_driver(&thp7212_i2c_driver);
 }
 
 static void __exit thp7212_mod_exit(void)
 {
+	printk("many: %s\n",__func__);
 	i2c_del_driver(&thp7212_i2c_driver);
 }
 
 module_init(thp7212_mod_init);
 module_exit(thp7212_mod_exit);
+
 
 MODULE_DESCRIPTION("THP7212 camera driver");
 MODULE_AUTHOR("   <    @nexell.co.kr>");

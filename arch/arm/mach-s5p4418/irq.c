@@ -616,6 +616,29 @@ static void gpio_mask_irq(struct irq_data *d)
 	writel(readl(base + GPIO_INT_DET) & ~(1<<bit), base + GPIO_INT_DET);
 }
 
+static void gpio_disable_irq(struct irq_data *d)
+{
+	void __iomem *base = irq_data_get_irq_chip_data(d);
+	int bit = (d->irq & 0x1F);
+	//printk("%s: gpio irq = %d, %s.%d\n", __func__, d->irq, VIO_NAME(d->irq), bit);
+
+	/* gpio mask : irq disable */
+	writel(readl(base + GPIO_INT_ENB) & ~(1<<bit), base + GPIO_INT_ENB);
+	writel(readl(base + GPIO_INT_DET) & ~(1<<bit), base + GPIO_INT_DET);
+}
+
+static void gpio_enable_irq(struct irq_data *d)
+{
+	void __iomem *base = irq_data_get_irq_chip_data(d);
+	int bit = (d->irq & 0x1F);
+	//printk("%s: gpio irq = %d, %s.%d\n", __func__, d->irq, VIO_NAME(d->irq), bit);
+
+	/* gpio unmask : irq enable */
+	writel(readl(base + GPIO_INT_ENB) | (1<<bit), base + GPIO_INT_ENB);
+	writel(readl(base + GPIO_INT_DET) | (1<<bit), base + GPIO_INT_DET);
+	readl(base + GPIO_INT_ENB);
+}
+
 static void gpio_unmask_irq(struct irq_data *d)
 {
 	void __iomem *base = irq_data_get_irq_chip_data(d);
@@ -696,6 +719,8 @@ static struct irq_chip gpio_chip = {
 	.irq_ack		= gpio_ack_irq,
 	.irq_mask		= gpio_mask_irq,
 	.irq_unmask		= gpio_unmask_irq,
+	.irq_enable		= gpio_enable_irq,
+	.irq_disable	= gpio_disable_irq,
 	.irq_set_type	= gpio_set_type_irq,
 	.irq_set_wake	= gpio_set_wake,
 };

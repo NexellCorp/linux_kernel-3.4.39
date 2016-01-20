@@ -1297,7 +1297,7 @@ static int __init dwc_otg_driver_init(void)
 {
 	int retval = 0;
 	int error;
-        struct device_driver *drv;
+    struct device_driver *drv;
 
 	if(fiq_split_enable && !fiq_fix_enable) {
 		printk(KERN_WARNING "dwc_otg: fiq_split_enable was set without fiq_fix_enable! Correcting.\n");
@@ -1334,7 +1334,11 @@ static int __init dwc_otg_driver_init(void)
 	return retval;
 }
 
+//#ifdef CONFIG_DEFERRED_INIT_CALL 
+//deferred_module_init(dwc_otg_driver_init);
+//#else
 module_init(dwc_otg_driver_init);
+//#endif
 
 /**
  * This function is called when the driver is removed from the kernel

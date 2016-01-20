@@ -182,7 +182,7 @@ static int nxp_tmu_start(struct tmu_info *info)
 	u32 mode = 7;
 	int time = 1000;
 
-	NX_TMU_SetBaseAddress(channel, IO_ADDRESS(NX_TMU_GetPhysicalAddress(channel)));
+	NX_TMU_SetBaseAddress(channel, (void*)IO_ADDRESS(NX_TMU_GetPhysicalAddress(channel)));
 	NX_TMU_ClearInterruptPendingAll(channel);
 	NX_TMU_SetInterruptEnableAll(channel, CFALSE);
 
@@ -227,13 +227,13 @@ static inline void nxp_tmu_trim_ready(struct tmu_info *info)
 
 	while (count-- > 0) {
 	    // Program the measured data to e-fuse
-    	u32 val = readl(IO_ADDRESS((PHY_BASEADDR_TIEOFF_MODULE + (76*4))));
+    	u32 val = readl((void*)IO_ADDRESS((PHY_BASEADDR_TIEOFF_MODULE + (76*4))));
     	val = val | 0x3;
 
-    	writel(val, (u32*)IO_ADDRESS((PHY_BASEADDR_TIEOFF_MODULE + (76*4))));
+    	writel(val, (void*)IO_ADDRESS((PHY_BASEADDR_TIEOFF_MODULE + (76*4))));
 
     	// e-fuse Sensing Done. Check.
-    	val = readl((u32*)IO_ADDRESS((PHY_BASEADDR_TIEOFF_MODULE + (76*4))));
+    	val = readl((void*)IO_ADDRESS((PHY_BASEADDR_TIEOFF_MODULE + (76*4))));
     	done = (((val>>3) & 0x3) == 0x3);
     	if (done)
     		break;

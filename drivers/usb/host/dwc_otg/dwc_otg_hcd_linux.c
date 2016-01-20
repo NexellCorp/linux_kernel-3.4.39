@@ -71,10 +71,13 @@
 #include "dwc_otg_hcd.h"
 #include "dwc_otg_mphi_fix.h"
 
-#ifdef CONFIG_BATTERY_NXE2000 
+/* nexell soc headers */
+#include <mach/platform.h>
+#if defined (CONFIG_BATTERY_NXE2000)
 #include <linux/power/nxe2000_battery.h>
-#endif
-#ifdef CONFIG_KP_AXP22
+#elif defined (CFG_SWITCH_USB_5V_EN)
+extern void otg_power_en(int enable);
+#elif defined (CONFIG_KP_AXP22)
 extern int axp_otg_power_control(int enable);
 #endif
 
@@ -165,7 +168,7 @@ static void dwc_otg_driver_suspend_regs(dwc_otg_core_if_t *core_if, int suspend)
 		regs->adpctl = DWC_READ_REG32(&global_regs->adpctl);
 	//	regs->reserved39[39] = DWC_READ_REG32(&global_regs->reserved39[39]);
 		regs->hptxfsiz = DWC_READ_REG32(&global_regs->hptxfsiz);
-		for (i = 0; 16 > i; i++)
+		for (i = 0; ARRAY_SIZE(regs->dtxfsiz) > i; i++)
 			regs->dtxfsiz[i] = DWC_READ_REG32(&global_regs->dtxfsiz[i]);	// 0~15
 	} else {
 		DWC_WRITE_REG32(&global_regs->gotgctl, regs->gotgctl);
@@ -195,7 +198,7 @@ static void dwc_otg_driver_suspend_regs(dwc_otg_core_if_t *core_if, int suspend)
 		DWC_WRITE_REG32(&global_regs->adpctl, regs->adpctl);
 	//	DWC_WRITE_REG32(&global_regs->reserved39[39], regs->reserved39[39]);
 		DWC_WRITE_REG32(&global_regs->hptxfsiz, regs->hptxfsiz);
-		for (i = 0; 16 > i; i++)
+		for (i = 0; ARRAY_SIZE(regs->dtxfsiz) > i; i++)
 			DWC_WRITE_REG32(&global_regs->dtxfsiz[i], regs->dtxfsiz[i]);	// 0~15
 	}
 }
@@ -351,6 +354,8 @@ static int dwc_otg_hcd_resume(struct usb_hcd *hcd)
 		core_if->op_state = B_PERIPHERAL;
 #if defined(CONFIG_BATTERY_NXE2000)
         otgid_power_control_by_dwc(0);
+#elif defined (CFG_SWITCH_USB_5V_EN)
+        otg_power_en(0);
 #elif defined(CONFIG_KP_AXP22)
 		axp_otg_power_control(0);
 #endif
@@ -667,23 +672,23 @@ int hcd_init(dwc_bus_dev_t *_dev)
 	dwc_otg_hcd_t *dwc_otg_hcd = NULL;
 	dwc_otg_device_t *otg_dev = DWC_OTG_BUSDRVDATA(_dev);
 	int retval = 0;
-        u64 dmamask;
+    u64 dmamask;
 //	struct pt_regs regs;
 
 	DWC_DEBUGPL(DBG_HCD, "DWC OTG HCD INIT otg_dev=%p\n", otg_dev);
 
 	/* Set device flags indicating whether the HCD supports DMA. */
 	if (dwc_otg_is_dma_enable(otg_dev->core_if))
-                dmamask = DMA_BIT_MASK(32);
-        else
-                dmamask = 0;
+        dmamask = DMA_BIT_MASK(32);
+    else
+        dmamask = 0;
               
 #if    defined(LM_INTERFACE) || defined(PLATFORM_INTERFACE)
-        dma_set_mask(&_dev->dev, dmamask);
-        dma_set_coherent_mask(&_dev->dev, dmamask);
+    dma_set_mask(&_dev->dev, dmamask);
+    dma_set_coherent_mask(&_dev->dev, dmamask);
 #elif  defined(PCI_INTERFACE)
-        pci_set_dma_mask(_dev, dmamask);
-        pci_set_consistent_dma_mask(_dev, dmamask);
+    pci_set_dma_mask(_dev, dmamask);
+    pci_set_consistent_dma_mask(_dev, dmamask);
 #endif
 
 #ifdef CONFIG_FIQ

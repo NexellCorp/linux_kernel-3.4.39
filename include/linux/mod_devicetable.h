@@ -130,6 +130,9 @@ struct usb_device_id {
 #define USB_DEVICE_ID_MATCH_INT_CLASS		0x0080
 #define USB_DEVICE_ID_MATCH_INT_SUBCLASS	0x0100
 #define USB_DEVICE_ID_MATCH_INT_PROTOCOL	0x0200
+#if defined (CONFIG_HID_IUI)
+#define USB_DEVICE_ID_MATCH_PRODUCT_HI		0x0400
+#endif
 
 #define HID_ANY_ID				(~0)
 

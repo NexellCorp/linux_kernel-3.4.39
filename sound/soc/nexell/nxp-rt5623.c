@@ -34,8 +34,13 @@
 /*
 #define	pr_debug	printk
 */
+#if defined (CFG_IO_AUDIO_RT5623_AMP_POWER )
+#define	AUDIO_AMP_POWER		CFG_IO_AUDIO_RT5623_AMP_POWER
+#endif
 
+#if defined (CFG_IO_AUDIO_AMP_POWER )
 #define	AUDIO_AMP_POWER		CFG_IO_AUDIO_AMP_POWER
+#endif
 
 //static struct snd_soc_jack_gpio jack_gpio;
 static struct snd_soc_codec *alc5623 = NULL;
@@ -80,42 +85,48 @@ static int alc5623_jack_status_check(void)
 	if (!codec)
 		return -1;
 
-	if(invert)
-		level = !level;
+	if (NULL != jack_gpio.name) {
+		if(invert)
+			level = !level;
 
-	printk("%s: hp jack %s\n", __func__, level?"IN":"OUT");
+		printk("%s: hp jack %s\n", __func__, level?"IN":"OUT");
 
-	if (!level) {
-#if defined(CONFIG_PLAT_S5P4418_NBOX)
+		if (!level) {
+	#if defined(CONFIG_PLAT_S5P4418_NBOX)
+			/***************************************/
+			// jimmy@zhongwei, 20140609 Testing
+			/***************************************/
+			NXL_JackInOut = 0x00; // 1: jack In
+	#endif
+		    snd_soc_update_bits(codec, 0x04, 0x8080, 0x8080);
+#if defined (AUDIO_AMP_POWER)
+			gpio_direction_output(AUDIO_AMP_POWER, 1);
+#endif
+		} else {
+	#if defined(CONFIG_PLAT_S5P4418_NBOX)
+			/***************************************/
+			// jimmy@zhongwei, 20140609 Testing
+			/***************************************/
+			NXL_JackInOut = 0x02; // 1: jack In
+	#endif
+		    snd_soc_update_bits(codec, 0x04, 0x8080, 0);
+#if defined (AUDIO_AMP_POWER)
+			gpio_direction_output(AUDIO_AMP_POWER, 0);
+#endif
+		}
+
+	#if defined(CONFIG_PLAT_S5P4418_NBOX)
 		/***************************************/
 		// jimmy@zhongwei, 20140609 Testing
 		/***************************************/
-		NXL_JackInOut = 0x00; // 1: jack In
-#endif
-        snd_soc_update_bits(codec, 0x04, 0x8080, 0x8080);
-		gpio_direction_output(AUDIO_AMP_POWER, 1);
-	} else {
-#if defined(CONFIG_PLAT_S5P4418_NBOX)
-		/***************************************/
-		// jimmy@zhongwei, 20140609 Testing
-		/***************************************/
-		NXL_JackInOut = 0x02; // 1: jack In
-#endif
-        snd_soc_update_bits(codec, 0x04, 0x8080, 0);
-		gpio_direction_output(AUDIO_AMP_POWER, 0);
+		//if(jack_report_enable)
+		{
+			printk(" Jack Report (%d)\n", NXL_JackInOut);
+			//wake_lock_timeout(&detect_jack_wake_lock, WAKE_LOCK_TIME);
+			switch_set_state(&switch_nxl_jack_detection, NXL_JackInOut); //  2->Jack In
+		}
+	#endif
 	}
-
-#if defined(CONFIG_PLAT_S5P4418_NBOX)
-	/***************************************/
-	// jimmy@zhongwei, 20140609 Testing
-	/***************************************/
-	//if(jack_report_enable)
-	{
-		printk(" Jack Report (%d)\n", NXL_JackInOut);
-		//wake_lock_timeout(&detect_jack_wake_lock, WAKE_LOCK_TIME);
-		switch_set_state(&switch_nxl_jack_detection, NXL_JackInOut); //  2->Jack In
-	}
-#endif
 
 	return !level;
 }
@@ -154,27 +165,33 @@ static int alc5623_startup(struct snd_pcm_substream *substream)
 
 	pr_debug("%s\n", __func__);
 
+	if (NULL != jack_gpio.name) {
+		if(invert)
+			level = !level;
 
-	if(invert)
-		level = !level;
+		if (!level) {
+			pr_debug("AMP ON\n");
 
-	if (!level) {
-		pr_debug("AMP ON\n");
-
-#if defined(CONFIG_PLAT_S5P4418_NBOX)
-		/***************************************/
-		// jimmy@zhongwei, 20140609 Testing
-		/***************************************/
-		if(level == 0)
-		switch_set_state(&switch_nxl_jack_detection, 0); //
-		else
-		switch_set_state(&switch_nxl_jack_detection, 0x2); //
+	#if defined(CONFIG_PLAT_S5P4418_NBOX)
+			/***************************************/
+			// jimmy@zhongwei, 20140609 Testing
+			/***************************************/
+			if(level == 0)
+			switch_set_state(&switch_nxl_jack_detection, 0); //
+			else
+			switch_set_state(&switch_nxl_jack_detection, 0x2); //
+	#endif
+#if defined (AUDIO_AMP_POWER)
+			gpio_direction_output(AUDIO_AMP_POWER, 1);
 #endif
-
-		gpio_direction_output(AUDIO_AMP_POWER, 1);
+		}
+		//jack_report_enable=1;
+	} else {
+			pr_debug("AMP ON\n");
+#if defined (AUDIO_AMP_POWER)
+			gpio_direction_output(AUDIO_AMP_POWER, 1);
+#endif
 	}
-	//jack_report_enable=1;
-
 	return 0;
 }
 
@@ -187,14 +204,16 @@ static void alc5623_shutdown(struct snd_pcm_substream *substream)
 
     if (stream == SNDRV_PCM_STREAM_PLAYBACK)
 {
-		//printk("AMP OFF\n");
+		pr_debug("AMP OFF\n");
 		#if 0
 		/***************************************/
 		// jimmy@zhongwei, 20140609 Testing
 		/***************************************/
 		switch_set_state(&switch_nxl_jack_detection, 0); //  1->Jack In
 		#endif
+#if defined (AUDIO_AMP_POWER)
 		gpio_direction_output(AUDIO_AMP_POWER, 0);
+#endif
 }
 }
 
@@ -290,7 +309,11 @@ static struct snd_soc_dai_link alc5623_dai_link = {
 	.cpu_dai_name 	= str_dai_name,			/* nxp_snd_i2s_driver name */
 	.platform_name  = DEV_NAME_PCM,			/* nxp_snd_pcm_driver name */
 	.codec_dai_name = "alc5621-hifi",		/* alc5623_dai's name */
+#if defined( CONFIG_PLAT_S5P4418_AVN_REF ) || defined( CONFIG_PLAT_S5P6818_AVN_REF )
+	.codec_name 	= "alc562x-codec.3-001a",		/* alc5623_i2c_driver name + '.' + bus + '-' + address(7bit) */
+#else
 	.codec_name 	= "alc562x-codec.0-001a",		/* alc5623_i2c_driver name + '.' + bus + '-' + address(7bit) */
+#endif
 	.ops 			= &alc5623_ops,
 	.symmetric_rates = 1,
 	.init			= alc5623_dai_init,
@@ -333,7 +356,9 @@ static int alc5623_probe(struct platform_device *pdev)
 		}
 		sprintf(str_dai_name, "%s.%d", DEV_NAME_I2S, plat->i2s_ch);	// set I2S name
 	}
+#if defined (AUDIO_AMP_POWER)
     gpio_request(AUDIO_AMP_POWER, "alc5621");
+#endif
 	/*
 	 * register card
 	 */
@@ -379,7 +404,9 @@ static int alc5623_remove(struct platform_device *pdev)
 	switch_dev_unregister(&switch_nxl_jack_detection);
 #endif
 	snd_soc_unregister_card(card);
+#if defined (AUDIO_AMP_POWER)
 	gpio_free(AUDIO_AMP_POWER);
+#endif
 	return 0;
 }
 

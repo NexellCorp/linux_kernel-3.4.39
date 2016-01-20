@@ -39,7 +39,7 @@ enum axp_regls{
 	vcc_ldo10,
 	vcc_ldo11,
 	vcc_ldo12,
-	
+
 	vcc_DCDC1,
 	vcc_DCDC2,
 	vcc_DCDC3,
@@ -132,7 +132,7 @@ static struct regulator_consumer_supply ldo12_data[] = {
 			.supply = AXP_DC5LDO_NAME,//"axp22_dc5ldo",
 		},
 	};
-	
+
 static struct regulator_consumer_supply ldoio0_data[] = {
 		{
 			.supply = "axp22_ldoio0",
@@ -177,83 +177,83 @@ static struct regulator_consumer_supply DCDC5_data[] = {
 
 
 static struct regulator_init_data axp_regl_init_data[] = {
-	[vcc_ldo1] = {
-		.constraints = { 
-			.name = "axp22_ldo1",
-			.min_uV =  AXP22_LDO1_MIN,
-			.max_uV =  AXP22_LDO1_MAX,
-		},
-		.num_consumer_supplies = ARRAY_SIZE(ldo1_data),
-		.consumer_supplies = ldo1_data,
-	},
-	[vcc_ldo2] = {
-		.constraints = { 
-			.name = "axp22_aldo1",
-			.min_uV = AXP22_LDO2_MIN,
-			.max_uV = AXP22_LDO2_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
-			.initial_state = PM_SUSPEND_STANDBY,
-			.state_standby = {
-				.uV = AXP_ALDO1_VALUE,
-				.enabled = AXP_ALDO1_ENABLE,
-			}
-#endif
-		},
-		.num_consumer_supplies = ARRAY_SIZE(ldo2_data),
-		.consumer_supplies = ldo2_data,
-	},
-	[vcc_ldo3] = {
-		.constraints = {
-			.name = "axp22_aldo2",
-			.min_uV =  AXP22_LDO3_MIN,
-			.max_uV =  AXP22_LDO3_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
-			.initial_state = PM_SUSPEND_STANDBY,
-			.state_standby = {
-				.uV = AXP_ALDO2_VALUE,
-				.enabled = AXP_ALDO2_ENABLE,
-			}
-#endif
-		},
-		.num_consumer_supplies = ARRAY_SIZE(ldo3_data),
-		.consumer_supplies = ldo3_data,
-	},
-	[vcc_ldo4] = {
-		.constraints = {
-			.name = "axp22_aldo3",
-			.min_uV = AXP22_LDO4_MIN,
-			.max_uV = AXP22_LDO4_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
-			.initial_state = PM_SUSPEND_STANDBY,
-			.state_standby = {
-				.uV = AXP_ALDO3_VALUE,
-				.enabled = AXP_ALDO3_ENABLE,
-			}
-#endif
-		},
-		.num_consumer_supplies = ARRAY_SIZE(ldo4_data),
-		.consumer_supplies = ldo4_data,
-	},
-	[vcc_ldo5] = {
-		.constraints = { 
-			.name = "axp22_dldo1",
-			.min_uV = AXP22_LDO5_MIN,
-			.max_uV = AXP22_LDO5_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
-			.initial_state = PM_SUSPEND_STANDBY,
-			.state_standby = {
-				.uV = AXP_DLDO1_VALUE,
-				.enabled = AXP_DLDO1_ENABLE,
-			}
-#endif
-		},
-		.num_consumer_supplies = ARRAY_SIZE(ldo5_data),
-		.consumer_supplies = ldo5_data,
-	},
+	/*[vcc_ldo1] = {*/
+		/*.constraints = { */
+			/*.name = "axp22_ldo1",*/
+			/*.min_uV =  AXP22_LDO1_MIN,*/
+			/*.max_uV =  AXP22_LDO1_MAX,*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(ldo1_data),*/
+		/*.consumer_supplies = ldo1_data,*/
+	/*},*/
+	/*[vcc_ldo2] = {*/
+		/*.constraints = { */
+			/*.name = "axp22_aldo1",*/
+			/*.min_uV = AXP22_LDO2_MIN,*/
+			/*.max_uV = AXP22_LDO2_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+/*#if defined (CONFIG_KP_OUTPUTINIT)*/
+			/*.initial_state = PM_SUSPEND_STANDBY,*/
+			/*.state_standby = {*/
+				/*.uV = AXP_ALDO1_VALUE,*/
+				/*.enabled = AXP_ALDO1_ENABLE,*/
+			/*}*/
+/*#endif*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(ldo2_data),*/
+		/*.consumer_supplies = ldo2_data,*/
+	/*},*/
+	/*[vcc_ldo3] = {*/
+		/*.constraints = {*/
+			/*.name = "axp22_aldo2",*/
+			/*.min_uV =  AXP22_LDO3_MIN,*/
+			/*.max_uV =  AXP22_LDO3_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+/*#if defined (CONFIG_KP_OUTPUTINIT)*/
+			/*.initial_state = PM_SUSPEND_STANDBY,*/
+			/*.state_standby = {*/
+				/*.uV = AXP_ALDO2_VALUE,*/
+				/*.enabled = AXP_ALDO2_ENABLE,*/
+			/*}*/
+/*#endif*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(ldo3_data),*/
+		/*.consumer_supplies = ldo3_data,*/
+	/*},*/
+	/*[vcc_ldo4] = {*/
+		/*.constraints = {*/
+			/*.name = "axp22_aldo3",*/
+			/*.min_uV = AXP22_LDO4_MIN,*/
+			/*.max_uV = AXP22_LDO4_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+/*#if defined (CONFIG_KP_OUTPUTINIT)*/
+			/*.initial_state = PM_SUSPEND_STANDBY,*/
+			/*.state_standby = {*/
+				/*.uV = AXP_ALDO3_VALUE,*/
+				/*.enabled = AXP_ALDO3_ENABLE,*/
+			/*}*/
+/*#endif*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(ldo4_data),*/
+		/*.consumer_supplies = ldo4_data,*/
+	/*},*/
+	/*[vcc_ldo5] = {*/
+		/*.constraints = { */
+			/*.name = "axp22_dldo1",*/
+			/*.min_uV = AXP22_LDO5_MIN,*/
+			/*.max_uV = AXP22_LDO5_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+/*#if defined (CONFIG_KP_OUTPUTINIT)*/
+			/*.initial_state = PM_SUSPEND_STANDBY,*/
+			/*.state_standby = {*/
+				/*.uV = AXP_DLDO1_VALUE,*/
+				/*.enabled = AXP_DLDO1_ENABLE,*/
+			/*}*/
+/*#endif*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(ldo5_data),*/
+		/*.consumer_supplies = ldo5_data,*/
+	/*},*/
 	[vcc_ldo6] = {
 		.constraints = { 
 			.name = "axp22_dldo2",
@@ -271,125 +271,125 @@ static struct regulator_init_data axp_regl_init_data[] = {
 		.num_consumer_supplies = ARRAY_SIZE(ldo6_data),
 		.consumer_supplies = ldo6_data,
 	},
-	[vcc_ldo7] = {
-		.constraints = {
-			.name = "axp22_dldo3",
-			.min_uV =  AXP22_LDO7_MIN,
-			.max_uV =  AXP22_LDO7_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
-			.initial_state = PM_SUSPEND_STANDBY,
-			.state_standby = {
-				.uV = AXP_DLDO3_VALUE,
-				.enabled = AXP_DLDO3_ENABLE,
-			}
-#endif
-		},
-		.num_consumer_supplies = ARRAY_SIZE(ldo7_data),
-		.consumer_supplies = ldo7_data,
-	},
-	[vcc_ldo8] = {
-		.constraints = {
-			.name = "axp22_dldo4",
-			.min_uV = AXP22_LDO8_MIN,
-			.max_uV = AXP22_LDO8_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
-			.initial_state = PM_SUSPEND_STANDBY,
-			.state_standby = {
-				.uV = AXP_DLDO4_VALUE,
-				.enabled = AXP_DLDO4_ENABLE,
-			}
-#endif
-		},
-		.num_consumer_supplies = ARRAY_SIZE(ldo8_data),
-		.consumer_supplies = ldo8_data,
-	},
-	[vcc_ldo9] = {
-		.constraints = { 
-			.name = "axp22_eldo1",
-			.min_uV = AXP22_LDO9_MIN,
-			.max_uV = AXP22_LDO9_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
-			.initial_state = PM_SUSPEND_STANDBY,
-			.state_standby = {
-				.uV = AXP_ELDO1_VALUE,
-				.enabled = AXP_ELDO1_ENABLE,
-			}
-#endif
-		},
-		.num_consumer_supplies = ARRAY_SIZE(ldo9_data),
-		.consumer_supplies = ldo9_data,
-	},
-	[vcc_ldo10] = {
-		.constraints = {
-			.name = "axp22_eldo2",
-			.min_uV = AXP22_LDO10_MIN,
-			.max_uV = AXP22_LDO10_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
-			.initial_state = PM_SUSPEND_STANDBY,
-			.state_standby = {
-				.uV = AXP_ELDO2_VALUE,
-				.enabled = AXP_ELDO2_ENABLE,
-			}
-#endif
-		},
-		.num_consumer_supplies = ARRAY_SIZE(ldo10_data),
-		.consumer_supplies = ldo10_data,
-	},
-	[vcc_ldo11] = {
-		.constraints = {
-			.name = "axp22_eldo3",
-			.min_uV =  AXP22_LDO11_MIN,
-			.max_uV =  AXP22_LDO11_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
-			.initial_state = PM_SUSPEND_STANDBY,
-			.state_standby = {
-				.uV = AXP_ELDO3_VALUE,
-				.enabled = AXP_ELDO3_ENABLE,
-			}
-#endif
-		},
-		.num_consumer_supplies = ARRAY_SIZE(ldo11_data),
-		.consumer_supplies = ldo11_data,
-	},
-	[vcc_ldo12] = {
-		.constraints = {
-			.name = "axp22_dc5ldo",
-			.min_uV = AXP22_LDO12_MIN,
-			.max_uV = AXP22_LDO12_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
-			.initial_state = PM_SUSPEND_STANDBY,
-			.state_standby = {
-				.uV = AXP_DC5LDO_VALUE,
-				.enabled = AXP_DC5LDO_ENABLE,
-			}
-#endif
-		},
-		.num_consumer_supplies = ARRAY_SIZE(ldo12_data),
-		.consumer_supplies = ldo12_data,
-	},
-	[vcc_DCDC1] = {
-		.constraints = {
-			.name = "axp22_dcdc1",
-			.min_uV = AXP22_DCDC1_MIN,
-			.max_uV = AXP22_DCDC1_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
-			.initial_state = PM_SUSPEND_STANDBY,
-			.state_standby = {
-				.uV = AXP_DCDC1_VALUE,
-				.enabled = AXP_DCDC1_ENABLE,
-			}
-#endif
-		},
-		.num_consumer_supplies = ARRAY_SIZE(DCDC1_data),
-		.consumer_supplies = DCDC1_data,
-	},
+	/*[vcc_ldo7] = {*/
+		/*.constraints = {*/
+			/*.name = "axp22_dldo3",*/
+			/*.min_uV =  AXP22_LDO7_MIN,*/
+			/*.max_uV =  AXP22_LDO7_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+/*#if defined (CONFIG_KP_OUTPUTINIT)*/
+			/*.initial_state = PM_SUSPEND_STANDBY,*/
+			/*.state_standby = {*/
+				/*.uV = AXP_DLDO3_VALUE,*/
+				/*.enabled = AXP_DLDO3_ENABLE,*/
+			/*}*/
+/*#endif*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(ldo7_data),*/
+		/*.consumer_supplies = ldo7_data,*/
+	/*},*/
+	/*[vcc_ldo8] = {*/
+		/*.constraints = {*/
+			/*.name = "axp22_dldo4",*/
+			/*.min_uV = AXP22_LDO8_MIN,*/
+			/*.max_uV = AXP22_LDO8_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+/*#if defined (CONFIG_KP_OUTPUTINIT)*/
+			/*.initial_state = PM_SUSPEND_STANDBY,*/
+			/*.state_standby = {*/
+				/*.uV = AXP_DLDO4_VALUE,*/
+				/*.enabled = AXP_DLDO4_ENABLE,*/
+			/*}*/
+/*#endif*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(ldo8_data),*/
+		/*.consumer_supplies = ldo8_data,*/
+	/*},*/
+	/*[vcc_ldo9] = {*/
+		/*.constraints = { */
+			/*.name = "axp22_eldo1",*/
+			/*.min_uV = AXP22_LDO9_MIN,*/
+			/*.max_uV = AXP22_LDO9_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+/*#if defined (CONFIG_KP_OUTPUTINIT)*/
+			/*.initial_state = PM_SUSPEND_STANDBY,*/
+			/*.state_standby = {*/
+				/*.uV = AXP_ELDO1_VALUE,*/
+				/*.enabled = AXP_ELDO1_ENABLE,*/
+			/*}*/
+/*#endif*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(ldo9_data),*/
+		/*.consumer_supplies = ldo9_data,*/
+	/*},*/
+	/*[vcc_ldo10] = {*/
+		/*.constraints = {*/
+			/*.name = "axp22_eldo2",*/
+			/*.min_uV = AXP22_LDO10_MIN,*/
+			/*.max_uV = AXP22_LDO10_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+/*#if defined (CONFIG_KP_OUTPUTINIT)*/
+			/*.initial_state = PM_SUSPEND_STANDBY,*/
+			/*.state_standby = {*/
+				/*.uV = AXP_ELDO2_VALUE,*/
+				/*.enabled = AXP_ELDO2_ENABLE,*/
+			/*}*/
+/*#endif*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(ldo10_data),*/
+		/*.consumer_supplies = ldo10_data,*/
+	/*},*/
+	/*[vcc_ldo11] = {*/
+		/*.constraints = {*/
+			/*.name = "axp22_eldo3",*/
+			/*.min_uV =  AXP22_LDO11_MIN,*/
+			/*.max_uV =  AXP22_LDO11_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+/*#if defined (CONFIG_KP_OUTPUTINIT)*/
+			/*.initial_state = PM_SUSPEND_STANDBY,*/
+			/*.state_standby = {*/
+				/*.uV = AXP_ELDO3_VALUE,*/
+				/*.enabled = AXP_ELDO3_ENABLE,*/
+			/*}*/
+/*#endif*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(ldo11_data),*/
+		/*.consumer_supplies = ldo11_data,*/
+	/*},*/
+	/*[vcc_ldo12] = {*/
+		/*.constraints = {*/
+			/*.name = "axp22_dc5ldo",*/
+			/*.min_uV = AXP22_LDO12_MIN,*/
+			/*.max_uV = AXP22_LDO12_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+/*#if defined (CONFIG_KP_OUTPUTINIT)*/
+			/*.initial_state = PM_SUSPEND_STANDBY,*/
+			/*.state_standby = {*/
+				/*.uV = AXP_DC5LDO_VALUE,*/
+				/*.enabled = AXP_DC5LDO_ENABLE,*/
+			/*}*/
+/*#endif*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(ldo12_data),*/
+		/*.consumer_supplies = ldo12_data,*/
+	/*},*/
+	/*[vcc_DCDC1] = {*/
+		/*.constraints = {*/
+			/*.name = "axp22_dcdc1",*/
+			/*.min_uV = AXP22_DCDC1_MIN,*/
+			/*.max_uV = AXP22_DCDC1_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+/*#if defined (CONFIG_KP_OUTPUTINIT)*/
+			/*.initial_state = PM_SUSPEND_STANDBY,*/
+			/*.state_standby = {*/
+				/*.uV = AXP_DCDC1_VALUE,*/
+				/*.enabled = AXP_DCDC1_ENABLE,*/
+			/*}*/
+/*#endif*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(DCDC1_data),*/
+		/*.consumer_supplies = DCDC1_data,*/
+	/*},*/
 	[vcc_DCDC2] = {
 		.constraints = {
 			.name = "axp22_dcdc2",
@@ -408,7 +408,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 		.consumer_supplies = DCDC2_data,
 	},
 	[vcc_DCDC3] = {
-		.constraints = { 
+		.constraints = {
 			.name = "axp22_dcdc3",
 			.min_uV = AXP22_DCDC3_MIN,
 			.max_uV = AXP22_DCDC3_MAX,
@@ -424,116 +424,119 @@ static struct regulator_init_data axp_regl_init_data[] = {
 		.num_consumer_supplies = ARRAY_SIZE(DCDC3_data),
 		.consumer_supplies = DCDC3_data,
 	},
-	[vcc_DCDC4] = {
-		.constraints = { 
-			.name = "axp22_dcdc4",
-			.min_uV = AXP22_DCDC4_MIN,
-			.max_uV = AXP22_DCDC4_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
-			.initial_state = PM_SUSPEND_STANDBY,
-			.state_standby = {
-				.uV = AXP_DCDC4_VALUE,
-				.enabled = AXP_DCDC4_ENABLE,
-			}
-#endif
-		},
-		.num_consumer_supplies = ARRAY_SIZE(DCDC4_data),
-		.consumer_supplies = DCDC4_data,
-	},
-	[vcc_DCDC5] = {
-		.constraints = { 
-			.name = "axp22_dcdc5",
-			.min_uV = AXP22_DCDC5_MIN,
-			.max_uV = AXP22_DCDC5_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-#if defined (CONFIG_KP_OUTPUTINIT)
-			.initial_state = PM_SUSPEND_STANDBY,
-			.state_standby = {
-				.uV = AXP_DCDC5_VALUE,
-				.enabled = AXP_DCDC5_ENABLE,
-			}
-#endif
-		},
-		.num_consumer_supplies = ARRAY_SIZE(DCDC5_data),
-		.consumer_supplies = DCDC5_data,
-	},
-	[vcc_ldoio0] = {
-		.constraints = {
-			.name = "axp22_ldoio0",
-			.min_uV = AXP22_LDOIO0_MIN,
-			.max_uV = AXP22_LDOIO0_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-		},
-		.num_consumer_supplies = ARRAY_SIZE(ldoio0_data),
-		.consumer_supplies = ldoio0_data,
-	},
-	[vcc_ldoio1] = {
-		.constraints = {
-			.name = "axp22_ldoio1",
-			.min_uV = AXP22_LDOIO1_MIN,
-			.max_uV = AXP22_LDOIO1_MAX,
-			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
-		},
-		.num_consumer_supplies = ARRAY_SIZE(ldoio1_data),
-		.consumer_supplies = ldoio1_data,
-	},
+	/*[vcc_DCDC4] = {*/
+		/*.constraints = { */
+			/*.name = "axp22_dcdc4",*/
+			/*.min_uV = AXP22_DCDC4_MIN,*/
+			/*.max_uV = AXP22_DCDC4_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+/*#if defined (CONFIG_KP_OUTPUTINIT)*/
+			/*.initial_state = PM_SUSPEND_STANDBY,*/
+			/*.state_standby = {*/
+				/*.uV = AXP_DCDC4_VALUE,*/
+				/*.enabled = AXP_DCDC4_ENABLE,*/
+			/*}*/
+/*#endif*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(DCDC4_data),*/
+		/*.consumer_supplies = DCDC4_data,*/
+	/*},*/
+	/*[vcc_DCDC5] = {*/
+		/*.constraints = { */
+			/*.name = "axp22_dcdc5",*/
+			/*.min_uV = AXP22_DCDC5_MIN,*/
+			/*.max_uV = AXP22_DCDC5_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+/*#if defined (CONFIG_KP_OUTPUTINIT)*/
+			/*.initial_state = PM_SUSPEND_STANDBY,*/
+			/*.state_standby = {*/
+				/*.uV = AXP_DCDC5_VALUE,*/
+				/*.enabled = AXP_DCDC5_ENABLE,*/
+			/*}*/
+/*#endif*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(DCDC5_data),*/
+		/*.consumer_supplies = DCDC5_data,*/
+	/*},*/
+	/*[vcc_ldoio0] = {*/
+		/*.constraints = {*/
+			/*.name = "axp22_ldoio0",*/
+			/*.min_uV = AXP22_LDOIO0_MIN,*/
+			/*.max_uV = AXP22_LDOIO0_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(ldoio0_data),*/
+		/*.consumer_supplies = ldoio0_data,*/
+	/*},*/
+	/*[vcc_ldoio1] = {*/
+		/*.constraints = {*/
+			/*.name = "axp22_ldoio1",*/
+			/*.min_uV = AXP22_LDOIO1_MIN,*/
+			/*.max_uV = AXP22_LDOIO1_MAX,*/
+			/*.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,*/
+		/*},*/
+		/*.num_consumer_supplies = ARRAY_SIZE(ldoio1_data),*/
+		/*.consumer_supplies = ldoio1_data,*/
+	/*},*/
 };
 
 static struct axp_funcdev_info axp_regldevs[] = {
+	/*{*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_LDO1,*/
+		/*.platform_data = &axp_regl_init_data[vcc_ldo1],*/
+	/*}, {*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_LDO2,*/
+		/*.platform_data = &axp_regl_init_data[vcc_ldo2],*/
+	/*}, {*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_LDO3,*/
+		/*.platform_data = &axp_regl_init_data[vcc_ldo3],*/
+	/*}, {*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_LDO4,*/
+		/*.platform_data = &axp_regl_init_data[vcc_ldo4],*/
+	/*}, {*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_LDO5,*/
+		/*.platform_data = &axp_regl_init_data[vcc_ldo5],*/
+	/*}, */
 	{
-		.name = "axp22-regulator",
-		.id = AXP22_ID_LDO1,
-		.platform_data = &axp_regl_init_data[vcc_ldo1],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_LDO2,
-		.platform_data = &axp_regl_init_data[vcc_ldo2],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_LDO3,
-		.platform_data = &axp_regl_init_data[vcc_ldo3],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_LDO4,
-		.platform_data = &axp_regl_init_data[vcc_ldo4],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_LDO5,
-		.platform_data = &axp_regl_init_data[vcc_ldo5],
-	}, {
 		.name = "axp22-regulator",
 		.id = AXP22_ID_LDO6,
 		.platform_data = &axp_regl_init_data[vcc_ldo6],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_LDO7,
-		.platform_data = &axp_regl_init_data[vcc_ldo7],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_LDO8,
-		.platform_data = &axp_regl_init_data[vcc_ldo8],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_LDO9,
-		.platform_data = &axp_regl_init_data[vcc_ldo9],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_LDO10,
-		.platform_data = &axp_regl_init_data[vcc_ldo10],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_LDO11,
-		.platform_data = &axp_regl_init_data[vcc_ldo11],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_LDO12,
-		.platform_data = &axp_regl_init_data[vcc_ldo12],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_DCDC1,
-		.platform_data = &axp_regl_init_data[vcc_DCDC1],
-	}, {
+	},
+	/*{*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_LDO7,*/
+		/*.platform_data = &axp_regl_init_data[vcc_ldo7],*/
+	/*}, {*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_LDO8,*/
+		/*.platform_data = &axp_regl_init_data[vcc_ldo8],*/
+	/*}, {*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_LDO9,*/
+		/*.platform_data = &axp_regl_init_data[vcc_ldo9],*/
+	/*}, {*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_LDO10,*/
+		/*.platform_data = &axp_regl_init_data[vcc_ldo10],*/
+	/*}, {*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_LDO11,*/
+		/*.platform_data = &axp_regl_init_data[vcc_ldo11],*/
+	/*}, {*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_LDO12,*/
+		/*.platform_data = &axp_regl_init_data[vcc_ldo12],*/
+	/*}, {*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_DCDC1,*/
+		/*.platform_data = &axp_regl_init_data[vcc_DCDC1],*/
+	/*}, {*/
+    {
 		.name = "axp22-regulator",
 		.id = AXP22_ID_DCDC2,
 		.platform_data = &axp_regl_init_data[vcc_DCDC2],
@@ -541,22 +544,22 @@ static struct axp_funcdev_info axp_regldevs[] = {
 		.name = "axp22-regulator",
 		.id = AXP22_ID_DCDC3,
 		.platform_data = &axp_regl_init_data[vcc_DCDC3],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_DCDC4,
-		.platform_data = &axp_regl_init_data[vcc_DCDC4],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_DCDC5,
-		.platform_data = &axp_regl_init_data[vcc_DCDC5],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_LDOIO0,
-		.platform_data = &axp_regl_init_data[vcc_ldoio0],
-	}, {
-		.name = "axp22-regulator",
-		.id = AXP22_ID_LDOIO1,
-		.platform_data = &axp_regl_init_data[vcc_ldoio1],
+	/*}, {*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_DCDC4,*/
+		/*.platform_data = &axp_regl_init_data[vcc_DCDC4],*/
+	/*}, {*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_DCDC5,*/
+		/*.platform_data = &axp_regl_init_data[vcc_DCDC5],*/
+	/*}, {*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_LDOIO0,*/
+		/*.platform_data = &axp_regl_init_data[vcc_ldoio0],*/
+	/*}, {*/
+		/*.name = "axp22-regulator",*/
+		/*.id = AXP22_ID_LDOIO1,*/
+		/*.platform_data = &axp_regl_init_data[vcc_ldoio1],*/
 	},
 };
 
@@ -590,7 +593,7 @@ static struct axp_funcdev_info axp_splydev[]={
 };
 
 static struct axp_funcdev_info axp_gpiodev[]={
-   	{  
+   	{
 		.name = "axp22-gpio",
    		.id = AXP22_ID_GPIO,
     },

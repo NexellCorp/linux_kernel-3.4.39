@@ -3579,9 +3579,14 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
 
 	sb->s_root = NULL;
 
+    // psw0523 fix for quickboot
+#if 0
 	needs_recovery = (es->s_last_orphan != 0 ||
 			  EXT4_HAS_INCOMPAT_FEATURE(sb,
 				    EXT4_FEATURE_INCOMPAT_RECOVER));
+#else
+    needs_recovery = es->s_last_orphan != 0;
+#endif
 
 	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_MMP) &&
 	    !(sb->s_flags & MS_RDONLY))
@@ -4862,6 +4867,8 @@ out:
 static struct dentry *ext4_mount(struct file_system_type *fs_type, int flags,
 		       const char *dev_name, void *data)
 {
+    // psw0523 debugging
+    printk("====> %s\n", __func__);
 	return mount_bdev(fs_type, flags, dev_name, data, ext4_fill_super);
 }
 

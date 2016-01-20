@@ -59,7 +59,7 @@
  * 	GMAC PHY
  */
 
-#define CFG_ETHER_LOOPBACK_MODE					1       /* 0: disable, 1: 10M, 2: 100M(x), 3: 1000M(x) */
+#define CFG_ETHER_LOOPBACK_MODE					0       /* 0: disable, 1: 10M, 2: 100M(x), 3: 1000M(x) */
 
  /*for rtl8201*/
 #if defined (CONFIG_REALTEK_PHY_RTL8201)
@@ -200,6 +200,11 @@
 #endif
 #define	CFG_AUDIO_SPDIF_TX_SAMPLE_RATE				48000
 #define	CFG_AUDIO_SPDIF_RX_SAMPLE_RATE				48000
+
+/*------------------------------------------------------------------------------
+   *  Audio PDM
+    */
+#define CFG_AUDIO_PDM_SAMPLE_RATE               48000
 
 /*------------------------------------------------------------------------------
  * 	I2C
