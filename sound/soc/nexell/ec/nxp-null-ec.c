@@ -169,7 +169,7 @@ static struct snd_soc_card snd_null_card[] = {
 	},
 	{
 	.name 			= "SND-NULL.2",	/* proc/asound/cards */
-	.dai_link 		= &snd_null_dai_link[1],
+	.dai_link 		= &snd_null_dai_link[2],
 	.num_links 		= 1,
 	},
 };
