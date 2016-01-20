@@ -66,6 +66,7 @@ struct nxp_pcm_runtime_data {
 	long rate_duration_us;
 	bool sample_exist;
 	bool is_run_resample;
+	bool resample_close;
 	spinlock_t 	lock;
 	struct mutex mutex;
 	struct snd_pcm_substream *substream;

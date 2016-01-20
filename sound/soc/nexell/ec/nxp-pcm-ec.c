@@ -209,6 +209,7 @@ static int nxp_pcm_resample_submit(struct snd_pcm_substream *substream)
 			STREAM_STR(substream->stream), prtd->input_rate, prtd->output_rate);
 		return -EINVAL;
 	}
+	prtd->resample_closed = false;
 	pr_debug("resampler [%d]->[%d] hz\n", prtd->input_rate, prtd->output_rate);
 #endif
 
@@ -226,6 +227,7 @@ static int nxp_pcm_resample_terminate(struct snd_pcm_substream *substream)
 
 	if (prtd->resampler) {
 		/* wait for end resampler */
+		prtd->resample_closed = true;
 		while(prtd->is_run_resample) {
 			if (0 == --count)
 				break;
@@ -305,7 +307,8 @@ static int nxp_pcm_capture_resample(void *data)
 		memcpy(dst, src, snd_pcm_lib_period_bytes(substream));
 	#else
 
-		if (NULL == prtd->resampler)
+		if (true == prtd->resample_closed ||
+			NULL == prtd->resampler)
 			continue;
 
 		src = (void*)(prtd->dma_buffer.area + prtd->dma_offset);
@@ -789,6 +792,7 @@ static int nxp_pcm_hw_params(struct snd_pcm_substream *substream,
 	prtd->substream = substream;
 	prtd->resampler = NULL;
 	prtd->is_run_resample = false;
+	prtd->resample_closed = true;
 
 	if (prtd->run_resampler) {
 		struct task_struct *p = kthread_create(nxp_pcm_capture_resample,
