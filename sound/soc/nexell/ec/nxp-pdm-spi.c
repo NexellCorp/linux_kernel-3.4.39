@@ -131,8 +131,23 @@ static int pdm_spi_init(struct nxp_pdm_snd_param *par)
 
 static int pdm_spi_start(struct nxp_pdm_snd_param *par, int stream)
 {
+		int ch = par->ch;
 	pr_debug("[%s: ch.%d]\n", __func__, par->ch);
 
+#if 1
+	NX_SSP_SetProtocol(ch, 0); 				// Protocol : Motorola SPI
+
+	// 0, 0	-> No receive 	-> No receive
+	// 0, 1 -> corrupt		-> 완전 깨져 (4ch 다 신호)
+	// 1, 0 -> No receive	-> No receive
+	// 1, 1 -> corrupt		-> corrupt 이지마 원하는 1채널만
+	NX_SSP_SetClockPolarityInvert(ch, 1);
+	NX_SSP_SetClockPhase(ch, 1);
+
+	NX_SSP_SetBitWidth(ch, 8); 				// 8 bit
+	NX_SSP_SetSlaveMode(ch, CTRUE); 		// slave mode
+	NX_SSP_SetDMATransferMode(ch, CTRUE);   //DMA_USE
+#endif
 	NX_SSP_SetSlaveOutputEnable(par->ch, CTRUE);
 	NX_SSP_SetEnable(par->ch, CTRUE);
 
@@ -149,7 +164,7 @@ static void pdm_spi_stop(struct nxp_pdm_snd_param *par, int stream)
 
 	gpio_set_value(PDM_IO_CSSEL, 1);		// OFF
 	gpio_set_value(PDM_IO_ISRUN, 0);		// OFF
-	gpio_set_value(PDM_IO_LRCLK, 0);		// No Exist
+	gpio_set_value(PDM_IO_LRCLK, 1);		// No Exist
 
 	NX_SSP_SetEnable(par->ch, CFALSE);
 }
@@ -249,12 +264,12 @@ static int nxp_pdm_trigger(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_START:
 		#ifdef SND_DEV_SYNC_I2S_PDM
-		if (SNDRV_PCM_STREAM_CAPTURE == stream)
+		if (SNDRV_PCM_STREAM_CAPTURE == stream) {
 			nxp_snd_sync_trigger(substream, cmd, type,
 				(void*)IO_ADDRESS(par->base_addr), par->ch);
-		else
-			pdm_spi_start(par, stream);
+		} else
 		#endif
+			pdm_spi_start(par, stream);
 		break;
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:

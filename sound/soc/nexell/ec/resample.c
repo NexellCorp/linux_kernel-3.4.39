@@ -101,7 +101,7 @@ static void ac3_5p1_mux(short *output, short *input1, short *input2, int n)
 }
 
 #ifdef __KERNEL__
-int inrate;
+int s_in_sample_rate;
 #endif
 
 ReSampleContext *audio_resample_init(int output_channels, int input_channels,
@@ -124,7 +124,7 @@ ReSampleContext *audio_resample_init(int output_channels, int input_channels,
 
     s->ratio = (float)output_rate / (float)input_rate;
 #ifdef __KERNEL__
-    inrate = (int)input_rate;
+    s_in_sample_rate = (int)input_rate;
 #endif
 
     s->input_channels = input_channels;
@@ -175,20 +175,41 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
 #ifndef __KERNEL__
     lenout= (int)(nb_samples * s->ratio) + 16;
 #else
+
+#if 0
 	if (2048 != nb_samples) {
 		printk("********* [%s:%d] not support sample count %d\n *********",
 					__func__, __LINE__, nb_samples);
 		return -1;
 	}
 
-	switch(inrate) {
+	switch(s_in_sample_rate) {
 		case 44100:		lenout = 2048 * (float)(16000./44100.) + 16; break;
 		case 48000:		lenout = 2048 * (float)(16000./48000.) + 16; break;
+		case 88200:		lenout = 2048 * (float)(16000./88200.) + 16; break;
 		case 96000:		lenout = 2048 * (float)(16000./96000.) + 16; break;
-		default:	printk("********* [%s:%d] not support out rate %d\n *********",
-						__func__, __LINE__, inrate);
+		default:	pr_debug("********* [%s:%d] not support out rate %d\n *********",
+						__func__, __LINE__, s_in_sample_rate);
+					return nb_samples;
 			break;
 	}
+#else
+	if (1024 != nb_samples) {
+		printk("********* [%s:%d] not support sample count %d\n *********",
+					__func__, __LINE__, nb_samples);
+		return -1;
+	}
+	switch(s_in_sample_rate) {
+		case 44100:		lenout = 1024 * (float)(16000./44100.) + 16; break;
+		case 48000:		lenout = 1024 * (float)(16000./48000.) + 16; break;
+		case 88200:		lenout = 1024 * (float)(16000./88200.) + 16; break;
+		case 96000:		lenout = 1024 * (float)(16000./96000.) + 16; break;
+		default:	pr_debug("********* [%s:%d] not support out rate %d\n *********",
+						__func__, __LINE__, s_in_sample_rate);
+					return nb_samples;
+			break;
+	}
+#endif
 #endif
 
     bufout[0]= (short*) av_malloc( lenout * sizeof(short) );

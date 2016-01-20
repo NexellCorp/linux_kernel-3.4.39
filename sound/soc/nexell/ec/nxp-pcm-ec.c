@@ -31,6 +31,7 @@
 #include <linux/fcntl.h>
 #include <linux/file.h>
 #include <linux/fs.h>
+#include <linux/delay.h>
 #include <linux/vmalloc.h>
 #include <linux/kthread.h>
 #include <asm/uaccess.h>
@@ -44,21 +45,23 @@
 #include <mach/devices.h>
 #include "nxp-pcm-ec.h"
 #include "nxp-pcm-timer.h"
+#include "nxp-pcm-sync.h"
 
 /*
 #define pr_debug		printk
 */
 
-#define	CFG_SND_PCM_CAPTURE_INPUT_RATE				48000	// 48000
+#define	CFG_SND_PCM_CAPTURE_INPUT_RATE				16000	// 48000
 #define	CFG_SND_PCM_CAPTURE_RESAMPLE_HZ				16000	// 16000
 #define	CFG_SND_PCM_CAPTURE_RESAMPLE_COPY			0
 #define	CFG_SND_PCM_CAPTURE_RESAMPLEER_ON			true
-#define	CFG_SND_PCM_SKIP_1ST_FRAME					false
 
-//#define	CFG_SND_PCM_CAPTURE_SAMPLE_DETECT
+#define	CFG_SND_PCM_CAPTURE_SAMPLE_DETECT
+#define	CFG_SND_PCM_CAPTURE_DEV_RESET
+
 
 /* Sample define */
-#define	SAMPLE_DETECT_COUNT							4	// 3
+#define	SAMPLE_DETECT_COUNT							2	// 3
 #define	SAMPLE_DETECT_DELTA							1000
 #define	F_DIV	1000	// 1000 E: 100000
 
@@ -94,16 +97,13 @@ static struct snd_pcm_hardware nxp_pcm_hardware = {
 #define FILTER_DEPTH				CHK_PERIOD_COUNTS
 
 #define	SAMPLE_RATE_HZ(frames, time)	(div_u64((1000000000*(u64)frames), time))
-#define	SAMPLE_PERIOD_NS(ns)			(1000000000/ns)
+#define	SAMPLE_PERIOD_NS(s)				(1000000000/s)	// SAMPLE_PERIOD_NS(16000)
 
-#define	SAMPLE_FRAME_NS_16000		SAMPLE_PERIOD_NS(16000)
-#define	SAMPLE_FRAME_NS_44100		SAMPLE_PERIOD_NS(44100)
-#define	SAMPLE_FRAME_NS_48000		SAMPLE_PERIOD_NS(48000)	// 48000
-#define	SAMPLE_FRAME_NS_96000		SAMPLE_PERIOD_NS(96000)
-
-static int sample_rate_table[] = { 44100, 48000, 96000 } ;
-static int pcm_rate_chaned_event_up = false;
+static int sample_rate_table[] = { 44100, 48000, 88200, 96000 } ;
 static int pcm_sample_rate_hz = CFG_SND_PCM_CAPTURE_INPUT_RATE;
+
+#define us_to_ktime(u)  ns_to_ktime((u64)u * 1000)
+#define ms_to_ktime(m)  ns_to_ktime((u64)m * 1000 * 1000)
 
 static int find_sample_rate(int *table, int table_size, int rate)
 {
@@ -143,14 +143,14 @@ static int nxp_pcm_dma_mem_allocate(struct snd_pcm *pcm,
 	buf->bytes = size;
 	buf->area = dma_alloc_writecombine(buf->dev.dev, size, &buf->addr, GFP_KERNEL);
 	if (!buf->area) {
-		printk(KERN_ERR "Fail, %s dma buffer allocate (%d)\n",
+		printk("Fail, %s dma buffer allocate (%d)\n",
 			STREAM_STR(substream->stream), size);
 		return -ENOMEM;
 	}
 
 	prtd->rs_buffer = kmalloc(PERIOD_BYTES_MAX, GFP_KERNEL);
 	if (!prtd->rs_buffer) {
-		printk(KERN_ERR "Fail, %s for resampler buffer (%d)\n",
+		printk("Fail, %s for resampler buffer (%d)\n",
 			STREAM_STR(substream->stream), PERIOD_BYTES_MAX);
 		return -ENOMEM;
 	}
@@ -184,14 +184,64 @@ static void nxp_pcm_dma_mem_free(struct snd_pcm *pcm,
 		__func__, STREAM_STR(substream->stream),
 		buf->bytes, (unsigned int)buf->area, buf->addr);
 
-	dma_free_writecombine(pcm->card->dev, buf->bytes, buf->area, buf->addr);
-	kfree(prtd->rs_buffer);
+	dma_free_writecombine(pcm->card->dev, buf->bytes,
+				buf->area, buf->addr);
+
+	if (prtd->rs_buffer)
+		kfree(prtd->rs_buffer);
 }
 
-#define	RESAMPLE_INC(s, f, l)	{ s += f; if (s > l) s = f; }
-#define	RESAMPLE_DEC(s, f, l)	{ s -= f; if (0 > s) s = l-f; }
+static int nxp_pcm_resample_submit(struct snd_pcm_substream *substream)
+{
+	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
+	long duration = (prtd->rate_duration_us/1000)*2; /* add 10ms */
 
-static inline void get_time_stamp(struct pcm_timer_data *tm,
+	if (NULL == prtd->task || false == prtd->run_resampler)
+		return -1;
+
+#if !CFG_SND_PCM_CAPTURE_RESAMPLE_COPY
+	prtd->input_rate = pcm_sample_rate_hz;
+	prtd->resampler = audio_resample_init(prtd->channels,
+						prtd->channels, (float)prtd->output_rate,
+						(float)prtd->input_rate);
+	if (!prtd->resampler) {
+		printk("Error: %s resample init for rate %d -> %d\n",
+			STREAM_STR(substream->stream), prtd->input_rate, prtd->output_rate);
+		return -EINVAL;
+	}
+	pr_debug("resampler [%d]->[%d] hz\n", prtd->input_rate, prtd->output_rate);
+#endif
+
+	if (0 == prtd->hw_channel_no) {
+		prtd->sample_exist = false;
+		hrtimer_start(&prtd->rate_timer, ms_to_ktime(duration), HRTIMER_MODE_REL_PINNED);
+	}
+	return 0;
+}
+
+static int nxp_pcm_resample_terminate(struct snd_pcm_substream *substream)
+{
+	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
+	int count = 100;
+
+	if (prtd->resampler) {
+		/* wait for end resampler */
+		while(prtd->is_run_resample) {
+			if (0 == --count)
+				break;
+			mdelay(1);
+		};
+		audio_resample_close(prtd->resampler);
+		prtd->resampler = NULL;
+
+		if (0 == prtd->hw_channel_no)
+			hrtimer_cancel(&prtd->rate_timer);
+	}
+
+	return 0;
+}
+
+static inline void get_hw_time_tick(struct pcm_timer_data *tm,
 						struct timespec *ts)
 {
 	u_long tcnt = __raw_readl(TIMER_CNTO(tm->channel));
@@ -200,14 +250,36 @@ static inline void get_time_stamp(struct pcm_timer_data *tm,
 	ts->tv_nsec = (tm->tcount - tcnt) * tm->nsec;
 }
 
-static int nxp_pcm_dma_capture_resample(void *data)
+static inline void nxp_pcm_reset_device(void)
+{
+#ifdef CFG_SND_PCM_CAPTURE_DEV_RESET
+	//	int  spie_bit = PAD_GET_BITNO(PDM_IO_CSSEL);
+	int  brun_bit = PAD_GET_BITNO(PDM_IO_ISRUN);
+	int  lclk_bit = PAD_GET_BITNO(PDM_IO_LRCLK);
+
+	/* SPI CSSEL : H OFF */
+	//	__raw_writel(__raw_readl(IO_BASE(PDM_IO_CSSEL)) |  (1<<spie_bit), IO_BASE(PDM_IO_CSSEL));
+
+	/* OFF RUN: L */
+	__raw_writel(__raw_readl(IO_BASE(PDM_IO_ISRUN)) & ~(1<<brun_bit) , IO_BASE(PDM_IO_ISRUN));
+
+	/* NO LRCK: H */
+	__raw_writel(__raw_readl(IO_BASE(PDM_IO_LRCLK)) |  (1<<lclk_bit), IO_BASE(PDM_IO_LRCLK));
+	mdelay(10);
+
+	/* SPI CSSEL : L ON  */
+	//	__raw_writel(__raw_readl(IO_BASE(PDM_IO_CSSEL)) & ~(1<<spie_bit), IO_BASE(PDM_IO_CSSEL));
+
+	/* ON RUN : H */
+	__raw_writel(__raw_readl(IO_BASE(PDM_IO_ISRUN)) |  (1<<brun_bit) , IO_BASE(PDM_IO_ISRUN));
+#endif
+}
+
+static int nxp_pcm_capture_resample(void *data)
 {
 	struct snd_pcm_substream *substream = data;
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_pcm *pcm = rtd->pcm;
 	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct kobject *kobj = &pcm->card->dev->kobj;
 	int out_bytes = snd_pcm_lib_period_bytes(substream);
 	int buffer_bytes = snd_pcm_lib_buffer_bytes(substream);
 #if !(CFG_SND_PCM_CAPTURE_RESAMPLE_COPY)
@@ -221,34 +293,11 @@ static int nxp_pcm_dma_capture_resample(void *data)
 		substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
 		return 0;
 
-	prtd->task_running = true;
-
 	while (!kthread_should_stop()) {
 
 		set_current_state(TASK_INTERRUPTIBLE);
 		schedule();
-		 __set_current_state(TASK_RUNNING);
-
-		if (prtd->rate_changed &&
-			(false == pcm_rate_chaned_event_up)) {
-			char  message[64];
-			char *envp[] = { message, NULL };
-			struct pcm_timer_data *tm = prtd->private_data;
-			struct timespec ts;
-
-			get_time_stamp(tm, &ts);
-
-			printk("RATE CHANE EVENT [%s][%6d.%9ld] [%d hz -> %d hz]\n",
-				prtd->dma_param->dma_ch_name,
-				(int)ts.tv_sec, (long)ts.tv_nsec, pcm_sample_rate_hz,(int)prtd->input_rate);
-
-			sprintf(message, "SAMPLERATE_CHANGED=%d", (int)prtd->input_rate);
-			kobject_uevent_env(kobj, KOBJ_CHANGE, envp);
-			prtd->rate_changed = false;
-			prtd->rate_detect_cnt = 0;
-			pcm_rate_chaned_event_up = true;
-			pcm_sample_rate_hz = prtd->input_rate;
-		}
+		__set_current_state(TASK_RUNNING);
 
 	#if (CFG_SND_PCM_CAPTURE_RESAMPLE_COPY)
 		src = (void*)(prtd->dma_buffer.area + prtd->dma_offset);	/* hw */
@@ -256,11 +305,16 @@ static int nxp_pcm_dma_capture_resample(void *data)
 		memcpy(dst, src, snd_pcm_lib_period_bytes(substream));
 	#else
 
+		if (NULL == prtd->resampler)
+			continue;
+
 		src = (void*)(prtd->dma_buffer.area + prtd->dma_offset);
 		dst = prtd->rs_buffer;
 
+		prtd->is_run_resample = true;
 		out_frames = audio_resample(prtd->resampler, (short*)dst, (short*)src, frame_size);
 		out_bytes = out_frames * frame_bytes;
+		prtd->is_run_resample = false;
 
 		src = prtd->rs_buffer;
 		dst = (void*)(runtime->dma_area + prtd->sample_offset);
@@ -297,9 +351,73 @@ static int nxp_pcm_dma_capture_resample(void *data)
 		snd_pcm_period_elapsed(substream);
 	}
 
-	prtd->task_running = false;
+	set_current_state(TASK_INTERRUPTIBLE);
+
 	pr_debug("Exit %s resampler ....\n", STREAM_STR(substream->stream));
 	return 0;
+}
+
+static void nxp_pcm_sample_rate_work(struct work_struct *work)
+{
+    struct nxp_pcm_runtime_data *prtd =
+    		container_of(work, struct nxp_pcm_runtime_data, work);
+	struct snd_pcm_substream *substream = prtd->substream;
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_pcm *pcm = rtd->pcm;
+	struct kobject *kobj = &pcm->card->dev->kobj;
+
+	char *envp[] = { prtd->message, NULL };
+
+	pr_debug("RATE CHANE MSG[%s]\n", prtd->message);
+	kobject_uevent_env(kobj, KOBJ_CHANGE, envp);
+
+	if (true == prtd->rate_changed) {
+		prtd->rate_changed = false;
+		prtd->rate_detect_cnt = 0;
+		pcm_sample_rate_hz = prtd->input_rate;
+	}
+	return;
+}
+
+static enum hrtimer_restart nxp_pcm_sample_rate_timer(struct hrtimer *hrtimer)
+{
+    struct nxp_pcm_runtime_data *prtd =
+    		container_of(hrtimer, struct nxp_pcm_runtime_data, rate_timer);
+	struct snd_pcm_substream *substream = prtd->substream;
+
+#if !(CFG_SND_PCM_CAPTURE_RESAMPLE_COPY)
+	if (prtd->sample_exist) {
+		/* check next sample */
+		hrtimer_start(&prtd->rate_timer,
+			us_to_ktime(prtd->rate_duration_us), HRTIMER_MODE_REL_PINNED);
+	} else {
+		unsigned long flags;
+
+		sprintf(prtd->message, "SAMPLE_NO_DATA=YES");
+
+		spin_lock_irqsave(&prtd->lock, flags);
+		prtd->input_rate = CFG_SND_PCM_CAPTURE_INPUT_RATE; /* initialize sample rate */
+		spin_unlock_irqrestore(&prtd->lock, flags);
+
+		nxp_pcm_reset_device();
+		schedule_work(&prtd->work);
+
+		/* escape capture status */
+		prtd->sample_offset += snd_pcm_lib_period_bytes(substream);
+		if (prtd->sample_offset >= snd_pcm_lib_buffer_bytes(substream))
+			prtd->sample_offset = 0;
+
+		snd_pcm_period_elapsed(substream);
+
+	#ifdef SND_DEV_SYNC_I2S_PDM
+		printk("[CURRENT PDM/I2S SYNC MODE]\n\n");
+	#endif
+	}
+#endif
+
+	prtd->sample_exist = false;
+
+	return HRTIMER_NORESTART;
 }
 
 /*
@@ -318,16 +436,17 @@ static void nxp_pcm_dma_complete(void *arg)
 	if (prtd->trans_period >= prtd->periods)
 		prtd->trans_period = 0;
 
+	prtd->sample_exist = true;
+
 #if 1
-	if (prtd->run_resampler &&
+	if (prtd->run_resampler && 0 == prtd->hw_channel_no &&
 		substream->stream == SNDRV_PCM_STREAM_CAPTURE)
 	{
 		struct timespec *ts = &prtd->ts[prtd->trans_period];
 		u64 t1, t2, jt;
-		u64 totals = prtd->total_counts;
 		int rate_hz;
 
-		get_time_stamp(tm, ts);
+		get_hw_time_tick(tm, ts);
 
 		t1 = ((u64)prtd->ts[trans_period].tv_sec*1000000000) + (prtd->ts[trans_period].tv_nsec);
 		t2 = ((u64)ts->tv_sec*1000000000) + (ts->tv_nsec);
@@ -338,19 +457,19 @@ static void nxp_pcm_dma_complete(void *arg)
 
 		#if 0
 		printk("(%6llu)[%09llu:%6d(%6d)][%6d](%s)\n",
-			totals, jt, prtd->period_bytes, prtd->period_size, (int)rate_hz, prtd->dma_param->dma_ch_name);
+			prtd->total_counts, jt, prtd->period_bytes, prtd->period_size,
+			(int)rate_hz, prtd->dma_param->dma_ch_name);
 		#endif
 
 		/*
 		 * detect samplerate change
 		 */
 		if (abs(prtd->input_rate - rate_hz) > SAMPLE_DETECT_DELTA) {
-			printk("RATE %d (%6llu:%012llu)(%6llu:%4d)[%6d]->[%6d] (%s:%d)\n",
-				prtd->rate_detect_cnt, totals, prtd->total_times, jt, prtd->period_size,
-				(int)prtd->input_rate, (int)rate_hz,
-				prtd->dma_param->dma_ch_name, prtd->dma_chan->chan_id);
+			printk("R[%d (%6llu:%4d)[%6d]->[%6d]\n",
+				prtd->rate_detect_cnt, jt, prtd->period_size, (int)prtd->input_rate, (int)rate_hz);
 
 			prtd->rate_detect_cnt++;
+
 #ifdef CFG_SND_PCM_CAPTURE_SAMPLE_DETECT
 			if (SAMPLE_DETECT_COUNT > prtd->rate_detect_cnt)
 				goto done_complete;
@@ -358,14 +477,20 @@ static void nxp_pcm_dma_complete(void *arg)
 			if ((sample_rate_table[0] - SAMPLE_DETECT_DELTA) > rate_hz ||
 				rate_hz > (sample_rate_table[ARRAY_SIZE(sample_rate_table)-1] +
 				SAMPLE_DETECT_DELTA)) {
-					printk("W: invalid sample %d hz, retry ...\n", (int)rate_hz);
+					printk("W: sample %d hz, retry %d...\n", (int)rate_hz, prtd->rate_detect_cnt);
 					prtd->rate_detect_cnt = 0;
 					goto done_complete;
 			}
 
-			prtd->input_rate =
-					find_sample_rate(sample_rate_table, ARRAY_SIZE(sample_rate_table), rate_hz);;
+			spin_lock(&prtd->lock);
+			prtd->input_rate = find_sample_rate(sample_rate_table,
+								ARRAY_SIZE(sample_rate_table), rate_hz);;
+			spin_unlock(&prtd->lock);
+
 			prtd->rate_changed = true;
+			sprintf(prtd->message, "SAMPLERATE_CHANGED=%d", (int)prtd->input_rate);
+
+		 	schedule_work(&prtd->work);
 #endif
 		}
 	}
@@ -405,7 +530,7 @@ static int nxp_pcm_dma_request_channel(void *runtime_data, int stream)
 
 	prtd->dma_chan = dma_request_channel(mask, filter_fn, filter_data);
 	if (!prtd->dma_chan) {
-		printk(KERN_ERR "Error: %s dma '%s'\n", STREAM_STR(stream), (char*)filter_data);
+		printk("Error: %s dma '%s'\n", STREAM_STR(stream), (char*)filter_data);
 		return -ENXIO;
 	}
 
@@ -488,7 +613,7 @@ static int nxp_pcm_dma_prepare_and_submit(struct snd_pcm_substream *substream)
 				snd_pcm_lib_period_bytes(substream), direction);
 
 	if (!desc) {
-		printk(KERN_ERR "%s: cannot prepare slave %s dma (0x%lx)\n",
+		printk("%s: cannot prepare slave %s dma (0x%lx)\n",
 			__func__, prtd->dma_param->dma_ch_name, (ulong)dma_addr);
 		return -EINVAL;
 	}
@@ -505,19 +630,20 @@ static int nxp_pcm_dma_prepare_and_submit(struct snd_pcm_substream *substream)
 	return 0;
 }
 
+static int nxp_pcm_prepare(struct snd_pcm_substream *substream)
+{
+	pr_debug("%s: %s\n", __func__, STREAM_STR(substream->stream));
+	return nxp_pcm_resample_submit(substream);
+}
+
 static int nxp_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
 	struct nxp_pcm_dma_param *dma_param = prtd->dma_param;
-	struct timespec *ts = &prtd->ts[0];
-
-	struct pcm_timer_data *tm = prtd->private_data;
-	int ch = tm->channel;
-	u_long tcount = tm->tcount;
-	u_long tcnt, flags;
 	int ret = 0;
 
-	pr_debug("%s: %s cmd=%d [%d]\n", __func__, STREAM_STR(substream->stream), cmd, dma_param->is_run);
+	pr_debug("%s: %s cmd=%d [%d]\n",
+		__func__, STREAM_STR(substream->stream), cmd, dma_param->is_run);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -525,14 +651,6 @@ static int nxp_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 		if (ret)
 			return ret;
 		dma_async_issue_pending(prtd->dma_chan);
-
-		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-			spin_lock_irqsave(&tm->lock, flags);
-			tcnt = __raw_readl(TIMER_CNTO(ch));
-			ts->tv_sec = tm->ts.tv_sec;
-			spin_unlock_irqrestore(&tm->lock, flags);
-			ts->tv_nsec = (tcount - tcnt) * tm->nsec;
-		}
 		break;
 
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -547,6 +665,7 @@ static int nxp_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 
 	case SNDRV_PCM_TRIGGER_STOP:
 		dmaengine_terminate_all(prtd->dma_chan);
+		nxp_pcm_resample_terminate(substream);
 		break;
 	default:
 		return -EINVAL;
@@ -577,7 +696,7 @@ static int nxp_pcm_open(struct snd_pcm_substream *substream)
 	pr_debug("%s %s\n", __func__, STREAM_STR(substream->stream));
 	prtd = kzalloc(sizeof(struct nxp_pcm_runtime_data), GFP_KERNEL);
 	if (prtd == NULL) {
-		printk(KERN_ERR "Error: %s %s dma runtime allocate %d\n",
+		printk("Error: %s %s dma runtime allocate %d\n",
 			__func__, STREAM_STR(substream->stream),
 			sizeof(struct nxp_pcm_runtime_data));
 		return -ENOMEM;
@@ -599,14 +718,13 @@ static int nxp_pcm_open(struct snd_pcm_substream *substream)
 	prtd->private_data = &pcm_timer;
 	tm->data = prtd;
 
+	spin_lock_init(&prtd->lock);
+
 	/* resampler  */
-	if (prtd->dma_chan->chan_id == DMA_PERIPHERAL_ID_I2S0_RX ||
-		prtd->dma_chan->chan_id == DMA_PERIPHERAL_ID_I2S1_RX ||
-		prtd->dma_chan->chan_id == DMA_PERIPHERAL_ID_I2S2_RX) {
+	if (!strcmp(prtd->dma_param->dma_ch_name, DMA_PERIPHERAL_NAME_I2S0_RX) ||
+		!strcmp(prtd->dma_param->dma_ch_name, DMA_PERIPHERAL_NAME_I2S1_RX)) {
 		prtd->run_resampler = CFG_SND_PCM_CAPTURE_RESAMPLEER_ON;
-		prtd->devno = prtd->dma_chan->chan_id == DMA_PERIPHERAL_ID_I2S0_RX ? 0 :
-				prtd->dma_chan->chan_id == DMA_PERIPHERAL_ID_I2S1_RX ? 1 : 2;
-		pr_debug("***[%d:%s resampler ON]***\n",
+		pr_debug("***[DMA %d:%s resampler ON]***\n",
 			prtd->dma_chan->chan_id, prtd->dma_param->dma_ch_name);
 	}
 
@@ -634,10 +752,10 @@ static int nxp_pcm_close(struct snd_pcm_substream *substream)
 	struct snd_pcm *pcm = rtd->pcm;
 	struct nxp_pcm_runtime_data *prtd = runtime->private_data;
 
-	pr_debug("%s %s\n", __func__, STREAM_STR(substream->stream));
-	nxp_pcm_dma_mem_free(pcm, substream);
 	nxp_pcm_dma_release_channel(prtd);
+	nxp_pcm_dma_mem_free(pcm, substream);
 	kfree(prtd);
+	pr_debug("%s %s\n", __func__, STREAM_STR(substream->stream));
 	return 0;
 }
 
@@ -668,33 +786,43 @@ static int nxp_pcm_hw_params(struct snd_pcm_substream *substream,
 	/* resample rate */
 	prtd->input_rate = pcm_sample_rate_hz;
 	prtd->output_rate = CFG_SND_PCM_CAPTURE_RESAMPLE_HZ;
-
-	pcm_rate_chaned_event_up = false;
+	prtd->substream = substream;
+	prtd->resampler = NULL;
+	prtd->is_run_resample = false;
 
 	if (prtd->run_resampler) {
-		struct task_struct *p;
-		int (*func)(void*) = nxp_pcm_dma_capture_resample;
-		prtd->resampler = audio_resample_init(prtd->channels,
-							prtd->channels, (float)prtd->output_rate,
-							(float)prtd->input_rate);
-
-		p = kthread_create(func, substream, "snd-capture-resampler");
+		struct task_struct *p = kthread_create(nxp_pcm_capture_resample,
+									substream, "snd-capture-resampler");
 		if (IS_ERR(p)) {
 			pr_err("Error: %s thread for capture resampler\n", __func__);
 			return PTR_ERR(p);
 		}
 		prtd->task = p;
-		pr_debug("%s %s create resampler task (ch:%d %d->%d) (0x%p)...\n",
+		prtd->rate_duration_us =
+			(1000000/params_rate(params))*params_period_size(params) + 1000; /* add 10ms */
+
+		if (!strcmp(prtd->dma_param->dma_ch_name, DMA_PERIPHERAL_NAME_I2S0_RX)) {
+			struct hrtimer *hrtimer = &prtd->rate_timer;
+			INIT_WORK(&prtd->work, nxp_pcm_sample_rate_work);
+			hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+			hrtimer->function = nxp_pcm_sample_rate_timer;
+			prtd->hw_channel_no = 0;
+		} else {
+			prtd->hw_channel_no = 1;
+		}
+
+		pr_debug("%s %s create resampler task (ch:%d %d->%d) ...\n",
 			__func__, STREAM_STR(substream->stream),
-			prtd->channels, (int)prtd->input_rate, (int)prtd->output_rate,
-			prtd->resampler);
+			prtd->channels, (int)prtd->input_rate, (int)prtd->output_rate);
 	}
 	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
 
-	pr_debug("%s: %s\n", __func__, STREAM_STR(substream->stream));
-	pr_debug("ch=%d, buffer_size=%6d, period_size=%6d, periods=%2d, rate=%6d, resample (%s)\n\n",
+	pr_debug("%s: %s I2S.%d\n", __func__, STREAM_STR(substream->stream), prtd->hw_channel_no);
+	pr_debug("ch=%d, buffer_size=%6d, period_size=%6d, periods=%2d, rate=%6d\n",
 		prtd->channels, params_buffer_size(params), params_period_size(params),
-		params_periods(params), params_rate(params), prtd->run_resampler?"O":"X");
+		params_periods(params), params_rate(params));
+	pr_debug("Resample (%s), detector duration %ldms\n\n",
+		prtd->run_resampler?"O":"X", prtd->rate_duration_us/1000);
 
 	return 0;
 }
@@ -703,22 +831,22 @@ static int nxp_pcm_hw_free(struct snd_pcm_substream *substream)
 {
 	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
 
-	pr_debug("%s: %s\n", __func__, STREAM_STR(substream->stream));
+	pr_debug("%s: %s (%s)\n", __func__, STREAM_STR(substream->stream),
+		prtd->dma_param->dma_ch_name);
 
 	if (prtd->task)
 		kthread_stop(prtd->task);
 
-	if (prtd->resampler) {
-		while(prtd->task_running) { };
-		audio_resample_close(prtd->resampler);
-		prtd->resampler = NULL;
+	if (prtd->run_resampler && 0 == prtd->hw_channel_no) {
+		hrtimer_cancel(&prtd->rate_timer);
+		cancel_work_sync(&prtd->work);
 	}
-
 	prtd->task = NULL;
-	pr_debug("%s: %d\n", __func__, STREAM_STR(substream->stream), prtd->task_running);
+
+	pr_debug("%s: %s (%s)\n",
+		__func__, STREAM_STR(substream->stream), prtd->dma_param->dma_ch_name);
 
 	snd_pcm_set_runtime_buffer(substream, NULL);
-
 	return 0;
 }
 
@@ -742,6 +870,7 @@ static struct snd_pcm_ops nxp_pcm_ops = {
 	.ioctl		= snd_pcm_lib_ioctl,
 	.hw_params	= nxp_pcm_hw_params,
 	.hw_free	= nxp_pcm_hw_free,
+	.prepare	= nxp_pcm_prepare,
 	.trigger	= nxp_pcm_trigger,
 	.pointer	= nxp_pcm_pointer,
 	.mmap		= nxp_pcm_mmap,
@@ -762,7 +891,7 @@ static int nxp_pcm_preallocate_sample_buffer(struct snd_pcm *pcm, int stream)
 	buf->bytes = size;
 	buf->area = dma_alloc_writecombine(buf->dev.dev, size, &buf->addr, GFP_KERNEL);
 	if (!buf->area) {
-		printk(KERN_ERR "Fail, %s dma buffer allocate (%d)\n",
+		printk("Fail, %s dma buffer allocate (%d)\n",
 			STREAM_STR(substream->stream), size);
 		return -ENOMEM;
 	}

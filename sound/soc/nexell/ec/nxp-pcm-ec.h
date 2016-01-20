@@ -59,6 +59,17 @@ struct nxp_pcm_runtime_data {
 	int   rate_detect_cnt;
 	void *rs_buffer;	/* for resampler */
 	int dma_avail_size;
+	/* even work */
+	int hw_channel_no;
+	struct work_struct work;
+	struct hrtimer rate_timer;
+	long rate_duration_us;
+	bool sample_exist;
+	bool is_run_resample;
+	spinlock_t 	lock;
+	struct mutex mutex;
+	struct snd_pcm_substream *substream;
+	char message[256];
 };
 
 #define	STREAM_STR(dir)	(SNDRV_PCM_STREAM_PLAYBACK == dir ? "playback" : "capture ")

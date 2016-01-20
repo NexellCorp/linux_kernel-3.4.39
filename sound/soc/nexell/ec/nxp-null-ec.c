@@ -36,28 +36,64 @@ static char str_dai_name[16] = "nxp-i2s-ec";
 
 static struct snd_soc_codec_driver soc_codec_snd_null;
 
-static struct snd_soc_dai_driver null_stub_dai = {
-	.name		= "snd-null-voice",
-	.playback 	= {
-		.stream_name	= "Null Playback",
-		.channels_min	= 1,
-		.channels_max	= 2,
-		.rates			= STUB_RATES,
-		.formats		= STUB_FORMATS,
+static struct snd_soc_dai_driver null_stub_dai[] = {
+	{
+		.name		= "snd-null-voice 0",
+		.playback 	= {
+			.stream_name	= "Null Playback",
+			.channels_min	= 1,
+			.channels_max	= 2,
+			.rates			= STUB_RATES,
+			.formats		= STUB_FORMATS,
+		},
+		.capture 	= {
+			.stream_name	= "Null Capture",
+			.channels_min	= 1,
+			.channels_max	= 2,
+			.rates			= STUB_RATES,
+			.formats		= STUB_FORMATS,
+		},
 	},
-	.capture 	= {
-		.stream_name	= "Null Capture",
-		.channels_min	= 1,
-		.channels_max	= 2,
-		.rates			= STUB_RATES,
-		.formats		= STUB_FORMATS,
+	{
+		.name		= "snd-null-voice 1",
+		.playback 	= {
+			.stream_name	= "Null Playback",
+			.channels_min	= 1,
+			.channels_max	= 2,
+			.rates			= STUB_RATES,
+			.formats		= STUB_FORMATS,
+		},
+		.capture 	= {
+			.stream_name	= "Null Capture",
+			.channels_min	= 1,
+			.channels_max	= 2,
+			.rates			= STUB_RATES,
+			.formats		= STUB_FORMATS,
+		},
+	},
+	{
+		.name		= "snd-null-voice 2",
+		.playback 	= {
+			.stream_name	= "Null Playback",
+			.channels_min	= 1,
+			.channels_max	= 2,
+			.rates			= STUB_RATES,
+			.formats		= STUB_FORMATS,
+		},
+		.capture 	= {
+			.stream_name	= "Null Capture",
+			.channels_min	= 1,
+			.channels_max	= 2,
+			.rates			= STUB_RATES,
+			.formats		= STUB_FORMATS,
+		},
 	},
 };
 
 static int snd_null_probe(struct platform_device *pdev)
 {
-	int ret = snd_soc_register_codec(&pdev->dev, &soc_codec_snd_null,
-					&null_stub_dai, 1);
+	int ret = snd_soc_register_codec(&pdev->dev,
+				&soc_codec_snd_null, null_stub_dai, ARRAY_SIZE(null_stub_dai));
 	if(ret < 0)
 		printk("snd null codec driver register fail.(ret=%d)\n", ret);
 	return ret;
@@ -90,30 +126,50 @@ MODULE_LICENSE("GPL");
 /*
  * SND-NULL Card DAI
  */
-static struct snd_soc_dai_link snd_null_dai_link = {
-	.name 			= "ASoc-NULL",
-	.stream_name 	= "Null Voice",
-	.cpu_dai_name 	= str_dai_name,
-	.platform_name  = "nxp-pcm-ec",			/* nxp_snd_pcm_driver name */
-	.codec_dai_name = "snd-null-voice",
-	.codec_name 	= "snd-null",
-	.symmetric_rates = 1,
+static struct snd_soc_dai_link snd_null_dai_link[] =  {
+	{
+		.name 			= "ASoc-NULL",
+		.stream_name 	= "Null Voice",
+		.cpu_dai_name 	= str_dai_name,
+		.platform_name  = "nxp-pcm-ec",			/* nxp_snd_pcm_driver name */
+		.codec_dai_name = "snd-null-voice 0",
+		.codec_name 	= "snd-null",
+		.symmetric_rates = 1,
+	},
+	{
+		.name 			= "ASoc-NULL",
+		.stream_name 	= "Null Voice",
+		.cpu_dai_name 	= str_dai_name,
+		.platform_name  = "nxp-pcm-ec",			/* nxp_snd_pcm_driver name */
+		.codec_dai_name = "snd-null-voice 1",
+		.codec_name 	= "snd-null",
+		.symmetric_rates = 1,
+	},
+	{
+		.name 			= "ASoc-NULL",
+		.stream_name 	= "Null Voice",
+		.cpu_dai_name 	= str_dai_name,
+		.platform_name  = "nxp-pcm-ec",			/* nxp_snd_pcm_driver name */
+		.codec_dai_name = "snd-null-voice 2",
+		.codec_name 	= "snd-null",
+		.symmetric_rates = 1,
+	},
 };
 
 static struct snd_soc_card snd_null_card[] = {
 	{
 	.name 			= "SND-NULL.0",	/* proc/asound/cards */
-	.dai_link 		= &snd_null_dai_link,
+	.dai_link 		= &snd_null_dai_link[0],
 	.num_links 		= 1,
 	},
 	{
 	.name 			= "SND-NULL.1",	/* proc/asound/cards */
-	.dai_link 		= &snd_null_dai_link,
+	.dai_link 		= &snd_null_dai_link[1],
 	.num_links 		= 1,
 	},
 	{
 	.name 			= "SND-NULL.2",	/* proc/asound/cards */
-	.dai_link 		= &snd_null_dai_link,
+	.dai_link 		= &snd_null_dai_link[1],
 	.num_links 		= 1,
 	},
 };
@@ -133,6 +189,7 @@ static int snd_card_probe(struct platform_device *pdev)
 		card = &snd_null_card[pdev->id];
 
 	card->dev = &pdev->dev;
+
 	ret = snd_soc_register_card(card);
 	if (ret) {
 		dev_err(&pdev->dev, "snd_soc_register_card() failed: %d\n", ret);

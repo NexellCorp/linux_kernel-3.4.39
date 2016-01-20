@@ -225,7 +225,7 @@ static struct platform_device *i2s_devices[] __initdata = {
 #if defined(CONFIG_SND_NXP_EC)
 static struct platform_device snd_null = {
 	.name = "snd-null",
-	.id = -1,
+	.id = -1,	/* must be  -1 */
 };
 
 struct nxp_snd_dai_plat_data snd_null_dai_data = {
@@ -241,15 +241,16 @@ struct nxp_snd_dai_plat_data snd_null_dai_data = {
 
 static struct platform_device snd_null_dai = {
 	.name = "snd-null-card",
-	.id = -1,
+	.id = 0,
 	.dev = {
 		.platform_data = &snd_null_dai_data,
 	}
 };
 
+//-------------------------------------------------------------------
 static struct platform_device snd_null_1 = {
 	.name = "snd-null",
-	.id = 1,
+	.id = 1,	/* must 1: second codec */
 };
 
 struct nxp_snd_dai_plat_data snd_null_dai_data_1 = {

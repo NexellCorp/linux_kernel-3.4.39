@@ -280,7 +280,8 @@ static int nxp_pcm_close(struct snd_pcm_substream *substream)
 
 	pr_debug("%s %s\n", __func__, STREAM_STR(substream->stream));
 	free_irq(pvd->irq, substream);
-	iounmap(pvd->buffer.area);
+	if (pvd->buffer.area)
+		iounmap(pvd->buffer.area);
 	kfree(prtd);
 
 	return 0;
