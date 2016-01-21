@@ -256,22 +256,22 @@
 /*------------------------------------------------------------------------------
  *	CAMERA Back Power Down
  */
-#define CFG_IO_CAMERA_BACK_POWER_DOWN     ((PAD_GPIO_E + 17) | PAD_FUNC_ALT0)
+#define CFG_IO_CAMERA_BACK_POWER_DOWN     ((PAD_GPIO_E + 10) | PAD_FUNC_ALT0) /* TW9912 */
+#define CFG_IO_CAMERA_RESET                 ((PAD_GPIO_E + 9) | PAD_FUNC_ALT0)		/* TW9912 */
 
 /*------------------------------------------------------------------------------
  *	CAMERA Front Power Down
  */
-#define CFG_IO_CAMERA_FRONT_POWER_DOWN     ((PAD_GPIO_E + 20) | PAD_FUNC_ALT0)		/* GPIO */
+#define CFG_IO_CAMERA_FRONT_POWER_DOWN     ((PAD_GPIO_E + 17) | PAD_FUNC_ALT0)		/* AR_POWER */
 
 /*------------------------------------------------------------------------------
  *	CAMERA Reset
  */
-#define CFG_IO_CAMERA_RESET                 ((PAD_GPIO_E + 7) | PAD_FUNC_ALT0)		/* GPIO */
 
 /*------------------------------------------------------------------------------
- *	AUDIO AMP for RT5623
+ *	AUDIO AMP
  */
-#define CFG_IO_AUDIO_RT5623_AMP_POWER 			(PAD_GPIO_D + 19)		/* GPIO */
+#define CFG_IO_AUDIO_SPK_AMP_POWER 			(PAD_GPIO_B + 27)		/* AMP POWER */
 
 
 #endif	/* __CFG_GPIO_H__ */
