@@ -172,7 +172,7 @@
 #define PAD_GPIOD23     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CMD          ,2:_                    ,3:_                    =DMB_INT
 #define PAD_GPIOD24     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CDATA[0]     ,2:_                    ,3:_                    =DMB_PWR_EN
 #define PAD_GPIOD25     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CDATA[1]     ,2:_                    ,3:_                    =PWR_DET
-#define PAD_GPIOD26     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CDATA[3]     ,2:_                    ,3:_                    =HUB_RESET
+#define PAD_GPIOD26     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CDATA[3]     ,2:_                    ,3:_                    =HUB_RESET
 #define PAD_GPIOD27     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CDATA[3]     ,2:_                    ,3:_                    =SD_PWR_EN
 #define PAD_GPIOD28     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: VIP1_VD[0]          ,2: MPEGTSI_TDATA1[0]   ,3: MCUS_ADDR[24]       =TW9912_D0
 #define PAD_GPIOD29     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: VIP1_VD[1]          ,2: MPEGTSI_TDATA1[1]   ,3:_                    =TW9912_D1
@@ -242,12 +242,16 @@
  *	TOUCH
  */
 #define	CFG_IO_TOUCH_PENDOWN_DETECT			(PAD_GPIO_E + 20)
-#define	CFG_IO_TOUCH_PWR_EN				(PAD_GPIO_E + 21)						/* for aw5306 */
-
+#define	CFG_IO_TOUCH_PWR_EN				(PAD_GPIO_E + 21)						/* for tsc2007 */
 /*------------------------------------------------------------------------------
- *	GPIO EEPROM
+ *	USB HUB
  */
-#define CFG_IO_SPI_EEPROM_WP				((PAD_GPIO_C + 27) | PAD_FUNC_ALT1)		/* GPIO */
+#define	CFG_IO_USB_HUB_RESET				(PAD_GPIO_D + 26)
+#define	CFG_IO_USB_HUB_PORT1_PWR_EN			(PAD_GPIO_B + 18)
+#define	CFG_IO_USB_HUB_PORT2_PWR_EN			(PAD_GPIO_B + 14)
+#define	CFG_IO_USB_HUB_PORT1_FLT			(PAD_GPIO_B + 11)
+#define	CFG_IO_USB_HUB_PORT2_FLT			(PAD_GPIO_B + 16)
+
 
 /*------------------------------------------------------------------------------
  *	CAMERA Back Power Down
