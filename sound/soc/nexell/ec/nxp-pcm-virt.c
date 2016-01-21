@@ -253,7 +253,7 @@ static int nxp_pcm_open(struct snd_pcm_substream *substream)
 	reg = (struct nxp_cpu_pdm_reg *)pvd->devptr;
 
 	PDM_REG_STOP(reg);
-	msleep(15);
+//	msleep(15);
 
 	ret = request_irq(pvd->irq, nxp_pcm_dma_complete,
 						0, "nxp-pdm-virt-irq", substream);

@@ -1,4 +1,8 @@
 #include "resample.h"
+#include "table_44100.h"
+#include "table_48000.h"
+#include "table_88200.h"
+#include "table_96000.h"
 //#include "dsputil.h"
 
 /********************************************************************************************/
@@ -264,7 +268,7 @@ long int lrintf(float x)
 
   /* Extract exponent field. */
   j0 = ((i0 & 0x7f800000) >> 23) - 127;
-  
+
   if (j0 < (int)(sizeof (long int) * 8) - 1)
     {
       if (j0 < -1)
@@ -307,7 +311,7 @@ void *av_malloc(unsigned int size)
     /* lets disallow possible ambiguous cases */
     if(size > INT_MAX)
         return NULL;
-    
+
 #ifdef MEMALIGN_HACK
     ptr = MES_malloc(size+16+1);
     MES_ASSERT( CNULL != ptr );
@@ -315,9 +319,9 @@ void *av_malloc(unsigned int size)
     //ptr += diff;
     ptr = (void*)((int)ptr + diff);
     ((char*)ptr)[-1]= diff;
-#elif defined (HAVE_MEMALIGN) 
+#elif defined (HAVE_MEMALIGN)
     ptr = memalign(16,size);
-        
+
 #else
     ptr = MES_malloc(size);
     MES_ASSERT( CNULL != ptr );
@@ -328,12 +332,12 @@ void *av_malloc(unsigned int size)
 /**
  * av_realloc semantics (same as glibc): if ptr is NULL and size > 0,
  * identical to malloc(size). If size is zero, it is identical to
- * free(ptr) and NULL is returned.  
+ * free(ptr) and NULL is returned.
  */
 void *av_realloc(void *ptr, unsigned int size)
 {
 	void *pret;
-	
+
 #ifdef MEMALIGN_HACK
     int diff;
 #endif
@@ -371,7 +375,7 @@ void av_free(void *ptr)
 void *av_mallocz(unsigned int size)
 {
     void *ptr;
-    
+
     ptr = av_malloc(size);
     if (!ptr)
         return NULL;
@@ -690,7 +694,29 @@ void av_resample_compensate(AVResampleContext *c, int sample_delta, int compensa
 /**/    c->filter_length= FFMAX((int)ceil_f(filter_size/factor), 1);
 #endif
 /**/    c->filter_bank= av_mallocz(c->filter_length*(phase_count+1)*sizeof(FELEM));
-/**/    av_build_filter(c->filter_bank, factor, c->filter_length, phase_count, 1<<FILTER_SHIFT, WINDOW_TYPE);
+/**///    av_build_filter(c->filter_bank, factor, c->filter_length, phase_count, 1<<FILTER_SHIFT, WINDOW_TYPE);
+/**///    memcpy(&c->filter_bank[c->filter_length*phase_count+1], c->filter_bank, (c->filter_length-1)*sizeof(FELEM));
+/**/	if(in_rate == 16000)
+/**/	{
+/**/		/* dummy copy */
+/**/		memcpy(c->filter_bank, c->filter_bank, c->filter_length*(phase_count+1)*sizeof(FELEM));
+/**/	}
+/**/	else if(in_rate == 44100)
+/**/	{
+/**/		memcpy(c->filter_bank, table_44100, c->filter_length*(phase_count+1)*sizeof(FELEM));
+/**/	}
+/**/	else if(in_rate == 48000)
+/**/	{
+/**/		memcpy(c->filter_bank, table_48000, c->filter_length*(phase_count+1)*sizeof(FELEM));
+/**/	}
+/**/	else if(in_rate == 88200)
+/**/	{
+/**/		memcpy(c->filter_bank, table_88200, c->filter_length*(phase_count+1)*sizeof(FELEM));
+/**/	}
+/**/	else if(in_rate == 96000)
+/**/	{
+/**/		memcpy(c->filter_bank, table_96000, c->filter_length*(phase_count+1)*sizeof(FELEM));
+/**/	}
 /**/    memcpy(&c->filter_bank[c->filter_length*phase_count+1], c->filter_bank, (c->filter_length-1)*sizeof(FELEM));
 /**/    c->filter_bank[c->filter_length*phase_count]= c->filter_bank[c->filter_length - 1];
 /**/

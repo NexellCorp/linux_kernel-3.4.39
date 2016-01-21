@@ -120,6 +120,15 @@ static int find_sample_rate(int *table, int table_size, int rate)
 	return table[find];
 }
 
+static inline void get_hw_time_tick(struct pcm_timer_data *tm,
+						struct timespec *ts)
+{
+	u_long tcnt = __raw_readl(TIMER_CNTO(tm->channel));
+	tcnt = (tcnt == 0 ? tm->tcount : tcnt);
+	ts->tv_sec = tm->ts.tv_sec;
+	ts->tv_nsec = (tm->tcount - tcnt) * tm->nsec;
+}
+
 /*
  * DMA resample buffer
  */
@@ -195,6 +204,8 @@ static int nxp_pcm_resample_submit(struct snd_pcm_substream *substream)
 {
 	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
 	long duration = (prtd->rate_duration_us/1000)*2; /* add 10ms */
+	struct pcm_timer_data *tm = prtd->private_data;
+	struct timespec *ts = &prtd->ts[0];
 
 	if (NULL == prtd->task || false == prtd->run_resampler)
 		return -1;
@@ -212,6 +223,8 @@ static int nxp_pcm_resample_submit(struct snd_pcm_substream *substream)
 	prtd->resample_closed = false;
 	pr_debug("resampler [%d]->[%d] hz\n", prtd->input_rate, prtd->output_rate);
 #endif
+
+	get_hw_time_tick(tm, ts);
 
 	if (0 == prtd->hw_channel_no) {
 		prtd->sample_exist = false;
@@ -241,15 +254,6 @@ static int nxp_pcm_resample_terminate(struct snd_pcm_substream *substream)
 	}
 
 	return 0;
-}
-
-static inline void get_hw_time_tick(struct pcm_timer_data *tm,
-						struct timespec *ts)
-{
-	u_long tcnt = __raw_readl(TIMER_CNTO(tm->channel));
-	tcnt = (tcnt == 0 ? tm->tcount : tcnt);
-	ts->tv_sec = tm->ts.tv_sec;
-	ts->tv_nsec = (tm->tcount - tcnt) * tm->nsec;
 }
 
 static inline void nxp_pcm_reset_device(void)
@@ -352,6 +356,7 @@ static int nxp_pcm_capture_resample(void *data)
 			prtd->dma_offset = 0;
 
 		snd_pcm_period_elapsed(substream);
+		prtd->resample_counts++;
 	}
 
 	set_current_state(TASK_INTERRUPTIBLE);
@@ -411,7 +416,7 @@ static enum hrtimer_restart nxp_pcm_sample_rate_timer(struct hrtimer *hrtimer)
 			prtd->sample_offset = 0;
 
 		snd_pcm_period_elapsed(substream);
-
+		prtd->rate_detect_cnt = 0;
 	#ifdef SND_DEV_SYNC_I2S_PDM
 		printk("[CURRENT PDM/I2S SYNC MODE]\n\n");
 	#endif
@@ -468,8 +473,9 @@ static void nxp_pcm_dma_complete(void *arg)
 		 * detect samplerate change
 		 */
 		if (abs(prtd->input_rate - rate_hz) > SAMPLE_DETECT_DELTA) {
-			printk("R[%d (%6llu:%4d)[%6d]->[%6d]\n",
-				prtd->rate_detect_cnt, jt, prtd->period_size, (int)prtd->input_rate, (int)rate_hz);
+			pr_debug("R[%d (%6llu:%4d)[%6d]->[%6d] (%lld)\n",
+				prtd->rate_detect_cnt, jt, prtd->period_size,
+				(int)prtd->input_rate, (int)rate_hz, prtd->total_counts);
 
 			prtd->rate_detect_cnt++;
 
@@ -605,6 +611,7 @@ static int nxp_pcm_dma_prepare_and_submit(struct snd_pcm_substream *substream)
 	prtd->trans_period = 0;
 	prtd->total_counts = 0;
 	prtd->total_times = 0;
+	prtd->resample_counts = 0;
 	prtd->dma_avail_size = snd_pcm_lib_buffer_bytes(substream);
 
   	if (prtd->run_resampler && substream->stream == SNDRV_PCM_STREAM_CAPTURE)

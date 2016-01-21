@@ -114,6 +114,23 @@ ReSampleContext *audio_resample_init(int output_channels, int input_channels,
         av_log(NULL, AV_LOG_ERROR, "Resampling with input channels greater than 2 unsupported.");
         return NULL;
       }
+    if(16000 != output_rate)
+      {
+        av_log(NULL, AV_LOG_ERROR, "Resampling with output rate unsupported.");
+        return NULL;
+      }
+    if( (16000 == input_rate)  ||
+    	(44100 == input_rate)  ||
+		(48000 == input_rate)  ||
+		(88200 == input_rate)  ||
+		(96000 == input_rate)  )
+		{
+		}
+	else
+      {
+        av_log(NULL, AV_LOG_ERROR, "Resampling with input rate unsupported.");
+        return NULL;
+      }
 
     s = av_mallocz(sizeof(ReSampleContext));
     if (!s)
