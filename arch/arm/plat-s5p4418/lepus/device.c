@@ -142,10 +142,33 @@ static struct platform_device dfs_plat_device = {
 #endif
 
 #if defined (CONFIG_SENSORS_NXP_ADC_TEMP)
+struct nxp_adc_tmp_trigger adc_tmp_event[] = {
+	{
+		.temp  = 50,
+		.freq  = 1200000,
+		.period = 1000, /* Ms */
+	} , {
+		.temp  = 55,
+		.freq  = 1000000,
+		.period = 1000, /* Ms */
+	} , {
+		.temp  = 60,
+		.freq  = 800000,
+		.period = 1000, /* Ms */
+	} , {
+		.temp  = 65,
+		.freq  = 400000,		/* freq = 0 :Set critical temp. Power off! */
+		.period = 1000, /* Ms */
+	},
+};
+
 struct nxp_adc_tmp_platdata adc_tmp_plat_data ={
 	.channel	= 2,
 	.tmp_offset	= 0,
 	.duration	= 1000,
+	.step_up 	= 1,
+	.event 		= adc_tmp_event,
+	.eventsize = ARRAY_SIZE( adc_tmp_event),
 };
 
 static struct platform_device adc_temp_plat_device = {
@@ -157,29 +180,6 @@ static struct platform_device adc_temp_plat_device = {
 #endif //SENSORS_NXP_ADC_TEMP
 
 
-/*------------------------------------------------------------------------------
- * CPUFREQ Limit
- */
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-
-static struct nxp_cpufreq_limit_data freq_limit_data = {
-	//.limit_name		= freq_proct_list,
-	//.limit_num 		= ARRAY_SIZE(freq_proct_list),
-	.aval_max_freq	= 1400000,
-	.op_max_freq	= 1200000,
-	.limit_level0_freq	= 1200000,
-	.limit_level1_freq	= 1000000,
-	.min_max_freq	= 800000,
-	.prev_max_freq = 1400000,
-};
-
-static struct platform_device freq_limit_device = {
-	.name			= "cpufreq-limit",
-	.dev			= {
-		.platform_data	= &freq_limit_data,
-	}
-};
-#endif
 /*------------------------------------------------------------------------------
  * Network DM9000
  */
@@ -1519,13 +1519,11 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 	printk("plat: add dynamic frequency (pll.%d)\n", dfs_plat_data.pll_dev);
 	platform_device_register(&dfs_plat_device);
-	#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-	platform_device_register(&freq_limit_device);
-	#endif
-	#ifdef CONFIG_SENSORS_NXP_ADC_TEMP
-	platform_device_register(&adc_temp_plat_device);
-	#endif
+#endif
 
+#ifdef CONFIG_SENSORS_NXP_ADC_TEMP
+	printk("plat: add device adc temp\n");
+	platform_device_register(&adc_temp_plat_device);
 #endif
 
 #if defined (CONFIG_FB_NXP)
