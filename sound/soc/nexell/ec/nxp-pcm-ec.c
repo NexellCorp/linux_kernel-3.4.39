@@ -473,7 +473,7 @@ static void nxp_pcm_dma_complete(void *arg)
 		 * detect samplerate change
 		 */
 		if (abs(prtd->input_rate - rate_hz) > SAMPLE_DETECT_DELTA) {
-			pr_debug("R[%d (%6llu:%4d)[%6d]->[%6d] (%lld)\n",
+			printk("R[%d (%6llu:%4d)[%6d]->[%6d] (%lld)\n",
 				prtd->rate_detect_cnt, jt, prtd->period_size,
 				(int)prtd->input_rate, (int)rate_hz, prtd->total_counts);
 
