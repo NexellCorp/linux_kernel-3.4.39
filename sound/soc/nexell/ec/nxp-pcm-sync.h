@@ -61,7 +61,7 @@ extern int nxp_snd_sync_trigger(struct snd_pcm_substream *substream,
 #define	PDM_I2S_LRCLK		(PAD_GPIO_D + 12)	/* H -> L */
 
 #define	PDM_IO_CSSEL		(PAD_GPIO_C + 22)	/* H -> L */
-#define	PDM_IO_ISRUN		(PAD_GPIO_D + 19)	/* B 27,  L -> H : H : RUN, 0: STOP */
+#define	PDM_IO_ISRUN		(PAD_GPIO_D + 19)	/* B 27, D19, L -> H : H : RUN, 0: STOP */
 #define	PDM_IO_LRCLK		(PAD_GPIO_B + 26)	/* H -> L : H : No LR, 0: LR */
 
 #define	IO_BASE(io)	(IO_ADDRESS(PHY_BASEADDR_GPIOA) + (0x1000*PAD_GET_GROUP(io)))

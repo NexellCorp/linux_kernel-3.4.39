@@ -121,8 +121,7 @@ static inline void __sync_capture_start(void)
 	__raw_writel(CSR, (base+0x04));
 	__raw_writel(CON, (base+0x00));
 
-	/* DPM */
-	NX_SSP_SetSlaveOutputEnable(2, CTRUE);
+	/* PDM */
 	base = (void*)0xf005f000;
 	__raw_writel(__raw_readl(base + 0x04) | 0x02, (base + 0x04));	// SSPCR1 = 0x04
 	pr_debug("***** LRCK %s [%d:%d:%d]*****\n",
