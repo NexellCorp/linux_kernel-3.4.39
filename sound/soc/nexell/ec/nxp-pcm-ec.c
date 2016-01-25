@@ -105,6 +105,9 @@ static int pcm_sample_rate_hz = CFG_SND_PCM_CAPTURE_INPUT_RATE;
 #define us_to_ktime(u)  ns_to_ktime((u64)u * 1000)
 #define ms_to_ktime(m)  ns_to_ktime((u64)m * 1000 * 1000)
 
+#define	RESAMPLE_STAT_RUN 		(1<<0)
+#define	RESAMPLE_STAT_OPEN		(1<<1)
+
 static int find_sample_rate(int *table, int table_size, int rate)
 {
 	int i = 0, min = 0, new = 0;
@@ -220,7 +223,8 @@ static int nxp_pcm_resample_submit(struct snd_pcm_substream *substream)
 			STREAM_STR(substream->stream), prtd->input_rate, prtd->output_rate);
 		return -EINVAL;
 	}
-	prtd->resample_closed = false;
+	set_bit(RESAMPLE_STAT_OPEN, &prtd->resample_status);
+
 	pr_debug("resampler [%d]->[%d] hz\n", prtd->input_rate, prtd->output_rate);
 #endif
 
@@ -236,16 +240,12 @@ static int nxp_pcm_resample_submit(struct snd_pcm_substream *substream)
 static int nxp_pcm_resample_terminate(struct snd_pcm_substream *substream)
 {
 	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
-	unsigned long flags;
 	int count = 100;
 
 	if (prtd->resampler) {
 		/* wait for end resampler */
-		spin_lock_irqsave(&prtd->lock, flags);
-		prtd->resample_closed = true;
-		spin_unlock_irqrestore(&prtd->lock, flags);
-
-		while(prtd->is_run_resample) {
+		clear_bit(RESAMPLE_STAT_OPEN, &prtd->resample_status);
+		while(test_bit(RESAMPLE_STAT_RUN, &prtd->resample_status)) {
 			if (0 == --count)
 				break;
 			mdelay(1);
@@ -306,7 +306,6 @@ static int nxp_pcm_capture_resample(void *data)
 	int frame_size = out_bytes/frame_bytes;
 	int out_frames;
 #endif
-	unsigned long flags;
 	void *src, *dst;
 
 	if (false == prtd->run_resampler ||
@@ -325,21 +324,20 @@ static int nxp_pcm_capture_resample(void *data)
 		memcpy(dst, src, snd_pcm_lib_period_bytes(substream));
 	#else
 
-		spin_lock_irqsave(&prtd->lock, flags);
-		if (true == prtd->resample_closed ||
-			NULL == prtd->resampler) {
-			spin_unlock_irqrestore(&prtd->lock, flags);
+		if (!test_bit(RESAMPLE_STAT_OPEN, &prtd->resample_status) ||
+			NULL == prtd->resampler)
 			continue;
-		}
-		spin_unlock_irqrestore(&prtd->lock, flags);
 
 		src = (void*)(prtd->dma_buffer.area + prtd->dma_offset);
 		dst = prtd->rs_buffer;
 
-		prtd->is_run_resample = true;
+		set_bit(RESAMPLE_STAT_RUN, &prtd->resample_status);
+
 		out_frames = audio_resample(prtd->resampler, (short*)dst, (short*)src, frame_size);
 		out_bytes = out_frames * frame_bytes;
-		prtd->is_run_resample = false;
+
+		clear_bit(RESAMPLE_STAT_RUN, &prtd->resample_status);
+
 
 		src = prtd->rs_buffer;
 		dst = (void*)(runtime->dma_area + prtd->sample_offset);
@@ -816,8 +814,9 @@ static int nxp_pcm_hw_params(struct snd_pcm_substream *substream,
 	prtd->output_rate = CFG_SND_PCM_CAPTURE_RESAMPLE_HZ;
 	prtd->substream = substream;
 	prtd->resampler = NULL;
-	prtd->is_run_resample = false;
-	prtd->resample_closed = true;
+
+	clear_bit(RESAMPLE_STAT_RUN , &prtd->resample_status);
+	clear_bit(RESAMPLE_STAT_OPEN, &prtd->resample_status);
 
 	if (prtd->run_resampler) {
 		struct task_struct *p = kthread_create(nxp_pcm_capture_resample,

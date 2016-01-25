@@ -65,8 +65,7 @@ struct nxp_pcm_runtime_data {
 	struct hrtimer rate_timer;
 	long rate_duration_us;
 	bool sample_exist;
-	bool is_run_resample;
-	bool resample_closed;
+	unsigned long resample_status;
 	u64 resample_counts;
 	spinlock_t 	lock;
 	struct mutex mutex;
