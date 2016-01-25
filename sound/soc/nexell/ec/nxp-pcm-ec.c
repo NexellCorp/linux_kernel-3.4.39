@@ -106,7 +106,7 @@ static int pcm_sample_rate_hz = CFG_SND_PCM_CAPTURE_INPUT_RATE;
 #define ms_to_ktime(m)  ns_to_ktime((u64)m * 1000 * 1000)
 
 #define	RESAMPLE_STAT_RUN 		(1<<0)
-#define	RESAMPLE_STAT_OPEN		(1<<1)
+#define	RESAMPLE_STAT_INIT		(1<<1)
 
 static int find_sample_rate(int *table, int table_size, int rate)
 {
@@ -223,7 +223,7 @@ static int nxp_pcm_resample_submit(struct snd_pcm_substream *substream)
 			STREAM_STR(substream->stream), prtd->input_rate, prtd->output_rate);
 		return -EINVAL;
 	}
-	set_bit(RESAMPLE_STAT_OPEN, &prtd->resample_status);
+	set_bit(RESAMPLE_STAT_INIT, &prtd->resample_status);
 
 	pr_debug("resampler [%d]->[%d] hz\n", prtd->input_rate, prtd->output_rate);
 #endif
@@ -244,7 +244,7 @@ static int nxp_pcm_resample_terminate(struct snd_pcm_substream *substream)
 
 	if (prtd->resampler) {
 		/* wait for end resampler */
-		clear_bit(RESAMPLE_STAT_OPEN, &prtd->resample_status);
+		clear_bit(RESAMPLE_STAT_INIT, &prtd->resample_status);
 		while(test_bit(RESAMPLE_STAT_RUN, &prtd->resample_status)) {
 			if (0 == --count)
 				break;
@@ -324,7 +324,7 @@ static int nxp_pcm_capture_resample(void *data)
 		memcpy(dst, src, snd_pcm_lib_period_bytes(substream));
 	#else
 
-		if (!test_bit(RESAMPLE_STAT_OPEN, &prtd->resample_status) ||
+		if (!test_bit(RESAMPLE_STAT_INIT, &prtd->resample_status) ||
 			NULL == prtd->resampler)
 			continue;
 
@@ -337,7 +337,6 @@ static int nxp_pcm_capture_resample(void *data)
 		out_bytes = out_frames * frame_bytes;
 
 		clear_bit(RESAMPLE_STAT_RUN, &prtd->resample_status);
-
 
 		src = prtd->rs_buffer;
 		dst = (void*)(runtime->dma_area + prtd->sample_offset);
@@ -816,7 +815,7 @@ static int nxp_pcm_hw_params(struct snd_pcm_substream *substream,
 	prtd->resampler = NULL;
 
 	clear_bit(RESAMPLE_STAT_RUN , &prtd->resample_status);
-	clear_bit(RESAMPLE_STAT_OPEN, &prtd->resample_status);
+	clear_bit(RESAMPLE_STAT_INIT, &prtd->resample_status);
 
 	if (prtd->run_resampler) {
 		struct task_struct *p = kthread_create(nxp_pcm_capture_resample,
