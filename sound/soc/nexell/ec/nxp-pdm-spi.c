@@ -115,6 +115,7 @@ static int pdm_spi_init(struct nxp_pdm_snd_param *par)
 	NX_SSP_SetInterruptEnable(ch, 2, CFALSE);
 	NX_SSP_SetInterruptEnable(ch, 3, CFALSE);
 //	NX_SSP_SetClockPrescaler(ch, 0x02,0x02);
+	NX_SSP_SetSlaveOutputEnable(par->ch, CFALSE);	/* NO TX */
 
 	NX_SSP_SetDMATransferMode(ch, CTRUE);   //DMA_USE
 
@@ -131,24 +132,9 @@ static int pdm_spi_init(struct nxp_pdm_snd_param *par)
 
 static int pdm_spi_start(struct nxp_pdm_snd_param *par, int stream)
 {
-		int ch = par->ch;
+	int ch = par->ch;
 	pr_debug("[%s: ch.%d]\n", __func__, par->ch);
 
-#if 1
-	NX_SSP_SetProtocol(ch, 0); 				// Protocol : Motorola SPI
-
-	// 0, 0	-> No receive 	-> No receive
-	// 0, 1 -> corrupt		-> 완전 깨져 (4ch 다 신호)
-	// 1, 0 -> No receive	-> No receive
-	// 1, 1 -> corrupt		-> corrupt 이지마 원하는 1채널만
-	NX_SSP_SetClockPolarityInvert(ch, 1);
-	NX_SSP_SetClockPhase(ch, 1);
-
-	NX_SSP_SetBitWidth(ch, 8); 				// 8 bit
-	NX_SSP_SetSlaveMode(ch, CTRUE); 		// slave mode
-	NX_SSP_SetDMATransferMode(ch, CTRUE);   //DMA_USE
-#endif
-	NX_SSP_SetSlaveOutputEnable(par->ch, CTRUE);
 	NX_SSP_SetEnable(par->ch, CTRUE);
 
 	gpio_set_value(PDM_IO_LRCLK, 0);		// Exist

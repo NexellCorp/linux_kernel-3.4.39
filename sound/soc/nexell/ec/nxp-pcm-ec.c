@@ -236,11 +236,15 @@ static int nxp_pcm_resample_submit(struct snd_pcm_substream *substream)
 static int nxp_pcm_resample_terminate(struct snd_pcm_substream *substream)
 {
 	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
+	unsigned long flags;
 	int count = 100;
 
 	if (prtd->resampler) {
 		/* wait for end resampler */
+		spin_lock_irqsave(&prtd->lock, flags);
 		prtd->resample_closed = true;
+		spin_unlock_irqrestore(&prtd->lock, flags);
+
 		while(prtd->is_run_resample) {
 			if (0 == --count)
 				break;
@@ -258,23 +262,32 @@ static int nxp_pcm_resample_terminate(struct snd_pcm_substream *substream)
 
 static inline void nxp_pcm_reset_device(void)
 {
-#ifdef CFG_SND_PCM_CAPTURE_DEV_RESET
-	//	int  spie_bit = PAD_GET_BITNO(PDM_IO_CSSEL);
-	int  brun_bit = PAD_GET_BITNO(PDM_IO_ISRUN);
 	int  lclk_bit = PAD_GET_BITNO(PDM_IO_LRCLK);
 
+#ifdef CFG_SND_PCM_CAPTURE_DEV_RESET
+	int  brun_bit = PAD_GET_BITNO(PDM_IO_ISRUN);
+	//int  spie_bit = PAD_GET_BITNO(PDM_IO_CSSEL);
+
 	/* SPI CSSEL : H OFF */
-	//	__raw_writel(__raw_readl(IO_BASE(PDM_IO_CSSEL)) |  (1<<spie_bit), IO_BASE(PDM_IO_CSSEL));
+	//__raw_writel(__raw_readl(IO_BASE(PDM_IO_CSSEL)) |  (1<<spie_bit), IO_BASE(PDM_IO_CSSEL));
 
 	/* OFF RUN: L */
 	__raw_writel(__raw_readl(IO_BASE(PDM_IO_ISRUN)) & ~(1<<brun_bit) , IO_BASE(PDM_IO_ISRUN));
+#endif
 
-	/* NO LRCK: H */
+	/*
+	 * NO LRCK: H
+	 */
 	__raw_writel(__raw_readl(IO_BASE(PDM_IO_LRCLK)) |  (1<<lclk_bit), IO_BASE(PDM_IO_LRCLK));
+
+#ifdef CFG_SND_PCM_CAPTURE_DEV_RESET
+	/*
+	 * micom delay time
+	 */
 	mdelay(10);
 
 	/* SPI CSSEL : L ON  */
-	//	__raw_writel(__raw_readl(IO_BASE(PDM_IO_CSSEL)) & ~(1<<spie_bit), IO_BASE(PDM_IO_CSSEL));
+	//__raw_writel(__raw_readl(IO_BASE(PDM_IO_CSSEL)) & ~(1<<spie_bit), IO_BASE(PDM_IO_CSSEL));
 
 	/* ON RUN : H */
 	__raw_writel(__raw_readl(IO_BASE(PDM_IO_ISRUN)) |  (1<<brun_bit) , IO_BASE(PDM_IO_ISRUN));
@@ -293,6 +306,7 @@ static int nxp_pcm_capture_resample(void *data)
 	int frame_size = out_bytes/frame_bytes;
 	int out_frames;
 #endif
+	unsigned long flags;
 	void *src, *dst;
 
 	if (false == prtd->run_resampler ||
@@ -311,9 +325,13 @@ static int nxp_pcm_capture_resample(void *data)
 		memcpy(dst, src, snd_pcm_lib_period_bytes(substream));
 	#else
 
+		spin_lock_irqsave(&prtd->lock, flags);
 		if (true == prtd->resample_closed ||
-			NULL == prtd->resampler)
+			NULL == prtd->resampler) {
+			spin_unlock_irqrestore(&prtd->lock, flags);
 			continue;
+		}
+		spin_unlock_irqrestore(&prtd->lock, flags);
 
 		src = (void*)(prtd->dma_buffer.area + prtd->dma_offset);
 		dst = prtd->rs_buffer;
