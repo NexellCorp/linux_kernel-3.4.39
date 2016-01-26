@@ -64,6 +64,7 @@ static int nxp_gpio_request(struct gpio_chip *chip, unsigned offset)
 
 	nxp_soc_gpio_set_io_func(io, fn);
 	pr_debug("%s: io [%s:%d=%d]\n", __func__, io_name[gpio->index], offset, io);
+	//printk("\033[32m\033[1m%s: io [%s:%d=%d]\033[0m\r\n", __func__, io_name[gpio->index], offset, io);
 
 	return 0;
 }
@@ -102,6 +103,8 @@ static int nxp_gpio_direction_output(struct gpio_chip *chip,
 
 	pr_debug("%s: io [%s:%d=%d], val=%d\n",
 		__func__, io_name[gpio->index], offset, io, value);
+	//printk("\033[33m\033[1m%s: io [%s:%d=%d], val=%d\033[0m\r\n",
+	//	__func__, io_name[gpio->index], offset, io, value);
 	return 0;
 }
 
@@ -135,6 +138,8 @@ static void nxp_gpio_set_value(struct gpio_chip *chip, unsigned offset, int valu
 
 	pr_debug("%s: io [%s:%d=%d], val=%d\n",
 		__func__, io_name[gpio->index], offset, io, value);
+	//printk("\033[34m\033[1m%s: io [%s:%d=%d], val=%d\033[0m\r\n",
+	//	__func__, io_name[gpio->index], offset, io, value);
 }
 
 static int nxp_gpio_to_irq( struct gpio_chip *chip , unsigned offset )

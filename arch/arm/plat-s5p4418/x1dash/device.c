@@ -248,90 +248,49 @@ static struct platform_device bl_plat_device = {
 /*------------------------------------------------------------------------------
  * ASoC Codec platform device
  */
-#if defined(CONFIG_SND_CODEC_WM8976) || defined(CONFIG_SND_CODEC_WM8976_MODULE)
+#if defined(CONFIG_SND_CODEC_WM8985) || defined(CONFIG_SND_CODEC_WM8985_MODULE)
 #include <linux/i2c.h>
 
-#define	WM8976_I2C_BUS		(0)
+#define	WM8985_I2C_BUS		(2)
 
 /* CODEC */
-static struct i2c_board_info __initdata wm8976_i2c_bdi = {
-	.type	= "wm8978",			// compatilbe with wm8976
+
+#if 1
+static struct i2c_board_info __initdata wm8985_i2c_bdi = {
+	.type	= "wm8985",			// compatible 8758
 	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
 };
-
 /* DAI */
 struct nxp_snd_dai_plat_data i2s_dai_data = {
 	.i2s_ch	= 0,
 	.sample_rate	= 48000,
 	.hp_jack 		= {
 		.support    	= 1,
-		.detect_io		= PAD_GPIO_E + 8,
+		.detect_io		= PAD_GPIO_B + 24,
 		.detect_level	= 1,
 	},
 };
 
-static struct platform_device wm8976_dai = {
-	.name			= "wm8976-audio",
+static struct platform_device wm8985_dai = {
+	.name			= "wm8985-audio",
 	.id				= 0,
 	.dev			= {
 		.platform_data	= &i2s_dai_data,
 	}
 };
+#else
+static struct i2c_board_info __initdata wm8985_board_info = {
+    I2C_BOARD_INFO("wm8985", 0x3A),
+};
+
 #endif
-
-#if defined(CONFIG_SND_CODEC_ALC5623)
-#include <linux/i2c.h>
-
-#define	WM8976_I2C_BUS		(0)
-
-/* CODEC */
-static struct i2c_board_info __initdata alc5623_i2c_bdi = {
-	.type	= "alc562x-codec",			// compatilbe with wm8976
-	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
-};
-
-/* DAI */
-struct nxp_snd_dai_plat_data i2s_dai_data = {
-	.i2s_ch	= 0,
-	.sample_rate	= 48000,
-	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
-	.hp_jack 		= {
-		.support    	= 1,
-		.detect_io		= PAD_GPIO_E + 8,
-		.detect_level	= 1,
-	},
-};
-
-static struct platform_device alc5623_dai = {
-	.name			= "alc5623-audio",
-	.id				= 0,
-	.dev			= {
-		.platform_data	= &i2s_dai_data,
-	}
-};
-#endif
-
-
-/*------------------------------------------------------------------------------
- * G-Sensor platform device
- */
-#if defined(CONFIG_SENSORS_MMA865X) || defined(CONFIG_SENSORS_MMA865X_MODULE)
-#include <linux/i2c.h>
-
-#define	MMA865X_I2C_BUS		(2)
-
-/* CODEC */
-static struct i2c_board_info __initdata mma865x_i2c_bdi = {
-	.type	= "mma8653",
-	.addr	= 0x1D//(0x4c),
-};
 
 #endif
 
 #if defined(CONFIG_SENSORS_STK831X) || defined(CONFIG_SENSORS_STK831X_MODULE)
 #include <linux/i2c.h>
 
-#define	STK831X_I2C_BUS		(2)
+#define	STK831X_I2C_BUS		(0)
 
 /* CODEC */
 static struct i2c_board_info __initdata stk831x_i2c_bdi = {
@@ -516,7 +475,7 @@ static struct regulator_consumer_supply nxe2000_ldo4_supply_0[] = {
 	REGULATOR_SUPPLY("vsys_1.9V", NULL),
 };
 static struct regulator_consumer_supply nxe2000_ldo5_supply_0[] = {
-	REGULATOR_SUPPLY("vcam_3.3V", NULL),
+	REGULATOR_SUPPLY("vlcd_3.3V", NULL),
 };
 static struct regulator_consumer_supply nxe2000_ldo6_supply_0[] = {
 	REGULATOR_SUPPLY("valive_3.3V", NULL),
@@ -525,10 +484,10 @@ static struct regulator_consumer_supply nxe2000_ldo7_supply_0[] = {
 	REGULATOR_SUPPLY("vvid_2.8V", NULL),
 };
 static struct regulator_consumer_supply nxe2000_ldo8_supply_0[] = {
-	REGULATOR_SUPPLY("vdumy0_3.3V", NULL),
+	REGULATOR_SUPPLY("vtouch_3.3V", NULL),
 };
 static struct regulator_consumer_supply nxe2000_ldo9_supply_0[] = {
-	REGULATOR_SUPPLY("vcam_3.3V", NULL),
+	REGULATOR_SUPPLY("vcam2_1.8V", NULL),
 };
 static struct regulator_consumer_supply nxe2000_ldo10_supply_0[] = {
 	REGULATOR_SUPPLY("vdumy2_1.2V", NULL),
@@ -1447,6 +1406,12 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_i2c_boardinfo, ARRAY_SIZE(nxe2000_i2c_boardinfo));
 #endif
 
+#if defined(CONFIG_SND_CODEC_WM8985) || defined(CONFIG_SND_CODEC_WM8985_MODULE)
+    printk("plat: add device asoc-wm8985\n");
+    i2c_register_board_info(WM8985_I2C_BUS, &wm8985_i2c_bdi, 1);
+    platform_device_register(&wm8985_dai);
+#endif
+
 #if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)
     printk("plat: add device nxp-v4l2\n");
     platform_device_register(&nxp_v4l2_dev);
@@ -1471,7 +1436,6 @@ void __init nxp_board_devices_register(void)
     printk("plat: add device usb2512\n");
     i2c_register_board_info(USB2512_I2C_BUS, &usb2512_i2c_bdi, 1);
 #endif
-
 
 	/* END */
 	printk("\n");

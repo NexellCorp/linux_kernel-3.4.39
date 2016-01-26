@@ -106,3 +106,9 @@ config SND_CODEC_WM8903
 	tristate "wm8903  I2S audio codec."
 	depends on SND_NXP_I2S
 	select SND_SOC_WM8903
+
+config SND_CODEC_WM8985
+	tristate "wm8985  I2S audio codec."
+	depends on SND_NXP_I2S
+	select SND_SOC_WM8985
+
