@@ -1236,7 +1236,7 @@ done:
 		pr_debug("gpio_request: gpio-%d (%s) status %d\n",
 			gpio, label ? : "?", status);
 		//printk("\033[31m\033[1mgpio_request: gpio-%d (%s) status %d\033[0m\r\n",
-			gpio, label ? : "?", status);
+			//gpio, label ? : "?", status);
 	spin_unlock_irqrestore(&gpio_lock, flags);
 	return status;
 }
