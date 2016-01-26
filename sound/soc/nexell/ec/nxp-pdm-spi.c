@@ -116,6 +116,7 @@ static int pdm_spi_init(struct nxp_pdm_snd_param *par)
 	NX_SSP_SetInterruptEnable(ch, 3, CFALSE);
 //	NX_SSP_SetClockPrescaler(ch, 0x02,0x02);
 	NX_SSP_SetSlaveOutputEnable(par->ch, CFALSE);	/* NO TX */
+	NX_SSP_SetEnable(par->ch, CFALSE);
 
 	NX_SSP_SetDMATransferMode(ch, CTRUE);   //DMA_USE
 
@@ -132,7 +133,6 @@ static int pdm_spi_init(struct nxp_pdm_snd_param *par)
 
 static int pdm_spi_start(struct nxp_pdm_snd_param *par, int stream)
 {
-	int ch = par->ch;
 	pr_debug("[%s: ch.%d]\n", __func__, par->ch);
 
 	NX_SSP_SetEnable(par->ch, CTRUE);
@@ -148,9 +148,9 @@ static void pdm_spi_stop(struct nxp_pdm_snd_param *par, int stream)
 {
 	pr_debug("[%s: ch.%d]\n", __func__, par->ch);
 
+	gpio_set_value(PDM_IO_LRCLK, 1);		// No Exist
 	gpio_set_value(PDM_IO_CSSEL, 1);		// OFF
 	gpio_set_value(PDM_IO_ISRUN, 0);		// OFF
-	gpio_set_value(PDM_IO_LRCLK, 1);		// No Exist
 
 	NX_SSP_SetEnable(par->ch, CFALSE);
 }
