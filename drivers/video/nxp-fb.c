@@ -223,7 +223,7 @@ static void nxp_fb_dev_set_addr(struct nxp_fb_param *par, unsigned phys, int wai
 static int nxp_fb_dev_enable(struct nxp_fb_param *par, bool on, int force)
 {
 #if defined CONFIG_NXP_DISPLAY && !defined(CONFIG_LOGO_NXP_COPY)
-#if !defined(CONFIG_SLSIAP_FINEBOOT)
+#if !defined(CONFIG_SLSIAP_ANDROID_BOOT_LOGO)
 	int module = par->fb_dev.device_id;
 	int stat = 0;
 

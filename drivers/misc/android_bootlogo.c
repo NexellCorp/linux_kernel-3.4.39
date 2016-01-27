@@ -27,40 +27,33 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 #include <mach/nxp-backward-camera.h>
+#include "draw_lcd.c"
+#include "draw_bmp.c"
+
 
 extern struct ion_device *get_global_ion_device(void);
 
-#define SPLASH_TAG			"splash"
-#define SPLASH_TAG_SIZE		6
-#define	IMAGE_SIZE_MAX		40
 #define HEADER_SIZE         2048
 
-#define USE_BZIP2
-/*#define USE_LZ4*/
+#define DISP_MODULE 0
+#define MAX_BMP_FILES   2
 
-#if defined(USE_BZIP2)
-#include <linux/decompress/bunzip2.h>
-#elif defined(USE_LZ4)
-#include <linux/decompress/unlz4.h>
-#else
-#error "You must define USE_BZIP2 or USE_LZ4"
-#endif
+#define OS_VERSION_DISPLAY_X        604
+#define OS_VERSION_DISPLAY_Y        458
+#define OS_VERSION_DISPLAY_TEXT_COLOR   0xFFFFFFFF
+#define OS_VERSION_DISPLAY_BACK_COLOR   0xFF000000
+#define OS_VERSION_DISPLAY_ALPHA    1
 
-typedef struct SPLASH_IMAGE_INFO{
-	unsigned char	ucImageName[16];
-	unsigned int 	ulImageAddr;
-	unsigned int	ulImageSize;
-	unsigned int	ulImageWidth;
-	unsigned int	ulImageHeight;
-	unsigned int 	Padding;
-	unsigned char	ucRev[12];
-} SPLASH_IMAGE_INFO;
 
-typedef struct SPLASH_IMAGE_Header {
-	unsigned char ucPartition[8];
-	unsigned int  ulNumber;
-	unsigned char ucRev[4];
-} SPLASH_IMAGE_Header;
+
+
+struct bmp_alloc_context {
+    struct ion_handle *ion_handle;
+    struct dma_buf    *dma_buf;
+    dma_addr_t         dma_addr;
+    void              *virt;
+};
+
 
 static struct android_boot_context {
     /* ion allocation */
@@ -71,9 +64,12 @@ static struct android_boot_context {
     void              *virt;
     int                alloc_size;
 
+	 /* buffer for bmp */
+    int bmp_index;
+    struct bmp_alloc_context bmp_alloc_context[MAX_BMP_FILES];
+
     /* image info */
     char header[HEADER_SIZE];
-    SPLASH_IMAGE_INFO *splash_info;
 
     int img_width;
     int img_height;
@@ -87,6 +83,9 @@ static struct android_boot_context {
 
     /* backward camera */
     struct platform_device *camera;
+    /* os version */
+    char *os_version;
+
 } _context;
 
 
@@ -102,7 +101,7 @@ static int _alloc_ion_buffer(struct android_boot_context *me, bool include_heade
         return -EINVAL;
     }
 
-    size = me->img_width * me->img_height * me->img_count * 4;
+    size = me->img_width * me->img_height * 4;
     if (include_header)
         size += HEADER_SIZE;
     me->alloc_size = PAGE_ALIGN(size);
@@ -137,88 +136,21 @@ static void _free_ion_buffer(struct android_boot_context *me)
         me->ion_handle = NULL;
     }
 }
-
-static int _check_header(struct android_boot_context *me)
+static int _load_bmp(char *filename, char **pbuf)
 {
-    SPLASH_IMAGE_Header *splash_header;
-    SPLASH_IMAGE_INFO *splash_info;
-    int count, width, height, address;
     struct file *filp = NULL;
     int ret = 0;
-    char *filename = "splash.img";
-
-    mm_segment_t old_fs = get_fs();
-    set_fs(KERNEL_DS);
-
-    filp = filp_open(filename, O_RDONLY | O_LARGEFILE, 0);
-    if (IS_ERR(filp)) {
-        printk(KERN_ERR "%s: open failed %s\n", __func__, filename);
-        ret = -1;
-        filp = NULL;
-        goto OUT;
-    }
-
-    ret = vfs_read(filp, me->header, HEADER_SIZE, &filp->f_pos);
-    if (ret != HEADER_SIZE) {
-        ret = -1;
-        printk(KERN_ERR "%s error: read size %d/%d\n", __func__, ret, HEADER_SIZE);
-        goto OUT;
-    }
-
-    splash_header = (SPLASH_IMAGE_Header *)me->header;
-    if (strncmp(SPLASH_TAG, (char*)splash_header->ucPartition, SPLASH_TAG_SIZE)) {
-        printk(KERN_ERR "can't find splash image at %p ...\n", splash_header);
-        ret = -1;
-        goto OUT;
-    }
-
-    count = splash_header->ulNumber;
-    if (count > IMAGE_SIZE_MAX) {
-        printk(KERN_ERR "splash images %d is over max %d ...\n", count, IMAGE_SIZE_MAX);
-        ret = -1;
-        goto OUT;
-    }
-
-    splash_info = (SPLASH_IMAGE_INFO*)(me->header + sizeof(*splash_header));
-    width = splash_info->ulImageWidth;
-    height = splash_info->ulImageHeight;
-    address = splash_info->ulImageAddr;
-
-    printk("splash %d * %d (%dEA) starting from offset %d... ret %d\n", width, height, count, address, ret);
-
-    me->splash_info = splash_info;
-    me->img_count = count;
-    me->img_width = width;
-    me->img_height = height;
-
-OUT:
-    if (filp)
-        filp_close(filp, NULL);
-    set_fs(old_fs);
-
-    return ret;
-}
-
-static int _load_thread(void *arg)
-{
-    struct android_boot_context *me = (struct android_boot_context *)arg;
-    struct file *filp = NULL;
-#ifdef USE_BZIP2
-    char *filename = "splash.img.bz2";
-#else
-    char *filename = "splash.img.lz4";
-#endif
-    int ret;
-    int decompress_size = 0;
     char *buf = NULL;
 
     mm_segment_t old_fs = get_fs();
     set_fs(KERNEL_DS);
 
-    printk("%s entered\n", __func__);
+    printk("%s, %s\n", __func__, filename);
     filp = filp_open(filename, O_RDONLY | O_LARGEFILE, 0);
     if (IS_ERR(filp)) {
         printk("%s: open failed %s\n", __func__, filename);
+        ret = -EINVAL;
+        goto OUT;
     } else {
         int file_size = 0;
         vfs_llseek(filp, 0, SEEK_SET);
@@ -227,6 +159,7 @@ static int _load_thread(void *arg)
         buf = kmalloc(file_size, GFP_KERNEL);
         if (!buf) {
             printk("%s: failed to alloc file buffer\n", __func__);
+            ret = -ENOMEM;
             goto OUT;
         }
 
@@ -234,41 +167,133 @@ static int _load_thread(void *arg)
         ret = vfs_read(filp, buf, file_size, &filp->f_pos);
         if (ret != file_size) {
             printk("%s error: read size %d/%d\n", __func__, ret, file_size);
+            ret = -EINVAL;
+            goto OUT;
+        }
+    }
+
+    *pbuf= buf;
+    ret = 0;
+
+OUT:
+    if (filp)
+        filp_close(filp, NULL);
+    set_fs(old_fs);
+
+    return ret;
+}
+static int _alloc_bmp_buffer(struct android_boot_context *me, int index)
+{
+    int size = 0;
+    struct ion_buffer *ion_buffer;
+    struct bmp_alloc_context *alloc_context = &me->bmp_alloc_context[index];
+
+    if (!me->ion_client) {
+        me->ion_client = ion_client_create(get_global_ion_device(), "android-boot");
+        if (IS_ERR(me->ion_client)) {
+            pr_err("%s Error: ion_client_create()\n", __func__);
+            return -EINVAL;
+        }
+    }
+
+    size = PAGE_ALIGN(CFG_DISP_PRI_RESOL_WIDTH * CFG_DISP_PRI_RESOL_HEIGHT * 4);
+    printk("%s: allocation size %d\n", __func__, size);
+
+   alloc_context->ion_handle = ion_alloc(me->ion_client, size, 0, ION_HEAP_NXP_CONTIG_MASK, 0);
+    if (IS_ERR(alloc_context->ion_handle)) {
+         pr_err("%s Error: ion_alloc()\n", __func__);
+         return -ENOMEM;
+    }
+
+    alloc_context->dma_buf = ion_share_dma_buf(me->ion_client, alloc_context->ion_handle);
+    if (IS_ERR_OR_NULL(alloc_context->dma_buf)) {
+         pr_err("%s Error: fail to ion_share_dma_buf()\n", __func__);
+         return -EINVAL;
+    }
+
+    ion_buffer = alloc_context->dma_buf->priv;
+    alloc_context->dma_addr = ion_buffer->priv_phys;
+    alloc_context->virt = cma_get_virt(alloc_context->dma_addr, size, 1);
+    printk("%s: dma_addr 0x%x, virt %p\n", __func__, alloc_context->dma_addr, alloc_context->virt);
+
+    return 0;
+}
+
+static void _free_bmp_buffer(struct android_boot_context *me)
+{
+    int i;
+    struct bmp_alloc_context *alloc_context = NULL;
+    for (i = 0; i < MAX_BMP_FILES; i++) {
+        alloc_context = &me->bmp_alloc_context[i];
+        if (alloc_context->dma_buf != NULL) {
+            dma_buf_put(alloc_context->dma_buf);
+            alloc_context->dma_buf = NULL;
+            ion_free(me->ion_client, alloc_context->ion_handle);
+            alloc_context->ion_handle = NULL;
+        }
+    }
+}
+
+static void _display_on(struct android_boot_context *me)
+{
+    nxp_soc_disp_device_enable_all(DISP_MODULE, 1);
+}
+
+static void _display_bmp(struct android_boot_context *me, char *filename)
+{
+    char *buf = NULL;
+    int ret;
+    bool first = me->bmp_index == 0;
+
+    if (0 == _load_bmp(filename, &buf)) {
+        u32 layer = CFG_DISP_PRI_SCREEN_LAYER;
+        u32 width = CFG_DISP_PRI_RESOL_WIDTH;
+        u32 height = CFG_DISP_PRI_RESOL_HEIGHT;
+
+        ret = _alloc_bmp_buffer(me, me->bmp_index);
+        if (ret) {
+            printk(KERN_ERR "%s: failed to _alloc_bmp_buffer for %d\n", __func__, me->bmp_index);
             goto OUT;
         }
 
-        ret = _alloc_ion_buffer(me, true);
+        lcd_set_logo_bmp_addr((unsigned long)buf);
+        lcd_draw_boot_logo((unsigned long)me->bmp_alloc_context[me->bmp_index].virt, CFG_DISP_PRI_RESOL_WIDTH, CFG_DISP_PRI_RESOL_HEIGHT, 4);
+        nxp_soc_disp_rgb_set_format(DISP_MODULE, layer, NX_MLC_RGBFMT_X8R8G8B8, width, height, 4);
+        nxp_soc_disp_rgb_set_address(DISP_MODULE, layer, me->bmp_alloc_context[me->bmp_index].dma_addr, 4, width * 4, 1);
+        if (first) {
+            _display_on(me);
+            first = false;
+        }
+    }
+
+OUT:
+    if (buf)
+        kfree(buf);
+
+    me->bmp_index++;
+}
+
+static void _display_bmp_loaded(struct android_boot_context *me, int index)
+{
+    u32 layer = CFG_DISP_PRI_SCREEN_LAYER;
+    u32 width = CFG_DISP_PRI_RESOL_WIDTH;
+    nxp_soc_disp_rgb_set_address(DISP_MODULE, layer, me->bmp_alloc_context[index].dma_addr, 4, width * 4, 1);
+}
+
+
+static int _load_thread(void *arg)
+{
+    struct android_boot_context *me = (struct android_boot_context *)arg;
+    int ret;
+    printk("%s entered\n", __func__);
+        ret = _alloc_ion_buffer(me, false);
         if (ret < 0) {
             printk("%s: failed to out buffer\n", __func__);
             goto OUT;
         }
 
-#ifdef USE_BZIP2
-        ret = bunzip2(buf, file_size, NULL, NULL, me->virt, &decompress_size, NULL);
-        if (ret < 0) {
-            printk("%s: failed to bunzip2(ret: %d)\n", __func__, ret);
-            goto OUT;
-        }
-#else
-        ret = unlz4(buf, file_size, NULL, NULL, me->virt, &decompress_size, NULL);
-        if (ret < 0) {
-            printk("%s: failed to unlz4(ret: %d)\n", __func__, ret);
-            me->load_task = NULL;
-            goto OUT;
-        }
-#endif
-
-        printk("%s: succeed to decompress, size %d\n", __func__, decompress_size);
-    }
-
 OUT:
     me->load_task = NULL;
-    if (buf)
-        kfree(buf);
-    if (filp)
-        filp_close(filp, NULL);
-    set_fs(old_fs);
-
     return 0;
 }
 
@@ -304,15 +329,8 @@ static void pwm_set_init(void)
 	return;
 }
 
-#if 0
-bool bl_on = false;
-u64 start_time=0;
-u64 end_time=0;
-unsigned int time_msec;
-#endif
 #endif
 
-#define DISP_MODULE 0
 #define SECOND_STAGE_START_FRAME    8
 #define SECOND_STAGE_FRAME_COUNT    12
 static int _anim_thread(void *arg)
@@ -320,7 +338,6 @@ static int _anim_thread(void *arg)
     struct android_boot_context *me = (struct android_boot_context *)arg;
     int count = 0;
     dma_addr_t address;
-    SPLASH_IMAGE_INFO *splash;
     bool first = true;
     int loop_count = 0;
 
@@ -329,105 +346,46 @@ static int _anim_thread(void *arg)
 
     printk("%s: %dx%d, buffer 0x%x\n", __func__, me->img_width, me->img_height, me->dma_addr);
     nxp_soc_disp_rgb_set_format(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, NX_MLC_RGBFMT_X8R8G8B8, me->img_width, me->img_height, 4);
-    while(loop_count < me->img_count) {
-    /*while(1) {*/
-        splash = &me->splash_info[count++%me->img_count];
-        address = me->dma_addr + splash->ulImageAddr;
-#ifdef CONFIG_PLAT_S5P4418_X1DASH
- 		address += 1024*60*4+112*4;
-#endif
-        nxp_soc_disp_rgb_set_address(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, address, 4, me->img_width * 4, 1);
-        if (first) {
-            nxp_soc_disp_device_enable_all(DISP_MODULE, 1);
-#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
-            if (is_backward_camera_on()) {
-                printk("%s: call backward_camera_external_on()\n", __func__);
-                backward_camera_external_on();
-            }
-#endif
-#ifdef CONFIG_PLAT_S5P4418_X1DASH
-			//mdelay(100);
-			//nxp_soc_gpio_set_out_value(CFG_IO_LCD_GD_PWR_EN, 1);
-			//mdelay(10);
-			//nxp_soc_gpio_set_out_value(CFG_IO_LVDS2RGB_EN, 1);
-			pwm_set_init();
 
-			mdelay(300);
-			//nxp_soc_gpio_set_out_value(CFG_IO_LCD_BL_ENB, 1);
-			//nxp_soc_gpio_set_out_value(CFG_IO_EL_EN, 1);
+	_display_bmp(me, "logo.bmp");
 
-#if 0
-			bl_on = 0;
-			start_time = get_jiffies_64();
-
-			printk(KERN_ERR "## CFG_IO_LCD_BL_ENB : On. start_time:%ld \n", start_time );
-#endif
-#else
-            //nxp_soc_gpio_set_out_value(PAD_GPIO_A + 25, 1);
-            //nxp_soc_gpio_set_out_value(PAD_GPIO_D + 1, 1);
-#endif
-            first = false;
-        }
-        schedule_timeout_interruptible(HZ/30);
+	while(1) {
         if (kthread_should_stop()) {
             goto OUT_ANIM;
         }
-        loop_count++;
-    }
-
-#if 1
-    count = 0;
-    while (1) {
-#if 0//def CONFIG_PLAT_S5P4418_X1DASH
-		if(bl_on == false)
-		{
-			end_time = get_jiffies_64();
-			time_msec = end_time - start_time;
-			if(jiffies_to_msecs(time_msec) >= 300)
-			{
-				bl_on = true;
-				printk(KERN_ERR "## CFG_IO_LCD_BL_ENB : On. time_msec:%ld \n", jiffies_to_msecs(time_msec));
-				nxp_soc_gpio_set_out_value(CFG_IO_LCD_BL_ENB, 1);
-				nxp_soc_gpio_set_out_value(CFG_IO_EL_EN, 1);
-			}
-		}
-#endif
-        loop_count = me->img_count - SECOND_STAGE_START_FRAME;
-        splash = &me->splash_info[SECOND_STAGE_START_FRAME + (count++%loop_count)];
-        address = me->dma_addr + splash->ulImageAddr;
-#ifdef CONFIG_PLAT_S5P4418_X1DASH
- 		address += 1024*60*4+112*4;
-#endif
-        nxp_soc_disp_rgb_set_address(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, address, 4, me->img_width * 4, 1);
-        schedule_timeout_interruptible(HZ/30);
-        if (kthread_should_stop()) {
-            break;
-        }
-    }
-#endif
-
+	}
 OUT_ANIM:
-    nxp_soc_disp_rgb_set_format(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, NX_MLC_RGBFMT_A8R8G8B8, me->img_width, me->img_height, 4);
+        nxp_soc_disp_rgb_set_format(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, NX_MLC_RGBFMT_A8R8G8B8, me->img_width, me->img_height, 4);
+        nxp_soc_disp_rgb_set_color(DISP_MODULE, CFG_DISP_PRI_SCREEN_LAYER, RGB_COLOR_ALPHA, 0x0, false);
 
-    _free_ion_buffer(me);
+        _free_ion_buffer(me);
+        _free_bmp_buffer(me);
+
     return 0;
 }
 
 static int _start_load(void *arg)
 {
     struct android_boot_context *me = &_context;
-    if (_check_header(me) < 0) {
-        printk(KERN_ERR "invalid image?\n");
-        return -1;
-    }
+	char *os_version = NULL;
+
+    me->img_width = CFG_DISP_PRI_RESOL_WIDTH;
+    me->img_height = CFG_DISP_PRI_RESOL_HEIGHT;
+
+	//TODO add read os version function
+
+    if (!os_version) {
+		os_version = "2016.00.00 00:00:00";
+	}
+
     me->is_valid = true;
     me->load_task = kthread_run(_load_thread, me, "android-bootload");
     return 0;
 }
 
+
 void start_android_logo_load(void)
 {
-     /*kthread_run(_start_load, &_context, "fine-boot-load");*/
     struct android_boot_context *me = &_context;
     _start_load(&_context);
     if (me->camera)
