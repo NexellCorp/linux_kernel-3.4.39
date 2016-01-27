@@ -245,8 +245,6 @@ static int wm8985_probe(struct platform_device *pdev)
 	unsigned int rates = 0, format = 0;
 	int ret;
 
-	printk("%s : Enter +++ \n",__FUNCTION__);
-
 	if (plat) {
 		rates = plat->sample_rate;
 		format = plat->pcm_format;

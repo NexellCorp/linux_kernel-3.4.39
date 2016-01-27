@@ -1773,7 +1773,6 @@ static int __init wm8985_modinit(void)
 {
 	int ret = 0;
 
-	printk("%s : Enter +++ \n",__FUNCTION__);
 
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret = i2c_add_driver(&wm8985_i2c_driver);
