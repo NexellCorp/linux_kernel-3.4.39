@@ -57,7 +57,7 @@
 /*
  * PCM INFO
  */
-#define	PERIOD_BYTES_MAX		65536 // 32768
+#define	PERIOD_BYTES_MAX		65536 // 8192
 
 static struct snd_pcm_hardware nxp_pcm_hardware = {
 	.info				= 	SNDRV_PCM_INFO_MMAP |
@@ -188,7 +188,6 @@ static void nxp_pcm_dma_clear(struct snd_pcm_substream *substream)
 /*
  * PCM INTERFACE
  */
-static unsigned int dma_w_count = 0;
 static void nxp_pcm_dma_complete(void *arg)
 {
 	struct snd_pcm_substream *substream = arg;
@@ -210,31 +209,6 @@ static void nxp_pcm_dma_complete(void *arg)
 			prtd->time_stamp_us += (over_samples*period_us);
 		}
 	}
-
-#if (0)
-    {
-		static long ts = 0;
-		long new = ktime_to_ms(ktime_get());
-		/* if (ts) printk("[%dms]\n", new-ts); */
-        if ((new - ts) > 11)
-        {
-            printk("[SPI]INTR OVERRUN %ld ms\n", new - ts);
-        }
-		ts= new;
-    }
-#endif
-
-#if (0)
-	{
-		struct snd_dma_buffer *buf = &substream->dma_buffer;
-		unsigned int *base = (unsigned int*)(buf->area + prtd->offset);
-		int i = 0;
-
-		for (i = 0; prtd->period_bytes/4 > i; i++)
-			*base++ = dma_w_count++;
-	}
-#endif
-
 
 	/*
 	if (over_samples > 1)
@@ -458,7 +432,6 @@ static int nxp_pcm_open(struct snd_pcm_substream *substream)
 		nxp_pcm_dma_release_channel(prtd);
 		return ret;
 	}
-dma_w_count = 0;
 
 	/*
 	 * change period_bytes_max value for SPDIFTX
