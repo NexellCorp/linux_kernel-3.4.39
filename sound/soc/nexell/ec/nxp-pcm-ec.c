@@ -777,6 +777,7 @@ static int nxp_pcm_close(struct snd_pcm_substream *substream)
 	struct snd_pcm *pcm = rtd->pcm;
 	struct nxp_pcm_runtime_data *prtd = runtime->private_data;
 
+	pcm_sample_rate_hz = CFG_SND_PCM_CAPTURE_INPUT_RATE;
 	nxp_pcm_dma_release_channel(prtd);
 	nxp_pcm_dma_mem_free(pcm, substream);
 	kfree(prtd);

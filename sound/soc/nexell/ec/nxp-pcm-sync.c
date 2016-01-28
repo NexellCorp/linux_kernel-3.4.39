@@ -66,6 +66,8 @@ static DEFINE_SPINLOCK(pcm_sync_lock);
 		c = w;  do { l = __raw_readl(IO_BASE(PDM_I2S_LRCLK)+0x18) & 1<<PAD_GET_BITNO(PDM_I2S_LRCLK); } while (l && --c > 0);	\
 	} while (0)
 
+#define	LRCLK_STAT()	(__raw_readl(IO_BASE(PDM_I2S_LRCLK)+0x18) & 1<<PAD_GET_BITNO(PDM_I2S_LRCLK))
+
 static inline void __sync_capture_start(void)
 {
 	unsigned int CON;	///< 0x00 :
@@ -111,19 +113,27 @@ static inline void __sync_capture_start(void)
 	CON  =  __raw_readl(base + 0x00) | ((1 << 1)  | (1 << 0));
 	CSR  = (__raw_readl(base + 0x04) & ~(3 << 8)) | (1 << 8) | 0;
 
-	__raw_writel(0x0, (base+0x08));	/* Clear the Flush bit */
-	__raw_writel(CSR, (base+0x04));
-	__raw_writel(CON, (base+0x00));
+	__raw_writel(1<<7, (base+0x08));	/* Clear the Flush bit */
+	__raw_writel(   0, (base+0x08));	/* Clear the Flush bit */
+	__raw_writel(CSR , (base+0x04));
+	__raw_writel(CON , (base+0x00));
 
 	/* I2S 1 */
 	base = (void*)0xf0056000;
-	__raw_writel(0x0, (base+0x08));	/* Clear the Flush bit */
-	__raw_writel(CSR, (base+0x04));
-	__raw_writel(CON, (base+0x00));
+	__raw_writel(1<<7, (base+0x08));	/* Clear the Flush bit */
+	__raw_writel(   0, (base+0x08));	/* Clear the Flush bit */
+	__raw_writel(CSR , (base+0x04));
+	__raw_writel(CON , (base+0x00));
 
 	/* PDM */
 	base = (void*)0xf005f000;
 	__raw_writel(__raw_readl(base + 0x04) | 0x02, (base + 0x04));	// SSPCR1 = 0x04
+
+#if 0
+	if (0 == LRCLK_STAT())
+		printk("!!! Sample Miss !!!\n");
+#endif
+
 	pr_debug("***** LRCK %s [%d:%d:%d]*****\n",
 		bLRCK ? "Exist" : "No Exist", count[0], count[1], count[2]);
 }
