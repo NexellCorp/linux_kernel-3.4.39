@@ -138,11 +138,6 @@ static inline double kcos(double radian)
 #define DEF_OUT_SWAPRB			CFALSE
 #define DEF_OUT_YCORDER			DPC_YCORDER_CbYCrY
 #define DEF_PADCLKSEL			DPC_PADCLKSEL_VCLK
-#define DEF_CLKGEN0_DELAY		0
-#define DEF_CLKGEN0_INVERT		0
-#define DEF_CLKGEN1_DELAY		0
-#define DEF_CLKGEN1_INVERT		0
-#define DEF_CLKSEL1_SELECT		0
 
 struct disp_control_info {
 	int 	module;							/* 0: primary, 1: secondary */
@@ -882,6 +877,7 @@ static void disp_syncgen_resume(struct disp_process_dev *pdev)
 {
 	struct disp_control_info *info = get_device_to_info(pdev);
 	struct disp_multily_dev *pmly = &info->multilayer;
+	struct disp_syncgen_par *psgen = &pdev->sync_gen;
 	int mlc_len = sizeof(struct NX_MLC_RegisterSet);
 	int dpc_len = sizeof(struct NX_DPC_RegisterSet);
 	int module = info->module;
@@ -889,7 +885,7 @@ static void disp_syncgen_resume(struct disp_process_dev *pdev)
 
 	PM_DBGOUT("%s display.%d (MLC:%s, DPC:%s)\n",
 		__func__, module, pmly->enable?"ON":"OFF",
-				pdev->status & PROC_STATUS_ENABLE?"ON":"OFF");
+		pdev->status & PROC_STATUS_ENABLE?"ON":"OFF");
 
 	/* restore */
 	NX_MLC_SetClockPClkMode(module, NX_PCLKMODE_ALWAYS);
@@ -923,6 +919,11 @@ static void disp_syncgen_resume(struct disp_process_dev *pdev)
 //		DISP_WAIT_POLL_VSYNC(module, wait);
 		disp_syncgen_irqenable(module, 1);	/* enable interrupt */
 	}
+
+    if ((module == 0) && psgen->clk_inv_lv0)
+        NX_DISPLAYTOP_SetPADClock(PADMUX_PrimaryMLC, PADCLK_CLK);
+    if ((module == 1) && psgen->clk_inv_lv1)
+        NX_DISPLAYTOP_SetPADClock(PADMUX_SecondaryMLC, PADCLK_CLK);
 }
 
 static inline int disp_ops_prepare_devs(struct list_head *head)
@@ -2536,6 +2537,7 @@ static int display_soc_setup(int module, struct disp_process_dev *pdev,
 {
 	struct disp_control_info *info = pdev->dev_info;
 	struct disp_multily_dev *pmly = &info->multilayer;
+	struct disp_syncgen_par *psgen = &pdev->sync_gen;
 	struct mlc_layer_info *layer = pmly->layer;
 	int i = 0, ret;
 	RET_ASSERT_VAL(info, -EINVAL)
@@ -2581,6 +2583,16 @@ static int display_soc_setup(int module, struct disp_process_dev *pdev,
 	/* init status */
 	pmly->enable = NX_MLC_GetMLCEnable(module) ? 1 : 0;
 	pdev->status = NX_DPC_GetDPCEnable(module) ? PROC_STATUS_ENABLE : 0;
+
+	/* Set TFT_CLKCTRL (offset : 1030h)
+		Field name : DPC0_CLKCTRL, DPC1_CLKCRL
+		Default value : clk_inv_lv0/1 = 0 : PADCLK_InvCLK 
+		Invert case	  : clk_inv_lv0/1 = 1 : PADCLK_CLK
+	*/
+	if ((module == 0) && psgen->clk_inv_lv0)
+		NX_DISPLAYTOP_SetPADClock(PADMUX_PrimaryMLC, PADCLK_CLK);
+	if ((module == 1) && psgen->clk_inv_lv1)
+		NX_DISPLAYTOP_SetPADClock(PADMUX_SecondaryMLC, PADCLK_CLK);
 
 	return ret;
 }
@@ -2647,11 +2659,11 @@ static int display_soc_probe(struct platform_device *pldev)
 	psgen->yc_order = DEF_OUT_YCORDER,
 	psgen->delay_mask = 0,
 	psgen->vclk_select = DEF_PADCLKSEL,
-	psgen->clk_delay_lv0 = DEF_CLKGEN0_DELAY,
-	psgen->clk_inv_lv0 = DEF_CLKGEN0_INVERT,
-	psgen->clk_delay_lv1 = DEF_CLKGEN1_DELAY,
-	psgen->clk_inv_lv1 = DEF_CLKGEN1_INVERT,
-	psgen->clk_sel_div1 = DEF_CLKSEL1_SELECT,
+	psgen->clk_delay_lv0 = CFG_DISP_PRI_CLKGEN0_DELAY,
+	psgen->clk_inv_lv0 = CFG_DISP_PRI_CLKGEN0_INVERT,
+	psgen->clk_delay_lv1 = CFG_DISP_PRI_CLKGEN1_DELAY,
+	psgen->clk_inv_lv1 = CFG_DISP_PRI_CLKGEN1_INVERT,
+	psgen->clk_sel_div1 = CFG_DISP_PRI_CLKSEL1_SELECT,
 
 	/* set multilayer device */
 	pmly = &info->multilayer;
