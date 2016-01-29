@@ -146,6 +146,8 @@ static int pdm_spi_start(struct nxp_pdm_snd_param *par, int stream)
 
 static void pdm_spi_stop(struct nxp_pdm_snd_param *par, int stream)
 {
+	void *base = (void*)0xf005f000;
+	volatile unsigned int val = 0;
 	pr_debug("[%s: ch.%d]\n", __func__, par->ch);
 
 	gpio_set_value(PDM_IO_LRCLK, 1);		// No Exist
@@ -153,6 +155,19 @@ static void pdm_spi_stop(struct nxp_pdm_snd_param *par, int stream)
 	gpio_set_value(PDM_IO_ISRUN, 0);		// OFF
 
 	NX_SSP_SetEnable(par->ch, CFALSE);
+
+	/* wait for fifo flush */
+	val = __raw_readl(base + 0xC);
+	if (val & (1<<2)) {
+		int count = 0;
+		while (__raw_readl(base + 0xC) & (1<<2)) {
+			val = __raw_readl(base + 0x8);
+			count++;
+		};
+	}
+#if 1
+	mdelay(15);
+#endif
 }
 
 static int nxp_pdm_check_param(struct nxp_pdm_snd_param *par)
