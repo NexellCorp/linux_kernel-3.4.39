@@ -165,8 +165,11 @@ static void pdm_spi_stop(struct nxp_pdm_snd_param *par, int stream)
 			count++;
 		};
 	}
-#if 1
+
+#ifdef CFG_SND_PCM_CAPTURE_DEV_RESET
 	mdelay(15);
+#else
+	udelay(4);
 #endif
 }
 

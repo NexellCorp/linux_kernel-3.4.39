@@ -56,6 +56,7 @@ extern int nxp_snd_sync_trigger(struct snd_pcm_substream *substream,
 
 /********************************************************************************/
 #define	SND_DEV_SYNC_I2S_PDM
+#define	CFG_SND_PCM_CAPTURE_DEV_RESET
 
 /********************************************************************************/
 #define	PDM_I2S_LRCLK		(PAD_GPIO_D + 12)	/* H -> L */

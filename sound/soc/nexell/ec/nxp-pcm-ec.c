@@ -57,8 +57,6 @@
 #define	CFG_SND_PCM_CAPTURE_RESAMPLEER_ON			true
 
 #define	CFG_SND_PCM_CAPTURE_SAMPLE_DETECT
-#define	CFG_SND_PCM_CAPTURE_DEV_RESET
-
 
 /* Sample define */
 #define	SAMPLE_DETECT_COUNT							2	// 3
@@ -488,7 +486,7 @@ static void nxp_pcm_dma_complete(void *arg)
 		 * detect samplerate change
 		 */
 		if (abs(prtd->input_rate - rate_hz) > SAMPLE_DETECT_DELTA) {
-			printk("R[%d (%6llu:%4d)[%6d]->[%6d] (%lld)\n",
+			pr_debug("R[%d (%6llu:%4d)[%6d]->[%6d] (%lld)\n",
 				prtd->rate_detect_cnt, jt, prtd->period_size,
 				(int)prtd->input_rate, (int)rate_hz, prtd->total_counts);
 
