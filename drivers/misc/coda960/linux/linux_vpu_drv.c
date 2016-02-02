@@ -231,7 +231,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 			{
 				NX_VpuEncClose( hInst );
 			}
-			else if( MJPG_ENC == hInst->codecMode )
+			else if( (MJPG_ENC == hInst->codecMode) || (MJPG_DEC == hInst->codecMode) )
 			{
 				//	N/A yet
 			}

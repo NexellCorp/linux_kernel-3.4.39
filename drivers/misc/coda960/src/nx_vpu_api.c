@@ -36,6 +36,7 @@
 //	system
 #include "../include/nx_alloc_mem.h"
 #include "../include/vpu_types.h"
+#include "../include/nx_fourcc.h"
 
 
 #define	NX_DTAG		"[DRV|VPU_API]"
@@ -1023,13 +1024,13 @@ NX_VPU_RET	NX_VpuEncGetHeader( NX_VPU_INST_HANDLE handle, VPU_ENC_GET_HEADER_ARG
 	else if ( MP4_ENC == handle->codecMode )
 	{
 		//	VOS
-		/*if( VPU_RET_OK != (ret = VPU_EncGetHeaderCommand(handle, VOS_HEADER, &ptr, &size)) )
+		if( VPU_RET_OK != (ret = VPU_EncGetHeaderCommand(handle, VOS_HEADER, &ptr, &size)) )
 		{
 			NX_ErrMsg(("NX_VpuEncGetHeader() VOS_HEADER Error!\n"));
 			goto GET_HEADER_EXIT;
 		}
 		NX_DrvMemcpy( header->mp4Header.vosData, ptr, size );
-		header->mp4Header.vosSize = size;*/
+		header->mp4Header.vosSize = size;
 		//	VOL
 		if( VPU_RET_OK != (ret = VPU_EncGetHeaderCommand(handle, VOL_HEADER, &ptr, &size)) )
 		{
@@ -1538,6 +1539,9 @@ static NX_VPU_RET VPU_EncOneFrameCommand( NX_VpuCodecInst *pInst, VPU_ENC_RUN_FR
 	{
 		// Registering Source Frame Buffer information
 		// Hide GDI IF under FW level
+		if ( runArg->inImgBuffer.fourCC == FOURCC_NV12 )
+			pEncInfo->cbcrInterleave = 1;
+
 		VpuWriteReg(CMD_ENC_PIC_SRC_INDEX, 2);	//	0/1 : reconstruct & reference buffer
 		VpuWriteReg(CMD_ENC_PIC_SRC_STRIDE, runArg->inImgBuffer.luStride);
 		VpuWriteReg(CMD_ENC_PIC_SRC_ADDR_Y, runArg->inImgBuffer.luPhyAddr);
@@ -1857,9 +1861,9 @@ NX_VPU_RET	NX_VpuDecOpen( VPU_OPEN_ARG *openArg, void *drvHandle, NX_VPU_INST_HA
 	else if (openArg->codecStd == CODEC_STD_AVS) {
 		hInst->codecMode = AVS_DEC;
 	}
-	//else if (codecStd == CODEC_STD_MJPG) {
-	//	pCodecInst->codecMode = MJPG_DEC;
-	//}
+	else if (openArg->codecStd == CODEC_STD_MJPG) {
+		hInst->codecMode = MJPG_DEC;
+	}
 	else if (openArg->codecStd == CODEC_STD_THO) {
 		hInst->codecMode = VPX_DEC;
 		hInst->auxMode = VPX_AUX_THO;
@@ -1892,6 +1896,20 @@ NX_VPU_RET	NX_VpuDecOpen( VPU_OPEN_ARG *openArg, void *drvHandle, NX_VPU_INST_HA
 	NX_DrvMemset( &hInst->codecInfo, 0, sizeof(hInst->codecInfo) );
 	pDecInfo->codecStd = openArg->codecStd;
 	pDecInfo->mp4Class = openArg->mp4Class;
+
+	if ( hInst->codecMode != MJPG_DEC )
+	{
+		pDecInfo->streamRdPtrRegAddr = BIT_RD_PTR;
+		pDecInfo->streamWrPtrRegAddr = BIT_WR_PTR;
+		pDecInfo->frameDisplayFlagRegAddr = BIT_FRM_DIS_FLG;
+	}
+	else
+	{
+		pDecInfo->streamRdPtrRegAddr = MJPEG_BBC_RD_PTR_REG;
+		pDecInfo->streamWrPtrRegAddr = MJPEG_BBC_WR_PTR_REG;
+		pDecInfo->frameDisplayFlagRegAddr = 0;
+	}
+
 	pDecInfo->strmBufPhyAddr = openArg->streamBuf.phyAddr;
 	pDecInfo->strmBufVirAddr = openArg->streamBuf.virAddr;
 	pDecInfo->strmBufSize    = openArg->streamBuf.size;
@@ -1935,16 +1953,27 @@ NX_VPU_RET	NX_VpuDecOpen( VPU_OPEN_ARG *openArg, void *drvHandle, NX_VPU_INST_HA
 
 	NX_DrvMemset( (void*)hInst->paramVirAddr, 0, PARA_BUF_SIZE);
 
-	VpuWriteReg(BIT_WR_PTR, pDecInfo->strmBufPhyAddr);
-	VpuWriteReg(BIT_RD_PTR, pDecInfo->strmBufPhyAddr);
+	VpuWriteReg(pDecInfo->streamWrPtrRegAddr, pDecInfo->strmBufPhyAddr);
+	VpuWriteReg(pDecInfo->streamRdPtrRegAddr, pDecInfo->strmBufPhyAddr);
 
 	pDecInfo->readPos  = pDecInfo->strmBufPhyAddr;
 	pDecInfo->writePos = pDecInfo->strmBufPhyAddr;
 
-	val = VpuReadReg(BIT_BIT_STREAM_PARAM);
-	val &= ~(1 << 2);
-	VpuWriteReg(BIT_BIT_STREAM_PARAM, val);	// clear stream end flag at start
-	pDecInfo->streamEndflag = val;
+	if ( hInst->codecMode != MJPG_DEC )
+	{
+		val = VpuReadReg(BIT_BIT_STREAM_PARAM);
+		val &= ~(1 << 2);
+		VpuWriteReg(BIT_BIT_STREAM_PARAM, val);	// clear stream end flag at start
+		pDecInfo->streamEndflag = val;
+	}
+	else
+	{
+		pDecInfo->streamEndflag = 0;
+		VpuWriteReg(MJPEG_BBC_BAS_ADDR_REG, pDecInfo->strmBufPhyAddr);
+		VpuWriteReg(MJPEG_BBC_END_ADDR_REG, pDecInfo->strmBufPhyAddr + pDecInfo->strmBufSize);
+
+		VpuWriteReg(MJPEG_BBC_STRM_CTRL_REG, 0);
+	}
 
 	*handle = hInst;
 
@@ -1972,6 +2001,12 @@ static int FillBuffer(NX_VPU_INST_HANDLE handle, unsigned char *stream, int size
 	if( !stream || size <0 )
 	{
 		return -1;
+	}
+
+	if ( pDecInfo->codecStd == CODEC_STD_MJPG )
+	{
+		pDecInfo->writePos = pDecInfo->strmBufPhyAddr;
+		pDecInfo->readPos  = pDecInfo->strmBufPhyAddr;
 	}
 
 	vWriteOffset = pDecInfo->writePos - pDecInfo->strmBufPhyAddr;
@@ -2010,13 +2045,14 @@ static int FillBuffer(NX_VPU_INST_HANDLE handle, unsigned char *stream, int size
 			return -1;
 		vWriteOffset = size-remain;
 	}
+
 	pDecInfo->writePos = vWriteOffset + pDecInfo->strmBufPhyAddr;
 	return 0;
 }
 
 NX_VPU_RET	NX_VpuDecSetSeqInfo( NX_VPU_INST_HANDLE handle, VPU_DEC_SEQ_INIT_ARG *seqArg )
 {
-//	VpuDecInfo *pInfo = &handle->codecInfo.decInfo;
+	VpuDecInfo *pInfo = &handle->codecInfo.decInfo;
 	NX_VPU_RET ret;
 
 	FUNCIN();
@@ -2048,12 +2084,17 @@ NX_VPU_RET	NX_VpuDecSetSeqInfo( NX_VPU_INST_HANDLE handle, VPU_DEC_SEQ_INIT_ARG 
 	}
 #endif
 
-	ret = VPU_DecSeqInitCommand( handle, seqArg );
-	if( VPU_RET_OK != ret )
-		return ret;
+	if ( handle->codecMode != MJPG_DEC )
+	{
+		if ( (ret = VPU_DecSeqInitCommand( handle, seqArg )) != VPU_RET_OK )
+			return ret;
+		ret = VPU_DecSeqComplete( handle, seqArg);
+	}
+
+	NX_DbgMsg( DBG_ES_ADDR, ("[Init]Start = %x, [In]Rd = %x, Wr = %x [Out]Rd = %x, Wr = %x\n", pInfo->strmBufPhyAddr, pInfo->readPos, pInfo->writePos, VpuReadReg(BIT_RD_PTR), VpuReadReg(BIT_WR_PTR)) );
 
 	FUNCOUT();
-	return VPU_DecSeqComplete( handle, seqArg);
+	return ret;
 }
 
 NX_VPU_RET	NX_VpuDecRegFrameBuf( NX_VPU_INST_HANDLE handle, VPU_DEC_REG_FRAME_ARG *frmArg)
@@ -2074,6 +2115,7 @@ NX_VPU_RET	NX_VpuDecRunFrame( NX_VPU_INST_HANDLE handle, VPU_DEC_DEC_FRAME_ARG *
 		NX_ErrMsg(("FillBuffer Failed.\n"));
 		return VPU_RET_ERROR;
 	}
+
 #if 0
 	if( pInfo->bitstreamMode != BS_MODE_PIC_END )
 	{
@@ -2095,11 +2137,21 @@ NX_VPU_RET	NX_VpuDecRunFrame( NX_VPU_INST_HANDLE handle, VPU_DEC_DEC_FRAME_ARG *
 		}
 	}
 #endif
-	ret = VPU_DecStartOneFrameCommand(handle, decArg);
-	if( ret != VPU_RET_OK )
-		return ret;
 
-	return VPU_DecGetOutputInfo( handle, decArg );
+	if ( handle->codecMode != MJPG_DEC )
+	{
+		if ( (ret = VPU_DecStartOneFrameCommand(handle, decArg)) == VPU_RET_OK )
+			ret = VPU_DecGetOutputInfo( handle, decArg );
+	}
+	else
+	{
+		extern NX_VPU_RET JPU_DecStartOneFrameCommand(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME_ARG *pArg);
+		ret = JPU_DecStartOneFrameCommand(handle, decArg);
+	}
+
+	NX_DbgMsg( DBG_ES_ADDR, ("Start = %x, [In]Rd = %x, Wr = %x [Out]Rd = %x, Wr = %x\n", pInfo->strmBufPhyAddr, pInfo->readPos, pInfo->writePos, VpuReadReg(BIT_RD_PTR), VpuReadReg(BIT_WR_PTR)) );
+
+	return ret;
 }
 
 NX_VPU_RET	NX_VpuDecFlush( NX_VPU_INST_HANDLE handle )
@@ -2109,7 +2161,7 @@ NX_VPU_RET	NX_VpuDecFlush( NX_VPU_INST_HANDLE handle )
 
 	val = pDecInfo->frameDisplayFlag;
 	val &= ~pDecInfo->clearDisplayIndexes;
-	VpuWriteReg( BIT_FRM_DIS_FLG, val);
+	VpuWriteReg( pDecInfo->frameDisplayFlagRegAddr, val);
 	pDecInfo->clearDisplayIndexes = 0;
 	pDecInfo->writePos = pDecInfo->readPos;
 	VpuBitIssueCommand(handle, DEC_BUF_FLUSH);
@@ -2118,7 +2170,7 @@ NX_VPU_RET	NX_VpuDecFlush( NX_VPU_INST_HANDLE handle )
 	{
 		return VPU_RET_ERR_TIMEOUT;
 	}
-	pDecInfo->frameDisplayFlag = VpuReadReg( BIT_FRM_DIS_FLG );
+	pDecInfo->frameDisplayFlag = VpuReadReg( pDecInfo->frameDisplayFlagRegAddr );
 	pDecInfo->frameDisplayFlag = 0;
 	pDecInfo->streamEndflag &= ~(1<<2);		//	Clear End of Stream
 	pDecInfo->readPos = pDecInfo->strmBufPhyAddr;
@@ -2136,9 +2188,13 @@ NX_VPU_RET	NX_VpuDecClrDspFlag( NX_VPU_INST_HANDLE handle, VPU_DEC_CLR_DSP_FLAG_
 
 NX_VPU_RET	NX_VpuDecClose( NX_VPU_INST_HANDLE handle )
 {
+	if ( handle->codecMode == MJPG_DEC )
+	{
+		return VPU_RET_OK;
+	}
+
 	return VPU_DecCloseCommand(handle);
 }
-
 
 //----------------------------------------------------------------------------
 //						Decoder Specific Static Functions
@@ -2155,8 +2211,8 @@ static NX_VPU_RET VPU_DecSeqComplete( NX_VpuCodecInst *pInst, VPU_DEC_SEQ_INIT_A
 		pInfo->seqInitEscape = 0;
 	}
 
-	pInfo->frameDisplayFlag = VpuReadReg(BIT_FRM_DIS_FLG);
-	pInfo->readPos = VpuReadReg(BIT_RD_PTR);
+	pInfo->frameDisplayFlag = VpuReadReg(pInfo->frameDisplayFlagRegAddr);
+	pInfo->readPos = VpuReadReg(pInfo->streamRdPtrRegAddr);
 	pInfo->streamEndflag = VpuReadReg(BIT_BIT_STREAM_PARAM);
 
 	errReason = 0;
@@ -2328,8 +2384,8 @@ static NX_VPU_RET VPU_DecSeqComplete( NX_VpuCodecInst *pInst, VPU_DEC_SEQ_INIT_A
 #endif
 	}
 
-	pInfo->writePos = VpuReadReg( BIT_WR_PTR );
-	pInfo->readPos  = VpuReadReg( BIT_RD_PTR );
+	pInfo->writePos = VpuReadReg( pInfo->streamWrPtrRegAddr );
+	pInfo->readPos  = VpuReadReg( pInfo->streamRdPtrRegAddr );
 
 	pInfo->width = pArg->outWidth;
 	pInfo->height = pArg->outHeight;
@@ -2354,7 +2410,7 @@ static NX_VPU_RET VPU_DecSeqInitCommand(NX_VpuCodecInst *pInst, VPU_DEC_SEQ_INIT
 	if( pInfo->needMoreFrame )
 	{
 		pInfo->needMoreFrame = 0;
-		VpuWriteReg(BIT_WR_PTR, pInfo->writePos);
+		VpuWriteReg(pInfo->streamWrPtrRegAddr, pInfo->writePos);
 		printk("Need More Buffer!!!!!\n");
 		goto WAIT_INTERRUPT;
 	}
@@ -2365,7 +2421,7 @@ static NX_VPU_RET VPU_DecSeqInitCommand(NX_VpuCodecInst *pInst, VPU_DEC_SEQ_INIT
 	VpuWriteReg(CMD_DEC_SEQ_BB_SIZE, pInfo->strmBufSize / 1024); // size in KBytes
 
 	//printk("hdr Addr = %x, Size = %x \n", pInfo->strmBufPhyAddr, pInfo->strmBufSize / 1024);
-	//printk("CurPC = %x, WR = %x, RD =  %x, Idx = %d \n", VpuReadReg(BIT_CUR_PC), VpuReadReg(BIT_WR_PTR), VpuReadReg(BIT_RD_PTR), pInst->instIndex );
+	//printk("CurPC = %x, WR = %x, RD =  %x, Idx = %d \n", VpuReadReg(BIT_CUR_PC), VpuReadReg(pDecInfo->streamWrPtrRegAddr), VpuReadReg(pDecInfo->streamRdPtrRegAddr), pInst->instIndex );
 
 #if (DBG_REGISTER)
 	{
@@ -2428,8 +2484,8 @@ static NX_VPU_RET VPU_DecSeqInitCommand(NX_VpuCodecInst *pInst, VPU_DEC_SEQ_INIT
 	if( pInst->codecMode == AVC_DEC )
 		VpuWriteReg(CMD_DEC_SEQ_SPP_CHUNK_SIZE, VPU_GBU_SIZE);
 
-	VpuWriteReg(BIT_WR_PTR, pInfo->writePos);
-	VpuWriteReg(BIT_RD_PTR, pInfo->readPos);
+	VpuWriteReg(pInfo->streamWrPtrRegAddr, pInfo->writePos);
+	VpuWriteReg(pInfo->streamRdPtrRegAddr, pInfo->readPos);
 
 	//	Clear Stream Flag
 	pInfo->streamEndflag &= ~(1<<2);			//	Clear End of Stream
@@ -2453,7 +2509,8 @@ static NX_VPU_RET VPU_DecSeqInitCommand(NX_VpuCodecInst *pInst, VPU_DEC_SEQ_INIT
 	VpuWriteReg(BIT_FRAME_MEM_CTRL, val);
 
 	//VpuWriteReg(H_MBY_SYNC_OUT, 0x00);
-	VpuWriteReg(BIT_FRM_DIS_FLG, 0);
+	if( pInst->codecMode != MJPG_DEC )
+		VpuWriteReg(pInfo->frameDisplayFlagRegAddr, 0);
 
 #if (DBG_REGISTER)
 	{
@@ -2473,11 +2530,11 @@ WAIT_INTERRUPT:
 	if( !(reason=VPU_WaitBitInterrupt(VPU_DEC_TIMEOUT)) )
 	{
 		NX_ErrMsg(("VPU_DecSeqInitCommand() Failed. Timeout(%d)\n", VPU_BUSY_CHECK_TIMEOUT));
-		printk("WritePos = 0x%.8x, ReadPos = 0x%.8x\n", VpuReadReg(BIT_WR_PTR), VpuReadReg(BIT_RD_PTR));
+		printk("WritePos = 0x%.8x, ReadPos = 0x%.8x\n", VpuReadReg(pInfo->streamWrPtrRegAddr), VpuReadReg(pInfo->streamRdPtrRegAddr));
 		return VPU_RET_ERR_TIMEOUT;
 	}
 
-	//printk("WritePos = 0x%.8x, ReadPos = 0x%.8x\n", VpuReadReg(BIT_WR_PTR), VpuReadReg(BIT_RD_PTR));
+	//printk("WritePos = 0x%.8x, ReadPos = 0x%.8x\n", VpuReadReg(pDecInfo->streamWrPtrRegAddr), VpuReadReg(pDecInfo->streamRdPtrRegAddr));
 
 	if( reason & (1<<VPU_INT_BIT_SEQ_INIT) )
 	{
@@ -2999,8 +3056,8 @@ static NX_VPU_RET VPU_DecGetOutputInfo(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME
 		pArg->multiRes = (VpuReadReg(RET_DEC_PIC_POST) >> 1) & 3;
 	}
 
-	pInfo->readPos          = VpuReadReg( BIT_RD_PTR      );
-	pInfo->frameDisplayFlag = VpuReadReg( BIT_FRM_DIS_FLG );
+	pInfo->readPos          = VpuReadReg( pInfo->streamRdPtrRegAddr      );
+	pInfo->frameDisplayFlag = VpuReadReg( pInfo->frameDisplayFlagRegAddr );
 
 	/*
 	pInfo->frameEndPos = pInfo->streamRdPtr;
@@ -3029,7 +3086,7 @@ static NX_VPU_RET VPU_DecStartOneFrameCommand(NX_VpuCodecInst *pInst, VPU_DEC_DE
 	if( pInfo->needMoreFrame )
 	{
 		pInfo->needMoreFrame = 0;
-		VpuWriteReg(BIT_WR_PTR, pInfo->writePos);
+		VpuWriteReg(pInfo->streamWrPtrRegAddr, pInfo->writePos);
 //		printk("Need More Buffer!!!!!\n");
 		goto WAIT_INTERRUPT;
 	}
@@ -3116,12 +3173,12 @@ static NX_VPU_RET VPU_DecStartOneFrameCommand(NX_VpuCodecInst *pInst, VPU_DEC_DE
 
 	VpuWriteReg(BIT_AXI_SRAM_USE, val);
 
-	VpuWriteReg(BIT_WR_PTR, pInfo->writePos);
-	VpuWriteReg(BIT_RD_PTR, pInfo->readPos );
+	VpuWriteReg(pInfo->streamWrPtrRegAddr, pInfo->writePos);
+	VpuWriteReg(pInfo->streamRdPtrRegAddr, pInfo->readPos );
 
 	val = pInfo->frameDisplayFlag;
 	val &= ~pInfo->clearDisplayIndexes;
-	VpuWriteReg(BIT_FRM_DIS_FLG, val);
+	VpuWriteReg(pInfo->frameDisplayFlagRegAddr, val);
 	pInfo->clearDisplayIndexes = 0;
 
 	if( pArg->eos )

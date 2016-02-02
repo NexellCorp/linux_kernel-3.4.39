@@ -14,6 +14,7 @@ enum {
 	DV3_DEC = 3,
 	RV_DEC = 4,
 	AVS_DEC = 5,
+	MJPG_DEC = 6,
 	VPX_DEC = 7,
 
 	AVC_ENC = 8,
@@ -299,8 +300,6 @@ typedef struct {
 	int numRows;
 } LowDelayInfo;
 
-
-
 typedef struct tagVpuDecInfo
 {
 	int codecStd;	//	Codec Standard
@@ -309,6 +308,10 @@ typedef struct tagVpuDecInfo
 	int height;
 
 	//	Input Stream Buffer Address
+	unsigned int streamRdPtrRegAddr;			// BIT_RD_PTR or MJPEG_BBC_RD_PTR_REG
+	unsigned int streamWrPtrRegAddr;			// BIT_WR_PTR or MJPEG_BBC_WR_PTR_REG
+	unsigned int frameDisplayFlagRegAddr;
+
 	unsigned int strmBufPhyAddr;
 	unsigned int strmBufVirAddr;
 	int needMoreFrame;			//

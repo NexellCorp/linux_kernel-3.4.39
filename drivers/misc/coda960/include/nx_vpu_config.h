@@ -88,7 +88,7 @@
 #define VPU_ENC_TIMEOUT			1000		//	1 sec
 #define VPU_DEC_TIMEOUT			300			//	300 msec
 #define JPU_ENC_TIMEOUT			1000		//	1 sec
-
+#define JPU_DEC_TIMEOUT			1000		//	1 sec
 
 
 #define VPU_GBU_SIZE    1024	//No modification required

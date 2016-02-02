@@ -14,6 +14,10 @@
 #define FOURCC_MVS4		MAKEFOURCC('M', 'V', 'S', '4')	//	YCbCr 444 : Plaranr Format
 #define FOURCC_MVN2		MAKEFOURCC('M', 'V', 'N', '2')	//	YUV 4:2:2 packed foramt(same as FOURCC_YUYV)
 
+#define FOURCC_H422		MAKEFOURCC('H', '4', '2', '2')	//	YCbCr H422 : Plarnar Format (same as FOURCC_MVS2)
+#define FOURCC_V422		MAKEFOURCC('V', '4', '2', '2')	//	YCbCr H422 : Plarnar Format
+#define FOURCC_GRAY		MAKEFOURCC('G', 'R', 'A', 'Y')	//	Gray(YCbCr 400) format
+
 //	YUV Packed Format
 #define FOURCC_YUY2		MAKEFOURCC('Y', 'U', 'Y', '2')	//	MPEG1 media format (1D nonseperated 422 format - Y,Cb,Y,Cr)
 #define FOURCC_YUYV		MAKEFOURCC('Y', 'U', 'Y', 'V')	//	Duplicated of YUY2(1D nonseperated 422 format - Y,Cb,Y,Cr) */

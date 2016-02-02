@@ -355,9 +355,44 @@ typedef struct
 	int userDataNum;        // User Data
 	int userDataSize;
 	int userDataBufFull;
-    int activeFormat;
+	int activeFormat;
 
 	int iRet;
+
+	//	Jpeg Info
+	int rstInterval;
+	int userHuffTable;
+
+	unsigned char *huffBits;
+	unsigned char *huffPtr;
+	unsigned int  *huffMin;
+	unsigned int  *huffMax;
+	unsigned char *huffValue;
+	unsigned char *infoTable;
+	unsigned char *quantTable;
+
+	int huffAcIdx;
+	int huffDcIdx;
+	//int qIdx;
+
+	int busReqNum;
+	int mcuBlockNum;
+	int compNum;
+	int *compInfo;
+	//int mcuwidth;
+	//int mcuHeight;
+
+	int width;
+	int height;
+
+	int pagePtr;
+	int wordPtr;
+	int bitPtr;
+
+	int downScaleWidth;                // 0 : No scaling, 1 : 1/2 down scaling, 2 : 1/4 down scaling, 3 : 1/8 down scaling
+	int downScaleHeight;               // 0 : No scaling, 1 : 1/2 down scaling, 2 : 1/4 down scaling, 3 : 1/8 down scaling
+
+	NX_VID_MEMORY_HANDLE hCurrFrameBuffer;
 } VPU_DEC_DEC_FRAME_ARG;
 
 
