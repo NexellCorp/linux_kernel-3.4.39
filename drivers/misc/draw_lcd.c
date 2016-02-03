@@ -50,7 +50,9 @@ static void (*DRAWTEXTFONT[])(char *, int, int, int, int, int) = {
 };
 
 #define RGB565_ALPHA_MASK	0xF7DE
+#ifndef RGB888TO565
 #define	RGB888TO565(c)		((((c>>16)&0xFF)&0xF8)<<8) | ((((c>>8)&0xFF)&0xFC)<<3) | ((((c>>0 )&0xFF)&0xF8)>>3)
+#endif
 
 static void PutPixel888To565(unsigned int base,
 			int xpos, int ypos, int width, int height, unsigned int color)

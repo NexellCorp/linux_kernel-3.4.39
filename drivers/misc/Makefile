@@ -59,5 +59,5 @@ obj-$(CONFIG_STMPE811_ADC)	+= stmpe811-adc.o
 obj-$(CONFIG_AUDIENCE_ES305)	+= es305.o
 obj-$(CONFIG_SLSIAP_BACKWARD_CAMERA) += backward-camera.o
 obj-y				+= coda960/
-obj-$(CONFIG_SLSIAP_ANDROID_BOOT_LOGO)   += android_bootlogo.o
+obj-$(CONFIG_SLSIAP_NXPBOOT)   += nxp-boot.o
 obj-$(CONFIG_FCI_FC8300) += fci/

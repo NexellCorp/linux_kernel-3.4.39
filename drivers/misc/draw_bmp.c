@@ -162,6 +162,7 @@ PutPixel565To8888(
     *(U8*)(base + (ypos * width + xpos) * 4 + 2) = (((color >> 11) << 3) & 0xf8) | (((color >> 11) >> 2) & 0x7);	// R
     *(U8*)(base + (ypos * width + xpos) * 4 + 3) = 0;	// Alpha
 }
+
 #ifndef RGB888TO565
 #define	RGB888TO565(col) 	((((col>>16)&0xFF)&0xF8)<<8) | ((((col>>8)&0xFF)&0xFC)<<3) | ((((col>>0 )&0xFF)&0xF8)>>3)
 #endif

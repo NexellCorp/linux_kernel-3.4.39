@@ -223,7 +223,7 @@ static void nxp_fb_dev_set_addr(struct nxp_fb_param *par, unsigned phys, int wai
 static int nxp_fb_dev_enable(struct nxp_fb_param *par, bool on, int force)
 {
 #if defined CONFIG_NXP_DISPLAY && !defined(CONFIG_LOGO_NXP_COPY)
-#if !defined(CONFIG_SLSIAP_ANDROID_BOOT_LOGO)
+#if !defined(CONFIG_SLSIAP_NXPBOOT)
 	int module = par->fb_dev.device_id;
 	int stat = 0;
 
@@ -378,7 +378,6 @@ nxp_fb_init_display(struct fb_info *info)
 
 	nxp_fb_dev_set_layer(par);
 
-    // psw0523 fix for quickbooting
 	#if defined(CONFIG_LOGO_NXP_COPY)
 	nxp_fb_copy_boot_logo(par, (xres * yres * pixel));
 	#else
@@ -653,7 +652,6 @@ static void nxp_fb_setup_info(struct fb_info *info)
 	pr_debug("res: %d by %d, virtual: %d by %d, length:%d\n",
 		dev->x_resol, dev->y_resol, x_v, y_v, info->fix.smem_len);
 }
-
 
 #ifdef CONFIG_FB_NXP_ION_MEM
 static int nxp_fb_setup_ion(struct nxp_fb_dma_buf_data *d)
@@ -1169,12 +1167,10 @@ static int nxp_fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *inf
 #define NXPFB_GET_FB_FD _IOWR('N', 101, __u32)
 #define NXPFB_SET_FB_FD _IOW('N', 102, __u32)
 #define NXPFB_GET_ACTIVE _IOR('N', 103, __u32)
-#if defined(CONFIG_SLSIAP_ANDROID_BOOT_LOGO)
-extern bool is_android_boot_animation_run(void);
+#if defined(CONFIG_SLSIAP_NXPBOOT)
+extern bool is_nxp_boot_animation_run(void);
 #endif
-
 #endif
-
 
 static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
 {
@@ -1274,8 +1270,8 @@ static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
             } else {
                 if (dev->fb_pan_phys != d->context[i].dma_addr) {
                     dev->fb_pan_phys = d->context[i].dma_addr;
-#if defined(CONFIG_SLSIAP_ANDROID_BOOT_LOGO)
-                    if (!is_android_boot_animation_run())
+#if defined(CONFIG_SLSIAP_NXPBOOT)
+                    if (!is_nxp_boot_animation_run())
 #endif
                     nxp_fb_update_buffer(info, 1);
                 }

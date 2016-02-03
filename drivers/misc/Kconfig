@@ -574,7 +574,7 @@ config SLSIAP_BACKWARD_CAMERA
       If you say yes here, you can view camera as soon as kernel booting, and
       this driver switch on/off camera by gpio interrupt
 
-config SLSIAP_ANDROID_BOOT_LOGO
+config SLSIAP_NXPBOOT
     bool "SLSIAP Android Boot logo in Kernel"
     depends on (ARCH_S5P4418 || ARCH_S5P6818)
     default n
