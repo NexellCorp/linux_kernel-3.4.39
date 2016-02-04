@@ -858,8 +858,9 @@ static int nxe2000_i2c_probe(struct i2c_client *client,
 	}
 
 	nxe2000_noe_init(nxe2000);
+	// pjsin said unnessary routine.
+	//nxe2000_gpio_init(nxe2000, pdata);
 
-	nxe2000_gpio_init(nxe2000, pdata);
 
 	nxe2000_debuginit(nxe2000);
 
