@@ -780,7 +780,6 @@ static void camera_common_vin_setup_io(int module, bool force)
         int i, len;
         u_int io, fn;
 
-
         /* VIP0:0 = VCLK, VID0 ~ 7 */
         const u_int port[][2] = {
             /* VCLK, HSYNC, VSYNC */
@@ -788,10 +787,14 @@ static void camera_common_vin_setup_io(int module, bool force)
             { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_E +  6, NX_GPIO_PADFUNC_1 },
             /* DATA */
-            { PAD_GPIO_D + 28, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 29, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_D + 28, NX_GPIO_PADFUNC_1 },
+	    { PAD_GPIO_D + 29, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 },
+	    { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 },
+	    { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
+            { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 },
+	    { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
         };
 
         printk("%s\n", __func__);
@@ -866,57 +869,55 @@ static bool is_front_camera_power_state_changed = false;
 static int front_camera_power_enable(bool on);
 static int back_camera_power_enable(bool on)
 {
-    unsigned int io = CFG_IO_CAMERA_BACK_POWER_DOWN;
-    unsigned int reset_io = CFG_IO_CAMERA_RESET;
-    PM_DBGOUT("%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
-    if (on) {
-        front_camera_power_enable(0);
-        if (!is_back_camera_enabled) {
-            camera_power_control(1);
-            /* PD signal */
-            nxp_soc_gpio_set_out_value(io, 0);
-            nxp_soc_gpio_set_io_dir(io, 1);
-            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-            nxp_soc_gpio_set_out_value(io, 1);
-            camera_common_set_clock(24000000);
-            /* mdelay(10); */
-            mdelay(1);
-            nxp_soc_gpio_set_out_value(io, 0);
-            /* RST signal */
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-            nxp_soc_gpio_set_io_dir(reset_io, 1);
-            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(io));
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            /* mdelay(100); */
-            mdelay(1);
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-            /* mdelay(100); */
-            mdelay(1);
-            is_back_camera_enabled = true;
-            is_back_camera_power_state_changed = true;
-        } else {
-            is_back_camera_power_state_changed = false;
-        }
-    } else {
-        if (is_back_camera_enabled) {
-            nxp_soc_gpio_set_out_value(io, 1);
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            is_back_camera_enabled = false;
-            is_back_camera_power_state_changed = true;
-        } else {
-            nxp_soc_gpio_set_out_value(io, 1);
-            nxp_soc_gpio_set_io_dir(io, 1);
-            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-            nxp_soc_gpio_set_out_value(io, 1);
-            is_back_camera_power_state_changed = false;
-        }
+	unsigned int io = CFG_IO_CAMERA_BACK_POWER_DOWN;
+	unsigned int reset_io = CFG_IO_CAMERA_RESET;
 
-        if (!(is_back_camera_enabled || is_front_camera_enabled)) {
-            camera_power_control(0);
-        }
-    }
+	printk("%s: is_back_camera_enabled %d, on %d\n", __func__,
+		is_back_camera_enabled, on);
 
-    return 0;
+	if (on) {
+		front_camera_power_enable(0);
+		if (!is_back_camera_enabled) {
+			/* Power Down : Active High*/
+			nxp_soc_gpio_set_out_value(io, 0);
+			nxp_soc_gpio_set_io_dir(io, 1);
+			nxp_soc_gpio_set_io_func(io,
+				nxp_soc_gpio_get_altnum(io));
+			mdelay(1);
+			nxp_soc_gpio_set_out_value(io, 0);
+			mdelay(100);
+
+			/* Reset : Active Low */
+			nxp_soc_gpio_set_out_value(reset_io, 1);
+			nxp_soc_gpio_set_io_dir(reset_io, 1);
+			nxp_soc_gpio_set_io_func(reset_io,
+				nxp_soc_gpio_get_altnum(io));
+			nxp_soc_gpio_set_out_value(reset_io, 0);
+			mdelay(1);
+			nxp_soc_gpio_set_out_value(reset_io, 1);
+			mdelay(100);
+			is_back_camera_enabled = true;
+			is_back_camera_power_state_changed = true;
+		} else {
+			is_back_camera_power_state_changed = false;
+		}
+	} else {
+		if (is_back_camera_enabled) {
+			nxp_soc_gpio_set_out_value(io, 1);
+			nxp_soc_gpio_set_out_value(reset_io, 0);
+			is_back_camera_enabled = false;
+			is_back_camera_power_state_changed = true;
+		} else {
+			nxp_soc_gpio_set_out_value(io, 1);
+			nxp_soc_gpio_set_io_dir(io, 1);
+			nxp_soc_gpio_set_io_func(io,
+				nxp_soc_gpio_get_altnum(io));
+			nxp_soc_gpio_set_out_value(io, 1);
+			is_back_camera_power_state_changed = false;
+		}
+	}
+
+	return 0;
 }
 
 static bool back_camera_power_state_changed(void)
@@ -926,12 +927,15 @@ static bool back_camera_power_state_changed(void)
 
 static struct i2c_board_info back_camera_i2c_boardinfo[] = {
     {
-        I2C_BOARD_INFO("SP2518", 0x60>>1),
+        //I2C_BOARD_INFO("TW9912", 0x8A>>1),
+        I2C_BOARD_INFO("TW9912", 0x88>>1),
     },
 };
 
 static int front_camera_power_enable(bool on)
 {
+
+#if 0
     unsigned int io = CFG_IO_CAMERA_FRONT_POWER_DOWN;
     unsigned int reset_io = CFG_IO_CAMERA_RESET;
     PM_DBGOUT("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
@@ -981,6 +985,7 @@ static int front_camera_power_enable(bool on)
             camera_power_control(0);
         }
     }
+#endif
 
     return 0;
 }
@@ -1018,23 +1023,23 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             /* for 656 */
             .is_mipi        = false,
             .external_sync  = false, /* 656 interface */
-            .h_active       = 800,
+            .h_active       = 704,
             .h_frontporch   = 7,
             .h_syncwidth    = 1,
             .h_backporch    = 10,
-            .v_active       = 600,
+            .v_active       = 480,
             .v_frontporch   = 0,
             .v_syncwidth    = 2,
             .v_backporch    = 3,
             .clock_invert   = true,
             .port           = 0,
-            .data_order     = NXP_VIN_Y0CBY1CR,
+            .data_order     = NXP_VIN_CBY0CRY1,	//NXP_VIN_CRY1CBY0, NXP_VIN_Y0CBY1CR, NXP_VIN_Y1CRY0CB,
             .interlace      = false,
-            .clk_rate       = 24000000,
-            .late_power_down = true,
+            .clk_rate       = 27000000,
+            .late_power_down = false,
             .power_enable   = back_camera_power_enable,
             .power_state_changed = back_camera_power_state_changed,
-            .set_clock      = camera_common_set_clock,
+            .set_clock      = NULL,
             .setup_io       = camera_common_vin_setup_io,
         },
         .deci = {
