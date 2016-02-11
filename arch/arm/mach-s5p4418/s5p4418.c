@@ -461,10 +461,17 @@ void nxp_cpu_reset(char str, const char *cmd)
 		nxp_board_reset(str, cmd);
 
 	__raw_writel((-1UL), SCR_RESET_SIG_RESET);
+
 	if (cmd && !strcmp(cmd, "recovery")) {
 		__raw_writel(RECOVERY_SIGNATURE, SCR_RESET_SIG_SET);
 		__raw_readl (SCR_RESET_SIG_READ);	/* verify */
 		printk("recovery sign [0x%x:0x%x] \n", SCR_RESET_SIG_READ, readl(SCR_RESET_SIG_READ));
+	}
+	
+	if (cmd && !strcmp(cmd, "poweroff")) {
+		__raw_writel(POWEROFF_SIGNATURE, SCR_RESET_SIG_SET);
+		__raw_readl (SCR_RESET_SIG_READ);	/* verify */
+		printk("reboot sign [0x%x:0x%x] \n", SCR_RESET_SIG_READ, readl(SCR_RESET_SIG_READ));
 	}
 
 	NX_ALIVE_SetWriteEnable(CFALSE);	/* close alive gate */
