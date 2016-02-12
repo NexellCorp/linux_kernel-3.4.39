@@ -582,6 +582,13 @@ config VIDEO_NVP6114A
 	  This is a Video4Linux2 sensor-level driver for Nextchip
 	  NVP6114A AHD sensor.
 
+config VIDEO_MAX9272
+    tristate "Maxim MAX9272 sensor support(nexell work)"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+	  This is a Video4Linux2 sensor-level driver for Maxim
+	  MAX9272 SerDes sensor.
+
 source "drivers/media/video/thine/Kconfig"
 
 config VIDEO_TCM825X
