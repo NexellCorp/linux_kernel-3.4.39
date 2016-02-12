@@ -113,7 +113,7 @@ static int tw9912_s_stream(struct v4l2_subdev *sd, int enable)
 	if (enable) {
 		if (!state->first) {
 
-#if 1
+#if !defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
 			struct reg_val *reg_val = &tw9912_init_reg[0];
 
 			for (index=0; index<TW9912_REGS; index++) {
