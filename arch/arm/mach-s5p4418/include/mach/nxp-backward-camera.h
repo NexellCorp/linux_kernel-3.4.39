@@ -9,6 +9,7 @@ struct reg_val {
 };
 
 struct nxp_backward_camera_platform_data {
+    int backgear_irq_num;
     int backgear_gpio_num;
     bool active_high; /* if turn on backgear and gpio goto high, this field is true */
     int vip_module_num;

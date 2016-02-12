@@ -112,6 +112,8 @@ static int tw9912_s_stream(struct v4l2_subdev *sd, int enable)
 
 	if (enable) {
 		if (!state->first) {
+
+#if 1
 			struct reg_val *reg_val = &tw9912_init_reg[0];
 
 			for (index=0; index<TW9912_REGS; index++) {
@@ -123,6 +125,7 @@ static int tw9912_s_stream(struct v4l2_subdev *sd, int enable)
 						reg_val->val);
 				reg_val++;
 			}
+#endif
 
 #if 0
 			mdelay(1000);

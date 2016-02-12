@@ -572,7 +572,7 @@ out:
     // psw0523 add
     /*extern void start_gsl_init_thread(void);*/
     /*start_gsl_init_thread();*/
-#if 0//defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
 extern struct platform_device backward_camera_device;
 extern int platform_device_register(struct platform_device *);
     printk("%s: register device backward-camera platform device\n", __func__);
