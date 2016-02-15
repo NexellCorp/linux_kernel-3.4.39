@@ -164,6 +164,7 @@ int nxe2000_write_bank1(struct device *dev, u8 reg, uint8_t val)
 		ret = __nxe2000_write(to_i2c_client(dev), reg, val);
 	mutex_unlock(&nxe2000->io_lock);
 
+	ret = set_bank_nxe2000(dev, 0);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(nxe2000_write_bank1);
@@ -194,6 +195,7 @@ int nxe2000_bulk_writes_bank1(struct device *dev, u8 reg, u8 len, uint8_t *val)
 		ret = __nxe2000_bulk_writes(to_i2c_client(dev), reg, len, val);
 	mutex_unlock(&nxe2000->io_lock);
 
+	ret = set_bank_nxe2000(dev, 0);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(nxe2000_bulk_writes_bank1);
@@ -234,6 +236,7 @@ int nxe2000_read_bank1(struct device *dev, u8 reg, uint8_t *val)
 		ret =  __nxe2000_read(to_i2c_client(dev), reg, val);
 	mutex_unlock(&nxe2000->io_lock);
 
+	ret = set_bank_nxe2000(dev, 0);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(nxe2000_read_bank1);
@@ -264,6 +267,7 @@ int nxe2000_bulk_reads_bank1(struct device *dev, u8 reg, u8 len, uint8_t *val)
 		ret = __nxe2000_bulk_reads(to_i2c_client(dev), reg, len, val);
 	mutex_unlock(&nxe2000->io_lock);
 
+	ret = set_bank_nxe2000(dev, 0);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(nxe2000_bulk_reads_bank1);
@@ -361,6 +365,7 @@ int nxe2000_update_bank1(struct device *dev, u8 reg, uint8_t val, uint8_t mask)
 		}
 	}
 out:
+	ret = set_bank_nxe2000(dev, 0);
 	mutex_unlock(&nxe2000->io_lock);
 	return ret;
 }
@@ -900,6 +905,11 @@ static int  __devexit nxe2000_i2c_remove(struct i2c_client *client)
 		nxe2000_irq_exit(nxe2000);
 
 	nxe2000_remove_subdevs(nxe2000);
+
+	cancel_delayed_work(&nxe2000->dcdc_int_work);
+	flush_workqueue(nxe2000->workqueue);
+	destroy_workqueue(nxe2000->workqueue);
+
 	kfree(nxe2000);
 	return 0;
 }
