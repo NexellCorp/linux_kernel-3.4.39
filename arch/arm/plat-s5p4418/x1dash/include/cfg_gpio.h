@@ -256,8 +256,8 @@
 /*------------------------------------------------------------------------------
  *	CAMERA Back Power Down
  */
-#define CFG_IO_CAMERA_BACK_POWER_DOWN     ((PAD_GPIO_E + 10) | PAD_FUNC_ALT0) /* TW9912 */
-#define CFG_IO_CAMERA_RESET                 ((PAD_GPIO_E + 9) | PAD_FUNC_ALT0)		/* TW9912 */
+#define CFG_IO_CAMERA_BACK_POWER_DOWN	((PAD_GPIO_E + 10) | PAD_FUNC_ALT0)/* TW9912 */
+#define CFG_IO_CAMERA_RESET		((PAD_GPIO_E +  9) | PAD_FUNC_ALT0)/* TW9912 */
 
 /*------------------------------------------------------------------------------
  *	CAMERA Front Power Down
