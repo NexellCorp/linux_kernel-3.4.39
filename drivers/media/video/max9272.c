@@ -166,7 +166,6 @@ static int register_i2c(int i2c_idx, struct i2c_board_info *board_info,
 	return 0;
 }
 
-#if 0
 static int sensor_init(void)
 {
 	struct reg_val *reg_val = &sensor_init_reg[0];
@@ -191,7 +190,6 @@ static int sensor_init(void)
 
 	return 0;
 }
-#endif
 
 static int ser_init(void)
 {
@@ -257,34 +255,29 @@ static int max9272_s_stream(struct v4l2_subdev *sd, int enable)
 
 	int regval = 0;
 
-	struct i2c_adapter *adapter;
-	int ret;
-
 	printk("%s - enable : %d, state : %d\n",
-			__func__, enable, (state->first == true) ? 1 : 0);
-
-	//_i2c_write_byte(sensor_client, 0x03, 0x00);
-	//ret = i2c_put_byte(adapter, PC6060KCT_I2C_ADDR, 0x03, 0x00);
-	//mdelay(5);
-	//_i2c_write_byte(sensor_client, 0x29, 0x99);
-	//ret = i2c_put_byte(adapter, PC6060KCT_I2C_ADDR, 0x29, 0x99);
-	//mdelay(5);
+	       __func__, enable, (state->first == true) ? 1 : 0);
 
 	if (enable) {
 		if (!state->first) {
 			if(!check_id(client))
 				return -EINVAL;
 
+			_i2c_write_byte(sensor_client, 0x03, 0x00);
+			mdelay(5);
+			_i2c_write_byte(sensor_client, 0x29, 0x99);
+			mdelay(5);
+
 			regval	= serdes_check_lock(client);
-			if (regval) {
-				printk(KERN_ERR "%s - SerDes lock status is high : %d\n"
-						, __func__, regval);
+			if (!regval) {
+				printk(KERN_ERR "%s - SerDes lock status : %d\n"
+				       , __func__, regval);
 				return -EIO;
 			}
 
 			des_init();
-			//ser_init();
-			//sensor_init();
+			ser_init();
+			sensor_init();
 
 			//	state->first = true;
 		}
