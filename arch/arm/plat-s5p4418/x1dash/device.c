@@ -534,7 +534,8 @@ NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
 NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V SYS */
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3000000, 1,  0);	/* 3.0V GPS */
-NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 1,  0);	/* 1.8V AR */
+//NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 1,  0);	/* 1.8V AR */
+NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V AR */
 NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS1 */
 NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS */
 NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V LCD */
@@ -1064,7 +1065,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 			/* for 656 */
 			.is_mipi        = false,
 			.external_sync  = false, /* 656 interface */
-			.h_active       = 720,
+			.h_active       = 640,
 			.h_frontporch   = 7,
 			.h_syncwidth    = 1,
 			.h_backporch    = 10,
