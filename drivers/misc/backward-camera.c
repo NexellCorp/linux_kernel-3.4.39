@@ -23,13 +23,27 @@
 #define MLC_LAYER_RGB_OVERLAY 0
 #endif
 
+//#define __DEBUG__
+
+#if defined( __DEBUG__ )
+#define debug_msg(args...) \
+	printk(KERN_ERR args);
+#define debug_i2c(args...) \
+	printk(KERN_ERR args);
+#else
+#define debug_msg(args...)
+#define debug_i2c(args...)
+#endif
+
+#define I2C_DEBUG	0
 #define ENABLE_UEVENT  0
+#define STOP_WAIT	0
 
 #if ENABLE_UEVENT
 extern struct switch_dev *backgear_switch;
 #endif
 
-extern int register_backward_irq();
+//extern int register_backward_irq();
 
 static struct nxp_backward_camera_context {
 	struct nxp_backward_camera_platform_data *plat_data;
@@ -257,8 +271,10 @@ static void _vip_hw_set_sensor_param(int module, struct nxp_backward_camera_plat
 				    param->interlace,
 				    CFALSE);
 		{
+#if 0
 			NX_VIP_RegisterSet *pREG =
 				(NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
+#endif
 		}
 
 		NX_VIP_SetDValidMode(module,
@@ -301,7 +317,7 @@ static void _vip_hw_set_addr(int module, struct nxp_backward_camera_platform_dat
 			      param->interlace ? ALIGN(param->h_active, 64)   : param->h_active,
 			      param->interlace ? ALIGN(param->h_active/2, 64) : param->h_active/2);
 #else
-	//printk("%s : width : %d, height : %d, lu_stride : %d, cb_stride : %d\n", __func__, param->h_active, param->v_active, param->lu_stride, param->cb_stride);
+	//debug_msg("%s : width : %d, height : %d, lu_stride : %d, cb_stride : %d\n", __func__, param->h_active, param->v_active, param->lu_stride, param->cb_stride);
 	NX_VIP_SetClipperAddr(module, NX_VIP_FORMAT_420, param->h_active, param->v_active,
 			      lu_addr, cb_addr, cr_addr,
 			      param->lu_stride,
@@ -315,11 +331,11 @@ static void _vip_run(int module)
 {
 	struct nxp_backward_camera_context *me = &_context;
 
-	printk("+++ %s +++\n", __func__);
-
 	u32 lu_addr = me->plat_data->lu_addr;
 	u32 cb_addr = me->plat_data->cb_addr;
 	u32 cr_addr = me->plat_data->cr_addr;
+
+	debug_msg("+++ %s +++\n", __func__);
 
 	_vip_hw_set_clock(module, me->plat_data, true);
 	_vip_hw_set_sensor_param(module, me->plat_data);
@@ -328,7 +344,7 @@ static void _vip_run(int module)
 	NX_VIP_SetVIPEnable(module, CTRUE, CTRUE, CTRUE, CFALSE);
 	//_vip_dump_register(module);
 
-	printk("--- %s ---\n", __func__);
+	debug_msg("--- %s ---\n", __func__);
 }
 
 static void _vip_stop(int module)
@@ -496,7 +512,8 @@ static int _get_i2c_client(struct nxp_backward_camera_context *me)
 	struct i2c_client *client;
 	struct i2c_adapter *adapter = i2c_get_adapter(me->plat_data->i2c_bus);
 
-	printk("+++ %s +++\n", __func__);
+	debug_msg("+++ %s +++\n", __func__);
+	
 	if (!adapter) {
 		pr_err("%s: unable to get i2c adapter %d\n", __func__, me->plat_data->i2c_bus);
 		return -EINVAL;
@@ -514,7 +531,7 @@ static int _get_i2c_client(struct nxp_backward_camera_context *me)
 
 	me->client = client;
 
-	printk("--- %s ---\n", __func__);
+	debug_msg("--- %s ---\n", __func__);
 	return 0;
 }
 
@@ -522,7 +539,8 @@ static int _camera_sensor_run(struct nxp_backward_camera_context *me)
 {
 	struct reg_val *reg_val;
 
-	printk("+++ %s +++\n", __func__);
+	debug_msg("+++ %s +++\n", __func__);
+
 	if (me->plat_data->power_enable)
 		me->plat_data->power_enable(true);
 
@@ -534,28 +552,26 @@ static int _camera_sensor_run(struct nxp_backward_camera_context *me)
 
 	reg_val = me->plat_data->reg_val;
 	while (reg_val->reg != 0xff) {
-		printk("%s - WRITE = reg : 0x%02X, val : 0x%02X\n", __func__, reg_val->reg, reg_val->val);
+		debug_i2c("%s - WRITE = reg : 0x%02X, val : 0x%02X\n", __func__, reg_val->reg, reg_val->val);
 		i2c_smbus_write_byte_data(me->client, reg_val->reg, reg_val->val);
 		mdelay(1);
-
+#if I2C_DEBUG
 		u8 regval = i2c_smbus_read_byte_data(me->client, reg_val->reg);
-		printk("%s - READ = reg : 0x%02X, val : 0x%02X\n\n", __func__, reg_val->reg, regval);
+		debug_i2c("%s - READ = reg : 0x%02X, val : 0x%02X\n\n", __func__, reg_val->reg, regval);
+#endif
 
 		reg_val++;
 	}
 
-	printk("--- %s ---\n", __func__);
+	debug_msg("--- %s ---\n", __func__);
 	return 0;
 }
 
 static void _turn_on(struct nxp_backward_camera_context *me)
 {
-	printk("+++ %s +++\n", __func__);
+	debug_msg("+++ %s +++\n", __func__);
 
 	if (me->is_first == true) {
-
-		printk("%s Line : %d\n", __func__, __LINE__);
-
 		//_vip_run(me->plat_data->vip_module_num);
 		_mlc_video_set_param(me->plat_data->mlc_module_num, me->plat_data);
 		_mlc_video_set_addr(me->plat_data->mlc_module_num,
@@ -576,16 +592,18 @@ static void _turn_on(struct nxp_backward_camera_context *me)
 	_mlc_overlay_run(me->plat_data->mlc_module_num);
 	me->is_on = true;
 
-	printk("--- %s ---\n", __func__);
+	debug_msg("--- %s ---\n", __func__);
 }
 
 static void _turn_off(struct nxp_backward_camera_context *me)
 {
-	printk("+++ %s +++\n", __func__);
+	debug_msg("+++ %s +++\n", __func__);
+
 	_mlc_overlay_stop(me->plat_data->mlc_module_num);
 	_mlc_video_stop(me->plat_data->mlc_module_num);
 	me->is_on = false;
-	printk("--- %s ---\n", __func__);
+
+	debug_msg("--- %s ---\n", __func__);
 }
 
 #define THINE_I2C_RETRY_CNT             3
@@ -627,20 +645,24 @@ static inline bool _is_backgear_on(struct nxp_backward_camera_platform_data *pda
 static inline bool _is_backgear_on(struct nxp_backward_camera_context *me)
 #endif
 {
-	printk("+++ %s +++\n", __func__);
 #if 1
 	bool is_on = nxp_soc_gpio_get_in_value(pdata->backgear_gpio_num);
+
+	debug_msg("+++ %s +++\n", __func__);
+
 	if (!pdata->active_high) is_on ^= 1;
+
+	debug_msg("--- %s ---\n", __func__);
+
 	return is_on;
 #else
-	//tw9900 read status
+	//read status
 	u8 data = 0;
 	_i2c_read_byte(me->client, 0x01, &data);
 	if( data & 0x80 )
 		return 0;
 	return 1;
 #endif
-	printk("--- %s ---\n", __func__);
 }
 
 static inline bool _is_running(struct nxp_backward_camera_context *me)
@@ -671,12 +693,12 @@ static void _backgear_switch(int on)
 
 static void _decide(struct nxp_backward_camera_context *me)
 {
-	printk("+++ %s +++\n", __func__);
+	debug_msg("+++ %s +++\n", __func__);
 
 	/*me->running = NX_MLC_GetLayerEnable(me->plat_data->mlc_module_num, 3); // video layer*/
 	me->running = _is_running(me);
 	me->backgear_on = _is_backgear_on(me->plat_data);
-	printk("%s: running %d, backgear on %d\n", __func__, me->running, me->backgear_on);
+	debug_msg("%s: running %d, backgear on %d\n", __func__, me->running, me->backgear_on);
 
 	if (me->backgear_on && !me->running)
 	{
@@ -694,7 +716,7 @@ static void _decide(struct nxp_backward_camera_context *me)
 #endif
 	}
 
-	printk("--- %s ---\n", __func__);
+	debug_msg("--- %s ---\n", __func__);
 }
 
 static irqreturn_t _irq_handler(int irq, void *devdata)
@@ -712,8 +734,10 @@ static void _work_handler(struct work_struct *work)
 extern struct ion_device *get_global_ion_device(void);
 static int _allocate_memory(struct nxp_backward_camera_context *me)
 {
-	printk("+++ %s +++\n", __func__);
 	struct ion_device *ion_dev = get_global_ion_device();
+
+	debug_msg("+++ %s +++\n", __func__);
+
 	if (me->plat_data->lu_addr && me->plat_data->rgb_addr)
 		return 0;
 
@@ -748,7 +772,7 @@ static int _allocate_memory(struct nxp_backward_camera_context *me)
 		me->virt_video = cma_get_virt(me->plat_data->lu_addr, size, 1);
 
 #if 1
-		printk("%s: lu 0x%x, cb 0x%x, cr 0x%x, virt %p\n",
+		debug_msg("%s: lu 0x%x, cb 0x%x, cr 0x%x, virt %p\n",
 		       __func__,
 		       me->plat_data->lu_addr,
 		       me->plat_data->cb_addr,
@@ -779,14 +803,14 @@ static int _allocate_memory(struct nxp_backward_camera_context *me)
 		me->virt_rgb = cma_get_virt(me->plat_data->rgb_addr, size, 1);
 
 #if 1
-		printk("%s: rgb 0x%x, virt %p\n",
+		debug_msg("%s: rgb 0x%x, virt %p\n",
 		       __func__,
 		       me->plat_data->rgb_addr,
 		       me->virt_rgb);
 #endif
 	}
 
-	printk("--- %s ---\n", __func__);
+	debug_msg("--- %s ---\n", __func__);
 
 	return 0;
 }
@@ -879,7 +903,7 @@ static ssize_t _stop_backward_camera(struct device *pdev,
 	struct nxp_backward_camera_context *me = &_context;
 	int module = me->plat_data->vip_module_num;
 
-	printk(KERN_ERR "%s : module : %d\n", __func__, module);
+	debug_msg("%s : module : %d\n", __func__, module);
 
 #if defined(CONFIG_ARCH_S5P6818)
 	if (module == 2) {
@@ -887,13 +911,15 @@ static ssize_t _stop_backward_camera(struct device *pdev,
 #if defined(CONFIG_ARCH_S5P4418)
 	if (module == 1) {
 #endif
+#if STOP_WAIT
 		while (is_backward_camera_on()) {
-			printk("wait backward camera stopping...\n");
+			debug_msg("wait backward camera stopping...\n");
 			schedule_timeout_interruptible(HZ/5);
 		}
+#endif
 		backward_camera_remove();
-		//register_backward_irq();
-		printk("end of backward_camera_remove()\n");
+		//register_backward_irq(); //register to sensor driver
+		debug_msg("end of backward_camera_remove()\n");
 	}
 
 	return n;
@@ -938,7 +964,7 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
 				pdev->dev.platform_data;
 	struct nxp_backward_camera_context *me = &_context;
 
-	printk("+++ %s +++\n", __func__);
+	debug_msg("+++ %s +++\n", __func__);
 
 	me->plat_data = pdata;
 	me->irq = IRQ_GPIO_START + pdata->backgear_gpio_num;
@@ -979,7 +1005,7 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
 		return -1;
 	}
 
-	printk("+++ %s +++\n", __func__);
+	debug_msg("+++ %s +++\n", __func__);
 
 #ifdef CONFIG_PM
 	INIT_DELAYED_WORK(&me->resume_work, _resume_work);
@@ -1001,7 +1027,7 @@ static int nxp_backward_camera_remove(struct platform_device *pdev)
 {
 	struct nxp_backward_camera_context *me = &_context;
 	if( me->removed == false ) {
-		printk(KERN_ERR "%s\n", __func__);
+		debug_msg("%s\n", __func__);
 
 		_mlc_overlay_stop(me->plat_data->mlc_module_num);
 		_mlc_video_stop(me->plat_data->mlc_module_num);

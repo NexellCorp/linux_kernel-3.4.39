@@ -898,13 +898,13 @@ static bool is_front_camera_power_state_changed = false;
 static int front_camera_power_enable(bool on);
 static int back_camera_power_enable(bool on)
 {
+#if !defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
 	unsigned int io = CFG_IO_CAMERA_BACK_POWER_DOWN;
 	unsigned int reset_io = CFG_IO_CAMERA_RESET;
 
 	printk("%s: is_back_camera_enabled %d, on %d\n", __func__,
 		is_back_camera_enabled, on);
 
-#if !defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
 	if (on) {
 		front_camera_power_enable(0);
 		if (!is_back_camera_enabled) {
@@ -1526,8 +1526,6 @@ static void _sensor_setup_io(void)
 	u_int *pad;
 	int i, len;
 	u_int io, fn;
-
-	printk("+++ %s +++\n", __func__);
 
 	/* VIP0:0 = VCLK, VID0 ~ 7 */
 	const u_int port[][2] = {
