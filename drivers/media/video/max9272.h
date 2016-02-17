@@ -10,8 +10,8 @@ struct reg_val {
 	uint8_t val;
 };
 
-#define DEBUG_MAX9272
-#define I2C_READ_CHECK 1
+//#define DEBUG_MAX9272
+#define I2C_READ_CHECK 0
 
 #ifdef DEBUG_MAX9272
 #define vmsg(a...)  printk(KERN_ERR a)
