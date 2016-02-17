@@ -51,6 +51,7 @@ static struct nxp_backward_camera_context {
 	bool running;
 	bool backgear_on;
 	bool is_first;
+	bool is_preview_on;
 	struct work_struct work;
 	struct i2c_client *client;
 #ifdef CONFIG_PM
@@ -703,13 +704,14 @@ static void _decide(struct nxp_backward_camera_context *me)
 	if (me->backgear_on && !me->running)
 	{
 		_turn_on(me);
-
+		me->is_preview_on = true;
 #if ENABLE_UEVENT
 		_backgear_switch(1);
 #endif
 	}
 	else if (me->running && !me->backgear_on)
 	{
+		me->is_preview_on = false;
 		_turn_off(me);
 #if ENABLE_UEVENT
 		_backgear_switch(0);
@@ -1064,6 +1066,12 @@ bool is_backward_camera_on(void)
 #endif
 }
 
+bool is_preview_display_on(void)
+{
+	struct nxp_backward_camera_context *me = &_context;
+	return me->is_preview_on;
+}
+
 void backward_camera_remove(void)
 {
 	struct nxp_backward_camera_context *me = &_context;
@@ -1071,6 +1079,7 @@ void backward_camera_remove(void)
 }
 
 EXPORT_SYMBOL(is_backward_camera_on);
+EXPORT_SYMBOL(is_preview_display_on);
 EXPORT_SYMBOL(backward_camera_remove);
 
 static int __init backward_camera_init(void)
