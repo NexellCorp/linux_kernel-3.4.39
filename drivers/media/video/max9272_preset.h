@@ -10,7 +10,8 @@ struct reg_val des_init_reg[] =
 	//{0x0D, 0xAA},
 	{0x02, 0x5F},
 	//{0x05, 0x39},
-	//{0x08, 0xC0}, //keun hsync, ysync invert
+	{0x08, 0xC0}, //keun hsync, ysync invert
+	//{0x08, 0x40}, //keun hsync invert
 	{DELAY,  10}
 };
 
