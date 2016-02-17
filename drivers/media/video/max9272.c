@@ -84,7 +84,9 @@ static int _i2c_write_byte(struct i2c_client *client, u8 addr, u8 val)
 	s8 i = 0;
 	s8 ret = 0;
 	u8 buf[2];
+#if I2C_READ_CHECK
 	u8 data = 0;
+#endif
 
 	struct i2c_msg msg;
 
@@ -179,9 +181,10 @@ static int sensor_init(void)
 			reg_val++;
 			continue;
 		}
-
+#if 0
 		printk("%s - reg : 0x%02X, val : 0x%02X\n",
 		       __func__, reg_val->reg, reg_val->val);
+#endif
 
 		_i2c_write_byte(client, reg_val->reg,
 				reg_val->val);
@@ -255,7 +258,7 @@ static int max9272_s_stream(struct v4l2_subdev *sd, int enable)
 
 	int regval = 0;
 
-	printk("%s - enable : %d, state : %d\n",
+	vmsg("%s - enable : %d, state : %d\n",
 	       __func__, enable, (state->first == true) ? 1 : 0);
 
 	if (enable) {
@@ -275,8 +278,8 @@ static int max9272_s_stream(struct v4l2_subdev *sd, int enable)
 				return -EIO;
 			}
 
-			des_init();
-			ser_init();
+			//des_init();
+			//ser_init();
 			sensor_init();
 
 			//	state->first = true;
