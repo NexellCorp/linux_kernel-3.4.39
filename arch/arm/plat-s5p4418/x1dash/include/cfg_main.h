@@ -223,7 +223,7 @@
  */
 
 #define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0 }
-#define CFG_KEYPAD_KEY_CODE						{ KEY_POWER }
+#define CFG_KEYPAD_KEY_CODE						{ KEY_DISPLAY_OFF }
 #define CFG_KEYPAD_REPEAT						CFALSE /* 0: Repeat Off 1 : Repeat On */
 
 /*------------------------------------------------------------------------------

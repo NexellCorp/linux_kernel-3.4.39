@@ -103,6 +103,8 @@ menu "DOS/FAT/NT Filesystems"
 
 source "fs/fat/Kconfig"
 source "fs/ntfs/Kconfig"
+config EXFAT_FS
+    bool "ExFAT file system support"
 
 endmenu
 endif # BLOCK

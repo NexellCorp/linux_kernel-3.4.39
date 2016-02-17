@@ -409,6 +409,61 @@ static struct i2c_board_info __initdata tsc2007_i2c_bdi = {
 };
 #endif
 
+/*------------------------------------------------------------------------------
+ * Keypad platform device
+ */
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
+
+#include <linux/input.h>
+
+static unsigned int  button_gpio[] = CFG_KEYPAD_KEY_BUTTON;
+static unsigned int  button_code[] = CFG_KEYPAD_KEY_CODE;
+
+struct nxp_key_plat_data key_plat_data = {
+    .bt_count   = ARRAY_SIZE(button_gpio),
+    .bt_io      = button_gpio,
+    .bt_code    = button_code,
+    .bt_repeat  = CFG_KEYPAD_REPEAT,
+};
+
+static struct platform_device key_plat_device = {
+    .name   = DEV_NAME_KEYPAD,
+    .id     = -1,
+    .dev    = {
+        .platform_data  = &key_plat_data
+    },
+};
+#endif  /* CONFIG_KEYBOARD_NXP_KEY || CONFIG_KEYBOARD_NXP_KEY_MODULE */
+
+#if defined(CONFIG_KEYBOARD_GPIO)
+#include <linux/gpio_keys.h>
+#include <linux/input.h>
+static struct gpio_keys_button x1dash_keys[] = {
+    {
+        .code           = KEY_POWER,
+        .gpio           = CFG_KEYPAD_KEY_BUTTON,
+        .desc           = "power_key",
+        .active_low     = 1,
+        .type       = EV_KEY,
+        .wakeup     = 1,
+        .debounce_interval = 15,
+    },
+};
+
+static struct gpio_keys_platform_data x1dash_keys_data = {
+    .buttons        = x1dash_keys,
+    .nbuttons       = ARRAY_SIZE(x1dash_keys),
+};
+
+static struct platform_device x1dash_kp_pdev = {
+    .name           = "gpio-keys",
+    .id             = -1,
+    .dev            = {
+        .platform_data  = &x1dash_keys_data,
+    },
+};
+#endif
+
 #if defined(CONFIG_USB_HUB_USB2512)
 #define USB2514_I2C_BUS     (2)
 
@@ -1673,6 +1728,10 @@ void __init nxp_board_devices_register(void)
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif
 
+#if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
+    printk("plat: add device keypad\n");
+    platform_device_register(&key_plat_device);
+#endif
 #if defined(CONFIG_REGULATOR_NXE2000)
 	printk("plat: add device nxe2000 pmic\n");
 	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_i2c_boardinfo, ARRAY_SIZE(nxe2000_i2c_boardinfo));
