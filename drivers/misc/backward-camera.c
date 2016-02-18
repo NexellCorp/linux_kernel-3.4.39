@@ -345,6 +345,7 @@ static struct nxp_backward_camera_context {
     /* for remove */
     struct platform_device *my_device;
 	bool is_on;
+	bool is_remove;
 	bool removed;
 
 	bool is_detected;
@@ -2663,10 +2664,25 @@ static ssize_t _stop_backward_camera(struct device *pdev,
         printk(KERN_ERR "%s - end of backward_camera_remove()\n", __func__);
     }
 
+    me->is_remove = true;
+
     return n;
 }
 
-static struct device_attribute backward_camera_attr = __ATTR(stop, 0664, NULL, _stop_backward_camera);
+static ssize_t _status_backward_camera(struct device *pdev,
+	struct device_attribute *attr, const char *buf)
+{
+	int ret = 0;
+	struct nxp_backward_camera_context *me = &_context;
+
+	if (me->is_remove) ret = 1;
+	else ret = 0;
+
+	sprintf(buf, "%d", ret);
+}
+
+static struct device_attribute backward_camera_attr = __ATTR(stop, 0664,
+				_status_backward_camera, _stop_backward_camera);
 
 static struct attribute *attrs[] = {
     &backward_camera_attr.attr,
@@ -2751,6 +2767,7 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
 
     me->is_first = true;
 	me->removed = false;
+	me->is_remove = false;
     me->my_device = pdev;
 
     if (_create_sysfs()) {
