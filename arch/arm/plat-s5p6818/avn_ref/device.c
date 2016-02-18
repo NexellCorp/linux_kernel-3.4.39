@@ -1646,7 +1646,7 @@ static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_dat
 #define TW9900 0
 #define TW9992 1
 
-#define BACKWARD_SEL    TW9900
+#define BACKWARD_SEL    TW9992
 
 #if (BACKWARD_SEL == TW9900)
 
