@@ -246,6 +246,10 @@
 #define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
 
+
+/* HDMIPHY TX Level : 0 ~ 31 */
+#define CFG_HDMIPHY_TX_LEVEL                    23
+
 //#define CONFIG_ENABLE_INIT_VOLTAGE				/* Enalbe init voltage for ARM, CORE */
 
 /*------------------------------------------------------------------------------
