@@ -38,6 +38,8 @@ unsigned int nvp6124_slave_addr[4] = {0x64, 0x00, 0x00, 0x00};
 unsigned int vloss=0xFFFF;
 
 
+int nvp6114a_initialization(void);
+
 /**
  *util functions
  */
@@ -60,7 +62,8 @@ static int check_id(unsigned int slave)
     return pid;
 }
 #else
-static bool check_id(struct i2c_client *client)
+//static bool check_id(struct i2c_client *client)
+bool check_id(struct i2c_client *client)
 {
     u8 pid = 0;
     i2c_smbus_write_byte_data(client, 0XFF, 0x00);
@@ -233,6 +236,44 @@ static void nvp6114a_device_init(struct i2c_client *client)
     //  nvp6114a_write_data(client, 0x00, NVP6114A_720_BB_30P_Buf);
 }
 #endif
+
+
+int nvp6114a_initialization(void)
+{
+    struct dev_state *state = NULL;
+    struct i2c_client *client = NULL;
+
+    int i=0;
+
+    state = &nvp6114a;
+    client= state->i2c_client;
+
+    nvp6124_cnt = 1;
+    chip_id[0]  = NVP6114A_R0_ID; 
+    nvp6124_mode = NTSC;
+
+    if( !state->first )
+    {
+        if(!check_id(client))
+            return -EINVAL;
+#if 0
+        unsigned char data;
+        if (_i2c_read_byte(client, PID, &data) == 0)
+            printk("nvp6114a reg =0xF4, data = 0x%02X\n", data);
+#endif
+        nvp6124_ntsc_common_init();
+
+        for (i=0 ; i<nvp6124_cnt ; i++)
+            audio_init(nvp6124_slave_addr[i],16,0,0);
+
+        state->first = true;
+    }
+    nvp6114a_outport_1mux(nvp6124_mode%2, 0x10|NVP6124_VI_720P_2530, 0x00|NVP6124_VI_720P_2530);
+
+    return 0;
+}
+
+EXPORT_SYMBOL(nvp6114a_initialization);
 
 static int nvp6114a_s_stream(struct v4l2_subdev *sd, int enable)
 {

@@ -918,6 +918,10 @@ static int _camera_sensor_run(struct nxp_backward_camera_context *me)
         i2c_smbus_write_byte_data(me->client, reg_val->reg, reg_val->val);
         reg_val++;
     }
+#if 0
+    if (me->plat_data->init_func)
+        me->plat_data->init_func();
+#endif
 
     return 0;
 }
@@ -2635,26 +2639,14 @@ static ssize_t _stop_backward_camera(struct device *pdev,
     struct nxp_backward_camera_context *me = &_context;
     int module = me->plat_data->vip_module_num;
 
-#if defined(CONFIG_ARCH_S5P6818)
-    bool is_mipi = me->plat_data->is_mipi;
-    int t_vip_module = 0;
-#endif
-
     printk(KERN_ERR "%s : module : %d\n", __func__, module);
 
-#if defined(CONFIG_ARCH_S5P6818)
-    t_vip_module = (is_mipi) ? 0 : 2;
-    if (module == t_vip_module) {
-#endif
-#if defined(CONFIG_ARCH_S5P4418)
-    if (module == 1) {
-#endif
+    if (module == get_backward_module_num()) {
         while (is_backward_camera_on()) {
             printk("wait backward camera stopping...\n");
             schedule_timeout_interruptible(HZ/5);
         }
         backward_camera_remove();
-
 #if 0
         if (get_backward_module_num() == 0)
             register_backward_irq_tw9992();
