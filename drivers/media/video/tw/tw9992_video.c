@@ -1348,7 +1348,7 @@ static int tw9992_init(struct v4l2_subdev *sd, u32 val)
     int ret = 0;
     dev_err(&client->dev, "%s: start\n", __func__);
 
-    mdelay(500);
+//    mdelay(500);
     ret = tw9992_reg_set_write(client, TW9992_DataSet);
     if(ret < 0) {
         dev_err(&client->dev, "\e[31mTW9992_DataSet0 error\e[0m, ret = %d\n", ret);
