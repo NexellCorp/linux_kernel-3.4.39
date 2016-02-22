@@ -918,10 +918,9 @@ static int _camera_sensor_run(struct nxp_backward_camera_context *me)
         i2c_smbus_write_byte_data(me->client, reg_val->reg, reg_val->val);
         reg_val++;
     }
-#if 0
+
     if (me->plat_data->init_func)
         me->plat_data->init_func();
-#endif
 
     return 0;
 }
