@@ -31,6 +31,7 @@ struct nxp_backward_camera_platform_data {
     int chip_addr;
     int clk_rate;
     struct reg_val *reg_val;
+    int (*init_func)(void);
     int (*power_enable)(bool);
     int (*set_clock)(int);
     void (*setup_io)(void);
