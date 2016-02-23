@@ -503,7 +503,7 @@ static int mp8845c_get_voltage(struct regulator_dev *rdev)
 }
 #endif
 
-#if 1
+#if 0
 static void mp8845c_set_default_vol(char str, const char *cmd)
 {
 	int ret;
@@ -696,7 +696,7 @@ static int __devinit mp8845c_probe(struct i2c_client *client, const struct i2c_d
 	i2c_set_clientdata(client, ri);
 	dev_dbg(&client->dev, "%s regulator driver is registered.\n", id->name);
 
-#if 1
+#if 0
 	if(id_info == 0)
 	{
 		mp8845c_i2c_client = client;
