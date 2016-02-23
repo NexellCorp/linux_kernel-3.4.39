@@ -468,6 +468,10 @@ void nxp_cpu_reset(char str, const char *cmd)
 		__raw_readl (SCR_RESET_SIG_READ);	/* verify */
 	}
 
+    if (cmd && !strcmp(cmd, "update")) {
+		__raw_writel(UPDATE_SIGNATURE, SCR_RESET_SIG_SET);
+		__raw_readl (SCR_RESET_SIG_READ);       /* verify */
+	}
 	if (cmd && !strcmp(cmd, "usbboot")) {
 		__raw_writel(USBBOOT_SIGNATURE, SCR_RESET_SIG_SET);
 		__raw_readl (SCR_RESET_SIG_READ);	/* verify */

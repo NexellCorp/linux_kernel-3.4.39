@@ -60,6 +60,7 @@
 #define	SUSPEND_SAVE_SIZE		(128*1024)		/* (_etext - _stext) */
 #define RECOVERY_SIGNATURE		(0x52455343)	/* (ASCII) : R.E.S.C */
 #define USBBOOT_SIGNATURE		(0x85836666)	/* (ASCII) : U.S.B.B */
+#define UPDATE_SIGNATURE        (0x55444154)    /* (ASCII) : U.D.A.T */
 
 #define	SCR_SMP_SIG_RESET		SCR_USER_SIG6_RESET
 #define	SCR_SMP_SIG_SET			SCR_USER_SIG6_SET
