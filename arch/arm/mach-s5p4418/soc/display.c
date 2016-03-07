@@ -751,7 +751,6 @@ static int  disp_syncgen_enable(struct disp_process_dev *pdev, int enable)
 	} else {
 		/* set irq wait time */
 		if (!(PROC_STATUS_READY & pdev->status)) {
-			printk(KERN_ERR "Fail, %s not set sync ...\n", dev_to_str(pdev->dev_id));
 			return -EINVAL;
 		}
 
