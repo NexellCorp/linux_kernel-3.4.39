@@ -2014,7 +2014,7 @@ static struct dw_mci_board _dwmci2_data = {
                       DW_MMC_QUIRK_HW_RESET_PW |
                       DW_MCI_QUIRK_NO_DETECT_EBIT,
     .bus_hz         = 200 * 1000 * 1000, /*200*/
-    .caps           = MMC_CAP_UHS_DDR50 |
+    .caps           = MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
                       MMC_CAP_NONREMOVABLE |
                       MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23 |
                       MMC_CAP_HW_RESET,
