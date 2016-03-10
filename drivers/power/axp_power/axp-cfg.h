@@ -19,7 +19,7 @@
 #define STACHGCUR			800*1000		/* AXP22:300~2550,100/step */ // running charge current
 #define EARCHGCUR			800*1000		/* AXP22:300~2550,100/step */ // suspend charge current
 #define SUSCHGCUR			1500*1000		/* AXP22:300~2550,100/step */ // suspend charge current
-#define CLSCHGCUR			800*1000		/* AXP22:300~2550,100/step */ // shut down charge current
+#define CLSCHGCUR			1500*1000		/* AXP22:300~2550,100/step */ // shut down charge current
 
 /* AC current charge */
 //#define AC_CHARGE_CURRENT	1500*1000
