@@ -466,7 +466,7 @@ static void axp_charger_update_state(struct axp_charger *charger)
 	charger->Coulumb_percentage = (val[1] & 0x7f);
 
 #if 1
-	if(charger->ac_valid)
+	if(charger->ac_valid || (charger->usb_charge_type == POWER_SUPPLY_PROP_AC_USB))
 		axp_update(charger->master, AXP22_CHARGE_CONTROL3, (AC_LIMIT_CURRENT_1500 -200001)/150000, 0x0F);
 	else
 		axp_update(charger->master, AXP22_CHARGE_CONTROL3, (AC_LIMIT_CURRENT_500 -200001)/150000, 0x0F);
@@ -870,7 +870,7 @@ static int axp_usb_limit_set(struct axp_charger *charger)
 		val |= 0x01;
 		charger->usb_charge_type = POWER_SUPPLY_PROP_DISCHARGE;
 	}
-	DBG_PSY_MSG("write reg : 0x%02x, 0x%02x, var:%d\n", AXP22_CHARGE_VBUS, val, var);
+	DBG_PSY_MSG("write reg : 0x%02x, 0x%02x, var:%d, usb_valid:%d\n", AXP22_CHARGE_VBUS, val, var, charger->usb_valid);
 	axp_write(charger->master, AXP22_CHARGE_VBUS,val);
 
 	return var;
