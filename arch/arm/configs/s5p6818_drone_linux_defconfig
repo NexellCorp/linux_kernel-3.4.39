@@ -2570,7 +2570,7 @@ CONFIG_IIO_CONSUMERS_PER_TRIGGER=2
 # CONFIG_ADT7410 is not set
 # CONFIG_AD7280 is not set
 # CONFIG_MAX1363 is not set
-# CONFIG_NXP_ADC is not set
+CONFIG_NXP_ADC=y
 
 #
 # Analog digital bi-direction converters
