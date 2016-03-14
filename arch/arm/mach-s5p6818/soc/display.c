@@ -738,7 +738,7 @@ static int  disp_syncgen_enable(struct disp_process_dev *pdev, int enable)
 			DISP_WAIT_POLL_VSYNC(module, wait);
 		}
 
-		NX_DPC_SetDPCEnable(module, CFALSE);			/* START: DPC */
+		NX_DPC_SetDPCEnable(module, CFALSE);		/* START: DPC */
 		NX_DPC_SetClockDivisorEnable(module, CFALSE);	/* START: CLKGEN */
 
 		disp_syncgen_irqenable(info->module, 0);
@@ -754,9 +754,10 @@ static int  disp_syncgen_enable(struct disp_process_dev *pdev, int enable)
 		disp_syncgen_prepare(info);
 		disp_syncgen_irqenable(info->module, 1);
 
-        if (module == 0)
-            NX_DPC_SetRegFlush(module);
-		NX_DPC_SetDPCEnable(module, CTRUE);				/* START: DPC */
+        	if (module == 0 || module == 1)
+            		NX_DPC_SetRegFlush(module);
+
+		NX_DPC_SetDPCEnable(module, CTRUE);		/* START: DPC */
 		NX_DPC_SetClockDivisorEnable(module, CTRUE);	/* START: CLKGEN */
 
 		pdev->status |=  PROC_STATUS_ENABLE;
