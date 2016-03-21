@@ -645,6 +645,7 @@ static int nxe2000_regulator_suspend(struct device *dev)
 	struct nxe2000_regulator *ri = NULL;
 	struct nxe2000_regulator_platform_data *nxe2000_pdata = dev->platform_data;
 	struct regulator_consumer_supply *consumer_supplies = nxe2000_pdata->regulator.consumer_supplies;
+	struct device *parent = dev->parent;
 
 	int ret = 0;
 	int cur_vol = 0;
@@ -660,7 +661,7 @@ static int nxe2000_regulator_suspend(struct device *dev)
 
 		if(cur_vol < nxe2000_pdata->init_uV)
 		{
-			ret = __nxe2000_set_voltage(dev, ri, nxe2000_pdata->init_uV, nxe2000_pdata->init_uV, 0, 0);
+			ret = __nxe2000_set_voltage(parent, ri, nxe2000_pdata->init_uV, nxe2000_pdata->init_uV, 0, 0);
 			if (ret < 0) {
 				dev_err(ri->dev, "Not able to initialize voltage %d for rail %d err %d\n", nxe2000_pdata->init_uV, ri->desc.id, ret);
 				return ret;
