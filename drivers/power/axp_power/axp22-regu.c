@@ -522,7 +522,7 @@ static int __devinit axp_regulator_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, rdev);
 
 	//axp_set_sleep_mod(rdev);
-	
+
 	if(ri->desc.id == AXP22_ID_DCDC1 ||ri->desc.id == AXP22_ID_DCDC2 \
 		|| ri->desc.id == AXP22_ID_DCDC3 ||ri->desc.id == AXP22_ID_DCDC4 \
 		|| ri->desc.id == AXP22_ID_DCDC5){
@@ -546,21 +546,9 @@ static int __devexit axp_regulator_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int axp_regulator_suspend(struct device *dev)
 {
-	struct regulator_dev *rdev = dev_get_drvdata(dev);
-	struct regulation_constraints *constraints = rdev->constraints;
-	struct regulator_state *state_standby = &constraints->state_standby;
-	int ret = 0;
-
-	axp_suspend_status = 0;
-
-	if(!strcmp(constraints->name, "axp22_dcdc2"))
-	{
-		if(state_standby)
-			ret = axp_set_voltage(rdev, AXP_DCDC2_VALUE, AXP_DCDC2_VALUE,NULL);
-	}
-
 	axp_suspend_status = 1;
-	return ret;
+
+	return 0;
 }
 
 static int axp_regulator_resume(struct device *dev)

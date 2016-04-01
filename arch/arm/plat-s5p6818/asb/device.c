@@ -755,8 +755,8 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
 #ifndef CONFIG_REGULATOR_MP8845C
-NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1200000, 1,  4);	/* 1.2V ARM */
-NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1100000, 1,  4);	/* 1.1V CORE */
+NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1250000, 1,  4);	/* 1.2V ARM */
+NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1200000, 1,  4);	/* 1.1V CORE */
 #endif
 NXE2000_PDATA_INIT(dc3,      0, 1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0, 1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
@@ -1056,8 +1056,8 @@ static struct regulator_consumer_supply mp8845c_vout_1[] = {
 	REGULATOR_SUPPLY("vdd_core_1.2V", NULL),
 };
 
-MP8845C_PDATA_INIT(vout, 0, 600000, 1500000, 1, 1, 1100000, 1, -1);	/* ARM */
-MP8845C_PDATA_INIT(vout, 1, 600000, 1500000, 1, 1, 1100000, 1, -1);	/* CORE */
+MP8845C_PDATA_INIT(vout, 0, 600000, 1500000, 1, 1, 1250000, 1, -1);	/* ARM */
+MP8845C_PDATA_INIT(vout, 1, 600000, 1500000, 1, 1, 1200000, 1, -1);	/* CORE */
 
 static struct mp8845c_platform_data __initdata mp8845c_platform[] = {
 	MP8845C_REGULATOR(0, vout, 0),

@@ -395,6 +395,7 @@ static void nxe2000_watchdog_init(struct nxe2000 *nxe2000)
 }
 #endif
 
+#if 0
 static int nxe2000_gpio_get(struct gpio_chip *gc, unsigned offset)
 {
 	struct nxe2000 *nxe2000 = container_of(gc, struct nxe2000,
@@ -524,6 +525,7 @@ static void nxe2000_gpio_init(struct nxe2000 *nxe2000,
 	if (ret)
 		dev_warn(nxe2000->dev, "GPIO registration failed: %d\n", ret);
 }
+#endif
 
 static int nxe2000_remove_subdev(struct device *dev, void *unused)
 {
@@ -620,43 +622,6 @@ static void nxe2000_debuginit(struct nxe2000 *nxe2000)
 {
 	(void)debugfs_create_file("nxe2000", S_IRUGO, NULL,
 			nxe2000, &debug_fops);
-}
-#else
-static void print_regs(const char *header, struct i2c_client *client,
-		int start_offset, int end_offset)
-{
-	uint8_t reg_val;
-	int i;
-	int ret;
-
-	printk(KERN_INFO "%s\n", header);
-	for (i = start_offset; i <= end_offset; ++i) {
-		ret = __nxe2000_read(client, i, &reg_val);
-		if (ret >= 0)
-			printk(KERN_INFO "Reg 0x%02x Value 0x%02x\n",
-							 i, reg_val);
-	}
-	printk(KERN_INFO "------------------\n");
-}
-static void nxe2000_debuginit(struct nxe2000 *nxe2000)
-{
-	struct i2c_client *client = nxe2000->client;
-
-	printk(KERN_INFO "NXE2000 Registers\n");
-	printk(KERN_INFO "------------------\n");
-
-	print_regs("System Regs",		client, 0x0, 0x05);
-	print_regs("Power Control Regs",	client, 0x07, 0x2B);
-	print_regs("DCDC  Regs",		client, 0x2C, 0x43);
-	print_regs("LDO   Regs",		client, 0x44, 0x5C);
-	print_regs("ADC   Regs",		client, 0x64, 0x8F);
-	print_regs("GPIO  Regs",		client, 0x90, 0x9B);
-	print_regs("INTC  Regs",		client, 0x9C, 0x9E);
-	print_regs("OPT   Regs",		client, 0xB0, 0xB1);
-	print_regs("CHG   Regs",		client, 0xB2, 0xDF);
-	print_regs("FUEL  Regs",		client, 0xE0, 0xFC);
-
-	return 0;
 }
 #endif
 
@@ -798,9 +763,13 @@ static int nxe2000_i2c_probe(struct i2c_client *client,
 
 	nxe2000_noe_init(nxe2000);
 
+#if 0
 	nxe2000_gpio_init(nxe2000, pdata);
+#endif
 
+#ifdef CONFIG_DEBUG_FS
 	nxe2000_debuginit(nxe2000);
+#endif
 
 #ifdef CONFIG_NXE2000_WDG_TEST
 	nxe2000_watchdog_init(nxe2000);

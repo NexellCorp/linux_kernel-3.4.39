@@ -245,12 +245,11 @@
 #define CFG_GPIO_PMIC_LOWBAT_DET				(-1)//(PAD_GPIO_ALV + 3)		/* Critical low battery detect */
 #define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
+//#define CONFIG_ENABLE_INIT_VOLTAGE				/* Enalbe init voltage for ARM, CORE */
 
 
 /* HDMIPHY TX Level : 0 ~ 31 */
 #define CFG_HDMIPHY_TX_LEVEL                    23
-
-//#define CONFIG_ENABLE_INIT_VOLTAGE				/* Enalbe init voltage for ARM, CORE */
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode

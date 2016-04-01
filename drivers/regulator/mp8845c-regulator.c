@@ -35,10 +35,6 @@ extern void (*nxp_board_reset)(char str, const char *cmd);
 static void (*backup_board_restart)(char str, const char *cmd) = NULL;
 static struct i2c_client *mp8845c_i2c_client = NULL;
 
-#if defined(CONFIG_PLAT_S5P6818_ASB) || defined(CONFIG_PLAT_S5P6818_SVT)
-#define FEATURE_ASV_CORE_TABLE
-#endif
-
 #ifdef FEATURE_ASV_CORE_TABLE
 #include <linux/clk.h>
 
@@ -723,30 +719,7 @@ static int __devexit mp8845c_remove(struct i2c_client *client)
 #ifdef CONFIG_PM
 static int mp8845c_suspend(struct i2c_client *client, pm_message_t state)
 {
-	struct mp8845c_platform_data *init_data = client->dev.platform_data;
-	struct mp8845c_regulator_platform_data *reg_plat_data = init_data->platform_data;
-	struct mp8845c_regulator *ri;
-	int id_info = init_data->id;
 	int ret = 0;
-
-#if !defined(CONFIG_PLAT_S5P6818_ASB) && !defined(CONFIG_PLAT_S5P6818_SVT)
-
-	ri = find_regulator_info(id_info);
-	if (ri == NULL) {
-		dev_err(&client->dev, "%s() invalid regulator ID specified\n", __func__);
-		return -EINVAL;
-	}
-
-	if(ri->id == MP8845C_0_VOUT) 
-	{
-		ret = __mp8845c_set_voltage(ri, reg_plat_data->init_uV, reg_plat_data->init_uV, NULL);
-		if (ret < 0) {
-			dev_err(ri->dev, "Not able to initialize voltage %d for rail %d err %d\n", 
-								reg_plat_data->init_uV, ri->desc.id, ret);
-			return ret;
-		}
-	}
-#endif
 
 	return ret;
 }
