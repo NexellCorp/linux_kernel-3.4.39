@@ -35,10 +35,6 @@ extern void (*nxp_board_reset)(char str, const char *cmd);
 static void (*backup_board_restart)(char str, const char *cmd) = NULL;
 static struct i2c_client *mp8845c_i2c_client = NULL;
 
-#if defined(CONFIG_PLAT_S5P6818_ASB) || defined(CONFIG_PLAT_S5P6818_SVT)
-#define FEATURE_ASV_CORE_TABLE
-#endif
-
 #ifdef FEATURE_ASV_CORE_TABLE
 #include <linux/clk.h>
 

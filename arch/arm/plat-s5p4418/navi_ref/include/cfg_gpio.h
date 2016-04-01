@@ -196,7 +196,7 @@
 #define PAD_GPIOE7      (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXD[0]     ,2: VIP0_Ext_VSYNC      ,3:_                    =
 #define PAD_GPIOE8      (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXD[1]     ,2:_                    ,3:_                    =
 #define PAD_GPIOE9      (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXD[2]     ,2:_                    ,3:_                    =
-#define PAD_GPIOE10     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXD[3]     ,2:_                    ,3:_                    =
+#define PAD_GPIOE10     (PAD_MODE_INT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_UP  | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXD[3]     ,2:_                    ,3:_                    =
 #define PAD_GPIOE11     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXEN       ,2:_                    ,3:_                    =
 #define PAD_GPIOE12     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXER       ,2:_                    ,3:_                    = Backlight Enable
 #define PAD_GPIOE13     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_COL        ,2: VIP0_Ext_HSYNC      ,3:_                    =
