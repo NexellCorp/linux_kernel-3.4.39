@@ -96,6 +96,27 @@ static void debug_sync(unsigned long priv)
  * set_input_size(), set_output_format(), set_crop()
  */
 
+ /**
+ * v4l2 set control
+ */
+#define V4L2_CID_INTERLACE	(V4L2_CTRL_CLASS_USER | 0X1001)
+static int nxp_vin_clipper_s_ctrl(struct v4l2_subdev *sd,
+	struct v4l2_control *ctrl)
+{
+	struct nxp_vin_clipper *me = v4l2_get_subdevdata(sd);
+
+	switch (ctrl->id) {
+	case V4L2_CID_INTERLACE:
+		me->platdata->interlace = ctrl->value;
+		break;
+	default:
+		pr_err("%s: invalid control id 0x%x\n", __func__, ctrl->id);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 /**
  * supported formats
  */
@@ -520,6 +541,7 @@ static irqreturn_t clipper_irq_handler(void *data)
 
     if (NXP_ATOMIC_READ(&me->state) & NXP_VIN_STATE_RUNNING_CLIPPER) {
         bool interlace = me->platdata->interlace;
+
         bool do_process = true;
         if (interlace) {
             _irq_count++;
@@ -978,6 +1000,7 @@ static int nxp_vin_clipper_s_power(struct v4l2_subdev *sd, int on)
 
 static const struct v4l2_subdev_core_ops nxp_vin_clipper_core_ops = {
     .s_power = nxp_vin_clipper_s_power,
+    .s_ctrl  = nxp_vin_clipper_s_ctrl,
 };
 
 /**
