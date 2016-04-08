@@ -27,18 +27,18 @@
 #include <nx_tieoff.h>
 #include <nx_gpio.h>
 
-#define SOC_PA_RSTCON		PHY_BASEADDR_RSTCON
-#define	SOC_VA_RSTCON		IO_ADDRESS(SOC_PA_RSTCON)
+#define SOC_PA_RSTCON			PHY_BASEADDR_RSTCON
+#define	SOC_VA_RSTCON			IO_ADDRESS(SOC_PA_RSTCON)
 
-#define SOC_PA_TIEOFF		PHY_BASEADDR_TIEOFF
-#define	SOC_VA_TIEOFF		IO_ADDRESS(SOC_PA_TIEOFF)
+#define SOC_PA_TIEOFF			PHY_BASEADDR_TIEOFF
+#define	SOC_VA_TIEOFF			IO_ADDRESS(SOC_PA_TIEOFF)
 
-#define USB2_HOST_CLKGEN     IO_ADDRESS(PHY_BASEADDR_CLKGEN32)
+#define USB2_HOST_CLKGEN		IO_ADDRESS(PHY_BASEADDR_CLKGEN32)
 
-#define HOST_SS_BUS_WIDTH16			(1)
-#define HOST_SS_ENA_INCR16			(0x1 << 25)
-#define HOST_SS_ENA_INCR8			(0x1 << 26)
-#define HOST_SS_ENA_INCR4			(0x1 << 27)
+#define HOST_SS_BUS_WIDTH16		(1)
+#define HOST_SS_ENA_INCR16		(0x1 << 25)
+#define HOST_SS_ENA_INCR8		(0x1 << 26)
+#define HOST_SS_ENA_INCR4		(0x1 << 27)
 #define HOST_SS_ENA_INCRX_ALIGN		(0x1 << 28)
 #define HOST_SS_DMA_BURST_MASK	\
 	(HOST_SS_ENA_INCR16 | HOST_SS_ENA_INCR8 |	\
@@ -103,10 +103,59 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 		writel(temp, SOC_VA_TIEOFF + 0x34);
 		udelay(1); // 10 clock need
 	}
-	else
+	else if( type == NXP_USB_PHY_HSIC )
+	{
+		u32 temp;
+#if defined (CFG_GPIO_HSIC_EXTHUB_RESET)
+		// GPIO Reset
+		nxp_soc_gpio_set_io_dir(CFG_GPIO_HSIC_EXTHUB_RESET, CTRUE);
+		nxp_soc_gpio_set_io_pull_enb(CFG_GPIO_HSIC_EXTHUB_RESET, CTRUE);
+		nxp_soc_gpio_set_out_value(CFG_GPIO_HSIC_EXTHUB_RESET, CTRUE);
+		udelay( 10 );
+		nxp_soc_gpio_set_out_value(CFG_GPIO_HSIC_EXTHUB_RESET, CFALSE);
+		udelay( 10 );
+		nxp_soc_gpio_set_out_value(CFG_GPIO_HSIC_EXTHUB_RESET, CTRUE);
+#else
+		printk("is there extern hub on hsic port???\n");
+#endif
+		// HSIC 12M rerference Clock setting
+		writel( 0x02, USB2_HOST_CLKGEN);
+		writel( 0x0C, USB2_HOST_CLKGEN + 0x4); // 8 : ok, c : no
+		writel( 0x10, USB2_HOST_CLKGEN + 0xc);
+		writel( 0x30, USB2_HOST_CLKGEN + 0xc);
+		writel( 0x06, USB2_HOST_CLKGEN);
+
+		// HSIC 480M clock setting
+		writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<23), SOC_VA_TIEOFF + 0x14);
+		writel(readl(SOC_VA_TIEOFF + 0x14) | (2<<23), SOC_VA_TIEOFF + 0x14);
+
+		// HSIC Enable in PORT1 of LINK
+		writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<14), SOC_VA_TIEOFF + 0x14);
+		writel(readl(SOC_VA_TIEOFF + 0x14) | (2<<14), SOC_VA_TIEOFF + 0x14);
+
+		temp = readl(SOC_VA_TIEOFF + 0x2C) | (3<<12);	// 2'b01 8bit, 2'b11 16bit word
+#if (HOST_SS_BUS_WIDTH16 == 0)
+		temp &= ~(2<<12);
+#endif
+		writel(temp, SOC_VA_TIEOFF + 0x2C);
+
+		// Set HSIC mode
+		writel(readl(SOC_VA_TIEOFF + 0x14) |  (3<<23), SOC_VA_TIEOFF + 0x14);
+
+		// POR of HSIC PHY
+		writel(readl(SOC_VA_TIEOFF + 0x28) & ~(3<<18), SOC_VA_TIEOFF + 0x28);
+		writel(readl(SOC_VA_TIEOFF + 0x28) |  (1<<18), SOC_VA_TIEOFF + 0x28);
+
+		// Wait clock of PHY - about 40 micro seconds
+		udelay(100); // 40us delay need.
+
+		temp = readl(SOC_VA_TIEOFF + 0x14) | (1<<22);
+		writel(temp, SOC_VA_TIEOFF + 0x14);
+	}
+	else	// NXP_USB_PHY_EHCI or NXP_USB_PHY_OHCI
 	{
 		u32 fladj_val, bit_num, bit_pos = 21;	// fladj_val0
-		u32 temp1, temp2, temp3;
+		u32 temp1, temp2;
 
 		// 0. Set FLADJ Register.
 		fladj_val = 0x20;
@@ -129,61 +178,25 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<24), SOC_VA_RSTCON + 0x04);			// reset on
 		udelay(1);
 
-		if (type == NXP_USB_PHY_HSIC) {
-#if defined (CFG_GPIO_HSIC_EXTHUB_RESET)
-		    // GPIO Reset
-			nxp_soc_gpio_set_io_dir(CFG_GPIO_HSIC_EXTHUB_RESET, CTRUE);
-		    nxp_soc_gpio_set_io_pull_enb(CFG_GPIO_HSIC_EXTHUB_RESET, CTRUE);
-		    nxp_soc_gpio_set_out_value(CFG_GPIO_HSIC_EXTHUB_RESET, CTRUE);
-			udelay( 10 );
-		    nxp_soc_gpio_set_out_value(CFG_GPIO_HSIC_EXTHUB_RESET, CFALSE);
-		    udelay( 10 );
-		    nxp_soc_gpio_set_out_value(CFG_GPIO_HSIC_EXTHUB_RESET, CTRUE);
-#else
-			printk("is there extern hub on hsic port???\n");
-#endif
-		}
-
 		writel(readl(SOC_VA_RSTCON + 0x04) |  (1<<24), SOC_VA_RSTCON + 0x04);			// reset off
-
-		if (type == NXP_USB_PHY_HSIC) {
-		    // HSIC 12M rerference Clock setting
-		    writel( 0x02, USB2_HOST_CLKGEN);
-		    writel( 0x0C, USB2_HOST_CLKGEN + 0x4); // 8 : ok, c : no
-		    writel( 0x10, USB2_HOST_CLKGEN + 0xc);
-		    writel( 0x30, USB2_HOST_CLKGEN + 0xc);
-		    writel( 0x06, USB2_HOST_CLKGEN);
-
-		    // HSIC 480M clock setting
-			writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<23), SOC_VA_TIEOFF + 0x14);
-			writel(readl(SOC_VA_TIEOFF + 0x14) | (2<<23), SOC_VA_TIEOFF + 0x14);
-
-		    // HSIC Enable in PORT1 of LINK
-			writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<14), SOC_VA_TIEOFF + 0x14);
-			writel(readl(SOC_VA_TIEOFF + 0x14) | (2<<14), SOC_VA_TIEOFF + 0x14);
-		}
 
 		// 2. Program AHB Burst type
 		temp1 = readl(SOC_VA_TIEOFF + 0x1C) & ~HOST_SS_DMA_BURST_MASK;
-		if (type == NXP_USB_PHY_OHCI)
-			writel(temp1 | OHCI_SS_ENABLE_DMA_BURST, SOC_VA_TIEOFF + 0x1C);
-		else
-			writel(temp1 | EHCI_SS_ENABLE_DMA_BURST, SOC_VA_TIEOFF + 0x1C);
+#if !defined(CONFIG_USB_EHCI_SYNOPSYS) && defined(CONFIG_USB_OHCI_SYNOPSYS)
+		writel(temp1 | OHCI_SS_ENABLE_DMA_BURST, SOC_VA_TIEOFF + 0x1C);
+#else
+		writel(temp1 | EHCI_SS_ENABLE_DMA_BURST, SOC_VA_TIEOFF + 0x1C);
+#endif
 
 		// 3. Select word interface and enable word interface selection
 		temp1 = readl(SOC_VA_TIEOFF + 0x14) | (3<<25);	// 2'b01 8bit, 2'b11 16bit word
 		temp2 = readl(SOC_VA_TIEOFF + 0x24) | (3<<8);	// 2'b01 8bit, 2'b11 16bit word
-		temp3 = readl(SOC_VA_TIEOFF + 0x2C) | (3<<12);	// 2'b01 8bit, 2'b11 16bit word
 #if (HOST_SS_BUS_WIDTH16 == 0)
 		temp1 &= ~(2<<25);
 		temp2 &= ~(2<<8);
-		temp3 &= ~(2<<12);
 #endif
-
 		writel(temp1, SOC_VA_TIEOFF + 0x14);
 		writel(temp2, SOC_VA_TIEOFF + 0x24);
-		if (type == NXP_USB_PHY_HSIC)
-			writel(temp3, SOC_VA_TIEOFF + 0x2C);
 
 		// 4. POR of PHY
 		temp1   = readl(SOC_VA_TIEOFF + 0x20);
@@ -192,24 +205,9 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 		writel(temp1, SOC_VA_TIEOFF + 0x20);
 		udelay(10); // 40us delay need.
 
-		if (type == NXP_USB_PHY_HSIC) {
-			// Set HSIC mode
-			writel(readl(SOC_VA_TIEOFF + 0x14) |  (3<<23), SOC_VA_TIEOFF + 0x14);
-
-			// POR of HSIC PHY
-			writel(readl(SOC_VA_TIEOFF + 0x28) & ~(3<<18), SOC_VA_TIEOFF + 0x28);
-			writel(readl(SOC_VA_TIEOFF + 0x28) |  (1<<18), SOC_VA_TIEOFF + 0x28);
-
-			// Wait clock of PHY - about 40 micro seconds
-			udelay(100); // 40us delay need.
-		}
-
 		// 5. Release utmi reset
-		temp1 = readl(SOC_VA_TIEOFF + 0x14) | (7<<20);
-		if (type == NXP_USB_PHY_HSIC)
-			writel(temp1, SOC_VA_TIEOFF + 0x14);
-		else
-			writel(temp1 & ~(4<<20), SOC_VA_TIEOFF + 0x14);
+		temp1 = readl(SOC_VA_TIEOFF + 0x14) | (3<<20);
+		writel(temp1, SOC_VA_TIEOFF + 0x14);
 
 		//6. Release ahb reset of EHCI, OHCI
 		//writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<17), SOC_VA_TIEOFF + 0x14);
@@ -267,7 +265,15 @@ int nxp_usb_phy_exit(struct platform_device *pdev, int type)
 		// OTG reset on
 		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<25), SOC_VA_RSTCON + 0x04);
 	}
-	else
+	else if( type == NXP_USB_PHY_HSIC )
+	{
+		// Clear HSIC mode
+		writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<23), SOC_VA_TIEOFF + 0x14);
+
+		// POR of HSIC PHY
+		writel(readl(SOC_VA_TIEOFF + 0x28) |  (3<<18), SOC_VA_TIEOFF + 0x28);
+	}
+	else	// NXP_USB_PHY_EHCI or NXP_USB_PHY_OHCI
 	{
 #if 0
 		// EHCI, OHCI reset on
@@ -297,13 +303,6 @@ int nxp_usb_phy_exit(struct platform_device *pdev, int type)
 		temp   &= ~(2<<7);
 		writel(temp, SOC_VA_TIEOFF + 0x20);
 #endif
-		if (type == NXP_USB_PHY_HSIC) {
-			// Clear HSIC mode
-			writel(readl(SOC_VA_TIEOFF + 0x14) & ~(3<<23), SOC_VA_TIEOFF + 0x14);
-
-			// POR of HSIC PHY
-			writel(readl(SOC_VA_TIEOFF + 0x28) |  (3<<18), SOC_VA_TIEOFF + 0x28);
-		}
 
 		// Wait clock of PHY - about 40 micro seconds
 		udelay(10); // 40us delay need.

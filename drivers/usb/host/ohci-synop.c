@@ -14,15 +14,28 @@
 #include <linux/clk.h>
 #include <linux/platform_device.h>
 #include <linux/usb/otg.h>
-
+#ifdef CONFIG_USB_OHCI_SYNOPSYS_RESUME_WORK
+#include <linux/wakelock.h>
+#endif
 #include <mach/devices.h>
 #include <mach/usb-phy.h>
+
+#ifdef CONFIG_USB_OHCI_SYNOPSYS_RESUME_WORK
+#define OHCI_WORK_QUEUE_DELAY   (1000)  /* wait for end usb resume sequence */
+#endif
 
 struct nxp_ohci_hcd {
 	struct device *dev;
 	struct usb_hcd *hcd;
 	struct clk *clk;
 	struct usb_phy *phy;
+#ifdef CONFIG_USB_OHCI_SYNOPSYS_RESUME_WORK
+	struct workqueue_struct *resume_wq;
+	struct delayed_work resume_work;
+	struct wake_lock resume_lock;
+	int delay_time;
+	unsigned char backup_state[256];
+#endif
 };
 
 static int ohci_nxp_init(struct usb_hcd *hcd)
@@ -83,6 +96,52 @@ static const struct hc_driver nxp_ohci_hc_driver = {
 #endif
 	.start_port_reset	= ohci_start_port_reset,
 };
+
+#ifdef CONFIG_USB_OHCI_SYNOPSYS_RESUME_WORK
+#include "../core/usb.h"
+
+static void nxp_ohci_resume_work(struct work_struct *work);
+
+static void nxp_ohci_resume_previous(struct usb_device *hdev, unsigned char *state, int *step)
+{
+	int port = hdev->maxchild;
+
+	pr_debug("%s: %s, ports=%d, step=%d, state=%d\n",
+		__func__, dev_name(&hdev->dev), hdev->maxchild, (int)*step, hdev->state);
+
+	state[*step] = (unsigned char)(hdev->state);
+	*step += 1;
+
+	hdev->state = USB_STATE_NOTATTACHED;
+	for (port = hdev->maxchild; port > 0; port--) {
+		struct usb_device *udev = hdev->children[port-1];
+		if (udev)
+			nxp_ohci_resume_previous(udev, state, step);
+	}
+}
+
+static void nxp_ohci_resume_last(struct usb_device *hdev, unsigned char *state, int *step)
+{
+	int port = hdev->maxchild;
+
+	hdev->state = state[*step];
+	*step += 1;
+
+	pr_debug("%s: %s, ports=%d, step=%d, state=%d\n",
+		__func__, dev_name(&hdev->dev), hdev->maxchild, (int)*step, hdev->state);
+
+	usb_resume(&hdev->dev, PMSG_RESUME);
+
+	for (port = hdev->maxchild; port > 0; port--) {
+		struct usb_device *udev = hdev->children[port-1];
+		if (udev) {
+			udev->state = USB_STATE_CONFIGURED;
+			udev->reset_resume = 1;
+			nxp_ohci_resume_last(udev, state, step);
+		}
+	}
+}
+#endif
 
 static int __devinit nxp_ohci_probe(struct platform_device *pdev)
 {
@@ -176,7 +235,18 @@ static int __devinit nxp_ohci_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, nxp_ohci);
 
 //	clk_disable(nxp_ohci->clk);
+#ifdef CONFIG_USB_OHCI_SYNOPSYS_RESUME_WORK
+	nxp_ohci->delay_time = pdata->resume_delay_time;
+	if (100 > nxp_ohci->delay_time)
+		nxp_ohci->delay_time = OHCI_WORK_QUEUE_DELAY;
 
+	nxp_ohci->resume_wq = alloc_workqueue("nxp-ohci", WQ_MEM_RECLAIM | WQ_NON_REENTRANT, 1);
+	if (!nxp_ohci->resume_wq)
+		goto fail;
+
+	INIT_DELAYED_WORK(&nxp_ohci->resume_work, nxp_ohci_resume_work);
+	wake_lock_init(&nxp_ohci->resume_lock, WAKE_LOCK_SUSPEND, "nxp-ohci");
+#endif
 	return 0;
 
 fail:
@@ -223,6 +293,9 @@ static int __devexit nxp_ohci_remove(struct platform_device *pdev)
 		nxp_ohci->clk = NULL;
 	}
 
+#ifdef CONFIG_USB_OHCI_SYNOPSYS_RESUME_WORK
+	destroy_workqueue(nxp_ohci->resume_wq);
+#endif
 	usb_put_hcd(hcd);
 	kfree(nxp_ohci);
 
@@ -278,8 +351,43 @@ fail:
 	return rc;
 }
 
+#ifdef CONFIG_USB_OHCI_SYNOPSYS_RESUME_WORK
+static void nxp_ohci_resume_work(struct work_struct *work)
+{
+	struct nxp_ohci_hcd *nxp_ohci = container_of(work, struct nxp_ohci_hcd, resume_work.work);
+	struct usb_hcd *hcd = nxp_ohci->hcd;
+	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
+	struct platform_device *pdev = to_platform_device(nxp_ohci->dev);
+	struct nxp_ohci_platdata *pdata = pdev->dev.platform_data;
+	struct usb_device *udev = hcd->self.root_hub;
+
+	if (nxp_ohci->phy) {
+                wake_unlock(&nxp_ohci->resume_lock);
+		return;
+	}
+
+	if (pdata && pdata->phy_init)
+		pdata->phy_init(pdev, NXP_USB_PHY_OHCI);
+
+	/* Mark hardware accessible again as we are out of D3 state by now */
+	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
+
+//	ohci_finish_controller_resume(hcd);
+
+	if (udev) {
+		int step = 0;
+		usb_lock_device(udev);
+		nxp_ohci_resume_last(udev, nxp_ohci->backup_state, &step);
+		usb_unlock_device(udev);
+	}
+
+	wake_unlock(&nxp_ohci->resume_lock);
+}
+#endif
+
 static int nxp_ohci_resume(struct device *dev)
 {
+#ifndef CONFIG_USB_OHCI_SYNOPSYS_RESUME_WORK
 	struct nxp_ohci_hcd *nxp_ohci = dev_get_drvdata(dev);
 	struct usb_hcd *hcd = nxp_ohci->hcd;
 	struct platform_device *pdev = to_platform_device(dev);
@@ -295,7 +403,17 @@ static int nxp_ohci_resume(struct device *dev)
 	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
 
 	ohci_finish_controller_resume(hcd);
+#else
+	struct nxp_ohci_hcd *nxp_ohci = dev_get_drvdata(dev);
+	struct usb_hcd *hcd = nxp_ohci->hcd;
+	struct usb_device *udev = hcd->self.root_hub;
+	int step = 0;
 
+	nxp_ohci_resume_previous(udev, nxp_ohci->backup_state, &step);
+	wake_lock(&nxp_ohci->resume_lock);
+	queue_delayed_work(nxp_ohci->resume_wq, &nxp_ohci->resume_work,
+				msecs_to_jiffies(nxp_ohci->delay_time));
+#endif
 	return 0;
 }
 #else

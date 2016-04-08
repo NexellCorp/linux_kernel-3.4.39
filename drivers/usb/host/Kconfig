@@ -424,6 +424,14 @@ config USB_OHCI_SYNOPSYS
 	help
 	 Enable support for the Synopsys's on-chip OHCI controller.
 
+config USB_OHCI_SYNOPSYS_RESUME_WORK
+	bool "Delay resume for fast resume"
+	depends on USB_OHCI_SYNOPSYS && ARCH_CPU_SLSI
+		default n
+	help
+	  Use delay work function to save resume time when resume. but
+	  could be lost resume log message, set delay time with platform data
+
 config USB_CNS3XXX_OHCI
 	bool "Cavium CNS3XXX OHCI Module"
 	depends on USB_OHCI_HCD && ARCH_CNS3XXX
