@@ -285,6 +285,10 @@ static int __devexit nxp_ohci_remove(struct platform_device *pdev)
 	else if (pdata && pdata->phy_exit)
 		pdata->phy_exit(pdev, NXP_USB_PHY_OHCI);
 
+#ifdef CONFIG_USB_OHCI_SYNOPSYS_RESUME_WORK
+	destroy_workqueue(nxp_ohci->resume_wq);
+#endif
+
 	iounmap(hcd->regs);
 
 	if (nxp_ohci->clk) {
@@ -293,9 +297,6 @@ static int __devexit nxp_ohci_remove(struct platform_device *pdev)
 		nxp_ohci->clk = NULL;
 	}
 
-#ifdef CONFIG_USB_OHCI_SYNOPSYS_RESUME_WORK
-	destroy_workqueue(nxp_ohci->resume_wq);
-#endif
 	usb_put_hcd(hcd);
 	kfree(nxp_ohci);
 
@@ -343,11 +344,11 @@ static int nxp_ohci_suspend(struct device *dev)
 
 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
 
-	if (pdata && pdata->phy_exit)
-		pdata->phy_exit(pdev, NXP_USB_PHY_OHCI);
 fail:
 	spin_unlock_irqrestore(&ohci->lock, flags);
 
+	if (pdata && pdata->phy_exit)
+		pdata->phy_exit(pdev, NXP_USB_PHY_OHCI);
 	return rc;
 }
 

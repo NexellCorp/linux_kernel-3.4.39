@@ -211,7 +211,10 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 
 		//6. Release ahb reset of EHCI, OHCI
 		//writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<17), SOC_VA_TIEOFF + 0x14);
-		writel(readl(SOC_VA_TIEOFF + 0x14) |  (7<<17), SOC_VA_TIEOFF + 0x14);
+		if( type == NXP_USB_PHY_EHCI )
+			writel(readl(SOC_VA_TIEOFF + 0x14) |  (5<<17), SOC_VA_TIEOFF + 0x14);
+		else
+			writel(readl(SOC_VA_TIEOFF + 0x14) |  (2<<17), SOC_VA_TIEOFF + 0x14);
 	}
 
 	PM_DBGOUT("-- %s\n", __func__);
@@ -283,7 +286,10 @@ int nxp_usb_phy_exit(struct platform_device *pdev, int type)
 		writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<24), SOC_VA_RSTCON + 0x04);
 
 		// 6. Release ahb reset of EHCI, OHCI
-		writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<17), SOC_VA_TIEOFF + 0x14);
+		if( type == NXP_USB_PHY_EHCI )
+			writel(readl(SOC_VA_TIEOFF + 0x14) & ~(5<<17), SOC_VA_TIEOFF + 0x14);
+		else
+			writel(readl(SOC_VA_TIEOFF + 0x14) & ~(2<<17), SOC_VA_TIEOFF + 0x14);
 
 		// 5. Release utmi reset
 		writel(readl(SOC_VA_TIEOFF + 0x14) & ~(7<<20), SOC_VA_TIEOFF + 0x14);
