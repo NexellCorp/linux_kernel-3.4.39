@@ -1,4 +1,21 @@
 /*
+ *            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+ *                    Version 2, December 2004
+ * 
+ * Copyright (C) 2016 Nexell Co., Ltd.
+ * Author: Jongkeun, Choi <jkchoi@nexell.co.kr>
+ * 
+ * Everyone is permitted to copy and distribute verbatim or modified
+ * copies of this license document, and changing it is allowed as long
+ * as the name is changed.
+ * 
+ *            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+ *   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+ * 
+ *  0. You just DO WHAT THE FUCK YOU WANT TO.
+ */
+
+/*
  * (C) Copyright 2009
  * jung hyun kim, Nexell Co, <jhkim@nexell.co.kr>
  *
@@ -1009,67 +1026,66 @@ static void backward_vin_setup_io(int module, bool force)
 //	printk(KERN_INFO "%s: module -> %d, force -> %d\n", __func__, module, ((force == true) ? 1 : 0));
 
 #if !defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
-    if (!force && is_backward_port_configured)
-        return;
-    else {
-        u_int *pad;
-        int i, len;
-        u_int io, fn;
+	if (!force && is_backward_port_configured)
+		return;
+	else {
+		u_int *pad;
+		int i, len;
+		u_int io, fn;
 
-        /* VIP0:0 = VCLK, VID0 ~ 7 */
-        const u_int port[][2] = {
-#if 1	//vid0
+		/* VIP0:0 = VCLK, VID0 ~ 7 */
+		const u_int port[][2] = {
+#if 0	//vid0
 			/* VCLK, HSYNC, VSYNC */
-            { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  6, NX_GPIO_PADFUNC_1 },
-            /* DATA */
-            { PAD_GPIO_D + 28, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 29, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
+			{ PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
+			{ PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
+			{ PAD_GPIO_E +  6, NX_GPIO_PADFUNC_1 },
+			/* DATA */
+			{ PAD_GPIO_D + 28, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 29, NX_GPIO_PADFUNC_1 },
+			{ PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
+			{ PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
+			{ PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
 #endif
 
 #if 0 //vid1
-            /* VCLK, HSYNC, VSYNC */
+			/* VCLK, HSYNC, VSYNC */
 			{ PAD_GPIO_A + 28, NX_GPIO_PADFUNC_1 },
-            //{ PAD_GPIO_E + 13, NX_GPIO_PADFUNC_2 },
-            //{ PAD_GPIO_E +  7, NX_GPIO_PADFUNC_2 },
+			//{ PAD_GPIO_E + 13, NX_GPIO_PADFUNC_2 },
+			//{ PAD_GPIO_E +  7, NX_GPIO_PADFUNC_2 },
 
-            { PAD_GPIO_A + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  0, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_B +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  4, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_B +  6, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  8, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
+			{ PAD_GPIO_A + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  0, NX_GPIO_PADFUNC_1 },
+			{ PAD_GPIO_B +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  4, NX_GPIO_PADFUNC_1 },
+			{ PAD_GPIO_B +  6, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  8, NX_GPIO_PADFUNC_1 },
+			{ PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
 #endif
 
-#if 0	//vid2
+#if 1	//vid2
 			/* VCLK, HSYNC, VSYNC */
 			{ PAD_GPIO_C + 14, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 15, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 16, NX_GPIO_PADFUNC_3 },
-            /* DATA */
-            { PAD_GPIO_C + 17, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 18, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 19, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 20, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 21, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 22, NX_GPIO_PADFUNC_3 },
-            { PAD_GPIO_C + 23, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 24, NX_GPIO_PADFUNC_3 },
-
+			{ PAD_GPIO_C + 15, NX_GPIO_PADFUNC_3 },
+			{ PAD_GPIO_C + 16, NX_GPIO_PADFUNC_3 },
+			/* DATA */
+			{ PAD_GPIO_C + 17, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 18, NX_GPIO_PADFUNC_3 },
+			{ PAD_GPIO_C + 19, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 20, NX_GPIO_PADFUNC_3 },
+			{ PAD_GPIO_C + 21, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 22, NX_GPIO_PADFUNC_3 },
+			{ PAD_GPIO_C + 23, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 24, NX_GPIO_PADFUNC_3 },
 #endif
-        };
+		};
 
-        //printk("%s\n", __func__);
+		//printk("%s\n", __func__);
 
-        pad = (u_int *)port;
-        len = sizeof(port)/sizeof(port[0]);
+		pad = (u_int *)port;
+		len = sizeof(port)/sizeof(port[0]);
 
-        for (i = 0; i < len; i++) {
-            io = *pad++;
-            fn = *pad++;
-            nxp_soc_gpio_set_io_dir(io, 0);
-            nxp_soc_gpio_set_io_func(io, fn);
-        }
+		for (i = 0; i < len; i++) {
+			io = *pad++;
+			fn = *pad++;
+			nxp_soc_gpio_set_io_dir(io, 0);
+			nxp_soc_gpio_set_io_func(io, fn);
+		}
 
-        is_backward_port_configured = true;
-    }
+		is_backward_port_configured = true;
+	}
 #endif
 }
 
@@ -1084,8 +1100,9 @@ static void camera_common_vin_setup_io(int module, bool force)
         u_int io, fn;
 
 
-        /* VIP0:0 = VCLK, VID0 ~ 7 */
+        /* VIP0:1 = VCLK, VID0 ~ 7 */
         const u_int port[][2] = {
+#if 0 //vid 1
             /* VCLK, HSYNC, VSYNC */
             { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
@@ -1095,6 +1112,31 @@ static void camera_common_vin_setup_io(int module, bool force)
             { PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
             { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
+#endif
+
+#if 0 //vid 1
+	  /* VCLK, HSYNC, VSYNC */
+	  { PAD_GPIO_A + 28, NX_GPIO_PADFUNC_1 },
+		//{ PAD_GPIO_E + 13, NX_GPIO_PADFUNC_2 },
+	 	//{ PAD_GPIO_E +  7, NX_GPIO_PADFUNC_2 },
+
+	  { PAD_GPIO_A + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  0, NX_GPIO_PADFUNC_1 },
+	  { PAD_GPIO_B +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  4, NX_GPIO_PADFUNC_1 },
+	  { PAD_GPIO_B +  6, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B +  8, NX_GPIO_PADFUNC_1 },
+	  { PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
+#endif
+
+#if 1	//vid2
+	  /* VCLK, HSYNC, VSYNC */
+	  { PAD_GPIO_C + 14, NX_GPIO_PADFUNC_3 },
+	  { PAD_GPIO_C + 15, NX_GPIO_PADFUNC_3 },
+	  { PAD_GPIO_C + 16, NX_GPIO_PADFUNC_3 },
+	  /* DATA */
+	  { PAD_GPIO_C + 17, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 18, NX_GPIO_PADFUNC_3 },
+	  { PAD_GPIO_C + 19, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 20, NX_GPIO_PADFUNC_3 },
+	  { PAD_GPIO_C + 21, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 22, NX_GPIO_PADFUNC_3 },
+	  { PAD_GPIO_C + 23, NX_GPIO_PADFUNC_3 }, { PAD_GPIO_C + 24, NX_GPIO_PADFUNC_3 },
+#endif
         };
 
         printk("%s\n", __func__);
@@ -1408,7 +1450,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 #if defined(CONFIG_VIDEO_NVP6114A)
     { 
         /* camera 656 interface */ 
-        .module = 1,
+        .module = 0,
         .sensor = &sensor[3],
         .type = NXP_CAPTURE_INF_PARALLEL,
         .parallel = {
@@ -1424,7 +1466,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .v_syncwidth    = 2,
             .v_backporch    = 3,
             .clock_invert   = true,
-            .port           = 0,
+            .port           = 1,
             .data_order     = NXP_VIN_CBY0CRY1,
             .interlace      = false,
             .clk_rate       = 27000000,
@@ -1445,7 +1487,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 #if defined(CONFIG_VIDEO_DS90UB914Q)
     { 
         /* camera 656 interface */ 
-        .module = 1,
+        .module = 0,
         .sensor = &sensor[2],
         .type = NXP_CAPTURE_INF_PARALLEL,
         .parallel = {
@@ -1461,7 +1503,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .v_syncwidth    = 1,
             .v_backporch    = 0,
             .clock_invert   = false,
-            .port           = 0,
+            .port           = 1,
             .data_order     = NXP_VIN_CBY0CRY1,
             .interlace      = false,
             .clk_rate       = 24000000,
@@ -1480,7 +1522,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 #if defined(CONFIG_VIDEO_TW9900)
     {
         /* back_camera 656 interface */
-        .module = 1,
+        .module = 0,
         .sensor = &sensor[0],
         .type = NXP_CAPTURE_INF_PARALLEL,
         .parallel = {
@@ -1496,7 +1538,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .v_syncwidth    			= 2,
             .v_backporch    			= 3,
             .clock_invert   			= true,
-            .port           			= 0,
+            .port           			= 1,
             .data_order     			= NXP_VIN_CBY0CRY1,
             .interlace      			= true,
             .clk_rate       			= 24000000,
@@ -1848,6 +1890,45 @@ static struct reg_val _sensor_init_data[] =
 
 #endif
 
+#if (BACKWARD_SEL == TW9900)
+#define	CAMERA_POWER_DOWN	(PAD_GPIO_E + 12)
+#define CAMERA_MUX		(PAD_GPIO_E + 16)
+#define DIS_MUX			(PAD_GPIO_C +  9)
+
+static int _sensor_power_enable(bool enable)
+{
+	u32 pwn		=	CAMERA_POWER_DOWN;
+	u32 mux		=	CAMERA_MUX;
+	u32 disMux 	= 	DIS_MUX; 
+
+	if( enable ) {
+
+//		printk("%s : enable : %d\n", __func__, enable);
+
+		nxp_soc_gpio_set_out_value(disMux, 1);
+		nxp_soc_gpio_set_io_dir(disMux, 1);
+		nxp_soc_gpio_set_io_func(disMux, NX_GPIO_PADFUNC_1);
+		mdelay(1);
+
+		nxp_soc_gpio_set_out_value(pwn, 0);
+		nxp_soc_gpio_set_io_dir(pwn, 1);
+		nxp_soc_gpio_set_io_func(pwn, NX_GPIO_PADFUNC_0);
+		mdelay(1);
+		nxp_soc_gpio_set_out_value(pwn, 0);
+
+		nxp_soc_gpio_set_out_value(mux, 0);
+		nxp_soc_gpio_set_io_dir(mux, 1);
+		nxp_soc_gpio_set_io_func(mux, NX_GPIO_PADFUNC_0);
+		mdelay(1);
+		nxp_soc_gpio_set_out_value(mux, 0);
+
+		mdelay(10);
+	}
+	
+	return 0;
+}
+#elif (BACKWARD_SEL == NVP6114A)
+
 #define CAMERA_RESET        (PAD_GPIO_B + 14)
 #define DISABLE_MUX			(PAD_GPIO_E + 12)
 #define ENABLE_MUX			(PAD_GPIO_C +  9)
@@ -1897,6 +1978,7 @@ static int _sensor_power_enable(bool enable)
 	
 	return 0;
 }
+#endif
 
 static void _sensor_setup_io(void)
 {
@@ -1906,7 +1988,7 @@ static void _sensor_setup_io(void)
 
 	/* VIP0:0 = VCLK, VID0 ~ 7 */
 	const u_int port[][2] = {
-#if 1	//vid0
+#if 0	//vid0
 	  /* VCLK, HSYNC, VSYNC */
 	  { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
 	  { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
@@ -1930,7 +2012,7 @@ static void _sensor_setup_io(void)
 	  { PAD_GPIO_B +  9, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_B + 10, NX_GPIO_PADFUNC_1 },
 #endif
 
-#if 0	//vid2
+#if 1	//vid2
 	  /* VCLK, HSYNC, VSYNC */
 	  { PAD_GPIO_C + 14, NX_GPIO_PADFUNC_3 },
 	  { PAD_GPIO_C + 15, NX_GPIO_PADFUNC_3 },
@@ -2037,7 +2119,7 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .backgear_gpio_num      = CFG_BACKWARD_GEAR,
     .active_high            = false,
     //.active_high          = true,
-    .vip_module_num         = 1,
+    .vip_module_num         = 0,
     .mlc_module_num         = 0,
 
     //vendor context
@@ -2061,7 +2143,7 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .setup_io               = _sensor_setup_io,
 
     // vip
-    .port                   = 0,
+    .port                   = 1,
     .external_sync          = false,
     .is_mipi                = false,
     .h_active               = BACKWARD_CAM_WIDTH,
@@ -2107,7 +2189,7 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .backgear_gpio_num      = CFG_BACKWARD_GEAR,
     .active_high            = false,
     //.active_high          = true,
-    .vip_module_num         = 1,
+    .vip_module_num         = 0,
     .mlc_module_num         = 0,
 
     //vendor context
@@ -2131,7 +2213,7 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .setup_io               = _sensor_setup_io,
 
     // vip
-    .port                   = 0,
+    .port                   = 1,
     .external_sync          = false,
     .is_mipi                = false,
     .h_active               = BACKWARD_CAM_WIDTH,

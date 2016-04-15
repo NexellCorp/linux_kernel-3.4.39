@@ -393,6 +393,7 @@ static void _restore_register(int module)
     pREG->CLIP_STRIDEL = pBackupReg->CLIP_STRIDEL;
     pREG->VIP_CDENB = pBackupReg->VIP_CDENB;
     pREG->VIP_CONFIG = pBackupReg->VIP_CONFIG;
+    pREG->VIP_VIP1 = pBackupReg->VIP_VIP1;
 #elif defined(CONFIG_ARCH_S5P6818)
     pREG->VIP_SYNCCTRL = pBackupReg->VIP_SYNCCTRL;
     pREG->VIP_VBEGIN = pBackupReg->VIP_VBEGIN;
@@ -487,6 +488,7 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
         } else {
             NX_VIP_SetVIPEnable(me->module, CFALSE, CFALSE, CFALSE, CFALSE);
         }
+
         /*dump_register(me->module);*/
 
         me->clip_enable = clip_enable;
