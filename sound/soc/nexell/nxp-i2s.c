@@ -148,11 +148,11 @@ static struct clock_ratio clk_ratio [] = {
  */
 struct nxp_i2s_snd_param {
 	int channel;
-    int master_mode;   	/* 0 = master_mode, 1 = slave */
-    int mclk_in;
-    int trans_mode; 	/* 0 = I2S, 2 = Left-Justified, 3 = Right-Justified  */
-    int sample_rate;
-    int	frame_bit;		/* 16, 24, 32, 48 */
+	int master_mode;   	/* 0 = master_mode, 1 = slave */
+	int mclk_in;
+	int trans_mode; 	/* 0 = I2S, 2 = Left-Justified, 3 = Right-Justified  */
+	int sample_rate;
+	int	frame_bit;		/* 16, 24, 32, 48 */
 	int LR_pol_inv;
 	int in_clkgen;
 	int pre_supply_mclk;
@@ -393,15 +393,6 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 		return -EINVAL;
 	}
 
-	if (!par->master_mode){ 
-	 	/* 384 RATIO */
-		RFS = RATIO_384, request = clk_ratio[i].ratio_384;
-		/* 256 RATIO */
-		if (BFS_32BIT == BFS)
-			RFS = RATIO_256, request = clk_ratio[i].ratio_256;
-		goto done;
-	}
-
 	for (i = 0; ARRAY_SIZE(clk_ratio) > i; i++) {
 		if (par->sample_rate == clk_ratio[i].sample_rate)
 			break;
@@ -411,6 +402,15 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 		printk(KERN_ERR "Fail, not support i2s sample rate %d \n",
 			par->sample_rate);
 		return -EINVAL;
+	}
+
+	if (!par->master_mode){ 
+	 	/* 384 RATIO */
+		RFS = RATIO_384, request = clk_ratio[i].ratio_384;
+		/* 256 RATIO */
+		if (BFS_32BIT == BFS)
+			RFS = RATIO_256, request = clk_ratio[i].ratio_256;
+		goto done;
 	}
 
 	if (par->ext_is_en) {
@@ -428,7 +428,6 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 #elif defined(CONFIG_ARCH_S5P6818)
 	set_sample_rate_clock(par->clk, request, &rate_hz, &divide);
 #endif
-
 
 	/* 256 RATIO */
 	if (rate_hz != request && BFS_32BIT == BFS) {
@@ -517,6 +516,10 @@ done:
 	pr_debug("snd i2s: PSRAEN=%d, PSVALA=%d \n", PSRAEN, prescale);
 #endif
 
+	/* i2s support rates */
+	dai->playback.rates = snd_pcm_rate_to_rate_bit(par->sample_rate);
+	dai->capture.rates = snd_pcm_rate_to_rate_bit(par->sample_rate);	
+
 	/* i2s support format */
 	if (RFS == RATIO_256 || BFS != BFS_48BIT) {
 		dai->playback.formats &= ~(SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_U24_LE);
@@ -535,13 +538,13 @@ static int nxp_i2s_set_plat_param(struct nxp_i2s_snd_param *par, void *data)
 	int i = 0, ret = 0;
 
 	par->channel = pdev->id;
-    par->master_mode = plat->master_mode;
-    par->mclk_in = plat->master_clock_in;
-    par->trans_mode = plat->trans_mode;
-    par->sample_rate = plat->sample_rate ? plat->sample_rate : DEF_SAMPLE_RATE;
-    par->frame_bit = plat->frame_bit ? plat->frame_bit : DEF_FRAME_BIT;
-    par->LR_pol_inv = plat->LR_pol_inv;
-    par->pre_supply_mclk = plat->pre_supply_mclk;
+	par->master_mode = plat->master_mode;
+	par->mclk_in = plat->master_clock_in;
+	par->trans_mode = plat->trans_mode;
+	par->sample_rate = plat->sample_rate ? plat->sample_rate : DEF_SAMPLE_RATE;
+	par->frame_bit = plat->frame_bit ? plat->frame_bit : DEF_FRAME_BIT;
+	par->LR_pol_inv = plat->LR_pol_inv;
+	par->pre_supply_mclk = plat->pre_supply_mclk;
 	if (plat->ext_is_en) {
 		par->ext_is_en = plat->ext_is_en();
 		par->mclk_in = par->ext_is_en ? 1 : plat->master_clock_in;
@@ -553,7 +556,7 @@ static int nxp_i2s_set_plat_param(struct nxp_i2s_snd_param *par, void *data)
 	par->base_addr = IO_ADDRESS(phy_base);
 	SND_I2S_LOCK_INIT(&par->lock);
 
-    for (i = 0; 2 > i; i++, dma = &par->capt) {
+	for (i = 0; 2 > i; i++, dma = &par->capt) {
 		if (! plat->dma_play_ch) {
 			dma->active = false;
 			continue;
@@ -665,7 +668,7 @@ static int nxp_i2s_trigger(struct snd_pcm_substream *substream,
 		break;
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-    case SNDRV_PCM_TRIGGER_STOP:
+	case SNDRV_PCM_TRIGGER_STOP:
 		i2s_stop(par, stream);
 #ifdef CONFIG_NXP_DFS_BCLK
         bclk_put(BCLK_USER_DMA);
@@ -814,12 +817,12 @@ static __devinit int nxp_i2s_probe(struct platform_device *pdev)
 	struct nxp_i2s_snd_param *par;
 	int ret = 0;
 
-    /*  allocate i2c_port data */
-    par = kzalloc(sizeof(struct nxp_i2s_snd_param), GFP_KERNEL);
-    if (! par) {
-        printk(KERN_ERR "fail, %s allocate driver info ...\n", pdev->name);
-        return -ENOMEM;
-    }
+	/*  allocate i2c_port data */
+	par = kzalloc(sizeof(struct nxp_i2s_snd_param), GFP_KERNEL);
+	if (! par) {
+		printk(KERN_ERR "fail, %s allocate driver info ...\n", pdev->name);
+		return -ENOMEM;
+	}
 
 	ret = nxp_i2s_set_plat_param(par, pdev);
 	if (ret)
