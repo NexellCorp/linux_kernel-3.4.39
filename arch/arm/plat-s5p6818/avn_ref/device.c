@@ -549,6 +549,7 @@ static struct i2c_board_info __initdata rt5640_i2c_bdi = {
 struct nxp_snd_dai_plat_data rt5640_i2s_dai_data = {
 	.i2s_ch	= 0,
 	.sample_rate	= 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
 #if 0
    	.hp_jack 		= {
 		.support    	= 1,
@@ -582,6 +583,7 @@ static struct i2c_board_info __initdata alc5623_i2c_bdi = {
 struct nxp_snd_dai_plat_data alc5623_i2s_dai_data = {
 	.i2s_ch	= 1,
 	.sample_rate	= 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
 #if 0
    	.hp_jack 		= {
 		.support    	= 1,
@@ -658,7 +660,6 @@ void __init nxp_reserve_mem(void)
     nxp_cma_region_reserve(regions, map);
 }
 #endif
-
 
 
 /*------------------------------------------------------------------------------
