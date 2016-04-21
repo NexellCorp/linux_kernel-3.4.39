@@ -34,12 +34,21 @@
 #include <mach/fourcc.h>
 
 #include "display_4418.h"
+#include "nx_gamma_tbl.h"
 
 #if (0)
 #define DBGOUT(msg...)		do { printk(KERN_INFO msg); } while (0)
 #else
 #define DBGOUT(msg...)		do {} while (0)
 #endif
+
+//	mlc_gammatable
+static ssize_t set_mlc_gamma(int module, int gamma);
+
+struct NX_MLC_GammaTable_Parameter   nx_mlc_gammatable;
+static int g_gamma_val[2]={10,10}; //0: module 0, 1: module 1
+
+
 
 /* 12345'678'[8] -> 12345 [5], 123456'78'[8] -> 123456[6] */
 static inline u_short R8G8B8toR5G6B5(unsigned int RGB)
@@ -397,6 +406,13 @@ static int disp_multily_enable(struct disp_control_info *info, int enable)
 		NX_MLC_SetGammaPriority(module, CFALSE);
     	NX_MLC_SetTopPowerMode(module, CTRUE);
     	NX_MLC_SetTopSleepMode(module, CFALSE);
+
+#if 1	//Gamma table
+		/* set gamma */
+	    if(module == 0) //set primary disp gamma
+			set_mlc_gamma(module, 10);
+#endif
+
 		NX_MLC_SetMLCEnable(module, CTRUE);
 
 		/* restore layer enable status */
@@ -2519,11 +2535,108 @@ static struct device_attribute fps0_attr =
 static struct device_attribute fps1_attr =
 	__ATTR(fps.1, S_IRUGO | S_IWUSR, fps_show, NULL);
 
+static ssize_t set_mlc_gamma(int module, int gamma)
+{
+
+    struct NX_MLC_GammaTable_Parameter *p_nx_mlc_gammatable;
+    U32 i;
+
+    p_nx_mlc_gammatable = &nx_mlc_gammatable;
+
+    for(i=0; i<256; i++) {
+        p_nx_mlc_gammatable->R_TABLE[i] = mlc_gtable[gamma-1][i];
+        p_nx_mlc_gammatable->G_TABLE[i] = mlc_gtable[gamma-1][i];
+        p_nx_mlc_gammatable->B_TABLE[i] = mlc_gtable[gamma-1][i];
+    }
+
+    p_nx_mlc_gammatable->DITHERENB   = 0;
+    p_nx_mlc_gammatable->ALPHASELECT = 0;
+    p_nx_mlc_gammatable->YUVGAMMAENB = 0;
+    p_nx_mlc_gammatable->RGBGAMMAENB = 0;
+    p_nx_mlc_gammatable->ALLGAMMAENB = 1;
+
+    NX_MLC_SetGammaTable( module, CTRUE, p_nx_mlc_gammatable );
+    return 0;
+}
+
+
+static ssize_t gamma_show(struct device *pdev,
+        struct device_attribute *attr, char *buf)
+{
+    struct attribute *at = &attr->attr;
+    struct disp_control_info *info;
+    struct disp_process_dev *dev;
+    const char *c;
+    int a, i, d[2], m = 0;
+	
+    c = &at->name[strlen("gamma.")];
+    a = simple_strtoul(c, NULL, 10);
+
+    for (i = 0; 2 > i; i++) {
+        info = get_module_to_info(i);
+        dev  = info->proc_dev;
+        d[i] = dev->dev_in;
+    }
+
+    /* not fb */
+    if (d[0] != DISP_DEVICE_END && d[1] != DISP_DEVICE_END)
+        m = a;
+    else /* 1 fb */
+        m = (d[0] == a) ? 0 : 1;
+
+    info = get_module_to_info(m);
+
+    return scnprintf(buf, PAGE_SIZE, "%d\n", g_gamma_val[a]);;
+}
+static ssize_t gamma_set(struct device *pdev,
+	        struct device_attribute *attr, const char *buf, size_t n)
+{
+    struct attribute *at = &attr->attr;
+    struct disp_control_info *info;
+    struct disp_process_dev *dev;
+    const char *c;
+    int a, i, d[2], m = 0;
+
+    c = &at->name[strlen("gamma.")];
+    a = simple_strtoul(c, NULL, 10);
+
+    for (i = 0; 2 > i; i++) {
+        info = get_module_to_info(i);
+        dev  = info->proc_dev;
+        d[i] = dev->dev_in;
+    }
+
+    /* not fb */
+    if (d[0] != DISP_DEVICE_END && d[1] != DISP_DEVICE_END)
+        m = a;
+    else /* 1 fb */
+        m = (d[0] == a) ? 0 : 1;
+
+    info = get_module_to_info(m);
+
+	sscanf(buf,"%d", &g_gamma_val[a]);
+
+	if(!(g_gamma_val[a] > MAX_GAMMA))
+	    set_mlc_gamma(a, g_gamma_val[a]);
+	else
+		printk(KERN_ERR "Fail, gamma.%d not supported value %d ...\n",
+			info->module, g_gamma_val[a]);
+		
+
+    return n;
+}
+
+static struct device_attribute gammar0_attr =
+	__ATTR(gamma.0, S_IRUGO | S_IWUGO, gamma_show, gamma_set);
+static struct device_attribute gammar1_attr =
+	__ATTR(gamma.1, S_IRUGO | S_IWUGO, gamma_show, gamma_set);
+
 /* sys attribte group */
 static struct attribute *attrs[] = {
 	&active0_attr.attr,	&active1_attr.attr,
 	&vblank0_attr.attr,	&vblank1_attr.attr,
 	&fps0_attr.attr, &fps1_attr.attr,
+	&gammar0_attr.attr, &gammar1_attr.attr,
 	NULL,
 };
 
