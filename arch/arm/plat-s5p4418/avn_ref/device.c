@@ -145,22 +145,22 @@ static struct platform_device dfs_plat_device = {
 #if defined (CONFIG_SENSORS_NXP_ADC_TEMP)
 struct nxp_adc_tmp_trigger adc_tmp_event[] = {
 	{
-		.temp  = 50,
+		.temp  = 45,
 		.freq  = 1200000,
 		.period = 1000, /* Ms */
 	} , {
-		.temp  = 55,
+		.temp  = 49,
 		.freq  = 1000000,
 		.period = 1000, /* Ms */
 	} , {
-		.temp  = 60,
+		.temp  = 53,
 		.freq  = 800000,
 		.period = 1000, /* Ms */
 	} , {
-		.temp  = 65,
+		.temp  = 55,
 		.freq  = 400000,		/* freq = 0 :Set critical temp. Power off! */
 		.period = 1000, /* Ms */
-	},
+	}
 };
 
 struct nxp_adc_tmp_platdata adc_tmp_plat_data ={
@@ -645,7 +645,6 @@ static struct i2c_board_info __initdata rt5640_i2c_bdi = {
 struct nxp_snd_dai_plat_data rt5640_i2s_dai_data = {
 	.i2s_ch	= 0,
 	.sample_rate	= 48000,
-	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
 #if 0
    	.hp_jack 		= {
 		.support    	= 1,
@@ -679,7 +678,6 @@ static struct i2c_board_info __initdata alc5623_i2c_bdi = {
 struct nxp_snd_dai_plat_data alc5623_i2s_dai_data = {
 	.i2s_ch	= 1,
 	.sample_rate	= 48000,
-	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
 #if 0
    	.hp_jack 		= {
 		.support    	= 1,
