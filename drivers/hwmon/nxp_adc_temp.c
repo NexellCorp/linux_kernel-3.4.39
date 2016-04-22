@@ -41,7 +41,7 @@
 
 #define DRVNAME	"nxp-adc-tmp"
 #define STEP_FREQ	100000
-#define CORE_DOWN_TEMP_LEVEL	40	//74
+#define CORE_DOWN_TEMP_LEVEL	74
 
 struct nxp_adc_tmp_event {
 	int  temp;
@@ -118,7 +118,7 @@ int stopped = 0;
 bool down_flag = false;
 
 /*
- * CPU Core Down
+ * CPU Down
  */
 static int cpu_down_force_byResource(void)
 {
@@ -145,7 +145,7 @@ static int cpu_down_force_byResource(void)
 }
 
 /*
- * CPU Core up
+ * CPU up
  */
 static void cpu_up_force_byResource(int stopped)
 {
@@ -588,10 +588,10 @@ static int __devinit nxp_adc_tmp_probe(struct platform_device *pdev)
 	}
 
 	tmp_cpufreq_register(tmp);
-	tmp->voltage_down = false;
-	tmp->core_1_1V = regulator_get(NULL, "vdd_core_1.2V");
-    if (IS_ERR(tmp->core_1_1V))
-		printk("%s: failed to regulator_get() for vdd_core_1.2V", __func__);
+//	tmp->voltage_down = false;
+//	tmp->core_1_1V = regulator_get(NULL, "vdd_core_1.2V");
+//	if (IS_ERR(tmp->core_1_1V))
+//		printk("%s: failed to regulator_get() for vdd_core_1.2V", __func__);
 
 	INIT_DELAYED_WORK(&tmp->mon_work, nxp_adc_tmp_monfn);
 //	tmp->core_voltage_down_workqueue = create_singlethread_workqueue("Core voltage down monitor");

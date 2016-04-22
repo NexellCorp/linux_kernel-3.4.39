@@ -328,7 +328,6 @@ struct nxp_adc_tmp_trigger {
     int     temp;
 	long    freq;
 	long    period;
-	bool	cpudown;
 };
 
 struct nxp_adc_tmp_platdata {
