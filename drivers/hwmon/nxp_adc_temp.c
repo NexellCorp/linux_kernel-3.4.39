@@ -30,13 +30,18 @@
 #include "../staging/iio/consumer.h"
 
 #include <linux/cpufreq.h>
+#include <linux/power_supply.h>
+#include <linux/regulator/consumer.h>
 #include <linux/reboot.h>
+#include <linux/syscalls.h>
+
 /*
 #define	pr_debug	printk
 */
 
 #define DRVNAME	"nxp-adc-tmp"
 #define STEP_FREQ	100000
+#define CORE_DOWN_TEMP_LEVEL	40	//74
 
 struct nxp_adc_tmp_event {
 	int  temp;
@@ -60,7 +65,8 @@ struct nxp_adc_tmp {
 	struct cpumask allowed_cpus;
 	/* TMU func */
 
-	struct delayed_work mon_work;
+	struct delayed_work mon_work, core_down_work;
+	struct workqueue_struct *core_voltage_down_workqueue;
 	struct nxp_adc_tmp_event *event;
 	int eventsize;
 	int	step_up;	/* freq stup_up or direct up */
@@ -75,7 +81,8 @@ struct nxp_adc_tmp {
 	long max_freq;
 	long min_freq;
 	long new_freq;
-
+	struct regulator *core_1_1V;
+	bool voltage_down;
 };
 
 #define	STATE_SUSPEND_ENTER		(0)		/* bit position */
@@ -91,7 +98,7 @@ static int tmp_table[][2] = {
 
 //	[0]  = {12900, 20}, // 0
 //	[1]  = {12200, 25}, // 0
-	[0]  = {11500, 30}, // 0
+	[0]  = {11500, 30},
 	[1]  = {10700, 35}, 
 	[2]  = { 9900, 40}, 
 	[3]  = { 9100, 45},
@@ -99,12 +106,58 @@ static int tmp_table[][2] = {
 	[5]  = { 7700, 55},
 	[6]  = { 7000, 60}, 
 	[7]  = { 6300, 65}, 
-	[8] = { 5700, 70},
-	[9] = { 5200, 75},
+	[8] =  { 5700, 70},
+	[9] =  { 5200, 75},
 	[10] = { 4700, 80},
 	[11] = { 4200, 85}  
 };
+
 #define TEMP_TABLAE_SIZE	ARRAY_SIZE(tmp_table)
+
+int stopped = 0;
+bool down_flag = false;
+
+/*
+ * CPU Core Down
+ */
+static int cpu_down_force_byResource(void)
+{
+    int cpu, cur = raw_smp_processor_id();
+    int stopped = 0;
+    int err;
+
+    for_each_present_cpu(cpu) {
+        if (cpu == 0 || cpu == 3)
+            continue;
+        if (cpu == cur)
+            continue;
+        if (!cpu_online(cpu))
+            continue;
+        stopped |= 1<<cpu;
+        err = cpu_down(cpu);
+
+		printk("cpu=%d, cur=%d, stopped=%x\n", cpu, cur, stopped);
+        if(err == 0)
+	        return stopped;
+    }
+
+    return 0;
+}
+
+/*
+ * CPU Core up
+ */
+static void cpu_up_force_byResource(int stopped)
+{
+    int cpu;
+    for_each_present_cpu(cpu) {
+		printk("cpu=%d\n", cpu);
+        if (stopped & 1<<cpu) {
+			printk("cpu down =%d\n", cpu);
+            cpu_up(cpu);
+		}
+    }
+}
 
 /*
  * cpu frequency
@@ -233,6 +286,7 @@ static inline void cpufreq_set_max(struct nxp_adc_tmp *tmp, long new)
 	tmp->new_freq = new;
 	cpufreq_update_policy(cpuid);
 }
+
 static void nxp_adc_tmp_monfn(struct work_struct *work)
 {
 	struct nxp_adc_tmp *tmp = container_of(work, struct nxp_adc_tmp, mon_work.work);
@@ -261,7 +315,6 @@ static void nxp_adc_tmp_monfn(struct work_struct *work)
 
 	for(i=0; i < event_size; i++, event++)
 	{
-
 		if(event->temp > temp){	/* freq up Max */
 			if(event->freq >= next )
 			{
@@ -284,9 +337,7 @@ static void nxp_adc_tmp_monfn(struct work_struct *work)
 				orderly_poweroff(true);
 				down_work = 0; up_max = 0;
 			}
-
 		}
-
 	}
 
 	if(down_work) {
@@ -327,6 +378,45 @@ exit_mon:
 	schedule_delayed_work(&tmp->mon_work, msecs_to_jiffies(tmp->delay_ms));
 
 	return;
+}
+
+static void nxp_core_down(struct work_struct *work) {
+	struct nxp_adc_tmp *tmp = container_of(work, struct nxp_adc_tmp, core_down_work.work);
+	
+
+	if (tmp->temperature > CORE_DOWN_TEMP_LEVEL) {
+		// Core voltage down
+		printk("Down core voltage!\n");
+		if (tmp->voltage_down == false) {
+			regulator_set_voltage(tmp->core_1_1V,  1050000, 1050000);
+			regulator_put(tmp->core_1_1V);
+			tmp->voltage_down = true;
+		}
+#if 0
+		// Core down
+		stopped |= cpu_down_force_byResource();
+		if (stopped != 0)
+			down_flag = true;
+#endif
+	} else {
+		// Core voltage up
+		printk("Up core voltage!\n");
+		if (tmp->voltage_down == true) {
+			regulator_set_voltage(tmp->core_1_1V,  1100000, 1100000);
+			regulator_put(tmp->core_1_1V);
+			tmp->voltage_down = false;
+		}
+#if 0
+		// Core up
+		if (down_flag == true) {
+			cpu_up_force_byResource(stopped);
+			stopped = 0;
+			down_flag = false;
+		}
+#endif
+	}
+
+	queue_delayed_work(tmp->core_voltage_down_workqueue, &tmp->core_down_work, HZ);
 }
 
 /*
@@ -438,7 +528,6 @@ static int __devinit nxp_adc_tmp_probe(struct platform_device *pdev)
 	struct nxp_adc_tmp *tmp = NULL;
 	//struct nxp_adc_tmp_event *event = NULL;
 	struct cpufreq_policy policy = { .cpuinfo = { .min_freq = 0, .min_freq = 0 }, };
-
 	int err = -1;
 	char name[16] ;
 
@@ -499,8 +588,16 @@ static int __devinit nxp_adc_tmp_probe(struct platform_device *pdev)
 	}
 
 	tmp_cpufreq_register(tmp);
+	tmp->voltage_down = false;
+	tmp->core_1_1V = regulator_get(NULL, "vdd_core_1.2V");
+    if (IS_ERR(tmp->core_1_1V))
+		printk("%s: failed to regulator_get() for vdd_core_1.2V", __func__);
+
 	INIT_DELAYED_WORK(&tmp->mon_work, nxp_adc_tmp_monfn);
+//	tmp->core_voltage_down_workqueue = create_singlethread_workqueue("Core voltage down monitor");
+//	INIT_DELAYED_WORK_DEFERRABLE(&tmp->core_down_work, nxp_core_down);
 	schedule_delayed_work(&tmp->mon_work, msecs_to_jiffies(1));
+//	queue_delayed_work(tmp->core_voltage_down_workqueue, &tmp->core_down_work, 15*HZ);
 	printk("TMU: register %s to hwmon\n", name);
 
 	return 0;
