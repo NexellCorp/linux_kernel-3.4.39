@@ -1,12 +1,29 @@
 
 config VIDEO_TW9992
-    tristate "TW9992 video decoder"
+    tristate "TW9992 video decoder(nexell work)"
     depends on I2C && VIDEO_V4L2
     ---help---
 	  Support for the Intersil/Techwell TW9992 video decoder.
 
 config VIDEO_TW9900
-    tristate "TW9900 video decoder"
+    tristate "TW9900 video decoder(nexell work)"
     depends on I2C && VIDEO_V4L2
     ---help---
       Support for the Intersil/Techwell TW9900 video decoder.
+choice
+depends on VIDEO_TW9900
+prompt "Camera position for TW9900"
+default TW9900_GENERAL
+config TW9900_GENERAL
+	bool "general camera"
+#	depends on !SLSIAP_BACKWARD_CAMERA
+	help
+	  This set as front camera
+
+config TW9900_BACKWARD
+	bool "backward camera"
+	depends on SLSIAP_BACKWARD_CAMERA
+	help
+	  This set as backward camera
+endchoice
+
