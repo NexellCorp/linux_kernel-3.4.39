@@ -479,7 +479,7 @@ static void _work_handler(struct work_struct *work)
 
 static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 {
-	printk("%s : enable : %d, state : %d\n", __func__, enable, _state.first);
+	//printk("%s : enable : %d, state : %d\n", __func__, enable, _state.first);
     if (enable) {
         if (_state.first) 
 		{
@@ -506,7 +506,7 @@ static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 
 			while( reg_val->reg != 0xff)
 			{
-				printk("%s : reg : 0x%02X, val : 0x%02X\n", __func__, reg_val->reg, reg_val->val);
+				//printk("%s : reg : 0x%02X, val : 0x%02X\n", __func__, reg_val->reg, reg_val->val);
 
 				_i2c_write_byte(me->i2c_client, reg_val->reg, reg_val->val);
 				mdelay(10);

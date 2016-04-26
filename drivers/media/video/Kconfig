@@ -581,6 +581,22 @@ config VIDEO_NVP6114A
     ---help---
 	  This is a Video4Linux2 sensor-level driver for Nextchip
 	  NVP6114A AHD sensor.
+choice
+depends on VIDEO_NVP6114A
+prompt "Camera position for NVP6114A"
+default NVP6114A_GENERAL
+config NVP6114A_GENERAL
+	bool "general camera"
+#	depends on !SLSIAP_BACKWARD_CAMERA
+	help
+	  This set as front camera
+
+config NVP6114A_BACKWARD
+	bool "backward camera"
+	depends on SLSIAP_BACKWARD_CAMERA
+	help
+	  This set as backward camera
+endchoice
 
 source "drivers/media/video/thine/Kconfig"
 

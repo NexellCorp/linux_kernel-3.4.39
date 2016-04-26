@@ -281,6 +281,7 @@ static int nvp6114a_s_stream(struct v4l2_subdev *sd, int enable)
     struct i2c_client *client = v4l2_get_subdevdata(sd);	
     unsigned char data;
     int i=0;
+    int width, height;
 
     nvp6124_cnt = 1;
     chip_id[0]  = NVP6114A_R0_ID; 
@@ -294,7 +295,7 @@ static int nvp6114a_s_stream(struct v4l2_subdev *sd, int enable)
                 return -EINVAL;
 #if 0
             if (_i2c_read_byte(client, PID, &data) == 0)
-            	printk("nvp6114a reg =0xF4, data = 0x%02X\n", data);
+            	printk(KERN_ERR "nvp6114a reg =0xF4, data = 0x%02X\n", data);
 #endif
             nvp6124_ntsc_common_init();
 
@@ -304,9 +305,17 @@ static int nvp6114a_s_stream(struct v4l2_subdev *sd, int enable)
             state->first = true;
         }
 
-        if (state->width == 1920 && state->height == 1080)  
+	width = state->width;
+	height = state->height;
+
+#if defined(CONFIG_ARCH_S5P4418)
+	width -= 32;
+	height -= 1;
+#endif
+
+        if (width == 1920 && height == 1080)  
             nvp6114a_outport_1mux(nvp6124_mode%2, 0x10|NVP6124_VI_1080P_2530, 0x00|NVP6124_VI_1080P_2530);
-        else if (state->width == 1280 && state->height == 720)
+        else if (width == 1280 && height == 720)
             nvp6114a_outport_1mux(nvp6124_mode%2, 0x10|NVP6124_VI_720P_2530, 0x00|NVP6124_VI_720P_2530);
     }
 
