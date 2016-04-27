@@ -16,7 +16,7 @@ prompt "Camera position for TW9900"
 default TW9900_GENERAL
 config TW9900_GENERAL
 	bool "general camera"
-#	depends on !SLSIAP_BACKWARD_CAMERA
+	depends on !SLSIAP_BACKWARD_CAMERA || NVP6114A_BACKWARD
 	help
 	  This set as front camera
 
