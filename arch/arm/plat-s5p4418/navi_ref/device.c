@@ -1023,9 +1023,11 @@ static int camera_common_set_clock(ulong clk_rate)
 static bool is_backward_port_configured = false;
 static void backward_vin_setup_io(int module, bool force)
 {
-//	printk(KERN_INFO "%s: module -> %d, force -> %d\n", __func__, module, ((force == true) ? 1 : 0));
-
 #if !defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+#if 0
+	printk(KERN_ERR "%s: module -> %d, force -> %d\n",
+		__func__, module, ((force == true) ? 1 : 0));
+#endif
 	if (!force && is_backward_port_configured)
 		return;
 	else {
@@ -1208,6 +1210,7 @@ static bool is_front_camera_power_state_changed = false;
 
 static int tw9900_power_enable(bool on)
 {
+#if !defined(CONFIG_TW9900_BACKWARD)
 	if( on )
 	{
 		unsigned int pwn	= 0;
@@ -1243,6 +1246,7 @@ static int tw9900_power_enable(bool on)
 
 		mdelay(100);
 	}
+#endif
 	return 0;
 }
 
@@ -1251,17 +1255,17 @@ static int front_camera_power_enable(bool on)
 #if defined(CONFIG_VIDEO_TW9992)
 	unsigned int reset_io = (PAD_GPIO_B + 23);
 
-    printk("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
+	pr_debug("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
 
-    if (on) {
+	if (on) {
 		if (!is_front_camera_enabled)
 		{
-            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
-            nxp_soc_gpio_set_io_dir(reset_io, 1);
-            mdelay(1);
-            nxp_soc_gpio_set_out_value(reset_io, 0);
+			nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(reset_io));
+			nxp_soc_gpio_set_io_dir(reset_io, 1);
+			mdelay(1);
+			nxp_soc_gpio_set_out_value(reset_io, 0);
 			mdelay(10);
-            nxp_soc_gpio_set_out_value(reset_io, 1);
+			nxp_soc_gpio_set_out_value(reset_io, 1);
 			mdelay(10);
 
 			is_front_camera_enabled = true;
@@ -1314,26 +1318,28 @@ static int ds90ub914q_power_enable(bool on)
 		mdelay(10);
 	}
 
-	return 0;
+	return 0;	
 }
 
 static int nvp6114a_power_enable(bool on)
 {
-#if !defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+#if !defined(CONFIG_NVP6114A_BACKWARD)
 	u32 reset	=	(PAD_GPIO_B + 14);
-    u32 dis_mux =   (PAD_GPIO_E + 12);
-    u32 en_mux  =   (PAD_GPIO_C + 9);
-    u32 sel_in  =   (PAD_GPIO_C + 10);
+	u32 dis_mux =   (PAD_GPIO_E + 12);
+	u32 en_mux  =   (PAD_GPIO_C + 9);
+	u32 sel_in  =   (PAD_GPIO_C + 10);
 
-    if( on )
-    {
-        //printk("%s :  enable : %d\n", __func__, on);
-
-        /* Disable MUX */
-        nxp_soc_gpio_set_io_func(dis_mux, nxp_soc_gpio_get_altnum(dis_mux));
-        nxp_soc_gpio_set_io_dir(dis_mux, 1);
-        nxp_soc_gpio_set_out_value(dis_mux, 1);
-        mdelay(10);
+	if( on )
+	{
+#if  0
+		printk("%s :  enable : %d\n", __func__, on);
+#endif
+		/* Disable MUX */
+		nxp_soc_gpio_set_io_func(dis_mux,
+			nxp_soc_gpio_get_altnum(dis_mux));
+		nxp_soc_gpio_set_io_dir(dis_mux, 1);
+		nxp_soc_gpio_set_out_value(dis_mux, 1);
+		mdelay(10);
 
         /* Select IN */
         nxp_soc_gpio_set_io_func(sel_in, nxp_soc_gpio_get_altnum(sel_in));
@@ -1351,12 +1357,6 @@ static int nvp6114a_power_enable(bool on)
         nxp_soc_gpio_set_out_value(reset, 1);
         nxp_soc_gpio_set_io_dir(reset, 1);
         nxp_soc_gpio_set_io_func(reset, NX_GPIO_PADFUNC_2);
-        mdelay(1);
-#if 0
-        nxp_soc_gpio_set_out_value(reset, 0);
-        mdelay(1);
-        nxp_soc_gpio_set_out_value(reset, 1);
-#endif
         mdelay(10);
     }
 #endif
@@ -1474,9 +1474,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .power_enable   = nvp6114a_power_enable,
             .power_state_changed = NULL,
             .set_clock      = NULL,
-            //.setup_io       = camera_common_vin_setup_io,
-            //.setup_io       = backward_vin_setup_io,
-            .setup_io       = NULL,
+            .setup_io       = backward_vin_setup_io,
         },
         .deci = {
             .start_delay_ms = 0,
@@ -1546,8 +1544,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .power_enable   			= tw9900_power_enable,
             .power_state_changed 		= NULL,
             .set_clock      			= NULL,
-            //.setup_io       			= backward_vin_setup_io,
-            .setup_io                   = camera_common_vin_setup_io,
+            .setup_io       			= backward_vin_setup_io,
         },
         .deci = {
             .start_delay_ms = 0,
@@ -1827,30 +1824,7 @@ static struct platform_device hdmi_cec_device = {
 #if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
 #include <mach/nxp-backward-camera.h>
 
-#define TW9900      0
-#define NVP6114A    1
-
-#define BACKWARD_SEL NVP6114A
-
-#if (BACKWARD_SEL == TW9900)
-#if 0
-static struct reg_val _sensor_init_data[] =
-{
-    {0x03, 0xa6},
-    {0x07, 0x02},
-    {0x08, 0x12},
-    {0x09, 0xf0},
-    {0x0a, 0x1c},
-    /*{0x0b, 0xd0}, // 720 */
-    {0x0b, 0xc0}, // 704
-    {0x1b, 0x00},
-    {0x10, 0x10},
-    {0x11, 0x42},
-    {0x2f, 0xe6},
-    {0x55, 0x00},
-    END_MARKER
-};
-#else
+#if defined(CONFIG_TW9900_BACKWARD)
 	static struct reg_val _sensor_init_data[] =
 	{
 		{0x02, 0x40},
@@ -1882,7 +1856,8 @@ static struct reg_val _sensor_init_data[] =
 		END_MARKER
 	};
 #endif
-#elif (BACKWARD_SEL == NVP6114A)
+
+#if defined(CONFIG_NVP6114A_BACKWARD)
 	static struct reg_val _sensor_init_data[] =
 	{
 		END_MARKER
@@ -1890,7 +1865,7 @@ static struct reg_val _sensor_init_data[] =
 
 #endif
 
-#if (BACKWARD_SEL == TW9900)
+#if defined(CONFIG_TW9900_BACKWARD)
 #define	CAMERA_POWER_DOWN	(PAD_GPIO_E + 12)
 #define CAMERA_MUX		(PAD_GPIO_E + 16)
 #define DIS_MUX			(PAD_GPIO_C +  9)
@@ -1902,8 +1877,6 @@ static int _sensor_power_enable(bool enable)
 	u32 disMux 	= 	DIS_MUX; 
 
 	if( enable ) {
-
-//		printk("%s : enable : %d\n", __func__, enable);
 
 		nxp_soc_gpio_set_out_value(disMux, 1);
 		nxp_soc_gpio_set_io_dir(disMux, 1);
@@ -1927,8 +1900,8 @@ static int _sensor_power_enable(bool enable)
 	
 	return 0;
 }
-#elif (BACKWARD_SEL == NVP6114A)
-
+#endif
+#if defined(CONFIG_NVP6114A_BACKWARD)
 #define CAMERA_RESET        (PAD_GPIO_B + 14)
 #define DISABLE_MUX			(PAD_GPIO_E + 12)
 #define ENABLE_MUX			(PAD_GPIO_C +  9)
@@ -1936,15 +1909,12 @@ static int _sensor_power_enable(bool enable)
 
 static int _sensor_power_enable(bool enable)
 {
-    u32 reset   =   CAMERA_RESET; 
-    u32 dis_mux =   DISABLE_MUX; 
-    u32 en_mux  =   ENABLE_MUX; 
-    u32 sel_in  =   SELECT_IN; 
+	u32 reset   =   CAMERA_RESET; 
+	u32 dis_mux =   DISABLE_MUX; 
+	u32 en_mux  =   ENABLE_MUX; 
+	u32 sel_in  =   SELECT_IN; 
 
 	if( enable ) {
-
-		printk("%s : enable : %d\n", __func__, enable);
-
         /* Disable MUX */
         nxp_soc_gpio_set_io_func(dis_mux, nxp_soc_gpio_get_altnum(dis_mux));
         nxp_soc_gpio_set_io_dir(dis_mux, 1);
@@ -1967,12 +1937,6 @@ static int _sensor_power_enable(bool enable)
         nxp_soc_gpio_set_out_value(reset, 1);
         nxp_soc_gpio_set_io_dir(reset, 1);
         nxp_soc_gpio_set_io_func(reset, NX_GPIO_PADFUNC_2);
-        mdelay(1);
-#if 0
-        nxp_soc_gpio_set_out_value(reset, 0);
-        mdelay(1);
-        nxp_soc_gpio_set_out_value(reset, 1);
-#endif
         mdelay(10);
 	}
 	
@@ -2039,8 +2003,7 @@ static void _sensor_setup_io(void)
     }    
 }
 
-
-#if (BACKWARD_SEL == NVP6114A)
+#if defined(CONFIG_NVP6114A_BACKWARD)
 extern void nvp6114a_initialization(void);
 #endif
 
@@ -2111,7 +2074,7 @@ static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_dat
 #endif
 }
 
-#if (BACKWARD_SEL == TW9900)
+#if defined(CONFIG_TW9900_BACKWARD)
 #define BACKWARD_CAM_WIDTH  704
 #define BACKWARD_CAM_HEIGHT 480
 
@@ -2178,12 +2141,11 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
 
     .draw_rgb_overlay   = _draw_rgb_overlay,
 };
+#endif
 
-#elif (BACKWARD_SEL == NVP6114A)
-
+#if defined(CONFIG_NVP6114A_BACKWARD)
 #define BACKWARD_CAM_WIDTH  1280
 #define BACKWARD_CAM_HEIGHT 720
-
 
 static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .backgear_gpio_num      = CFG_BACKWARD_GEAR,
@@ -2248,10 +2210,7 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
 
     .draw_rgb_overlay   = _draw_rgb_overlay,
 };
-
-
 #endif
-
 
 /*static struct platform_device backward_camera_device = {*/
 struct platform_device backward_camera_device = {
