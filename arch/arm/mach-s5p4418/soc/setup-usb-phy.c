@@ -198,6 +198,9 @@ int nxp_usb_phy_init(struct platform_device *pdev, int type)
 		writel(temp1, SOC_VA_TIEOFF + 0x14);
 		writel(temp2, SOC_VA_TIEOFF + 0x24);
 
+		// HOST_OHCI_SUSP_LGCY set high(1) for ohci suspend/resume
+		writel(readl(SOC_VA_TIEOFF + 0x20) | (1 << 3), SOC_VA_TIEOFF + 0x20);
+
 		// 4. POR of PHY
 		temp1   = readl(SOC_VA_TIEOFF + 0x20);
 		temp1  &= ~(3<<7);

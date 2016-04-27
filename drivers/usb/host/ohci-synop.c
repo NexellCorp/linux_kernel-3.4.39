@@ -344,11 +344,11 @@ static int nxp_ohci_suspend(struct device *dev)
 
 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
 
+	if (pdata && pdata->phy_exit)
+		pdata->phy_exit(pdev, NXP_USB_PHY_OHCI);
 fail:
 	spin_unlock_irqrestore(&ohci->lock, flags);
 
-	if (pdata && pdata->phy_exit)
-		pdata->phy_exit(pdev, NXP_USB_PHY_OHCI);
 	return rc;
 }
 
@@ -357,7 +357,6 @@ static void nxp_ohci_resume_work(struct work_struct *work)
 {
 	struct nxp_ohci_hcd *nxp_ohci = container_of(work, struct nxp_ohci_hcd, resume_work.work);
 	struct usb_hcd *hcd = nxp_ohci->hcd;
-	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
 	struct platform_device *pdev = to_platform_device(nxp_ohci->dev);
 	struct nxp_ohci_platdata *pdata = pdev->dev.platform_data;
 	struct usb_device *udev = hcd->self.root_hub;
