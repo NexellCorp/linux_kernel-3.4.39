@@ -762,13 +762,15 @@ static int camera_common_set_clock(ulong clk_rate)
     return 0;
 }
 
-static bool is_tw9900_port_configured = false;
-static void tw9900_vin_setup_io(int module, bool force)
+static bool is_backward_port_configured = false;
+static void backward_vin_setup_io(int module, bool force)
 {
-//	printk(KERN_INFO "%s: module -> %d, force -> %d\n", __func__, module, ((force == true) ? 1 : 0));
-
 #if !defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
-    if (!force && is_tw9900_port_configured)
+  #if 0
+	printk(KERN_ERR "%s: module -> %d, force -> %d\n",
+		__func__, module, ((force == true) ? 1 : 0));
+#endif
+	if (!force && is_backward_port_configured)
         return;
     else {
         u_int *pad;
@@ -827,7 +829,7 @@ static void tw9900_vin_setup_io(int module, bool force)
             nxp_soc_gpio_set_io_func(io, fn);
         }
 
-        is_tw9900_port_configured = true;
+        is_backward_port_configured = true;
     }
 #endif
 }
@@ -919,14 +921,12 @@ static void camera_power_control(int enable)
     camera_power_enabled = enable ? true : false;
 }
 
-//static bool is_back_camera_enabled = false;
-//static bool is_back_camera_power_state_changed = false;
 static bool is_front_camera_enabled = false;
 static bool is_front_camera_power_state_changed = false;
 
 static int tw9900_power_enable(bool on)
 {
-#if !defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+#if !defined(CONFIG_TW9900_BACKWARD)
 	if( on )
 	{
 		unsigned int pwn	= 0;
@@ -966,78 +966,12 @@ static int tw9900_power_enable(bool on)
 	return 0;
 }
 
-
-static int front_camera_power_enable(bool on);
-
-#if 0
-static int back_camera_power_enable(bool on)
-{
-#if 0
-    unsigned int io = CFG_IO_CAMERA_BACK_POWER_DOWN;
-    unsigned int reset_io = CFG_IO_CAMERA_RESET;
-    PM_DBGOUT("%s: is_back_camera_enabled %d, on %d\n", __func__, is_back_camera_enabled, on);
-    if (on) {
-        front_camera_power_enable(0);
-        if (!is_back_camera_enabled) {
-            camera_power_control(1);
-            /* PD signal */
-            nxp_soc_gpio_set_out_value(io, 0);
-            nxp_soc_gpio_set_io_dir(io, 1);
-            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-            nxp_soc_gpio_set_out_value(io, 1);
-            camera_common_set_clock(24000000);
-            /* mdelay(10); */
-            mdelay(1);
-            nxp_soc_gpio_set_out_value(io, 0);
-            /* RST signal */
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-            nxp_soc_gpio_set_io_dir(reset_io, 1);
-            nxp_soc_gpio_set_io_func(reset_io, nxp_soc_gpio_get_altnum(io));
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            /* mdelay(100); */
-            mdelay(1);
-            nxp_soc_gpio_set_out_value(reset_io, 1);
-            /* mdelay(100); */
-            mdelay(1);
-            is_back_camera_enabled = true;
-            is_back_camera_power_state_changed = true;
-        } else {
-            is_back_camera_power_state_changed = false;
-        }
-    } else {
-        if (is_back_camera_enabled) {
-            nxp_soc_gpio_set_out_value(io, 1);
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            is_back_camera_enabled = false;
-            is_back_camera_power_state_changed = true;
-        } else {
-            nxp_soc_gpio_set_out_value(io, 1);
-            nxp_soc_gpio_set_io_dir(io, 1);
-            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-            nxp_soc_gpio_set_out_value(io, 1);
-            is_back_camera_power_state_changed = false;
-        }
-
-        if (!(is_back_camera_enabled || is_front_camera_enabled)) {
-            camera_power_control(0);
-        }
-    }
-#endif
-    return 0;
-}
-
-static bool back_camera_power_state_changed(void)
-{
-    return is_back_camera_power_state_changed;
-}
-#endif
-
 static int front_camera_power_enable(bool on)
 {
 #if defined(CONFIG_VIDEO_TW9992)
 	unsigned int reset_io = (PAD_GPIO_B + 23);
 
-    //printk("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
+	pr_debug("%s: is_front_camera_enabled %d, on %d\n", __func__, is_front_camera_enabled, on);
 
     if (on) {
 		if (!is_front_camera_enabled)
@@ -1057,16 +991,6 @@ static int front_camera_power_enable(bool on)
 			is_front_camera_power_state_changed	= false;
 		}
    } 
-#if 0
-	else
-	{
-        if (is_front_camera_enabled) {
-            nxp_soc_gpio_set_out_value(reset_io, 0);
-            is_front_camera_enabled = false;
-            is_front_camera_power_state_changed = true;
-        }
-   }
-#endif
 #endif
 
     return 0;
@@ -1105,6 +1029,7 @@ static int ds90ub914q_power_enable(bool on)
 
 static int nvp6114a_power_enable(bool on)
 {
+#if !defined(CONFIG_NVP6114A_BACKWARD)
 	u32 reset   =	(PAD_GPIO_B + 14);
     u32 dis_mux =   (PAD_GPIO_E + 12);
     u32	en_mux  =   (PAD_GPIO_C + 9);
@@ -1112,7 +1037,9 @@ static int nvp6114a_power_enable(bool on)
 
 	if( on )
 	{
-		//printk("%s :  enable : %d\n", __func__, on);
+#if  0
+		printk("%s :  enable : %d\n", __func__, on);
+#endif
 
         /* Disable MUX */
         nxp_soc_gpio_set_io_func(dis_mux, nxp_soc_gpio_get_altnum(dis_mux));
@@ -1136,16 +1063,10 @@ static int nvp6114a_power_enable(bool on)
 		nxp_soc_gpio_set_out_value(reset, 1);
 		nxp_soc_gpio_set_io_dir(reset, 1);
 		nxp_soc_gpio_set_io_func(reset, NX_GPIO_PADFUNC_2);
-		mdelay(1);
-#if 0
-		nxp_soc_gpio_set_out_value(reset, 0);
-		mdelay(1);
-		nxp_soc_gpio_set_out_value(reset, 1);
-#endif
 		mdelay(10);
 	}
-
-	return 0;	
+#endif
+	return 0;
 }
 
 static bool front_camera_power_state_changed(void)
@@ -1155,12 +1076,10 @@ static bool front_camera_power_state_changed(void)
 
 static struct i2c_board_info tw9900_i2c_boardinfo[] = {
     {
-    	//I2C_BOARD_INFO("tw9900", 0x8A>>1),
-       	I2C_BOARD_INFO("tw9900", 0x88>>1),
+		//I2C_BOARD_INFO("tw9900", 0x8A>>1),
+		I2C_BOARD_INFO("tw9900", 0x88>>1),
     },
 };
-
-#if defined(CONFIG_VIDEO_TW9992)
 
 #define FRONT_CAM_WIDTH		720
 #define FRONT_CAM_HEIGHT	480
@@ -1201,8 +1120,6 @@ struct nxp_mipi_csi_platformdata front_plat_data = {
 	.base		=	0, /* not used */
 	.phy_enable	=	front_phy_enable,
 };
-
-#endif
 
 static struct i2c_board_info ds90ub914q_i2c_boardinfo[] = {
     {
@@ -1265,7 +1182,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 	  .power_enable   = nvp6114a_power_enable,
 	  .power_state_changed = NULL,
 	  .set_clock      = NULL,
-	  .setup_io       = camera_common_vin_setup_io,
+	  .setup_io       = backward_vin_setup_io,
 	},
 	.deci = {
 	  .start_delay_ms = 0,
@@ -1336,7 +1253,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .power_enable   = tw9900_power_enable,
             .power_state_changed = NULL,
             .set_clock      = NULL,
-            .setup_io       = tw9900_vin_setup_io,
+            .setup_io       = backward_vin_setup_io,
         },
         .deci = {
             .start_delay_ms = 0,
@@ -1453,6 +1370,8 @@ static struct platform_device nxp_v4l2_dev = {
 
 #if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
 #include <mach/nxp-backward-camera.h>
+
+#if defined(CONFIG_TW9900_BACKWARD)
 static struct reg_val _sensor_init_data[] = {
 	{0x02, 0x40},
 	//{0x02, 0x44},
@@ -1470,20 +1389,29 @@ static struct reg_val _sensor_init_data[] = {
 	{0x2f, 0xe6},
 	{0x55, 0x00},
 #if 1
-	//{0xb1, 0x20},
-	//{0xb1, 0x02},
+	/*{0xb1, 0x20},*/
+	/*{0xb1, 0x02},*/
 	{0xaf, 0x00},
 	{0xb1, 0x20},
 	{0xb4, 0x20},
-	//{0x06, 0x80},
+	/*{0x06, 0x80},*/
 #endif
-	//{0xaf, 0x40},
-	//{0xaf, 0x00},
-	//{0xaf, 0x80},
-
+	/*{0xaf, 0x40},*/
+	/*{0xaf, 0x00},*/
+	/*{0xaf, 0x80},*/
     END_MARKER
 };
+#endif
 
+#if defined(CONFIG_NVP6114A_BACKWARD)
+	static struct reg_val _sensor_init_data[] =
+	{
+		END_MARKER
+    };
+
+#endif
+
+#if defined(CONFIG_TW9900_BACKWARD)
 #define	CAMERA_POWER_DOWN	(PAD_GPIO_E + 12)
 #define CAMERA_MUX			(PAD_GPIO_E + 16)
 #define DIS_MUX				(PAD_GPIO_C +  9)
@@ -1495,8 +1423,6 @@ static int _sensor_power_enable(bool enable)
 	u32 disMux 	= 	DIS_MUX; 
 
 	if( enable ) {
-
-//		printk("%s : enable : %d\n", __func__, enable);
 
 		nxp_soc_gpio_set_out_value(disMux, 1);
 		nxp_soc_gpio_set_io_dir(disMux, 1);
@@ -1520,6 +1446,49 @@ static int _sensor_power_enable(bool enable)
 	
 	return 0;
 }
+#endif
+#if defined(CONFIG_NVP6114A_BACKWARD)
+#define CAMERA_RESET        (PAD_GPIO_B + 14)
+#define DISABLE_MUX			(PAD_GPIO_E + 12)
+#define ENABLE_MUX			(PAD_GPIO_C +  9)
+#define	SELECT_IN          	(PAD_GPIO_C + 10)
+
+static int _sensor_power_enable(bool enable)
+{
+	u32 reset   =   CAMERA_RESET; 
+	u32 dis_mux =   DISABLE_MUX; 
+	u32 en_mux  =   ENABLE_MUX; 
+	u32 sel_in  =   SELECT_IN; 
+
+	if( enable ) {
+		/* Disable MUX */
+		nxp_soc_gpio_set_io_func(dis_mux, nxp_soc_gpio_get_altnum(dis_mux));
+		nxp_soc_gpio_set_io_dir(dis_mux, 1);
+		nxp_soc_gpio_set_out_value(dis_mux, 1);
+		mdelay(10);
+
+		/* Select IN */
+		nxp_soc_gpio_set_io_func(sel_in, nxp_soc_gpio_get_altnum(sel_in));
+		nxp_soc_gpio_set_io_dir(sel_in, 1);
+		nxp_soc_gpio_set_out_value(sel_in, 1);
+		mdelay(10);
+
+		/* enable MUX */
+		nxp_soc_gpio_set_io_func(en_mux, nxp_soc_gpio_get_altnum(en_mux));
+		nxp_soc_gpio_set_io_dir(en_mux, 1);
+		nxp_soc_gpio_set_out_value(en_mux, 0);
+		mdelay(10);
+
+		/* reset */
+		nxp_soc_gpio_set_out_value(reset, 1);
+		nxp_soc_gpio_set_io_dir(reset, 1);
+		nxp_soc_gpio_set_io_func(reset, NX_GPIO_PADFUNC_2);
+		mdelay(10);
+	}
+
+	return 0;
+}
+#endif
 
 static void _sensor_setup_io(void)
 {
@@ -1579,6 +1548,10 @@ static void _sensor_setup_io(void)
         nxp_soc_gpio_set_io_func(io, fn); 
     }    
 }
+
+#if defined(CONFIG_NVP6114A_BACKWARD)
+extern void nvp6114a_initialization(void);
+#endif
 
 struct nxp_vendor_context {
 };
@@ -1644,13 +1617,7 @@ static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_dat
     }
 }
 
-#define TW9900 0
-#define TW9992 1
-
-#define BACKWARD_SEL    TW9992
-
-#if (BACKWARD_SEL == TW9900)
-
+#if defined(CONFIG_TW9900_BACKWARD)
 #define BACKWARD_CAM_WIDTH  704
 #define BACKWARD_CAM_HEIGHT 480
 
@@ -1720,8 +1687,9 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
 
     .draw_rgb_overlay       = _draw_rgb_overlay,
 };
+#endif
 
-#elif (BACKWARD_SEL == TW9992)
+#if defined(CONFIG_TW9992_BACKWARD)
 
 static struct reg_val _tw9992_sensor_init_data[] =
 {
@@ -1914,7 +1882,75 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .rgb_addr           = 0,
     .draw_rgb_overlay   = _draw_rgb_overlay,
 };
+#endif
 
+#if defined(CONFIG_NVP6114A_BACKWARD)
+#define BACKWARD_CAM_WIDTH  1280
+#define BACKWARD_CAM_HEIGHT 720
+
+static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
+    .backgear_gpio_num      = CFG_BACKWARD_GEAR,
+    .active_high            = false,
+    //.active_high          = true,
+    .vip_module_num         = 2,
+    .mlc_module_num         = 0,
+
+    //vendor context
+    .vendor_context         = &_nxp_vendor_context,
+    .alloc_vendor_context   = _alloc_vendor_context,
+    .free_vendor_context    = _free_vendor_context,
+    .pre_turn_on            = _pre_turn_on,
+    .post_turn_off          = _post_turn_off,
+    .decide                 = _decide,
+
+    //activation
+    .turn_on_delay_ms       = 700, 
+
+    // sensor
+    .i2c_bus                = MDEC_HDCAM_HMRX_AUDIO2_I2CBUS,
+    .chip_addr              = 0x64 >> 1,
+    .reg_val                = _sensor_init_data,
+    .init_func              = nvp6114a_initialization,
+    .power_enable           = _sensor_power_enable,
+    .set_clock              = NULL,
+    .setup_io               = _sensor_setup_io,
+
+    // vip
+    .port                   = 0,
+    .external_sync          = false,
+    .is_mipi                = false,
+    .h_active               = BACKWARD_CAM_WIDTH,
+    .h_frontporch           = 7,
+    .h_syncwidth            = 1,
+    .h_backporch            = 10,
+    .v_active               = BACKWARD_CAM_HEIGHT,
+    .v_frontporch           = 0,
+    .v_syncwidth            = 2,
+    .v_backporch            = 3,
+    .data_order             = 0,
+    .interlace              = false,
+
+    // deinterlace
+    .use_deinterlacer       = false,
+    //.use_deinterlacer       = true,
+    .devide_frame           = false, // Data Sequence : TW9900 : (odd-even-odd ~ even) per frame = false,
+    .is_odd_first           = true,
+
+    .lu_addr            = 0,
+    .cb_addr            = 0,
+    .cr_addr            = 0,
+
+    .lu_stride          = 0,
+    .cb_stride          = 0,
+    .cr_stride          = 0,
+
+    .rgb_format         = MLC_RGBFMT_A8R8G8B8,
+    .width              = 1024,
+    .height             = 600,
+    .rgb_addr           = 0,
+
+    .draw_rgb_overlay   = _draw_rgb_overlay,
+};
 #endif
 
 /*static struct platform_device backward_camera_device = {*/
