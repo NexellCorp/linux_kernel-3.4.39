@@ -587,9 +587,8 @@ prompt "Camera position for NVP6114A"
 default NVP6114A_GENERAL
 config NVP6114A_GENERAL
 	bool "general camera"
-	depends on !SLSIAP_BACKWARD_CAMERA || TW9900_BACKWARD
 	help
-	  This set as front camera
+	  This set as gerneral camera
 
 config NVP6114A_BACKWARD
 	bool "backward camera"
