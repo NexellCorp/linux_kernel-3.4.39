@@ -122,6 +122,7 @@ static const struct snd_soc_dapm_widget rt5640_dapm_widgets[] = {
 	SND_SOC_DAPM_HP("Headphone Jack", NULL),
 };
 
+#if !defined(CONFIG_NOUSE_SND_DAPM)
 /* Corgi machine audio map (connections to the codec pins) */
 static const struct snd_soc_dapm_route rt5640_audio_map[] = {
 	/* headphone connected to HPOL, HPOR */
@@ -134,6 +135,7 @@ static const struct snd_soc_dapm_route rt5640_audio_map[] = {
 	{"Ext Spk", NULL, "SPORP"},
 	{"Ext Spk", NULL, "SPORN"},
 };
+#endif
 
 #if defined(CONFIG_PLAT_S5P4418_SECRET) || !defined(CONFIG_ANDROID)
 /* Headphones jack detection DAPM pin */
@@ -169,6 +171,7 @@ static int rt5640_dai_init(struct snd_soc_pcm_runtime *rtd)
 
 	rt5640 = codec;
 
+#if !defined(CONFIG_NOUSE_SND_DAPM)
 	/* set endpoints to not connected */
 	snd_soc_dapm_nc_pin(dapm, "SPOLP");
 	snd_soc_dapm_nc_pin(dapm, "SPOLN");
@@ -179,6 +182,7 @@ static int rt5640_dai_init(struct snd_soc_pcm_runtime *rtd)
 	
 	snd_soc_dapm_enable_pin(dapm, "IN1P");
 	snd_soc_dapm_enable_pin(dapm, "IN1N");
+#endif
 
 	if (NULL == jack->name)
 		return 0;
@@ -226,8 +230,10 @@ static struct snd_soc_card rt5640_card = {
 	.resume_post		= &rt5640_resume_post,
 	.dapm_widgets 		= rt5640_dapm_widgets,
 	.num_dapm_widgets 	= ARRAY_SIZE(rt5640_dapm_widgets),
+#if !defined(CONFIG_NOUSE_SND_DAPM)
 	.dapm_routes 		= rt5640_audio_map,
 	.num_dapm_routes 	= ARRAY_SIZE(rt5640_audio_map),
+#endif	
 };
 
 /*
