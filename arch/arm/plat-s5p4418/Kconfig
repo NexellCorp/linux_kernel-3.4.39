@@ -17,7 +17,12 @@ choice
     config PLAT_S5P4418_X1DASH
         bool "Android X1 DASH board"
         help
-            Support for the X1-DASG board.
+            Support for the X1-DASH board.
+    
+	config PLAT_S5P4418_MOWGLI
+        bool "Android mowgli board"
+        help
+            Support for the mowgli board.
 
 
 

@@ -11,6 +11,10 @@ ifeq ($(CONFIG_PLAT_S5P4418_X1DASH),y)
 PLATBOARD :=x1dash
 endif
 
+ifeq ($(CONFIG_PLAT_S5P4418_MOWGLI),y)
+PLATBOARD :=mowgli
+endif
+
 #
 # Build options
 #
