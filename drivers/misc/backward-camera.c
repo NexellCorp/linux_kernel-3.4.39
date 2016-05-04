@@ -39,9 +39,23 @@
 #define ENABLE_UEVENT  0
 #define STOP_WAIT	0
 
+enum FRAME_KIND {                                                               
+    Y,                                                                          
+    CB,                                                                         
+    CR                                                                          
+};                                                                              
+  
+
 #if ENABLE_UEVENT
 extern struct switch_dev *backgear_switch;
 #endif
+
+#define YUV_STRIDE_ALIGN_FACTOR     64                                          
+#define YUV_VSTRIDE_ALIGN_FACTOR    16                                          
+                                                                                
+#define YUV_STRIDE(w)   ALIGN(w, YUV_STRIDE_ALIGN_FACTOR)                       
+#define YUV_YSTRIDE(w)  (ALIGN(w/2, YUV_STRIDE_ALIGN_FACTOR) * 2)               
+#define YUV_VSTRIDE(h)  ALIGN(h, YUV_VSTRIDE_ALIGN_FACTOR)   
 
 //extern int register_backward_irq();
 
@@ -653,6 +667,8 @@ static inline bool _is_backgear_on(struct nxp_backward_camera_context *me)
 
 	if (!pdata->active_high) is_on ^= 1;
 
+	//printk("%s : is_on = %d \n",__FUNCTION__, is_on);
+
 	debug_msg("--- %s ---\n", __func__);
 
 	return is_on;
@@ -733,6 +749,31 @@ static void _work_handler(struct work_struct *work)
 	_decide(&_context);
 }
 
+static int _stride_cal(struct nxp_backward_camera_context *me, enum FRAME_KIND type)
+{                                                                               
+    int value=0;                                                                
+    int stride=0;                                                               
+                                                                                
+    int width = me->plat_data->h_active;                                        
+                                                                                
+    switch (type) {                                                             
+    case Y:                                                                     
+        value = me->plat_data->lu_stride;                                       
+        stride = (value > 0) ? value : YUV_STRIDE(width);                       
+        break;                                                                  
+    case CB:                                                                    
+        value = me->plat_data->cb_stride;                                       
+        stride = (value > 0) ? value : YUV_STRIDE(width/2);                     
+        break;                                                                  
+    case CR:                                                                    
+        value = me->plat_data->cr_stride;                                       
+        stride = (value > 0) ? value : YUV_STRIDE(width/2);                     
+        break;                                                                  
+    }                                                                           
+                                                                                
+    return stride;                                                              
+}     
+
 extern struct ion_device *get_global_ion_device(void);
 static int _allocate_memory(struct nxp_backward_camera_context *me)
 {
@@ -749,6 +790,10 @@ static int _allocate_memory(struct nxp_backward_camera_context *me)
 		return -EINVAL;
 	}
 
+    me->plat_data->lu_stride = _stride_cal(me, Y);                              
+    me->plat_data->cb_stride = _stride_cal(me, CB);                             
+    me->plat_data->cr_stride = _stride_cal(me, CR);  
+
 
 	if (!me->plat_data->lu_addr) {
 		int size = me->plat_data->lu_stride * me->plat_data->v_active
@@ -756,6 +801,8 @@ static int _allocate_memory(struct nxp_backward_camera_context *me)
 			+ me->plat_data->cr_stride * (me->plat_data->v_active / 2);
 		struct ion_buffer *ion_buffer;
 		size = PAGE_ALIGN(size);
+
+		//printk("%s : size = 0x%X \n",__FUNCTION__, size);
 
 		me->ion_handle_video = ion_alloc(me->ion_client, size, 0, ION_HEAP_NXP_CONTIG_MASK, 0);
 		if (IS_ERR(me->ion_handle_video)) {

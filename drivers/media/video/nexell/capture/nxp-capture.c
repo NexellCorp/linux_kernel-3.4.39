@@ -763,6 +763,8 @@ static struct v4l2_subdev *_register_sensor(struct nxp_capture *me,
     //	_set_sensor_entity_name(sensor_index, "loopback-sensor", 0, 0x00);
 		set_sensor_entity_name_without_i2c(sensor_index);
 	}
+	pr_err("%s: register subdev %s\n",
+               __func__, board_info->board_info->type);
 
     sensor_index++;
 

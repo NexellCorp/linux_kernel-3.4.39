@@ -99,7 +99,7 @@ void tw9900_external_set_brightness(char brightness) {
 EXPORT_SYMBOL(tw9900_external_set_brightness);
 
 static irqreturn_t _irq_handler(int, void *);
-
+/*
 int register_backward_irq(void)
 {
    int ret = request_irq(IRQ_GPIO_START + CFG_BACKWARD_GEAR, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);
@@ -110,7 +110,7 @@ int register_backward_irq(void)
 
    return 0;
 }
-
+*/
 /**
  * util functions
  */
@@ -238,11 +238,13 @@ static int tw9900_get_status(struct v4l2_ctrl *ctrl)
         if (!(data & 0x80))
             val |= 1 << 0;
         // Rearcam IN
+		/*
         if (_is_backgear_on()) {
             _i2c_read_byte(me->i2c_client, 0x16, &data);
             if (data & 0x40)
                 val |= 1 << 1;
         }
+		*/
         //printk("%s: mux 0 --> 0x%x\n", __func__, val);
     } else {
         // Rearcam IN
@@ -351,6 +353,7 @@ static int tw9900_initialize_ctrls(struct tw9900_state *me)
     return 0;
 }
 
+/*
 static inline bool _is_backgear_on(void)
 {
     int val = nxp_soc_gpio_get_in_value(CFG_BACKWARD_GEAR);
@@ -364,6 +367,7 @@ static inline bool _is_backgear_on(void)
 	else
     	return false;
 }
+*/
 
 static inline bool _is_camera_on(void)
 {
@@ -427,7 +431,8 @@ static irqreturn_t _irq_handler3(int irq, void *devdata)
 {
     if (switch_get_state(&_state.switch_dev)/* && !_is_camera_on()*/) {
         switch_set_state(&_state.switch_dev, 0);
-    } else if (!switch_get_state(&_state.switch_dev) && _is_backgear_on()) {
+    //} else if (!switch_get_state(&_state.switch_dev) && _is_backgear_on()) {
+    } else if (!switch_get_state(&_state.switch_dev) ) {
         schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_MPOUT_TIME));
     }
 
@@ -437,7 +442,8 @@ static irqreturn_t _irq_handler3(int irq, void *devdata)
 static void _work_handler(struct work_struct *work)
 {
     //if (_is_backgear_on() && _is_camera_on()) {
-    if (_is_backgear_on() && _is_camera_on()) {
+    //if (_is_backgear_on() && _is_camera_on()) {
+    if (_is_camera_on()) {
 		if (rearcam_brightness_tbl[_state.brightness] != DEFAULT_BRIGHTNESS)
 		{
 			//printk(KERN_ERR "brightness = %d\n",_state.brightness);
@@ -450,10 +456,12 @@ static void _work_handler(struct work_struct *work)
         switch_set_state(&_state.switch_dev, 0);
 	//	printk("%s : backward camera off!!\n", __func__);
     }
+	/*
 	else if(_is_backgear_on())
 	{
 		schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
 	}
+	*/
 }
 
 
@@ -496,13 +504,13 @@ static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 #endif
      		_state.first = false;
 
-			if (_is_backgear_on()){
+			//if (_is_backgear_on()){
 				if (_is_camera_on())	{
 					switch_set_state(&_state.switch_dev, 1);
 				} else {
 					schedule_delayed_work(&_state.work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
 				}
-			}
+			//}
 		}
     }
 

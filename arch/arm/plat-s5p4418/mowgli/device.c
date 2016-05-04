@@ -464,15 +464,6 @@ static struct platform_device mowgli_kp_pdev = {
 };
 #endif
 
-#if defined(CONFIG_USB_HUB_USB2512)
-#define USB2514_I2C_BUS     (2)
-
-static struct i2c_board_info __initdata usb2512_i2c_bdi = {
-    .type   = "usb2512",
-    .addr   = 0x58>>1,
-};
-#endif /* CONFIG_USB_HUB_USB2514 */
-
 
 /*------------------------------------------------------------------------------
  * PMIC platform device
@@ -599,7 +590,7 @@ NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 3300000, 1,  1);	/* 3.3V
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3 Touch */
 NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 1, 1, 1800000, 1,  0);	/* 1.8V CIF */
 NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
-NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
+NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
 NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
 
 
@@ -948,62 +939,9 @@ static void camera_power_control(int enable)
 
 static bool is_back_camera_enabled = false;
 static bool is_back_camera_power_state_changed = false;
-static bool is_front_camera_enabled = false;
-static bool is_front_camera_power_state_changed = false;
 
-static int front_camera_power_enable(bool on);
 static int back_camera_power_enable(bool on)
 {
-#if !defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
-	unsigned int io = CFG_IO_CAMERA_BACK_POWER_DOWN;
-	unsigned int reset_io = CFG_IO_CAMERA_RESET;
-
-	printk("%s: is_back_camera_enabled %d, on %d\n", __func__,
-		is_back_camera_enabled, on);
-
-	if (on) {
-		front_camera_power_enable(0);
-		if (!is_back_camera_enabled) {
-			/* Power Down : Active High*/
-			nxp_soc_gpio_set_out_value(io, 0);
-			nxp_soc_gpio_set_io_dir(io, 1);
-			nxp_soc_gpio_set_io_func(io,
-				nxp_soc_gpio_get_altnum(io));
-			mdelay(1);
-			nxp_soc_gpio_set_out_value(io, 0);
-			mdelay(100);
-
-			/* Reset : Active Low */
-			nxp_soc_gpio_set_out_value(reset_io, 1);
-			nxp_soc_gpio_set_io_dir(reset_io, 1);
-			nxp_soc_gpio_set_io_func(reset_io,
-				nxp_soc_gpio_get_altnum(io));
-			nxp_soc_gpio_set_out_value(reset_io, 0);
-			mdelay(1);
-			nxp_soc_gpio_set_out_value(reset_io, 1);
-			mdelay(100);
-			is_back_camera_enabled = true;
-			is_back_camera_power_state_changed = true;
-		} else {
-			is_back_camera_power_state_changed = false;
-		}
-	} else {
-		if (is_back_camera_enabled) {
-			nxp_soc_gpio_set_out_value(io, 1);
-			nxp_soc_gpio_set_out_value(reset_io, 0);
-			is_back_camera_enabled = false;
-			is_back_camera_power_state_changed = true;
-		} else {
-			nxp_soc_gpio_set_out_value(io, 1);
-			nxp_soc_gpio_set_io_dir(io, 1);
-			nxp_soc_gpio_set_io_func(io,
-				nxp_soc_gpio_get_altnum(io));
-			nxp_soc_gpio_set_out_value(io, 1);
-			is_back_camera_power_state_changed = false;
-		}
-	}
-#endif
-
 	return 0;
 }
 
@@ -1014,66 +952,13 @@ static bool back_camera_power_state_changed(void)
 
 static struct i2c_board_info back_camera_i2c_boardinfo[] = {
     {
-        //I2C_BOARD_INFO("TW9912", 0x8A>>1),
-        I2C_BOARD_INFO("TW9912", 0x88>>1),
-    },
-};
-
-static int front_camera_power_enable(bool on)
-{
-    unsigned int io = CFG_IO_CAMERA_FRONT_POWER_DOWN;
-
-    printk("%s: is_front_camera_enabled %d, on %d\n", __func__,
-		 is_front_camera_enabled, on);
-#if 1
-    if (on) {
-        back_camera_power_enable(0);
-        if (!is_front_camera_enabled) {
-            /* Power Enable High Activation */
-            nxp_soc_gpio_set_out_value(io, 0);
-            nxp_soc_gpio_set_io_dir(io, 1);
-            nxp_soc_gpio_set_io_func(io, nxp_soc_gpio_get_altnum(io));
-            nxp_soc_gpio_set_out_value(io, 1);
-            mdelay(10);
-
-            is_front_camera_enabled = true;
-            is_front_camera_power_state_changed = true;
-        } else {
-            is_front_camera_power_state_changed = false;
-        }
-    } else {
-        if (is_front_camera_enabled) {
-            nxp_soc_gpio_set_out_value(io, 0);
-            is_front_camera_enabled = false;
-            is_front_camera_power_state_changed = true;
-        } else {
-            nxp_soc_gpio_set_out_value(io, 0);
-            is_front_camera_power_state_changed = false;
-        }
-    }
-#endif
-
-    return 0;
-}
-
-static bool front_camera_power_state_changed(void)
-{
-    return is_front_camera_power_state_changed;
-}
-
-static struct i2c_board_info front_camera_i2c_boardinfo[] = {
-    {
-        I2C_BOARD_INFO("MAX9272", 0x90>>1),
+        I2C_BOARD_INFO("tw9900", 0x88>>1),
     },
 };
 
 static struct nxp_v4l2_i2c_board_info sensor[] = {
     {
         .board_info = &back_camera_i2c_boardinfo[0],
-        .i2c_adapter_id = 0,
-    },
-    {
-        .board_info = &front_camera_i2c_boardinfo[0],
         .i2c_adapter_id = 0,
     },
 };
@@ -1107,40 +992,6 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 			.power_state_changed = back_camera_power_state_changed,
 			.set_clock      = NULL,
 			.setup_io       = back_camera_vin_setup_io,
-		},
-		.deci = {
-			.start_delay_ms = 0,
-			.stop_delay_ms  = 0,
-		},
-	},
-	{
-		/* front_camera 656 interface */
-		.module = 0,
-		.sensor = &sensor[1],
-		.type = NXP_CAPTURE_INF_PARALLEL,
-		.parallel = {
-			/* for 656 */
-			.is_mipi        = false,
-			.external_sync  = false, /* 656 interface */
-			.h_active       = 640,
-			.h_frontporch   = 7,
-			.h_syncwidth    = 1,
-			.h_backporch    = 10,
-			.v_active       = 480,
-			.v_frontporch   = 0,
-			.v_syncwidth    = 2,
-			.v_backporch    = 3,
-			.clock_invert   = false,
-			.port           = 0,
-			.data_order     = NXP_VIN_CBY0CRY1,	//NXP_VIN_CRY1CBY0, NXP_VIN_Y0CBY1CR, NXP_VIN_Y1CRY0CB,
-			.interlace      = false,
-			.clk_rate       = 27000000,
-			.late_power_down = false,
-			.power_enable   = front_camera_power_enable,
-			.power_state_changed = front_camera_power_state_changed,
-			.set_clock      = NULL,
-			.setup_io       = front_camera_vin_setup_io,
-
 		},
 		.deci = {
 			.start_delay_ms = 0,
@@ -1444,105 +1295,22 @@ static struct platform_device hdmi_cec_device = {
 
 static struct reg_val _sensor_init_data[] =
 {
-//progressive
-	{0x01,0x78}, //D
-	{0x02,0x40},
-	{0x03,0x20},
-	{0x04,0x00},
-	{0x05,0x10},
-	{0x06,0x03},
-	{0x07,0x02},
-	{0x08,0x14},
-	{0x09,0xF0},
-	{0x0A,0x0B},
-	//{0x0B,0xD0},
-	{0x0B,0xC0},
-	{0x0C,0xCC},
-	{0x0D,0x15},
-	{0x10,0x00},
-	{0x11,0x64},
-	{0x12,0x11},
-	{0x13,0x80},
-	{0x14,0x80},
-	{0x15,0x00},
-	{0x17,0x30},
-	{0x18,0x44},
-	{0x19,0x10}, //K
-	{0x1A,0x10},
-	{0x1B,0x00},
-	//{0x1C,0x08}, //0x00
-	{0x1C,0x00}, //0x00 //K
-	//{0x1D,0x00}, //0x01
-	{0x1D,0x01}, //0x01
-	{0x1E,0x08},
-	{0x1F,0x00},
-	{0x20,0x50},
-	{0x21,0x42},
-	{0x22,0xF0},
-	{0x23,0xD8},
-	{0x24,0xBC},
-	{0x25,0xB8},
-	{0x26,0x44},
-	{0x27,0x38},
-	{0x28,0x00},
-	{0x29,0x00},
-	{0x2A,0x78},
-	{0x2B,0x44},
-	{0x2C,0x30},
-	{0x2D,0x14},
-	{0x2E,0xA5},
-	{0x2D,0x14},
-	//{0x2D,0x1C},
-	{0x2F,0x24},
-	{0x30,0x00},
-	{0x31,0x10},
-	{0x32,0xFF},
-	{0x33,0x85},
-	{0x34,0x1A},
-	{0x35,0x00},
-	{0x36,0xE8},
-	{0x37,0x12},
-	{0x38,0x01},
-	{0x40,0x00},
-	{0x41,0x80},
-	{0x42,0x00},
-	{0xC0,0x01},
-	{0xC1,0x07},
-	{0xC2,0x01},
-	{0xC3,0x03},
-	{0xC4,0x5A},
-	{0xC5,0x00},
-	{0xC6,0x20},
-	{0xC7,0x04},
-	{0xC8,0x00},
-	{0xC9,0x06},
-	{0xCA,0x06},
-	{0xCB,0x30},
-	{0xCC,0x00},
-	{0xCD,0x54},
-	{0xD0,0x00},
-	{0xD1,0xF0},
-	{0xD2,0xF0},
-	{0xD3,0xF0},
-	{0xD4,0x00},
-	{0xD5,0x00},
-	{0xD6,0x10},
-	{0xD7,0x70},
-	{0xD8,0x00},
-	{0xD9,0x04},
-	{0xDA,0x80},
-	{0xDB,0x80},
-	{0xDC,0x20},
-	{0xE0,0x00},
-	{0xE1,0x45},
-	{0xE2,0xD9},
-	{0xE3,0x00},
-	{0xE4,0x00},
-	{0xE5,0x00},
-	{0xE6,0x00},
-	{0xE7,0x2A},
-	{0xE8,0x0F},
-	{0xE9,0x75},
+	//{0x02, 0x40},                                                           
+	{0x02, 0x44}, //Mux1 selected
+	{0x03, 0xa2},
+	{0x07, 0x02},
+	{0x08, 0x12},
+	{0x09, 0xf0},
+	{0x0a, 0x1c},
+	{0x0b, 0xc0}, // 704
+	{0x1b, 0x00},
+	{0x10, 0x1e},
+	{0x11, 0x64},
+	{0x2f, 0xe6},
+	{0x55, 0x00},
+	{0xaf, 0x00},
+	{0xb1, 0x20},
+	{0xb4, 0x20},
 	END_MARKER
 };
 
@@ -1623,7 +1391,7 @@ static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_dat
 		u32 *pbuffer = (u32 *)mem;
 		for (i = 0; i < 50; i++) {
 			for (j = 0; j < 50; j++) {
-				pbuffer[i * 1024 + j] = color;
+				pbuffer[i * plat_data->width + j] = color;
 			}
 		}
 	}
@@ -1663,20 +1431,19 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
 	.v_syncwidth        = 2,
 	.v_backporch        = 3,
 	.data_order         = 0,
-	.interlace          = false,
+	.interlace          = true,
 
 	.lu_addr            = 0,
 	.cb_addr            = 0,
 	.cr_addr            = 0,
 
-	//.lu_stride          = BACKWARD_CAM_WIDTH,
-	.lu_stride          = 768,
-	.cb_stride          = 384,
-	.cr_stride          = 384,
+	.lu_stride          = 0,
+	.cb_stride          = 0,
+	.cr_stride          = 0,
 
 	.rgb_format         = MLC_RGBFMT_A8R8G8B8,
-	.width              = 1024,
-	.height             = 600,
+	.width              = 800,
+	.height             = 480,
 	.rgb_addr           = 0,
 	.draw_rgb_overlay   = _draw_rgb_overlay,
 };
@@ -1761,11 +1528,6 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_TOUCHSCREEN_TSC2007)
     printk("plat: add touch(tsc2007) device\n");
     i2c_register_board_info(TSC2007_I2C_BUS, &tsc2007_i2c_bdi, 1);
-#endif
-
-#if defined(CONFIG_USB_HUB_USB2512)
-    printk("plat: add device usb2512\n");
-    i2c_register_board_info(USB2512_I2C_BUS, &usb2512_i2c_bdi, 1);
 #endif
 
 /*
