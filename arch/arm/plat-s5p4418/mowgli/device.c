@@ -968,6 +968,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 	{
 		/* back_camera 656 interface */
 		.module = 1,
+		//..module = 0,
 		.sensor = &sensor[0],
 		.type = NXP_CAPTURE_INF_PARALLEL,
 		.parallel = {
@@ -1137,7 +1138,7 @@ static struct dw_mci_board _dwmci0_data = {
 					  MMC_CAP_NONREMOVABLE |
 			 	  	  MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
 				  	  MMC_CAP_HW_RESET,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0x1c) | DW_MMC_DRIVE_PHASE(1) | DW_MMC_SAMPLE_PHASE(1),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0x1c) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
 
 	.desc_sz		= 4,
 	.detect_delay_ms= 200,
@@ -1320,6 +1321,8 @@ static int _sensor_power_enable(bool enable)
 {
 	unsigned int io = CAMERA_PWDN;
 	unsigned int reset_io = CAMERA_RESET;
+		
+	printk("%s: Enter +++ enable = %d \n", __FUNCTION__, enable);
 
 	if (enable) {
 		/* Power Down : Active High*/
