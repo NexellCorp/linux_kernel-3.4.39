@@ -287,24 +287,6 @@ static struct i2c_board_info __initdata wm8985_board_info = {
 
 #endif
 
-#if defined(CONFIG_SENSORS_STK831X) || defined(CONFIG_SENSORS_STK831X_MODULE)
-#include <linux/i2c.h>
-
-#define	STK831X_I2C_BUS		(0)
-
-/* CODEC */
-static struct i2c_board_info __initdata stk831x_i2c_bdi = {
-#if   defined CONFIG_SENSORS_STK8312
-	.type	= "stk8312",
-	.addr	= (0x3d),
-#elif defined CONFIG_SENSORS_STK8313
-	.type	= "stk8313",
-	.addr	= (0x22),
-#endif
-};
-
-#endif
-
 /*------------------------------------------------------------------------------
  *  * reserve mem
  *   */
@@ -574,14 +556,13 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,	 950000, 2000000, 1, 1, 1125000, 1,  4);	/* 1.2V ARM */
+NXE2000_PDATA_INIT(dc1,      0,	 950000, 2000000, 1, 1, 1125000, 1,  4);	/* 1.125V ARM */
 NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1,  4);	/* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
 NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V SYS */
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3000000, 1,  0);	/* 3.0V GPS */
-//NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 1,  0);	/* 1.8V AR */
-NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V AR */
+NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 1,  0);	/* 1.8V AR */
 NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS1 */
 NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS */
 NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V LCD */
@@ -590,7 +571,7 @@ NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 3300000, 1,  1);	/* 3.3V
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3 Touch */
 NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 1, 1, 1800000, 1,  0);	/* 1.8V CIF */
 NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
-NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
+NXE2000_PDATA_INIT(ldortc1,  0, 1700000, 3500000, 1, 0, 1800000, 1, -1);    /* 1.8V ALIVE */
 NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
 
 
@@ -986,7 +967,7 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
 			.clock_invert   = true,
 			.port           = 0,
 			.data_order     = NXP_VIN_CBY0CRY1,	//NXP_VIN_CRY1CBY0, NXP_VIN_Y0CBY1CR, NXP_VIN_Y1CRY0CB,
-			.interlace      = false,
+			.interlace      = true,
 			.clk_rate       = 27000000,
 			.late_power_down = false,
 			.power_enable   = back_camera_power_enable,
