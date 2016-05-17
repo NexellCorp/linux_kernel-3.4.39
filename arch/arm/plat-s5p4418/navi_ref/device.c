@@ -2221,6 +2221,13 @@ struct platform_device backward_camera_device = {
 };
 #endif
 
+static struct i2c_board_info __initdata adv7391_i2c_bdi = {
+    .type   = "adv7391",
+    .addr   = (0x54>>1),
+    /*.platform_data = &adv7391_plat_data, */
+
+};
+
 /*------------------------------------------------------------------------------
  * register board platform devices
  */
@@ -2333,11 +2340,16 @@ void __init nxp_board_devices_register(void)
     i2c_register_board_info(TSC2007_I2C_BUS, &tsc2007_i2c_bdi, 1);
 #endif
 
-
 #if defined(CONFIG_USB_HUB_USB2514)
     printk("plat: add device usb2514\n");
     i2c_register_board_info(USB2514_I2C_BUS, &usb2514_i2c_bdi, 1);
 #endif
+
+#if defined(CONFIG_VIDEO_ADV7391)
+    printk("plat: add Encoder(adv7391) device\n");
+    i2c_register_board_info(TW9900_CS4955_HUB_I2CBUS, &adv7391_i2c_bdi, 1);
+#endif
+
 
 	/* END */
 	printk("\n");
