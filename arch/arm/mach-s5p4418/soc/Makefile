@@ -8,6 +8,7 @@ obj-y += peri_reset.o gpio.o
 obj-$(CONFIG_NXP_PWM)		+= pwm.o
 obj-$(CONFIG_NXP_DISPLAY)		+= display.o
 obj-$(CONFIG_NXP_DISPLAY_LCD)	+= display_lcd.o
+obj-$(CONFIG_NXP_DISPLAY_ENCODER)	+= display_encoder.o
 obj-$(CONFIG_NXP_DISPLAY_LVDS)	+= display_lvds.o
 obj-$(CONFIG_NXP_DISPLAY_HDMI)	+= display_hdmi.o hdmi/
 obj-$(CONFIG_NXP_DISPLAY_MIPI)	+= display_mipi.o

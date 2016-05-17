@@ -41,6 +41,8 @@ obj-$(CONFIG_NXP_DISPLAY)				+= 	$(PROTOTYPE)/$(MODULES)/nx_displaytop.o		\
 								   			$(PROTOTYPE)/$(MODULES)/nx_mlc.o			\
 								   			$(PROTOTYPE)/$(MODULES)/nx_dpc.o
 
+obj-$(CONFIG_NXP_DISPLAY_ENCODER)			+= 	$(PROTOTYPE)/$(MODULES)/nx_hdmi.o
+obj-$(CONFIG_NXP_DISPLAY_ENCODER)			+= 	$(PROTOTYPE)/$(MODULES)/nx_ecid.o
 obj-$(CONFIG_NXP_DISPLAY_LVDS)			+= 	$(PROTOTYPE)/$(MODULES)/nx_lvds.o
 obj-$(CONFIG_NXP_DISPLAY_RESCONV)		+= 	$(PROTOTYPE)/$(MODULES)/nx_resconv.o
 obj-$(CONFIG_NXP_DISPLAY_HDMI)			+= 	$(PROTOTYPE)/$(MODULES)/nx_hdmi.o
