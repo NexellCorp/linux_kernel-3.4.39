@@ -1411,7 +1411,7 @@ void __init nxp_cpu_devices_register(void)
     platform_add_devices(syncgen_devices, ARRAY_SIZE(syncgen_devices));
 #endif
 
-#if defined(CONFIG_NXP_DISPLAY_LCD)
+#if defined(CONFIG_NXP_DISPLAY_LCD) || defined(CONFIG_NXP_DISPLAY_ENCODER)
 	printk("mach: add device lcd \n");
 	platform_device_register(&lcd_device);
 #endif

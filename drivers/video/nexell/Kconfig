@@ -105,4 +105,8 @@ config NXP_DISPLAY_HDMI_USE_HDCP
     ---help---
       Say y here to enable hdcp module
 
+config NXP_DISPLAY_ENCODER
+	bool "ENCODER"
+	default n
+
 endmenu

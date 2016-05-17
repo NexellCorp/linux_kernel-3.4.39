@@ -388,6 +388,8 @@ static int disp_multily_enable(struct disp_control_info *info, int enable)
 		interlace = pmly->interlace;
 		lock_size = pmly->mem_lock_len;
 
+		if (interlace > 0) yresol = psync->v_active_len * 2;
+	
 		NX_MLC_SetFieldEnable(module, interlace);
 		NX_MLC_SetScreenSize(module, xresol, yresol);
 		NX_MLC_SetRGBLayerGamaTablePowerMode(module, CFALSE, CFALSE, CFALSE);
@@ -606,15 +608,16 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 	int clk_dly_lv0 = psgen->clk_delay_lv0;
 	int clk_dly_lv1 = psgen->clk_delay_lv1;
 
-#if 0
 	int 	   invert_field = psgen->invert_field;
 	int 		 swap_RB    = psgen->swap_RB;
 	unsigned int yc_order   = psgen->yc_order;
+
 	int interlace = psgen->interlace;
+
 	int vclk_select = psgen->vclk_select;
 	int vclk_invert = psgen->clk_inv_lv0 | psgen->clk_inv_lv1;
 	CBOOL EmbSync = (out_format == DPC_FORMAT_CCIR656 ? CTRUE : CFALSE);
-#endif
+
 	CBOOL RGBMode = CFALSE;
 	NX_DPC_DITHER RDither, GDither, BDither;
 
@@ -654,59 +657,93 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 		RDither = GDither = BDither = NX_DPC_DITHER_6BIT;
 		RGBMode = CTRUE;
 	}
-	else {
+	else if ((U32)DPC_FORMAT_CCIR656 == out_format) {
+		RDither = GDither = BDither = NX_DPC_DITHER_BYPASS;
+		RGBMode = CFALSE;
+	} else {
 		RDither = GDither = BDither = NX_DPC_DITHER_BYPASS;
 		RGBMode = CTRUE;
 	}
 
-	/* CLKGEN0/1 */
-	NX_DPC_SetClockSource  (module, 0, clk_src_lv0);
-	NX_DPC_SetClockDivisor (module, 0, clk_div_lv0);
-	NX_DPC_SetClockOutDelay(module, 0, clk_dly_lv0);
-	NX_DPC_SetClockSource  (module, 1, clk_src_lv1);
-	NX_DPC_SetClockDivisor (module, 1, clk_div_lv1);
-	NX_DPC_SetClockOutDelay(module, 1, clk_dly_lv1);
+	if ((U32)DPC_FORMAT_CCIR656 == out_format) {
+		NX_DPC_SetClockSource	(module, 0, 4);	
+		NX_DPC_SetClockDivisor	(module, 0, 1);
+		NX_DPC_SetClockOutDelay	(module, 0, 0);
+		NX_DPC_SetClockOutInv	(module, 0, 0); //X
+		NX_DPC_SetClockSource	(module, 1, 7);
+		NX_DPC_SetClockDivisor	(module, 1, 2);
+		NX_DPC_SetClockOutDelay	(module, 1, 0);
+	} else {
+		/* CLKGEN0/1 */
+		NX_DPC_SetClockSource  (module, 0, clk_src_lv0);
+		NX_DPC_SetClockDivisor (module, 0, clk_div_lv0);
+		NX_DPC_SetClockOutDelay(module, 0, clk_dly_lv0);
+		NX_DPC_SetClockSource  (module, 1, clk_src_lv1);
+		NX_DPC_SetClockDivisor (module, 1, clk_div_lv1);
+		NX_DPC_SetClockOutDelay(module, 1, clk_dly_lv1);
+	}
 
-	/* LCD out */
+	/* CCIR656 */
+	if (EmbSync) {
+		pr_info("%s - module : %d, RGBMODE : %d, out_foramt : 0x%x, Enable embed sync: %d\n", __func__, module, RGBMode ? 1 : 0, out_format, EmbSync ? 1 : 0);
+		pr_info("%s - interlace : %d\n", __func__, interlace ? 1 : 0);
+		pr_info("%s - INVERT : %d\n", __func__, invert_field ? 1 : 0);
+		pr_info("%s - INTERLACE!!\n", __func__);
+		pr_info("%s - PADCLKSEL : %d\n", __func__, vclk_select ? 1 : 0);
+
+		NX_DPC_SetMode(module, out_format, interlace, invert_field, RGBMode,
+				swap_RB, yc_order, EmbSync, EmbSync, vclk_select, vclk_invert, CFALSE);
+		NX_DPC_SetHSync(module,  psync->h_active_len,
+				psync->h_sync_width,  psync->h_front_porch,  psync->h_back_porch,  psync->h_sync_invert);
+		NX_DPC_SetVSync(module,
+				psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch,
+				psync->v_sync_invert,
+				psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch);
+		NX_DPC_SetVSyncOffset(module, 0, 0, 0, 0);
+		NX_DPC_SetDelay (module, 12, 12, 12, 12);
+ 		NX_DPC_SetDither(module, RDither, GDither, BDither);
+	} else {
+		/* LCD out */
 #if 0
-	NX_DPC_SetMode(module, out_format, interlace, invert_field, RGBMode,
-			swap_RB, yc_order, EmbSync, EmbSync, vclk_select, vclk_invert, CFALSE);
-	NX_DPC_SetHSync(module,  psync->h_active_len,
-			psync->h_sync_width,  psync->h_front_porch,  psync->h_back_porch,  psync->h_sync_invert);
-	NX_DPC_SetVSync(module,
-			psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch,
-			psync->v_sync_invert,
-			psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch);
-	NX_DPC_SetVSyncOffset(module, v_vso, v_veo, e_vso, e_veo);
-	NX_DPC_SetDelay (module, rgb_pvd, hsync_cp1, vsync_fram, de_cp2);
- 	NX_DPC_SetDither(module, RDither, GDither, BDither);
+		NX_DPC_SetMode(module, out_format, interlace, invert_field, RGBMode,
+				swap_RB, yc_order, EmbSync, EmbSync, vclk_select, vclk_invert, CFALSE);
+		NX_DPC_SetHSync(module,  psync->h_active_len,
+				psync->h_sync_width,  psync->h_front_porch,  psync->h_back_porch,  psync->h_sync_invert);
+		NX_DPC_SetVSync(module,
+				psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch,
+				psync->v_sync_invert,
+				psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch);
+		NX_DPC_SetVSyncOffset(module, v_vso, v_veo, e_vso, e_veo);
+		NX_DPC_SetDelay (module, rgb_pvd, hsync_cp1, vsync_fram, de_cp2);
+		NX_DPC_SetDither(module, RDither, GDither, BDither);
 #else
-    {
-        POLARITY FieldPolarity = POLARITY_ACTIVEHIGH;
-        POLARITY HSyncPolarity = POLARITY_ACTIVEHIGH;
-        POLARITY VSyncPolarity = POLARITY_ACTIVEHIGH;
+		{
+			POLARITY FieldPolarity = POLARITY_ACTIVEHIGH;
+			POLARITY HSyncPolarity = POLARITY_ACTIVEHIGH;
+			POLARITY VSyncPolarity = POLARITY_ACTIVEHIGH;
 
-        NX_DPC_SetSync ( module,
-                PROGRESSIVE,
-                psync->h_active_len,
-                psync->v_active_len,
-                psync->h_sync_width,
-                psync->h_front_porch,
-                psync->h_back_porch,
-                psync->v_sync_width,
-                psync->v_front_porch,
-                psync->v_back_porch,
-                FieldPolarity,
-                HSyncPolarity,
-                VSyncPolarity,
-                0, 0, 0, 0, 0, 0, 0); // EvenVSW, EvenVFP, EvenVBP, VSP, VCP, EvenVSP, EvenVCP
+			NX_DPC_SetSync ( module,
+					PROGRESSIVE,
+					psync->h_active_len,
+					psync->v_active_len,
+					psync->h_sync_width,
+					psync->h_front_porch,
+					psync->h_back_porch,
+					psync->v_sync_width,
+					psync->v_front_porch,
+					psync->v_back_porch,
+					FieldPolarity,
+					HSyncPolarity,
+					VSyncPolarity,
+					0, 0, 0, 0, 0, 0, 0); // EvenVSW, EvenVFP, EvenVBP, VSP, VCP, EvenVSP, EvenVCP
 
-        NX_DPC_SetDelay (module, rgb_pvd, hsync_cp1, vsync_fram, de_cp2);
-        NX_DPC_SetOutputFormat(module, out_format, 0 );
-        NX_DPC_SetDither(module, RDither, GDither, BDither);
-        NX_DPC_SetQuantizationMode(module, QMODE_256, QMODE_256 );
-    }
+			NX_DPC_SetDelay (module, rgb_pvd, hsync_cp1, vsync_fram, de_cp2);
+			NX_DPC_SetOutputFormat(module, out_format, 0 );
+			NX_DPC_SetDither(module, RDither, GDither, BDither);
+			NX_DPC_SetQuantizationMode(module, QMODE_256, QMODE_256 );
+		}
 #endif
+	}
 
 	DBGOUT("%s: display.%d (x=%4d, hfp=%3d, hbp=%3d, hsw=%3d)\n",
 		__func__, module, psync->h_active_len, psync->h_front_porch,
@@ -730,6 +767,7 @@ static int  disp_syncgen_enable(struct disp_process_dev *pdev, int enable)
 	struct disp_control_info *info = get_device_to_info(pdev);
 	int wait = info->wait_time * 10;
 	int module = info->module;
+	struct disp_vsync_info *psync = &pdev->vsync; 
 
 	DBGOUT("%s : display.%d, %s, wait=%d, status=0x%x\n",
 		__func__, module, enable?"ON":"OFF", wait, pdev->status);
@@ -760,6 +798,15 @@ static int  disp_syncgen_enable(struct disp_process_dev *pdev, int enable)
 
         if (module == 0)
             NX_DPC_SetRegFlush(module);
+		if (psync->interlace > 0) {
+			pr_info("%s - NX_DPC_SetEnable_WITH_INTERLACE!!!\n", __func__);
+			NX_DPC_SetEnable_WITH_INTERLACE (module,
+					CTRUE,   ///< [in] display controller enable
+					CFALSE,  ///< [in] output format reb & ycbcr enable : CTRUE : RGB, CFALSE : YUV
+					CFALSE,   ///< [in] use NTSC encoder sync
+					CFALSE,   ///< [in] use analog output(use DAC)
+					CTRUE ); ///< [in] Start of active and End of active Enable	
+		}
 		NX_DPC_SetDPCEnable(module, CTRUE);				/* START: DPC */
 		NX_DPC_SetClockDivisorEnable(module, CTRUE);	/* START: CLKGEN */
 
