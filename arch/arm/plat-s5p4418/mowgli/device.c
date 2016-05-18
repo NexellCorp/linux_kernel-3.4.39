@@ -142,6 +142,50 @@ static struct platform_device dfs_plat_device = {
 };
 #endif
 
+#if defined (CONFIG_SENSORS_NXP_ADC_TEMP)                                       
+struct nxp_adc_tmp_trigger adc_tmp_event[] = {
+#if 0		
+	{              
+        .temp  = 44,		/* thermal camera: 75 */
+		.freq  = 1200000,
+		.period = 1000, 	/* Ms */
+	} , 
+	{
+		.temp  = 50,		/* thermal camera: 80 */
+		.freq  = 1000000,
+		.period = 1000, 	/* Ms */
+	} , 
+	{
+		.temp  = 52, 		/* thermal camera: 82 */
+		.freq  = 800000,
+		.period = 1000, 	/* Ms */
+	} ,
+#endif
+	{
+		.temp  = 56,  		/* thermal camera: 85 */
+		.freq  = 800000,    /* freq = 0 :Set critical temp. Power off! */
+		.period = 1000, 	/* Ms */
+	}
+};                                                                              
+                                                                                
+struct nxp_adc_tmp_platdata adc_tmp_plat_data ={                                
+    .channel    = 2,                                                            
+    .tmp_offset = 0,                                                            
+    .duration   = 1000,                                                         
+    .step_up    = 1,                                                            
+    .event      = adc_tmp_event,                                                
+    .eventsize = ARRAY_SIZE( adc_tmp_event),                                    
+};                                                                              
+                                                                                
+static struct platform_device adc_temp_plat_device = {                          
+    .name           = "nxp-adc-tmp",                                            
+    .dev            = {                                                         
+        .platform_data  = &adc_tmp_plat_data,                                   
+    }                                                                           
+};                                                                              
+#endif //SENSORS_NXP_ADC_TEMP 
+
+
 /*------------------------------------------------------------------------------
  * Network DM9000
  */
@@ -1452,6 +1496,12 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add dynamic frequency (pll.%d)\n", dfs_plat_data.pll_dev);
 	platform_device_register(&dfs_plat_device);
 #endif
+
+#ifdef CONFIG_SENSORS_NXP_ADC_TEMP                                              
+	printk("plat: add device adc temp\n");                                      
+	platform_device_register(&adc_temp_plat_device);                            
+#endif 
+
 
 #if defined (CONFIG_FB_NXP)
 	printk("plat: add framebuffer\n");

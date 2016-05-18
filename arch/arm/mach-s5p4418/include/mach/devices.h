@@ -324,11 +324,21 @@ struct nxp_ohci_platdata {
 /*
  * ADC TMU
  */
-struct nxp_adc_tmp_platdata {
-	int channel;
-	int tmp_offset;
-	int duration;				/* default 100ms */
-	void (*callback)(int ch, int value, int temp, bool run);
-};
+struct nxp_adc_tmp_trigger {                                                    
+    int     temp;                                                               
+    long    freq;                                                               
+    long    period;                                                             
+};                                                                              
+                                                                                
+struct nxp_adc_tmp_platdata {                                                   
+    int channel;                                                                
+    int tmp_offset;                                                             
+    int duration;               /* default 100ms */                             
+    int step_up;                                                                
+    struct nxp_adc_tmp_trigger *event;                                          
+    int eventsize;                                                              
+                                                                                
+    void (*callback)(int ch, int value, int temp, bool run);                    
+};   
 
 #endif    /* __DEVICES_H__ */
