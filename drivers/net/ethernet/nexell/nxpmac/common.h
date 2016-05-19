@@ -149,7 +149,8 @@ struct stmmac_extra_stats {
 
 #define	MAC_CSR_H_FRQ_MASK	0x20
 
-#define HASH_TABLE_SIZE 64
+//#define HASH_TABLE_SIZE 64
+#define HASH_TABLE_SIZE 256
 #define PAUSE_TIME 0x200
 
 /* Flow Control defines */
