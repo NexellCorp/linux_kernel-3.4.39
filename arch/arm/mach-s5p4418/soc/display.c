@@ -664,7 +664,7 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 		RDither = GDither = BDither = NX_DPC_DITHER_BYPASS;
 		RGBMode = CTRUE;
 	}
-
+#if 0 // 2015.05.23 remark by keun.
 	if ((U32)DPC_FORMAT_CCIR656 == out_format) {
 		NX_DPC_SetClockSource	(module, 0, 4);	
 		NX_DPC_SetClockDivisor	(module, 0, 1);
@@ -682,15 +682,34 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 		NX_DPC_SetClockDivisor (module, 1, clk_div_lv1);
 		NX_DPC_SetClockOutDelay(module, 1, clk_dly_lv1);
 	}
+#else
+	/* CLKGEN0/1 */
+	NX_DPC_SetClockSource  (module, 0, clk_src_lv0);
+	NX_DPC_SetClockDivisor (module, 0, clk_div_lv0);
+	NX_DPC_SetClockOutDelay(module, 0, clk_dly_lv0);
+	NX_DPC_SetClockSource  (module, 1, clk_src_lv1);
+	NX_DPC_SetClockDivisor (module, 1, clk_div_lv1);
+	NX_DPC_SetClockOutDelay(module, 1, clk_dly_lv1);
+#endif
+#if 0
+	pr_info("%s - module : %d, RGBMODE : %d, out_foramt : 0x%x, Enable embed sync: %d\n", __func__, module, RGBMode ? 1 : 0, out_format, EmbSync ? 1 : 0);
+	pr_info("%s - interlace : %d\n", __func__, interlace ? 1 : 0);
+	pr_info("%s - INVERT : %d\n", __func__, invert_field ? 1 : 0);
+	pr_info("%s - PADCLKSEL : %d\n", __func__, vclk_select ? 1 : 0);
+
+	pr_info("%s - clk_src_lv0 : %d\n", __func__, clk_src_lv0);
+	pr_info("%s - clk_div_lv0 : %d\n", __func__, clk_div_lv0);
+	pr_info("%s - clk_src_lv1 : %d\n", __func__, clk_src_lv1);
+	pr_info("%s - clk_div_lv1 : %d\n", __func__, clk_div_lv1);
+	pr_info("%s - clk_dly_lv0 : %d\n", __func__, clk_dly_lv0);
+	pr_info("%s - clk_dly_lv1 : %d\n", __func__, clk_dly_lv1);
+
+	pr_info("%s - clk_inv_lv1 : %d\n", __func__, psgen->clk_inv_lv1);
+	pr_info("%s - clk_sel_div1 : %d\n", __func__, psgen->clk_sel_div1);
+#endif
 
 	/* CCIR656 */
 	if (EmbSync) {
-		pr_info("%s - module : %d, RGBMODE : %d, out_foramt : 0x%x, Enable embed sync: %d\n", __func__, module, RGBMode ? 1 : 0, out_format, EmbSync ? 1 : 0);
-		pr_info("%s - interlace : %d\n", __func__, interlace ? 1 : 0);
-		pr_info("%s - INVERT : %d\n", __func__, invert_field ? 1 : 0);
-		pr_info("%s - INTERLACE!!\n", __func__);
-		pr_info("%s - PADCLKSEL : %d\n", __func__, vclk_select ? 1 : 0);
-
 		NX_DPC_SetMode(module, out_format, interlace, invert_field, RGBMode,
 				swap_RB, yc_order, EmbSync, EmbSync, vclk_select, vclk_invert, CFALSE);
 		NX_DPC_SetHSync(module,  psync->h_active_len,
