@@ -130,7 +130,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
 	.max_cpufreq	= 1400*1000,
 	.max_retention  =   20*1000,
-	.rest_cpufreq   =  400*1000,
+	.rest_cpufreq   =  800*1000,
 	.rest_retention =    1*1000,
 };
 
