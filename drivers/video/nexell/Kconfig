@@ -58,6 +58,10 @@ config NXP_DISPLAY_MIPI
 		depends on NXP_DISPLAY_MIPI
 		default 0
 
+config NXP_DISPLAY_TVOUT
+	bool "TVOUT"
+	default n
+
 config NXP_DISPLAY_HDMI
 	bool "HDMI"
 
@@ -100,5 +104,15 @@ config NXP_DISPLAY_HDMI_USE_HDCP
     default n
     ---help---
       Say y here to enable hdcp module
+
+config NXP_DISPLAY_ENCODER
+	bool "ENCODER"
+	depends on !NXP_DISPLAY_LCD
+	default n
+
+    config NXP_DISPLAY_ENCODER_IN
+        int "Display In  [0=Display 0, 1=Display 1]"
+        depends on NXP_DISPLAY_ENCODER
+        default 0
 
 endmenu

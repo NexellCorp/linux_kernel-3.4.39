@@ -17,6 +17,7 @@
  * fixed by swpark@nexell.co.kr for compatibility with general v4l2 layer (not using soc camera interface)
  */
 
+//Suruibin 2015-04-03 V1.0 ae
 
 #include <linux/init.h>
 #include <linux/module.h>
@@ -433,9 +434,9 @@ static const struct regval_list sp2518_svga_init_regs[] =
 	{0xf5,0x38},
 	{0xf6,0x38},
 	{0xfd,0x01},
-	{0x94,0xc0},//f8
+	{0x94,0xcC},//f8 C0
 	{0x95,0x38},
-	{0x9c,0x6c},
+	{0x9c,0x74},//6C
 	{0x9d,0x38},
 #ifndef CONFIG_VIDEO_SP2518_FIXED_FRAMERATE
 	/*24*3pll 8~13fps 50hz*/
@@ -470,8 +471,8 @@ static const struct regval_list sp2518_svga_init_regs[] =
 	{0xd9 , 0xaf},
 	{0xda , 0x00},
 	{0xfd , 0x00},
-#else
-    /* fixed 30frame */
+
+
 	{0xfd , 0x00},
 	{0x03 , 0x07},
 	{0x04 , 0x9e},
@@ -502,6 +503,39 @@ static const struct regval_list sp2518_svga_init_regs[] =
 	{0xd8 , 0x01},
 	{0xd9 , 0x45},
 	{0xda , 0x01},
+	{0xfd , 0x00},
+#else
+    /* 24M Fixed 10frame */
+	{0xfd , 0x00},
+	{0x03 , 0x03},
+	{0x04 , 0x0C},
+	{0x05 , 0x00},
+	{0x06 , 0x00},
+	{0x07 , 0x00},
+	{0x08 , 0x00},
+	{0x09 , 0x00},
+	{0x0a , 0xE4},
+	{0x2f , 0x00},
+	{0x30 , 0x11},
+	{0xf0 , 0x82},
+	{0xf1 , 0x00},
+	{0xfd , 0x01},
+	{0x90 , 0x0A},
+	{0x92 , 0x01},
+	{0x98 , 0x82},
+	{0x99 , 0x01},
+	{0x9a , 0x01},
+	{0x9b , 0x00},
+	//Status
+	{0xfd , 0x01},
+	{0xce , 0x14},
+	{0xcf , 0x05},
+	{0xd0 , 0x14},
+	{0xd1 , 0x05},
+	{0xd7 , 0x7E},
+	{0xd8 , 0x00},
+	{0xd9 , 0x82},
+	{0xda , 0x00},
 	{0xfd , 0x00},
 #endif /* CONFIG_VIDEO_SP2518_FIXED_FRAMERATE */
 
@@ -1417,6 +1451,7 @@ static int sp2518_write_array(struct i2c_client *client, const struct regval_lis
 {
     int ret;
     while (vals->reg_num != 0xff) {
+        /*printk("{0x%02x, 0x%02x},\n", vals->reg_num, vals->value);*/
         ret = i2c_smbus_write_byte_data(client, vals->reg_num, vals->value);
         if (ret < 0)
             return ret;
@@ -2048,7 +2083,7 @@ static int sp2518_g_chip_ident(struct v4l2_subdev *sd, struct v4l2_dbg_chip_iden
 static int sp2518_s_power(struct v4l2_subdev *sd, int on)
 {
     /* used when suspending */
-    /* printk("%s: on %d\n", __func__, on); */
+     printk("%s: on %d\n", __func__, on);
     if (!on) {
         struct sp2518_priv *priv = to_priv(sd);
         priv->initialized = false;

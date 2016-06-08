@@ -325,12 +325,16 @@ static void __init get_fs_names(char *page)
 
 static int __init do_mount_root(char *name, char *fs, int flags, void *data)
 {
+    // psw0523 debugging
+    /*printk("=> %s: %d\n", __func__, __LINE__);*/
 	struct super_block *s;
 	int err = sys_mount(name, "/root", fs, flags, data);
+    /*printk("=> %s: %d\n", __func__, __LINE__);*/
 	if (err)
 		return err;
 
 	sys_chdir((const char __user __force *)"/root");
+    /*printk("=> %s: %d\n", __func__, __LINE__);*/
 	s = current->fs->pwd.dentry->d_sb;
 	ROOT_DEV = s->s_dev;
 	printk(KERN_INFO
@@ -398,7 +402,7 @@ retry:
 out:
 	putname(fs_names);
 }
- 
+
 #ifdef CONFIG_ROOT_NFS
 
 #define NFSROOT_TIMEOUT_MIN	5
@@ -510,7 +514,6 @@ void __init prepare_namespace(void)
 		       root_delay);
 		ssleep(root_delay);
 	}
-
 	/*
 	 * wait for the known devices to complete their probing
 	 *
@@ -553,8 +556,19 @@ void __init prepare_namespace(void)
 		ROOT_DEV = Root_RAM0;
 
 	mount_root();
+
 out:
 	devtmpfs_mount("dev");
 	sys_mount(".", "/", NULL, MS_MOVE, NULL);
 	sys_chroot((const char __user __force *)".");
+
+    // psw0523 add
+    /*extern void start_gsl_init_thread(void);*/
+    /*start_gsl_init_thread();*/
+#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+extern struct platform_device backward_camera_device;
+extern int platform_device_register(struct platform_device *);
+    printk("%s: register device backward-camera platform device\n", __func__);
+    platform_device_register(&backward_camera_device);
+#endif
 }

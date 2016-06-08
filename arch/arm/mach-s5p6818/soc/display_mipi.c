@@ -34,6 +34,13 @@
 #endif
 #define ERROUT(msg...)		{ printk(KERN_ERR msg); }
 
+#define	PLLPMS_150MHz		0x2192
+#define	BANDCTL_150MHz		0x2
+#define	PLLPMS_100MHz		0x3323
+#define	BANDCTL_100MHz		0x1
+#define	PLLPMS_80MHz		0x3283
+#define	BANDCTL_80MHz		0x0
+
 static int  mipi_set_vsync(struct disp_process_dev *pdev, struct disp_vsync_info *psync)
 {
 	RET_ASSERT_VAL(pdev && psync, -EINVAL);
@@ -89,6 +96,8 @@ static int  mipi_prepare(struct disp_process_dev *pdev)
 	pllctl  = pmipi->pllctl;
 	phyctl  = pmipi->phyctl;
 
+	U32 esc_pre_value = 1;
+
 	switch (input) {
 	case DISP_DEVICE_SYNCGEN0:	input = 0; break;
 	case DISP_DEVICE_SYNCGEN1:	input = 1; break;
@@ -98,66 +107,71 @@ static int  mipi_prepare(struct disp_process_dev *pdev)
 	}
 
 	NX_MIPI_DSI_SetPLL(index
-			,CTRUE      // CBOOL Enable      ,
-            ,0xFFFFFFFF // U32 PLLStableTimer,
-            ,pllpms     // 19'h033E8: 1Ghz  // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
-            ,bandctl    // 4'hF     : 1Ghz  // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
-            ,pllctl     // U32 M_PLLCTL      , // Refer to 10.2.2 M_PLLCTL of MIPI_D_PHY_USER_GUIDE.pdf  Default value is all "0". If you want to change register values, it need to confirm from IP Design Team
-            ,phyctl		// U32 B_DPHYCTL       // Refer to 10.2.3 M_PLLCTL of MIPI_D_PHY_USER_GUIDE.pdf or NX_MIPI_PHY_B_DPHYCTL enum or LN28LPP_MipiDphyCore1p5Gbps_Supplement. default value is all "0". If you want to change register values, it need to confirm from IP Design Team
-			);
-
-	NX_MIPI_DSI_SoftwareReset(index);
-    NX_MIPI_DSI_SetClock (index
-    		,1  // CBOOL EnableTXHSClock    ,
-            ,0  // CBOOL UseExternalClock   , // CFALSE: PLL clock CTRUE: External clock
-            ,1  // CBOOL EnableByteClock    , // ByteClock means (D-PHY PLL clock / 8)
-            ,1  // CBOOL EnableESCClock_ClockLane,
-            ,1  // CBOOL EnableESCClock_DataLane0,
-            ,1  // CBOOL EnableESCClock_DataLane1,
-            ,1  // CBOOL EnableESCClock_DataLane2,
-            ,1  // CBOOL EnableESCClock_DataLane3,
-            ,1  // CBOOL EnableESCPrescaler , // ESCClock = ByteClock / ESCPrescalerValue
-            ,5  // U32   ESCPrescalerValue
-   			);
-
-	NX_MIPI_DSI_SetPhy( index
-			,3 // U32   NumberOfDataLanes , // 0~3
-            ,1 // CBOOL EnableClockLane   ,
-            ,1 // CBOOL EnableDataLane0   ,
-            ,1 // CBOOL EnableDataLane1   ,
-            ,1 // CBOOL EnableDataLane2   ,
-            ,1 // CBOOL EnableDataLane3   ,
-            ,0 // CBOOL SwapClockLane     ,
-            ,0 // CBOOL SwapDataLane      )
-			);
-
-	NX_MIPI_DSI_SetConfigVideoMode  (index
-			,1   // CBOOL EnableAutoFlushMainDisplayFIFO ,
-			,0   // CBOOL EnableAutoVerticalCount        ,
-			,1,NX_MIPI_DSI_SYNCMODE_EVENT // CBOOL EnableBurst, NX_MIPI_DSI_SYNCMODE SyncMode,
-			//,0,NX_MIPI_DSI_SYNCMODE_PULSE // CBOOL EnableBurst, NX_MIPI_DSI_SYNCMODE SyncMode,
-			,1   // CBOOL EnableEoTPacket                ,
-			,1   // CBOOL EnableHsyncEndPacket           , // Set HSEMode=1
-			,1   // CBOOL EnableHFP                      , // Set HFPMode=0
-			,1   // CBOOL EnableHBP                      , // Set HBPMode=0
-			,1   // CBOOL EnableHSA                      , // Set HSAMode=0
-			,0   // U32   NumberOfVirtualChannel         , // 0~3
-			,NX_MIPI_DSI_FORMAT_RGB888   // NX_MIPI_DSI_FORMAT Format            ,
-			,HFP  // U32   NumberOfWordsInHFP             , // ~65535
-			,HBP  // U32   NumberOfWordsInHBP             , // ~65535
-			,HS   // U32   NumberOfWordsInHSYNC           , // ~65535
-			,VFP  // U32   NumberOfLinesInVFP             , // ~2047
-			,VBP   // U32   NumberOfLinesInVBP             , // ~2047
-			,VS    // U32   NumberOfLinesInVSYNC           , // ~1023
-			,0 // U32   NumberOfLinesInCommandAllow
-    		);
+						,CTRUE			// CBOOL Enable      ,
+						,0xFFFFFFFF		// U32 PLLStableTimer,
+						,PLLPMS_100MHz	// 19'h033E8: 1Ghz  // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
+						,BANDCTL_100MHz	// 4'hF     : 1Ghz  // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
+						,0				// U32 M_PLLCTL      , // Refer to 10.2.2 M_PLLCTL of MIPI_D_PHY_USER_GUIDE.pdf  Default value is all "0". If you want to change register values, it need to confirm from IP Design Team
+						,0				// U32 B_DPHYCTL       // Refer to 10.2.3 M_PLLCTL of MIPI_D_PHY_USER_GUIDE.pdf or NX_MIPI_PHY_B_DPHYCTL enum or LN28LPP_MipiDphyCore1p5Gbps_Supplement. default value is all "0". If you want to change register values, it need to confirm from IP Design Team
+						);
 
 	if (pmipi->lcd_init) {
+		NX_MIPI_DSI_SoftwareReset(index);
+	    NX_MIPI_DSI_SetClock (index
+	    		,0  // CBOOL EnableTXHSClock    ,
+	            ,0  // CBOOL UseExternalClock   , // CFALSE: PLL clock CTRUE: External clock
+	            ,1  // CBOOL EnableByteClock    , // ByteClock means (D-PHY PLL clock / 8)
+	            ,1  // CBOOL EnableESCClock_ClockLane,
+	            ,1  // CBOOL EnableESCClock_DataLane0,
+	            ,0  // CBOOL EnableESCClock_DataLane1,
+	            ,0  // CBOOL EnableESCClock_DataLane2,
+	            ,0  // CBOOL EnableESCClock_DataLane3,
+	            ,1  // CBOOL EnableESCPrescaler , // ESCClock = ByteClock / ESCPrescalerValue
+	            ,esc_pre_value  // U32   ESCPrescalerValue
+	   			);
+
+		NX_MIPI_DSI_SetPhy( index
+				,0 // U32   NumberOfDataLanes , // 0~3
+	            ,1 // CBOOL EnableClockLane   ,
+	            ,1 // CBOOL EnableDataLane0   ,
+	            ,0 // CBOOL EnableDataLane1   ,
+	            ,0 // CBOOL EnableDataLane2   ,
+	            ,0 // CBOOL EnableDataLane3   ,
+	            ,0 // CBOOL SwapClockLane     ,
+	            ,0 // CBOOL SwapDataLane      )
+				);
+
 		ret = pmipi->lcd_init(width, height, pmipi->private_data);
 		if (0 > ret)
 			return ret;
 	}
 
+	NX_MIPI_DSI_SetPLL(index
+			,CTRUE      // CBOOL Enable      ,
+			,0xFFFFFFFF // U32 PLLStableTimer,
+			,pllpms     // 19'h033E8: 1Ghz  // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
+			,bandctl    // 4'hF     : 1Ghz  // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
+			,pllctl     // U32 M_PLLCTL      , // Refer to 10.2.2 M_PLLCTL of MIPI_D_PHY_USER_GUIDE.pdf  Default value is all "0". If you want to change register values, it need to confirm from IP Design Team
+			,phyctl		// U32 B_DPHYCTL       // Refer to 10.2.3 M_PLLCTL of MIPI_D_PHY_USER_GUIDE.pdf or NX_MIPI_PHY_B_DPHYCTL enum or LN28LPP_MipiDphyCore1p5Gbps_Supplement. default value is all "0". If you want to change register values, it need to confirm from IP Design Team
+			);
+
+	mdelay(1);
+
+	NX_MIPI_DSI_SetClock (index
+			,0  // CBOOL EnableTXHSClock    ,
+			,0  // CBOOL UseExternalClock   , // CFALSE: PLL clock CTRUE: External clock
+			,1  // CBOOL EnableByteClock    , // ByteClock means (D-PHY PLL clock / 8)
+			,1  // CBOOL EnableESCClock_ClockLane,
+			,1  // CBOOL EnableESCClock_DataLane0,
+			,0  // CBOOL EnableESCClock_DataLane1,
+			,0  // CBOOL EnableESCClock_DataLane2,
+			,0  // CBOOL EnableESCClock_DataLane3,
+			,1  // CBOOL EnableESCPrescaler , // ESCClock = ByteClock / ESCPrescalerValue
+			,10  // U32   ESCPrescalerValue
+			);
+
+	mdelay(1);
+
 	NX_MIPI_DSI_SoftwareReset(index);
     NX_MIPI_DSI_SetClock (index
     		,1  // CBOOL EnableTXHSClock    ,
@@ -169,7 +183,7 @@ static int  mipi_prepare(struct disp_process_dev *pdev)
             ,1  // CBOOL EnableESCClock_DataLane2,
             ,1  // CBOOL EnableESCClock_DataLane3,
             ,1  // CBOOL EnableESCPrescaler , // ESCClock = ByteClock / ESCPrescalerValue
-            ,5  // U32   ESCPrescalerValue
+            ,esc_pre_value  // U32   ESCPrescalerValue
    			);
 
 	NX_MIPI_DSI_SetPhy( index
@@ -209,10 +223,17 @@ static int  mipi_prepare(struct disp_process_dev *pdev)
 	NX_DISPLAYTOP_SetMIPIMUX(CTRUE, input);
 
 	// 0 is spdif, 1 is mipi vclk
+#if 0
 	NX_DISPTOP_CLKGEN_SetClockSource (clkid, 0, psync->clk_src_lv0);
 	NX_DISPTOP_CLKGEN_SetClockDivisor(clkid, 0, psync->clk_div_lv0);
 	NX_DISPTOP_CLKGEN_SetClockSource (clkid, 1, psync->clk_src_lv1);  // CLKSRC_PLL0
 	NX_DISPTOP_CLKGEN_SetClockDivisor(clkid, 1, psync->clk_div_lv1);
+#else
+	//NX_DISPTOP_CLKGEN_SetClockSource (clkid, 0, psync->clk_src_lv0);
+	//NX_DISPTOP_CLKGEN_SetClockDivisor(clkid, 0, psync->clk_div_lv0);
+	NX_DISPTOP_CLKGEN_SetClockSource (clkid, 1, psync->clk_src_lv0);  // CLKSRC_PLL0
+	NX_DISPTOP_CLKGEN_SetClockDivisor(clkid, 1, (psync->clk_div_lv1)*(psync->clk_div_lv0));
+#endif
 
 	return 0;
 }

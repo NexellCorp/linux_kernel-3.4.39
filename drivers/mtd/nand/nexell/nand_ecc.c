@@ -71,10 +71,11 @@
 /*
  * u-boot nand hw ecc
  */
-static int iNX_BCH_VAR_K	 = ECC_PAGE_SIZE;			/* 512 or 1024 */
-static int iNX_BCH_VAR_M	 = 14;			/* 13 or 14 */
-static int iNX_BCH_VAR_T	 = ECC_HW_BITS;	/* 4, 8, 12, 16, 24, 40, 60 ... */
-static int iNX_BCH_VAR_TMAX  = 24;			/* eccsize == 512 ? 24 : 60 */
+static int iNX_BCH_VAR_K	 = ECC_PAGE_SIZE;	/* 512 or 1024 */
+static int iNX_BCH_VAR_M	 = 14;				/* 13 or 14 */
+static int iNX_BCH_VAR_T	 = 60;				/* 4, 8, 12, 16, 24, 40, 60 ... */
+static int iNX_BCH_VAR_R	 = 104;				/* (iNX_BCH_VAR_K * iNX_BCH_VAR_M) / 8 - 1 */
+static int iNX_BCH_VAR_TMAX  = 60;				/* eccsize == 512 ? 24 : 60 */
 
 static struct NX_MCUS_RegisterSet * const _pNCTRL =
 	(struct NX_MCUS_RegisterSet *)IO_ADDRESS(PHY_BASEADDR_MCUSTOP_MODULE);
@@ -84,12 +85,12 @@ static void inline __ecc_reset_decoder(void)
 	_pNCTRL->NFCONTROL |= NX_NFCTRL_ECCRST;
 	// disconnect syndrome path
 	_pNCTRL->NFECCAUTOMODE = (_pNCTRL->NFECCAUTOMODE & ~(NX_NFACTRL_ELP)) | NX_NFACTRL_SYN;
+
+	dmb();
 }
 
 static void __ecc_decode_enable(int eccsize)	/* 512 or 1024 */
 {
-	int iNX_BCH_VAR_R = (((iNX_BCH_VAR_M * iNX_BCH_VAR_T)/8) - 1);
-
 	// connect syndrome path
 	_pNCTRL->NFECCAUTOMODE = (_pNCTRL->NFECCAUTOMODE & ~(NX_NFACTRL_ELP | NX_NFACTRL_SYN));
 
@@ -102,6 +103,8 @@ static void __ecc_decode_enable(int eccsize)	/* 512 or 1024 */
 		((iNX_BCH_VAR_T & 0x7F) << NX_NFECCCTRL_ELPNUM)		|
 		((iNX_BCH_VAR_R & 0xFF) << NX_NFECCCTRL_PDATACNT)	|
 		(((eccsize-1) & 0x3FF)  << NX_NFECCCTRL_DATACNT);
+
+	dmb();
 }
 
 static void __ecc_write_ecc_decode(unsigned int *ecc, int eccbyte)
@@ -114,6 +117,8 @@ static void __ecc_write_ecc_decode(unsigned int *ecc, int eccbyte)
 
 	for(i = 0; len > i; i++)
 		*pNFORGECC++ = *ecc++;
+
+	dmb();
 }
 
 static inline void __ecc_wait_for_decode(void)
@@ -129,8 +134,6 @@ static inline unsigned int __ecc_decode_error(void)
 
 static inline void __ecc_start_correct(int eccsize)
 {
-	int iNX_BCH_VAR_R = (((iNX_BCH_VAR_M * iNX_BCH_VAR_T)/8) - 1);
-
 	// load elp
 	_pNCTRL->NFECCCTRL =
 		(0 << NX_NFECCCTRL_RUNECC_W)   |
@@ -140,6 +143,8 @@ static inline void __ecc_start_correct(int eccsize)
  		((iNX_BCH_VAR_T & 0x07F) << NX_NFECCCTRL_ELPNUM )	|
 		((iNX_BCH_VAR_R & 0x0FF) << NX_NFECCCTRL_PDATACNT)	|
 	 	(((eccsize - 1) & 0x3FF) << NX_NFECCCTRL_DATACNT);
+
+	dmb();
 }
 
 #ifdef CFG_NAND_ECCIRQ_MODE
@@ -174,17 +179,19 @@ static int __ecc_get_err_location(unsigned int *pLocation)
 
 static inline void __ecc_setup_encoder(void)
 {
-	int iNX_BCH_VAR_R = (((iNX_BCH_VAR_M * iNX_BCH_VAR_T)/8) - 1);
-
     NX_MCUS_SetNANDRWDataNum(iNX_BCH_VAR_K);
     NX_MCUS_SetParityCount(iNX_BCH_VAR_R);
     NX_MCUS_SetNumOfELP(iNX_BCH_VAR_T);
+
+	dmb();
 }
 
 static inline void __ecc_encode_enable(void)
 {
 	NX_MCUS_SetNFDecMode(NX_MCUS_DECMODE_ENCODER);
 	NX_MCUS_RunECCEncDec();
+
+	dmb();
 }
 
 static inline void __ecc_read_ecc_encode(unsigned int *ecc, int eccbyte)
@@ -428,7 +435,7 @@ static int nand_hw_ecc_read_page(struct mtd_info *mtd, struct nand_chip *chip,
 #endif
 				NAND_PROF_END(&nand_read, N_LOADELP);
 
-#if (1)
+#if (0)
 				if (((_pNCTRL->NFECCSTATUS & NX_NFECCSTATUS_ELPERR) >>  16) >= chip->ecc.strength) {
 					printk ("  over ecc.strength %d, page: %d, step:%d, numerr: %d, elperr: %d\n",
 							chip->ecc.strength, page, 
@@ -771,11 +778,12 @@ int nand_hw_ecc_init_device(struct mtd_info *mtd)
 
 	nxp->eccmode = eccmode;
 
-	iNX_BCH_VAR_M	 = eccidx;			/* 13 or 14 */
-	iNX_BCH_VAR_T	 = ECC_HW_BITS;	/* 4, 8, 12, 16, 24, 40, 60 ... */
-	iNX_BCH_VAR_TMAX = (eccsize == 512 ? 24 : 60);
-	DBGOUT("%s ecc %d bit, eccsize=%d, eccbyte=%d, eccindex=%d\n",
-		__func__, ECC_HW_BITS, eccsize, eccbyte, eccidx);
+	iNX_BCH_VAR_M			= eccidx;			/* 13 or 14 */
+	iNX_BCH_VAR_T			= ECC_HW_BITS;		/* 4, 8, 12, 16, 24, 40, 60 ... */
+	iNX_BCH_VAR_R			= DIV_ROUND_UP(iNX_BCH_VAR_M * iNX_BCH_VAR_T, 8) - 1;
+	iNX_BCH_VAR_TMAX		= (eccsize == 512 ? 24 : 60);
+	DBGOUT("%s ecc %d bit, eccsize=%d, parity=%d, eccbyte=%d, eccindex=%d\n",
+		__func__, ECC_HW_BITS, eccsize, iNX_BCH_VAR_R, eccbyte, eccidx);
 
 	chip->ecc.mode 			= NAND_ECC_HW;
 	chip->ecc.size 			= eccsize;			/* per 512 or 1024 bytes */

@@ -306,6 +306,7 @@
 #include <nx_vip.h>
 #include <nx_adc.h>
 #include <nx_ecid.h>
+#include <nx_wdt.h>
 
 #endif /* 	__ASSEMBLY__ */
 #endif /*	__S5P4418_H__ */

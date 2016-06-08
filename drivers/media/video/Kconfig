@@ -295,6 +295,8 @@ config VIDEO_SAA6588
 
 comment "Video decoders"
 
+source "drivers/media/video/tw/Kconfig"
+
 config VIDEO_ADV7180
 	tristate "Analog Devices ADV7180 decoder"
 	depends on VIDEO_V4L2 && I2C
@@ -492,6 +494,15 @@ config VIDEO_ADV7343
 	  To compile this driver as a module, choose M here: the
 	  module will be called adv7343.
 
+config VIDEO_ADV7391
+	tristate "ADV7391 video encoder"
+	depends on VIDEO_V4L2 && I2C && NXP_DISPLAY_ENCODER
+	help
+	  Support for Analog Devices I2C bus based ADV7391 encoder.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called adv7391.
+
 config VIDEO_AK881X
 	tristate "AK8813/AK8814 video encoders"
 	depends on I2C
@@ -566,8 +577,37 @@ config VIDEO_MT9D111_CAM
 	  This is a Video4Linux2 sensor-level driver for the Micron
 	  MT9D111 1600x1200 CMOS sensor.
 
+config VIDEO_DS90UB914Q
+    tristate "TI DS90UB914Q sensor support(nexell work)"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+	  This is a Video4Linux2 sensor-level driver for TI
+	  DS90UB914Q Serializer and Deserializer sensor.
+
+config VIDEO_NVP6114A
+    tristate "Nextchip NVP6114A sensor support(nexell work)"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+	  This is a Video4Linux2 sensor-level driver for Nextchip
+	  NVP6114A AHD sensor.
+choice
+depends on VIDEO_NVP6114A
+prompt "Camera position for NVP6114A"
+default NVP6114A_GENERAL
+config NVP6114A_GENERAL
+	bool "general camera"
+	help
+	  This set as gerneral camera
+
+config NVP6114A_BACKWARD
+	bool "backward camera"
+	depends on SLSIAP_BACKWARD_CAMERA
+	help
+	  This set as backward camera
+endchoice
+
 source "drivers/media/video/thine/Kconfig"
-	  
+
 config VIDEO_TCM825X
 	tristate "TCM825x camera sensor support"
 	depends on I2C && VIDEO_V4L2

@@ -3,12 +3,12 @@
 #
 # Makefile for the Nexell platform board
 
-ifeq ($(CONFIG_PLAT_S5P6818_VTK),y)
-PLATBOARD :=vtk
+ifeq ($(CONFIG_PLAT_S5P6818_SVT),y)
+PLATBOARD :=svt
 endif
 
-ifeq ($(CONFIG_PLAT_S5P6818_DRONE),y)
-PLATBOARD :=drone
+ifeq ($(CONFIG_PLAT_S5P6818_AVN_REF),y)
+PLATBOARD :=avn_ref
 endif
 
 #

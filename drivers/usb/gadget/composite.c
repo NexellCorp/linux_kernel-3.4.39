@@ -66,7 +66,7 @@ MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
 
 static char composite_manufacturer[50];
 #if defined(CONFIG_ARCH_CPU_SLSI)
-static bool usb_config_wake_lock_held;
+static bool usb_config_wake_lock_held = false;
 static struct wake_lock usb_config_wake_lock;
 #endif
 
@@ -578,8 +578,9 @@ static void device_qual(struct usb_composite_dev *cdev)
 #if defined(CONFIG_ARCH_CPU_SLSI)
 void nxp_wake_lock_timeout(void)
 {
-	if (usb_config_wake_lock_held == true)
+	if (usb_config_wake_lock_held == true) {
 		wake_lock_timeout(&usb_config_wake_lock, 1*HZ);
+	}
 }
 EXPORT_SYMBOL(nxp_wake_lock_timeout);
 #endif
@@ -597,7 +598,6 @@ static void reset_config(struct usb_composite_dev *cdev)
 		bitmap_zero(f->endpoints, 32);
 	}
 	cdev->config = NULL;
-
 }
 
 static int set_config(struct usb_composite_dev *cdev,
@@ -1184,7 +1184,9 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		value = set_config(cdev, ctrl, w_value);
 		spin_unlock(&cdev->lock);
 #if defined(CONFIG_ARCH_CPU_SLSI)
-		wake_lock(&usb_config_wake_lock);
+		if (usb_config_wake_lock_held == true) {
+			wake_lock(&usb_config_wake_lock);
+		}
 #endif
 		break;
 	case USB_REQ_GET_CONFIGURATION:
@@ -1366,7 +1368,9 @@ static void composite_disconnect(struct usb_gadget *gadget)
 	 * disconnect callbacks?
 	 */
 #if defined(CONFIG_ARCH_CPU_SLSI)
-	wake_lock_timeout(&usb_config_wake_lock, 1*HZ);
+	if (usb_config_wake_lock_held == true) {
+		wake_lock_timeout(&usb_config_wake_lock, 1*HZ);
+	}
 #endif
 	spin_lock_irqsave(&cdev->lock, flags);
 	if (cdev->config)
@@ -1675,11 +1679,6 @@ void usb_composite_unregister(struct usb_composite_driver *driver)
 	if (composite != driver)
 		return;
 	usb_gadget_unregister_driver(&composite_driver);
-	// psw0523 add
-#ifdef CONFIG_PM
-	composite = NULL;
-#endif
-	// end psw0523
 }
 
 /**

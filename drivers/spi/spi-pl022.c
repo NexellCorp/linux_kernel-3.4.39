@@ -492,10 +492,11 @@ static void giveback(struct pl022 *pl022)
 	pl022->cur_msg = NULL;
 	pl022->cur_transfer = NULL;
 	pl022->cur_chip = NULL;
-	spi_finalize_current_message(pl022->master);
+
 	/* disable the SPI/SSP operation */
 	writew((readw(SSP_CR1(pl022->virtbase)) &
 		(~SSP_CR1_MASK_SSE)), SSP_CR1(pl022->virtbase));
+	spi_finalize_current_message(pl022->master);
 }
 
 /**
@@ -1392,7 +1393,7 @@ static void do_interrupt_dma_transfer(struct pl022 *pl022)
 	}
 	/* If we're using DMA, set up DMA here */
 
-	if (pl022->cur_chip->enable_dma && pl022->cur_transfer->len >= 4 ) {		//bok add
+	if (pl022->cur_chip->enable_dma && !(pl022->cur_transfer->len % 4) &&  (pl022->cur_transfer->len < 4096)) {		//bok add
 //	if (pl022->cur_chip->enable_dma) {
 		/* Configure DMA transfer */
 		if (configure_dma(pl022)) {

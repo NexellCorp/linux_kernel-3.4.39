@@ -8,6 +8,10 @@ config ARCH_CPU_SLSI
 	select MULTI_IRQ_HANDLER
 	default y
 
+config ARCH_S5P6818_REV
+	bool "s5p6818 revision"
+	default y
+
 choice
 	prompt "Prototype build mode"
 	default S5P6818_PROTO_RELEASE
@@ -112,6 +116,10 @@ config ANDROID_PERSISTENT_RAM_CONS_SIZE
     int "RAM console size (KB)"
     depends on ANDROID_RAM_CONSOLE
     default 16
+
+config DEFERRED_INIT_CALL
+	bool "Enable deferred_init_call"
+	default n
 
 source "arch/arm/plat-s5p6818/Kconfig"
 

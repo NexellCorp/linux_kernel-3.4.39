@@ -47,7 +47,7 @@
  */
 #define CFG_UART_DEBUG_CH						0	/* For Low level debug */
 #define	CFG_UART_DEBUG_BAUDRATE					115200
-#define	CFG_UART_CLKGEN_CLOCK_HZ				50000000 /* 50000000 */
+#define	CFG_UART_CLKGEN_CLOCK_HZ				14750000	/* 50000000 */
 
 /*------------------------------------------------------------------------------
  * 	Timer List (SYS = Source, EVT = Event, WDT = WatchDog)
@@ -65,7 +65,7 @@
  * 	GMAC PHY
  */
 
-#define CFG_ETHER_LOOPBACK_MODE					1       /* 0: disable, 1: 10M, 2: 100M(x), 3: 1000M(x) */
+#define CFG_ETHER_LOOPBACK_MODE					0       /* 0: disable, 1: 10M, 2: 100M(x), 3: 1000M(x) */
 
  /*for rtl8201*/
 #if defined (CONFIG_REALTEK_PHY_RTL8201)
@@ -80,10 +80,13 @@
 /*------------------------------------------------------------------------------
  * 	Nand (HWECC)
  */
+/* MTD */
 #define CFG_NAND_ECC_BYTES 						1024
 #define CFG_NAND_ECC_BITS               		40			/* 512 - 4,8,16,24 1024 - 24,40,60 */
 //#define CFG_NAND_ECCIRQ_MODE
-//#define CFG_MTD_NAND_BMT_FIRST_LAST
+
+/* FTL */
+#define CFG_NAND_FTL_START_BLOCK				0x6000000	/* byte address, Must Be Multiple of 8MB */
 
 /*------------------------------------------------------------------------------
  *	Nand (GPIO)
@@ -104,11 +107,11 @@
 
 #define CFG_DISP_PRI_MLC_INTERLACE              CFALSE
 
-#define	CFG_DISP_PRI_LCD_WIDTH_MM				152.4
-#define	CFG_DISP_PRI_LCD_HEIGHT_MM				91.44
+#define	CFG_DISP_PRI_LCD_WIDTH_MM				155
+#define	CFG_DISP_PRI_LCD_HEIGHT_MM				90
 
 #define CFG_DISP_PRI_RESOL_WIDTH          		1024	// X Resolution
-#define CFG_DISP_PRI_RESOL_HEIGHT				 600	// Y Resolution
+#define CFG_DISP_PRI_RESOL_HEIGHT				600	// Y Resolution
 
 #define CFG_DISP_PRI_HSYNC_SYNC_WIDTH           20
 #define CFG_DISP_PRI_HSYNC_BACK_PORCH           140
@@ -191,12 +194,17 @@
  * 	Audio SPDIF (TX/RX)
  */
 #if defined (CONFIG_ANDROID)
-#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT					CTRUE
+#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT				CTRUE
 #else
-#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT					CFALSE
+#define	CFG_AUDIO_SPDIF_TX_HDMI_OUT				CFALSE
 #endif
-#define	CFG_AUDIO_SPDIF_TX_SAMPLE_RATE				48000
-#define	CFG_AUDIO_SPDIF_RX_SAMPLE_RATE				48000
+#define	CFG_AUDIO_SPDIF_TX_SAMPLE_RATE			48000
+#define	CFG_AUDIO_SPDIF_RX_SAMPLE_RATE			48000
+
+/*------------------------------------------------------------------------------
+ * 	Audio PDM
+ */
+#define CFG_AUDIO_PDM_SAMPLE_RATE				48000
 
 /*------------------------------------------------------------------------------
  * 	I2C
@@ -224,9 +232,9 @@
 /*------------------------------------------------------------------------------
  * 	Keypad
  */
+
 #define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0 }
 #define CFG_KEYPAD_KEY_CODE						{ KEY_POWER }
-
 #define CFG_KEYPAD_REPEAT						CFALSE /* 0: Repeat Off 1 : Repeat On */
 
 /*------------------------------------------------------------------------------
@@ -275,11 +283,19 @@
 #define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
 
+//#define CONFIG_ENABLE_INIT_VOLTAGE					/* Enalbe init voltage for ARM, CORE */
+
+
 /*------------------------------------------------------------------------------
  * 	usb ehci
  */
 #define CFG_USB_EHCI_LATE_LOAD					1
 #define CFG_USB_EHCI_LATE_LOADTIME				500
+
+/*------------------------------------------------------------------------------
+ * 	usb hsic
+ */
+#define CFG_GPIO_HSIC_EXTHUB_RESET				(PAD_GPIO_E + 22)
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode
@@ -294,7 +310,7 @@
 #define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE3				CFALSE					/* PMIC - CRITICAL LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_ASYNC_LOWLEVEL
-#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR */
+#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR - LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE
@@ -303,7 +319,7 @@
  * Wakeup Source : RTC ALARM
  * ifndef Enable ALARM Wakeup
  */
-#define	CFG_PWR_WAKEUP_SRC_ALARM				CFALSE
+#define	CFG_PWR_WAKEUP_SRC_ALARM				CTRUE
 
 //------------------------------------------------------------------------------
 // Static Bus #0 ~ #9, NAND, IDE configuration

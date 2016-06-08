@@ -125,7 +125,7 @@ static void __init cpu_map_io(void)
 static void __init cpu_init_machine(void)
 {
 	/* set shutdown */
-	pm_power_off   = nxp_cpu_shutdown;
+	pm_power_off = nxp_cpu_shutdown;
 	arm_pm_restart = nxp_cpu_reset;
 
 	/*

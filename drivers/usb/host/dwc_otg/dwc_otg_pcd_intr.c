@@ -675,6 +675,10 @@ void dwc_otg_pcd_stop(dwc_otg_pcd_t * pcd)
 	}
 	pcd->ep0state = EP0_DISCONNECT;
 
+#if defined(CONFIG_ARCH_CPU_SLSI)
+	dwc_otg_pcd_clear_ep0_state();
+#endif
+
 	/* Reset the OTG state. */
 	dwc_otg_pcd_update_otg(pcd, 1);
 
@@ -1349,7 +1353,6 @@ static inline void do_gadget_setup(dwc_otg_pcd_t * pcd,
 	ret = pcd->fops->setup(pcd, (uint8_t *) ctrl);
 	DWC_SPINLOCK(pcd->lock);
 	if (ret < 0) {
-		DWC_SPINUNLOCK(pcd->lock);
 		ep0_do_stall(pcd, ret);
 	}
 

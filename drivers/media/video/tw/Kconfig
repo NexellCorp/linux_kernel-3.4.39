@@ -1,0 +1,45 @@
+
+config VIDEO_TW9992
+    tristate "TW9992 video decoder(nexell work)"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+	  Support for the Intersil/Techwell TW9992 video decoder.
+choice
+depends on VIDEO_TW9992
+prompt "Camera position for TW9992"
+default TW9992_GENERAL
+config TW9992_GENERAL
+	bool "general camera"
+#	depends on ARCH_S5P6818 && !SLSIAP_BACKWARD_CAMERA || NVP6114A_BACKWARD || TW9992_BACKWARD
+	depends on ARCH_S5P6818
+	help
+	  This set as general camera
+
+config TW9992_BACKWARD
+	bool "backward camera"
+	depends on ARCH_S5P6818 && SLSIAP_BACKWARD_CAMERA
+	help
+	  This set as backward camera
+endchoice
+
+config VIDEO_TW9900
+    tristate "TW9900 video decoder(nexell work)"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+      Support for the Intersil/Techwell TW9900 video decoder.
+choice
+depends on VIDEO_TW9900
+prompt "Camera position for TW9900"
+default TW9900_GENERAL
+config TW9900_GENERAL
+	bool "general camera"
+	help
+	  This set as general camera
+
+config TW9900_BACKWARD
+	bool "backward camera"
+	depends on SLSIAP_BACKWARD_CAMERA
+	help
+	  This set as backward camera
+endchoice
+

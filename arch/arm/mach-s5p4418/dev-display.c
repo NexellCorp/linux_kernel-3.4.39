@@ -121,11 +121,12 @@ static struct platform_device *syncgen_devices[] __initdata = {
 /*------------------------------------------------------------------------------
  * LCD platform device
  */
-#if defined (CONFIG_NXP_DISPLAY_LCD)
+#if defined (CONFIG_NXP_DISPLAY_LCD) || defined (CONFIG_NXP_DISPLAY_ENCODER)
 
 static struct disp_vsync_info __lcd_vsync = {
 	/* default parameters refer to cfg_main.h */
 	#if defined(CFG_DISP_PRI_RESOL_WIDTH) && defined(CFG_DISP_PRI_RESOL_HEIGHT)
+	.interlace	= CFG_DISP_PRI_OUT_INTERLACE,
 	.h_active_len	= CFG_DISP_PRI_RESOL_WIDTH,
 	.h_sync_width	= CFG_DISP_PRI_HSYNC_SYNC_WIDTH,
 	.h_back_porch	= CFG_DISP_PRI_HSYNC_BACK_PORCH,
@@ -145,10 +146,28 @@ static struct disp_vsync_info __lcd_vsync = {
 };
 static struct disp_lcd_param   __lcd_devpar;
 
+static struct disp_syncgen_par __lcd_syncgen = {
+	#if defined(CFG_DISP_PRI_RESOL_WIDTH) && defined(CFG_DISP_PRI_RESOL_HEIGHT)
+	.interlace	= CFG_DISP_PRI_OUT_INTERLACE, 
+	.out_format	= CFG_DISP_PRI_OUT_FORMAT,
+	.vclk_select	= CFG_DISP_PRI_PADCLKSEL,
+//	.clk_inv_lv0	= CFG_DISP_PRI_CLKGEN0_INVERT,
+//	.clk_delay_lv0	= CFG_DISP_PRI_CLKGEN0_DELAY,
+//	.clk_inv_lv1	= CFG_DISP_PRI_CLKGEN1_INVERT,
+//	.clk_delay_lv1	= CFG_DISP_PRI_CLKGEN1_DELAY,
+//	.clk_sel_div1	= CFG_DISP_PRI_CLKSEL1_SELECT,
+	#endif
+};
+
 static struct nxp_lcd_plat_data lcd_data = {
+	#if defined(CONFIG_NXP_DISPLAY_ENCODER)
+	.display_in		= DISPLAY_INPUT(CONFIG_NXP_DISPLAY_ENCODER_IN),
+	#else
 	.display_in		= DISPLAY_INPUT(CONFIG_NXP_DISPLAY_LCD_IN),
+	#endif
 	.display_dev	= DISP_DEVICE_LCD,
 	.vsync			= &__lcd_vsync,
+	.sync_gen	= &__lcd_syncgen,	
 	.dev_param	 	= (union disp_dev_param*)&__lcd_devpar,
 };
 

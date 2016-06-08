@@ -14,7 +14,7 @@ config NXP_OUT_HDMI
       Say y here to enable v4l2 hdmi
 
 if NXP_OUT_HDMI
-source arch/arm/mach-s5p4418/soc/hdmi/Kconfig
+source arch/arm/mach-slsiap/hdmi/Kconfig
 endif
 
 config NXP_HDMI_CEC
@@ -23,5 +23,13 @@ config NXP_HDMI_CEC
     default n
     ---help---
       Say y here to enable hdmi cec module
+
+config NXP_OUT_TVOUT
+    bool "Enable tvout"
+    select NXP_DISPLAY_TVOUT
+    depends on ARCH_S5P6818
+    default n
+    ---help---
+      Say y here to enable v4l2 tvout
 
 endif

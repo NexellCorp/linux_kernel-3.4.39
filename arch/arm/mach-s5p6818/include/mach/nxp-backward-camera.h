@@ -14,12 +14,24 @@ struct nxp_backward_camera_platform_data {
     int vip_module_num;
     int mlc_module_num;
 
+    //vendor context
+    void *vendor_context;
+    bool (*alloc_vendor_context)(void *);
+    void (*free_vendor_context)(void *);
+    bool (*pre_turn_on)(void *);
+    void (*post_turn_off)(void *);
+    bool (*decide)(void *);
+
+    //activation
+    int turn_on_delay_ms;
+
     // for suspend/resume
     // sensor
     int i2c_bus;
     int chip_addr;
     int clk_rate;
     struct reg_val *reg_val;
+    int (*init_func)(void);
     int (*power_enable)(bool);
     int (*set_clock)(int);
     void (*setup_io)(void);
@@ -38,6 +50,9 @@ struct nxp_backward_camera_platform_data {
     u32  v_backporch;
     u32  data_order;
     bool interlace;
+    bool use_deinterlacer;
+    bool devide_frame;
+    bool is_odd_first;
 
     u32 lu_addr;
     u32 cb_addr;
@@ -51,7 +66,7 @@ struct nxp_backward_camera_platform_data {
     u32 height;
     u32 rgb_addr;
 
-    void (*draw_rgb_overlay)(struct nxp_backward_camera_platform_data *);
+    void (*draw_rgb_overlay)(struct nxp_backward_camera_platform_data *, void *, void *);
 };
 
 #endif

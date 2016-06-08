@@ -113,7 +113,7 @@
 #define PHY_BASEADDR_CLKGEN24		(0xC00A8000)	// UART_1
 #define PHY_BASEADDR_CLKGEN25		(0xC00AB000)	// UART_3
 #define PHY_BASEADDR_CLKGEN26		(0xC006E000)	// UART_4
-#define PHY_BASEADDR_CLKGEN27		(0xC0084000)	// UART_5
+#define PHY_BASEADDR_CLKGEN27		(0xC00B1000)	// UART_5
 #define PHY_BASEADDR_CLKGEN28		(0xC00B5000)	// DEINTERLACE
 #define PHY_BASEADDR_CLKGEN29		(0xC00C4000)	// PPM
 #define PHY_BASEADDR_CLKGEN30		(0xC00C1000)	// VIP_0
@@ -308,6 +308,8 @@
 #include <nx_vip.h>
 #include <nx_adc.h>
 #include <nx_ecid.h>
+#include <nx_tmu.h>
+#include <nx_wdt.h>
 
 #endif /* 	__ASSEMBLY__ */
 #endif /*	__S5P6818_H__ */

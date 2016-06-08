@@ -1453,8 +1453,24 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 	}
 
 	/* card bind complete so register a sound card */
+#if defined (CONFIG_ARCH_CPU_SLSI)
+	char card_chk, card_id;
+	sprintf(&card_chk, "%s", dev_name(card->dev) + (sizeof(char) * strlen(dev_name(card->dev)) - 2)); 
+	sprintf(&card_id, "%s", dev_name(card->dev) + (sizeof(char) * strlen(dev_name(card->dev)) - 1)); 
+	if (card_chk == '.') {
+		pr_debug("card number %d\n", (int)(card_id - 0x30));
+		ret = snd_card_create((int)(card_id - 0x30), SNDRV_DEFAULT_STR1,
+				card->owner, 0, &card->snd_card);
+	} else {
+		pr_debug("default card numbering\n");
+		ret = snd_card_create(SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1,
+				card->owner, 0, &card->snd_card);
+	}
+#else
 	ret = snd_card_create(SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1,
 			card->owner, 0, &card->snd_card);
+#endif
+
 	if (ret < 0) {
 		pr_err("asoc: can't create sound card for card %s: %d\n",
 			card->name, ret);
@@ -1617,15 +1633,37 @@ card_probe_error:
 	mutex_unlock(&card->mutex);
 }
 
+// psw0523 test
+#if 1
+#include <linux/kthread.h>
+static int _card_instantiate(void *data)
+{
+    struct snd_soc_card *card = data;
+    msleep(1000);
+    printk("%s entered\n", __func__);
+    snd_soc_instantiate_card(card);
+    printk("%s exit\n", __func__);
+    return 0;
+}
+#endif
 /*
  * Attempt to initialise any uninitialised cards.  Must be called with
  * client_mutex.
  */
 static void snd_soc_instantiate_cards(void)
 {
+#if 0
 	struct snd_soc_card *card;
 	list_for_each_entry(card, &card_list, list)
 		snd_soc_instantiate_card(card);
+#else
+    if (!list_empty(&card_list)) {
+        struct snd_soc_card *card = list_first_entry(&card_list, struct snd_soc_card, list);
+        /*printk("%s: start card_instantiate\n", __func__);*/
+        kthread_run(_card_instantiate, card, "card_instantiate");
+        /*printk("%s exit\n", __func__);*/
+    }
+#endif
 }
 
 /* probes a new socdev */

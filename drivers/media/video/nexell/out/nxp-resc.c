@@ -184,12 +184,17 @@ static int _hw_set_with_preset(struct nxp_resc *me)
     pr_debug("%s: sg_hdelay %d, sg_hoffset %d, sg_s2in_vs %d\n",
             __func__, sg_hdelay, sg_hoffset, sg_s2in_vs);
 
+#if defined(CONFIG_ARCH_S5P4418)
     NX_RSTCON_SetnRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_nDISABLE);
     NX_RSTCON_SetnRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_nENABLE);
+#elif defined(CONFIG_ARCH_S5P6818)
+    NX_RSTCON_SetRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_ASSERT);
+    NX_RSTCON_SetRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_NEGATE);
+#endif
 
     NX_RESCONV_Initialize();
     NX_RESCONV_SetBaseAddress(me->id,
-            (U32)IO_ADDRESS(NX_RESCONV_GetPhysicalAddress(0)));
+            (void*)IO_ADDRESS(NX_RESCONV_GetPhysicalAddress(0)));
 
     NX_RESCONV_FIFO_Init(me->id, CTRUE);
     NX_RESCONV_FIFO_Init(me->id, CFALSE);
@@ -267,12 +272,17 @@ static int _hw_set(struct nxp_resc *me)
     sg_hoffset = 0;
     sg_s2in_vs = 0;
 
+#if defined(CONFIG_ARCH_S5P4418)
     NX_RSTCON_SetnRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_nDISABLE);
     NX_RSTCON_SetnRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_nENABLE);
+#elif defined(CONFIG_ARCH_S5P6818)
+    NX_RSTCON_SetRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_ASSERT);
+    NX_RSTCON_SetRST(RESETINDEX_OF_RESCONV_MODULE, RSTCON_NEGATE);
+#endif
 
     NX_RESCONV_Initialize();
     NX_RESCONV_SetBaseAddress(me->id,
-            (U32)IO_ADDRESS(NX_RESCONV_GetPhysicalAddress(0)));
+            (void*)IO_ADDRESS(NX_RESCONV_GetPhysicalAddress(0)));
 
     NX_RESCONV_FIFO_Init(me->id, CTRUE);
     NX_RESCONV_FIFO_Init(me->id, CFALSE);
@@ -622,7 +632,7 @@ static int _set_remote_sync(struct nxp_resc *me)
 static void _set_resc_clkgen_pre(struct nxp_resc *me, bool enable, bool sink_is_hdmi)
 {
     NX_DISPTOP_CLKGEN_SetBaseAddress(ResConv_CLKGEN,
-            (U32)IO_ADDRESS(NX_DISPTOP_CLKGEN_GetPhysicalAddress(ResConv_CLKGEN)));
+            (void*)IO_ADDRESS(NX_DISPTOP_CLKGEN_GetPhysicalAddress(ResConv_CLKGEN)));
     NX_DISPTOP_CLKGEN_SetClockDivisorEnable(ResConv_CLKGEN, CFALSE);
     if (enable) {
         NX_DISPTOP_CLKGEN_SetClockPClkMode(ResConv_CLKGEN, NX_PCLKMODE_ALWAYS);
@@ -638,7 +648,7 @@ static void _set_resc_clkgen_pre(struct nxp_resc *me, bool enable, bool sink_is_
         NX_DISPTOP_CLKGEN_SetClockDivisorEnable(ResConv_CLKGEN, CTRUE);
 
         NX_DISPTOP_CLKGEN_SetBaseAddress(LCDIF_CLKGEN,
-                (U32)IO_ADDRESS(NX_DISPTOP_CLKGEN_GetPhysicalAddress(LCDIF_CLKGEN)));
+                (void*)IO_ADDRESS(NX_DISPTOP_CLKGEN_GetPhysicalAddress(LCDIF_CLKGEN)));
         NX_DISPTOP_CLKGEN_SetClockDivisorEnable ( LCDIF_CLKGEN, CFALSE);
         NX_DISPTOP_CLKGEN_SetClockPClkMode      ( LCDIF_CLKGEN, NX_PCLKMODE_ALWAYS );
         NX_DISPTOP_CLKGEN_SetClockDivisorEnable ( LCDIF_CLKGEN, CFALSE );

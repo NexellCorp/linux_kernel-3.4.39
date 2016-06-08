@@ -44,20 +44,20 @@
  * For low level uart debug (debug-macro.S)
  */
 #if defined(CONFIG_DEBUG_LL) && defined(CONFIG_DEBUG_NXP_UART)
-	#if	  (0 == CFG_UART_DEBUG_CH)
+	#if	 defined (CONFIG_DEBUG_NXP_UART_CH0)
 		#define	PB_UART_PHYS_BASE		PHY_BASEADDR_UART0
-	#elif (1 == CFG_UART_DEBUG_CH)
+	#elif defined (CONFIG_DEBUG_NXP_UART_CH1)
 		#define	PB_UART_PHYS_BASE		PHY_BASEADDR_UART1
-	#elif (2 == CFG_UART_DEBUG_CH)
+	#elif defined (CONFIG_DEBUG_NXP_UART_CH2)
 		#define	PB_UART_PHYS_BASE		PHY_BASEADDR_UART2
-	#elif (3 == CFG_UART_DEBUG_CH)
+	#elif defined(CONFIG_DEBUG_NXP_UART_CH3)
 		#define	PB_UART_PHYS_BASE		PHY_BASEADDR_UART3
-	#elif (4 == CFG_UART_DEBUG_CH)
+	#elif defined(CONFIG_DEBUG_NXP_UART_CH4)
 		#define	PB_UART_PHYS_BASE		PHY_BASEADDR_UART4
-	#elif (5 == CFG_UART_DEBUG_CH)
+	#elif defined(CONFIG_DEBUG_NXP_UART_CH5)
 		#define	PB_UART_PHYS_BASE		PHY_BASEADDR_UART5
 	#else
-		#error not support low level debug uart port (0 ~ 5)
+		#define	PB_UART_PHYS_BASE		PHY_BASEADDR_UART0
 	#endif
 
 	#define	PB_UART_VIRT_BASE			IO_ADDRESS(PB_UART_PHYS_BASE)
@@ -94,7 +94,7 @@ void __init 	nxp_cpu_devs_register(void);
 void		 	nxp_cpu_periph_clock_register(int id, long ext1, long ext2);
 unsigned long 	nxp_cpu_pll_change_frequency(int pllno, unsigned long rate);
 
-extern int (*nxp_check_pm_wakeup_dev)(char *dev, int io);
+extern int 	 nxp_check_pm_wakeup_dev(char *dev, int io);
 extern int   nxp_check_pm_wakeup_alive(int alive_no);
 extern void  nxp_key_power_event(void);
 

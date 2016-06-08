@@ -68,7 +68,8 @@
 #define DEV_NAME_CPUFREQ        "nxp-cpufreq"
 #define DEV_NAME_USBOTG         "nxp-otg"
 #define DEV_NAME_RFKILL         "nxp-rfkill"
-#define DEV_NAME_WDT    	"nxp-wdt"
+#define DEV_NAME_WDT            "nxp-wdt"
+#define DEV_NAME_TVOUT          "nxp-tvout"
 
 /*
  *  Frame buffer platform data and display controller
@@ -119,7 +120,8 @@ struct nxp_i2s_plat_data {
     int     frame_bit;                  /* support only 32, 48 */
     int     LR_pol_inv;
     int     pre_supply_mclk;            /* codec require mclk out, before codec initialize */
-	int     (*set_ext_mclk)(bool enable);
+	bool	(*ext_is_en)(void);
+	unsigned long (*set_ext_mclk)(unsigned long clk, int ch);
     bool    (*dma_filter)(struct dma_chan *chan, void *filter_param);
     const char *dma_play_ch;
     const char *dma_capt_ch;
@@ -129,6 +131,13 @@ struct nxp_i2s_plat_data {
 struct nxp_spdif_plat_data {
     int sample_rate;
     int hdmi_out;
+    bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
+    const char *dma_ch;
+};
+
+/* PDM */
+struct nxp_pdm_plat_data {
+    int sample_rate;
     bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
     const char *dma_ch;
 };
@@ -303,6 +312,23 @@ struct nxp_ehci_platdata {
 struct nxp_ohci_platdata {
 	int (*phy_init)(struct platform_device *pdev, int type);
 	int (*phy_exit)(struct platform_device *pdev, int type);
+};
+
+/*
+ * TMU
+ */
+struct nxp_tmu_trigger {
+	int	  trig_degree;
+	long  trig_duration;	/* ms */
+	long  trig_cpufreq;
+};
+
+struct nxp_tmu_platdata {
+	int channel;
+	int poll_duration;					/* default 500ms */
+	struct nxp_tmu_trigger *triggers;
+	int trigger_size;
+	void (*callback)(int ch, int temp, bool run);
 };
 
 #endif    /* __DEVICES_H__ */

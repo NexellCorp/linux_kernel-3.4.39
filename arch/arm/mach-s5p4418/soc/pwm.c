@@ -39,6 +39,7 @@
  */
 struct pwm_device {
 	int ch;
+	int invert;
 	unsigned long request;
 	unsigned long rate;
 	int 		  duty;		/* unit % 0% ~ 100% */
@@ -58,24 +59,36 @@ static struct pwm_device devs_pwm[] = {
 		.io     = PAD_GPIO_D +  1,
 		.fn_io  = NX_GPIO_PADFUNC_0,
 		.fn_pwm = NX_GPIO_PADFUNC_1,
+#ifdef CFG_PWM0_CLK_INV
+		.invert = 1,
+#endif
 	},
 	[1] = {
 		.ch	    = 1,
 		.io     = PAD_GPIO_C + 13,
 		.fn_io  = NX_GPIO_PADFUNC_1,
 		.fn_pwm = NX_GPIO_PADFUNC_2,
+#ifdef CFG_PWM1_CLK_INV
+		.invert = 1,
+#endif
 	},
 	[2] = {
 		.ch	    = 2,
 		.io     = PAD_GPIO_C + 14,
 		.fn_io  = NX_GPIO_PADFUNC_1,
 		.fn_pwm = NX_GPIO_PADFUNC_2,
+#ifdef CFG_PWM2_CLK_INV
+		.invert = 1,
+#endif
 	},
 	[3] = {
 		.ch	    = 3,
 		.io     = PAD_GPIO_D +  0,
 		.fn_io  = NX_GPIO_PADFUNC_0,
 		.fn_pwm = NX_GPIO_PADFUNC_2,
+#ifdef CFG_PWM3_CLK_INV
+		.invert = 1,
+#endif
 	},
 };
 #define	PWN_CHANNELS	(4)
@@ -152,9 +165,10 @@ static inline void pwm_count(int ch, unsigned int cnt, unsigned int cmp)
 	writel((cmp-1), PWM_BASE + PWM_CMPB + (PWM_CH_OFFS * ch));
 }
 
-static inline void pwm_start(int ch, int irqon)
+static inline void pwm_start(struct pwm_device *pwm, int irqon)
 {
 	volatile U32 val;
+	int ch = pwm->ch;
 	int on = irqon ? 1 : 0;
 
 	val  = readl(PWM_BASE + PWM_STAT);
@@ -169,12 +183,15 @@ static inline void pwm_start(int ch, int irqon)
 
 	val &= ~(TCON_UP << TCON_CH(ch));
 	val |=  ((TCON_AUTO | TCON_RUN) << TCON_CH(ch));	/* set pwm out invert ? */
+	if (pwm->invert)
+		val |=  (TCON_INVT << TCON_CH(ch));	/* set pwm out invert ? */
 	writel(val, PWM_BASE + PWM_TCON);
 }
 
-static inline void pwm_stop(int ch, int irqon)
+static inline void pwm_stop(struct pwm_device *pwm, int irqon)
 {
 	volatile U32 val;
+	int ch = pwm->ch;
 	int on = irqon ? 1 : 0;
 
 	val  = readl(PWM_BASE + PWM_STAT);
@@ -199,11 +216,14 @@ static void pwm_set_device(struct pwm_device *pwm)
 	PWM_RESET();
 
 	if (pwm->counter == pwm->compare || 0 == pwm->compare) {
-		nxp_soc_gpio_set_out_value(pwm->io, (0 == pwm->compare ? 0 : 1));
+		if (pwm->invert)
+			nxp_soc_gpio_set_out_value(pwm->io, (0 == pwm->compare ? 1 : 0));
+		else
+			nxp_soc_gpio_set_out_value(pwm->io, (0 == pwm->compare ? 0 : 1));
 		nxp_soc_gpio_set_io_dir(pwm->io, 1);
 		nxp_soc_gpio_set_io_func(pwm->io, pwm->fn_io);
 
-		pwm_stop(ch, 0);
+		pwm_stop(pwm, 0);
 		clk_disable(pwm->clk);
 	} else {
 		clk_set_rate(pwm->clk, pwm->rate);
@@ -211,7 +231,7 @@ static void pwm_set_device(struct pwm_device *pwm)
 
 		pwm_clock(ch, tmux, tscl);
 		pwm_count(ch, pwm->counter, pwm->compare);	/* TCMPB : Need Invert */
-		pwm_start(ch, 0);
+		pwm_start(pwm, 0);
 
 		nxp_soc_gpio_set_io_func(pwm->io, pwm->fn_pwm);
 	}

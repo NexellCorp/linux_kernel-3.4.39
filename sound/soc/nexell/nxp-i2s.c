@@ -42,7 +42,7 @@
 #define pr_debug				printk
 */
 #define	DEF_SAMPLE_RATE			48000
-#define	DEF_FRAME_BIT			48	// 32, 48 	 (BFS)
+#define	DEF_FRAME_BIT			32	// 32, 48 	 (BFS)
 
 #define	I2S_BASEADDR			PHY_BASEADDR_I2S0
 #define	I2S_CH_OFFSET			0x1000
@@ -60,14 +60,18 @@
 struct i2s_register {
 	unsigned int CON;		///< 0x00 :
 	unsigned int CSR;		///< 0x04 :
-	unsigned int fic;		///< 0x08 :
+	unsigned int FIC;		///< 0x08 :
+#if defined(CONFIG_ARCH_S5P4418)
 	unsigned int PSR;		///< 0x0C :
+#endif
 };
 
 #define	I2S_CON_OFFSET			(0x00)
 #define	I2S_CSR_OFFSET			(0x04)
 #define	I2S_FIC_OFFSET			(0x08)
+#if defined(CONFIG_ARCH_S5P4418)
 #define	I2S_PSR_OFFSET			(0x0C)
+#endif
 #define	I2S_TXD_OFFSET			(0x10)
 #define	I2S_RXD_OFFSET			(0x14)
 
@@ -81,18 +85,31 @@ struct i2s_register {
 
 #define	CSR_BLC_POS				13		// [13:14]
 #define	CSR_CDCLKCON_POS		12		// [12]
+#if defined(CONFIG_ARCH_S5P4418)
 #define	CSR_IMS_POS				10		// [10:11]
+#elif defined(CONFIG_ARCH_S5P6818)
+#define	CSR_IMS_POS				11		// [11]
+#endif
 #define	CSR_TXR_POS			 	8		// [08:09]
 #define	CSR_LRP_POS			 	7 		// [7]
 #define	CSR_SDF_POS			 	5		// [06:06]
 #define	CSR_RFS_POS			 	3		// [03:04]
 #define	CSR_BFS_POS			 	1		// [01:02]
 
+#if defined(CONFIG_ARCH_S5P4418)
 #define	PSR_PSRAEN_POS	   	   	15		// [15]
 #define	PSR_PSVALA_POS		 	8		// [08:13]
+#endif
 
+#if defined(CONFIG_ARCH_S5P4418)
+#define	IMS_BIT_PCLK			(0<<0)
 #define	IMS_BIT_EXTCLK			(1<<0)
+#define	IMS_BIT_SLAVE_PCLK		(2<<0)
 #define	IMS_BIT_SLAVE			(3<<0)
+#elif defined(CONFIG_ARCH_S5P6818)
+#define	IMS_BIT_EXTCLK			(0<<0)
+#define	IMS_BIT_SLAVE			(1<<0)
+#endif
 
 #define BLC_8BIT				1
 #define BLC_16BIT				0
@@ -131,16 +148,19 @@ static struct clock_ratio clk_ratio [] = {
  */
 struct nxp_i2s_snd_param {
 	int channel;
-    int master_mode;   	/* 0 = master_mode, 1 = slave */
-    int mclk_in;
-    int trans_mode; 	/* 0 = I2S, 2 = Left-Justified, 3 = Right-Justified  */
-    int sample_rate;
-    int	frame_bit;		/* 16, 24, 32, 48 */
+	int master_mode;   	/* 0 = master_mode, 1 = slave */
+	int mclk_in;
+	int trans_mode; 	/* 0 = I2S, 2 = Left-Justified, 3 = Right-Justified  */
+	int sample_rate;
+	int	frame_bit;		/* 16, 24, 32, 48 */
 	int LR_pol_inv;
 	int in_clkgen;
 	int pre_supply_mclk;
+	bool ext_is_en;
+	unsigned long (*set_ext_mclk)(unsigned long clk, int ch);	
 	int	status;
 	spinlock_t	lock;
+	unsigned long flags;
 	/* clock control */
 	struct clk *clk;
 	long clk_rate;
@@ -151,6 +171,10 @@ struct nxp_i2s_snd_param {
 	unsigned int base_addr;
 	struct i2s_register i2s;
 };
+
+#define	SND_I2S_LOCK_INIT(x)		spin_lock_init(x)
+#define	SND_I2S_LOCK(x, f)		spin_lock_irqsave(x, f);
+#define	SND_I2S_UNLOCK(x, f)		spin_unlock_irqrestore(x, f);
 
 /*
  * return 0 = clkgen, 1 = peripheral clock
@@ -177,8 +201,8 @@ static int set_sample_rate_clock(struct clk *clk, unsigned long request,
 		if (find > I2S_MAX_CLOCK)
 			break;
 		din = abs((clock/i) - (find/i));
-		if (dio > din) {
-			dio = din, rate = find;
+		if (dio >= din) {
+			dio = din, rate = find/i;
 			div = i, ret = 0;
 			if (0 == din)
 				break;
@@ -253,10 +277,14 @@ static int i2s_start(struct nxp_i2s_snd_param *par, int stream)
 	unsigned int FIC = 0;
 
 	pr_debug("%s %d\n", __func__, par->channel);
-	spin_lock(&par->lock);
 
-	if (!par->pre_supply_mclk)
+	SND_I2S_LOCK(&par->lock, par->flags);
+
+	if (!par->pre_supply_mclk) {
+		if (par->ext_is_en)
+		    par->set_ext_mclk(CTRUE, par->channel);
 		supply_master_clock(par);
+	}
 
 	if (SNDRV_PCM_STREAM_PLAYBACK == stream) {
 		FIC |= (1 << 15);	/* flush fifo */
@@ -284,7 +312,8 @@ static int i2s_start(struct nxp_i2s_snd_param *par, int stream)
 	writel(i2s->CSR, (base+I2S_CSR_OFFSET));
 	writel(i2s->CON, (base+I2S_CON_OFFSET));
 
-	spin_unlock(&par->lock);
+	SND_I2S_UNLOCK(&par->lock, par->flags);
+
 	return 0;
 }
 
@@ -294,7 +323,8 @@ static void i2s_stop(struct nxp_i2s_snd_param *par, int stream)
 	unsigned int base = par->base_addr;
 
 	pr_debug("%s %d\n", __func__, par->channel);
-	spin_lock(&par->lock);
+
+	SND_I2S_LOCK(&par->lock, par->flags);
 
 	if (SNDRV_PCM_STREAM_PLAYBACK == stream) {
 		par->status &= ~SNDDEV_STATUS_PLAY;
@@ -319,10 +349,13 @@ static void i2s_stop(struct nxp_i2s_snd_param *par, int stream)
 
 	/* I2S Inactive */
 	if (!(par->status & SNDDEV_STATUS_RUNNING) &&
-		!par->pre_supply_mclk)
+		!par->pre_supply_mclk) {
 		cutoff_master_clock(par);
+		if (par->ext_is_en)
+		    par->set_ext_mclk(CFALSE, par->channel);
+	}
 
-	spin_unlock(&par->lock);
+	SND_I2S_UNLOCK(&par->lock, par->flags);
 }
 
 static struct snd_soc_dai_driver i2s_dai_driver;
@@ -335,11 +368,16 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 	struct nxp_pcm_dma_param *dmap_capt = &par->capt;
 	unsigned int base = par->base_addr;
 	unsigned long request = 0, rate_hz = 0;
-	int divide = 0, prescale = 0;
-	int en_pclk = 0, i = 0;
+	int divide = 0, i = 0;
+#if defined(CONFIG_ARCH_S5P4418)
+	int prescale = 0, en_pclk = 0;
+#endif
 
 	int LRP, IMS, BLC = BLC_16BIT, BFS = 0, RFS = RATIO_256;
-	int SDF = 0, OEN = 0, PSRAEN = 0;
+	int SDF = 0, OEN = 0;
+#if defined(CONFIG_ARCH_S5P4418)
+	int PSRAEN = 0;
+#endif
 
 	IMS = par->master_mode ? 0 : IMS_BIT_SLAVE;
 	SDF = par->trans_mode & 0x03;	/* 0:I2S, 1:Left 2:Right justfied */
@@ -355,16 +393,6 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 		return -EINVAL;
 	}
 
-	if (!par->master_mode){ 
-	 	/* 384 RATIO */
-		RFS = RATIO_384, request = clk_ratio[i].ratio_384;
-		
-		/* 256 RATIO */
-		if (BFS_32BIT == BFS)
-			RFS = RATIO_256, request = clk_ratio[i].ratio_256;
-	goto done;
-	}
-
 	for (i = 0; ARRAY_SIZE(clk_ratio) > i; i++) {
 		if (par->sample_rate == clk_ratio[i].sample_rate)
 			break;
@@ -376,38 +404,79 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 		return -EINVAL;
 	}
 
+	if (!par->master_mode){ 
+	 	/* 384 RATIO */
+		RFS = RATIO_384, request = clk_ratio[i].ratio_384;
+		/* 256 RATIO */
+		if (BFS_32BIT == BFS)
+			RFS = RATIO_256, request = clk_ratio[i].ratio_256;
+		goto done;
+	}
+
+	if (par->ext_is_en) {
+		if (BFS_48BIT == BFS)
+			request = clk_ratio[i].ratio_384;
+		else	
+			request = clk_ratio[i].ratio_256;
+	    par->set_ext_mclk(request, par->channel);
+	}
+
  	/* 384 RATIO */
 	RFS = RATIO_384, request = clk_ratio[i].ratio_384;
+#if defined(CONFIG_ARCH_S5P4418)
 	en_pclk = set_sample_rate_clock(par->clk, request, &rate_hz, &divide);
+#elif defined(CONFIG_ARCH_S5P6818)
+	set_sample_rate_clock(par->clk, request, &rate_hz, &divide);
+#endif
 
 	/* 256 RATIO */
 	if (rate_hz != request && BFS_32BIT == BFS) {
-		unsigned int rate = rate_hz, div = divide, pclk = en_pclk;
+		unsigned int rate = rate_hz, div = divide;
+#if defined(CONFIG_ARCH_S5P4418)
+		unsigned int pclk = en_pclk;
+#endif
 		RFS = RATIO_256, request = clk_ratio[i].ratio_256;
+#if defined(CONFIG_ARCH_S5P4418)
 		en_pclk = set_sample_rate_clock(par->clk, request, &rate_hz, &divide);
+#elif defined(CONFIG_ARCH_S5P6818)
+		set_sample_rate_clock(par->clk, request, &rate_hz, &divide);
+#endif
 		if (abs(request - rate_hz) >
 			abs(request - rate)) {
 			rate_hz = rate, divide = div, RFS = RATIO_384;
+#if defined(CONFIG_ARCH_S5P4418)
 			en_pclk = pclk;
+#endif
 		}
 	}
 
 	/* input clock */
+#if defined(CONFIG_ARCH_S5P4418)
 	if (!en_pclk) {
 		par->clk_rate = clk_set_rate(par->clk, rate_hz);
 		par->in_clkgen = 1;
-		IMS |= 1;
+		IMS |= IMS_BIT_EXTCLK;
 	} else {
-		struct clk *pclk = clk_get(NULL, "pclk");
-		clk_enable(pclk);
-		par->clk_rate = 0;
-		par->in_clkgen = 0;
+		if (par->mclk_in == 1) {
+			par->in_clkgen = 1;
+			IMS |= IMS_BIT_EXTCLK;
+		} else {
+			struct clk *pclk = clk_get(NULL, "pclk");
+			clk_enable(pclk);
+			par->clk_rate = 0;
+			par->in_clkgen = 0;
+			IMS = IMS_BIT_PCLK;
+		}
 	}
 
 	if (en_pclk) {
-		PSRAEN    = 1;
-		prescale  = divide - 1;
+		PSRAEN = 1;
+		prescale = divide - 1;
 	}
+#elif defined(CONFIG_ARCH_S5P6818)
+	par->clk_rate = clk_set_rate(par->clk, rate_hz);
+	par->in_clkgen = 1;
+#endif
 
 done:
 	i2s->CSR = 	(BLC << CSR_BLC_POS) |
@@ -417,7 +486,23 @@ done:
 				(SDF << CSR_SDF_POS) |
 				(RFS << CSR_RFS_POS) |
 				(BFS << CSR_BFS_POS);
+#if defined(CONFIG_ARCH_S5P4418)
 	i2s->PSR = 	((PSRAEN &0x1) << PSR_PSRAEN_POS) | ((prescale & 0x3f) << PSR_PSVALA_POS);
+#endif
+	i2s_reset(par);
+
+	if (par->pre_supply_mclk) {
+		if (par->ext_is_en)
+	    	rate_hz = par->set_ext_mclk(CTRUE, par->channel);
+		supply_master_clock(par);
+		i2s->CON |=  1 << CON_I2SACTIVE_POS;
+		writel(i2s->CON, (base+I2S_CON_OFFSET));
+	} else {
+		if (par->ext_is_en) {
+	    	rate_hz = par->set_ext_mclk(CTRUE, par->channel);
+	    	par->set_ext_mclk(CFALSE, par->channel);
+		}
+	}
 
 	dmap_play->real_clock = rate_hz/(RATIO_256==RFS?256:384);
 	dmap_capt->real_clock = rate_hz/(RATIO_256==RFS?256:384);
@@ -427,15 +512,13 @@ done:
 		par->sample_rate, rate_hz/(RATIO_256==RFS?256:384),
 		par->frame_bit, rate_hz, (RATIO_256==RFS?256:384));
 	pr_debug("snd i2s: BLC=%d, IMS=%d, LRP=%d, SDF=%d, RFS=%d, BFS=%d\n", BLC, IMS, LRP, SDF, RFS, BFS);
+#if defined(CONFIG_ARCH_S5P4418)
 	pr_debug("snd i2s: PSRAEN=%d, PSVALA=%d \n", PSRAEN, prescale);
+#endif
 
-	i2s_reset(par);
-
-	if (par->pre_supply_mclk){
-		supply_master_clock(par);
-		i2s->CON |=  1 << CON_I2SACTIVE_POS;
-		writel(i2s->CON, (base+I2S_CON_OFFSET));
-	}
+	/* i2s support rates */
+	dai->playback.rates = snd_pcm_rate_to_rate_bit(par->sample_rate);
+	dai->capture.rates = snd_pcm_rate_to_rate_bit(par->sample_rate);	
 
 	/* i2s support format */
 	if (RFS == RATIO_256 || BFS != BFS_48BIT) {
@@ -455,18 +538,25 @@ static int nxp_i2s_set_plat_param(struct nxp_i2s_snd_param *par, void *data)
 	int i = 0, ret = 0;
 
 	par->channel = pdev->id;
-    par->master_mode = plat->master_mode;
-    par->mclk_in = plat->master_clock_in;
-    par->trans_mode = plat->trans_mode;
-    par->sample_rate = plat->sample_rate ? plat->sample_rate : DEF_SAMPLE_RATE;
-    par->frame_bit = plat->frame_bit ? plat->frame_bit : DEF_FRAME_BIT;
-    par->sample_rate = plat->sample_rate;
-    par->LR_pol_inv = plat->LR_pol_inv;
-    par->pre_supply_mclk = plat->pre_supply_mclk;
+	par->master_mode = plat->master_mode;
+	par->mclk_in = plat->master_clock_in;
+	par->trans_mode = plat->trans_mode;
+	par->sample_rate = plat->sample_rate ? plat->sample_rate : DEF_SAMPLE_RATE;
+	par->frame_bit = plat->frame_bit ? plat->frame_bit : DEF_FRAME_BIT;
+	par->LR_pol_inv = plat->LR_pol_inv;
+	par->pre_supply_mclk = plat->pre_supply_mclk;
+	if (plat->ext_is_en) {
+		par->ext_is_en = plat->ext_is_en();
+		par->mclk_in = par->ext_is_en ? 1 : plat->master_clock_in;
+	} else {
+		par->ext_is_en = 0;
+	}
+	if (plat->set_ext_mclk)
+		par->set_ext_mclk = plat->set_ext_mclk;
 	par->base_addr = IO_ADDRESS(phy_base);
-	spin_lock_init(&par->lock);
+	SND_I2S_LOCK_INIT(&par->lock);
 
-    for (i = 0; 2 > i; i++, dma = &par->capt) {
+	for (i = 0; 2 > i; i++, dma = &par->capt) {
 		if (! plat->dma_play_ch) {
 			dma->active = false;
 			continue;
@@ -497,18 +587,22 @@ static int nxp_i2s_setup(struct snd_soc_dai *dai)
 	struct i2s_register *i2s = &par->i2s;
 	unsigned int base = par->base_addr;
 
-	spin_lock(&par->lock);
+	SND_I2S_LOCK(&par->lock, par->flags);
 
 	if (SNDDEV_STATUS_SETUP & par->status) {
-		spin_unlock(&par->lock);
+		SND_I2S_UNLOCK(&par->lock, par->flags);
 		return 0;
 	}
 
 	writel(i2s->CSR, (base+I2S_CSR_OFFSET));
+#if defined(CONFIG_ARCH_S5P4418)
 	writel(i2s->PSR, (base+I2S_PSR_OFFSET));
+#endif
 
 	par->status |= SNDDEV_STATUS_SETUP;
-	spin_unlock(&par->lock);
+
+	SND_I2S_UNLOCK(&par->lock, par->flags);
+
 	return 0;
 }
 
@@ -518,7 +612,7 @@ static void nxp_i2s_release(struct snd_soc_dai *dai)
 	struct i2s_register *i2s = &par->i2s;
 	unsigned int base = par->base_addr;
 
-	spin_lock(&par->lock);
+	SND_I2S_LOCK(&par->lock, par->flags);
 
 	i2s->CON =~((1 << CON_TXDMAPAUSE_POS) | (1 << CON_RXDMAPAUSE_POS) |
 				(1 << CON_TXCHPAUSE_POS) | (1 << CON_RXCHPAUSE_POS) |
@@ -532,7 +626,7 @@ static void nxp_i2s_release(struct snd_soc_dai *dai)
 
 	par->status = SNDDEV_STATUS_CLEAR;
 
-	spin_unlock(&par->lock);
+	SND_I2S_UNLOCK(&par->lock, par->flags);
 }
 
 /*
@@ -574,7 +668,7 @@ static int nxp_i2s_trigger(struct snd_pcm_substream *substream,
 		break;
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-    case SNDRV_PCM_TRIGGER_STOP:
+	case SNDRV_PCM_TRIGGER_STOP:
 		i2s_stop(par, stream);
 #ifdef CONFIG_NXP_DFS_BCLK
         bclk_put(BCLK_USER_DMA);
@@ -658,6 +752,9 @@ static int nxp_i2s_dai_resume(struct snd_soc_dai *dai)
 
 	i2s_reset(par);
 
+	if (par->pre_supply_mclk && par->ext_is_en)
+	    par->set_ext_mclk(CTRUE, par->channel);
+
 	if (par->master_mode && par->in_clkgen) {
 		clk_set_rate(par->clk, par->clk_rate);
 		if(SNDDEV_STATUS_POWER & par->status)
@@ -671,7 +768,9 @@ static int nxp_i2s_dai_resume(struct snd_soc_dai *dai)
 	writel(FIC, (base+I2S_FIC_OFFSET));	/* Flush the current FIFO */
 	writel(0x0, (base+I2S_FIC_OFFSET));	/* Clear the Flush bit */
 	writel(i2s->CSR, (base+I2S_CSR_OFFSET));
+#if defined(CONFIG_ARCH_S5P4418)
 	writel(i2s->PSR, (base+I2S_PSR_OFFSET));
+#endif
 	writel(i2s->CON, (base+I2S_CON_OFFSET));
 
 	return 0;
@@ -718,12 +817,12 @@ static __devinit int nxp_i2s_probe(struct platform_device *pdev)
 	struct nxp_i2s_snd_param *par;
 	int ret = 0;
 
-    /*  allocate i2c_port data */
-    par = kzalloc(sizeof(struct nxp_i2s_snd_param), GFP_KERNEL);
-    if (! par) {
-        printk(KERN_ERR "fail, %s allocate driver info ...\n", pdev->name);
-        return -ENOMEM;
-    }
+	/*  allocate i2c_port data */
+	par = kzalloc(sizeof(struct nxp_i2s_snd_param), GFP_KERNEL);
+	if (! par) {
+		printk(KERN_ERR "fail, %s allocate driver info ...\n", pdev->name);
+		return -ENOMEM;
+	}
 
 	ret = nxp_i2s_set_plat_param(par, pdev);
 	if (ret)

@@ -33,11 +33,15 @@
 #include <linux/pm_runtime.h>
 #include <linux/delay.h>
 
-/* nexell soc headers */
+/* slsi soc headers */
 #include <mach/platform.h>
 #include <mach/devices.h>
 #include <mach/soc.h>
 #include <linux/vr/vr_utgard.h>
+
+#include <mach/iic.h>
+#include <mach/regs-iic.h>
+
 
 /*------------------------------------------------------------------------------
  * Serial platform device
@@ -50,7 +54,7 @@
  * I2C Bus platform device
  */
 
-#if defined(CONFIG_I2C_NXP)
+#if defined( CONFIG_I2C_NXP) || defined ( CONFIG_I2C_SLSI )
 #define I2CUDELAY(x)	1000000/x/2
 /* gpio i2c 0 */
 #ifdef CFG_IO_I2C0_SCL
@@ -86,7 +90,44 @@
 #define	I2C2_SDA	NXP_I2C2_MOD_SDA
 #endif
 
+#ifdef CFG_I2C0_RETRY_CNT
+#define I2C0_RETRY_CNT CFG_I2C0_RETRY_CNT
+#else
+#define I2C0_RETRY_CNT 3
+#endif
+
+#ifdef CFG_I2C0_RETRY_DELAY
+#define I2C0_RETRY_DELAY CFG_I2C0_RETRY_DELAY
+#else
+#define I2C0_RETRY_DELAY 100
+#endif
+
+#ifdef CFG_I2C1_RETRY_CNT
+#define I2C1_RETRY_CNT CFG_I2C1_RETRY_CNT
+#else
+#define I2C1_RETRY_CNT 3
+#endif
+
+#ifdef CFG_I2C1_RETRY_DELAY
+#define I2C1_RETRY_DELAY CFG_I2C1_RETRY_DELAY
+#else
+#define I2C1_RETRY_DELAY 100
+#endif
+
+#ifdef CFG_I2C2_RETRY_CNT
+#define I2C2_RETRY_CNT CFG_I2C2_RETRY_CNT
+#else
+#define I2C2_RETRY_CNT 3
+#endif
+
+#ifdef CFG_I2C2_RETRY_DELAY
+#define I2C2_RETRY_DELAY CFG_I2C2_RETRY_DELAY
+#else
+#define I2C2_RETRY_DELAY 100
+#endif
+
 #if	defined(CONFIG_I2C_NXP_PORT0)
+#if  defined(CONFIG_I2C_NXP_PORT0_GPIO_MODE)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port0 = {
 	.sda_pin	= I2C0_SDA,
 	.scl_pin	= I2C0_SCL,
@@ -94,7 +135,6 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port0 = {
 	.timeout	= 10,
 };
 
-#if  defined(CONFIG_I2C_NXP_PORT0_GPIO_MODE)
 static struct platform_device i2c_device_ch0 = {
 	.name	= "i2c-gpio",
 	.id		= 0,
@@ -103,17 +143,32 @@ static struct platform_device i2c_device_ch0 = {
 	},
 };
 #else
-static struct nxp_i2c_plat_data i2c_data_ch0 = {
-	.port		= 0,
-	.irq		= IRQ_PHY_I2C0,
-	.gpio 		= &nxp_i2c_gpio_port0,
-	.base_addr	= PHY_BASEADDR_I2C0,
-	.rate 		= CFG_I2C0_CLK,
+void i2c_cfg_gpio0(struct platform_device *dev)
+{
+	nxp_soc_gpio_set_io_func( I2C0_SCL & 0xff, 1);
+	nxp_soc_gpio_set_io_func( I2C0_SDA & 0xff, 1);
+}
+struct s3c2410_platform_i2c i2c_data_ch0 = {
+	.bus_num	= 0,
+    .flags      = 0,
+    .slave_addr = 0x10,
+    .frequency  = CFG_I2C0_CLK,
+    .sda_delay  = 100,
+	.retry_delay=  I2C0_RETRY_DELAY, 
+	.retry_cnt  =  I2C0_RETRY_CNT, 
+	.cfg_gpio	= i2c_cfg_gpio0,
+};
+static struct resource s3c_i2c0_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C0, SZ_256),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C0),
 };
 
 static struct platform_device i2c_device_ch0 = {
-	.name	= DEV_NAME_I2C,
+	//.name	= DEV_NAME_I2C,
+	.name = "s3c2440-i2c",
 	.id		= 0,
+	.num_resources  = ARRAY_SIZE(s3c_i2c0_resource),
+	.resource   = s3c_i2c0_resource,
 	.dev    = {
 		.platform_data	= &i2c_data_ch0
 	},
@@ -124,6 +179,8 @@ static struct platform_device i2c_device_ch0 = {
 #endif
 
 #if	defined(CONFIG_I2C_NXP_PORT1)
+
+#if  defined(CONFIG_I2C_NXP_PORT1_GPIO_MODE)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port1 = {
 	.sda_pin	= I2C1_SDA,
 	.scl_pin	= I2C1_SCL,
@@ -132,7 +189,6 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port1 = {
 };
 
 
-#if  defined(CONFIG_I2C_NXP_PORT1_GPIO_MODE)
 static struct platform_device i2c_device_ch1 = {
 	.name	= "i2c-gpio",
 	.id		= 1,
@@ -141,17 +197,33 @@ static struct platform_device i2c_device_ch1 = {
 	},
 };
 #else
-static struct nxp_i2c_plat_data i2c_data_ch1 = {
-	.port		= 1,
-	.irq		= IRQ_PHY_I2C1,
-	.gpio 		= &nxp_i2c_gpio_port1,
-	.base_addr	= PHY_BASEADDR_I2C1,
-	.rate 		= CFG_I2C1_CLK,
+void i2c_cfg_gpio1(struct platform_device *dev)
+{
+	nxp_soc_gpio_set_io_func( I2C1_SCL & 0xff, 1);
+	nxp_soc_gpio_set_io_func( I2C1_SDA & 0xff, 1);
+
+}
+struct s3c2410_platform_i2c i2c_data_ch1 = {
+	.bus_num	= 1,
+    .flags      = 0,
+    .slave_addr = 0x10,
+    .frequency  = CFG_I2C1_CLK,
+    .sda_delay  = 100,
+	.retry_delay=  I2C1_RETRY_DELAY, 
+	.retry_cnt  =  I2C1_RETRY_CNT, 
+	.cfg_gpio	= i2c_cfg_gpio1,
+};
+static struct resource s3c_i2c1_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C1, SZ_4K),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C1),
 };
 
 static struct platform_device i2c_device_ch1 = {
-	.name	= DEV_NAME_I2C,
+	//.name	= DEV_NAME_I2C,
+	.name = "s3c2440-i2c",
 	.id		= 1,
+	.num_resources  = ARRAY_SIZE(s3c_i2c1_resource),
+	.resource   = s3c_i2c1_resource,
 	.dev    = {
 		.platform_data	= &i2c_data_ch1
 	},
@@ -160,6 +232,7 @@ static struct platform_device i2c_device_ch1 = {
 #endif
 
 #if	defined(CONFIG_I2C_NXP_PORT2)
+#if  defined(CONFIG_I2C_NXP_PORT2_GPIO_MODE)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port2 = {
 	.sda_pin	= I2C2_SDA,
 	.scl_pin	= I2C2_SCL,
@@ -167,8 +240,6 @@ static struct i2c_gpio_platform_data nxp_i2c_gpio_port2 = {
 
 	.timeout	= 10,
 };
-
-#if  defined(CONFIG_I2C_NXP_PORT2_GPIO_MODE)
 static struct platform_device i2c_device_ch2 = {
 	.name	= "i2c-gpio",
 	.id		= 2,
@@ -177,17 +248,32 @@ static struct platform_device i2c_device_ch2 = {
 	},
 };
 #else
-static struct nxp_i2c_plat_data i2c_data_ch2 = {
-	.port		= 2,
-	.irq		= IRQ_PHY_I2C2,
-	.gpio 		= &nxp_i2c_gpio_port2,
-	.base_addr	= PHY_BASEADDR_I2C2,
-	.rate 		= CFG_I2C2_CLK,
+void i2c_cfg_gpio2(struct platform_device *dev)
+{
+	nxp_soc_gpio_set_io_func( I2C2_SCL & 0xff, 1);
+	nxp_soc_gpio_set_io_func( I2C2_SDA & 0xff, 1);
+}
+struct s3c2410_platform_i2c i2c_data_ch2 = {
+	.bus_num	= 2,
+    .flags      = 0,
+    .slave_addr = 0x10,
+    .frequency  = CFG_I2C2_CLK,
+    .sda_delay  = 100,
+	.retry_delay=  I2C2_RETRY_DELAY, 
+	.retry_cnt  =  I2C2_RETRY_CNT, 
+	.cfg_gpio	= i2c_cfg_gpio2,
+};
+static struct resource s3c_i2c2_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_I2C2, SZ_4K),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_I2C2),
 };
 
+
 static struct platform_device i2c_device_ch2 = {
-	.name	= DEV_NAME_I2C,
+	.name	="s3c2440-i2c",
 	.id		= 2,
+	.num_resources  = ARRAY_SIZE(s3c_i2c2_resource),
+	.resource   = s3c_i2c2_resource,
 	.dev    = {
 		.platform_data	= &i2c_data_ch2
 	},
@@ -212,11 +298,11 @@ static struct platform_device *i2c_devices[] = {
    * RTC (Real Time Clock) platform device
     */
 #if defined(CONFIG_RTC_DRV_NXP)
-static struct platform_device rtc_device = {
+static struct platform_device rtc_plat_device = {
 	.name   = DEV_NAME_RTC,
 	.id     = 0,
 };
-#endif  /* CONFIG_RTC_DRV_NEXELL */
+#endif  /* CONFIG_RTC_DRV_NXP */
 
 /*------------------------------------------------------------------------------
  * PWM platform device
@@ -427,34 +513,70 @@ static struct platform_device vr_gpu_device =
  */
 #if defined(CONFIG_SND_NXP_I2S) || defined(CONFIG_SND_NXP_I2S_MODULE)
 
-#ifdef CFG_AUDIO_I2S0_SUPPLY_EXT_MCLK
-static int i2s_ext_mclk_set_clock(bool enable)
+#ifndef CFG_AUDIO_I2S_SUPPLY_EXT_MCLK
+#define CFG_AUDIO_I2S_SUPPLY_EXT_MCLK	0
+#endif
+
+extern void nxp_cpu_id_string(u32 *string);
+static bool i2s_ext_is_en(void)
 {
-	int clk_rate;
+	bool ret = false;
+	u8 name[49] = {0,};
+	u8 *cmp_name = "NEXELL-NXP5430-R0-LF3000------------------------";
 
-	if(CFG_AUDIO_I2S0_FRAME_BIT == 32)
-		clk_rate = 12287980;
-	else
-		clk_rate = 18432000;
+	nxp_cpu_id_string((u32*)name);
 
-    PM_DBGOUT("%s: %d\n", __func__, (int)clk_rate);
-
-	// set input & gpio_mode of I2S0_CODCLK
-	nxp_soc_gpio_set_io_dir(PAD_GPIO_D + 13, 0);
-	nxp_soc_gpio_set_io_func(PAD_GPIO_D + 13, NX_GPIO_PADFUNC_0);
-
-    if (enable){
-        nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, clk_rate, 50);
-		nxp_cpu_periph_clock_register(CLK_ID_I2S_0, clk_rate, 0);
+	if ((strcmp(name, cmp_name) == 0) || CFG_AUDIO_I2S_SUPPLY_EXT_MCLK){
+		printk("using i2s ext clk!!!!!\n");
+		ret = true;
 	}
-    else{
-        nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, 0, 0);
 
+	return ret;
+}
+
+unsigned long i2s_ext_clk_value;
+static unsigned long i2s_ext_mclk_set_clock(unsigned long clk, int ch)
+{
+	unsigned long ret_clk = 0;
+
+    PM_DBGOUT("%s: %ld\n", __func__, clk);
+
+    if (clk > 1) {
+		// set input & gpio_mode of I2S MCLK pin
+		switch (ch) {
+			case 0:
+				nxp_soc_gpio_set_io_func(PAD_GPIO_D + 13, NX_GPIO_PADFUNC_0);
+				nxp_soc_gpio_set_io_dir(PAD_GPIO_D + 13, 0);
+				break;
+			case 1:
+			case 2:
+				nxp_soc_gpio_set_io_func(PAD_GPIO_A + 28, NX_GPIO_PADFUNC_0);
+				nxp_soc_gpio_set_io_dir(PAD_GPIO_A + 28, 0);
+				break;
+			default:
+				break;
+		}
+#if defined(CFG_EXT_MCLK_PWM_CH)
+		nxp_cpu_periph_clock_register(CLK_ID_I2S_0 + ch, clk, 0);
+		i2s_ext_clk_value = clk;
+	} else {
+		if (clk) {
+	        ret_clk = nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, i2s_ext_clk_value, 50);
+		} else {
+	        ret_clk = nxp_soc_pwm_set_frequency(CFG_EXT_MCLK_PWM_CH, 0, 0);
+		}
 	}
     msleep(1);
-    return 0;
-}
+#else
+		printk("err!!! must have other ext_clk++\n");
+		nxp_cpu_periph_clock_register(CLK_ID_I2S_0 + ch, clk, 0);
+		i2s_ext_clk_value = clk;
+	} else {
+		ret_clk = i2s_ext_clk_value;
+	}
 #endif
+    return ret_clk;
+}
 
 #ifndef CFG_AUDIO_I2S0_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S0_MASTER_CLOCK_IN		0
@@ -468,11 +590,8 @@ static struct nxp_i2s_plat_data i2s_data_ch0 = {
 	.frame_bit			= CFG_AUDIO_I2S0_FRAME_BIT,
 	.sample_rate		= CFG_AUDIO_I2S0_SAMPLE_RATE,
 	.pre_supply_mclk 	= CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK,
-#ifdef CFG_AUDIO_I2S0_SUPPLY_EXT_MCLK
+	.ext_is_en			= i2s_ext_is_en,
 	.set_ext_mclk		= i2s_ext_mclk_set_clock,
-#else
-	.set_ext_mclk		= NULL,
-#endif
 	/* DMA */
 	.dma_filter			= pl08x_filter_id,
 	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S0_TX,
@@ -499,6 +618,8 @@ static struct nxp_i2s_plat_data i2s_data_ch1 = {
 	.frame_bit			= CFG_AUDIO_I2S1_FRAME_BIT,
 	.sample_rate		= CFG_AUDIO_I2S1_SAMPLE_RATE,
 	.pre_supply_mclk 	= CFG_AUDIO_I2S1_PRE_SUPPLY_MCLK,
+	.ext_is_en			= i2s_ext_is_en,
+	.set_ext_mclk		= i2s_ext_mclk_set_clock,
 	/* DMA */
 	.dma_filter			= pl08x_filter_id,
 	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S1_TX,
@@ -525,10 +646,12 @@ static struct nxp_i2s_plat_data i2s_data_ch2 = {
 	.frame_bit			= CFG_AUDIO_I2S2_FRAME_BIT,
 	.sample_rate		= CFG_AUDIO_I2S2_SAMPLE_RATE,
 	.pre_supply_mclk 	= CFG_AUDIO_I2S2_PRE_SUPPLY_MCLK,
+	.ext_is_en			= i2s_ext_is_en,
+	.set_ext_mclk		= i2s_ext_mclk_set_clock,
 	/* DMA */
 	.dma_filter			= pl08x_filter_id,
-	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S1_TX,
-	.dma_capt_ch		= DMA_PERIPHERAL_NAME_I2S1_RX,
+	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S2_TX,
+	.dma_capt_ch		= DMA_PERIPHERAL_NAME_I2S2_RX,
 };
 
 static struct platform_device i2s_device_ch2 = {
@@ -590,9 +713,27 @@ static struct platform_device spdif_device_rx = {
 #endif	/* CONFIG_SND_NXP_SPDIF_RX || CONFIG_SND_NXP_SPDIF_RX_MODULE */
 
 /*------------------------------------------------------------------------------
+ * Alsa sound platform device (PDM)
+ */
+#if defined(CONFIG_SND_NXP_PDM) || defined(CONFIG_SND_NXP_PDM_MODULE)
+static struct nxp_pdm_plat_data pdm_data = {
+	.sample_rate	= CFG_AUDIO_PDM_SAMPLE_RATE,
+	.dma_filter		= pl08x_filter_id,
+	.dma_ch			= DMA_PERIPHERAL_NAME_PDM,
+};
+
+static struct platform_device pdm_device = {
+	.name	= DEV_NAME_PDM,
+	.id		= -1,
+	.dev    = {
+		.platform_data	= &pdm_data
+	},
+};
+#endif	/* CONFIG_SND_NXP_PDM || CONFIG_SND_NXP_PDM_MODULE */
+
+/*------------------------------------------------------------------------------
  * SSP/SPI
  */
-
 #ifdef CONFIG_SPI_SLSI_PORT0
 #include <mach/slsi-spi.h>
 #include <linux/gpio.h>
@@ -608,8 +749,8 @@ static void spi_init(int ch)
     char name[10] = {0};
     int req_clk = 0;
     struct clk *clk ;
-	printk("%s %d\n",__func__,ch);
-    if(0 == ch)
+    
+	if(0 == ch)
     	req_clk = CFG_SPI0_CLK;
 	else if(1 == ch)
 	    req_clk = CFG_SPI1_CLK;
@@ -620,7 +761,7 @@ static void spi_init(int ch)
 
 	clk = clk_get(NULL,name);
 	clk_set_rate(clk,req_clk);
-	printk("%s : %d \n", name,clk_get_rate(clk) );
+	
 	nxp_soc_peri_reset_enter(reset[ch][0]);
 	nxp_soc_peri_reset_enter(reset[ch][1]);
 	nxp_soc_peri_reset_exit(reset[ch][0]);
@@ -653,7 +794,7 @@ struct s3c64xx_spi_info s3c64xx_spi0_pdata = {
       .dma_tx_param   = (void *)DMA_PERIPHERAL_NAME_SSP0_TX,
       //.autosuspend_delay  = 10,
 /* end */
-
+	//.hierarchy = SSP_MASTER,
 };
 
 static struct resource s3c64xx_spi0_resource[] = {
@@ -672,75 +813,168 @@ struct platform_device s3c64xx_device_spi0 = {
 		.platform_data      = &s3c64xx_spi0_pdata,
     },
 };
+#endif
+#ifdef CONFIG_SPI_SLSI_PORT1
+int s3c64xx_spi1_cfg_gpio(struct platform_device *dev)
+{
+	return 0;
+}
 
-#endif /* CONFIG_S3C64XX_DEV_SPI0 */
+struct s3c64xx_spi_info s3c64xx_spi1_pdata = {
+	.fifo_lvl_mask  = 0x1ff,
+	.rx_lvl_offset  = 15,
+	//.rx_lvl_offset  = 0x1ff,
+	.high_speed = 1,
+	.clk_from_cmu   = false,//true,
+	.tx_st_done = 25,
+	.num_cs = 1,
+	.src_clk_nr = 0,
+	.cfg_gpio = s3c64xx_spi0_cfg_gpio,
+	.spi_init = spi_init,
+/* bok add */
+	  .bus_id = 1,
+	  .enable_dma     = 1,
+      .dma_filter     = pl08x_filter_id,
+      .dma_rx_param   = (void *)DMA_PERIPHERAL_NAME_SSP1_RX,
+      .dma_tx_param   = (void *)DMA_PERIPHERAL_NAME_SSP1_TX,
+      //.autosuspend_delay  = 10,
+/* end */
+//	.hierarchy = SSP_SLAVE,
+};
+
+static struct resource s3c64xx_spi1_resource[] = {
+    [0] = DEFINE_RES_MEM(PHY_BASEADDR_SSP1, SZ_256),
+    [1] = DEFINE_RES_DMA(DMA_PERIPHERAL_ID_SSP1_TX),
+    [2] = DEFINE_RES_DMA(DMA_PERIPHERAL_ID_SSP1_TX),
+    [3] = DEFINE_RES_IRQ(IRQ_PHY_SSP1),
+};
+
+struct platform_device s3c64xx_device_spi1 = {
+    .name       = "s3c64xx-spi",
+    .id     = 1,
+    .num_resources  = ARRAY_SIZE(s3c64xx_spi1_resource),
+    .resource   = s3c64xx_spi1_resource,
+    .dev = {
+		.platform_data      = &s3c64xx_spi1_pdata,
+    },
+};
+
+#endif
+#ifdef CONFIG_SPI_SLSI_PORT2
+int s3c64xx_spi2_cfg_gpio(struct platform_device *dev)
+{
+	return 0;
+}
+
+struct s3c64xx_spi_info s3c64xx_spi2_pdata = {
+	.fifo_lvl_mask  = 0x1ff,
+	.rx_lvl_offset  = 15,
+	//.rx_lvl_offset  = 0x1ff,
+	.high_speed = 1,
+	.clk_from_cmu   = false,//true,
+	.tx_st_done = 25,
+	.num_cs = 1,
+	.src_clk_nr = 0,
+	.cfg_gpio = s3c64xx_spi2_cfg_gpio,
+	.spi_init = spi_init,
+/* bok add */
+	.bus_id = 2,
+	.enable_dma     = 1,
+    .dma_filter     = pl08x_filter_id,
+    .dma_rx_param   = (void *)DMA_PERIPHERAL_NAME_SSP2_RX,
+    .dma_tx_param   = (void *)DMA_PERIPHERAL_NAME_SSP2_TX,
+      //.autosuspend_delay  = 10,
+/* end */
+//	.hierarchy = SSP_MASTER,
+
+};
+static struct resource s3c64xx_spi2_resource[] = {
+    [0] = DEFINE_RES_MEM(PHY_BASEADDR_SSP2, SZ_256),
+    [1] = DEFINE_RES_DMA(DMA_PERIPHERAL_ID_SSP2_TX),
+    [2] = DEFINE_RES_DMA(DMA_PERIPHERAL_ID_SSP2_TX),
+    [3] = DEFINE_RES_IRQ(IRQ_PHY_SSP2),
+};
+
+struct platform_device s3c64xx_device_spi2 = {
+    .name       = "s3c64xx-spi",
+    .id     = 2,
+    .num_resources  = ARRAY_SIZE(s3c64xx_spi2_resource),
+    .resource   = s3c64xx_spi2_resource,
+    .dev = {
+		.platform_data      = &s3c64xx_spi2_pdata,
+    },
+};
+
+
+#endif
 
 /*------------------------------------------------------------------------------
  * USB device (EHCI/OHCI)
  */
 
-#if defined(CONFIG_USB_EHCI_NXP_SYNOPSYS)
-#include <mach/usb.h>
+#if defined(CONFIG_USB_EHCI_SYNOPSYS)
+#include <mach/usb-phy.h>
 
-static int __hsic_phy_power_on(void) { return 0; }
-int usb_hsic_phy_power_on(struct platform_device *pdev, bool on)
-	__attribute__((weak, alias("__hsic_phy_power_on")));
+extern int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on);
+
 
 /* USB EHCI Host Controller registration */
-static struct resource ehci_resource[] = {
+
+static struct resource nxp_ehci_resource[] = {
     [0] = DEFINE_RES_MEM(PHY_BASEADDR_EHCI, SZ_256),
     [1] = DEFINE_RES_IRQ(IRQ_PHY_USB20HOST),
 };
 
-static struct nxp_ehci_plat_data ehci_data = {
-    .phy_init = nxp_soc_usb_phy_init,
-    .phy_exit = nxp_soc_usb_phy_exit,
-    .hsic_phy_pwr_on = usb_hsic_phy_power_on,
+struct nxp_ehci_platdata nxp_ehci_plat_data = {
+    .phy_init = nxp_usb_phy_init,
+    .phy_exit = nxp_usb_phy_exit,
+    .hsic_phy_pwr_on = nxp_hsic_phy_pwr_on,
 };
 
-static u64 ehci_dmamask = DMA_BIT_MASK(32);
+static u64 nxp_ehci_dmamask = DMA_BIT_MASK(32);
 
-static struct platform_device ehci_device = {
-    .name           = "nxp-ehci-synop",
+struct platform_device nxp_device_ehci = {
+    .name           = "nxp-ehci",
     .id             = -1,
-    .num_resources  = ARRAY_SIZE(ehci_resource),
-    .resource       = ehci_resource,
+    .num_resources  = ARRAY_SIZE(nxp_ehci_resource),
+    .resource       = nxp_ehci_resource,
     .dev            = {
-        .dma_mask           = &ehci_dmamask,
+        .dma_mask           = &nxp_ehci_dmamask,
         .coherent_dma_mask  = DMA_BIT_MASK(32),
-        .platform_data      = &ehci_data,
+        .platform_data      = &nxp_ehci_plat_data,
     }
 };
-#endif  /* CONFIG_USB_EHCI_NXP_SYNOPSYS */
+#endif  /* CONFIG_USB_EHCI_SYNOPSYS */
 
-#if defined(CONFIG_USB_OHCI_NXP_SYNOPSYS)
-#include <mach/usb.h>
+#if defined(CONFIG_USB_OHCI_SYNOPSYS)
+#include <mach/usb-phy.h>
 
 /* USB OHCI Host Controller registration */
-static struct resource ohci_resource[] = {
+
+static struct resource nxp_ohci_resource[] = {
     [0] = DEFINE_RES_MEM(PHY_BASEADDR_OHCI, SZ_256),
     [1] = DEFINE_RES_IRQ(IRQ_PHY_USB20HOST),
 };
 
-static struct nxp_ohci_plat_data ohci_data = {
-    .phy_init = nxp_soc_usb_phy_init,
-    .phy_exit = nxp_soc_usb_phy_exit,
+struct nxp_ohci_platdata nxp_ohci_plat_data = {
+    .phy_init = nxp_usb_phy_init,
+    .phy_exit = nxp_usb_phy_exit,
 };
 
-static u64 ohci_dmamask = DMA_BIT_MASK(32);
+static u64 nxp_ohci_dmamask = DMA_BIT_MASK(32);
 
-static struct platform_device ohci_device = {
-    .name           = "nxp-ohci-synop",
+struct platform_device nxp_device_ohci = {
+    .name           = "nxp-ohci",
     .id             = -1,
-    .num_resources  = ARRAY_SIZE(ohci_resource),
-    .resource       = ohci_resource,
+    .num_resources  = ARRAY_SIZE(nxp_ohci_resource),
+    .resource       = nxp_ohci_resource,
     .dev            = {
-        .dma_mask           = &ohci_dmamask,
+        .dma_mask           = &nxp_ohci_dmamask,
         .coherent_dma_mask  = DMA_BIT_MASK(32),
-        .platform_data      = &ohci_data,
+        .platform_data      = &nxp_ohci_plat_data,
     }
 };
-#endif  /* CONFIG_USB_OHCI_NXP_SYNOPSYS */
+#endif  /* CONFIG_USB_OHCI_SYNOPSYS */
 
 /*------------------------------------------------------------------------------
  * USB OTG Host or Gadget
@@ -804,7 +1038,11 @@ void otg_phy_init(void)
     // 1-1. VBUS reconfig - Over current Issue
 #if 1
     temp  = readl(SOC_VA_TIEOFF + 0x38) & ~(0x7<<23);
+#if defined(CFG_OTG_OVC_VALUE)
+    temp |= (CFG_OTG_OVC_VALUE << 23);
+#else
     temp |= (0x3<<23);
+#endif
     writel(temp, SOC_VA_TIEOFF + 0x38);
 #endif
 
@@ -939,11 +1177,13 @@ static struct platform_device otg_plat_device = {
     .resource       = otg_resources,
 };
 
-#define CFG_SWITCH_USB_5V_EN        (PAD_GPIO_D + 10)
-#define CFG_SWITCH_USB_HOST_DEVICE  (PAD_GPIO_D + 11)
+//#define CFG_SWITCH_USB_5V_EN        (PAD_GPIO_D + 10)
+//#define CFG_SWITCH_USB_HOST_DEVICE  (PAD_GPIO_D + 11)
 #define CFG_OTG_MODE_HOST           1
 #define CFG_OTG_MODE_DEVICE         0
+#if !defined(CFG_OTG_BOOT_MODE)
 #define CFG_OTG_BOOT_MODE           CFG_OTG_MODE_DEVICE
+#endif
 
 static int cur_otg_mode = CFG_OTG_BOOT_MODE;
 
@@ -951,6 +1191,7 @@ unsigned int get_otg_mode(void)
 {
     return cur_otg_mode;
 }
+EXPORT_SYMBOL(get_otg_mode);
 
 void set_otg_mode(unsigned int mode, int is_force)
 {
@@ -959,12 +1200,24 @@ void set_otg_mode(unsigned int mode, int is_force)
     if ((mode == cur_otg_mode) && !is_force) return;
 
     cur_otg_mode = mode;
-
+#if defined (CFG_SWITCH_USB_HOST_DEVICE)
+	pr_debug("%s %d\n", __func__, mode);
+	nxp_soc_gpio_set_out_value(CFG_SWITCH_USB_HOST_DEVICE, mode);
+#endif
     return;
 }
-
-EXPORT_SYMBOL(get_otg_mode);
 EXPORT_SYMBOL(set_otg_mode);
+
+#if defined (CFG_SWITCH_USB_5V_EN)
+void otg_power_en(int enable)
+{
+	pr_debug("%s %d\n", __func__, enable);
+
+	nxp_soc_gpio_set_out_value(CFG_SWITCH_USB_5V_EN, enable);
+}
+EXPORT_SYMBOL(otg_power_en);
+#endif /* CFG_SWITCH_USB_5V_EN */
+
 #endif/* CONFIG_USB_DWCOTG */
 
 /*------------------------------------------------------------------------------
@@ -993,18 +1246,16 @@ struct platform_device nxp_device_ion = {
 #endif
 static unsigned long adc_sample_rate = CFG_ADC_SAMPLE_RATE;
 
-static struct resource adc_resource[] = {
-	[0] = {
-		.start	= IRQ_PHY_ADC,
-		.flags	= IORESOURCE_IRQ,
-	},
+static struct resource nxp_adc_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_ADC, SZ_1K),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_ADC),
 };
 
-static struct platform_device adc_device = {
+static struct platform_device nxp_adc_device = {
 	.name			= DEV_NAME_ADC,
 	.id				= -1,
-	.num_resources	= ARRAY_SIZE(adc_resource),
-	.resource		= adc_resource,
+	.num_resources	= ARRAY_SIZE(nxp_adc_resource),
+	.resource		= nxp_adc_resource,
 	.dev  			= {
 		.platform_data	= &adc_sample_rate,
 	},
@@ -1020,18 +1271,18 @@ static struct platform_device adc_device = {
  * Watchdog Timer
  */
 
-#if defined(CONFIG_NXP_WATCHDOG)
+#if defined(CONFIG_NXP_WDT)
 
-static struct resource wdt_resource[] = {
+static struct resource nxp_wdt_resource[] = {
         [0] = DEFINE_RES_MEM(PHY_BASEADDR_WDT, SZ_1K),
         [1] = DEFINE_RES_IRQ(IRQ_PHY_WDT),
 };
 
-static struct platform_device wdt_device = {
+struct platform_device nxp_device_wdt = {
         .name           = DEV_NAME_WDT,
         .id             = -1,
-        .num_resources  = ARRAY_SIZE(wdt_resource),
-        .resource       = wdt_resource,
+        .num_resources  = ARRAY_SIZE(nxp_wdt_resource),
+        .resource       = nxp_wdt_resource,
 };
 #endif
 
@@ -1126,18 +1377,23 @@ void __init nxp_cpu_devs_register(void)
 	platform_device_register(&resc_device);
 #endif
 
+#if defined(CONFIG_NXP_DISPLAY_TVOUT)
+	printk("mach: add device tvout \n");
+	platform_device_register(&tvout_device);
+#endif
+
 #if defined(CONFIG_SERIAL_NXP)
     printk("mach: add device serial (array:%d)\n", ARRAY_SIZE(uart_devices));
     platform_add_devices(uart_devices, ARRAY_SIZE(uart_devices));
 #endif
 
-#if defined(CONFIG_I2C_NXP)
+#if defined(CONFIG_I2C_NXP) || defined(CONFIG_I2C_SLSI)
     printk("mach: add device i2c bus (array:%d) \n", ARRAY_SIZE(i2c_devices));
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif
 #if defined(CONFIG_RTC_DRV_NXP)
     printk("mach: add device Real Time Clock  \n");
-    platform_device_register(&rtc_device);
+    platform_device_register(&rtc_plat_device);
 #endif
 
 #if defined(CONFIG_HAVE_PWM)
@@ -1165,14 +1421,19 @@ void __init nxp_cpu_devs_register(void)
     platform_device_register(&spdif_device_rx);
 #endif
 
-#if defined(CONFIG_USB_EHCI_NXP_SYNOPSYS)
-    printk("mach: add device usb_ehci\n");
-    platform_device_register(&ehci_device);
+#if defined(CONFIG_SND_NXP_PDM) || defined(CONFIG_SND_NXP_PDM_MODULE)
+    printk("mach: add device pdm\n");
+    platform_device_register(&pdm_device);
 #endif
 
-#if defined(CONFIG_USB_OHCI_NXP_SYNOPSYS)
+#if defined(CONFIG_USB_EHCI_SYNOPSYS)
+    printk("mach: add device usb_ehci\n");
+    platform_device_register(&nxp_device_ehci);
+#endif
+
+#if defined(CONFIG_USB_OHCI_SYNOPSYS)
     printk("mach: add device usb_ohci\n");
-    platform_device_register(&ohci_device);
+    platform_device_register(&nxp_device_ohci);
 #endif
 
 #if defined(CONFIG_USB_DWCOTG)
@@ -1188,15 +1449,15 @@ void __init nxp_cpu_devs_register(void)
 
 #if defined(CONFIG_NXP_ADC)
     printk("mach: add device adc\n");
-    platform_device_register(&adc_device);
+    platform_device_register(&nxp_adc_device);
 #endif
     /* Register the platform devices */
     printk("mach: add graphic device opengl|es\n");
     platform_device_register(&vr_gpu_device);
 
-#if defined(CONFIG_NXP_WATCHDOG)
+#if defined(CONFIG_NXP_WDT)
     printk("mach: add device watchdog\n");
-    platform_device_register(&wdt_device);
+    platform_device_register(&nxp_device_wdt);
 #endif
 
 #if defined(CONFIG_SPI_SLSI_PORT0)
@@ -1204,6 +1465,14 @@ void __init nxp_cpu_devs_register(void)
     platform_device_register(&s3c64xx_device_spi0);
 #endif
 
+#if defined(CONFIG_SPI_SLSI_PORT1)
+    printk("mach: add device spi1 \n");
+    platform_device_register(&s3c64xx_device_spi1);
+#endif
+#if defined(CONFIG_SPI_SLSI_PORT2)
+    printk("mach: add device spi2 \n");
+    platform_device_register(&s3c64xx_device_spi2);
+#endif
 #ifdef CONFIG_PM_RUNTIME
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37))
 		pm_runtime_set_autosuspend_delay(&(vr_gpu_device.dev), 1000);

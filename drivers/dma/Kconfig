@@ -58,11 +58,9 @@ config AMBA_PL08X
 	  which can provide DMA engine support
 
 config AMBA_PL08X_USE_ISR
-	bool "Use ISR instead of IST"
+	bool "Use interrupt service routine instead of interrupt thread"
 	depends on AMBA_PL08X
 	default n
-	help
-	  Use ISR instead of IST
 
 config INTEL_IOATDMA
 	tristate "Intel I/OAT DMA support"

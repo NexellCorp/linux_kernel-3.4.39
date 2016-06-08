@@ -8,6 +8,10 @@
 #include <linux/v4l2-mediabus.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
+#include <linux/syscalls.h>
+#include <linux/fcntl.h>
+#include <asm/uaccess.h>
+#include <linux/unistd.h>
 
 #include <media/media-entity.h>
 #include <media/v4l2-dev.h>
@@ -71,6 +75,7 @@ void dump_register(int module)
         (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
 
     DBGOUT("BASE ADDRESS: %p\n", pREG);
+#if defined(CONFIG_ARCH_S5P4418)
     DBGOUT(" VIP_CONFIG     = 0x%04x\r\n", pREG->VIP_CONFIG);
     DBGOUT(" VIP_HVINT      = 0x%04x\r\n", pREG->VIP_HVINT);
     DBGOUT(" VIP_SYNCCTRL   = 0x%04x\r\n", pREG->VIP_SYNCCTRL);
@@ -142,13 +147,75 @@ void dump_register(int module)
     /* DBGOUT(" VIPCLKGEN[0][1]= 0x%04x\r\n", pREG->VIPCLKGEN[0][1]); */
     /* DBGOUT(" VIPCLKGEN[1][0]= 0x%04x\r\n", pREG->VIPCLKGEN[1][0]); */
     /* DBGOUT(" VIPCLKGEN[1][1]= 0x%04x\r\n", pREG->VIPCLKGEN[1][1]); */
+#elif defined(CONFIG_ARCH_S5P6818)
+    DBGOUT(" VIP_CONFIG     = 0x%04x\r\n", pREG->VIP_CONFIG);
+    DBGOUT(" VIP_HVINT      = 0x%04x\r\n", pREG->VIP_HVINT);
+    DBGOUT(" VIP_SYNCCTRL   = 0x%04x\r\n", pREG->VIP_SYNCCTRL);
+    DBGOUT(" VIP_SYNCMON    = 0x%04x\r\n", pREG->VIP_SYNCMON);
+    DBGOUT(" VIP_VBEGIN     = 0x%04x\r\n", pREG->VIP_VBEGIN);
+    DBGOUT(" VIP_VEND       = 0x%04x\r\n", pREG->VIP_VEND);
+    DBGOUT(" VIP_HBEGIN     = 0x%04x\r\n", pREG->VIP_HBEGIN);
+    DBGOUT(" VIP_HEND       = 0x%04x\r\n", pREG->VIP_HEND);
+    DBGOUT(" VIP_FIFOCTRL   = 0x%04x\r\n", pREG->VIP_FIFOCTRL);
+    DBGOUT(" VIP_HCOUNT     = 0x%04x\r\n", pREG->VIP_HCOUNT);
+    DBGOUT(" VIP_VCOUNT     = 0x%04x\r\n", pREG->VIP_VCOUNT);
+    DBGOUT(" VIP_PADCLK_SEL = 0x%04x\r\n", pREG->VIP_PADCLK_SEL);
+    DBGOUT(" VIP_INFIFOCLR  = 0x%04x\r\n", pREG->VIP_INFIFOCLR);
+    DBGOUT(" VIP_CDENB      = 0x%04x\r\n", pREG->VIP_CDENB);
+    DBGOUT(" VIP_ODINT      = 0x%04x\r\n", pREG->VIP_ODINT);
+    DBGOUT(" VIP_IMGWIDTH   = 0x%04x\r\n", pREG->VIP_IMGWIDTH);
+    DBGOUT(" VIP_IMGHEIGHT  = 0x%04x\r\n", pREG->VIP_IMGHEIGHT);
+    DBGOUT(" CLIP_LEFT      = 0x%04x\r\n", pREG->CLIP_LEFT);
+    DBGOUT(" CLIP_RIGHT     = 0x%04x\r\n", pREG->CLIP_RIGHT);
+    DBGOUT(" CLIP_TOP       = 0x%04x\r\n", pREG->CLIP_TOP);
+    DBGOUT(" CLIP_BOTTOM    = 0x%04x\r\n", pREG->CLIP_BOTTOM);
+    DBGOUT(" DECI_TARGETW   = 0x%04x\r\n", pREG->DECI_TARGETW);
+    DBGOUT(" DECI_TARGETH   = 0x%04x\r\n", pREG->DECI_TARGETH);
+    DBGOUT(" DECI_DELTAW    = 0x%04x\r\n", pREG->DECI_DELTAW);
+    DBGOUT(" DECI_DELTAH    = 0x%04x\r\n", pREG->DECI_DELTAH);
+    DBGOUT(" DECI_CLEARW    = 0x%04x\r\n", pREG->DECI_CLEARW);
+    DBGOUT(" DECI_CLEARH    = 0x%04x\r\n", pREG->DECI_CLEARH);
+    DBGOUT(" DECI_FORMAT    = 0x%04x\r\n", pREG->DECI_FORMAT);
+    DBGOUT(" DECI_LUADDR    = 0x%04x\r\n", pREG->DECI_LUADDR);
+    DBGOUT(" DECI_LUSTRIDE  = 0x%04x\r\n", pREG->DECI_LUSTRIDE);
+    DBGOUT(" DECI_CRADDR    = 0x%04x\r\n", pREG->DECI_CRADDR);
+    DBGOUT(" DECI_CRSTRIDE  = 0x%04x\r\n", pREG->DECI_CRSTRIDE);
+    DBGOUT(" DECI_CBADDR    = 0x%04x\r\n", pREG->DECI_CBADDR);
+    DBGOUT(" DECI_CBSTRIDE  = 0x%04x\r\n", pREG->DECI_CBSTRIDE);
+    DBGOUT(" CLIP_FORMAT    = 0x%04x\r\n", pREG->CLIP_FORMAT);
+    DBGOUT(" CLIP_LUADDR    = 0x%04x\r\n", pREG->CLIP_LUADDR);
+    DBGOUT(" CLIP_LUSTRIDE  = 0x%04x\r\n", pREG->CLIP_LUSTRIDE);
+    DBGOUT(" CLIP_CRADDR    = 0x%04x\r\n", pREG->CLIP_CRADDR);
+    DBGOUT(" CLIP_CRSTRIDE  = 0x%04x\r\n", pREG->CLIP_CRSTRIDE);
+    DBGOUT(" CLIP_CBADDR    = 0x%04x\r\n", pREG->CLIP_CBADDR);
+    DBGOUT(" CLIP_CBSTRIDE  = 0x%04x\r\n", pREG->CLIP_CBSTRIDE);
+    DBGOUT(" VIP_SCANMODE   = 0x%04x\r\n", pREG->VIP_SCANMODE);
+    DBGOUT(" VIP_VIP1       = 0x%04x\r\n", pREG->VIP_VIP1);
+#endif
+
+#endif
+}
+
+void dump_register_value(int module)
+{
+#if (DUMP_REGISTER)
+#define DBGOUT(args...)  printk(args)
+    NX_VIP_RegisterSet *pREG =
+        (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
+
+    //DBGOUT("BASE ADDRESS: %p\n", pREG);
+	DBGOUT(" VIP_SYNCCTRL   = 0x%04x\r\n", pREG->VIP_SYNCCTRL);
 #endif
 }
 
 
 static int _hw_get_irq_num(struct nxp_capture *me)
 {
+#if defined(CONFIG_ARCH_S5P4418)
     return NX_VIP_GetInterruptNumber(me->module);
+#elif defined(CONFIG_ARCH_S5P6818)
+    return NX_VIP_GetInterruptNumber(me->module) + 32;
+#endif
 }
 
 #if defined(CONFIG_TURNAROUND_VIP_RESET)
@@ -157,6 +224,7 @@ static void _backup_register(int module)
 {
     NX_VIP_RegisterSet *pREG = (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
     NX_VIP_RegisterSet *pBackupReg = &s_reg_backup[module];
+#if defined(CONFIG_ARCH_S5P4418)
     pBackupReg->VIP_CONFIG = pREG->VIP_CONFIG;
     pBackupReg->VIP_SYNCCTRL = pREG->VIP_SYNCCTRL;
     pBackupReg->VIP_VBEGIN = pREG->VIP_VBEGIN;
@@ -164,8 +232,6 @@ static void _backup_register(int module)
     pBackupReg->VIP_HBEGIN = pREG->VIP_HBEGIN;
     pBackupReg->VIP_HEND = pREG->VIP_HEND;
     pBackupReg->VIP_FIFOCTRL = pREG->VIP_FIFOCTRL;
-    /*pBackupReg->VIP_PADCLK_SEL = pREG->VIP_PADCLK_SEL;*/
-    /*pBackupReg->VIP_INFIFOCLR = pREG->VIP_INFIFOCLR;*/
     pBackupReg->VIP_CDENB = pREG->VIP_CDENB;
     pBackupReg->VIP_IMGWIDTH = pREG->VIP_IMGWIDTH;
     pBackupReg->VIP_IMGHEIGHT = pREG->VIP_IMGHEIGHT;
@@ -179,23 +245,6 @@ static void _backup_register(int module)
     pBackupReg->DECI_DELTAH = pREG->DECI_DELTAH;
     pBackupReg->DECI_CLEARW = pREG->DECI_CLEARW;
     pBackupReg->DECI_CLEARH = pREG->DECI_CLEARH;
-#if 0
-    pBackupReg->DECI_FORMAT = pREG->DECI_FORMAT;
-    pBackupReg->DECI_LUADDR = pREG->DECI_LUADDR;
-    pBackupReg->DECI_LUSTRIDE = pREG->DECI_LUSTRIDE;
-    pBackupReg->DECI_CRADDR = pREG->DECI_CRADDR;
-    pBackupReg->DECI_CRSTRIDE = pREG->DECI_CRSTRIDE;
-    pBackupReg->DECI_CBADDR = pREG->DECI_CBADDR;
-    pBackupReg->DECI_CBSTRIDE = pREG->DECI_CBSTRIDE;
-    pBackupReg->CLIP_FORMAT = pREG->CLIP_FORMAT;
-    pBackupReg->CLIP_LUADDR = pREG->CLIP_LUADDR;
-    pBackupReg->CLIP_LUSTRIDE = pREG->CLIP_LUSTRIDE;
-    pBackupReg->CLIP_CRADDR = pREG->CLIP_CRADDR;
-    pBackupReg->CLIP_CRSTRIDE = pREG->CLIP_CRSTRIDE;
-    pBackupReg->CLIP_CBADDR = pREG->CLIP_CBADDR;
-    pBackupReg->CLIP_CBSTRIDE = pREG->CLIP_CBSTRIDE;
-    pBackupReg->VIP_SCANMODE = pREG->VIP_SCANMODE;
-#else
     pBackupReg->DECI_LUSEG = pREG->DECI_LUSEG;
     pBackupReg->DECI_CRSEG = pREG->DECI_CRSEG;
     pBackupReg->DECI_CBSEG = pREG->DECI_CBSEG;
@@ -236,22 +285,60 @@ static void _backup_register(int module)
     pBackupReg->CLIP_BASEADDRL = pREG->CLIP_BASEADDRL;
     pBackupReg->CLIP_STRIDEH = pREG->CLIP_STRIDEH;
     pBackupReg->CLIP_STRIDEL = pREG->CLIP_STRIDEL;
-#endif
     pBackupReg->VIP_VIP1 = pREG->VIP_VIP1;
+#elif defined(CONFIG_ARCH_S5P6818)
+    pBackupReg->VIP_CONFIG = pREG->VIP_CONFIG;
+    pBackupReg->VIP_SYNCCTRL = pREG->VIP_SYNCCTRL;
+    pBackupReg->VIP_VBEGIN = pREG->VIP_VBEGIN;
+    pBackupReg->VIP_VEND = pREG->VIP_VEND;
+    pBackupReg->VIP_HBEGIN = pREG->VIP_HBEGIN;
+    pBackupReg->VIP_HEND = pREG->VIP_HEND;
+    pBackupReg->VIP_FIFOCTRL = pREG->VIP_FIFOCTRL;
+    pBackupReg->VIP_PADCLK_SEL = pREG->VIP_PADCLK_SEL;
+    pBackupReg->VIP_INFIFOCLR = pREG->VIP_INFIFOCLR;
+    pBackupReg->VIP_CDENB = pREG->VIP_CDENB;
+    pBackupReg->VIP_IMGWIDTH = pREG->VIP_IMGWIDTH;
+    pBackupReg->VIP_IMGHEIGHT = pREG->VIP_IMGHEIGHT;
+    pBackupReg->CLIP_LEFT = pREG->CLIP_LEFT;
+    pBackupReg->CLIP_RIGHT = pREG->CLIP_RIGHT;
+    pBackupReg->CLIP_TOP = pREG->CLIP_TOP;
+    pBackupReg->CLIP_BOTTOM = pREG->CLIP_BOTTOM;
+    pBackupReg->DECI_TARGETW = pREG->DECI_TARGETW;
+    pBackupReg->DECI_TARGETH = pREG->DECI_TARGETH;
+    pBackupReg->DECI_DELTAW = pREG->DECI_DELTAW;
+    pBackupReg->DECI_DELTAH = pREG->DECI_DELTAH;
+    pBackupReg->DECI_CLEARW = pREG->DECI_CLEARW;
+    pBackupReg->DECI_CLEARH = pREG->DECI_CLEARH;
+    pBackupReg->DECI_FORMAT = pREG->DECI_FORMAT;
+    pBackupReg->DECI_LUADDR = pREG->DECI_LUADDR;
+    pBackupReg->DECI_LUSTRIDE = pREG->DECI_LUSTRIDE;
+    pBackupReg->DECI_CRADDR = pREG->DECI_CRADDR;
+    pBackupReg->DECI_CRSTRIDE = pREG->DECI_CRSTRIDE;
+    pBackupReg->DECI_CBADDR = pREG->DECI_CBADDR;
+    pBackupReg->DECI_CBSTRIDE = pREG->DECI_CBSTRIDE;
+    pBackupReg->CLIP_FORMAT = pREG->CLIP_FORMAT;
+    pBackupReg->CLIP_LUADDR = pREG->CLIP_LUADDR;
+    pBackupReg->CLIP_LUSTRIDE = pREG->CLIP_LUSTRIDE;
+    pBackupReg->CLIP_CRADDR = pREG->CLIP_CRADDR;
+    pBackupReg->CLIP_CRSTRIDE = pREG->CLIP_CRSTRIDE;
+    pBackupReg->CLIP_CBADDR = pREG->CLIP_CBADDR;
+    pBackupReg->CLIP_CBSTRIDE = pREG->CLIP_CBSTRIDE;
+    pBackupReg->VIP_SCANMODE = pREG->VIP_SCANMODE;
+    pBackupReg->VIP_VIP1 = pREG->VIP_VIP1;
+#endif
 }
 
 static void _restore_register(int module)
 {
     NX_VIP_RegisterSet *pREG = (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
     NX_VIP_RegisterSet *pBackupReg = &s_reg_backup[module];
+#if defined(CONFIG_ARCH_S5P4418)
     pREG->VIP_SYNCCTRL = pBackupReg->VIP_SYNCCTRL;
     pREG->VIP_VBEGIN = pBackupReg->VIP_VBEGIN;
     pREG->VIP_VEND = pBackupReg->VIP_VEND;
     pREG->VIP_HBEGIN = pBackupReg->VIP_HBEGIN;
     pREG->VIP_HEND = pBackupReg->VIP_HEND;
     pREG->VIP_FIFOCTRL = pBackupReg->VIP_FIFOCTRL;
-    /*pREG->VIP_PADCLK_SEL = pBackupReg->VIP_PADCLK_SEL;*/
-    /*pREG->VIP_INFIFOCLR = pBackupReg->VIP_INFIFOCLR;*/
     pREG->VIP_IMGWIDTH = pBackupReg->VIP_IMGWIDTH;
     pREG->VIP_IMGHEIGHT = pBackupReg->VIP_IMGHEIGHT;
     pREG->CLIP_LEFT = pBackupReg->CLIP_LEFT;
@@ -264,24 +351,6 @@ static void _restore_register(int module)
     pREG->DECI_DELTAH = pBackupReg->DECI_DELTAH;
     pREG->DECI_CLEARW = pBackupReg->DECI_CLEARW;
     pREG->DECI_CLEARH = pBackupReg->DECI_CLEARH;
-#if 0
-    pREG->DECI_FORMAT = pBackupReg->DECI_FORMAT;
-    pREG->DECI_LUADDR = pBackupReg->DECI_LUADDR;
-    pREG->DECI_LUSTRIDE = pBackupReg->DECI_LUSTRIDE;
-    pREG->DECI_CRADDR = pBackupReg->DECI_CRADDR;
-    pREG->DECI_CRSTRIDE = pBackupReg->DECI_CRSTRIDE;
-    pREG->DECI_CBADDR = pBackupReg->DECI_CBADDR;
-    pREG->DECI_CBSTRIDE = pBackupReg->DECI_CBSTRIDE;
-    pREG->CLIP_FORMAT = pBackupReg->CLIP_FORMAT;
-    pREG->CLIP_LUADDR = pBackupReg->CLIP_LUADDR;
-    pREG->CLIP_LUSTRIDE = pBackupReg->CLIP_LUSTRIDE;
-    pREG->CLIP_CRADDR = pBackupReg->CLIP_CRADDR;
-    pREG->CLIP_CRSTRIDE = pBackupReg->CLIP_CRSTRIDE;
-    pREG->CLIP_CBADDR = pBackupReg->CLIP_CBADDR;
-    pREG->CLIP_CBSTRIDE = pBackupReg->CLIP_CBSTRIDE;
-    pREG->VIP_SCANMODE = pBackupReg->VIP_SCANMODE;
-    pREG->VIP_VIP1 = pBackupReg->VIP_VIP1;
-#else
     pREG->DECI_LUSEG = pBackupReg->DECI_LUSEG;
     pREG->DECI_CRSEG = pBackupReg->DECI_CRSEG;
     pREG->DECI_CBSEG = pBackupReg->DECI_CBSEG;
@@ -322,11 +391,70 @@ static void _restore_register(int module)
     pREG->CLIP_BASEADDRL = pBackupReg->CLIP_BASEADDRL;
     pREG->CLIP_STRIDEH = pBackupReg->CLIP_STRIDEH;
     pREG->CLIP_STRIDEL = pBackupReg->CLIP_STRIDEL;
-#endif
-
     pREG->VIP_CDENB = pBackupReg->VIP_CDENB;
     pREG->VIP_CONFIG = pBackupReg->VIP_CONFIG;
+    pREG->VIP_VIP1 = pBackupReg->VIP_VIP1;
+#elif defined(CONFIG_ARCH_S5P6818)
+    pREG->VIP_SYNCCTRL = pBackupReg->VIP_SYNCCTRL;
+    pREG->VIP_VBEGIN = pBackupReg->VIP_VBEGIN;
+    pREG->VIP_VEND = pBackupReg->VIP_VEND;
+    pREG->VIP_HBEGIN = pBackupReg->VIP_HBEGIN;
+    pREG->VIP_HEND = pBackupReg->VIP_HEND;
+    pREG->VIP_FIFOCTRL = pBackupReg->VIP_FIFOCTRL;
+    pREG->VIP_PADCLK_SEL = pBackupReg->VIP_PADCLK_SEL;
+    pREG->VIP_INFIFOCLR = pBackupReg->VIP_INFIFOCLR;
+    pREG->VIP_IMGWIDTH = pBackupReg->VIP_IMGWIDTH;
+    pREG->VIP_IMGHEIGHT = pBackupReg->VIP_IMGHEIGHT;
+    pREG->CLIP_LEFT = pBackupReg->CLIP_LEFT;
+    pREG->CLIP_RIGHT = pBackupReg->CLIP_RIGHT;
+    pREG->CLIP_TOP = pBackupReg->CLIP_TOP;
+    pREG->CLIP_BOTTOM = pBackupReg->CLIP_BOTTOM;
+    pREG->DECI_TARGETW = pBackupReg->DECI_TARGETW;
+    pREG->DECI_TARGETH = pBackupReg->DECI_TARGETH;
+    pREG->DECI_DELTAW = pBackupReg->DECI_DELTAW;
+    pREG->DECI_DELTAH = pBackupReg->DECI_DELTAH;
+    pREG->DECI_CLEARW = pBackupReg->DECI_CLEARW;
+    pREG->DECI_CLEARH = pBackupReg->DECI_CLEARH;
+    pREG->DECI_FORMAT = pBackupReg->DECI_FORMAT;
+    pREG->DECI_LUADDR = pBackupReg->DECI_LUADDR;
+    pREG->DECI_LUSTRIDE = pBackupReg->DECI_LUSTRIDE;
+    pREG->DECI_CRADDR = pBackupReg->DECI_CRADDR;
+    pREG->DECI_CRSTRIDE = pBackupReg->DECI_CRSTRIDE;
+    pREG->DECI_CBADDR = pBackupReg->DECI_CBADDR;
+    pREG->DECI_CBSTRIDE = pBackupReg->DECI_CBSTRIDE;
+    pREG->CLIP_FORMAT = pBackupReg->CLIP_FORMAT;
+    pREG->CLIP_LUADDR = pBackupReg->CLIP_LUADDR;
+    pREG->CLIP_LUSTRIDE = pBackupReg->CLIP_LUSTRIDE;
+    pREG->CLIP_CRADDR = pBackupReg->CLIP_CRADDR;
+    pREG->CLIP_CRSTRIDE = pBackupReg->CLIP_CRSTRIDE;
+    pREG->CLIP_CBADDR = pBackupReg->CLIP_CBADDR;
+    pREG->CLIP_CBSTRIDE = pBackupReg->CLIP_CBSTRIDE;
+    pREG->VIP_SCANMODE = pBackupReg->VIP_SCANMODE;
+    pREG->VIP_VIP1 = pBackupReg->VIP_VIP1;
+    pREG->VIP_CDENB = pBackupReg->VIP_CDENB;
+    pREG->VIP_CONFIG = pBackupReg->VIP_CONFIG;
+#endif
 }
+
+static void _backup_reset_restore_register(int module)
+{
+  //  printk("%s!\n", __func__);
+    _backup_register(module);
+    NX_VIP_SetVIPEnable(module, CFALSE, CFALSE, CFALSE, CFALSE);
+    NX_VIP_ResetFIFO(module);
+#if 0
+    mdelay(100);
+#endif
+#if defined(CONFIG_ARCH_S5P4418)
+    NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nDISABLE);
+    NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nENABLE);
+#elif defined(CONFIG_ARCH_S5P6818)
+    NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_ASSERT);
+    NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_NEGATE);
+#endif
+    _restore_register(module);
+}
+
 #endif
 
 static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
@@ -352,17 +480,7 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
 #ifdef CONFIG_TURNAROUND_VIP_RESET
             if (me->deci_enable == false && me->clip_enable == false ) {
                 vmsg("%s: RESET & restore\n", __func__);
-                _backup_register(me->module);
-                NX_VIP_SetVIPEnable(me->module, CFALSE, CFALSE, CFALSE, CFALSE);
-                NX_VIP_ResetFIFO(me->module);
-#if 0
-                mdelay(100);
-#endif
-                NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(me->module), RSTCON_nDISABLE);
-                NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(me->module), RSTCON_nENABLE);
-                /*NX_RSTCON_SetRST(NX_VIP_GetResetNumber(me->module), RSTCON_ASSERT);*/
-                /*NX_RSTCON_SetRST(NX_VIP_GetResetNumber(me->module), RSTCON_NEGATE);*/
-                _restore_register(me->module);
+                _backup_reset_restore_register(me->module);
             }
 #endif
             NX_VIP_SetVIPEnable(me->module, CTRUE, CTRUE, clip_enable, deci_enable);
@@ -370,7 +488,9 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
         } else {
             NX_VIP_SetVIPEnable(me->module, CFALSE, CFALSE, CFALSE, CFALSE);
         }
+
         /*dump_register(me->module);*/
+
         me->clip_enable = clip_enable;
         me->deci_enable = deci_enable;
 
@@ -379,7 +499,7 @@ static void _hw_child_enable(struct nxp_capture *me, u32 child, bool on)
 
 }
 
-static void _hw_run(struct nxp_capture *me, bool on)
+__attribute__((__unused__)) static void _hw_run(struct nxp_capture *me, bool on)
 {
     if (on) {
         /* vmsg("%s: capture child 0x%x\n", __func__, me->running_child_bitmap); */
@@ -417,6 +537,7 @@ static irqreturn_t _irq_handler(int irq, void *desc)
 
     NX_VIP_ClearInterruptPendingAll(me->module);
 
+//	dump_register_value(me->module);
     spin_lock_irqsave(&me->lock, flags);
 
     if (!list_empty(&me->irq_entry_list))
@@ -550,14 +671,35 @@ static void _set_sensor_entity_name(int module, char *type, int i2c_adapter_num,
     vmsg("%s: module %d, sensor name %s\n", __func__, module, p_entity_name);
 }
 
+static void set_sensor_entity_name_without_i2c(int module)
+{
+    char *p_entity_name;
+
+    if (module == 0)
+        p_entity_name = _sensor_info[0].name;
+    else if (module == 1)
+        p_entity_name = _sensor_info[1].name;
+    else
+        return;
+
+    sprintf(p_entity_name, "%s", "loopback-sensor");
+    vmsg("%s: module %d, sensor name %s\n", __func__, module, p_entity_name);
+}
+
 static void _set_sensor_mipi_info(int module, int is_mipi)
 {
     if (module == 0 || module == 1)
         _sensor_info[module].is_mipi = is_mipi;
 }
 
-static struct v4l2_subdev *
-_register_sensor(struct nxp_capture *me,
+static struct v4l2_subdev *external_sensor = NULL;
+void nxp_v4l2_capture_set_sensor_subdev(struct v4l2_subdev *sd)
+{
+    external_sensor = sd;
+}
+/*EXPORT_SYMBOL(nxp_v4l2_capture_set_sensor_subdev);*/
+
+static struct v4l2_subdev *_register_sensor(struct nxp_capture *me,
         struct nxp_v4l2_i2c_board_info *board_info)
 {
     struct v4l2_subdev *sensor = NULL;
@@ -566,28 +708,35 @@ _register_sensor(struct nxp_capture *me,
     u32 pad;
     u32 flags;
     int ret;
-    // psw0523 add for urbetter...
-    // TODO
+
     static int sensor_index = 0;
 
-    if (!board_info->board_info)
-        return NULL;
 
-    adapter = i2c_get_adapter(board_info->i2c_adapter_id);
-    if (!adapter) {
-        pr_err("%s: unable to get i2c adapter %d for device %s\n",
-                __func__,
-                board_info->i2c_adapter_id,
-                board_info->board_info->type);
-        return NULL;
-    }
+    if (board_info && board_info->board_info) {
+        adapter = i2c_get_adapter(board_info->i2c_adapter_id);
+        if (!adapter) {
+            pr_err("%s: unable to get i2c adapter %d for device %s\n",
+                    __func__,
+                    board_info->i2c_adapter_id,
+                    board_info->board_info->type);
+            return NULL;
+        }
 
-    sensor = v4l2_i2c_new_subdev_board(me->get_v4l2_device(me),
-            adapter, board_info->board_info, NULL);
-    if (!sensor) {
-        pr_err("%s: unable to register subdev %s\n",
-                __func__, board_info->board_info->type);
-        return NULL;
+        sensor = v4l2_i2c_new_subdev_board(me->get_v4l2_device(me),
+                adapter, board_info->board_info, NULL);
+        if (!sensor) {
+            pr_err("%s: unable to register subdev %s\n",
+                    __func__, board_info->board_info->type);
+            return NULL;
+        }
+    } else {
+        if (external_sensor)
+            sensor = external_sensor;
+        else {
+             pr_err("%s: external sensor is NULL!!!\n", __func__);
+             return NULL;
+        }
+
     }
 
     sensor->host_priv = board_info;
@@ -609,8 +758,14 @@ _register_sensor(struct nxp_capture *me,
         return NULL;
     }
 
-    /* _set_sensor_entity_name(me->module, board_info->board_info->type, board_info->i2c_adapter_id, board_info->board_info->addr); */
-    _set_sensor_entity_name(sensor_index, board_info->board_info->type, board_info->i2c_adapter_id, board_info->board_info->addr);
+	if (board_info && board_info->board_info) {
+   	/* _set_sensor_entity_name(me->module, board_info->board_info->type, board_info->i2c_adapter_id, board_info->board_info->addr); */
+   	_set_sensor_entity_name(sensor_index, board_info->board_info->type, board_info->i2c_adapter_id, board_info->board_info->addr);
+	} else {
+    //	_set_sensor_entity_name(sensor_index, "loopback-sensor", 0, 0x00);
+		set_sensor_entity_name_without_i2c(sensor_index);
+	}
+
     sensor_index++;
 
     return sensor;
@@ -710,6 +865,10 @@ struct nxp_capture *create_nxp_capture(int index,
     me->unregister_irq_entry = _unregister_irq_entry;
     me->get_csi_subdev    = _get_csi_subdev;
     me->get_sensor_subdev = _get_sensor_subdev;
+
+#ifdef CONFIG_TURNAROUND_VIP_RESET
+    me->backup_reset_restore_register = _backup_reset_restore_register;
+#endif
 
     init_waitqueue_head(&me->wait_change_context);
     me->clip_enable = false;
@@ -815,8 +974,6 @@ void release_nxp_capture(struct nxp_capture *me)
 int register_nxp_capture(struct nxp_capture *me)
 {
     int ret;
-    struct nxp_v4l2_i2c_board_info *sensor_info;
-    struct v4l2_subdev *sensor;
 #ifdef CONFIG_NXP_CAPTURE_MIPI_CSI
     bool csi_enabled = me->interface_type == NXP_CAPTURE_INF_CSI;
 #endif
@@ -847,21 +1004,11 @@ int register_nxp_capture(struct nxp_capture *me)
     }
 #endif
 
-    /* find sensor subdev */
-    sensor_info = me->platdata->sensor;
-    if (!sensor_info) {
-        pr_err("%s: can't find sensor platdata\n", __func__);
-        goto error_sensor;
-    }
-
-    sensor = _register_sensor(me, sensor_info);
-    if (!sensor) {
+    if (NULL == _register_sensor(me, me->platdata->sensor)) {
         pr_err("%s: can't register sensor subdev\n", __func__);
         goto error_sensor;
     }
 
-    // psw0523 fix for urbetter
-    /* ret = request_irq(me->irq, &_irq_handler, IRQF_DISABLED, "nxp-capture", me); */
     ret = request_irq(me->irq, &_irq_handler, IRQF_SHARED, "nxp-capture", me);
     if (ret) {
         pr_err("%s: failed to request_irq()\n", __func__);

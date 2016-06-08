@@ -52,20 +52,51 @@ static int			rtc_enable_irq = 0;
 static int			alm_enable_irq = 0;
 
 #define	RTC_TIME_YEAR 	(1970)	/* Jan 1 1970 00:00:00 */
+#define RTC_TIME_MAX	0x69546780	// 2025.12.31 00:00:00
+#define RTC_TIME_MIN	0x52c35a80	// 2014.01.01 00:00:00
+#define RTC_TIME_DFT	0x4a9c6400	// 2009.09.01 00:00:00
+
 static unsigned long	rtc_time_offs;
 
 static void nxp_rtc_setup(void)
 {
+	unsigned long rtc, curr;
+	struct rtc_time rtc_tm;
+
 	pr_debug("%s\n", __func__);
 
 	NX_RTC_Initialize();
-	NX_RTC_SetBaseAddress((U32)IO_ADDRESS(NX_RTC_GetPhysicalAddress()));
+	NX_RTC_SetBaseAddress((void*)IO_ADDRESS(NX_RTC_GetPhysicalAddress()));
 	NX_RTC_OpenModule();
 
 	NX_RTC_ClearInterruptPendingAll();
 	NX_RTC_SetInterruptEnableAll(CFALSE);
 
 	rtc_time_offs = mktime(RTC_TIME_YEAR, 1, 1, 0, 0, 0);
+
+	rtc = NX_RTC_GetRTCCounter();
+
+	curr = rtc + rtc_time_offs;
+
+	if ((curr > RTC_TIME_MAX) || (curr < RTC_TIME_MIN)) {
+		
+		/* set hw rtc */
+		NX_RTC_SetRTCCounterWriteEnable(CTRUE);
+		NX_RTC_SetRTCCounter(RTC_TIME_DFT - rtc_time_offs);
+		while(NX_RTC_IsBusyRTCCounter()) { ; }
+
+		NX_RTC_SetRTCCounterWriteEnable(CFALSE);
+
+		/* Confirm the write value. */
+		while(NX_RTC_IsBusyRTCCounter()) { ; }
+	
+		rtc = NX_RTC_GetRTCCounter();
+	}
+	
+	rtc_time_to_tm(rtc + rtc_time_offs, &rtc_tm);
+	printk("[RTC] day=%04d.%02d.%02d time=%02d:%02d:%02d\n",
+		 rtc_tm.tm_year + 1900, rtc_tm.tm_mon + 1, rtc_tm.tm_mday,
+		 rtc_tm.tm_hour, rtc_tm.tm_min, rtc_tm.tm_sec);
 }
 
 static int nxp_rtc_irq_enable(int alarm, struct device *dev, unsigned int enable)

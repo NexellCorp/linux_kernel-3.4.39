@@ -63,6 +63,10 @@ static inline NX_VIP_FORMAT _convert_to_vip_format(unsigned int format)
     }
 }
 
+#define YUV_STRIDE_ALIGN_FACTOR     128
+#define YUV_VSTRIDE_ALIGN_FACTOR    16
+#define YUV_YSTRIDE(w)   ALIGN(w, YUV_STRIDE_ALIGN_FACTOR)
+
 static struct v4l2_subdev *_get_remote_source_subdev(struct nxp_decimator *me);
 static int _hw_configure(struct nxp_decimator *me)
 {
@@ -85,18 +89,19 @@ static int _hw_configure(struct nxp_decimator *me)
 #else
     // check clipper on & clipper region
     {
+    #if defined(CONFIG_ARCH_S5P4418)
         int left, top, right, bottom;
         NX_VIP_GetClipRegion(module, &left, &top, &right, &bottom);
         if ((me->src_width != (right - left)) || (me->src_height != (bottom - top))) {
             pr_err("%s: current clipper setting is differ from me\n", __func__);
             pr_err("clipper(%d,%d--%d,%d)\n", left, top, right, bottom);
             pr_err("me(%d,%d--%d,%d)\n", 0, 0, me->src_width, me->src_height);
-            pr_err("setting force me to clipper\n");
+            pr_err("setting force me to clipper: %d,%d --> %d,%d\n", right, bottom, YUV_YSTRIDE(right-127), bottom);
 
             NX_VIP_SetClipRegion(module, 0, 0, right, bottom);
             NX_VIP_SetDecimation(module,
                     right, bottom,
-                    right, bottom);
+                    YUV_YSTRIDE(right - 127), bottom);
 
         } else {
             NX_VIP_SetClipRegion(module, 0, 0, me->src_width, me->src_height);
@@ -104,8 +109,19 @@ static int _hw_configure(struct nxp_decimator *me)
                     me->src_width, me->src_height,
                     me->target_width, me->target_height);
         }
+    #else
+        NX_VIP_SetClipRegion(module, 0, 0, me->src_width, me->src_height);
+        NX_VIP_SetDecimation(module,
+                me->src_width, me->src_height,
+                me->target_width, me->target_height);
+    #endif
+
+    #if defined(CONFIG_ARCH_S5P4418)
         NX_VIP_SetDecimatorFormat(module,
                 _convert_to_vip_format(me->code) , false, false, false);
+    #elif defined(CONFIG_ARCH_S5P6818)
+        NX_VIP_SetDecimatorFormat(module, _convert_to_vip_format(me->code));
+    #endif
     }
 #endif
 

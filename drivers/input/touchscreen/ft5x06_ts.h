@@ -2,7 +2,7 @@
 #define __LINUX_FT5X0X_TS_H__
 
 
-#if defined(CONFIG_PLAT_S5P4418_SVT)
+#if defined(CONFIG_PLAT_S5P6818_SVT) || defined(CONFIG_PLAT_S5P4418_SVT)
 	#define SCREEN_MAX_X    1024	
 	#define SCREEN_MAX_Y  	600		
 #else

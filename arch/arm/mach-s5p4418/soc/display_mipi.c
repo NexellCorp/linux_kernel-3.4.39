@@ -107,53 +107,32 @@ static int  mipi_prepare(struct disp_process_dev *pdev)
             ,phyctl		// U32 B_DPHYCTL       // Refer to 10.2.3 M_PLLCTL of MIPI_D_PHY_USER_GUIDE.pdf or NX_MIPI_PHY_B_DPHYCTL enum or LN28LPP_MipiDphyCore1p5Gbps_Supplement. default value is all "0". If you want to change register values, it need to confirm from IP Design Team
 			);
 
-	NX_MIPI_DSI_SoftwareReset(index);
-    NX_MIPI_DSI_SetClock (index
-    		,1  // CBOOL EnableTXHSClock    ,
-            ,0  // CBOOL UseExternalClock   , // CFALSE: PLL clock CTRUE: External clock
-            ,1  // CBOOL EnableByteClock    , // ByteClock means (D-PHY PLL clock / 8)
-            ,1  // CBOOL EnableESCClock_ClockLane,
-            ,1  // CBOOL EnableESCClock_DataLane0,
-            ,1  // CBOOL EnableESCClock_DataLane1,
-            ,1  // CBOOL EnableESCClock_DataLane2,
-            ,1  // CBOOL EnableESCClock_DataLane3,
-            ,1  // CBOOL EnableESCPrescaler , // ESCClock = ByteClock / ESCPrescalerValue
-            ,5  // U32   ESCPrescalerValue
-   			);
-
-	NX_MIPI_DSI_SetPhy( index
-			,3 // U32   NumberOfDataLanes , // 0~3
-            ,1 // CBOOL EnableClockLane   ,
-            ,1 // CBOOL EnableDataLane0   ,
-            ,1 // CBOOL EnableDataLane1   ,
-            ,1 // CBOOL EnableDataLane2   ,
-            ,1 // CBOOL EnableDataLane3   ,
-            ,0 // CBOOL SwapClockLane     ,
-            ,0 // CBOOL SwapDataLane      )
-			);
-
-	NX_MIPI_DSI_SetConfigVideoMode  (index
-			,1   // CBOOL EnableAutoFlushMainDisplayFIFO ,
-			,0   // CBOOL EnableAutoVerticalCount        ,
-			,1,NX_MIPI_DSI_SYNCMODE_EVENT // CBOOL EnableBurst, NX_MIPI_DSI_SYNCMODE SyncMode,
-			//,0,NX_MIPI_DSI_SYNCMODE_PULSE // CBOOL EnableBurst, NX_MIPI_DSI_SYNCMODE SyncMode,
-			,1   // CBOOL EnableEoTPacket                ,
-			,1   // CBOOL EnableHsyncEndPacket           , // Set HSEMode=1
-			,1   // CBOOL EnableHFP                      , // Set HFPMode=0
-			,1   // CBOOL EnableHBP                      , // Set HBPMode=0
-			,1   // CBOOL EnableHSA                      , // Set HSAMode=0
-			,0   // U32   NumberOfVirtualChannel         , // 0~3
-			,NX_MIPI_DSI_FORMAT_RGB888   // NX_MIPI_DSI_FORMAT Format            ,
-			,HFP  // U32   NumberOfWordsInHFP             , // ~65535
-			,HBP  // U32   NumberOfWordsInHBP             , // ~65535
-			,HS   // U32   NumberOfWordsInHSYNC           , // ~65535
-			,VFP  // U32   NumberOfLinesInVFP             , // ~2047
-			,VBP   // U32   NumberOfLinesInVBP             , // ~2047
-			,VS    // U32   NumberOfLinesInVSYNC           , // ~1023
-			,0 // U32   NumberOfLinesInCommandAllow
-    		);
-
 	if (pmipi->lcd_init) {
+		NX_MIPI_DSI_SoftwareReset(index);
+	    NX_MIPI_DSI_SetClock (index
+	    		,0  // CBOOL EnableTXHSClock    ,
+	            ,0  // CBOOL UseExternalClock   , // CFALSE: PLL clock CTRUE: External clock
+	            ,1  // CBOOL EnableByteClock    , // ByteClock means (D-PHY PLL clock / 8)
+	            ,1  // CBOOL EnableESCClock_ClockLane,
+	            ,1  // CBOOL EnableESCClock_DataLane0,
+	            ,0  // CBOOL EnableESCClock_DataLane1,
+	            ,0  // CBOOL EnableESCClock_DataLane2,
+	            ,0  // CBOOL EnableESCClock_DataLane3,
+	            ,1  // CBOOL EnableESCPrescaler , // ESCClock = ByteClock / ESCPrescalerValue
+	            ,5  // U32   ESCPrescalerValue
+	   			);
+
+		NX_MIPI_DSI_SetPhy( index
+				,0 // U32   NumberOfDataLanes , // 0~3
+	            ,1 // CBOOL EnableClockLane   ,
+	            ,1 // CBOOL EnableDataLane0   ,
+	            ,0 // CBOOL EnableDataLane1   ,
+	            ,0 // CBOOL EnableDataLane2   ,
+	            ,0 // CBOOL EnableDataLane3   ,
+	            ,0 // CBOOL SwapClockLane     ,
+	            ,0 // CBOOL SwapDataLane      )
+				);
+
 		ret = pmipi->lcd_init(width, height, pmipi->private_data);
 		if (0 > ret)
 			return ret;
@@ -210,10 +189,17 @@ static int  mipi_prepare(struct disp_process_dev *pdev)
 	NX_DISPLAYTOP_SetMIPIMUX(CTRUE, input);
 
 	// 0 is spdif, 1 is mipi vclk
+#if 0
 	NX_DISPTOP_CLKGEN_SetClockSource (clkid, 0, psync->clk_src_lv0);
 	NX_DISPTOP_CLKGEN_SetClockDivisor(clkid, 0, psync->clk_div_lv0);
 	NX_DISPTOP_CLKGEN_SetClockSource (clkid, 1, psync->clk_src_lv1);  // CLKSRC_PLL0
 	NX_DISPTOP_CLKGEN_SetClockDivisor(clkid, 1, psync->clk_div_lv1);
+#else
+	//NX_DISPTOP_CLKGEN_SetClockSource (clkid, 0, psync->clk_src_lv0);
+	//NX_DISPTOP_CLKGEN_SetClockDivisor(clkid, 0, psync->clk_div_lv0);
+	NX_DISPTOP_CLKGEN_SetClockSource (clkid, 1, psync->clk_src_lv0);  // CLKSRC_PLL0
+	NX_DISPTOP_CLKGEN_SetClockDivisor(clkid, 1, (psync->clk_div_lv1)*(psync->clk_div_lv0));
+#endif
 
 	return 0;
 }
@@ -296,12 +282,12 @@ static void mipi_initialize(void)
     }
 
 	/* BASE : CLKGEN, MIPI */
-	NX_DISPTOP_CLKGEN_SetBaseAddress(clkid, (U32)IO_ADDRESS(NX_DISPTOP_CLKGEN_GetPhysicalAddress(clkid)));
+	NX_DISPTOP_CLKGEN_SetBaseAddress(clkid, (void*)IO_ADDRESS(NX_DISPTOP_CLKGEN_GetPhysicalAddress(clkid)));
 	NX_DISPTOP_CLKGEN_SetClockPClkMode(clkid, NX_PCLKMODE_ALWAYS);
 
 	/* BASE : MIPI */
 	NX_MIPI_Initialize();
-    NX_MIPI_SetBaseAddress(0, IO_ADDRESS(NX_MIPI_GetPhysicalAddress(0)));
+    NX_MIPI_SetBaseAddress(0, (void*)IO_ADDRESS(NX_MIPI_GetPhysicalAddress(0)));
 	NX_MIPI_OpenModule(0);
 }
 

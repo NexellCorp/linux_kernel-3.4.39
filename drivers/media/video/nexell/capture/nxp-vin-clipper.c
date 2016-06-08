@@ -32,6 +32,13 @@
 
 #include <linux/timer.h>
 
+
+#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+extern bool is_backward_camera_on(void);
+extern void backward_camera_remove(void);
+extern int get_backward_module_num(void);
+#endif
+
 #ifdef DEBUG_SYNC
 #define DEBUG_SYNC_TIMEOUT_MS   (1000)
 #endif
@@ -95,6 +102,27 @@ static void debug_sync(unsigned long priv)
  * do sensor set_clock()
  * set_input_size(), set_output_format(), set_crop()
  */
+
+ /**
+ * v4l2 set control
+ */
+#define V4L2_CID_INTERLACE	(V4L2_CTRL_CLASS_USER | 0X1001)
+static int nxp_vin_clipper_s_ctrl(struct v4l2_subdev *sd,
+	struct v4l2_control *ctrl)
+{
+	struct nxp_vin_clipper *me = v4l2_get_subdevdata(sd);
+
+	switch (ctrl->id) {
+	case V4L2_CID_INTERLACE:
+		me->platdata->interlace = ctrl->value;
+		break;
+	default:
+		pr_err("%s: invalid control id 0x%x\n", __func__, ctrl->id);
+		return -EINVAL;
+	}
+
+	return 0;
+}
 
 /**
  * supported formats
@@ -182,16 +210,33 @@ static int _hw_set_clock(struct nxp_vin_clipper *me, bool on)
 #else
     if (on) {
         volatile u32 *clkgen_base = (volatile u32 *)IO_ADDRESS(NX_CLKGEN_GetPhysicalAddress(NX_VIP_GetClockNumber(module)));
-        NX_CLKGEN_SetBaseAddress(NX_VIP_GetClockNumber(module), (U32)clkgen_base);
+        NX_CLKGEN_SetBaseAddress(NX_VIP_GetClockNumber(module), (void*)clkgen_base);
         NX_CLKGEN_SetClockDivisorEnable(NX_VIP_GetClockNumber(module), CTRUE);
         NX_CLKGEN_SetClockBClkMode(NX_VIP_GetClockNumber(module), NX_BCLKMODE_DYNAMIC);
+#if defined(CONFIG_ARCH_S5P4418)
         NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nDISABLE);
         NX_RSTCON_SetnRST(NX_VIP_GetResetNumber(module), RSTCON_nENABLE);
+#elif defined(CONFIG_ARCH_S5P6818)
+        NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_ASSERT);
+        NX_RSTCON_SetRST(NX_VIP_GetResetNumber(module), RSTCON_NEGATE);
+#endif
 
         if (me->platdata->is_mipi) {
+#if defined(CONFIG_VIDEO_TW9992)
+	#if defined(CONFIG_ARCH_S5P4418)
+            U32 ClkSrc = 2;
+            U32 Divisor = 2;
+	#elif defined(CONFIG_ARCH_S5P6818)
+            U32 ClkSrc = 0;
+            U32 Divisor = 8;
+	#endif
             vmsg("%s: apply mipi csi clock!!!\n", __func__);
-            NX_CLKGEN_SetClockSource(NX_VIP_GetClockNumber(module), 0, 2); /* external PCLK */
+            NX_CLKGEN_SetClockSource(NX_VIP_GetClockNumber(module), 0, ClkSrc); /* external PCLK */
+            NX_CLKGEN_SetClockDivisor(NX_VIP_GetClockNumber(module), 0, Divisor);
+#else
+			NX_CLKGEN_SetClockSource(NX_VIP_GetClockNumber(module), 0, 2); /* external PCLK */
             NX_CLKGEN_SetClockDivisor(NX_VIP_GetClockNumber(module), 0, 2);
+#endif
             NX_CLKGEN_SetClockDivisorEnable(NX_VIP_GetClockNumber(module), CTRUE);
         } else {
             NX_CLKGEN_SetClockSource(NX_VIP_GetClockNumber(module), 0, 4 + me->platdata->port); /* external PCLK */
@@ -202,7 +247,7 @@ static int _hw_set_clock(struct nxp_vin_clipper *me, bool on)
         }
 
         vmsg("VIP CLK GEN VAL: 0x%x\n", *clkgen_base);
-        NX_VIP_SetBaseAddress(module, IO_ADDRESS(NX_VIP_GetPhysicalAddress(module)));
+        NX_VIP_SetBaseAddress(module, (void*)IO_ADDRESS(NX_VIP_GetPhysicalAddress(module)));
     }
 #endif
 
@@ -294,7 +339,11 @@ static int _hw_set_output_format(struct nxp_vin_clipper *me)
         }
     }
 
+#if defined(CONFIG_ARCH_S5P4418)
     NX_VIP_SetClipperFormat(module, nx_format, 0, 0, 0);
+#elif defined(CONFIG_ARCH_S5P6818)
+    NX_VIP_SetClipperFormat(module, nx_format);
+#endif
 
     return 0;
 }
@@ -323,7 +372,8 @@ static int _hw_set_input_size(struct nxp_vin_clipper *me)
         NX_VIP_SetHVSync(module,
                 info->external_sync,
                 mbus_fmt->width*2,
-                mbus_fmt->height,
+                /*mbus_fmt->height,*/
+                info->interlace ? mbus_fmt->height >> 1 : mbus_fmt->height,
                 info->h_syncwidth,
                 info->h_frontporch,
                 info->h_backporch,
@@ -340,11 +390,14 @@ static int _hw_set_crop(struct nxp_vin_clipper *me)
     struct nxp_capture *parent = nxp_vin_to_parent(me);
     int module = parent->get_module_num(parent);
     struct v4l2_rect *c = &me->crop;
+    struct nxp_vin_platformdata *info = me->platdata;
 
     vmsg("%s: l(%d), t(%d), w(%d), h(%d)\n", __func__, c->left, c->top, c->width, c->height);
 
+    /*NX_VIP_SetClipRegion(module, c->left, c->top,*/
+            /*c->left + c->width, c->top + c->height);*/
     NX_VIP_SetClipRegion(module, c->left, c->top,
-            c->left + c->width, c->top + c->height);
+            c->left + c->width, info->interlace ? (c->top + c->height) >> 1 : c->top + c->height);
 
     return 0;
 }
@@ -382,13 +435,17 @@ static int _hw_set_addr(struct nxp_vin_clipper *me, struct nxp_video_buffer *buf
         if (me->format[1].code == V4L2_MBUS_FMT_YUYV8_2X8) {
             vmsg("%s: clipper bufs 0x%x, stride %d\n",
                 __func__, buf->dma_addr[0], buf->stride[0]);
+            /* TODO: how can s5p6818 do this? */
+#if defined(CONFIG_ARCH_S5P4418)
             NX_VIP_SetClipperAddrYUYV(module, buf->dma_addr[0], buf->stride[0]>>1);
+#endif
         } else {
             u32 nx_format = _convert_to_nxp_vip_format(me->format[1].code);
             struct v4l2_rect *c = &me->crop;
             vmsg("%s: clipper bufs 0x%x, 0x%x, 0x%x, stride %d, %d,%d\n",
                 __func__, buf->dma_addr[0], buf->dma_addr[1], buf->dma_addr[2],
                 buf->stride[0], buf->stride[1], buf->stride[2]);
+
             NX_VIP_SetClipperAddr(module, nx_format, c->width, c->height,
                     buf->dma_addr[0], buf->dma_addr[1], buf->dma_addr[2],
                     buf->stride[0], buf->stride[1]);
@@ -475,6 +532,7 @@ static void _clear_buf(struct nxp_vin_clipper *me);
 /**
  * call back functions
  */
+#if 0
 static irqreturn_t clipper_irq_handler(void *data)
 {
     struct nxp_vin_clipper *me = data;
@@ -496,6 +554,61 @@ static irqreturn_t clipper_irq_handler(void *data)
 
     return IRQ_HANDLED;
 }
+#else
+static uint32_t _irq_count = 0;
+static irqreturn_t clipper_irq_handler(void *data)
+{
+    struct nxp_vin_clipper *me = data;
+
+    if (NXP_ATOMIC_READ(&me->state) & NXP_VIN_STATE_RUNNING_CLIPPER) {
+        bool interlace = me->platdata->interlace;
+
+        bool do_process = true;
+        if (interlace) {
+            // patch for odd/even sequence
+#if 0
+            _irq_count++;
+#else
+            struct nxp_capture *parent = nxp_vin_to_parent(me);
+            int module = parent->get_module_num(parent);
+            if (_irq_count == 0) {
+                // must odd
+                if(CFALSE == NX_VIP_GetFieldStatus(module))
+                    _irq_count++;
+            } else {
+                // must even
+                if(CTRUE == NX_VIP_GetFieldStatus(module))
+                    _irq_count++;
+            }
+#endif
+            if (_irq_count == 2) {
+                _irq_count = 0;
+            } else {
+                do_process = false;
+            }
+        }
+
+				/* printk("%s - do_process : %d, irq_count : %d\n", __func__, do_process, _irq_count); */
+
+        if (do_process) {
+            _done_buf(me, true);
+
+            if (NXP_ATOMIC_READ(&me->state) & NXP_VIN_STATE_STOPPING) {
+                struct nxp_capture *parent = nxp_vin_to_parent(me);
+                printk("%s: real stop...\n", __func__);
+                parent->stop(parent, me);
+                _unregister_irq_handler(me);
+                _clear_buf(me);
+                complete(&me->stop_done);
+            } else {
+                _update_next_buffer(me);
+            }
+        }
+    }
+
+    return IRQ_HANDLED;
+}
+#endif
 
 static int clipper_buffer_queue(struct nxp_video_buffer *buf, void *me)
 {
@@ -906,27 +1019,46 @@ static int nxp_vin_clipper_s_power(struct v4l2_subdev *sd, int on)
         return -EINVAL;
     }
 
-    if (on) {
-        if (me->platdata->setup_io)
-            me->platdata->setup_io(module, false);
-        _hw_set_clock(me, true);
-        ret = v4l2_subdev_call(remote_source, core, s_power, 1);
-    } else {
-        _disable_all(me);
-        ret = v4l2_subdev_call(remote_source, core, s_power, 0);
-        _hw_set_clock(me, false);
-    }
+#if !defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+	  if (on) {
+		  if (me->platdata->setup_io)
+			  me->platdata->setup_io(module, false);
+		  _hw_set_clock(me, true);
+		  ret = v4l2_subdev_call(remote_source, core, s_power, 1);
+	  } else {
+		  _disable_all(me);
+		  ret = v4l2_subdev_call(remote_source, core, s_power, 0);
+		  _hw_set_clock(me, false);
+	  }
+#else
+	if( module != get_backward_module_num()) {
+	  if (on) {
+		  if (me->platdata->setup_io)
+			  me->platdata->setup_io(module, false);
+		  _hw_set_clock(me, true);
+		  ret = v4l2_subdev_call(remote_source, core, s_power, 1);
+	  } else {
+		  _disable_all(me);
+		  ret = v4l2_subdev_call(remote_source, core, s_power, 0);
+		  _hw_set_clock(me, false);
+	  }
+	}
+#endif
 
     return ret;
 }
 
 static const struct v4l2_subdev_core_ops nxp_vin_clipper_core_ops = {
     .s_power = nxp_vin_clipper_s_power,
+    .s_ctrl  = nxp_vin_clipper_s_ctrl,
 };
 
 /**
  * v4l2_subdev_video_ops
  */
+#define YUV_STRIDE_ALIGN_FACTOR     128
+#define YUV_VSTRIDE_ALIGN_FACTOR    16
+#define YUV_YSTRIDE(w)   ALIGN(w, YUV_STRIDE_ALIGN_FACTOR)
 static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
 {
     /*
@@ -958,23 +1090,45 @@ static int nxp_vin_clipper_s_stream(struct v4l2_subdev *sd, int enable)
                 }
             }
         }
+
+#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
+#if 0
+		if( module == 2 ){
+			while (is_backward_camera_on()) {
+				printk("wait backward camera stopping...\n");
+				schedule_timeout_interruptible(HZ/5);
+			}
+			backward_camera_remove();
+			printk("end of backword_camera_remove()\n");
+		}
+#endif        
+#endif
+
         _configure(me, enable);
+
         if (is_host_video) {
+            CBOOL vip_enable, deci_enable;
             ret = _register_irq_handler(me);
             if (ret < 0) {
                 pr_err("%s: failed to _register_irq_handler\n", __func__);
                 return ret;
             }
             _update_next_buffer(me);
-            if (NXP_ATOMIC_READ(&me->state) & NXP_VIN_STATE_RUNNING_DECIMATOR) {
+            NX_VIP_GetVIPEnable(module, &vip_enable, NULL, NULL, &deci_enable);
+            if (vip_enable && deci_enable) {
                 struct v4l2_rect *c = &me->crop;
                 U32 src_width, src_height, dst_width, dst_height;
                 NX_VIP_GetDeciSource(module, &src_width, &src_height);
                 if (c->width != src_width || c->height != src_height) {
                     NX_VIP_GetDecimation(module, &dst_width, &dst_height, NULL, NULL, NULL, NULL);
                     if (dst_width > c->width || dst_height > c->height) {
-                        pr_err("%s: Decimator wxh(%dx%d) is bigger than clipper(%dx%d)\n", __func__, dst_width, dst_height, c->width, c->height);
-                        NX_VIP_SetDecimation(module, c->width, c->height, c->width, c->height);
+                        int deci_width = dst_width > c->width ? c->width : dst_width;
+                        int deci_height = dst_height > c->height ? c->height : dst_height;
+                        while (!NX_VIP_GetInterruptPendingAll(module));
+    #ifdef CONFIG_TURNAROUND_VIP_RESET
+                        parent->backup_reset_restore_register(module);
+    #endif
+                        NX_VIP_SetDecimation(module, c->width, c->height, YUV_YSTRIDE(deci_width-127), deci_height);
                     } else {
                         vmsg("%s: SetDecimation: src(%dx%d), dst(%dx%d)\n", __func__, c->width, c->height, dst_width, dst_height);
                         if (dst_width > 0 && dst_height > 0)
@@ -1031,8 +1185,6 @@ static const struct v4l2_subdev_video_ops nxp_vin_clipper_video_ops = {
 static int nxp_vin_clipper_enum_mbus_code(struct v4l2_subdev *sd,
         struct v4l2_subdev_fh *fh, struct v4l2_subdev_mbus_code_enum *code)
 {
-    //struct nxp_vin_clipper *me = v4l2_get_subdevdata(sd);
-
     switch (code->pad) {
     case NXP_VIN_PAD_SINK:
         if (code->index != 0)
@@ -1060,9 +1212,7 @@ static int nxp_vin_clipper_get_fmt(struct v4l2_subdev *sd,
         struct v4l2_subdev_fh *fh, struct v4l2_subdev_format *format)
 {
     struct nxp_vin_clipper *me = v4l2_get_subdevdata(sd);
-
     format->format = *_get_pad_format(me, fh, format->pad, format->which);
-
     return 0;
 }
 
@@ -1379,7 +1529,7 @@ int nxp_vin_clipper_init(struct nxp_vin_clipper *me,
 
     if (likely(!ret)) {
         NXP_ATOMIC_SET(&me->state, NXP_VIN_STATE_INIT);
-        INIT_LIST_HEAD(&me->buffer_list);
+            INIT_LIST_HEAD(&me->buffer_list);
         me->platdata = platdata;
         spin_lock_init(&me->slock);
         me->buffer_count = 0;

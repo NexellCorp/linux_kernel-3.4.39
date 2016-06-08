@@ -489,7 +489,7 @@ done:
 static int btusb_open(struct hci_dev *hdev)
 {
 	struct btusb_data *data = GET_DRV_DATA(hdev);
-#if NEXELL_POWER_CONTROL
+#if defined (CONFIG_MFD_NXE2000)
 	struct regulator_dev *rdev = data->vcc->rdev;
 	struct nxe2000_regulator *ri = rdev_get_drvdata(rdev);
 #endif
@@ -538,7 +538,7 @@ static int btusb_open(struct hci_dev *hdev)
 	set_bit(BTUSB_BULK_RUNNING, &data->flags);
 	btusb_submit_bulk_urb(hdev, GFP_KERNEL);
 
-#if NEXELL_POWER_CONTROL
+#if defined (CONFIG_MFD_NXE2000)
 
 	nxe2000_update(rdev_get_dev(rdev)->parent->parent, ri->sleep_slot_reg,
 							0xF, 0xF);
@@ -569,7 +569,7 @@ static void btusb_stop_traffic(struct btusb_data *data)
 static int btusb_close(struct hci_dev *hdev)
 {
 	struct btusb_data *data = GET_DRV_DATA(hdev);
-#if NEXELL_POWER_CONTROL
+#if defined (CONFIG_MFD_NXE2000)
 	struct regulator_dev *rdev = data->vcc->rdev;
 	struct nxe2000_regulator *ri = rdev_get_drvdata(rdev);
 #endif
@@ -610,7 +610,7 @@ static int btusb_close(struct hci_dev *hdev)
 	data->intf->needs_remote_wakeup = 0;
 	usb_autopm_put_interface(data->intf);
 
-#if NEXELL_POWER_CONTROL
+#if defined (CONFIG_MFD_NXE2000)
 	nxe2000_update(rdev_get_dev(rdev)->parent->parent, ri->sleep_slot_reg,
 							0x2, 0xF);
 #endif

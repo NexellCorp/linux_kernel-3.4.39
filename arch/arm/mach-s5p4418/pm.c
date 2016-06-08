@@ -34,6 +34,7 @@
 #include <asm/hardware/pl080.h>
 #include <mach/platform.h>
 #include <mach/pm.h>
+#include <mach/gpio.h>
 
 #define SRAM_SAVE_SIZE		(0x4000*2)	/* 4330=16K, 4418=32K */
 
@@ -42,7 +43,10 @@ static unsigned int *sramptr;
 static unsigned int sram_length = SRAM_SAVE_SIZE;
 extern void nxp_cpu_id_string(u32 *string);
 
-void (*nxp_board_suspend_mark)(struct suspend_mark_up *mark, int suspend) = NULL;
+#define	FLUSH_CACHE()		do { flush_cache_all(); outer_flush_all(); } while(0);
+#define	END_FLUSH_CACHE()	do { dmb(); outer_disable(); dmb(); FLUSH_CACHE() } while(0);
+
+void (*nxp_board_pm_mark)(struct suspend_mark_up *mark, int suspend) = NULL;
 void (*do_suspend)(ulong, ulong) = NULL;
 EXPORT_SYMBOL_GPL(do_suspend);
 
@@ -52,7 +56,7 @@ void pm_suspend_data_save(void *mem)
 	unsigned int *dst = mem ? mem : sramsave;
 	int i = 0;
 
-	for(; sram_length/4 > i; i++)
+	for(i = 0; sram_length/4 > i; i++)
 		dst[i] = src[i];
 }
 EXPORT_SYMBOL_GPL(pm_suspend_data_save);
@@ -63,7 +67,7 @@ void pm_suspend_data_restore(void *mem)
 	unsigned int *dst = sramptr;
 	int i = 0;
 
-	for( ; sram_length/4 > i; i++)
+	for(i = 0; sram_length/4 > i; i++)
 		dst[i] = src[i];
 }
 EXPORT_SYMBOL_GPL(pm_suspend_data_restore);
@@ -105,19 +109,21 @@ struct pm_saved_regs {
 };
 
 static struct pm_saved_regs saved_regs;
-static struct board_suspend_ops *board_suspend = NULL;
+static struct board_pm_ops *board_pm = NULL;
 
 #if (0)
-#define	PM_SAVE_ADDR	(U32)virt_to_phys(&saved_regs)
+#define	PM_SAVE_ADDR	virt_to_phys(&saved_regs)
+#define	PM_SAVE_VIRT	saved_regs
 #define	PM_SAVE_SIZE	SUSPEND_SAVE_SIZE
 #else
-#define	PM_SAVE_ADDR	(U32)__pa(_stext)
+#define	PM_SAVE_ADDR	__pa(_stext)
+#define	PM_SAVE_VIRT	_stext
 #define	PM_SAVE_SIZE	SUSPEND_SAVE_SIZE
 #endif
 
 #define	SUSPEND_STATUS(s)	(SUSPEND_SUSPEND == s ? "suspend" : "resume")
 
-unsigned int __wake_event_bits = 0;	/* VDDTOGLE, RTC, ALIVE0, 1, ... */
+unsigned int st_wake_events = 0;	/* VDDTOGLE, RTC, ALIVE0, 1, ... */
 static const char * __wake_event_name [] = {
 	[0] = "VDDPWRTOGGLE",
 	[1] = "RTC",
@@ -135,6 +141,41 @@ static const char * __wake_event_name [] = {
 #define	POWER_KEY_MASK		(0x3FC)
 #define	RTC_ALARM_INTENB	(0x010)
 #define	RTC_ALARM_INTPND	(0x014)
+
+
+static unsigned long gpio_alfn[5][2];
+static int prepare_gpio_suspend(void)
+{
+	int i, size = 5;
+
+	printk("%s:\n", __func__);
+
+	for (i = 0; size > i; i++) {
+		int j;
+
+		for (j = 0; j < GPIO_NUM_PER_BANK/2; j++)
+			gpio_alfn[i][0] |= (GET_GPIO_ALTFUNC(i, j) << (j<<1));
+		for (j = 0; j < GPIO_NUM_PER_BANK/2; j++)
+			gpio_alfn[i][1] |= (GET_GPIO_ALTFUNC(i, j+16) << (j<<1));
+
+		printk("  alfn[%d][0]: 0x%08lx, alfn[%d][1]: 0x%08lx\n",
+				i, gpio_alfn[i][0], i, gpio_alfn[i][1]);
+	}
+
+	return 0;
+}
+
+void watchdog_clear(void)
+{
+	NX_WDT_Initialize();
+	NX_WDT_SetBaseAddress(0, (void*)IO_ADDRESS(NX_WDT_GetPhysicalAddress(0)));
+	NX_WDT_OpenModule(0);
+
+	// watchdog disable
+	NX_WDT_SetEnable(0, CFALSE);
+	NX_WDT_SetResetEnable(0, CFALSE);
+	NX_WDT_ClearInterruptPending(0, NX_WDT_GetInterruptNumber(0));
+}
 
 static int suspend_machine(void)
 {
@@ -154,6 +195,7 @@ static int suspend_machine(void)
 
 	NX_ALIVE_SetWriteEnable(CTRUE);
 	NX_ALIVE_ClearWakeUpStatus();
+	NX_ALIVE_ClearInterruptPendingAll();
 
 	/*
 	 * set wakeup device
@@ -201,8 +243,8 @@ static int suspend_machine(void)
 	/*
 	 * wakeup from board.
 	 */
-	if (board_suspend && board_suspend->poweroff)
-		ret = board_suspend->poweroff();
+	if (board_pm && board_pm->poweroff)
+		ret = board_pm->poweroff();
 
 	if (ret < 0)
 		return ret;
@@ -230,12 +272,12 @@ static int resume_machine(void)
 	}
 
 	/* set wake event */
-	__wake_event_bits = status & ((1<<WAKE_EVENT_NUM) - 1);
+	st_wake_events = status & ((1<<WAKE_EVENT_NUM) - 1);
 
 	/* reset machine */
 	nxp_cpu_base_init();
-	if (board_suspend && board_suspend->poweron)
-		board_suspend->poweron();
+	if (board_pm && board_pm->poweron)
+		board_pm->poweron();
 
 	return 0;
 }
@@ -244,8 +286,38 @@ static void print_wake_event(void)
 {
 	int i = 0;
 	for (i = 0; WAKE_EVENT_NUM > i; i++) {
-		if (__wake_event_bits & 1<<i)
+		if (st_wake_events & 1<<i)
 			printk("%s WAKE [%s]\n", __func__, __wake_event_name[i]);
+	}
+}
+
+static void suspend_cpu_enter(void)
+{
+	struct save_gpio *gpio = saved_regs.gpio;
+	unsigned int base = IO_ADDRESS(PHY_BASEADDR_GPIOA);
+	int gic_irqs  = NR_IRQS;
+	int i = 0, size = 5;
+
+	for (i = 0; size > i; i++, gpio++, base += 0x1000) {
+		if (i == 1) { // except UART 4,5 setting
+			writel(gpio_alfn[i][0], (base+0x20));
+			writel((gpio_alfn[i][1]&0x33ffffff)|(readl(base+0x24)&0xcc000000), (base+0x24));
+			writel(readl(base+0x04)&0xa0000000, (base+0x04));	/* Input */
+			writel(readl(base+0x58)&0xa0000000, (base+0x58));	/* GPIOx_PULLSEL - Down */
+			writel(readl(base+0x60)&0xa0000000, (base+0x60));	/* GPIOx_PULLENB - Disable */
+		} else if (i == 3) { // except UART 0,1,2,3 setting
+			writel(gpio_alfn[i][0], (base+0x20));
+			writel((gpio_alfn[i][1]&0xfffff00f)|(readl(base+0x24)&0xff0), (base+0x24));
+			writel(readl(base+0x04)&0x3c0000, (base+0x04));	/* Input */
+			writel(readl(base+0x58)&0x3c0000, (base+0x58));	/* GPIOx_PULLSEL - Down */
+			writel(readl(base+0x60)&0x3c0000, (base+0x60));	/* GPIOx_PULLENB - Disable */
+		} else {
+			writel(gpio_alfn[i][0], (base+0x20));
+			writel(gpio_alfn[i][1], (base+0x24));
+			writel(0, (base+0x04));	/* Input */
+			writel(0, (base+0x58));	/* GPIOx_PULLSEL - Down */
+			writel(0, (base+0x60)); /* GPIOx_PULLENB - Disable */
+		}
 	}
 }
 
@@ -254,7 +326,7 @@ static void suspend_cores(suspend_state_t stat)
 	unsigned int core = 0, clamp = 0;
 	unsigned int reset = 0;
 	int cpu = 0, num = nr_cpu_ids;
-	int cur = smp_processor_id();
+	int cur = raw_smp_processor_id();
 
 	for (cpu = 0; num > cpu; cpu++) {
 		if (cpu == cur) {
@@ -278,9 +350,9 @@ static void suspend_cores(suspend_state_t stat)
 				break;
 		}
 
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE)
 		if (SUSPEND_SUSPEND == stat) {
-			NX_RSTCON_SetBaseAddress(IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
+			NX_RSTCON_SetBaseAddress((void*)IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
 			NX_RSTCON_SetnRST(reset, RSTCON_nDISABLE);
 
 			NX_TIEOFF_Set(clamp, 1);
@@ -310,13 +382,13 @@ static inline unsigned int __calc_crc(void *addr, int len)
 	return crc;
 }
 
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE)
 static void suspend_mark(suspend_state_t stat)
 {
 	struct suspend_mark_up mark = {
 		.resume_fn = (U32)virt_to_phys(cpu_resume),
 		.signature = SUSPEND_SIGNATURE,
-		.save_phy_addr = PM_SAVE_ADDR,
+		.save_phy_addr = (u32)PM_SAVE_ADDR,
 		.save_phy_len = PM_SAVE_SIZE,
 	};
 
@@ -327,13 +399,12 @@ static void suspend_mark(suspend_state_t stat)
 	writel((-1UL), SCR_SIGNAGURE_RESET);
 
 	if (SUSPEND_SUSPEND == stat) {
-		uint phy = mark.save_phy_addr;
 		uint len = mark.save_phy_len;
-		mark.save_crc_ret = __calc_crc(__va(phy), len);
+		mark.save_crc_ret = __calc_crc((void*)PM_SAVE_VIRT, len);
 	}
 
-	if (nxp_board_suspend_mark) {
-		nxp_board_suspend_mark(&mark, (SUSPEND_SUSPEND == stat ? 1: 0));
+	if (nxp_board_pm_mark) {
+		nxp_board_pm_mark(&mark, (SUSPEND_SUSPEND == stat ? 1: 0));
 		return;
 	}
 
@@ -400,7 +471,7 @@ static void suspend_l2cache(suspend_state_t stat)
 		pl2c->filter_end = readl_relaxed(base + L2X0_ADDR_FILTER_END);
 		pl2c->pwr_ctrl = readl_relaxed(base + L2X0_POWER_CTRL);
 		pl2c->aux_ctrl = readl_relaxed(base + L2X0_AUX_CTRL);
-		pl2c->tieoff = readl_relaxed(IO_ADDRESS(PHY_BASEADDR_TIEOFF));
+		pl2c->tieoff = readl_relaxed((void*)IO_ADDRESS(PHY_BASEADDR_TIEOFF));
 		pl2c->l2x0_way_mask = pl2c->aux_ctrl & (1 << 16) ? (1 << 16) - 1 : (1 << 8) - 1 ;
 	} else {
 		int i = 0, lockregs = 8;
@@ -409,7 +480,7 @@ static void suspend_l2cache(suspend_state_t stat)
 			return;
 
 		/* TIEOFF */
-		writel_relaxed(pl2c->tieoff|0x3000, IO_ADDRESS(PHY_BASEADDR_TIEOFF));
+		writel_relaxed(pl2c->tieoff|0x3000, (void*)IO_ADDRESS(PHY_BASEADDR_TIEOFF));
 
 		/* restore */
 		writel_relaxed(pl2c->tag_latency, (base + L2X0_TAG_LATENCY_CTRL));
@@ -455,9 +526,15 @@ static void suspend_gpio(suspend_state_t stat)
 
 			writel((-1UL), (base+0x14));	/* clear pend */
 		}
+
+		/*
+		 * Set GPIO input mode, when suspending
+		 */
+		gpio = saved_regs.gpio;
+		base = IO_ADDRESS(PHY_BASEADDR_GPIOA);
 	} else {
 		for (i = 0; size > i; i++, gpio++, base += 0x1000) {
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE)
 			for (j = 0; j < 10; j++)
 				writel(gpio->reg_val[j], (base+0x40+(j<<2)));
 #endif
@@ -470,7 +547,6 @@ static void suspend_gpio(suspend_state_t stat)
 			writel(gpio->mode[2],(base+0x28));
 			writel(gpio->mask,   (base+0x10));
 			writel(gpio->mask,   (base+0x3C));
-
 			writel((-1UL),       (base+0x14));	/* clear pend */
 		}
 	}
@@ -536,56 +612,43 @@ static void suspend_intc(suspend_state_t stat)
 	}
 }
 
-#if defined (CONFIG_S5P4418_PM_STOP)
-static void cpu_do_stop(void)
-{
-    struct NX_CLKPWR_RegisterSet *clkpwr =
-    	(struct NX_CLKPWR_RegisterSet *)IO_ADDRESS(PHY_BASEADDR_CLKPWR_MODULE);
-
-    clkpwr->PWRCONT &= ~(0xFF<<8);
-    clkpwr->PWRMODE |= 1<<1;    // goto stop mode
-}
-#endif
-
 static int __powerdown(unsigned long arg)
 {
-	int ret = suspend_machine();
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
-	void (*power_down)(ulong, ulong) = NULL;
+#if !defined (CONFIG_S5P4418_PM_IDLE)
+	void (*power_down)(ulong, ulong) =
+			(void (*)(ulong, ulong))((ulong)do_suspend + 0x220);
 #endif
+	int ret;
 
+	ret = suspend_machine();
 	if (0 == ret)
 		pm_suspend_data_restore(NULL);
 
 #if defined (CONFIG_S5P4418_PM_IDLE)
 	lldebugout("Go to IDLE...\n");
 #endif
-#if defined (CONFIG_S5P4418_PM_STOP)
-	lldebugout("Go to STOP...\n");
-#endif
 
-	flush_cache_all();
-	outer_flush_all();
-
+	FLUSH_CACHE();
 	if (0 > ret)
 		return ret;	/* wake up */
 
 #if defined (CONFIG_S5P4418_PM_IDLE)
 	cpu_do_idle();
-#elif defined (CONFIG_S5P4418_PM_STOP)
-	cpu_do_stop();
-	mdelay(10);
 #else
+
 	if(do_suspend == NULL) {
 		lldebugout("Fail, inavalid suspend callee\n");
 		return 0;
 	}
 
-	lldebugout("suspend machine\n");
-	power_down = (void (*)(ulong, ulong))((ulong)do_suspend + 0x220);
+	suspend_cpu_enter();
+	
+	lldebugout("suspend machine...\n");
+
+	END_FLUSH_CACHE();
 	power_down(IO_ADDRESS(PHY_BASEADDR_ALIVE), IO_ADDRESS(PHY_BASEADDR_DREX));
 
-	while (1) { ; }
+	while (1);
 #endif
 	return 0;
 }
@@ -598,8 +661,9 @@ static int __powerdown(unsigned long arg)
 static int suspend_valid(suspend_state_t state)
 {
 	int ret = 1;
-	/* clear */
-	__wake_event_bits = 0;
+
+	/* clear events */
+	st_wake_events = 0;
 
 #ifdef CONFIG_SUSPEND
 	if (!suspend_valid_only_mem(state)) {
@@ -607,8 +671,9 @@ static int suspend_valid(suspend_state_t state)
 		return 0;
 	}
 #endif
-	if (board_suspend && board_suspend->valid)
-		ret = board_suspend->valid(state);
+
+	if (board_pm && board_pm->valid)
+		ret = board_pm->valid(state);
 
 	PM_DBGOUT("%s %s\n", __func__, ret ? "DONE":"WAKE");
 	return ret;
@@ -618,8 +683,8 @@ static int suspend_valid(suspend_state_t state)
 static int suspend_begin(suspend_state_t state)
 {
 	int ret = 0;
-	if (board_suspend && board_suspend->begin)
-		ret = board_suspend->begin(state);
+	if (board_pm && board_pm->begin)
+		ret = board_pm->begin(state);
 
 	PM_DBGOUT("%s %s\n", __func__, ret ? "WAKE":"DONE");
 	return 0;
@@ -629,8 +694,8 @@ static int suspend_begin(suspend_state_t state)
 static int suspend_prepare(void)
 {
 	int ret = 0;
-	if (board_suspend && board_suspend->prepare)
-		ret = board_suspend->prepare();
+	if (board_pm && board_pm->prepare)
+		ret = board_pm->prepare();
 
 	PM_DBGOUT("%s %s\n", __func__, ret ? "WAKE":"DONE");
 	return ret;
@@ -642,8 +707,8 @@ static int suspend_enter(suspend_state_t state)
 	int ret = 0;
 	lldebugout("%s enter\n", __func__);
 
-	if (board_suspend && board_suspend->enter) {
-		if ((ret = board_suspend->enter(state)))
+	if (board_pm && board_pm->enter) {
+		if ((ret = board_pm->enter(state)))
 			return ret;
 	}
 
@@ -651,7 +716,7 @@ static int suspend_enter(suspend_state_t state)
 	suspend_gpio(SUSPEND_SUSPEND);
 	suspend_alive(SUSPEND_SUSPEND);
 	suspend_l2cache(SUSPEND_SUSPEND);
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE)
 	suspend_mark(SUSPEND_SUSPEND);
 #endif
 
@@ -668,7 +733,7 @@ static int suspend_enter(suspend_state_t state)
 	/*
 	 * Wakeup status
 	 */
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE)
 	suspend_mark(SUSPEND_RESUME);
 #endif
 	suspend_l2cache(SUSPEND_RESUME);
@@ -691,15 +756,17 @@ static int suspend_enter(suspend_state_t state)
 static void suspend_finish(void)
 {
 	PM_DBGOUT("%s\n", __func__);
-	if (board_suspend && board_suspend->finish)
-		board_suspend->finish();
+	if (board_pm && board_pm->finish)
+		board_pm->finish();
+
+	watchdog_clear();
 }
 
 static void suspend_end(void)
 {
 	PM_DBGOUT("%s\n", __func__);
-	if (board_suspend && board_suspend->end)
-		board_suspend->end();
+	if (board_pm && board_pm->end)
+		board_pm->end();
 }
 
 static struct platform_suspend_ops suspend_ops = {
@@ -722,10 +789,12 @@ static int __init suspend_ops_init(void)
 	sramptr = (unsigned int*)ioremap(0xFFFF0000, sram_length);
 	pr_debug("%s sram save [%d]\r\n", __func__, sram_length);
 
-    pm_suspend_data_save(NULL);
+	pm_suspend_data_save(NULL);
 	suspend_set_ops(&suspend_ops);
+	/* prepare GPIO input mode, when suspending */
+	prepare_gpio_suspend();
 
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE)
 	do_suspend = __arm_ioremap_exec(0xffff0000, 0x10000, 0);
 	if (!do_suspend)
 		printk("Fail, ioremap for suspend callee\n");
@@ -737,9 +806,9 @@ core_initcall(suspend_ops_init);
 /*
  * 	cpu board suspend fn
  */
-void nxp_board_suspend_register(struct board_suspend_ops *ops)
+void nxp_board_pm_register(struct board_pm_ops *ops)
 {
-    board_suspend = ops;
+    board_pm = ops;
 }
 
 /*
@@ -753,17 +822,15 @@ int nxp_check_pm_wakeup_alive(int num)
 	if (PAD_GET_GROUP(PAD_GPIO_ALV) != grp)
 		return 0;
 
-	return (__wake_event_bits & 1<<(io+2)) ? 1 : 0;
+	return (st_wake_events & 1<<(io+2)) ? 1 : 0;
 }
 EXPORT_SYMBOL(nxp_check_pm_wakeup_alive);
 
-static int pm_check_wakeup_dev(char *dev, int io)
+int nxp_check_pm_wakeup_dev(char *dev, int io)
 {
 	printk("Check PM wakeup : %s, io[%d]\n", dev, io);
 	return nxp_check_pm_wakeup_alive(io);
 }
-
-int (*nxp_check_pm_wakeup_dev)(char *dev, int io) = pm_check_wakeup_dev;
 EXPORT_SYMBOL(nxp_check_pm_wakeup_dev);
 
 void nxp_cpu_goto_stop(void)
@@ -774,7 +841,7 @@ void nxp_cpu_goto_stop(void)
 	suspend_gpio(SUSPEND_SUSPEND);
 	suspend_alive(SUSPEND_SUSPEND);
 	suspend_l2cache(SUSPEND_SUSPEND);
-#if !defined (CONFIG_S5P4418_PM_IDLE) && !defined (CONFIG_S5P4418_PM_STOP)
+#if !defined (CONFIG_S5P4418_PM_IDLE)
 	suspend_mark(SUSPEND_SUSPEND);
 #endif
 

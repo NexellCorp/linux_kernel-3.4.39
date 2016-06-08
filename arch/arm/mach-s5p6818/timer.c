@@ -388,8 +388,7 @@ static struct clock_event_device tm_event_clk = {
 #define	TIMER_TICK_MSG(ch, cn) 	{	\
 		static long count = 0;			\
 		if (0 == (count++ % cn))		\
-			printk("[cpu.%d evt: %4ld, cnt=%8u]\n", 	\
-			smp_processor_id(), count-1, readl((U8*)&(TIMER_BASE)->TCNTB0+(TIMER_CH_OFFS*ch)));	\
+			printk("[cpu.%d ch.%d evt: %6ld]\n", smp_processor_id(), ch, count-1);	\
 		}
 
 static irqreturn_t timer_event_handler(int irq, void *dev_id)
@@ -451,31 +450,13 @@ static int __init timer_event_init(int ch)
 	return 0;
 }
 
-#ifdef CONFIG_HAVE_ARM_TWD
-#define	SCU_PVT_PHYBASE		(__PB_IO_MAP_MPPR_PHYS + 0x00000600) 	// 0xF0001000
-#define IRQ_LOCALTIMER      IRQ_GIC_PPI_PVT
-#define IRQ_LOCALWDOG       IRQ_GIC_PPI_WDT
-
-static DEFINE_TWD_LOCAL_TIMER(twd_local_timer,
-			      SCU_PVT_PHYBASE,
-			      IRQ_LOCALTIMER);
-
-static void __init timer_twd_init(void)
-{
-	int err = twd_local_timer_register(&twd_local_timer);
-	if (err)
-		pr_err("fail: twd_local_timer_register err = %d\n", err);
-}
-#else
-#define timer_twd_init()	do { } while(0)
-#endif
-
 static void __init timer_initialize(void)
 {
 	pr_debug("%s\n", __func__);
+
 	timer_source_init(CFG_TIMER_SYS_TICK_CH);
 	timer_event_init(CFG_TIMER_EVT_TICK_CH);
-	timer_twd_init();
+
 	return;
 }
 

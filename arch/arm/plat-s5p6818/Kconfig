@@ -10,15 +10,15 @@ choice
     prompt "Platform board"
     default PLAT_S5P6818_DRONE
 
-	config PLAT_S5P6818_VTK
-		bool "VTK: Validation Kit board"
+   	config PLAT_S5P6818_SVT
+		bool "SVT: Android SVT board"
 		help
-   	 		Support for the validation kit board.
+   	 		Support for the SVT board.
 
-	config PLAT_S5P6818_DRONE
-		bool "DRONE: Android drone board"
+   	config PLAT_S5P6818_AVN_REF
+		bool "S5P6818 Android AVN board"
 		help
-   	 		Support for the drone board.
+   	 		Support for the AVN REF board.
 
 endchoice
 

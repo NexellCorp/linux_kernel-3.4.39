@@ -19,6 +19,10 @@
 
 #include "usb.h"
 
+#if defined (CONFIG_HIGHMEM) && defined(CONFIG_ARCH_CPU_SLSI) 
+#include <linux/highmem.h>
+#endif
+
 static void cancel_async_set_config(struct usb_device *udev);
 
 struct api_context {
@@ -430,8 +434,22 @@ int usb_sg_init(struct usb_sg_request *io, struct usb_device *dev,
 			 */
 			if (!PageHighMem(sg_page(sg)))
 				urb->transfer_buffer = sg_virt(sg);
+#if defined (CONFIG_HIGHMEM) && defined(CONFIG_ARCH_CPU_SLSI) 
+			else {
+				void *vaddr = kmap_high_get(sg_page(sg));	
+				if (vaddr) {
+					vaddr += sg->offset;
+					kunmap_high(sg_page(sg));
+				} else if (cache_is_vipt()) {
+					vaddr = kmap_atomic(sg_page(sg));
+					kunmap_atomic(vaddr);
+				}
+				urb->transfer_buffer = vaddr;
+			}
+#else
 			else
 				urb->transfer_buffer = NULL;
+#endif
 
 			len = sg->length;
 			if (length) {

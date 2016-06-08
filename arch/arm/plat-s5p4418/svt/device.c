@@ -98,29 +98,9 @@ const u8 g_DispBusSI[3] = {
  */
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
-static unsigned long dfs_freq_table[][2] = {
-	{ 1400000, 1200000, },
-	{ 1300000, 1200000, },
-	{ 1200000, 1100000, },
-	{ 1100000, 1100000, },
-	{ 1000000, 1000000, },
-	{  900000, 1000000, },
-	{  800000, 1000000, },
-	{  700000,  960000, },
-	{  600000,  960000, },
-	{  500000,  960000, },
-	{  400000,  960000, },
-};
-
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
-	.freq_table	   	= dfs_freq_table,
-	.table_size	   	= ARRAY_SIZE(dfs_freq_table),
-	.max_cpufreq    = 1200*1000,
-	.max_retention  =   20*1000,
-	.rest_cpufreq   =  400*1000,
-	.rest_retention =    1*1000,
-	.supply_name 	= "vdd_arm_1.3V",
+		.supply_name 	= "vdd_arm_1.3V",
 };
 
 static struct platform_device dfs_plat_device = {
@@ -156,6 +136,7 @@ static int set_max_scale(const char *file, long new)
 	if (max != new) {
 		sprintf(buf, "%ld", new);
 		sys_write(fd, (void*)buf, sizeof(buf));
+        printk("********************** [%s] ***************************\n", buf);
 	}
 
 	set_fs(old_fs);
@@ -163,31 +144,39 @@ static int set_max_scale(const char *file, long new)
 	return 0;
 }
 
-#define	FREQ_TEMP_OVER			45	// 85
-#define	FREQ_TEMP_RELAX			42	//	70
+#define	FREQ_TEMP_OVER			45	// 85: 45, 70: 43, 40
+#define	FREQ_TEMP_RELAX			43	//	70, 39
+#define	FREQ_MAX_DN_KHZ			400000
+#define	FREQ_MAX_UP_KHZ			1400000
+
 static long relax_time = 0;
 static long scale_down = 0, scale_up   = 1;
 
 static void adc_tmp_cb(int ch, int value, int temp, bool run)
 {
+    int ret = 0;
 	if (temp >= FREQ_TEMP_OVER && scale_up) {
-		printk("<FRQ DN: temp %d>\n", temp);
+		printk("<FRQ DN: temp %d, %d>\n", temp, FREQ_MAX_DN_KHZ);
+	    ret = set_max_scale(SYS_DVFS_SCALING_PATH, FREQ_MAX_DN_KHZ);
+	    if (0 > ret)
+            return;
 		relax_time = ktime_to_ms(ktime_get());
 		scale_down = 1; scale_up = 0;
-		set_max_scale(SYS_DVFS_SCALING_PATH, 400000);
-	}
+    }
 
 	if (FREQ_TEMP_RELAX >= temp && scale_down) {
 		if (2000 > (ktime_to_ms(ktime_get()) - relax_time))
 			return;
+		printk("<FRQ UP: temp %d, %d>\n", temp, FREQ_MAX_UP_KHZ);
+		ret = set_max_scale(SYS_DVFS_SCALING_PATH, FREQ_MAX_UP_KHZ);
+	    if (0 > ret)
+            return;
 		relax_time = 0; scale_down = 0; scale_up = 1;
-		printk("<FRQ UP: temp %d>\n", temp);
-		set_max_scale(SYS_DVFS_SCALING_PATH, 1400000);
-	}
+    }
 
 	if (false == run) {
-		printk("<FRQ Restore>\n");
-		set_max_scale(SYS_DVFS_SCALING_PATH, 1400000);
+		printk("<FRQ Restore: %d>\n");
+		set_max_scale(SYS_DVFS_SCALING_PATH, FREQ_MAX_UP_KHZ);
 	}
 }
 #endif
@@ -259,62 +248,22 @@ int  nxpmac_init(struct platform_device *pdev)
 {
     u32 addr;
 
-#if defined (CONFIG_REALTEK_PHY_RTL8201)	// 20140515
-	// 100 & 10Base-T
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 7, 0 );        // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 8, 0 );        // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+ 9, 0 );        // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+10, 0 );        // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+11, 0 );        // PAD_GPIOE11,    GMAC0_PHY_TXEN
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+12, 3 );        // PAD_GPIOE12,    GMAC0_PHY_TXER
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+13, 3 );        // PAD_GPIOE13,    GMAC0_PHY_COL
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+14, 2 );        // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+15, 2 );        // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+16, 2 );        // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+17, 2 );        // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+18, 3 );        // PAD_GPIOE18,    GMAC0_RX_CLK
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+19, 3);        // PAD_GPIOE19,    GMAC0_PHY_RX_DV
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+20, 3 );        // PAD_GPIOE20,    GMAC0_GMII_MDC
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+21, 3 );        // PAD_GPIOE21,    GMAC0_GMII_MDI
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+22, 3 );        // PAD_GPIOE22,    GMAC0_PHY_RXER
-//  nxp_soc_gpio_set_io_drv( PAD_GPIO_E+23, 3 );        // PAD_GPIOE23,    GMAC0_PHY_CRS
-    nxp_soc_gpio_set_io_drv( PAD_GPIO_E+24, 0 );        // PAD_GPIOE24,    GMAC0_GTX_CLK
-
-#else	// 1000Base-T
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  7), 3 );     // PAD_GPIOE7,     GMAC0_PHY_TXD[0]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  8), 3 );     // PAD_GPIOE8,     GMAC0_PHY_TXD[1]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E +  9), 3 );     // PAD_GPIOE9,     GMAC0_PHY_TXD[2]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 10), 3 );     // PAD_GPIOE10,    GMAC0_PHY_TXD[3]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 11), 3 );     // PAD_GPIOE11,    GMAC0_PHY_TXEN
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 14), 3 );     // PAD_GPIOE14,    GMAC0_PHY_RXD[0]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 15), 3 );     // PAD_GPIOE15,    GMAC0_PHY_RXD[1]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 16), 3 );     // PAD_GPIOE16,    GMAC0_PHY_RXD[2]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 17), 3 );     // PAD_GPIOE17,    GMAC0_PHY_RXD[3]
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 18), 3 );     // PAD_GPIOE18,    GMAC0_RX_CLK
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 19), 3 );     // PAD_GPIOE19,    GMAC0_PHY_RX_DV
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 20), 3 );     // PAD_GPIOE20,    GMAC0_GMII_MDC
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 21), 3 );     // PAD_GPIOE21,    GMAC0_GMII_MDI
-	nxp_soc_gpio_set_io_drv( (PAD_GPIO_E + 24), 3 );     // PAD_GPIOE24,    GMAC0_GTX_CLK
-#endif
-
-
 	// Clock control
 	NX_CLKGEN_Initialize();
 	addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
-	NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (u32)IO_ADDRESS(addr) );
+	NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (void*)IO_ADDRESS(addr) );
 
 	NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 4);     // Sync mode for 100 & 10Base-T : External RX_clk
 	NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);    // Sync mode for 100 & 10Base-T
 
 	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);    // TX Clk invert off : 100 & 10Base-T
-//	NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CTRUE);     // TX clk invert on : 100 & 10Base-T
 
 	NX_CLKGEN_SetClockDivisorEnable( CLOCKINDEX_OF_DWC_GMAC_MODULE, CTRUE);
 
 	// Reset control
 	NX_RSTCON_Initialize();
 	addr = NX_RSTCON_GetPhysicalAddress();
-	NX_RSTCON_SetBaseAddress( (u32)IO_ADDRESS(addr) );
+	NX_RSTCON_SetBaseAddress( (void*)IO_ADDRESS(addr) );
 	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
 	udelay(100);
 	NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_DISABLE);
@@ -332,7 +281,7 @@ int  nxpmac_init(struct platform_device *pdev)
 
     gpio_free(CFG_ETHER_GMAC_PHY_RST_NUM);
 
-     printk("NXP mac init ..................\n");
+	printk("NXP mac init ..................\n");
 	return 0;
 }
 
@@ -516,7 +465,18 @@ static struct platform_device nand_plat_device = {
 		.platform_data	= &nand_plat_data,
 	},
 };
-#endif	/* CONFIG_MTD_NAND_NXP */
+#elif defined(CONFIG_NXP_FTL)
+static struct resource nand_resource =
+{
+};
+
+static struct platform_device nand_plat_device = {
+	.name	= DEV_NAME_NAND,
+	.id		= -1,
+	.dev	= {
+	},
+};
+#endif	/* CONFIG_NXP_FTL */
 
 /*------------------------------------------------------------------------------
  * Touch platform device
@@ -714,6 +674,26 @@ static struct platform_device rt5631_dai = {
 };
 #endif
 
+#if defined(CONFIG_SND_PDM_REC) || defined(CONFIG_SND_PDM_REC_MODULE)
+static struct platform_device pdm_recorder = {
+	.name	= "pdm-dit-recorder",
+	.id		= -1,
+};
+
+struct nxp_snd_dai_plat_data pdm_rec_dai_data = {
+	.sample_rate = 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
+};
+
+static struct platform_device pdm_rec_dai = {
+	.name	= "pdm-recorder",
+	.id		= -1,
+	.dev	= {
+		.platform_data	= &pdm_rec_dai_data,
+	}
+};
+#endif
+
 /*------------------------------------------------------------------------------
  *  * reserve mem
  *   */
@@ -769,10 +749,6 @@ void __init nxp_reserve_mem(void)
 
 #define NXE2000_I2C_BUS		(2)
 #define NXE2000_I2C_ADDR	(0x64 >> 1)
-#define NXE2000_IRQ			(PAD_GPIO_ALV + 4)
-
-#define PMC_CTRL			0x0
-#define PMC_CTRL_INTR_LOW	(1 << 17)
 
 /* NXE2000 IRQs */
 #define NXE2000_IRQ_BASE	(IRQ_SYSTEM_END)
@@ -864,28 +840,28 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1100000, 1,  2);	/* 1.1V ARM */
-NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1100000, 1,  2);	/* 1.0V CORE */
-NXE2000_PDATA_INIT(dc3,      0, 1000000, 3500000, 1, 1, 3300000, 1,  2);	/* 3.3V SYS */
-NXE2000_PDATA_INIT(dc4,      0, 1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
-NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  2);	/* 1.5V SYS */
+NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1250000, 1,  4); /* 1.1V ARM */
+NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1100000, 1,  4); /* 1.0V CORE */
+NXE2000_PDATA_INIT(dc3,      0, 1000000, 3500000, 1, 1, 3300000, 1,  0); /* 3.3V SYS */
+NXE2000_PDATA_INIT(dc4,      0, 1000000, 2000000, 1, 1, 1500000, 1, -1); /* 1.5V DDR */
+NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  4); /* 1.5V SYS */
 
-NXE2000_PDATA_INIT(ldo1,     0, 1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V GPS */
-NXE2000_PDATA_INIT(ldo2,     0, 1000000, 3500000, 0, 0, 1800000, 0,  2);	/* 1.8V CAM1 */
-NXE2000_PDATA_INIT(ldo3,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS1 */
-NXE2000_PDATA_INIT(ldo4,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS */
-NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  2);	/* 2.8V VCAM */
-NXE2000_PDATA_INIT(ldo6,     0, 1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
-NXE2000_PDATA_INIT(ldo7,     0, 1000000, 3500000, 1, 0, 2800000, 1,  2);	/* 2.8V VID */
+NXE2000_PDATA_INIT(ldo1,     0, 1000000, 3500000, 1, 0, 3300000, 1,  0); /* 3.3V GPS */
+NXE2000_PDATA_INIT(ldo2,     0, 1000000, 3500000, 0, 0, 1800000, 0,  0); /* 1.8V CAM1 */
+NXE2000_PDATA_INIT(ldo3,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2); /* 1.8V SYS1 */
+NXE2000_PDATA_INIT(ldo4,     0, 1000000, 3500000, 1, 0, 1800000, 1,  2); /* 1.8V SYS */
+NXE2000_PDATA_INIT(ldo5,     0, 1000000, 3500000, 0, 0, 2800000, 0,  0); /* 2.8V VCAM */
+NXE2000_PDATA_INIT(ldo6,     0, 1000000, 3500000, 1, 0, 3300000, 1, -1); /* 3.3V ALIVE */
+NXE2000_PDATA_INIT(ldo7,     0, 1000000, 3500000, 1, 0, 2800000, 1,  1); /* 2.8V VID */
 #if defined(CONFIG_RFKILL_NXP)
-NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 0,  2);	/* 3.3V WIFI */
+NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 0,  0); /* 3.3V WIFI */
 #else
-NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 1,  2);	/* 3.3V WIFI */
+NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 1,  0); /* 3.3V WIFI */
 #endif
-NXE2000_PDATA_INIT(ldo9,     0, 1000000, 3500000, 1, 0, 3300000, 1,  2);	/* 3.3V HUB */
-NXE2000_PDATA_INIT(ldo10,    0, 1000000, 3500000, 1, 0, 1200000, 0,  2);	/* 1.2V HSIC */
-NXE2000_PDATA_INIT(ldortc1,  0, 1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
-NXE2000_PDATA_INIT(ldortc2,  0, 1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
+NXE2000_PDATA_INIT(ldo9,     0, 1000000, 3500000, 1, 0, 3300000, 1,  0); /* 3.3V HUB */
+NXE2000_PDATA_INIT(ldo10,    0, 1000000, 3500000, 1, 0, 1200000, 0,  0); /* 1.2V HSIC */
+NXE2000_PDATA_INIT(ldortc1,  0, 1700000, 3500000, 1, 0, 1800000, 1, -1); /* 1.8V ALIVE */
+NXE2000_PDATA_INIT(ldortc2,  0, 1000000, 3500000, 1, 0, 1000000, 1, -1); /* 1.0V ALIVE */
 
 
 /*-------- if nxe2000 RTC exists -----------*/
@@ -953,7 +929,6 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 
 	.low_vbat_vol_mv	= 3600,
 	.low_vsys_vol_mv	= 3600,
-	.alarm_vol_mv		= 3450,	//3450,
 	.bat_impe			= 1500,
 	.slp_ibat			= 10,
 //	.adc_channel		= NXE2000_ADC_CHANNEL_VBAT,
@@ -965,12 +940,13 @@ static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 		.ch_vrchg		= 0x03,	/* VRCHG	= 0 - 4 (3.85v, 3.90v, 3.95v, 4.00v, 4.10v) */
 		.ch_vbatovset	= 0xFF,	/* VBATOVSET	= 0 or 1 (0 : 4.38v(up)/3.95v(down) 1: 4.53v(up)/4.10v(down)) */
 		.ch_ichg 		= 0x0E,	/* ICHG		= 0 - 0x1D (100mA - 3000mA) */
+		.ch_ichg_slp	= 0x0E,	/* SLEEP  ICHG	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_adp 	= 0x18,	/* ILIM_ADP	= 0 - 0x1D (100mA - 3000mA) */
 		.ch_ilim_usb 	= 0x04,	/* ILIM_USB	= 0 - 0x1D (100mA - 3000mA) */
-		.ch_icchg		= 0x03,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
-		.fg_target_vsys	= 3450,	/* This value is the target one to DSOC=0% */
+		.ch_icchg		= 0x00,	/* ICCHG	= 0 - 3 (50mA 100mA 150mA 200mA) */
+		.fg_target_vsys	= 3250,	/* This value is the target one to DSOC=0% */
 		.fg_target_ibat	= 1000,	/* This value is the target one to DSOC=0% */
-		.fg_poff_vbat	= 3450,	/* setting value of 0 per Vbat */
+		.fg_poff_vbat	= 3350,	/* setting value of 0 per Vbat */
 		.jt_en			= 0,	/* JEITA Enable	  = 0 or 1 (1:enable, 0:disable) */
 		.jt_hw_sw		= 1,	/* JEITA HW or SW = 0 or 1 (1:HardWare, 0:SoftWare) */
 		.jt_temp_h		= 50,	/* degree C */
@@ -1081,10 +1057,10 @@ static struct nxe2000_platform_data nxe2000_platform = {
 	.enable_shutdown_pin	= true,
 };
 
-static struct i2c_board_info __initdata nxe2000_regulators[] = {
+static struct i2c_board_info __initdata nxe2000_i2c_boardinfo[] = {
 	{
 		I2C_BOARD_INFO("nxe2000", NXE2000_I2C_ADDR),
-		.irq		= NXE2000_IRQ,
+		.irq			= CFG_GPIO_PMIC_INTR,
 		.platform_data	= &nxe2000_platform,
 	},
 };
@@ -1802,6 +1778,12 @@ static struct dw_mci_board _dwmci0_data = {
 	.get_cd			= _dwmci0_get_cd,
 	.ext_cd_init	= _dwmci_ext_cd_init,
 	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH0_USE_DMA)
+    .mode       	= DMA_MODE,
+#else
+    .mode       	= PIO_MODE,
+#endif
+
 };
 #endif
 
@@ -1816,7 +1798,11 @@ static struct dw_mci_board _dwmci1_data = {
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
 	.get_ro         = _dwmci_get_ro,
 	.get_cd			= _dwmci_get_cd,
-
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
+    .mode       	= DMA_MODE,
+#else
+    .mode       	= PIO_MODE,
+#endif
 };
 #endif
 
@@ -1831,6 +1817,12 @@ static struct dw_mci_board _dwmci2_data = {
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(0),
 	.get_ro			= _dwmci_get_ro,
 	.get_cd			= _dwmci_get_cd,
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
+    .mode			= DMA_MODE,
+#else
+	.mode			= PIO_MODE,
+#endif
+
 };
 #endif
 
@@ -1944,7 +1936,7 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(FT5X0X_I2C_BUS, &ft5x0x_i2c_bdi, 1);
 #endif
 
-#if defined(CONFIG_MTD_NAND_NXP)
+#if defined(CONFIG_MTD_NAND_NXP) || defined(CONFIG_NXP_FTL)
 	platform_device_register(&nand_plat_device);
 #endif
 
@@ -1960,17 +1952,7 @@ void __init nxp_board_devices_register(void)
 
 #if defined(CONFIG_REGULATOR_NXE2000)
 	printk("plat: add device nxe2000 pmic\n");
-	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_regulators, ARRAY_SIZE(nxe2000_regulators));
-#endif
-
-#if defined(CONFIG_REGULATOR_NXE1999)
-	printk("plat: add device nxe1999 pmic\n");
-	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_i2c_pmic_devs, ARRAY_SIZE(nxe2000_i2c_pmic_devs));
-#endif
-
-#if defined(CONFIG_REGULATOR_NXE1100)
-	printk("plat: add device nxe1100 pmic\n");
-	i2c_register_board_info(NXE1100_I2C_BUS, nxe1100_i2c_pmic_devs, ARRAY_SIZE(nxe1100_i2c_pmic_devs));
+	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_i2c_boardinfo, ARRAY_SIZE(nxe2000_i2c_boardinfo));
 #endif
 
 #if defined(CONFIG_NXP_MP2TS_IF)
@@ -2001,6 +1983,12 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device asoc-rt5631\n");
 	i2c_register_board_info(RT5631_I2C_BUS, &rt5631_i2c_bdi, 1);
 	platform_device_register(&rt5631_dai);
+#endif
+
+#if defined(CONFIG_SND_PDM_REC) || defined(CONFIG_SND_PDM_REC_MODULE)
+	printk("plat: add device pdm capture\n");
+	platform_device_register(&pdm_recorder);
+	platform_device_register(&pdm_rec_dai);
 #endif
 
 #if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)

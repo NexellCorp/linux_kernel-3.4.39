@@ -3,20 +3,24 @@
 #
 # Makefile for the Nexell platform board
 
-ifeq ($(CONFIG_PLAT_S5P4418_DRONE),y)
-PLATBOARD :=drone
-endif
-
-ifeq ($(CONFIG_PLAT_S5P4418_DRONE2),y)
-PLATBOARD :=drone2
-endif
-
 ifeq ($(CONFIG_PLAT_S5P4418_SVT),y)
 PLATBOARD :=svt
 endif
 
-ifeq ($(CONFIG_PLAT_S5P4418_ASB),y)
-PLATBOARD :=asb
+ifeq ($(CONFIG_PLAT_S5P4418_MSD8000B),y)
+PLATBOARD :=msd8000b
+endif
+
+ifeq ($(CONFIG_PLAT_S5P4418_AVN_REF),y)
+PLATBOARD :=avn_ref
+endif
+
+ifeq ($(CONFIG_PLAT_S5P4418_NAVI_REF),y)
+PLATBOARD :=navi_ref
+endif
+
+ifeq ($(CONFIG_PLAT_S5P4418_CORONA),y)
+PLATBOARD :=corona
 endif
 
 #

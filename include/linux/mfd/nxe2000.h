@@ -282,6 +282,9 @@ struct nxe2000 {
 	struct device		*dev;
 	struct i2c_client	*client;
 	struct mutex		io_lock;
+	struct workqueue_struct *workqueue;
+	struct delayed_work	dcdc_int_work;
+
 	int			gpio_base;
 	struct gpio_chip	gpio_chip;
 	int			irq_base;

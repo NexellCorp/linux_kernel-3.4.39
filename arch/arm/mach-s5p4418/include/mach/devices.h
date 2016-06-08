@@ -119,7 +119,8 @@ struct nxp_i2s_plat_data {
     int     frame_bit;                  /* support only 32, 48 */
     int     LR_pol_inv;
     int     pre_supply_mclk;            /* codec require mclk out, before codec initialize */
-	int     (*set_ext_mclk)(bool enable);
+	bool	(*ext_is_en)(void);
+	unsigned long (*set_ext_mclk)(unsigned long clk, int ch);
     bool    (*dma_filter)(struct dma_chan *chan, void *filter_param);
     const char *dma_play_ch;
     const char *dma_capt_ch;
@@ -129,6 +130,13 @@ struct nxp_i2s_plat_data {
 struct nxp_spdif_plat_data {
     int sample_rate;
     int hdmi_out;
+    bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
+    const char *dma_ch;
+};
+
+/* PDM */
+struct nxp_pdm_plat_data {
+    int sample_rate;
     bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
     const char *dma_ch;
 };
@@ -166,6 +174,8 @@ enum nxp_i2c_pin_descript {
 struct nxp_i2c_plat_data {
     int  port;
     int  irq;
+	int retry_cnt;
+	int retry_delay;
     long rate;
     unsigned int base_addr;
     struct i2c_gpio_platform_data *gpio;
@@ -314,10 +324,20 @@ struct nxp_ohci_platdata {
 /*
  * ADC TMU
  */
+struct nxp_adc_tmp_trigger {
+    int     temp;
+	long    freq;
+	long    period;
+};
+
 struct nxp_adc_tmp_platdata {
 	int channel;
 	int tmp_offset;
 	int duration;				/* default 100ms */
+	int step_up;
+	struct nxp_adc_tmp_trigger *event;
+	int eventsize;
+
 	void (*callback)(int ch, int value, int temp, bool run);
 };
 

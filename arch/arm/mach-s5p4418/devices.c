@@ -268,6 +268,43 @@ static AMBA_AHB_DEVICE(uart5, "uart-pl011.5", 0, PHY_BASEADDR_UART5, {IRQ_PHY_UA
 #define	I2C2_SDA	NXP_I2C2_MOD_SDA
 #endif
 
+#ifdef CFG_I2C0_RETRY_CNT
+#define I2C0_RETRY_CNT CFG_I2C0_RETRY_CNT
+#else
+#define I2C0_RETRY_CNT 3
+#endif
+
+#ifdef CFG_I2C0_RETRY_DELAY
+#define I2C0_RETRY_DELAY CFG_I2C0_RETRY_DELAY
+#else
+#define I2C0_RETRY_DELAY 0
+#endif
+
+#ifdef CFG_I2C1_RETRY_CNT
+#define I2C1_RETRY_CNT CFG_I2C1_RETRY_CNT
+#else
+#define I2C1_RETRY_CNT 3
+#endif
+
+#ifdef CFG_I2C1_RETRY_DELAY_
+#define I2C1_RETRY_DELAY CFG_I2C1_RETRY_DELAY
+#else
+#define I2C1_RETRY_DELAY 0
+#endif
+
+
+#ifdef CFG_I2C2_RETRY_CNT
+#define I2C2_RETRY_CNT CFG_I2C2_RETRY_CNT
+#else
+#define I2C2_RETRY_CNT 3
+#endif
+
+#ifdef CFG_I2C2_RETRY_DELAY_
+#define I2C2_RETRY_DELAY CFG_I2C2_RETRY_DELAY
+#else
+#define I2C2_RETRY_DELAY 0
+#endif
+
 #if	defined(CONFIG_I2C_NXP_PORT0)
 
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port0 = {
@@ -293,6 +330,8 @@ static struct nxp_i2c_plat_data i2c_data_ch0 = {
 	.gpio 		= &nxp_i2c_gpio_port0,
 	.base_addr	= PHY_BASEADDR_I2C0,
 	.rate 		= CFG_I2C0_CLK,
+	.retry_cnt  =  I2C0_RETRY_CNT, 
+	.retry_delay=  I2C0_RETRY_DELAY, 
 };
 
 static struct platform_device i2c_device_ch0 = {
@@ -332,6 +371,8 @@ static struct nxp_i2c_plat_data i2c_data_ch1 = {
 	.gpio 		= &nxp_i2c_gpio_port1,
 	.base_addr	= PHY_BASEADDR_I2C1,
 	.rate 		= CFG_I2C1_CLK,
+	.retry_cnt  =  I2C1_RETRY_CNT, 
+	.retry_delay=  I2C1_RETRY_DELAY, 
 };
 
 static struct platform_device i2c_device_ch1 = {
@@ -370,6 +411,8 @@ static struct nxp_i2c_plat_data i2c_data_ch2 = {
 	.gpio 		= &nxp_i2c_gpio_port2,
 	.base_addr	= PHY_BASEADDR_I2C2,
 	.rate 		= CFG_I2C2_CLK,
+	.retry_cnt  =  I2C2_RETRY_CNT, 
+	.retry_delay=  I2C2_RETRY_DELAY, 
 };
 
 static struct platform_device i2c_device_ch2 = {
@@ -742,6 +785,25 @@ static struct platform_device spdif_device_rx = {
 #endif	/* CONFIG_SND_NXP_SPDIF_RX || CONFIG_SND_NXP_SPDIF_RX_MODULE */
 
 /*------------------------------------------------------------------------------
+ * Alsa sound platform device (PDM)
+ */
+#if defined(CONFIG_SND_NXP_PDM) || defined(CONFIG_SND_NXP_PDM_MODULE)
+static struct nxp_pdm_plat_data pdm_data = {
+	.sample_rate	= CFG_AUDIO_PDM_SAMPLE_RATE,
+	.dma_filter		= pl08x_filter_id,
+	.dma_ch			= DMA_PERIPHERAL_NAME_PDM,
+};
+
+static struct platform_device pdm_device = {
+	.name	= DEV_NAME_PDM,
+	.id		= -1,
+	.dev    = {
+		.platform_data	= &pdm_data
+	},
+};
+#endif	/* CONFIG_SND_NXP_PDM || CONFIG_SND_NXP_PDM_MODULE */
+
+/*------------------------------------------------------------------------------
  * SSP/SPI
  */
 #if defined(CONFIG_SPI_PL022) || defined(CONFIG_SPI_PL022_MODULE)
@@ -886,7 +948,7 @@ static struct amba_device spi2_device = {
 #endif /* CONFIG_SPI_PL022 */
 
 /*------------------------------------------------------------------------------
- * USB device
+ * USB device (EHCI/OHCI)
  */
 
 #if defined(CONFIG_USB_EHCI_SYNOPSYS)
@@ -1015,7 +1077,11 @@ void otg_phy_init(void)
     // 1-1. VBUS reconfig - Over current Issue
 #if 1
     temp  = readl(SOC_VA_TIEOFF + 0x38) & ~(0x7<<23);
+#if defined(CFG_OTG_OVC_VALUE)
+    temp |= (CFG_OTG_OVC_VALUE << 23);
+#else
     temp |= (0x3<<23);
+#endif
     writel(temp, SOC_VA_TIEOFF + 0x38);
 #endif
 
@@ -1150,11 +1216,13 @@ static struct platform_device otg_plat_device = {
     .resource       = otg_resources,
 };
 
-#define CFG_SWITCH_USB_5V_EN        (PAD_GPIO_D + 10)
-#define CFG_SWITCH_USB_HOST_DEVICE  (PAD_GPIO_D + 11)
+//#define CFG_SWITCH_USB_5V_EN        (PAD_GPIO_D + 10)
+//#define CFG_SWITCH_USB_HOST_DEVICE  (PAD_GPIO_D + 11)
 #define CFG_OTG_MODE_HOST           1
 #define CFG_OTG_MODE_DEVICE         0
+#if !defined(CFG_OTG_BOOT_MODE)
 #define CFG_OTG_BOOT_MODE           CFG_OTG_MODE_DEVICE
+#endif
 
 static int cur_otg_mode = CFG_OTG_BOOT_MODE;
 
@@ -1162,6 +1230,7 @@ unsigned int get_otg_mode(void)
 {
     return cur_otg_mode;
 }
+EXPORT_SYMBOL(get_otg_mode);
 
 void set_otg_mode(unsigned int mode, int is_force)
 {
@@ -1170,12 +1239,24 @@ void set_otg_mode(unsigned int mode, int is_force)
     if ((mode == cur_otg_mode) && !is_force) return;
 
     cur_otg_mode = mode;
-
+#if defined (CFG_SWITCH_USB_HOST_DEVICE)
+	pr_debug("%s %d\n", __func__, mode);
+	nxp_soc_gpio_set_out_value(CFG_SWITCH_USB_HOST_DEVICE, mode);
+#endif
     return;
 }
-
-EXPORT_SYMBOL(get_otg_mode);
 EXPORT_SYMBOL(set_otg_mode);
+
+#if defined (CFG_SWITCH_USB_5V_EN)
+void otg_power_en(int enable)
+{
+	pr_debug("%s %d\n", __func__, enable);
+
+	nxp_soc_gpio_set_out_value(CFG_SWITCH_USB_5V_EN, enable);
+}
+EXPORT_SYMBOL(otg_power_en);
+#endif /* CFG_SWITCH_USB_5V_EN */
+
 #endif/* CONFIG_USB_DWCOTG */
 
 /*------------------------------------------------------------------------------
@@ -1251,18 +1332,16 @@ struct platform_device nxp_device_ion = {
 #endif
 static unsigned long adc_sample_rate = CFG_ADC_SAMPLE_RATE;
 
-static struct resource adc_resource[] = {
-	[0] = {
-		.start	= IRQ_PHY_ADC,
-		.flags	= IORESOURCE_IRQ,
-	},
+static struct resource nxp_adc_resource[] = {
+	[0] = DEFINE_RES_MEM(PHY_BASEADDR_ADC, SZ_1K),
+	[1] = DEFINE_RES_IRQ(IRQ_PHY_ADC),
 };
 
-static struct platform_device adc_device = {
+static struct platform_device nxp_adc_device = {
 	.name			= DEV_NAME_ADC,
 	.id				= -1,
-	.num_resources	= ARRAY_SIZE(adc_resource),
-	.resource		= adc_resource,
+	.num_resources	= ARRAY_SIZE(nxp_adc_resource),
+	.resource		= nxp_adc_resource,
 	.dev  			= {
 		.platform_data	= &adc_sample_rate,
 	},
@@ -1332,7 +1411,7 @@ void __init nxp_cpu_devices_register(void)
     platform_add_devices(syncgen_devices, ARRAY_SIZE(syncgen_devices));
 #endif
 
-#if defined(CONFIG_NXP_DISPLAY_LCD)
+#if defined(CONFIG_NXP_DISPLAY_LCD) || defined(CONFIG_NXP_DISPLAY_ENCODER)
 	printk("mach: add device lcd \n");
 	platform_device_register(&lcd_device);
 #endif
@@ -1396,6 +1475,11 @@ void __init nxp_cpu_devices_register(void)
     platform_device_register(&spdif_device_rx);
 #endif
 
+#if defined(CONFIG_SND_NXP_PDM) || defined(CONFIG_SND_NXP_PDM_MODULE)
+    printk("mach: add device pdm\n");
+    platform_device_register(&pdm_device);
+#endif
+
 #if defined(CONFIG_USB_EHCI_SYNOPSYS)
     printk("mach: add device usb_ehci\n");
     platform_device_register(&nxp_device_ehci);
@@ -1419,7 +1503,7 @@ void __init nxp_cpu_devices_register(void)
 
 #if defined(CONFIG_NXP_ADC)
     printk("mach: add device adc\n");
-    platform_device_register(&adc_device);
+    platform_device_register(&nxp_adc_device);
 #endif
     /* Register the platform devices */
     printk("mach: add graphic device opengl|es\n");

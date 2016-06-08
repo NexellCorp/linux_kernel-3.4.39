@@ -15,7 +15,6 @@
 
 #include <mach/ppm.h>
 
-
 #define NXP_IR_DEVICE_NAME	"nxp_ir_recv"
 #define RAW_BUFFER_SIZE 100
 
@@ -181,7 +180,7 @@ static int __devinit nxp_ir_recv_probe(struct platform_device *pdev)
 	clk_enable(clk);
 
     NX_PPM_Initialize();
-    NX_PPM_SetBaseAddress(0, (U32)IO_ADDRESS(NX_PPM_GetPhysicalAddress(0)));
+    NX_PPM_SetBaseAddress(0, (void*)IO_ADDRESS(NX_PPM_GetPhysicalAddress(0)));
 
 //	NX_PPM_OpenModule(0);
 	nxp_dev = kzalloc(sizeof(struct nxp_rc_dev), GFP_KERNEL);
@@ -221,7 +220,7 @@ static int __devinit nxp_ir_recv_probe(struct platform_device *pdev)
 		goto exit_create_singlethread;
 	}
 
-	rc = request_irq(NX_PPM_GetInterruptNumber(0),
+	rc = request_irq(IRQ_PHY_PPM,
 			nxp_ir_recv_irq, 0, "nxp-ir-recv-irq", nxp_dev);
 	if (rc < 0)
 		goto err_request_irq;
@@ -259,7 +258,7 @@ static int __devexit nxp_ir_recv_remove(struct platform_device *pdev)
 {
 	struct nxp_rc_dev *nxp_dev = platform_get_drvdata(pdev);
 
-	free_irq(NX_PPM_GetInterruptNumber(0), nxp_dev);
+	free_irq(IRQ_PHY_PPM, nxp_dev);
 	cancel_work_sync(&nxp_dev->ppm_event_work);
 	destroy_workqueue(nxp_dev->ppm_workqueue);
 	platform_set_drvdata(pdev, NULL);
@@ -272,7 +271,7 @@ static int __devexit nxp_ir_recv_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int nxp_ir_recv_suspend(struct device *dev)
 {
-	disable_irq(NX_PPM_GetInterruptNumber(0));
+	disable_irq(IRQ_PHY_PPM);
 
 	return 0;
 }
@@ -292,7 +291,7 @@ static int nxp_ir_recv_resume(struct device *dev)
 	NX_PPM_SetInterruptEnableAll(0,true);
 	NX_PPM_SetPPMEnable(0, true);
 
-	enable_irq(NX_PPM_GetInterruptNumber(0));
+	enable_irq(IRQ_PHY_PPM);
 	return 0;
 }
 

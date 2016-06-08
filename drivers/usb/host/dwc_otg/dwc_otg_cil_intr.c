@@ -50,6 +50,9 @@
 #ifdef CONFIG_BATTERY_NXE2000 
 #include <linux/power/nxe2000_battery.h>
 #endif
+#ifdef CONFIG_KP_AXP22
+extern int axp_otg_power_control(int enable);
+#endif
 
 #ifdef DEBUG
 inline const char *op_state_str(dwc_otg_core_if_t * core_if)
@@ -289,8 +292,10 @@ void w_conn_id_status_change(void *p)
 		DWC_ASSERT(++count < 10000,
 			   "Connection id status change timed out");
 		core_if->op_state = B_PERIPHERAL;
-#ifdef CONFIG_BATTERY_NXE2000 
+#if defined(CONFIG_BATTERY_NXE2000)
 		otgid_power_control_by_dwc(0);
+#elif defined(CONFIG_KP_AXP22)
+		axp_otg_power_control(0);
 #endif
 		dwc_otg_set_prtpower(core_if, 0);
 		core_if->host_flag = 0;

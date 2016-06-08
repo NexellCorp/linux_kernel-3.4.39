@@ -177,27 +177,27 @@ static void cpu_base_init(void)
 	int i = 0;
 
 	NX_RSTCON_Initialize();
-	NX_RSTCON_SetBaseAddress((U32)IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
+	NX_RSTCON_SetBaseAddress((void*)IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
 
 	NX_TIEOFF_Initialize();
-	NX_TIEOFF_SetBaseAddress((U32)IO_ADDRESS(NX_TIEOFF_GetPhysicalAddress()));
+	NX_TIEOFF_SetBaseAddress((void*)IO_ADDRESS(NX_TIEOFF_GetPhysicalAddress()));
 
 	NX_GPIO_Initialize();
 	for (i = 0; NX_GPIO_GetNumberOfModule() > i; i++) {
-		NX_GPIO_SetBaseAddress(i, (U32)IO_ADDRESS(NX_GPIO_GetPhysicalAddress(i)));
+		NX_GPIO_SetBaseAddress(i, (void*)IO_ADDRESS(NX_GPIO_GetPhysicalAddress(i)));
 		NX_GPIO_OpenModule(i);
 	}
 
 	NX_ALIVE_Initialize();
-	NX_ALIVE_SetBaseAddress((U32)IO_ADDRESS(NX_ALIVE_GetPhysicalAddress()));
+	NX_ALIVE_SetBaseAddress((void*)IO_ADDRESS(NX_ALIVE_GetPhysicalAddress()));
 	NX_ALIVE_OpenModule();
 
 	NX_CLKPWR_Initialize();
-	NX_CLKPWR_SetBaseAddress((U32)IO_ADDRESS(NX_CLKPWR_GetPhysicalAddress()));
+	NX_CLKPWR_SetBaseAddress((void*)IO_ADDRESS(NX_CLKPWR_GetPhysicalAddress()));
 	NX_CLKPWR_OpenModule();
 
 	NX_ECID_Initialize();
-	NX_ECID_SetBaseAddress((U32)IO_ADDRESS(NX_ECID_GetPhysicalAddress()));
+	NX_ECID_SetBaseAddress((void*)IO_ADDRESS(NX_ECID_GetPhysicalAddress()));
 
 	/*
 	 * NOTE> ALIVE Power Gate must enable for RTC register access.
@@ -214,7 +214,7 @@ static void cpu_bus_init(void)
 {
 	/* MCUS for Static Memory. */
 	NX_MCUS_Initialize();
-	NX_MCUS_SetBaseAddress((U32)IO_ADDRESS(NX_MCUS_GetPhysicalAddress()));
+	NX_MCUS_SetBaseAddress((void*)IO_ADDRESS(NX_MCUS_GetPhysicalAddress()));
 	NX_MCUS_OpenModule();
 
 	/*
@@ -284,8 +284,17 @@ void nxp_cpu_reset(char str, const char *cmd)
 	if (cmd && !strcmp(cmd, "recovery")) {
 		__raw_writel(RECOVERY_SIGNATURE, SCR_RESET_SIG_SET);
 		__raw_readl (SCR_RESET_SIG_READ);	/* verify */
-		printk("recovery sign [0x%x:0x%x] \n", SCR_RESET_SIG_READ, readl(SCR_RESET_SIG_READ));
 	}
+
+    if (cmd && !strcmp(cmd, "update")) {
+        __raw_writel(UPDATE_SIGNATURE, SCR_RESET_SIG_SET);
+        __raw_readl (SCR_RESET_SIG_READ);       /* verify */
+    }
+	if (cmd && !strcmp(cmd, "usbboot")) {
+		__raw_writel(USBBOOT_SIGNATURE, SCR_RESET_SIG_SET);
+		__raw_readl (SCR_RESET_SIG_READ);	/* verify */
+	}
+	printk("recovery sign [0x%x:0x%x] \n", SCR_RESET_SIG_READ, readl(SCR_RESET_SIG_READ));
 
 	NX_ALIVE_SetWriteEnable(CFALSE);	/* close alive gate */
 	NX_CLKPWR_SetSoftwareResetEnable(CTRUE);
@@ -342,6 +351,7 @@ void nxp_cpu_id_string(u32 *string)
 	}
 	NX_ECID_GetChipName((char*)string);
 }
+EXPORT_SYMBOL(nxp_cpu_id_string);
 
 /*
  * Notify cpu version
@@ -403,7 +413,7 @@ static ssize_t name_show(struct device *pdev,
 			struct device_attribute *attr, char *buf)
 {
 	char *s = buf;
-	u8 name[12*4];
+	u8 name[12*4] = {0,};
 
 	nxp_cpu_id_string((u32*)name);
 

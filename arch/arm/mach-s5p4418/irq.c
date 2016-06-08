@@ -228,6 +228,11 @@ int nxp_cpu_vic_table(void)
 EXPORT_SYMBOL(nxp_cpu_vic_table);
 
 #ifdef CONFIG_ARM_GIC
+#define DEBUG_TIMESTAMP		(0)
+
+#if defined (CONFIG_CPU_S5P4418_SMP_ISR)
+static DEFINE_RAW_SPINLOCK(smp_irq_lock);
+#endif
 
 static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 {
@@ -236,6 +241,14 @@ static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 	int i = 0, gic = irq;
 	int cpu, n;
 	static u32 vic_nr[4] = { 0, 1, 0, 1};
+#if defined (CONFIG_CPU_S5P4418_SMP_ISR)
+	static u32 vic_mask[3] = { 0, } ;
+#endif
+
+#if (DEBUG_TIMESTAMP)
+	long long ts = ktime_to_us(ktime_get());
+	static long long max = 0;
+#endif
 
 	stat[0] = readl_relaxed(VIC0_INT_BASE+VIC_IRQ_STATUS);
 	stat[1] = readl_relaxed(VIC1_INT_BASE+VIC_IRQ_STATUS);
@@ -271,19 +284,46 @@ static void __vic_handler(unsigned int irq, struct irq_desc *desc)
 			break;
 		}
 	}
-
-	pr_debug("%s: cpu.%d vic[%s] gic irq=%d, vic=%d, stat=0x%02x \n",
-		__func__, cpu, i?"1":"0", gic, irq, pend);
+#if defined (CONFIG_CPU_S5P4418_SMP_ISR)
+	pr_debug("%s: cpu.%d vic[%s] gic irq=%d, vic=%d, stat=0x%02x [0x%08x:0x%08x:0x%08x]\n",
+		__func__, cpu, i?"1":"0", gic, irq, pend, vic_mask[0], vic_mask[1], vic_mask[2]);
+#endif
 
 	if (0 == pend)
 		goto irq_eoi;
 
 irq_hnd:
-	desc = irq_desc + irq;	/* vic descriptor */
+#if defined (CONFIG_CPU_S5P4418_SMP_ISR)
+	raw_spin_lock(&smp_irq_lock);
+	if (vic_mask[irq>>5] & (1<<(irq&0x1f))) {
+		writel_relaxed(31, GIC_CPUI_BASE + GIC_CPU_EOI);
+		raw_spin_unlock(&smp_irq_lock);
+		return;
+	}
+	vic_mask[irq>>5] |= (1<<(irq&0x1f));
+	raw_spin_unlock(&smp_irq_lock);
+#endif
+
+	/* vic descriptor */
+	desc = irq_desc + irq;
 	if (desc)
 		generic_handle_irq_desc(irq, desc);
 	else
 		printk(KERN_ERR "Error, not registered vic irq=%d !!!\n", irq);
+
+#if defined (CONFIG_CPU_S5P4418_SMP_ISR)
+	raw_spin_lock(&smp_irq_lock);
+	vic_mask[irq>>5] &= ~(1<<(irq&0x1f));
+	raw_spin_unlock(&smp_irq_lock);
+#endif
+
+#if (DEBUG_TIMESTAMP)
+	ts = ktime_to_us(ktime_get()) - ts;
+	if (ts > 2000) {
+		max = ts;
+		printk("[cpu.%d irq.%d, %03lldms]\n", cpu, irq, div64_s64(ts, 1000));
+	}
+#endif
 
 irq_eoi:
 	writel_relaxed(31, GIC_CPUI_BASE + GIC_CPU_EOI);
@@ -376,6 +416,7 @@ static void alive_ack_irq(struct irq_data *d)
 	/* alive ack : irq pend clear */
 	writel((1<<bit), base + ALIVE_INT_STATUS);
 	readl(base + ALIVE_INT_STATUS);
+	dmb();
 }
 
 static void alive_mask_irq(struct irq_data *d)
@@ -397,6 +438,7 @@ static void alive_unmask_irq(struct irq_data *d)
 	/* alive unmask : irq set (enable) */
 	writel((1<<bit), base + ALIVE_INT_SET);
 	readl(base + ALIVE_INT_SET_READ);
+	dmb();
 }
 
 static int alive_set_type_irq(struct irq_data *d, unsigned int type)
@@ -576,6 +618,29 @@ static void gpio_mask_irq(struct irq_data *d)
 	writel(readl(base + GPIO_INT_DET) & ~(1<<bit), base + GPIO_INT_DET);
 }
 
+static void gpio_disable_irq(struct irq_data *d)
+{
+	void __iomem *base = irq_data_get_irq_chip_data(d);
+	int bit = (d->irq & 0x1F);
+	//printk("%s: gpio irq = %d, %s.%d\n", __func__, d->irq, VIO_NAME(d->irq), bit);
+
+	/* gpio mask : irq disable */
+	writel(readl(base + GPIO_INT_ENB) & ~(1<<bit), base + GPIO_INT_ENB);
+	writel(readl(base + GPIO_INT_DET) & ~(1<<bit), base + GPIO_INT_DET);
+}
+
+static void gpio_enable_irq(struct irq_data *d)
+{
+	void __iomem *base = irq_data_get_irq_chip_data(d);
+	int bit = (d->irq & 0x1F);
+	//printk("%s: gpio irq = %d, %s.%d\n", __func__, d->irq, VIO_NAME(d->irq), bit);
+
+	/* gpio unmask : irq enable */
+	writel(readl(base + GPIO_INT_ENB) | (1<<bit), base + GPIO_INT_ENB);
+	writel(readl(base + GPIO_INT_DET) | (1<<bit), base + GPIO_INT_DET);
+	readl(base + GPIO_INT_ENB);
+}
+
 static void gpio_unmask_irq(struct irq_data *d)
 {
 	void __iomem *base = irq_data_get_irq_chip_data(d);
@@ -656,6 +721,8 @@ static struct irq_chip gpio_chip = {
 	.irq_ack		= gpio_ack_irq,
 	.irq_mask		= gpio_mask_irq,
 	.irq_unmask		= gpio_unmask_irq,
+	.irq_enable		= gpio_enable_irq,
+	.irq_disable	= gpio_disable_irq,
 	.irq_set_type	= gpio_set_type_irq,
 	.irq_set_wake	= gpio_set_wake,
 };

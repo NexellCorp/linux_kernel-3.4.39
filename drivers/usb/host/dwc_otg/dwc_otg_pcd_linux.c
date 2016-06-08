@@ -752,6 +752,13 @@ static void dwc_otg_pcd_softconnect(dwc_otg_pcd_t * pcd, int is_set)
 		if (is_set) {
 			DWC_MODIFY_REG32(&core_if->dev_if->dev_global_regs->dctl, dctl.d32, 0);
 		} else {
+			if (gadget_wrapper->gadget.speed != USB_SPEED_UNKNOWN) {
+				if (gadget_wrapper->driver && gadget_wrapper->driver->disconnect) {
+					DWC_SPINUNLOCK_IRQRESTORE(pcd->lock, flags);
+					gadget_wrapper->driver->disconnect(&gadget_wrapper->gadget);
+					DWC_SPINLOCK_IRQSAVE(pcd->lock, &flags);
+				}
+			}
 			DWC_MODIFY_REG32(&core_if->dev_if->dev_global_regs->dctl, 0, dctl.d32);
 		}
 		DWC_SPINUNLOCK_IRQRESTORE(pcd->lock, flags);
@@ -1493,6 +1500,11 @@ int pcd_init(dwc_bus_dev_t *_dev)
         free_wrapper(gadget_wrapper);
         otg_dev->pcd = 0;
     }
+	#if defined (CONFIG_USB_G_ANDROID)
+	else {
+		dwc_otg_pcd_softconnect(gadget_wrapper->pcd, 0);
+	}
+	#endif
 #endif
 	return retval;
 }

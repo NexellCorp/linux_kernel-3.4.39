@@ -332,6 +332,8 @@ static void nxp_fb_copy_boot_logo(struct nxp_fb_param *par, int size)
 	void *virt = NULL;
 	struct page *page;
 
+	size = PAGE_ALIGN(size);
+
 	phys = nxp_fb_dev_get_addr(par);
 
 	if (phys) {
@@ -376,6 +378,7 @@ nxp_fb_init_display(struct fb_info *info)
 
 	nxp_fb_dev_set_layer(par);
 
+    // psw0523 fix for quickbooting
 	#if defined(CONFIG_LOGO_NXP_COPY)
 	nxp_fb_copy_boot_logo(par, (xres * yres * pixel));
 	#else
@@ -544,9 +547,13 @@ static int nxp_fb_setup_param(int fb, struct fb_info *info, void *data)
 		return ret;
 
 	/* get from output device sync */
+#if 0
 	x_resol = vsi.h_active_len ? vsi.h_active_len : plat->x_resol;
 	y_resol = vsi.v_active_len ? vsi.v_active_len : plat->y_resol;
-
+#else
+	x_resol = plat->x_resol;
+	y_resol = plat->y_resol;
+#endif
 	/* clear palette buffer */
 	par->info = info;
 	par->status = 0;
@@ -562,7 +569,7 @@ static int nxp_fb_setup_param(int fb, struct fb_info *info, void *data)
 	dev->x_resol 	  = x_resol;
 	dev->y_resol 	  = y_resol;
 	dev->x_virt		  = x_resol;
-	dev->y_virt		  = y_resol * plat->buffers;
+	dev->y_virt		  = PAGE_ALIGN(y_resol * plat->buffers);
 	dev->buffer_num	  = plat->buffers;
 	dev->pixelbit 	  = plat->bitperpixel;
 	dev->format		  = plat->format;
@@ -610,7 +617,7 @@ static void nxp_fb_setup_info(struct fb_info *info)
 	info->var.right_margin	= dev->hs_right;
 	info->var.upper_margin	= dev->vs_upper;
 	info->var.lower_margin	= dev->vs_lower;
-	info->var.pixclock		= (1000000000 / dev->pixelclk) * 1000;	/* pico second */
+	info->var.pixclock		= KHZ2PICOS(dev->pixelclk/1000);	/* pico second */
 
 	/* get resolution */
 	info->var.xres	    	= dev->x_resol;
@@ -998,7 +1005,7 @@ static int nxp_fb_set_par(struct fb_info *info)
         dev->y_resol     = var->yres;
         dev->pixelbit    = var->bits_per_pixel;
         dev->x_virt	     = dev->x_resol;
-        dev->y_virt	     = dev->y_resol * dev->buffer_num;
+        dev->y_virt	     = PAGE_ALIGN(dev->y_resol * dev->buffer_num);
         dev->fb_pan_phys = dev->fb_phy_base;	/* pan restore */
 
         nxp_fb_setup_info(info);
