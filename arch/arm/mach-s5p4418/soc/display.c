@@ -1428,7 +1428,7 @@ void nxp_soc_disp_video_set_address(int module, unsigned int lu_a, unsigned int 
         NX_MLC_SetVideoLayerAddressYUYV(module, lu_a, lu_s);
     } else {
         NX_MLC_SetVideoLayerStride (module, lu_s, cb_s, cr_s);
-        NX_MLC_SetVideoLayerAddress(module, lu_a, cb_a, cr_a);
+        NX_MLC_SetVideoLayerAddress(module, lu_s + lu_a, cb_s + cb_a, cr_s + cr_a);
     }
 
 	NX_MLC_SetDirtyFlag(module, MLC_LAYER_VIDEO);

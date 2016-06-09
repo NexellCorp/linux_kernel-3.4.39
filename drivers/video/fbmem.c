@@ -612,6 +612,7 @@ int fb_prepare_logo(struct fb_info *info, int rotate)
 	}
 
 	/* Return if no suitable logo was found */
+	printk("Prepare FB logo!!!!!\n");
 	fb_logo.logo = fb_find_logo(depth);
 
 	if (!fb_logo.logo) {
@@ -651,7 +652,7 @@ int fb_prepare_logo(struct fb_info *info, int rotate)
  			break;
  		}
  	}
-
+	printk("END prepare_fb_logo!\n");
 	return fb_prepare_extra_logos(info, fb_logo.logo->height, yres);
 }
 
