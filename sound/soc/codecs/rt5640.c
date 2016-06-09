@@ -4019,7 +4019,7 @@ static int rt5640_i2c_probe(struct i2c_client *i2c,
 	i2c_set_clientdata(i2c, rt5640);
 
 	ret = snd_soc_register_codec(&i2c->dev, &soc_codec_dev_rt5640,
-			&rt5640_dai, ARRAY_SIZE(rt5640_dai));
+			rt5640_dai, ARRAY_SIZE(rt5640_dai));
 	if (ret < 0)
 		kfree(rt5640);
 

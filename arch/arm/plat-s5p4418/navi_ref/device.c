@@ -294,8 +294,8 @@ static struct nxp_fb_plat_data fb0_plat_data = {
 	.format			= CFG_DISP_PRI_SCREEN_RGB_FORMAT,
 	.bgcolor		= CFG_DISP_PRI_BACK_GROUND_COLOR,
 	.bitperpixel	= CFG_DISP_PRI_SCREEN_PIXEL_BYTE * 8,
-	.x_resol		= 720,//CFG_DISP_PRI_RESOL_WIDTH,
-	.y_resol		= 480,//CFG_DISP_PRI_RESOL_HEIGHT,
+	.x_resol		= CFG_DISP_PRI_RESOL_WIDTH,
+	.y_resol		= CFG_DISP_PRI_RESOL_HEIGHT,
 	#ifdef CONFIG_ANDROID
 	.buffers		= 3,
 	.skip_pan_vsync	= 1,
