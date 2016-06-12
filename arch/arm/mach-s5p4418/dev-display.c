@@ -156,7 +156,7 @@ static struct disp_syncgen_par __lcd_syncgen = {
 	.clk_inv_lv1	= CFG_DISP_PRI_CLKGEN1_INVERT,
 	.clk_delay_lv1	= CFG_DISP_PRI_CLKGEN1_DELAY,
 	.clk_sel_div1	= CFG_DISP_PRI_CLKSEL1_SELECT,
-//	.invert_field	= 1,
+	.invert_field	= CFG_DISP_PRI_OUT_INVERT_FIELD,
 	#endif
 };
 
