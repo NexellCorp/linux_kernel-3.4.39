@@ -63,10 +63,8 @@ static struct nxp_hdmi_display *__me = NULL;
 static int hdmi_disp_get_vsync(struct disp_process_dev *pdev, struct disp_vsync_info *psync)
 {
     struct nxp_hdmi_display *me = (struct nxp_hdmi_display *)pdev->priv;
-    pr_debug("%s entered\n", __func__);
     hdmi_get_vsync(&me->ctx);
     memcpy(psync, &me->ctx.dpc_sync_info, sizeof(struct disp_vsync_info));
-    pr_debug("%s exit\n", __func__);
     return 0;
 }
 
@@ -78,7 +76,6 @@ static int hdmi_disp_prepare(struct disp_process_dev *pdev)
 static int hdmi_disp_enable(struct disp_process_dev *pdev, int enable)
 {
     struct nxp_hdmi_display *me = (struct nxp_hdmi_display *)pdev->priv;
-    pr_debug("%s entered: %d, %p\n", __func__, enable, me);
     if (enable) {
         if (hdmi_is_connected()) {
             hdmi_run(&me->ctx, false);
@@ -126,7 +123,7 @@ static struct i2c_board_info hdmi_edid_i2c_boardinfo = {
 
 static struct nxp_v4l2_i2c_board_info edid = {
     .board_info = &hdmi_edid_i2c_boardinfo,
-    .i2c_adapter_id = 0,
+    .i2c_adapter_id = 2,
 };
 
 static struct i2c_board_info hdmi_hdcp_i2c_boardinfo = {
@@ -135,14 +132,13 @@ static struct i2c_board_info hdmi_hdcp_i2c_boardinfo = {
 
 static struct nxp_v4l2_i2c_board_info hdcp = {
     .board_info = &hdmi_hdcp_i2c_boardinfo,
-    .i2c_adapter_id = 0,
+    .i2c_adapter_id = 2,
 };
 
 static void _set_hdmi_mux(struct nxp_hdmi_context *ctx)
 {
     struct nxp_hdmi_display *me = context_to_nxp_hdmi_display(ctx);
 
-    pr_debug("%s entered\n", __func__);
     nxp_soc_disp_device_set_vsync_info(ctx->source_device, &ctx->dpc_sync_info);
     nxp_soc_disp_device_set_sync_param(ctx->source_device, &ctx->dpc_sync_param);
     ctx->source_device = me->plat_data->display_in;
@@ -159,7 +155,6 @@ static void _set_hdmi_mux(struct nxp_hdmi_context *ctx)
         ctx->source_dpc_module_num = 0;
         pr_debug("source device : RESC\n");
     }
-    pr_debug("%s exit\n", __func__);
 }
 
 static void notify_hpd_changed(void *data, int state)
@@ -228,7 +223,6 @@ static int hdmi_probe(struct platform_device *pdev)
 
     __me = me;
 
-    pr_debug("%s exit\n", __func__);
     return 0;
 }
 

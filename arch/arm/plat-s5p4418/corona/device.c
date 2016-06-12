@@ -294,8 +294,13 @@ static struct nxp_fb_plat_data fb0_plat_data = {
 	.format			= CFG_DISP_PRI_SCREEN_RGB_FORMAT,
 	.bgcolor		= CFG_DISP_PRI_BACK_GROUND_COLOR,
 	.bitperpixel	= CFG_DISP_PRI_SCREEN_PIXEL_BYTE * 8,
+#ifdef CONFIG_NXP_DISPLAY_HDMI
+	.x_resol		= CFG_DISP_PRI_RESOL_WIDTH,
+	.y_resol		= CFG_DISP_PRI_RESOL_HEIGHT,
+#else
 	.x_resol		= CFG_DISP_PRI_RESOL_WIDTH,
 	.y_resol		= CFG_DISP_PRI_RESOL_HEIGHT * 2,
+#endif
 	#ifdef CONFIG_ANDROID
 	.buffers		= 3,
 	.skip_pan_vsync	= 1,
@@ -1697,7 +1702,9 @@ static struct nxp_out_platformdata out_plat_data = {
 };
 
 static struct nxp_v4l2_platformdata v4l2_plat_data = {
-    .captures = &capture_plat_data[0],
+#ifdef CONFIG_VIDEO_NXP_CAPTURE		
+	.captures = &capture_plat_data[0],
+#endif
     .out = &out_plat_data,
 };
 
@@ -2521,7 +2528,6 @@ void __init nxp_board_devices_register(void)
     printk("plat: add Encoder(adv7391) device\n");
     i2c_register_board_info(9, &adv7391_i2c_bdi, 1);
 #endif
-
 
 	/* END */
 	printk("\n");

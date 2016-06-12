@@ -87,6 +87,8 @@ struct nxp_hdmi_context {
     /* hook ; hpd change notifier */
     void (*notify_hpd_changed)(void *, int);
     void *notify_data;
+
+	bool resume_work;
 };
 
 int hdmi_init_context(struct nxp_hdmi_context *, struct nxp_v4l2_i2c_board_info *, struct nxp_v4l2_i2c_board_info *);

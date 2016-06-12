@@ -83,7 +83,53 @@
  * 	Display (DPC and MLC)
  */
 /* Primary */
-#define CFG_DISP_PRI_SCREEN_LAYER               1
+#ifdef CONFIG_NXP_DISPLAY_HDMI
+#define CFG_DISP_PRI_SCREEN_LAYER				0
+#define CFG_DISP_PRI_SCREEN_RGB_FORMAT          MLC_RGBFMT_R8G8B8
+#define CFG_DISP_PRI_SCREEN_PIXEL_BYTE          3
+#define CFG_DISP_PRI_SCREEN_COLOR_KEY           0x090909
+
+#define CFG_DISP_PRI_VIDEO_PRIORITY             2   // 0, 1, 2, 3
+#define CFG_DISP_PRI_BACK_GROUND_COLOR          0x000000
+
+#define CFG_DISP_PRI_MLC_INTERLACE              CFALSE
+
+#define CFG_DISP_PRI_LCD_WIDTH_MM               344.232
+#define CFG_DISP_PRI_LCD_HEIGHT_MM              193.536
+
+#define CFG_DISP_PRI_RESOL_WIDTH                1920    // X Resolution
+#define CFG_DISP_PRI_RESOL_HEIGHT               1080    // Y Resolution
+
+#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH           14
+#define CFG_DISP_PRI_HSYNC_BACK_PORCH           90
+#define CFG_DISP_PRI_HSYNC_FRONT_PORCH          90
+#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CTRUE
+#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH           3
+#define CFG_DISP_PRI_VSYNC_BACK_PORCH           23
+#define CFG_DISP_PRI_VSYNC_FRONT_PORCH          12
+#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH          CTRUE
+
+#define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL0
+#define CFG_DISP_PRI_CLKGEN0_DIV                10
+#define CFG_DISP_PRI_CLKGEN0_DELAY              0
+#define CFG_DISP_PRI_CLKGEN0_INVERT             1
+#define CFG_DISP_PRI_CLKGEN1_SOURCE             DPC_VCLK_SRC_VCLK2
+#define CFG_DISP_PRI_CLKGEN1_DIV                1
+#define CFG_DISP_PRI_CLKGEN1_DELAY              0
+#define CFG_DISP_PRI_CLKGEN1_INVERT             0
+#define CFG_DISP_PRI_CLKSEL1_SELECT             0
+#define CFG_DISP_PRI_PADCLKSEL                  DPC_PADCLKSEL_VCLK2  /* VCLK=CLKGEN1, VCLK2=CLKGEN0 */
+
+#define CFG_DISP_PRI_PIXEL_CLOCK                76000000
+
+#define CFG_DISP_PRI_OUT_SWAPRB                 CFALSE
+#define CFG_DISP_PRI_OUT_FORMAT                 DPC_FORMAT_RGB888
+#define CFG_DISP_PRI_OUT_YCORDER                DPC_YCORDER_CbYCrY
+#define CFG_DISP_PRI_OUT_INTERLACE              CFALSE
+#define CFG_DISP_PRI_OUT_INVERT_FIELD           CFALSE
+#define CFG_DISP_LCD_MPY_TYPE                   0
+#else
+#define CFG_DISP_PRI_SCREEN_LAYER               0
 #define CFG_DISP_PRI_SCREEN_RGB_FORMAT          MLC_RGBFMT_R8G8B8
 #define CFG_DISP_PRI_SCREEN_PIXEL_BYTE	        3
 #define CFG_DISP_PRI_SCREEN_COLOR_KEY	        0x090909
@@ -117,7 +163,7 @@
 #define CFG_DISP_PRI_CLKGEN1_DELAY              0
 #define CFG_DISP_PRI_CLKGEN1_INVERT				1
 #define CFG_DISP_PRI_CLKSEL1_SELECT				0
-#define CFG_DISP_PRI_PADCLKSEL                  DPC_PADCLKSEL_VCLK2	/* VCLK=CLKGEN1, VCLK12=CLKGEN0 */
+#define CFG_DISP_PRI_PADCLKSEL                  DPC_PADCLKSEL_VCLK2	/* VCLK=CLKGEN1, VCLK2=CLKGEN0 */
 
 #define	CFG_DISP_PRI_PIXEL_CLOCK				800000000/CFG_DISP_PRI_CLKGEN0_DIV
 
@@ -127,6 +173,7 @@
 #define CFG_DISP_PRI_OUT_INTERLACE              CTRUE
 #define CFG_DISP_PRI_OUT_INVERT_FIELD           CTRUE
 #define CFG_DISP_LCD_MPY_TYPE					0
+#endif
 
 /*------------------------------------------------------------------------------
  * 	LVDS

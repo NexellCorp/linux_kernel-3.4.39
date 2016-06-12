@@ -29,6 +29,7 @@ config LOGO_LINUX_CLUT224
 
 config LOGO_COLORBAR_CLUT224
 	bool "Color bar (720x480)"
+	depends on NXP_DISPLAY_ENCODER
 	default n
 	
 config LOGO_BLACKFIN_VGA16

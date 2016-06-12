@@ -617,6 +617,7 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 	int vclk_select = psgen->vclk_select;
 	int vclk_invert = psgen->clk_inv_lv0 | psgen->clk_inv_lv1;
 	CBOOL EmbSync = (out_format == DPC_FORMAT_CCIR656 ? CTRUE : CFALSE);
+	bool LCD_out = (pdev->dev_out == DISP_DEVICE_LCD ? CTRUE : CFALSE);
 
 	CBOOL RGBMode = CFALSE;
 	NX_DPC_DITHER RDither, GDither, BDither;
@@ -728,21 +729,20 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 		NX_DPC_SetDelay (module, 12, 12, 12, 12);
  		NX_DPC_SetDither(module, RDither, GDither, BDither);
 	} else {
+		if (LCD_out) {
 		/* LCD out */
-#if 0
-		NX_DPC_SetMode(module, out_format, interlace, invert_field, RGBMode,
-				swap_RB, yc_order, EmbSync, EmbSync, vclk_select, vclk_invert, CFALSE);
-		NX_DPC_SetHSync(module,  psync->h_active_len,
-				psync->h_sync_width,  psync->h_front_porch,  psync->h_back_porch,  psync->h_sync_invert);
-		NX_DPC_SetVSync(module,
-				psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch,
-				psync->v_sync_invert,
-				psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch);
-		NX_DPC_SetVSyncOffset(module, v_vso, v_veo, e_vso, e_veo);
-		NX_DPC_SetDelay (module, rgb_pvd, hsync_cp1, vsync_fram, de_cp2);
-		NX_DPC_SetDither(module, RDither, GDither, BDither);
-#else
-		{
+			NX_DPC_SetMode(module, out_format, interlace, invert_field, RGBMode,
+					swap_RB, yc_order, EmbSync, EmbSync, vclk_select, vclk_invert, CFALSE);
+			NX_DPC_SetHSync(module,  psync->h_active_len,
+					psync->h_sync_width,  psync->h_front_porch,  psync->h_back_porch,  psync->h_sync_invert);
+			NX_DPC_SetVSync(module,
+					psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch,
+					psync->v_sync_invert,
+					psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch);
+			NX_DPC_SetVSyncOffset(module, v_vso, v_veo, e_vso, e_veo);
+			NX_DPC_SetDelay (module, rgb_pvd, hsync_cp1, vsync_fram, de_cp2);
+			NX_DPC_SetDither(module, RDither, GDither, BDither);
+		} else {
 			POLARITY FieldPolarity = POLARITY_ACTIVEHIGH;
 			POLARITY HSyncPolarity = POLARITY_ACTIVEHIGH;
 			POLARITY VSyncPolarity = POLARITY_ACTIVEHIGH;
@@ -767,7 +767,6 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 			NX_DPC_SetDither(module, RDither, GDither, BDither);
 			NX_DPC_SetQuantizationMode(module, QMODE_256, QMODE_256 );
 		}
-#endif
 	}
 
 	DBGOUT("%s: display.%d (x=%4d, hfp=%3d, hbp=%3d, hsw=%3d)\n",

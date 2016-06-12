@@ -879,6 +879,7 @@ int hdmi_init_context(struct nxp_hdmi_context *me,
     me->audio_codec = DEFAULT_AUDIO_CODEC;
     me->aspect = HDMI_ASPECT_RATIO_16_9;
     me->cur_preset = V4L2_DV_INVALID;
+	me->resume_work = false;
 
     me->hpd_switch.name = "hdmi";
     switch_dev_register(&me->hpd_switch);
@@ -949,12 +950,12 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
 {
     int ret;
 
-    printk("%s entered\n", __func__);
-
-    if (atomic_read(&me->state) == HDMI_RUNNING) {
-        pr_warning("%s: hdmi already running!\n", __func__);
-        return 0;
-    }
+	if (me->resume_work != true) {
+	    if (atomic_read(&me->state) == HDMI_RUNNING) {
+	        pr_warning("%s: hdmi already running!\n", __func__);
+	        return 0;
+	    }
+	}
 
     _hdmi_reset(me);
 
@@ -1053,14 +1054,12 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
 #endif
 
     atomic_set(&me->state, HDMI_RUNNING);
-    printk("%s exit\n", __func__);
     return 0;
 }
 
 void hdmi_stop(struct nxp_hdmi_context *me)
 {
     pr_debug("%s\n", __func__);
-    printk("%s entered\n", __func__);
 
     if (atomic_read(&me->state) != HDMI_RUNNING)
         return;
@@ -1086,7 +1085,6 @@ void hdmi_stop(struct nxp_hdmi_context *me)
     _h_sync_offset = 0;
 
     atomic_set(&me->state, HDMI_STOPPED);
-    printk("%s exit\n", __func__);
 }
 
 #if 0
@@ -1250,10 +1248,12 @@ int hdmi_resume(struct nxp_hdmi_context *me)
 {
     PM_DBGOUT("+%s\n", __func__);
     _hdmi_initialize(me);
+	me->resume_work = true;
     if (atomic_read(&me->state) == HDMI_RUNNING)
         hdmi_run(me, true);
     else if (hdmi_hpd_status())
         _hdmi_hpd_changed(me, 1);
+	me->resume_work = false;
     PM_DBGOUT("-%s\n", __func__);
     return 0;
 }
