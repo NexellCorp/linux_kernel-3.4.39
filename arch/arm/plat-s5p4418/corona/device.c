@@ -175,7 +175,7 @@ struct nxp_adc_tmp_trigger adc_tmp_event[] = {
 		.period = 1000, /* Ms */
 	} , {
 		.temp  = 55,
-		.freq  = 400000,		/* freq = 0 :Set critical temp. Power off! */
+		.freq  = 600000,		/* freq = 0 :Set critical temp. Power off! */
 		.period = 1000, /* Ms */
 	}
 };
