@@ -7,6 +7,7 @@ obj-$(CONFIG_MFD_88PM860X)	+= 88pm860x.o
 obj-$(CONFIG_MFD_SM501)		+= sm501.o
 obj-$(CONFIG_MFD_ASIC3)		+= asic3.o tmio_core.o
 
+obj-$(CONFIG_MFD_NXE1500)	+= nxe1500.o nxe1500-irq.o
 obj-$(CONFIG_MFD_NXE2000)	+= nxe2000.o nxe2000-irq.o
 
 obj-$(CONFIG_HTC_EGPIO)		+= htc-egpio.o

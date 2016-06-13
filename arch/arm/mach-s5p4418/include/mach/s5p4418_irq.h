@@ -134,6 +134,8 @@
 
 #if defined (CONFIG_REGULATOR_NXE2000)
 #define	IRQ_RESERVED_OFFSET		72		// refer NXE2000_NR_IRQS <linux/mfd/nxe2000.h>
+#elif defined (CONFIG_REGULATOR_NXE1500)
+#define	IRQ_RESERVED_OFFSET		17		// refer NXE1500_NR_IRQS <linux/mfd/nxe1500.h>
 #else
 #define	IRQ_RESERVED_OFFSET		0
 #endif

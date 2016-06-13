@@ -323,8 +323,8 @@
 /*------------------------------------------------------------------------------
  * 	PMIC
  */
-#define CFG_GPIO_PMIC_INTR				(PAD_GPIO_E + 10)
-//#define CONFIG_ENABLE_INIT_VOLTAGE					/* Enalbe init voltage for ARM, CORE */
+#define CFG_GPIO_PMIC_INTR				(PAD_GPIO_ALV + 4)
+//#define CONFIG_ENABLE_INIT_VOLTAGE		/* Enalbe init voltage for ARM, CORE, DDRIO, DDR */
 
 /* HDMIPHY TX Level : 0 ~ 31 */
 #define CFG_HDMIPHY_TX_LEVEL			31

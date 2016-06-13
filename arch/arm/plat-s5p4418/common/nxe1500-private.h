@@ -1,0 +1,616 @@
+/*
+ * nxe1500.h - Voltage regulator driver for the NXE1500
+ *
+ *  Copyright (C) 2013 Nexell Co,.Ltd.
+ *  Bongkwan Kook <kook@nexell.co.kr>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+#ifndef __LINUX_MFD_NXE1500_PRIV_H
+#define __LINUX_MFD_NXE1500_PRIV_H
+
+#define NXE1500_NUM_IRQ_REGS			4
+
+#define NXE1500_REG_TYPE_INVALID		0x4000
+#define NXE1500_REG_TYPE_INTMASK		0x4100
+#define NXE1500_REG_TYPE_INTEN			0x4200
+
+
+/* NXE1500 registers */
+#define	NXE1500_NUM_OF_REGS				0xFF
+
+/* System control */
+#define	NXE1500_REG_LSIVER				0x00	/* Read only */
+#define	NXE1500_REG_OTPVER				0x01	/* Read only */
+#define	NXE1500_REG_IODAC				0x02
+#define	NXE1500_REG_VINDAC				0x03
+
+/* I2C control */
+#define	NXE1500_REG_CPUCNT				0x06
+
+/* Power control */
+#define	NXE1500_REG_PSWR				0x07
+#define	NXE1500_REG_PONHIS				0x09	/* Read only */
+#define	NXE1500_REG_POFFHIS				0x0A	/* Read only */
+#define	NXE1500_REG_WATCHDOG			0x0B
+#define	NXE1500_REG_WATCHDOGCNT			0x0C	/* Read only */
+#define	NXE1500_REG_PWRFUNC				0x0D
+#define	NXE1500_REG_SLPCNT				0x0E
+#define	NXE1500_REG_REPCNT				0x0F
+#define	NXE1500_REG_PWRONTIMSET			0x10
+#define	NXE1500_REG_NOETIMSETCNT		0x11
+#define	NXE1500_REG_PWRIREN				0x12
+#define	NXE1500_REG_PWRIRQ				0x13
+#define	NXE1500_REG_PWRMON				0x14
+#define	NXE1500_REG_PWRIRSEL			0x15
+#define	NXE1500_REG_DC1SLP_SLOT			0x16
+#define	NXE1500_REG_DC2SLP_SLOT			0x17
+#define	NXE1500_REG_DC3SLP_SLOT			0x18
+#define	NXE1500_REG_DC4SLP_SLOT			0x19
+#define	NXE1500_REG_LDO1SLP_SLOT		0x1B
+#define	NXE1500_REG_LDO2SLP_SLOT		0x1C
+#define	NXE1500_REG_LDO3SLP_SLOT		0x1D
+#define	NXE1500_REG_LDO4SLP_SLOT		0x1E
+#define	NXE1500_REG_LDO5SLP_SLOT		0x1F
+#define	NXE1500_REG_PSO0SLP_SLOT		0x25
+#define	NXE1500_REG_PSO1SLP_SLOT		0x26
+#define	NXE1500_REG_PSO2SLP_SLOT		0x27
+#define	NXE1500_REG_PSO3SLP_SLOT		0x28
+#define	NXE1500_REG_PSO4SLP_SLOT		0x29
+#define	NXE1500_REG_LDORTC1SLP_SLOT		0x2A
+
+/* DCDC */
+#define	NXE1500_REG_DC1CTL				0x2C
+#define	NXE1500_REG_DC1CTL2				0x2D
+#define	NXE1500_REG_DC2CTL				0x2E
+#define	NXE1500_REG_DC2CTL2				0x2F
+#define	NXE1500_REG_DC3CTL				0x30
+#define	NXE1500_REG_DC3CTL2				0x31
+#define	NXE1500_REG_DC4CTL				0x32
+#define	NXE1500_REG_DC4CTL2				0x33
+#define	NXE1500_REG_DC1VOL				0x36
+#define	NXE1500_REG_DC2VOL				0x37
+#define	NXE1500_REG_DC3VOL				0x38
+#define	NXE1500_REG_DC4VOL				0x39
+#define	NXE1500_REG_DC1VOL_SLP			0x3B
+#define	NXE1500_REG_DC2VOL_SLP			0x3C
+#define	NXE1500_REG_DC3VOL_SLP			0x3D
+#define	NXE1500_REG_DC4VOL_SLP			0x3E
+#define	NXE1500_REG_DCIREN				0x40	/* Enable	*/
+#define	NXE1500_REG_DCIRQ				0x41	/* Mask		*/
+#define	NXE1500_REG_DCIRMON				0x42	/* Status	*/
+
+/* LDO */
+#define	NXE1500_REG_LDOEN1				0x44
+#define	NXE1500_REG_LDOEN2				0x45
+#define	NXE1500_REG_LDODIS1				0x46
+#define	NXE1500_REG_LDO1VOL				0x4C
+#define	NXE1500_REG_LDO2VOL				0x4D
+#define	NXE1500_REG_LDO3VOL				0x4E
+#define	NXE1500_REG_LDO4VOL				0x4F
+#define	NXE1500_REG_LDO5VOL				0x50
+#define	NXE1500_REG_LDORTC1VOL			0x56
+#define	NXE1500_REG_LDORTC2VOL			0x57
+#define	NXE1500_REG_LDO1VOL_SLP			0x58
+#define	NXE1500_REG_LDO2VOL_SLP			0x59
+#define	NXE1500_REG_LDO3VOL_SLP			0x5A
+#define	NXE1500_REG_LDO4VOL_SLP			0x5B
+#define	NXE1500_REG_LDO5VOL_SLP			0x5C
+
+/* GPIO */
+#define	NXE1500_REG_IOSEL				0x90
+#define	NXE1500_REG_IOOUT				0x91
+#define	NXE1500_REG_GPEDGE1				0x92
+#define	NXE1500_REG_GPEDGE2				0x93
+#define	NXE1500_REG_EN_GPIR				0x94	/* Enable & Mask */
+#define	NXE1500_REG_IR_GPR				0x95	/* Pending */
+#define	NXE1500_REG_IR_GPF				0x96	/* Pending */
+#define	NXE1500_REG_MON_IOIN			0x97	/* Status */
+#define	NXE1500_REG_GPLED_FUNC			0x98
+
+/* Interrupt */
+#define	NXE1500_REG_INTPOL				0x9C
+#define	NXE1500_REG_INTEN				0x9D	/* Enable & Mask */
+#define	NXE1500_REG_INTMON				0x9E	/* Status */
+
+/* System Option */
+#define	NXE1500_REG_PREVINDAC			0xB0
+#define	NXE1500_REG_DIESET				0xBC
+
+
+/*
+ * register bit position
+ */
+
+/* PSWR */
+#define	NXE1500_POS_PSWR_PSWR				(0)
+#define	NXE1500_POS_PSWR_RRESET				(7)
+
+/* PONHIS */
+#define	NXE1500_POS_PONHIS_PWRONPON			(0)
+#define	NXE1500_POS_PONHIS_REPWRPON			(1)
+#define	NXE1500_POS_PONHIS_CHARGEPON		(2)
+#define	NXE1500_POS_PONHIS_ON_EXTINPON		(3)
+
+/* POFFHIS */
+#define	NXE1500_POS_POFFHIS_PWRONPOFF		(0)
+#define	NXE1500_POS_POFFHIS_TSHUTPOFF		(1)
+#define	NXE1500_POS_POFFHIS_VINDETPOFF		(2)
+#define	NXE1500_POS_POFFHIS_IODETPOFF		(3)
+#define	NXE1500_POS_POFFHIS_SWPWRPOFF		(4)
+#define	NXE1500_POS_POFFHIS_WDGPOFF			(5)
+#define	NXE1500_POS_POFFHIS_DCLIMPOFF		(6)
+#define	NXE1500_POS_POFFHIS_N_OEPOFF		(7)
+
+/* WATHDOG */
+#define	NXE1500_POS_WATHDOG_WDOGTIM			(0)
+#define	NXE1500_POS_WATHDOG_WDOG_EN			(1)
+#define	NXE1500_POS_WATHDOG_WDOGSLPEN		(2)
+
+/* PWRFUNC */
+#define	NXE1500_POS_PWRFUNC_OFFSEQ_SEL		(1)
+#define	NXE1500_POS_PWRFUNC_DC1EXON_EN		(2)
+#define	NXE1500_POS_PWRFUNC_DC2EXON_EN		(3)
+#define	NXE1500_POS_PWRFUNC_SLP_TO_OFFSEQ	(5)
+
+/* SLPCNT */
+#define	NXE1500_POS_SLPCNT_SWPWROFF			(0)
+#define	NXE1500_POS_SLPCNT_SLPENT			(4)
+#define	NXE1500_POS_SLPCNT_SLPEXIT			(5)
+
+/* REPCNT */
+#define	NXE1500_POS_REPCNT_REPWRON			(0)
+#define	NXE1500_POS_REPCNT_REPWRTIM			(1)
+#define	NXE1500_POS_REPCNT_OFF_RESETO		(4)
+
+/* PWRONTIMSET */
+#define	NXE1500_POS_PWRONTIMSET_DIS_OFF_PWRON_TIM	(7)
+#define	NXE1500_POS_PWRONTIMSET_OFF_PRESS_PWRON		(4)
+#define	NXE1500_POS_PWRONTIMSET_OFF_JUDGE_PWRON		(3)
+#define	NXE1500_POS_PWRONTIMSET_ON_PRESS_PWRON		(0)
+
+/* NOETIMSET */
+#define	NXE1500_POS_NOETIMSET_DIS_OFF_NOE_TIM 		(3)
+#define	NXE1500_POS_NOETIMSET_OFF_JUDGE_NOE 		(2)
+#define	NXE1500_POS_NOETIMSET_OFF_PRESS_NOE			(0)
+
+/* PWRIREN */
+#define	NXE1500_POS_PWRIREN_WDOG			(6)
+#define	NXE1500_POS_PWRIREN_NOE_OFF			(5)
+#define	NXE1500_POS_PWRIREN_PWRON_OFF 		(4)
+#define	NXE1500_POS_PWRIREN_PREOT			(3)
+#define	NXE1500_POS_PWRIREN_PRVINDT			(2)
+#define	NXE1500_POS_PWRIREN_EXTIN			(1)
+#define	NXE1500_POS_PWRIREN_PWRON			(0)
+
+/* PWRIRQ */
+#define	NXE1500_POS_PWRIRQ_WDOG				(6)
+#define	NXE1500_POS_PWRIRQ_NOE_OFF			(5)
+#define	NXE1500_POS_PWRIRQ_PWRON_OFF		(4)
+#define	NXE1500_POS_PWRIRQ_PREOT			(3)
+#define	NXE1500_POS_PWRIRQ_PRVINDT			(2)
+#define	NXE1500_POS_PWRIRQ_EXTIN			(1)
+#define	NXE1500_POS_PWRIRQ_PWRON			(0)
+
+/* PWRMON */
+#define	NXE1500_POS_PWRMON_PREOT			(3)
+#define	NXE1500_POS_PWRMON_PRVINDT			(2)
+#define	NXE1500_POS_PWRMON_EXTIN			(1)
+#define	NXE1500_POS_PWRMON_PWRON			(0)
+
+/* PWRIRSEL */
+#define	NXE1500_POS_PWRIRSEL_SEL_PREOT		(3)
+#define	NXE1500_POS_PWRIRSEL_SEL_PRVINDT 	(2)
+#define	NXE1500_POS_PWRIRSEL_SEL_EXTIN		(1)
+#define	NXE1500_POS_PWRIRSEL_SEL_PWRON		(0)
+
+/* DC1_SLOT */
+#define	NXE1500_POS_DC1SLOT_ON				(4)
+#define	NXE1500_POS_DC1SLOT_SLP				(0)
+
+/* DC2_SLOT */
+#define	NXE1500_POS_DC2SLOT_ON				(4)
+#define	NXE1500_POS_DC2SLOT_SLP				(0)
+
+/* DC3_SLOT */
+#define	NXE1500_POS_DC3SLOT_ON				(4)
+#define	NXE1500_POS_DC3SLOT_SLP				(0)
+
+/* LDO1_SLOT */
+#define	NXE1500_POS_LDO1SLOT_ON				(4)
+#define	NXE1500_POS_LDO1SLOT_SLP			(0)
+
+/* LDO2_SLOT */
+#define	NXE1500_POS_LDO2SLOT_ON				(4)
+#define	NXE1500_POS_LDO2SLOT_SLP			(0)
+
+/* LDO3_SLOT */
+#define	NXE1500_POS_LDO3SLOT_ON				(4)
+#define	NXE1500_POS_LDO3SLOT_SLP			(0)
+
+/* LDO4_SLOT */
+#define	NXE1500_POS_LDO4SLOT_ON				(4)
+#define	NXE1500_POS_LDO4SLOT_SLP			(0)
+
+/* LDO5_SLOT */
+#define	NXE1500_POS_LDO5SLOT_ON				(4)
+#define	NXE1500_POS_LDO5SLOT_SLP			(0)
+
+/* PSO0_SLOT */
+#define	NXE1500_POS_PSO0SLOT_ON				(4)
+#define	NXE1500_POS_PSO0SLOT_SLP			(0)
+
+/* PSO1_SLOT */
+#define	NXE1500_POS_PSO1SLOT_ON				(4)
+#define	NXE1500_POS_PSO1SLOT_SLP			(0)
+
+/* PSO2_SLOT */
+#define	NXE1500_POS_PSO2SLOT_ON				(4)
+#define	NXE1500_POS_PSO2SLOT_SLP			(0)
+
+/* PSO3_SLOT */
+#define	NXE1500_POS_PSO3SLOT_ON				(4)
+#define	NXE1500_POS_PSO3SLOT_SLP			(0)
+
+/* LDORTC1_SLOT */
+#define	NXE1500_POS_LDORTC1SLOT_ON			(4)
+#define	NXE1500_POS_LDORTC1SLOT_SLP			(0)
+
+/* DC1CTL, DC2CTL, DC3CTL */
+#define	NXE1500_POS_DCxCTL_DCxMODE_SLP		(6)
+#define	NXE1500_POS_DCxCTL_DCxMODE			(4)
+#define	NXE1500_POS_DCxCTL_DCxDIS			(1)
+#define	NXE1500_POS_DCxCTL_DCxEN			(0)
+
+/* DC1CTL2, DC2CTL2, DC3CTL2 */
+#define	NXE1500_POS_DCxCTL2_DCxOSC			(6)
+#define	NXE1500_POS_DCxCTL2_DCxSR			(4)
+#define	NXE1500_POS_DCxCTL2_DCxLIM			(1)
+#define	NXE1500_POS_DCxCTL2_DCxLIMSDEN		(0)
+
+/* DCIREN */
+#define	NXE1500_POS_DCIREN_DC3LIM			(2)
+#define	NXE1500_POS_DCIREN_DC2LIM			(1)
+#define	NXE1500_POS_DCIREN_DC1LIM			(0)
+
+/* DCIRQ */
+#define	NXE1500_POS_DCIRQ_DC3LIM			(2)
+#define	NXE1500_POS_DCIRQ_DC2LIM			(1)
+#define	NXE1500_POS_DCIRQ_DC1LIM			(0)
+
+/* DCIRMON */
+#define	NXE1500_POS_DCIRMON_DC3LIM			(2)
+#define	NXE1500_POS_DCIRMON_DC2LIM			(1)
+#define	NXE1500_POS_DCIRMON_DC1LIM			(0)
+
+/* LDOEN1 */
+#define	NXE1500_POS_LDOEN1_LDO8EN			(7)
+#define	NXE1500_POS_LDOEN1_LDO7EN			(6)
+#define	NXE1500_POS_LDOEN1_LDO6EN			(5)
+#define	NXE1500_POS_LDOEN1_LDO5EN			(4)
+#define	NXE1500_POS_LDOEN1_LDO4EN			(3)
+#define	NXE1500_POS_LDOEN1_LDO3EN			(2)
+#define	NXE1500_POS_LDOEN1_LDO2EN			(1)
+#define	NXE1500_POS_LDOEN1_LDO1EN			(0)
+
+/* LDOEN2 */
+#define	NXE1500_POS_LDOEN2_LDORTC2EN		(5)
+#define	NXE1500_POS_LDOEN2_LDORTC1EN		(4)
+#define	NXE1500_POS_LDOEN2_LDO10EN			(1)
+#define	NXE1500_POS_LDOEN2_LDO9EN			(0)
+
+/* LDODIS */
+#define	NXE1500_POS_LDODIS1_LDO8DIS			(7)
+#define	NXE1500_POS_LDODIS1_LDO7DIS			(6)
+#define	NXE1500_POS_LDODIS1_LDO6DIS			(5)
+#define	NXE1500_POS_LDODIS1_LDO5DIS			(4)
+#define	NXE1500_POS_LDODIS1_LDO4DIS			(3)
+#define	NXE1500_POS_LDODIS1_LDO3DIS			(2)
+#define	NXE1500_POS_LDODIS1_LDO2DIS			(1)
+#define	NXE1500_POS_LDODIS1_LDO1DIS			(0)
+
+#define	NXE1500_POS_LDODIS2_LDO10DIS		(1)
+#define	NXE1500_POS_LDODIS2_LDO9DIS			(0)
+
+/* LDOECO */
+#define	NXE1500_POS_LDOECO1_LDO8DIS			(7)
+#define	NXE1500_POS_LDOECO1_LDO7DIS			(6)
+#define	NXE1500_POS_LDOECO1_LDO6DIS			(5)
+#define	NXE1500_POS_LDOECO1_LDO5DIS			(4)
+#define	NXE1500_POS_LDOECO1_LDO4DIS			(3)
+#define	NXE1500_POS_LDOECO1_LDO3DIS			(2)
+#define	NXE1500_POS_LDOECO1_LDO2DIS			(1)
+#define	NXE1500_POS_LDOECO1_LDO1DIS			(0)
+
+/* IOSEL */
+#define	NXE1500_POS_IOSEL_IO03				(3)
+#define	NXE1500_POS_IOSEL_IO02				(2)
+#define	NXE1500_POS_IOSEL_IO01				(1)
+#define	NXE1500_POS_IOSEL_IO00				(0) 
+
+/* IOOUT */
+#define	NXE1500_POS_IOOUT_IO03				(3)			// 1 : Hi-Z, 0 : Low
+#define	NXE1500_POS_IOOUT_IO02				(2)
+#define	NXE1500_POS_IOOUT_IO01				(1)
+#define	NXE1500_POS_IOOUT_IO00				(0) 
+
+/* GPEDGE1 */
+#define	NXE1500_POS_GPEDGE1_EDGE03			(3)
+#define	NXE1500_POS_GPEDGE1_EDGE02			(2)
+#define	NXE1500_POS_GPEDGE1_EDGE01			(1)
+#define	NXE1500_POS_GPEDGE1_EDGE00			(0)
+
+#define	NXE1500_VAL_GPEDGE1_EDGE_MASK		(3)
+#define	NXE1500_VAL_GPEDGE1_BOTH_EDGE		(3)
+#define	NXE1500_VAL_GPEDGE1_FALLING_EDGE	(2)
+#define	NXE1500_VAL_GPEDGE1_RISING_EDGE		(1)
+#define	NXE1500_VAL_GPEDGE1_LEVEL			(0)
+
+/* EN_GPIR */
+#define	NXE1500_POS_EN_GPIR_GP03			(3)
+#define	NXE1500_POS_EN_GPIR_GP02			(2)
+#define	NXE1500_POS_EN_GPIR_GP01			(1)
+#define	NXE1500_POS_EN_GPIR_GP00			(0)
+
+/* IR_GPR */
+#define	NXE1500_POS_IR_GPR_GP03				(3)
+#define	NXE1500_POS_IR_GPR_GP02				(2)
+#define	NXE1500_POS_IR_GPR_GP01				(1)
+#define	NXE1500_POS_IR_GPR_GP00				(0)
+
+/* IR_GPF */
+#define	NXE1500_POS_IR_GPF_GP03				(3)
+#define	NXE1500_POS_IR_GPF_GP02				(2)
+#define	NXE1500_POS_IR_GPF_GP01				(1)
+#define	NXE1500_POS_IR_GPF_GP00				(0)
+
+/* MON_IOIN */
+#define	NXE1500_POS_MON_IOIN_GP03			(3)
+#define	NXE1500_POS_MON_IOIN_GP02			(2)
+#define	NXE1500_POS_MON_IOIN_GP01			(1)
+#define	NXE1500_POS_MON_IOIN_GP00			(0)
+
+/* GPLED_FUNC */
+#define	NXE1500_POS_GPLED_FUNC_GP1_LEDMODE	(6)
+#define	NXE1500_POS_GPLED_FUNC_GP1_LEDFUNC	(4)
+#define	NXE1500_POS_GPLED_FUNC_GP0_LEDMODE	(2)
+#define	NXE1500_POS_GPLED_FUNC_GP0_LEDFUNC	(0)
+
+/* INTPOL */
+#define	NXE1500_POS_INTPOL					(0)
+#define	NXE1500_VAL_INTPOL					(1)
+
+/* INTEN */
+#define	NXE1500_POS_INTEN_FGIREN			(7)
+#define	NXE1500_POS_INTEN_CHGIREN			(6)
+#define	NXE1500_POS_INTEN_GPIOIREN			(4)
+#define	NXE1500_POS_INTEN_ADCIREN			(3)
+#define	NXE1500_POS_INTEN_DCDCIREN			(1)
+#define	NXE1500_POS_INTEN_SYSTEMIREN		(0)
+
+/* INTMON */
+#define	NXE1500_POS_INTMON_FGIRM			(7)
+#define	NXE1500_POS_INTMON_CHGIRM			(6)
+#define	NXE1500_POS_INTMON_WDGIRM			(5)
+#define	NXE1500_POS_INTMON_GPIOIRM			(4)
+#define	NXE1500_POS_INTMON_ADCIRM			(3)
+#define	NXE1500_POS_INTMON_DCDCIRM			(1)
+#define	NXE1500_POS_INTMON_SYSTEMIRM		(0)
+
+/* PREVINDAC */
+#define	NXE1500_POS_PREVINDAC				(0)
+
+/* VSYSSET */
+#define	NXE1500_POS_VSYSSET_PSWON			(7)
+#define	NXE1500_POS_VSYSSET_VSYSSET			(4)
+#define	NXE1500_POS_VSYSSET_VSYSOVSET		(0)
+
+/* REGISET1 */
+#define	NXE1500_POS_REGISET1_ILIM_ADP		(0)
+
+/* REGISET2 */
+#define	NXE1500_POS_REGISET2_SDPOVRLIM		(7)
+#define	NXE1500_POS_REGISET2_SDPLIMSEL		(6)
+#define	NXE1500_POS_REGISET2_ILIPORTCHGEN	(5)
+#define	NXE1500_POS_REGISET2_ILIM_USB		(0)
+
+#define	NXE1500_VAL_CURRENT_SETTING_MAX		(0x1D)		// 3000mA
+#define	NXE1500_VAL_CURRENT_SETTING_MIN		(0x00)		// 100mA
+
+/* TIMSET */
+#define	NXE1500_POS_TIMSET_CTIMSET			(2)
+#define	NXE1500_POS_TIMSET_RTIMSET			(0)
+
+#define	NXE1500_VAL_CTIME_1000mS			(3)
+#define	NXE1500_VAL_CTIME_5000mS			(2)
+#define	NXE1500_VAL_CTIME_100mS				(1)
+#define	NXE1500_VAL_CTIME_500mS				(0)
+
+/*  DIESET */
+#define	NXE1500_POS_DIESET_DIERTNTEMP		(4)
+#define	NXE1500_POS_DIESET_DIEERRTEMP		(2)
+#define	NXE1500_POS_DIESET_DIESHUTTEMP		(0)
+
+
+/* IRQ definitions */
+enum nxe1500_irq_source {
+	NXE1500_IRQGRP_SYSTEM_INT = 0,
+	NXE1500_IRQGRP_DCDC_INT,
+	NXE1500_IRQGRP_GPIO_INT,
+	NXE1500_IRQ_GROUP_NR,
+};
+
+enum nxe1500_irq {
+	NXE1500_IRQ_DCDC_DC1LIM,
+	NXE1500_IRQ_DCDC_DC2LIM,
+	NXE1500_IRQ_DCDC_DC3LIM,
+	NXE1500_IRQ_DCDC_DC4LIM,
+
+	NXE1500_IRQ_ADC1_AIN0L,
+	NXE1500_IRQ_ADC1_AIN1L,
+	NXE1500_IRQ_ADC1_VTHML,
+	NXE1500_IRQ_ADC1_VSYSL,
+	NXE1500_IRQ_ADC1_VUSBL,
+	NXE1500_IRQ_ADC1_VADPL,			/* 10 */
+	NXE1500_IRQ_ADC1_VBATL,
+	NXE1500_IRQ_ADC1_ILIML,
+
+	NXE1500_IRQ_ADC2_AIN0H,
+	NXE1500_IRQ_ADC2_AIN1H,
+	NXE1500_IRQ_ADC2_VTHMH,
+	NXE1500_IRQ_ADC2_VSYSH,
+	NXE1500_IRQ_ADC2_VUSBH,
+	NXE1500_IRQ_ADC2_VADPH,
+	NXE1500_IRQ_ADC2_VBATH,
+	NXE1500_IRQ_ADC2_ILIMH,			/* 20 */
+
+	NXE1500_IRQ_ADC3_END,
+
+	NXE1500_IRQ_GPIO_GP00,
+	NXE1500_IRQ_GPIO_GP01,
+	NXE1500_IRQ_GPIO_GP02,
+	NXE1500_IRQ_GPIO_GP03,
+	NXE1500_IRQ_GPIO_GP04,
+
+	NXE1500_IRQ_CHGCTRL_RDSTATESHIFT,
+	NXE1500_IRQ_CHGCTRL_WVUSBS,
+	NXE1500_IRQ_CHGCTRL_WVADPS,
+	NXE1500_IRQ_CHGCTRL_VUSBLVS,	/* 30 */
+	NXE1500_IRQ_CHGCTRL_VADPLVS,
+	NXE1500_IRQ_CHGCTRL_VUSBDETS,
+	NXE1500_IRQ_CHGCTRL_VADPDETS,
+
+	NXE1500_IRQ_CHGSTS_BTEMPJTA4,
+	NXE1500_IRQ_CHGSTS_BTEMPJTA3,
+	NXE1500_IRQ_CHGSTS_BTEMPJTA2,
+	NXE1500_IRQ_CHGSTS_BTEMPJTA1,
+	NXE1500_IRQ_CHGSTS_SLPMODE,
+	NXE1500_IRQ_CHGSTS_BATOPEN,
+	NXE1500_IRQ_CHGSTS_CHGCMP,		/* 40 */
+	NXE1500_IRQ_CHGSTS_ONCHG,
+
+	NXE1500_IRQ_CHGSTS_OSCMDET,
+	NXE1500_IRQ_CHGSTS_OSCFDET3,
+	NXE1500_IRQ_CHGSTS_OSCFDET2,
+	NXE1500_IRQ_CHGSTS_OSCFDET1,
+	NXE1500_IRQ_CHGSTS_POOR_CHGCUR,
+	NXE1500_IRQ_CHGSTS_ICRVS,
+	NXE1500_IRQ_CHGSTS_VOLTERM,
+	NXE1500_IRQ_CHGSTS_CURTERM,
+
+	NXE1500_IRQ_CHGERR_VUSBOVS,		/* 50 */
+	NXE1500_IRQ_CHGERR_VADPOVS,
+	NXE1500_IRQ_CHGERR_RTIMOV,
+	NXE1500_IRQ_CHGERR_TTIMOV,
+	NXE1500_IRQ_CHGERR_VBATOV,
+	NXE1500_IRQ_CHGERR_BTEMPERR,
+	NXE1500_IRQ_CHGERR_DIEERR,
+	NXE1500_IRQ_CHGERR_DIEOFF,
+
+	NXE1500_IRQ_NR,
+};
+
+enum nxe1500_pwr_src {
+	NXE1500_PWR_SRC_BAT = 0,
+	NXE1500_PWR_SRC_ADP,
+	NXE1500_PWR_SRC_USB,
+};
+
+/* NXE1500 various variants */
+enum {
+	TYPE_NXE1500 = 0, /* Default */
+};
+
+#define NXE1500_IRQ_SYSTEM_MASK		(1 << 0)
+#define NXE1500_IRQ_DCDC_MASK		(1 << 1)
+#define NXE1500_IRQ_ADC_MASK		(1 << 3)
+#define NXE1500_IRQ_GPIO_MASK		(1 << 4)
+#define NXE1500_IRQ_CHG_MASK		(1 << 6)
+#define NXE1500_IRQ_FG_MASK			(1 << 7)
+
+#define NXE1500_IRQ_WTSREVNT_MASK	(1 << 0)
+#define NXE1500_IRQ_SMPLEVNT_MASK	(1 << 1)
+#define NXE1500_IRQ_ALARM1_MASK		(1 << 2)
+#define NXE1500_IRQ_ALARM0_MASK		(1 << 3)
+
+#define NXE1500_IRQ_ONKEY1S_MASK	(1 << 0)
+#define NXE1500_IRQ_TOPOFFR_MASK	(1 << 2)
+#define NXE1500_IRQ_DCINOVPR_MASK	(1 << 3)
+#define NXE1500_IRQ_CHGRSTF_MASK	(1 << 4)
+#define NXE1500_IRQ_DONER_MASK		(1 << 5)
+#define NXE1500_IRQ_CHGFAULT_MASK	(1 << 7)
+
+#define NXE1500_IRQ_LOBAT1_MASK		(1 << 0)
+#define NXE1500_IRQ_LOBAT2_MASK		(1 << 1)
+
+#define NXE1500_ENRAMP				(1 << 4)
+
+#define NXE1500_NUM_GPIO	5
+
+#if defined(CONFIG_REGULATOR_NXE1999)
+struct nxe1500_dev {
+	struct device		*dev;
+	struct i2c_client	*i2c;
+	struct mutex		iolock;
+	struct mutex		irqlock;
+
+	int		irq_base;
+	int		irq;
+	int		ono;
+	u8		irq_masks_cur[NXE1500_IRQ_GROUP_NR];
+	u8		irq_masks_cache[NXE1500_IRQ_GROUP_NR];
+	u8		status_regs[NXE1500_IRQ_GROUP_NR];
+
+	int		gpio_eint;
+	u8		gpio_mode[NXE1500_NUM_GPIO];
+	u8		cache_reg[256];
+	int		type;
+	bool	wakeup;
+
+	int		bank_num;
+};
+
+extern int  nxe1500_irq_init(struct nxe1500_dev *nxe1500);
+extern void nxe1500_irq_exit(struct nxe1500_dev *nxe1500);
+extern int  nxe1500_irq_resume(struct nxe1500_dev *nxe1500);
+
+extern int  nxe1500_read(struct i2c_client *i2c, uint8_t reg, uint8_t *val);
+extern int  nxe1500_read_bank1(struct i2c_client *i2c, uint8_t reg, uint8_t *val);
+extern int  nxe1500_bulk_reads(struct i2c_client *i2c, u8 reg, u8 count,
+								uint8_t *val);
+extern int  nxe1500_bulk_reads_bank1(struct i2c_client *i2c, u8 reg, u8 count,
+								uint8_t *val);
+extern int  nxe1500_write(struct i2c_client *i2c, u8 reg, uint8_t val);
+extern int  nxe1500_write_bank1(struct i2c_client *i2c, u8 reg, uint8_t val);
+extern int  nxe1500_bulk_writes(struct i2c_client *i2c, u8 reg, u8 count,
+								uint8_t *val);
+extern int  nxe1500_bulk_writes_bank1(struct i2c_client *i2c, u8 reg, u8 count,
+								uint8_t *val);
+extern int  nxe1500_set_bits(struct i2c_client *i2c, u8 reg, uint8_t bit_mask);
+extern int  nxe1500_clr_bits(struct i2c_client *i2c, u8 reg, uint8_t bit_mask);
+extern int  nxe1500_update(struct i2c_client *i2c, u8 reg, uint8_t val,
+								uint8_t mask);
+extern int  nxe1500_update_bank1(struct i2c_client *i2c, u8 reg, uint8_t val,
+								uint8_t mask);
+#endif
+
+#define NXE1500_GPIO_INT_BOTH	(0x3)
+#define NXE1500_GPIO_INT_FALL	(0x2)
+#define NXE1500_GPIO_INT_RISE	(0x1)
+#define NXE1500_GPIO_INT_LEVEL	(0x0)
+
+#define NXE1500_GPIO_INT_MASK	(0x3)
+#endif /*  __LINUX_MFD_NXE1500_PRIV_H */

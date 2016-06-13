@@ -52,6 +52,7 @@ obj-$(CONFIG_REGULATOR_WM831X) += wm831x-ldo.o
 obj-$(CONFIG_REGULATOR_WM8350) += wm8350-regulator.o
 obj-$(CONFIG_REGULATOR_WM8400) += wm8400-regulator.o
 obj-$(CONFIG_REGULATOR_WM8994) += wm8994-regulator.o
+obj-$(CONFIG_REGULATOR_NXE1500) += nxe1500-regulator.o
 obj-$(CONFIG_REGULATOR_NXE2000) += nxe2000-regulator.o
 obj-$(CONFIG_REGULATOR_MP8845C) += mp8845c-regulator.o
 

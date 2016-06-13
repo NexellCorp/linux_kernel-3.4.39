@@ -74,6 +74,13 @@ config REGULATOR_GPIO
 	  and the platform has to provide a mapping of GPIO-states
 	  to target volts/amps.
 
+config REGULATOR_NXE1500
+	tristate "Nexell NXE1500 Power regulator"
+	select MFD_NXE1500
+	help
+	  This driver supports regulator driver for the Nexell NXE1500
+	  Power Management device.
+
 config REGULATOR_NXE2000
 	tristate "Nexell NXE2000 Power regulator"
 	select MFD_NXE2000

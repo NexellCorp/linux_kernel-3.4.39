@@ -144,7 +144,7 @@ const u8 g_DispBusSI[3] = {
 
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	= CONFIG_NXP_CPUFREQ_PLLDEV,
-	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
+	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE1500
 	.max_cpufreq	= 1400*1000,
 	.max_retention  =   20*1000,
 	.rest_cpufreq   =  400*1000,
@@ -837,87 +837,67 @@ void __init nxp_reserve_mem(void)
 /*------------------------------------------------------------------------------
  * PMIC platform device
  */
-#if defined(CONFIG_REGULATOR_NXE2000)
-
+#if defined(CONFIG_REGULATOR_NXE1500)
+#include <linux/io.h>
+#include <linux/gpio.h>
 #include <linux/i2c.h>
 #include <linux/regulator/machine.h>
-#include <linux/mfd/nxe2000.h>
-#include <linux/gpio.h>
-#include <linux/io.h>
 #include <linux/regulator/fixed.h>
-#include <linux/regulator/nxe2000-regulator.h>
-#include <linux/power/nxe2000_battery.h>
-//#include <linux/rtc/rtc-nxe2000.h>
-//#include <linux/rtc.h>
+#include <linux/regulator/nxe1500-regulator.h>
+#include <linux/mfd/nxe1500.h>
 
-#define NXE2000_I2C_BUS		(PMIC_I2CBUS)
-#define NXE2000_I2C_ADDR	(0x64 >> 1)
+#define NXE1500_I2C_BUS		(PMIC_I2CBUS)
+#define NXE1500_I2C_ADDR	(0x66 >> 1)
 
-/* NXE2000 IRQs */
-#define NXE2000_IRQ_BASE	(IRQ_SYSTEM_END)
-#define NXE2000_GPIO_BASE	(ARCH_NR_GPIOS) //PLATFORM_NXE2000_GPIO_BASE
-#define NXE2000_GPIO_IRQ	(NXE2000_GPIO_BASE + 8)
+/* NXE1500 IRQs */
+#define NXE1500_IRQ_BASE	(IRQ_SYSTEM_END)
+#define NXE1500_GPIO_BASE	(ARCH_NR_GPIOS) //PLATFORM_NXE1500_GPIO_BASE
+#define NXE1500_GPIO_IRQ	(NXE1500_GPIO_BASE + 8)
 
-//#define CONFIG_NXE2000_RTC
+//#define CONFIG_NXE1500_RTC
 
 
-static struct regulator_consumer_supply nxe2000_dc1_supply_0[] = {
+static struct regulator_consumer_supply nxe1500_dc1_supply_0[] = {
 	REGULATOR_SUPPLY("vdd_arm_1.3V", NULL),
 };
-static struct regulator_consumer_supply nxe2000_dc2_supply_0[] = {
-	REGULATOR_SUPPLY("vdd_core_1.2V", NULL),
+static struct regulator_consumer_supply nxe1500_dc2_supply_0[] = {
+	REGULATOR_SUPPLY("vdd_core_1.1V", NULL),
 };
-static struct regulator_consumer_supply nxe2000_dc3_supply_0[] = {
-	REGULATOR_SUPPLY("vdd_sys_3.3V", NULL),
+static struct regulator_consumer_supply nxe1500_dc3_supply_0[] = {
+	REGULATOR_SUPPLY("vdd_ddrio_1.5V", NULL),
 };
-static struct regulator_consumer_supply nxe2000_dc4_supply_0[] = {
-	REGULATOR_SUPPLY("vdd_ddr_1.6V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_dc5_supply_0[] = {
-	REGULATOR_SUPPLY("vdd_sys_1.6V", NULL),
+static struct regulator_consumer_supply nxe1500_dc4_supply_0[] = {
+	REGULATOR_SUPPLY("vdd_ddr_1.5V", NULL),
 };
 
-static struct regulator_consumer_supply nxe2000_ldo1_supply_0[] = {
-	REGULATOR_SUPPLY("vgps_3.3V", NULL),
+
+static struct regulator_consumer_supply nxe1500_ldo1_supply_0[] = {
+	REGULATOR_SUPPLY("vcore_3.3V", NULL),
 };
-static struct regulator_consumer_supply nxe2000_ldo2_supply_0[] = {
-	REGULATOR_SUPPLY("vcam1_1.8V", NULL),
+static struct regulator_consumer_supply nxe1500_ldo2_supply_0[] = {
+	REGULATOR_SUPPLY("vcore_1.8V", NULL),
 };
-static struct regulator_consumer_supply nxe2000_ldo3_supply_0[] = {
-	REGULATOR_SUPPLY("vsys1_1.8V", NULL),
+static struct regulator_consumer_supply nxe1500_ldo3_supply_0[] = {
+	REGULATOR_SUPPLY("vsys_3.3V", NULL),
 };
-static struct regulator_consumer_supply nxe2000_ldo4_supply_0[] = {
-	REGULATOR_SUPPLY("vsys_1.9V", NULL),
+static struct regulator_consumer_supply nxe1500_ldo4_supply_0[] = {
+	REGULATOR_SUPPLY("ldo4", NULL),
 };
-static struct regulator_consumer_supply nxe2000_ldo5_supply_0[] = {
-	REGULATOR_SUPPLY("vcam_2.8V", NULL),
+static struct regulator_consumer_supply nxe1500_ldo5_supply_0[] = {
+	REGULATOR_SUPPLY("ldo5", NULL),
 };
-static struct regulator_consumer_supply nxe2000_ldo6_supply_0[] = {
-	REGULATOR_SUPPLY("valive_3.3V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldo7_supply_0[] = {
-	REGULATOR_SUPPLY("vvid_2.8V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldo8_supply_0[] = {
-	REGULATOR_SUPPLY("vdumy0_3.3V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldo9_supply_0[] = {
-	REGULATOR_SUPPLY("vcam_3.3V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldo10_supply_0[] = {
-	REGULATOR_SUPPLY("vdumy2_1.2V", NULL),
-};
-static struct regulator_consumer_supply nxe2000_ldortc1_supply_0[] = {
+
+static struct regulator_consumer_supply nxe1500_ldortc1_supply_0[] = {
 	REGULATOR_SUPPLY("valive_1.8V", NULL),
 };
-static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
+static struct regulator_consumer_supply nxe1500_ldortc2_supply_0[] = {
 	REGULATOR_SUPPLY("valive_1.0V", NULL),
 };
 
 
-#define NXE2000_PDATA_INIT(_name, _sname, _minuv, _maxuv, _always_on, _boot_on, \
+#define NXE1500_PDATA_INIT(_name, _sname, _minuv, _maxuv, _always_on, _boot_on, \
 	_init_uv, _init_enable, _slp_slots) \
-	static struct nxe2000_regulator_platform_data pdata_##_name##_##_sname = \
+	static struct nxe1500_regulator_platform_data pdata_##_name##_##_sname = \
 	{	\
 		.regulator = {	\
 			.constraints = {	\
@@ -933,8 +913,8 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 				.apply_uV	= 1,			\
 			},	\
 			.num_consumer_supplies =		\
-				ARRAY_SIZE(nxe2000_##_name##_supply_##_sname),	\
-			.consumer_supplies	= nxe2000_##_name##_supply_##_sname, \
+				ARRAY_SIZE(nxe1500_##_name##_supply_##_sname),	\
+			.consumer_supplies	= nxe1500_##_name##_supply_##_sname, \
 			.supply_regulator	= 0,	\
 		},	\
 		.init_uV		= _init_uv,		\
@@ -942,100 +922,59 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 		.sleep_slots	= _slp_slots,	\
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
-/*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,	 950000, 2000000, 1, 1, 1250000, 1,  4);	/* 1.2V ARM */
-NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1,  4);	/* 1.1V CORE */
-NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
-NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
-NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V SYS */
-#if defined(CONFIG_RFKILL_NXP)
-NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V GPS */
-#else
-NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 1,  0);	/* 3.3V GPS */
-#endif
-NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 0,  0);	/* 1.8V CAM1 */
-NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1900000, 1,  2);	/* 1.8V SYS1 */
-NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  2);	/* 1.9V SYS */
-NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 1, 1, 2800000, 0,  0);	/* 2.8V VCAM */
-NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
-NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 2800000, 1,  1);	/* 2.8V VID */
-NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
-NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 1, 1, 2800000, 0,  0);	/* 2.8V VCAM */
-NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
-NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 1, 0, 1800000, 1, -1);	/* 1.8V ALIVE */
-NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 1, 0, 1000000, 1, -1);	/* 1.0V ALIVE */
+/*                 range from min to max voltage according to NXE1500 specification. */
+NXE1500_PDATA_INIT(dc1,      0,	 950000, 2000000, 1, 1, 1250000, 1,  4);	/* 1.25V ARM */
+NXE1500_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1100000, 1,  4);	/* 1.1V CORE */
+NXE1500_PDATA_INIT(dc3,      0,	1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V DDRIO */
+NXE1500_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
 
+NXE1500_PDATA_INIT(ldo1,     0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* VCORE 3.3V */
+NXE1500_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 1,  0);	/* VCORE 1.8V */
+NXE1500_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 1, 3300000, 1,  2);	/* VSYS 3.3V */
+NXE1500_PDATA_INIT(ldo4,     0,	1000000, 3500000, 0, 0,     -1, 0,  2);	/* NC */
+NXE1500_PDATA_INIT(ldo5,     0,	1000000, 3500000, 0, 0,     -1, 0,  0);	/* NC */
+NXE1500_PDATA_INIT(ldortc1,  0,	1200000, 3500000, 1, 1, 1800000, 1, -1);	/* ALIVE 1.8V */
+NXE1500_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 1, 1, 1000000, 1, -1);	/* ALIVE 1.0V */
 
-/*-------- if nxe2000 RTC exists -----------*/
-#ifdef CONFIG_NXE2000_RTC
-static struct nxe2000_rtc_platform_data rtc_data = {
-	.irq	= NXE2000_IRQ_BASE,
-	.time	= {
-		.tm_year	= 1970,
-		.tm_mon		= 0,
-		.tm_mday	= 1,
-		.tm_hour	= 0,
-		.tm_min		= 0,
-		.tm_sec		= 0,
-	},
-};
-
-#define NXE2000_RTC_REG	\
+#define NXE1500_REG(_id, _name, _sname)	\
 {	\
-	.id		= 0,	\
-	.name	= "rtc_nxe2000",	\
-	.platform_data	= &rtc_data,	\
-}
-#endif
-/*-------- if Nexell RTC exists -----------*/
-
-#define NXE2000_REG(_id, _name, _sname)	\
-{	\
-	.id		= NXE2000_ID_##_id,	\
-	.name	= "nxe2000-regulator",	\
+	.id		= NXE1500_ID_##_id,	\
+	.name	= "nxe1500-regulator",	\
 	.platform_data	= &pdata_##_name##_##_sname,	\
 }
 
 //==========================================
-//NXE2000 Power_Key device data
+//NXE1500 Power_Key device data
 //==========================================
-static struct nxe2000_pwrkey_platform_data nxe2000_pwrkey_data = {
-	.irq 		= NXE2000_IRQ_BASE,
+static struct nxe1500_pwrkey_platform_data nxe1500_pwrkey_data = {
+	.irq 		= NXE1500_IRQ_BASE,
 	.delay_ms 	= 20,
 };
-#define NXE2000_PWRKEY_REG		\
+#define NXE1500_PWRKEY_REG		\
 {	\
 	.id 	= -1,	\
-	.name 	= "nxe2000-pwrkey",	\
-	.platform_data 	= &nxe2000_pwrkey_data,	\
+	.name 	= "nxe1500-pwrkey",	\
+	.platform_data 	= &nxe1500_pwrkey_data,	\
 }
 
-#define NXE2000_DEV_REG 		\
-	NXE2000_REG(DC1, dc1, 0),	\
-	NXE2000_REG(DC2, dc2, 0),	\
-	NXE2000_REG(DC3, dc3, 0),	\
-	NXE2000_REG(DC4, dc4, 0),	\
-	NXE2000_REG(DC5, dc5, 0),	\
-	NXE2000_REG(LDO1, ldo1, 0),	\
-	NXE2000_REG(LDO2, ldo2, 0),	\
-	NXE2000_REG(LDO3, ldo3, 0),	\
-	NXE2000_REG(LDO4, ldo4, 0),	\
-	NXE2000_REG(LDO5, ldo5, 0),	\
-	NXE2000_REG(LDO6, ldo6, 0),	\
-	NXE2000_REG(LDO7, ldo7, 0),	\
-	NXE2000_REG(LDO8, ldo8, 0),	\
-	NXE2000_REG(LDO9, ldo9, 0),	\
-	NXE2000_REG(LDO10, ldo10, 0),	\
-	NXE2000_REG(LDORTC1, ldortc1, 0),	\
-	NXE2000_REG(LDORTC2, ldortc2, 0)
+#define NXE1500_DEV_REG 		\
+	NXE1500_REG(DC1, dc1, 0),	\
+	NXE1500_REG(DC2, dc2, 0),	\
+	NXE1500_REG(DC3, dc3, 0),	\
+	NXE1500_REG(DC4, dc4, 0),	\
+	NXE1500_REG(LDO1, ldo1, 0),	\
+	NXE1500_REG(LDO2, ldo2, 0),	\
+	NXE1500_REG(LDO3, ldo3, 0),	\
+	NXE1500_REG(LDO4, ldo4, 0),	\
+	NXE1500_REG(LDO5, ldo5, 0),	\
+	NXE1500_REG(LDORTC1, ldortc1, 0),	\
+	NXE1500_REG(LDORTC2, ldortc2, 0)
 
-static struct nxe2000_subdev_info nxe2000_devs_dcdc[] = {
-	NXE2000_DEV_REG,
-	NXE2000_PWRKEY_REG,
+static struct nxe1500_subdev_info nxe1500_devs_dcdc[] = {
+	NXE1500_DEV_REG,
 };
 
-
-#define NXE2000_GPIO_INIT(_init_apply, _output_mode, _output_val, _led_mode, _led_func) \
+#define NXE1500_GPIO_INIT(_init_apply, _output_mode, _output_val, _led_mode, _led_func) \
 	{									\
 		.output_mode_en = _output_mode,	\
 		.output_val		= _output_val,	\
@@ -1043,33 +982,34 @@ static struct nxe2000_subdev_info nxe2000_devs_dcdc[] = {
 		.led_mode		= _led_mode,	\
 		.led_func		= _led_func,	\
 	}
-struct nxe2000_gpio_init_data nxe2000_gpio_data[] = {
-	NXE2000_GPIO_INIT(false, false, 0, 0, 0),
-	NXE2000_GPIO_INIT(false, false, 0, 0, 0),
-	NXE2000_GPIO_INIT(false, false, 0, 0, 0),
-	NXE2000_GPIO_INIT(false, false, 0, 0, 0),
-	NXE2000_GPIO_INIT(false, false, 0, 0, 0),
+
+struct nxe1500_gpio_init_data nxe1500_gpio_data[] = {
+	NXE1500_GPIO_INIT(false, false, 0, 0, 0),
+	NXE1500_GPIO_INIT(false, false, 0, 0, 0),
+	NXE1500_GPIO_INIT(false, false, 0, 0, 0),
+	NXE1500_GPIO_INIT(false, false, 0, 0, 0),
+	NXE1500_GPIO_INIT(false, false, 0, 0, 0),
 };
 
-static struct nxe2000_platform_data nxe2000_platform = {
-	.num_subdevs		= ARRAY_SIZE(nxe2000_devs_dcdc),
-	.subdevs			= nxe2000_devs_dcdc,
-	.irq_base			= NXE2000_IRQ_BASE,
+static struct nxe1500_platform_data nxe1500_platform = {
+	.num_subdevs		= ARRAY_SIZE(nxe1500_devs_dcdc),
+	.subdevs			= nxe1500_devs_dcdc,
+	.irq_base			= NXE1500_IRQ_BASE,
 	.irq_type			= IRQ_TYPE_EDGE_FALLING,
-	.gpio_base			= NXE2000_GPIO_BASE,
-	.gpio_init_data		= nxe2000_gpio_data,
-	.num_gpioinit_data	= ARRAY_SIZE(nxe2000_gpio_data),
+	.gpio_base			= NXE1500_GPIO_BASE,
+	.gpio_init_data		= nxe1500_gpio_data,
+	.num_gpioinit_data	= ARRAY_SIZE(nxe1500_gpio_data),
 	.enable_shutdown_pin	= true,
 };
 
-static struct i2c_board_info __initdata nxe2000_i2c_boardinfo[] = {
+static struct i2c_board_info __initdata nxe1500_i2c_boardinfo[] = {
 	{
-		I2C_BOARD_INFO("nxe2000", NXE2000_I2C_ADDR),
+		I2C_BOARD_INFO("nxe1500", NXE1500_I2C_ADDR),
 		.irq			= CFG_GPIO_PMIC_INTR,
-		.platform_data	= &nxe2000_platform,
+		.platform_data	= &nxe1500_platform,
 	},
 };
-#endif  /* CONFIG_REGULATOR_NXE2000 */
+#endif  /* CONFIG_REGULATOR_NXE1500 */
 
 
 /*------------------------------------------------------------------------------
@@ -2458,9 +2398,9 @@ void __init nxp_board_devices_register(void)
     platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif
 
-#if defined(CONFIG_REGULATOR_NXE2000)
-	printk("plat: add device nxe2000 pmic\n");
-	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_i2c_boardinfo, ARRAY_SIZE(nxe2000_i2c_boardinfo));
+#if defined(CONFIG_REGULATOR_NXE1500)
+	printk("plat: add device nxe1500 pmic\n");
+	i2c_register_board_info(NXE1500_I2C_BUS, nxe1500_i2c_boardinfo, ARRAY_SIZE(nxe1500_i2c_boardinfo));
 #endif
 
 #if defined(CONFIG_FCI_FC8300)
