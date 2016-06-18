@@ -717,6 +717,11 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
         printk("%s - INTERLACE!!\n", __func__);
         printk("%s - PADCLKSEL : %d\n", __func__, vclk_select ? 1 : 0);
 
+		u32 vsp         = 0;
+		u32 vcp         = (u32)((psync->h_sync_width+psync->h_front_porch+psync->h_back_porch+psync->h_active_len)/2);
+		u32 even_vsp    = (u32)((psync->h_sync_width+psync->h_front_porch+psync->h_back_porch+psync->h_active_len)/2);
+		u32 even_vcp    = 0;
+
 		NX_DPC_SetMode(module, out_format, interlace, invert_field, RGBMode,
 				swap_RB, yc_order, EmbSync, EmbSync, vclk_select, vclk_invert, CFALSE);
 		NX_DPC_SetHSync(module,  psync->h_active_len,
@@ -724,8 +729,10 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 		NX_DPC_SetVSync(module,
 				psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch,
 				psync->v_sync_invert,
-				psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch);
-		NX_DPC_SetVSyncOffset(module, 0, 0, 0, 0);
+//				psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch);
+				psync->v_active_len, psync->v_sync_width, psync->v_front_porch, psync->v_back_porch+1);
+//		NX_DPC_SetVSyncOffset(module, 0, 0, 0, 0);
+		NX_DPC_SetVSyncOffset(module, vsp, vcp, even_vsp, even_vcp);
 		NX_DPC_SetDelay (module, 12, 12, 12, 12);
  		NX_DPC_SetDither(module, RDither, GDither, BDither);
 	} else {

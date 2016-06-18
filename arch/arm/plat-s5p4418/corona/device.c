@@ -2413,6 +2413,10 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&fc8300_dai);
 #endif
 
+#if defined(CONFIG_VIDEO_ADV7391)
+    printk("plat: add Encoder(adv7391) device\n");
+    i2c_register_board_info(9, &adv7391_i2c_bdi, 1);
+#endif
 
 #if defined(CONFIG_SND_CODEC_RT5640) || defined(CONFIG_SND_CODEC_RT5640_MODULE)
 	printk("plat: add device asoc-rt5640\n");
@@ -2466,11 +2470,6 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_USB_HUB_USB2514)
     printk("plat: add device usb2514\n");
     i2c_register_board_info(USB2514_I2C_BUS, &usb2514_i2c_bdi, 1);
-#endif
-
-#if defined(CONFIG_VIDEO_ADV7391)
-    printk("plat: add Encoder(adv7391) device\n");
-    i2c_register_board_info(9, &adv7391_i2c_bdi, 1);
 #endif
 
 	/* END */

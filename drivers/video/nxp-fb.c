@@ -67,7 +67,7 @@ extern struct ion_device *get_global_ion_device(void);
 #endif
 
 #define	FB_DEV_PIXELCLOCK	(27000000)	/* 27Mhz */
-#define	FB_CLEAR_COLOR		(0x0)
+#define	FB_CLEAR_COLOR		(0xff)		// 0x0
 #define FB_PALETTE_CLEAR 	(0x80000000)
 
 /*------------------------------------------------------------------------------
