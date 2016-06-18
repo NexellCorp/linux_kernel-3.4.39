@@ -147,7 +147,7 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE1500
 	.max_cpufreq	= 1400*1000,
 	.max_retention  =   20*1000,
-	.rest_cpufreq   =  400*1000,
+	.rest_cpufreq   =  600*1000,
 	.rest_retention =    1*1000,
 };
 
@@ -166,18 +166,22 @@ struct nxp_adc_tmp_trigger adc_tmp_event[] = {
 		.freq  = 1200000,
 		.period = 1000, /* Ms */
 	} , {
-		.temp  = 49,
+		.temp  = 50,
 		.freq  = 1000000,
 		.period = 1000, /* Ms */
 	} , {
-		.temp  = 53,
+		.temp  = 55,
 		.freq  = 800000,
 		.period = 1000, /* Ms */
 	} , {
-		.temp  = 55,
+		.temp  = 60,
 		.freq  = 600000,		/* freq = 0 :Set critical temp. Power off! */
 		.period = 1000, /* Ms */
-	}
+	} , {
+        .temp  = 65,
+        .freq  = 400000,        /* freq = 0 :Set critical temp. Power off! */
+        .period = 1000, /* Ms */
+    }
 };
 
 struct nxp_adc_tmp_platdata adc_tmp_plat_data ={

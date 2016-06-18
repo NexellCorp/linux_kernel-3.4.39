@@ -3263,8 +3263,8 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
 			ext4_msg(sb, KERN_INFO, "mounting ext3 file system "
 				 "using the ext4 subsystem");
 		else {
-			ext4_msg(sb, KERN_ERR, "couldn't mount as ext3 due "
-				 "to feature incompatibilities");
+//			ext4_msg(sb, KERN_ERR, "couldn't mount as ext3 due "
+//				 "to feature incompatibilities");
 			goto failed_mount;
 		}
 	}

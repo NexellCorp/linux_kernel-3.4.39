@@ -302,7 +302,7 @@ static void nxp_adc_tmp_monfn(struct work_struct *work)
 		goto exit_mon;
 
 	temp = nxp_read_adc_tmp(tmp);
-	if(temp <tmp_table[0][1] ){
+	if(temp < tmp_table[0][1] ){
 		goto exit_mon;
 	}
 
