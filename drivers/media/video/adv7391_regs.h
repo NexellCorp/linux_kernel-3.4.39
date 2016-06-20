@@ -30,11 +30,11 @@ struct adv7391_std_info {
 /* Register offset macros */
 #define ADV7391_POWER_MODE_REG		(0x00)
 #define ADV7391_MODE_SELECT_REG		(0x01)
-#define ADV7391_MODE_REG0			(0x02)
+#define ADV7391_MODE_REG0		(0x02)
 
 #define ADV7391_DAC123_OUTPUT_LEVEL	(0x0B)
-#define	ADV7391_CABLE_DETECT		(0x10)
-#define ADV7391_SOFT_RESET			(0x17)
+
+#define ADV7391_SOFT_RESET		(0x17)
 
 #define ADV7391_HD_MODE_REG1		(0x30)
 #define ADV7391_HD_MODE_REG2		(0x31)
@@ -67,7 +67,7 @@ struct adv7391_std_info {
 #define ADV7391_SD_BRIGHTNESS_WSS	(0xA1)
 
 /* Default values for the registers */
-#define ADV7391_POWER_MODE_REG_DEFAULT		(0x12)//(0x1C)
+#define ADV7391_POWER_MODE_REG_DEFAULT		(0x1C)
 #define	ADV7391_MODE_SELECT_REG_DEFAULT		(0x00)
 #define ADV7391_HD_MODE_REG1_DEFAULT		(0x3C)	/* Changed Default
 							   720p EAV/SAV code*/
@@ -78,7 +78,6 @@ struct adv7391_std_info {
 #define ADV7391_HD_MODE_REG5_DEFAULT		(0x08)
 #define ADV7391_HD_MODE_REG6_DEFAULT		(0x00)
 #define ADV7391_HD_MODE_REG7_DEFAULT		(0x00)
-#define ADV7391_CABLE_DETECT_DEFAULT		(0x13)
 #define ADV7391_SOFT_RESET_DEFAULT		(0x02)
 #define ADV7391_COMPOSITE_POWER_VALUE		(0x10)
 #define ADV7391_COMPONENT_POWER_VALUE		(0x1C)

@@ -72,27 +72,27 @@ void dump_register_dpc(int module)
 		struct NX_DPC_RegisterSet *pREG =
 			(struct NX_DPC_RegisterSet*)NX_DPC_GetBaseAddress(module);
 		DBGOUT("DPC%d BASE ADDRESS: %p\n", module, pREG);
-		DBGOUT(" DPCCTRL0     		=	0x%04x\r\n", pREG->DPCCTRL0);
-		DBGOUT(" DPCHTOTAL			=	0x%04x\r\n", pREG->DPCHTOTAL);
-		DBGOUT(" DPCHSWIDTH			=	0x%04x\r\n", pREG->DPCHSWIDTH);
-		DBGOUT(" DPCHASTART			=	0x%04x\r\n", pREG->DPCHASTART);
-		DBGOUT(" DPCHAEND			=	0x%04x\r\n", pREG->DPCHAEND);
-		DBGOUT(" DPCVTOTAL			=	0x%04x\r\n", pREG->DPCVTOTAL);
-		DBGOUT(" DPCVSWIDTH			=	0x%04x\r\n", pREG->DPCVSWIDTH);
-		DBGOUT(" DPCVASTART			=	0x%04x\r\n", pREG->DPCVASTART);
-		DBGOUT(" DPCVAEND			=	0x%04x\r\n", pREG->DPCVAEND);
-		DBGOUT(" DPCCTRL0			=	0x%04x\r\n", pREG->DPCCTRL0);
-		DBGOUT(" DPCCTRL1			=	0x%04x\r\n", pREG->DPCCTRL1);
-		DBGOUT(" DPCEVTOTAL			=	0x%04x\r\n", pREG->DPCEVTOTAL);
+		DBGOUT(" DPCCTRL0     = 0x%04x\r\n", pREG->DPCCTRL0);
+		DBGOUT(" DPCHTOTAL		=	0x%04x\r\n", pREG->DPCHTOTAL);
+		DBGOUT(" DPCHSWIDTH		=	0x%04x\r\n", pREG->DPCHSWIDTH);
+		DBGOUT(" DPCHASTART		=	0x%04x\r\n", pREG->DPCHASTART);
+		DBGOUT(" DPCHAEND		=	0x%04x\r\n", pREG->DPCHAEND);
+		DBGOUT(" DPCVTOTAL		=	0x%04x\r\n", pREG->DPCVTOTAL);
+		DBGOUT(" DPCVSWIDTH		=	0x%04x\r\n", pREG->DPCVSWIDTH);
+		DBGOUT(" DPCVASTART		=	0x%04x\r\n", pREG->DPCVASTART);
+		DBGOUT(" DPCVAEND		=	0x%04x\r\n", pREG->DPCVAEND);
+		DBGOUT(" DPCCTRL0		=	0x%04x\r\n", pREG->DPCCTRL0);
+		DBGOUT(" DPCCTRL1		=	0x%04x\r\n", pREG->DPCCTRL1);
+		DBGOUT(" DPCEVTOTAL		=	0x%04x\r\n", pREG->DPCEVTOTAL);
 		DBGOUT(" DPCEVSWIDTH		=	0x%04x\r\n", pREG->DPCEVSWIDTH);
 		DBGOUT(" DPCEVASTART		=	0x%04x\r\n", pREG->DPCEVASTART);
-		DBGOUT(" DPCEVAEND			=	0x%04x\r\n", pREG->DPCEVAEND);
-		DBGOUT(" DPCCTRL2			=	0x%04x\r\n", pREG->DPCCTRL2);
+		DBGOUT(" DPCEVAEND		=	0x%04x\r\n", pREG->DPCEVAEND);
+		DBGOUT(" DPCCTRL2		=	0x%04x\r\n", pREG->DPCCTRL2);
 		DBGOUT(" DPCVSEOFFSET		=	0x%04x\r\n", pREG->DPCVSEOFFSET);
 		DBGOUT(" DPCVSSOFFSET		=	0x%04x\r\n", pREG->DPCVSSOFFSET);
 		DBGOUT(" DPCEVSEOFFSET		=	0x%04x\r\n", pREG->DPCEVSEOFFSET);
 		DBGOUT(" DPCEVSSOFFSET		=	0x%04x\r\n", pREG->DPCEVSSOFFSET);
-		DBGOUT(" DPCDELAY0			=	0x%04x\r\n", pREG->DPCDELAY0);
+		DBGOUT(" DPCDELAY0		=	0x%04x\r\n", pREG->DPCDELAY0);
 		DBGOUT(" DPCUPSCALECON0 	=	0x%04x\r\n", pREG->DPCUPSCALECON0);
 		DBGOUT(" DPCUPSCALECON1 	=	0x%04x\r\n", pREG->DPCUPSCALECON1);
 		DBGOUT(" DPCUPSCALECON2 	=	0x%04x\r\n", pREG->DPCUPSCALECON2);
@@ -101,7 +101,7 @@ void dump_register_dpc(int module)
 		DBGOUT(" DPCRNUMGENCON2 	=	0x%04x\r\n", pREG->DPCRNUMGENCON2);
 		DBGOUT(" DPCRNDCONFORMULA_L	=	0x%04x\r\n", pREG->DPCRNDCONFORMULA_L);
 		DBGOUT(" DPCRNDCONFORMULA_H	=	0x%04x\r\n", pREG->DPCRNDCONFORMULA_H);
-		DBGOUT(" DPCFDTAddr			=	0x%04x\r\n", pREG->DPCFDTAddr);
+		DBGOUT(" DPCFDTAddr		=	0x%04x\r\n", pREG->DPCFDTAddr);
 		DBGOUT(" DPCFRDITHERVALUE	=	0x%04x\r\n", pREG->DPCFRDITHERVALUE);
 		DBGOUT(" DPCFGDITHERVALUE	=	0x%04x\r\n", pREG->DPCFGDITHERVALUE);
 		DBGOUT(" DPCFBDITHERVALUE	=	0x%04x\r\n", pREG->DPCFBDITHERVALUE);
@@ -111,7 +111,7 @@ void dump_register_dpc(int module)
 		DBGOUT(" DPCPOLCTRL      	=	0x%04x\r\n", pREG->DPCPOLCTRL);
 		DBGOUT(" DPCRGBSHIFT     	=	0x%04x\r\n", pREG->DPCRGBSHIFT);
 		DBGOUT(" DPCDATAFLUSH    	=	0x%04x\r\n", pREG->DPCDATAFLUSH);
-		DBGOUT(" DPCCLKENB			=	0x%04x\r\n", pREG->DPCCLKENB);
+		DBGOUT(" DPCCLKENB		=	0x%04x\r\n", pREG->DPCCLKENB);
 #endif
 }
 #endif
@@ -136,7 +136,6 @@ static inline int adv7391_write(struct v4l2_subdev *sd, u8 reg, u8 value)
 static const u8 adv7391_init_reg_val[] = {
 	ADV7391_SOFT_RESET, ADV7391_SOFT_RESET_DEFAULT,
 	ADV7391_POWER_MODE_REG, ADV7391_POWER_MODE_REG_DEFAULT,
-//	ADV7391_CABLE_DETECT, ADV7391_CABLE_DETECT_DEFAULT,
 
 	ADV7391_HD_MODE_REG1, ADV7391_HD_MODE_REG1_DEFAULT,
 	ADV7391_HD_MODE_REG2, ADV7391_HD_MODE_REG2_DEFAULT,
@@ -270,7 +269,7 @@ setstd_exit:
 	return err;
 }
 
-static int adv7391_test_pattern(struct v4l2_subdev *sd, v4l2_std_id std)
+static int adv731_test_pattern(struct v4l2_subdev *sd, v4l2_std_id std)
 {
 	struct adv7391_state *state = to_state(sd);
 	int err = 0;
@@ -480,8 +479,8 @@ static int adv7391_initialize(struct v4l2_subdev *sd)
 		return -EINVAL;
 	}
 #if 0
-	// Init test pattern
-	err = adv7391_test_pattern(sd, state->std);
+	//Init test pattern
+	err = adv731_test_pattern(sd, state->std);
 	if (err < 0) {
 		v4l2_err(sd, "Error setting test pattern\n");
 		return -EINVAL;

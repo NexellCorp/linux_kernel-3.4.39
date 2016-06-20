@@ -85,6 +85,4 @@ typedef struct tag_NX_DISPLAY_MODE
     NX_ENCODER_MODE		*pEncoderMode;
 } NX_DISPLAY_MODE;
 
-static int adv7391_test_pattern(struct v4l2_subdev *sd, v4l2_std_id std);
-
 #endif
