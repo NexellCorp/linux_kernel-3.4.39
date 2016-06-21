@@ -745,7 +745,8 @@ static int nxp_pcm_open(struct snd_pcm_substream *substream)
 
 	/* resampler  */
 	if (!strcmp(prtd->dma_param->dma_ch_name, DMA_PERIPHERAL_NAME_I2S0_RX) ||
-		!strcmp(prtd->dma_param->dma_ch_name, DMA_PERIPHERAL_NAME_I2S1_RX)) {
+		!strcmp(prtd->dma_param->dma_ch_name, DMA_PERIPHERAL_NAME_I2S1_RX) || 
+		!strcmp(prtd->dma_param->dma_ch_name, DMA_PERIPHERAL_NAME_I2S2_RX)) {
 		prtd->run_resampler = CFG_SND_PCM_CAPTURE_RESAMPLEER_ON;
 		pr_debug("***[DMA %d:%s resampler ON]***\n",
 			prtd->dma_chan->chan_id, prtd->dma_param->dma_ch_name);

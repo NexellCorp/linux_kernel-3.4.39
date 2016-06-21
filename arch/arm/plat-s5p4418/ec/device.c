@@ -162,6 +162,9 @@ struct platform_device nxp_gmac_dev = {
  */
 #if defined(CONFIG_SND_NXP_EC)
 
+#define I2S_1ST_CH	0
+#define I2S_2ST_CH	2
+
 #ifndef CFG_AUDIO_I2S0_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S0_MASTER_CLOCK_IN		0
 #endif
@@ -181,32 +184,32 @@ static struct nxp_i2s_plat_data i2s_data_ch0 = {
 
 static struct platform_device i2s_device_ch0 = {
 	.name	= "nxp-i2s-ec",
-	.id		= 0,	/* channel */
+	.id		= I2S_1ST_CH,	/* channel */
 	.dev    = {
 		.platform_data	= &i2s_data_ch0
 	},
 };
 
-#ifndef CFG_AUDIO_I2S1_MASTER_CLOCK_IN
-#define CFG_AUDIO_I2S1_MASTER_CLOCK_IN		0
+#ifndef CFG_AUDIO_I2S2_MASTER_CLOCK_IN
+#define CFG_AUDIO_I2S2_MASTER_CLOCK_IN		0
 #endif
 
 static struct nxp_i2s_plat_data i2s_data_ch1 = {
-	.master_mode		= CFG_AUDIO_I2S1_MASTER_MODE,
-	.master_clock_in	= CFG_AUDIO_I2S1_MASTER_CLOCK_IN,
-	.trans_mode			= CFG_AUDIO_I2S1_TRANS_MODE,
-	.frame_bit			= CFG_AUDIO_I2S1_FRAME_BIT,
-	.sample_rate		= CFG_AUDIO_I2S1_SAMPLE_RATE,
-	.pre_supply_mclk 	= CFG_AUDIO_I2S1_PRE_SUPPLY_MCLK,
+	.master_mode		= CFG_AUDIO_I2S2_MASTER_MODE,
+	.master_clock_in	= CFG_AUDIO_I2S2_MASTER_CLOCK_IN,
+	.trans_mode			= CFG_AUDIO_I2S2_TRANS_MODE,
+	.frame_bit			= CFG_AUDIO_I2S2_FRAME_BIT,
+	.sample_rate		= CFG_AUDIO_I2S2_SAMPLE_RATE,
+	.pre_supply_mclk 	= CFG_AUDIO_I2S2_PRE_SUPPLY_MCLK,
 	/* DMA */
 	.dma_filter			= pl08x_filter_id,
-	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S1_TX,
-	.dma_capt_ch		= DMA_PERIPHERAL_NAME_I2S1_RX,
+	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S2_TX,
+	.dma_capt_ch		= DMA_PERIPHERAL_NAME_I2S2_RX,
 };
 
 static struct platform_device i2s_device_ch1 = {
 	.name	= "nxp-i2s-ec",
-	.id		= 1,	/* channel */
+	.id		= I2S_2ST_CH,	/* channel */
 	.dev    = {
 		.platform_data	= &i2s_data_ch1
 	},
@@ -229,7 +232,7 @@ static struct platform_device snd_null = {
 };
 
 struct nxp_snd_dai_plat_data snd_null_dai_data = {
-	.i2s_ch = 0,
+	.i2s_ch = I2S_1ST_CH,
 #if (1)
 	.sample_rate = SNDRV_PCM_RATE_8000_192000,
 	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
@@ -254,7 +257,7 @@ static struct platform_device snd_null_1 = {
 };
 
 struct nxp_snd_dai_plat_data snd_null_dai_data_1 = {
-	.i2s_ch = 1,
+	.i2s_ch = I2S_2ST_CH,
 #if (1)
 	.sample_rate = SNDRV_PCM_RATE_8000_192000,
 	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
@@ -491,7 +494,7 @@ EXPORT_SYMBOL(nxp_hsic_phy_pwr_on);
 //#include <linux/rtc/rtc-nxe2000.h>
 //#include <linux/rtc.h>
 
-#define NXE2000_I2C_BUS		(2)
+#define NXE2000_I2C_BUS		(0)
 #define NXE2000_I2C_ADDR	(0x64 >> 1)
 
 /* NXE2000 IRQs */

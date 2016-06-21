@@ -80,7 +80,8 @@ static inline void __sync_capture_start(void)
 	int  run_bit = PAD_GET_BITNO(PDM_IO_ISRUN);
 	int  count[3] = { 0, };
 	bool bLRCK = false;
-	unsigned int run_n_lrck = __raw_readl(IO_BASE(PDM_IO_ISRUN));
+	unsigned int run_val = __raw_readl(IO_BASE(PDM_IO_ISRUN)) | (1<<run_bit);
+	unsigned int lrck_val = __raw_readl(IO_BASE(PDM_IO_LRCLK));
 
 	val = __raw_readl(base + 0xC);
 	if (val & (1<<2))
@@ -94,7 +95,7 @@ static inline void __sync_capture_start(void)
 	if (val & (0x1f))
 		printk("!!!!!!!!!!! fifo : i2s0 rx not empty (0x%08x) !!!!!!!!!!!\n", val);
 
-	base = (void*)0xf0056000;
+	base = (void*)0xf0057000;	// 0xf0056000
 	__raw_writel(1<<7, (base+0x08));	/* Clear the Rx Flush bit */
 	__raw_writel(   0, (base+0x08));	/* Clear the Flush bit */
 
@@ -113,9 +114,9 @@ static inline void __sync_capture_start(void)
 	}
 
 	if (bLRCK)
-		run_n_lrck &= ~(1<<lrck_bit);
+		lrck_val &= ~(1<<lrck_bit);
 	else
-		run_n_lrck |=  (1<<lrck_bit);
+		lrck_val |=  (1<<lrck_bit);
 
 	/* SPI CSSEL : L ON */
 	__raw_writel(__raw_readl(IO_BASE(PDM_IO_CSSEL)) & ~(1<<spie_bit), IO_BASE(PDM_IO_CSSEL));
@@ -124,7 +125,8 @@ static inline void __sync_capture_start(void)
 	  * ISRUN : H RUN
 	  * PDM LRCLK : L EXIST, H No Exist
 	  */
-	__raw_writel(run_n_lrck | (1<<run_bit), IO_BASE(PDM_IO_ISRUN));
+	__raw_writel(run_val , IO_BASE(PDM_IO_ISRUN));
+	__raw_writel(lrck_val, IO_BASE(PDM_IO_LRCLK));
 
 	/* I2S 0 */
 	base = (void*)0xf0055000;
@@ -135,7 +137,7 @@ static inline void __sync_capture_start(void)
 	__raw_writel(CON , (base+0x00));
 
 	/* I2S 1 */
-	base = (void*)0xf0056000;
+	base = (void*)0xf0057000; // 0xf0056000
 	__raw_writel(CSR , (base+0x04));
 	__raw_writel(CON , (base+0x00));
 
