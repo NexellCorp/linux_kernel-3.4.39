@@ -49,7 +49,7 @@
  * 	Uart
  */
 #define	CFG_UART_DEBUG_BAUDRATE			115200		/* For Low level debug */
-#define	CFG_UART_CLKGEN_CLOCK_HZ		14750000	/* 50000000 */
+#define	CFG_UART_CLKGEN_CLOCK_HZ		100000000	// Max 3M baudrate
 
 /*------------------------------------------------------------------------------
  * 	Timer List (SYS = Source, EVT = Event, WDT = WatchDog)
@@ -171,7 +171,7 @@
 #define CFG_DISP_PRI_OUT_FORMAT                 DPC_FORMAT_CCIR656
 #define CFG_DISP_PRI_OUT_YCORDER                DPC_YCORDER_CbYCrY
 #define CFG_DISP_PRI_OUT_INTERLACE              CTRUE
-#define CFG_DISP_PRI_OUT_INVERT_FIELD           CFALSE
+#define CFG_DISP_PRI_OUT_INVERT_FIELD           CTRUE
 #define CFG_DISP_LCD_MPY_TYPE					0
 #endif
 
