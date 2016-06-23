@@ -649,6 +649,8 @@ static void readwriter(struct pl022 *pl022)
 	dev_dbg(&pl022->adev->dev,
 		"%s, rx: %p, rxend: %p, tx: %p, txend: %p\n",
 		__func__, pl022->rx, pl022->rx_end, pl022->tx, pl022->tx_end);
+	//printk(	"%s, rx: %p, rxend: %p, tx: %p, txend: %p\n",
+	//	__func__, pl022->rx, pl022->rx_end, pl022->tx, pl022->tx_end);
 
 	/* Read as much as you can */
 	while ((readw(SSP_SR(pl022->virtbase)) & SSP_SR_MASK_RNE)
@@ -1845,6 +1847,7 @@ static int pl022_setup(struct spi_device *spi)
 
 	/* Now set controller state based on controller data */
 	chip->xfer_type = chip_info->com_mode;
+	printk("%s : com_mode = %d \n",__FUNCTION__, chip->xfer_type);
 	if (!chip_info->cs_control) {
 		chip->cs_control = null_cs_control;
 		dev_warn(&spi->dev,
@@ -1885,6 +1888,7 @@ static int pl022_setup(struct spi_device *spi)
 	    && ((pl022->master_info)->enable_dma)) {
 		chip->enable_dma = true;
 		dev_dbg(&spi->dev, "DMA mode set in controller state\n");
+		printk("DMA mode set in controller state\n");
 		SSP_WRITE_BITS(chip->dmacr, SSP_DMA_ENABLED,
 			       SSP_DMACR_MASK_RXDMAE, 0);
 		SSP_WRITE_BITS(chip->dmacr, SSP_DMA_ENABLED,
@@ -1892,6 +1896,7 @@ static int pl022_setup(struct spi_device *spi)
 	} else {
 		chip->enable_dma = false;
 		dev_dbg(&spi->dev, "DMA mode NOT set in controller state\n");
+		printk("DMA mode NOT set in controller state\n");
 		SSP_WRITE_BITS(chip->dmacr, SSP_DMA_DISABLED,
 			       SSP_DMACR_MASK_RXDMAE, 0);
 		SSP_WRITE_BITS(chip->dmacr, SSP_DMA_DISABLED,

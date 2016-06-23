@@ -1,0 +1,5 @@
+config FCI_8080
+    bool "FCI 8080 for TDMB"
+    default n
+    help
+      FCI driver for DMB

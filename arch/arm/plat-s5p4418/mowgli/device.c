@@ -419,6 +419,7 @@ struct tsc2007_platform_data tsc2007_plat_data = {
         .fuzzx = 0,
         .fuzzy = 0,
         .fuzzz = 0,
+		.invert_y = true,
         .get_pendown_state = &tsc2007_get_pendown_state,
         #else
         .x_plate_ohms   = 10,
@@ -1136,13 +1137,14 @@ struct pl022_config_chip spi0_info = {
 
 static struct spi_board_info spi_plat_board[] __initdata = {
     [0] = {
-        .modalias        = "spidev",    /* fixup */
+        .modalias        = "fc8080_spi",    /* fixup */
         //.max_speed_hz    = 3125000,     /* max spi clock (SCK) speed in HZ */
-        .max_speed_hz    = 8 * 1000 * 1000,     /* max spi clock (SCK) speed in HZ */
+        //.platform_data   = NULL,
+        .max_speed_hz    = 15 * 1000 * 1000,     /* max spi clock (SCK) speed in HZ */
         .bus_num         = 0,           /* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
         .chip_select     = 0,           /* Note> set chip select num, must be smaller than spi cs_num */
         .controller_data = &spi0_info,
-        .mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
+        .mode            = SPI_MODE_0, //SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
     },
 };
 

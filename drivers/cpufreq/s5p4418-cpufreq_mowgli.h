@@ -63,7 +63,7 @@ extern void nxp_cpu_id_string(u32 string[12]);
  */
 
 #define	FREQ_MAX_FREQ_KHZ	(1400*1000)
-#define	FREQ_ARRAY_SIZE		(13)
+#define	FREQ_ARRAY_SIZE		(3)
 #define	UV(v)				(v*1000)
 
 struct asv_tb_info {
@@ -74,51 +74,51 @@ struct asv_tb_info {
 };
 
 #define	ASB_FREQ_MHZ {	\
-	[ 0] = 1600,	\
-	[ 1] = 1500,	\
-	[ 2] = 1400,	\
-	[ 3] = 1300,	\
-	[ 4] = 1200,	\
-	[ 5] = 1100,	\
-	[ 6] = 1000,	\
-	[ 7] =  900,	\
-	[ 8] =  800,	\
-	[ 9] =  700,	\
-	[10] =  600,	\
-	[11] =  500,	\
-	[12] =  400,	\
+	[ 0] = 1400,	\
+	[ 1] = 1000,	\
+	[ 2] =  800,	\
 	}
 
 static struct asv_tb_info asv_tables[] = {
 	[0] = {	.ids = 10, .ro = 110,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1350), UV(1350),	/* OVER FREQ */
-					 UV(1350), UV(1300), UV(1250), UV(1200), UV(1175), UV(1150),
-					 UV(1125), UV(1100), UV(1075), UV(1075), UV(1075) },
+			.uV  = { 
+					UV(1350), //1400
+					UV(1175), //1000
+					UV(1125)  //800
+				},
 	},
 	[1] = {	.ids = 15, .ro = 130,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1300), UV(1300),	/* OVER FREQ */
-				     UV(1300), UV(1250), UV(1200), UV(1150), UV(1125), UV(1100),
-					 UV(1075), UV(1050), UV(1025), UV(1025), UV(1025) },
+			.uV  = { 
+				     UV(1300), //1400
+					 UV(1125), //1000
+					 UV(1075)  //800
+				},
 	},
 	[2] = {	.ids = 20, .ro = 140,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1250), UV(1250),	/* OVER FREQ */
-					 UV(1250), UV(1200), UV(1150), UV(1100), UV(1075), UV(1050),
-					 UV(1025), UV(1000), UV(1000), UV(1000), UV(1000) },
+			.uV  = { 
+					UV(1250), //1400
+					UV(1075), //1000
+					UV(1025) //800
+				},
 	},
 	[3] = {	.ids = 50, .ro = 170,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1200), UV(1200),	/* OVER FREQ */
-					 UV(1200), UV(1150), UV(1100), UV(1050), UV(1025), UV(1000),
-					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
+			.uV  = { 
+					UV(1200), //1400
+					UV(1025), //1000
+					UV(1000)  //800
+				},
 	},
 	[4] = {	.ids = 50, .ro = 170,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1175), UV(1175),	/* OVER FREQ */
-					 UV(1175), UV(1100), UV(1050), UV(1000), UV(1000), UV(1000),
-					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
+			.uV  = { 
+					UV(1175), //1400
+					UV(1000), //1000
+					UV(1000)  //800
+				},
 	},
 };
 #define	ASV_ARRAY_SIZE	ARRAY_SIZE(asv_tables)

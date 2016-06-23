@@ -198,7 +198,7 @@
 #define CFG_SPI1_CLK							10000000
 #define CFG_SPI2_CLK							10000000
 
-#define CFG_SPI0_COM_MODE						0 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
+#define CFG_SPI0_COM_MODE						2 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
 #define CFG_SPI1_COM_MODE						1 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
 #define CFG_SPI2_COM_MODE						1 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
 
@@ -243,6 +243,11 @@
  * 1 : PMIC interrupt (FVUSBDETSINT)
  */
 #define CFG_USB_DET_FROM_PMIC_INT				(0)
+
+#define CFG_GPIO_DMB_INT                      PAD_GPIO_D + 23 //PAD_GPIO_E + 20
+#define CFG_GPIO_DMB_POWER                    (PAD_GPIO_D + 24)
+#define CFG_GPIO_DMB_POWER_1V2                (PAD_GPIO_D + 22)
+
 
 #define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)
 #define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_D + 21)
