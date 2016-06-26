@@ -108,8 +108,9 @@ static inline void color_imageblit(const struct fb_image *image,
 			color <<= FB_LEFT_POS(p, bpp);
 			val |= FB_SHIFT_HIGH(p, color, shift ^ bswapmask);
 			if (shift >= null_bits) {
+				if (bpp == 32)
+					val |= (0xff << 24);	// Blending bit mask for kernel logo
 				FB_WRITEL(val, dst++);
-	
 				val = (shift == null_bits) ? 0 : 
 					FB_SHIFT_LOW(p, color, 32 - shift);
 			}

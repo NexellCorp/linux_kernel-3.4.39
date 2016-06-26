@@ -547,13 +547,9 @@ static int nxp_fb_setup_param(int fb, struct fb_info *info, void *data)
 		return ret;
 
 	/* get from output device sync */
-#if 0
-	x_resol = vsi.h_active_len ? vsi.h_active_len : plat->x_resol;
-	y_resol = vsi.v_active_len ? vsi.v_active_len : plat->y_resol;
-#else
 	x_resol = plat->x_resol;
 	y_resol = plat->y_resol;
-#endif
+
 	/* clear palette buffer */
 	par->info = info;
 	par->status = 0;
