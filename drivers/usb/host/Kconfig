@@ -642,6 +642,25 @@ config USB_DWCOTG
 	  To compile this driver as a module, choose M here: the
 	  modules built will be called dwc_otg and dwc_common_port.
 
+choice
+	prompt "Default OTG device mode detection voltage"
+	depends on USB_DWCOTG
+	default USB_DWCOTG_VBUS_5
+	help
+	  Selects one of 5V and 3.3V
+
+config USB_DWCOTG_VBUS_5
+	bool "Analog VBUS 5V"
+	help
+	  Enable VBUS 5V.
+
+config USB_DWCOTG_USBVBUS_3_3
+	bool "Digital USBVBUS 3.3V"
+	help
+	  Enable USBVBUS 3.3V
+	 
+endchoice
+
 config USB_CONNECT_NXP_DRV
 	bool "SLsiAP USB connect driver for UBC & OTG"
 	depends on USB_DWCOTG

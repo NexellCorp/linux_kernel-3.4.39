@@ -1075,13 +1075,9 @@ void otg_phy_init(void)
     udelay(10);
 
     // 1-1. VBUS reconfig - Over current Issue
-#if 1
-    temp  = readl(SOC_VA_TIEOFF + 0x38) & ~(0x7<<23);
 #if defined(CFG_OTG_OVC_VALUE)
+    temp  = readl(SOC_VA_TIEOFF + 0x38) & ~(0x7<<23);
     temp |= (CFG_OTG_OVC_VALUE << 23);
-#else
-    temp |= (0x3<<23);
-#endif
     writel(temp, SOC_VA_TIEOFF + 0x38);
 #endif
 
@@ -1098,8 +1094,11 @@ void otg_phy_init(void)
 
 
     // 4. Select VBUS
-//    writel(readl(SOC_VA_TIEOFF + 0x34) |  (3<<24), SOC_VA_TIEOFF + 0x34);   /* Select VBUS 3.3V */
+#ifdef CONFIG_USB_DWCOTG_VBUS_5
     writel(readl(SOC_VA_TIEOFF + 0x34) & ~(3<<24), SOC_VA_TIEOFF + 0x34);   /* Select VBUS 5V */
+#elif defined (CONFIG_USB_DWCOTG_USBVBUS_3_3)
+	writel(readl(SOC_VA_TIEOFF + 0x34) |  (3<<24), SOC_VA_TIEOFF + 0x34);   /* Select VBUS 3.3V */
+#endif
 
     // 5. POR of PHY
 #if 0
@@ -1133,8 +1132,11 @@ void otg_phy_off(void)
     PM_DBGOUT("+%s\n", __func__);
 
     // 0. Select VBUS
-    writel(readl(SOC_VA_TIEOFF + 0x34) |  (3<<24), SOC_VA_TIEOFF + 0x34);   /* Select VBUS 3.3V */
-//    writel(readl(SOC_VA_TIEOFF + 0x34) & ~(3<<24), SOC_VA_TIEOFF + 0x34);   /* Select VBUS 5V */
+#ifdef CONFIG_USB_DWCOTG_VBUS_5	
+	writel(readl(SOC_VA_TIEOFF + 0x34) |  (3<<24), SOC_VA_TIEOFF + 0x34);   /* Select VBUS 3.3V */
+#elif defined (CONFIG_USB_DWCOTG_USBVBUS_3_3)
+	writel(readl(SOC_VA_TIEOFF + 0x34) & ~(3<<24), SOC_VA_TIEOFF + 0x34);   /* Select VBUS 5V */
+#endif
 
     // 1. UTMI reset
     writel(readl(SOC_VA_TIEOFF + 0x34) & ~(1<<3), SOC_VA_TIEOFF + 0x34);
