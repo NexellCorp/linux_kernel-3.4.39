@@ -1161,8 +1161,11 @@ void otg_phy_suspend(void)
     u32 temp;
 
     // 0. Select VBUS
-    writel(readl(SOC_VA_TIEOFF + 0x34) |  (3<<24), SOC_VA_TIEOFF + 0x34);   /* Select VBUS 3.3V */
-//    writel(readl(SOC_VA_TIEOFF + 0x34) & ~(3<<24), SOC_VA_TIEOFF + 0x34);   /* Select VBUS 5V */
+#ifdef CONFIG_USB_DWCOTG_VBUS_5	
+ 	writel(readl(SOC_VA_TIEOFF + 0x34) |  (3<<24), SOC_VA_TIEOFF + 0x34);   /* Select VBUS 3.3V */
+#elif defined (CONFIG_USB_DWCOTG_USBVBUS_3_3)
+    writel(readl(SOC_VA_TIEOFF + 0x34) & ~(3<<24), SOC_VA_TIEOFF + 0x34);   /* Select VBUS 5V */
+#endif
 
     // 1. AHB reset
 #if 0
