@@ -22,7 +22,8 @@
  * 	 System memory map
  */
 #define	CFG_MEM_PHY_SYSTEM_BASE			0x40000000	/* System, must be at an evne 2MB boundary (head.S) */
-#define	CFG_MEM_PHY_SYSTEM_SIZE			0x7F000000	/* Total 2G MB */
+#define	CFG_MEM_PHY_SYSTEM_SIZE			0x3F000000	/* Total 2G MB (0x7F000000), Total 1G MB (0x3F000000)*/
+
 
 /*------------------------------------------------------------------------------
  *   DMA zone, if not defined DAM default size is 2M

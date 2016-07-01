@@ -824,6 +824,8 @@ static int nxe2000_i2c_probe(struct i2c_client *client,
 	struct nxe2000_platform_data *pdata = client->dev.platform_data;
 	int ret;
 
+	printk(KERN_ERR "## [%s():%s:%d\t] %ld \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__, msecs_to_jiffies(1000));
+
 	nxe2000 = kzalloc(sizeof(struct nxe2000), GFP_KERNEL);
 	if (nxe2000 == NULL)
 		return -ENOMEM;

@@ -33,11 +33,96 @@ struct pwm_bl_data {
 	int			(*check_fb)(struct device *, struct fb_info *);
 };
 
+int cu_brightness=0;
+int max_brightness=0;
+int backlite_value=0;
+int backlite_state=0;
+struct pwm_bl_data *g_pb = NULL;
+
+int get_backlight_value()
+{
+	return backlite_value;
+}
+EXPORT_SYMBOL(get_backlight_value);
+
+int backlight_state()
+{
+	return backlite_state;
+}
+EXPORT_SYMBOL(backlight_state);
+
+void runa_backlight_forced_brightness(int set_brightness)
+{
+		int brightness; 
+        
+		int max = max_brightness;
+
+
+        if(set_brightness>255) set_brightness=255;
+        
+        if(0==set_brightness){
+            brightness = 25;
+        }else if(1==set_brightness){
+            brightness = cu_brightness;
+            backlite_state = 1;
+        }else{
+            backlite_value = brightness = set_brightness;
+            if(brightness <= 2)backlite_state = 0;
+            else backlite_state = 1;
+        }
+
+        if(g_pb!=NULL) {
+            if (brightness == 0) {
+                pwm_config(g_pb->pwm, 0, g_pb->period);
+                pwm_disable(g_pb->pwm);
+            } else {
+                
+                if(max!=0){
+                    brightness = g_pb->lth_brightness +
+                        (brightness * (g_pb->period - g_pb->lth_brightness) / max);
+                    pwm_config(g_pb->pwm, brightness, g_pb->period);
+                    pwm_enable(g_pb->pwm);
+
+
+                    printk(KERN_INFO " pwm backlight  on\n");   
+                }
+                else {
+
+                    printk(KERN_INFO " Error :divided by zero\n");   
+                }
+
+            }
+
+
+
+        
+        }
+
+
+
+
+
+}
+EXPORT_SYMBOL(runa_backlight_forced_brightness);
+
+
+extern bool backlight_activated;
+
+
+
+
 static int pwm_backlight_update_status(struct backlight_device *bl)
 {
 	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
 	int brightness = bl->props.brightness;
-	int max = bl->props.max_brightness;
+	
+    int max = bl->props.max_brightness;
+
+	cu_brightness=brightness;
+    max_brightness=max;
+    
+    if(pb!=NULL) 
+      g_pb = pb; 
 
 	if (bl->props.power != FB_BLANK_UNBLANK)
 		brightness = 0;
@@ -60,6 +145,9 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
 
 	if (pb->notify_after)
 		pb->notify_after(pb->dev, brightness);
+
+backlight_activated = true;
+
 
 	return 0;
 }

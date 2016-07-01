@@ -152,7 +152,7 @@ static void tsc2007_read_values(struct tsc2007 *tsc, struct ts_event *tc)
 	if (tsc->invert_x == true)
 		tc->x = MAX_12BIT - tc->x;
 
-	if (tsc->invert_y == true)
+	//if (tsc->invert_y == true)
 		tc->y = MAX_12BIT - tc->y;
 
 	if (tsc->invert_z1 == true)

@@ -42,7 +42,7 @@
 #define CFG_BUS_RECONFIG_TOPBUSSI           0
 #define CFG_BUS_RECONFIG_TOPBUSQOS          0
 #define CFG_BUS_RECONFIG_BOTTOMBUSSI        0
-#define CFG_BUS_RECONFIG_BOTTOMBUSQOS       0
+#define CFG_BUS_RECONFIG_BOTTOMBUSQOS       1
 #define CFG_BUS_RECONFIG_DISPBUSSI          1
 
 /*------------------------------------------------------------------------------
@@ -113,17 +113,34 @@
 #define CFG_DISP_PRI_RESOL_WIDTH          		800	// X Resolution
 #define CFG_DISP_PRI_RESOL_HEIGHT				480	// Y Resolution
 
-#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH            20
+
+
+
+//CHIMEI LCD ===========================================================
+// VS Blanking     (SYNC_WIDTH + BACK_PORCH )  : MIN 23, TPY 23, MAX 23
+// VS Front Porch                              : MIN 7           MAX 147
+
+// HS Blanking     (SYNC_WIDTH + BACK_PORCH )  : MIN 46, TPY 46, MAX 46
+// HS Front Porch                              : MIN 16          MAX 354
+//----------------------------------------------------------------------
+
+// CFG_DISP_PRI_HSYNC_SYNC_WIDTH + CFG_DISP_PRI_HSYNC_BACK_PORCH == 46 
+#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH           20
 #define CFG_DISP_PRI_HSYNC_BACK_PORCH           26
-#define CFG_DISP_PRI_HSYNC_FRONT_PORCH          300
+#define CFG_DISP_PRI_HSYNC_FRONT_PORCH          150//100//300//160//300
 #define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CFALSE
+
+// CFG_DISP_PRI_VSYNC_SYNC_WIDTH + CFG_DISP_PRI_VSYNC_BACK_PORCH == 23 
 #define CFG_DISP_PRI_VSYNC_SYNC_WIDTH            10
 #define CFG_DISP_PRI_VSYNC_BACK_PORCH            13
-#define CFG_DISP_PRI_VSYNC_FRONT_PORCH           44
-#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CFALSE
+#define CFG_DISP_PRI_VSYNC_FRONT_PORCH          60//40 //44
+#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH          CFALSE
+
 
 #define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL2
-#define CFG_DISP_PRI_CLKGEN0_DIV                18 
+//#define CFG_DISP_PRI_CLKGEN0_DIV                18//20//18 //38Mhz
+//#define CFG_DISP_PRI_CLKGEN0_DIV                22 //30.xMhz
+#define CFG_DISP_PRI_CLKGEN0_DIV                20 //33.8xx Mhz
 #define CFG_DISP_PRI_CLKGEN0_DELAY              0
 #define CFG_DISP_PRI_CLKGEN0_INVERT				0
 #define CFG_DISP_PRI_CLKGEN1_SOURCE             DPC_VCLK_SRC_VCLK2
@@ -162,7 +179,7 @@
 #define	CFG_AUDIO_I2S0_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S0_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
 #define	CFG_AUDIO_I2S0_FRAME_BIT				32		// 32, 48
-#define	CFG_AUDIO_I2S0_SAMPLE_RATE				48000
+#define	CFG_AUDIO_I2S0_SAMPLE_RATE				44100
 #define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			1
 
 #define	CFG_AUDIO_I2S1_MASTER_MODE				CTRUE	// CTRUE
@@ -223,14 +240,20 @@
  * 	Keypad
  */
 
-#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0 }
-#define CFG_KEYPAD_KEY_CODE						{ KEY_DISPLAY_OFF }
+
+#define CFG_KEYPAD_KEY_BUTTON				{ PAD_GPIO_D + 25 , PAD_GPIO_ALV + 0 	, PAD_GPIO_E + 30}
+#define CFG_KEYPAD_KEY_CODE					{ KEY_POWER       , KEY_POWER 			, KEY_CONTROL_BOX}
 #define CFG_KEYPAD_REPEAT						CFALSE /* 0: Repeat Off 1 : Repeat On */
 
 /*------------------------------------------------------------------------------
  * 	SDHC
  */
 #define	CFG_SDMMC2_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
+#define   CFG_SDMMC2_DETECT_CONTROL_BOX       (PAD_GPIO_E + 31) /* detect control box */
+
+
+#define CFG_SWITCH_USB_5V_EN        (PAD_GPIO_B + 18)
+
 
 
 /*------------------------------------------------------------------------------

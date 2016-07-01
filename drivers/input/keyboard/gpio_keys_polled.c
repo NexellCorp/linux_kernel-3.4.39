@@ -25,8 +25,37 @@
 #include <linux/platform_device.h>
 #include <linux/gpio.h>
 #include <linux/gpio_keys.h>
+#include <linux/delay.h>
 
 #define DRV_NAME	"gpio-keys-polled"
+
+//#define BACKLIGHT_OFF 0
+//#define BACKLIGHT_ON  1
+//extern int s3cfb_backlight_state(struct platform_device *pdev);
+//extern int s3cfb_backlight_on(struct platform_device *pdev);
+//extern int s3cfb_backlight_off(struct platform_device *pdev);
+//static int prev_bl_state = BACKLIGHT_ON;
+//bool ts_enable;
+//EXPORT_SYMBOL(ts_enable);
+//int set_ts_enable(bool enable)
+//{
+//	ts_enable = enable;
+//	return 0;
+//}
+//EXPORT_SYMBOL(set_ts_enable);
+
+bool power_off_is_key = false;
+bool power_off_is_dc = false;
+bool backlight_activated = false;
+
+EXPORT_SYMBOL(power_off_is_key);
+EXPORT_SYMBOL(power_off_is_dc);
+EXPORT_SYMBOL(backlight_activated);
+
+static int iCapture = 0;
+static int brightness = 0;
+#define BACKLIGHT_OFF 0
+#define BACKLIGHT_ON  1
 
 struct gpio_keys_button_data {
 	int last_state;
@@ -42,25 +71,185 @@ struct gpio_keys_polled_dev {
 	struct gpio_keys_button_data data[0];
 };
 
+extern void runa_backlight_forced_brightness(int set_brightness);
+extern int get_backlight_value();
+extern int backlight_state();
+//extern int arcam_gpio(int onoff);
+
 static void gpio_keys_polled_check_state(struct input_dev *input,
 					 struct gpio_keys_button *button,
 					 struct gpio_keys_button_data *bdata)
 {
 	int state;
+	static unsigned int key1_down_time,key2_down_time,key3_down_time;	
 
 	if (bdata->can_sleep)
-		state = !!gpio_get_value_cansleep(button->gpio);
+		state = !gpio_get_value_cansleep(button->gpio);
 	else
-		state = !!gpio_get_value(button->gpio);
+		state = !gpio_get_value(button->gpio);
 
-	if (state != bdata->last_state) {
+	if (state != bdata->last_state)
+	{
 		unsigned int type = button->type ?: EV_KEY;
+		if(button->code == KEY_POWER)
+		{
+			printk("button->code == KEY_POWER\n");
 
-		input_event(input, type, button->code,
-			    !!(state ^ button->active_low));
-		input_sync(input);
+            
+            if(state == 1)//key down 
+			{
+                key1_down_time = jiffies_to_msecs(jiffies);
+			}
+			else//key up
+			{
+
+                if(jiffies_to_msecs(jiffies) - key1_down_time < 1000)//short key - up
+				{
+                 input_event(input, EV_KEY, KEY_VOLUMEDOWN, 1);
+					input_sync(input);
+					input_event(input, EV_KEY, KEY_POWER, 1);
+					input_sync(input);
+					udelay(3);
+
+					mdelay(1000);
+
+					input_event(input, EV_KEY, KEY_POWER, 0);
+					input_sync(input);
+					udelay(3);
+					input_event(input, EV_KEY, KEY_VOLUMEDOWN, 0);
+					input_sync(input);
+				}
+				key1_down_time = 0;
+			}
+		}
+
+		if(button->code == KEY_BATTERY)
+		{
+			printk("button->code == KEY_BATTERY\n");
+			if(state == 1)//key down 
+			{
+				key2_down_time = jiffies_to_msecs(jiffies);
+
+                if(backlight_activated)  
+                  runa_backlight_forced_brightness(0);
+
+            }
+			else//key up
+			{
+				key2_down_time = 0;
+                if(backlight_activated) 
+                  runa_backlight_forced_brightness(1);
+            }
+		}
+		if(button->code == KEY_CONTROL_BOX)
+		{
+			if(state == 1){//key down
+				iCapture = 0;
+				key3_down_time = jiffies_to_msecs(jiffies);
+			}else{//key up
+			printk("button->code == KEY_CONTROL_BOX\n");
+				if(jiffies_to_msecs(jiffies) - key3_down_time < 500 && iCapture == 0){	//short key
+					//brightness = get_backlight_value();
+					if(BACKLIGHT_OFF == backlight_state()) {
+						runa_backlight_forced_brightness(1);
+						printk(KERN_INFO ">>>> BACKLIGHT_ON !!!\n");
+					} else {
+						brightness = get_backlight_value();
+						runa_backlight_forced_brightness(2);
+						printk(KERN_INFO ">>>> BACKLIGHT_OFF !!!\n");
+					}
+				}else if(jiffies_to_msecs(jiffies) - key3_down_time <= 1300 && iCapture == 0){
+					input_event(input, EV_KEY, KEY_POWER, 0);
+						input_sync(input);
+						udelay(3);
+						input_event(input, EV_KEY, KEY_VOLUMEDOWN, 0);
+						input_sync(input);
+				}
+				key3_down_time = 0;
+			}
+		}
+
 		bdata->count = 0;
 		bdata->last_state = state;
+	}
+	else
+	{
+		if(button->code == KEY_CONTROL_BOX)
+		{
+			if(state == 1){
+				if(jiffies_to_msecs(jiffies) - key3_down_time > 1300 && iCapture == 0){ //capture end
+						printk("capture!!!\n");
+						input_event(input, EV_KEY, KEY_POWER, 0);
+						input_sync(input);
+						udelay(3);
+						input_event(input, EV_KEY, KEY_VOLUMEDOWN, 0);
+						input_sync(input);
+						iCapture = 1;
+				}else if(jiffies_to_msecs(jiffies) - key3_down_time > 500 && iCapture == 0){ //capture start
+						input_event(input, EV_KEY, KEY_POWER, 1);
+						input_sync(input);
+						udelay(3);
+						input_event(input, EV_KEY, KEY_VOLUMEDOWN, 1);
+						input_sync(input);
+				}
+			}
+		}
+		if(button->code == KEY_POWER)
+		{
+			if(state == 1)//key down
+			{
+
+				if(jiffies_to_msecs(jiffies) - key1_down_time > 1500) //long key - down continue 
+				{
+                printk("report key --> LONG KEY_POWER OFF\n");
+
+					power_off_is_key = true;
+					power_off_is_dc = false;
+
+					input_event(input, EV_KEY, KEY_POWER, 1);
+					input_sync(input);
+                    
+                 mdelay(2000);
+                    input_event(input, EV_KEY, KEY_POWER, 0);
+					input_sync(input);
+
+                 printk("report key --> LONG KEY_POWER OFF\n");
+				}
+			}
+		}
+		
+		if(button->code == KEY_BATTERY)
+		{
+			if(state == 1 /* && (power_off_is_dc == false)*/)//key down
+			{
+				if(jiffies_to_msecs(jiffies) - key2_down_time > 1500) //long key - down continue 
+				{
+
+
+                    if((power_off_is_key==false) && (power_off_is_dc==false))
+                    {
+                        input_report_key(input, KEY_FN_F9, 1);
+                        input_sync(input);
+                        udelay(3);
+                        input_report_key(input, KEY_FN_F9, 0);
+                        input_sync(input);
+
+                        mdelay(100);
+                    }
+
+                    power_off_is_key = false;
+                    power_off_is_dc = true;
+
+                   // printk("report key --> KEY_POWER OFF\n");
+
+                    
+                    input_event(input, EV_KEY, KEY_POWER, 1);
+                    input_sync(input);
+		
+
+                }
+			}
+		}
 	}
 }
 
@@ -109,6 +298,8 @@ static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
 	struct input_dev *input;
 	int error;
 	int i;
+
+	printk("%s\n", __func__);
 
 	if (!pdata || !pdata->poll_interval)
 		return -EINVAL;
@@ -182,6 +373,10 @@ static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
 		input_set_capability(input, type, button->code);
 	}
 
+	input_set_capability(input, EV_KEY, KEY_VOLUMEDOWN);
+	input_set_capability(input, EV_KEY, KEY_FN_F10);
+	input_set_capability(input, EV_KEY, KEY_FN_F9);
+
 	bdev->poll_dev = poll_dev;
 	bdev->dev = dev;
 	bdev->pdata = pdata;
@@ -241,7 +436,19 @@ static struct platform_driver gpio_keys_polled_driver = {
 		.owner	= THIS_MODULE,
 	},
 };
-module_platform_driver(gpio_keys_polled_driver);
+
+static int __init gpio_keys_polled_init(void)
+{
+	return platform_driver_register(&gpio_keys_polled_driver);
+}
+
+static void __exit gpio_keys_polled_exit(void)
+{
+	platform_driver_unregister(&gpio_keys_polled_driver);
+}
+
+module_init(gpio_keys_polled_init);
+module_exit(gpio_keys_polled_exit);
 
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Gabor Juhos <juhosg@openwrt.org>");

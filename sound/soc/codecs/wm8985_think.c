@@ -38,7 +38,7 @@
 
 #define MONO_SPEAKER_CONTROL
 
-//#define CONFIG_SOUND_TUNE
+#define CONFIG_SOUND_TUNE
 #define FEATURE_NAVIGATION
 #define FEATURE_IN_DASH
 //#define FEATURE_ON_DASH
@@ -55,7 +55,7 @@
 #error "Must choose one type !!!"
 #endif
 
-#define DEFAULT_HP_VOL	0x3F
+#define DEFAULT_HP_VOL	0x3B
 
 struct snd_soc_codec *codecwrite;
 
@@ -81,8 +81,8 @@ static const u16 wm8985_reg_defs[] = {
 	0x0000,     /* R8  - GPIO Control */
 	0x0000,     /* R9  - Jack Detect Control 1 */
 	0x0048,     /* R10 - DAC Control */
-	0x00FD,     /* R11 - Left DAC digital Vol */
-	0x00FD,     /* R12 - Right DAC digital vol */
+	0x00F0,     /* R11 - Left DAC digital Vol */
+	0x00F0,     /* R12 - Right DAC digital vol */
 	0x0000,     /* R13 - Jack Detect Control 2 */
 	0x0188,     /* R14 - ADC Control */
 	0x00F5,     /* R15 - Left ADC Digital Vol */
@@ -122,12 +122,12 @@ static const u16 wm8985_reg_defs[] = {
 	0x0000,     /* R49 - Output ctrl */
 	0x0008,     /* R50 - Left mixer ctrl */
 	0x0000,     /* R51 - Right mixer ctrl */
-	0x003F,     /* R52 - LOUT1 (HP) volume ctrl */
-	0x003F,     /* R53 - ROUT1 (HP) volume ctrl */
-	0x003F,     /* R54 - LOUT2 (SPK) volume ctrl */
-	0x003F,     /* R55 - ROUT2 (SPK) volume ctrl */
-	0x0000,     /* R56 - OUT3 mixer ctrl */
-	0x0000,     /* R57 - OUT4 (MONO) mix ctrl */
+	0x0038,     /* R52 - LOUT1 (HP) volume ctrl */
+	0x0038,     /* R53 - ROUT1 (HP) volume ctrl */
+	0x0037,     /* R54 - LOUT2 (SPK) volume ctrl */
+	0x0037,     /* R55 - ROUT2 (SPK) volume ctrl */
+	0x0008,     /* R56 - OUT3 mixer ctrl */
+	0x0009,     /* R57 - OUT4 (MONO) mix ctrl */
 	0x0001,     /* R58 */
 	0x0000,     /* R59 */
 	0x0004,     /* R60 - OUTPUT ctrl */
@@ -339,16 +339,18 @@ static const struct snd_kcontrol_new wm8985_snd_controls[] = {
 	SOC_DOUBLE_R("Speaker Playback ZC Switch", WM8985_LOUT2_SPK_VOLUME_CTRL,
 		WM8985_ROUT2_SPK_VOLUME_CTRL, 7, 1, 0),
 	SOC_DOUBLE_R("Speaker Switch", WM8985_LOUT2_SPK_VOLUME_CTRL,
-		WM8985_ROUT2_SPK_VOLUME_CTRL, 6, 0, 1),
+		WM8985_ROUT2_SPK_VOLUME_CTRL, 6, 1, 1),
 
 #ifdef MONO_SPEAKER_CONTROL
-	SOC_DOUBLE_R("Mono Speaker Switch", WM8985_OUT3_MIXER_CTRL,	WM8985_OUT4_MONO_MIX_CTRL, 6, 1, 1),
+	SOC_DOUBLE_R("Mono Speaker Switch", WM8985_OUT3_MIXER_CTRL,
+		WM8985_OUT4_MONO_MIX_CTRL, 6, 1, 1),
 	SOC_SINGLE("Out3 Mixer Switch", WM8985_POWER_MANAGEMENT_1, 6, 1, 0),
 	SOC_SINGLE("Out4 Mixer Switch", WM8985_POWER_MANAGEMENT_1, 7, 1, 0),
 #endif
 
 #ifdef LINEOUT_CONTROL
-	SOC_DOUBLE_R("Lineout Switch", WM8985_OUT3_MIXER_CTRL,WM8985_OUT4_MONO_MIX_CTRL, 6, 1, 1),
+	SOC_DOUBLE_R("Lineout Switch", WM8985_OUT3_MIXER_CTRL,
+		WM8985_OUT4_MONO_MIX_CTRL, 6, 1, 1),
 #endif
 
 	SOC_SINGLE("High Pass Filter Switch", WM8985_ADC_CONTROL, 8, 1, 0),
@@ -394,7 +396,7 @@ static const struct snd_kcontrol_new left_out_mixer[] = {
 	SOC_DAPM_SINGLE("Aux Switch", WM8985_LEFT_MIXER_CTRL, 5, 1, 0),
 	SOC_DAPM_SINGLE("PCM Switch", WM8985_LEFT_MIXER_CTRL, 0, 1, 0),
 #ifdef MONO_SPEAKER_CONTROL
-	SOC_DAPM_SINGLE("Mono Switch", WM8985_OUT3_MIXER_CTRL, 0, 1, 0),
+	SOC_DAPM_SINGLE("Mono Switch", WM8985_OUT3_MIXER_CTRL, 3, 1, 0),
 #endif
 #ifdef LINEOUT_CONTROL
 	SOC_DAPM_SINGLE("Lineout PCM Switch", WM8985_POWER_MANAGEMENT_1, 6, 1, 0),
@@ -1179,9 +1181,9 @@ static int wm8985_remove(struct snd_soc_codec *codec)
 #ifdef FEATURE_NAVIGATION
 static int is_spk_on;
 static int is_aux_on = 1;
-#ifdef FEATURE_ON_DASH
 static int force_spk;
 
+#ifdef FEATURE_ON_DASH
 static ssize_t on_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
@@ -1326,7 +1328,6 @@ static size_t hp_vol_store(struct device *dev, struct device_attribute *attr,
 
 	err = kstrtoint(buf, 10, &val);
 	pr_debug("[%s] val : %d !!!\n", __func__, val);
-	printk("[%s] val : %d !!!\n", __func__, val);
 
 	if (err < 0) {
 		printk("[%s] kstrtoint err !!!\n", __func__);
@@ -1359,8 +1360,8 @@ static size_t hp_vol_store(struct device *dev, struct device_attribute *attr,
 			    val << WM8985_LOUT1VOL_SHIFT);
 
         snd_soc_update_bits(codecwrite, WM8985_ROUT1_HP_VOLUME_CTRL,
-			    WM8985_LOUT1VOL_MASK,
-			    val << WM8985_LOUT1VOL_SHIFT);
+			    WM8985_ROUT1VOL_MASK,
+			    val << WM8985_ROUT1VOL_SHIFT);
 #endif
 
 	return size;
@@ -1493,20 +1494,16 @@ static void wm8985_register_setting(struct snd_soc_codec *codec ) {
 	snd_soc_write(codec,WM8985_AUDIO_INTERFACE,0x012);//R4(0x4)
 	snd_soc_write(codec,WM8985_CLOCK_GEN_CONTROL,0x000);//R6(0x6)
 	snd_soc_write(codec,WM8985_ADDITIONAL_CONTROL,0X180);//R7(0x7)
-	snd_soc_write(codec,WM8985_DAC_CONTROL,0x048);//R10(0xA)
+	snd_soc_write(codec,WM8985_DAC_CONTROL,0x00C);//R10(0xA)
 	snd_soc_write(codec,WM8985_ADC_CONTROL,0x188);//R14(0x0E)
 
 	//VOL
-	snd_soc_write(codec,WM8985_LEFT_DAC_DIGITAL_VOL,0x1FD);//R11(0x0B)
-	snd_soc_write(codec,WM8985_RIGHT_DAC_DIGITAL_VOL,0x1FD);//R12(0x0C)
-	//snd_soc_write(codec,WM8985_LOUT1_HP_VOLUME_CTRL,0x134);//R52(0x34)
-	//snd_soc_write(codec,WM8985_ROUT1_HP_VOLUME_CTRL,0x134);//R53(0x35)
-	snd_soc_write(codec,WM8985_LOUT1_HP_VOLUME_CTRL,0x13F);//R52(0x34)
-	snd_soc_write(codec,WM8985_ROUT1_HP_VOLUME_CTRL,0x13F);//R53(0x35)
-	//snd_soc_write(codec,WM8985_LOUT2_SPK_VOLUME_CTRL,0x135);//R54(0x36)
-	//snd_soc_write(codec,WM8985_ROUT2_SPK_VOLUME_CTRL,0x135);//R55(0x37)
-	snd_soc_write(codec,WM8985_LOUT2_SPK_VOLUME_CTRL,0x13F);//R54(0x36)
-	snd_soc_write(codec,WM8985_ROUT2_SPK_VOLUME_CTRL,0x13F);//R55(0x37)
+	snd_soc_write(codec,WM8985_LEFT_DAC_DIGITAL_VOL,0x1F0);//R11(0x0B)
+	snd_soc_write(codec,WM8985_RIGHT_DAC_DIGITAL_VOL,0x1F0);//R12(0x0C)
+	snd_soc_write(codec,WM8985_LOUT1_HP_VOLUME_CTRL,0x13B);//R52(0x34)
+	snd_soc_write(codec,WM8985_ROUT1_HP_VOLUME_CTRL,0x13B);//R53(0x35)
+	snd_soc_write(codec,WM8985_LOUT2_SPK_VOLUME_CTRL,0x137);//R54(0x36)
+	snd_soc_write(codec,WM8985_ROUT2_SPK_VOLUME_CTRL,0x137);//R55(0x37)
 
 	snd_soc_write(codec,WM8985_LEFT_ADC_DIGITAL_VOL,0x1F5);//R15(0x0F)
 	snd_soc_write(codec,WM8985_RIGHT_ADC_DIGITAL_VOL,0x1F5);//R16(0x10)
@@ -1684,7 +1681,7 @@ static struct snd_soc_codec_driver soc_codec_dev_wm8985 = {
 	.reg_word_size = sizeof(u16),
 	.reg_cache_default = wm8985_reg_defs
 };
-#if 0
+
 #if defined(CONFIG_SPI_MASTER)
 static int __devinit wm8985_spi_probe(struct spi_device *spi)
 {
@@ -1721,7 +1718,6 @@ static struct spi_driver wm8985_spi_driver = {
 	.remove = __devexit_p(wm8985_spi_remove)
 };
 #endif
-#endif
 
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 static __devinit int wm8985_i2c_probe(struct i2c_client *i2c,
@@ -1751,7 +1747,162 @@ static __devexit int wm8985_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 
-//
+#ifdef CONFIG_SOUND_TUNE
+
+#define DEBUG_MSG	printk
+#define PRINT_MSG
+#define SND_TUNE_DEV_NAME "dixon_snd_tune"
+#define DIAG_MAX_BUF        128
+#define AUDIO_CODEC_REG_OFFSET  50
+
+static int wm8985_set_register(u32 reg, u32 val)
+{
+	u32 retval = 0;
+
+	if (!codecwrite)
+		return -1;
+
+	retval = snd_soc_write(codecwrite, reg, val);
+	DEBUG_MSG("[%s] reg : 0x%x, val : 0x%x, retval : 0x%x\n",__func__, reg, val, retval);
+	return retval;
+}
+
+static int wm8985_get_register(u32 reg)
+{
+	u32 retval = 0;
+
+	if (!codecwrite)
+		return -1;
+
+	retval = snd_soc_read(codecwrite, reg);
+	DEBUG_MSG("[%s] reg : 0x%x, retval : 0x%x\n", __func__,reg, retval);
+	return retval;
+}
+
+static int snd_tune_open(struct inode *inode, struct file *filp)
+{
+	DEBUG_MSG("[DIAG] %s()\n", __func__);
+	return 0;
+}
+
+
+static int snd_tune_release(struct inode *inode, struct file *filp)
+{
+	DEBUG_MSG("[DIAG] %s()\n", __func__);
+	return 0;
+}
+
+
+static ssize_t snd_tune_write(struct file *filp, const char *buff, size_t count, loff_t *offp)
+{
+	int ret = 0;
+	char tmp[DIAG_MAX_BUF];
+
+	DEBUG_MSG("[DIAG] %s(), buff : %s\n", __func__, buff);
+
+	if (count > 8192)
+		count = 8192;
+
+	memset(tmp, 0, sizeof(tmp));
+
+	if (copy_from_user(tmp, buff, count)) {
+		return -EFAULT;
+	}
+
+	if (strcmp(&tmp[0], "AUDIO_CODEC_PATH_OFF") == 0) {
+		PRINT_MSG("[SOUND] AUDIO_CODEC_PATH_OFF\n");
+	} else if (strcmp(&tmp[0], "AUDIO_CODEC_PATH_LEFT") == 0) {
+		PRINT_MSG("[SOUND] AUDIO_CODEC_PATH_LEFT\n");
+	} else if (strcmp(&tmp[0], "AUDIO_CODEC_PATH_RIGHT") == 0) {
+		PRINT_MSG("[SOUND] AUDIO_CODEC_PATH_RIGHT\n");
+	} else if (strcmp(&tmp[0], "AUDIO_CODEC_PATH_BOTH") == 0) {
+		PRINT_MSG("[SOUND] AUDIO_CODEC_PATH_BOTH\n");
+	} else if (strcmp(&tmp[0], "AUDIO_CODEC_WRITE_REG") == 0) {
+		u32 reg, val;
+		reg = tmp[AUDIO_CODEC_REG_OFFSET] | tmp[AUDIO_CODEC_REG_OFFSET+1]<<8;
+		val = tmp[AUDIO_CODEC_REG_OFFSET+2] | tmp[AUDIO_CODEC_REG_OFFSET+3]<<8;
+		//PRINT_MSG("[%s] @ reg  = %x, val = 0x%x, tmp[50]  = %x, tmp[51] = %x, tmp[52] = %x, tmp[53] = %x\n",__func__,reg,val,tmp[50],tmp[51],tmp[52],tmp[53]);
+		ret = wm8985_set_register(reg, val);
+		if (ret < 0) {
+			PRINT_MSG("[%s] wm8985_set_register Error!!\n",__func__);
+		}
+	} else {
+		PRINT_MSG("[DIAG] nothing command.!!!@\n");
+	}
+	//----------------------------------------------------------------- END --
+
+	return ret;
+}
+
+static ssize_t snd_tune_read(struct file *filp, char __user *buff, size_t count, loff_t *offp)
+{
+	int ret = 0;
+	char tmp[DIAG_MAX_BUF];
+	unsigned long check;
+	DEBUG_MSG("[DIAG] %s()\n", __func__);
+
+	if (count > 8192)
+		count = 8192;
+
+	// DIAG RESULT RETURN  ---------------------------------------------------
+	memset(tmp, 0, sizeof(tmp));
+
+	if (copy_from_user(tmp, buff, count)) {
+		PRINT_MSG("[%s] Error copy_from_user!\n",__func__);
+		return -EFAULT;
+	}
+
+	DEBUG_MSG("[DIAG] %s() tmp=%s, count=%d\n", __func__, tmp, count);
+	//----------------------------------------------------------------- END --
+
+	if (strcmp(&tmp[0], "AUDIO_CODEC_READ_REG") == 0) {
+		u32 reg, val;
+		reg = tmp[AUDIO_CODEC_REG_OFFSET] | tmp[AUDIO_CODEC_REG_OFFSET+1]<<8;
+		//PRINT_MSG("[%s]#1 reg  = %x, val = 0x%x, tmp[50]  = %x, tmp[51] = %x, tmp[52] = %x, tmp[53] = %x\n",__func__,reg,val,tmp[50],tmp[51],tmp[52],tmp[53]);
+		val = wm8985_get_register(reg);
+		if (val < 0){
+			//error
+			tmp[AUDIO_CODEC_REG_OFFSET+2] = 0xff; tmp[AUDIO_CODEC_REG_OFFSET+3] = 0xff;
+			PRINT_MSG("[%s] wm8985_get_register Error!!\n",__func__);
+			ret = -1;
+		} else {
+			tmp[AUDIO_CODEC_REG_OFFSET+2] = val & 0x00ff;
+			tmp[AUDIO_CODEC_REG_OFFSET+3] = (val & 0xff00)>>8;
+		}
+		//PRINT_MSG("[%s]#2 reg  = %x, val = 0x%x, tmp[50]  = %x, tmp[51] = %x, tmp[52] = %x, tmp[53] = %x\n",__func__,reg,val,tmp[50],tmp[51],tmp[52],tmp[53]);
+	} else {
+		PRINT_MSG("[%s] nothing command.\n",__func__);
+	}
+
+	check = copy_to_user(buff, tmp, count);
+	DEBUG_MSG("[%s] copy_to_user = %ld\n", __func__,check);
+
+	return ret;
+}
+
+static int snd_tune_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	DEBUG_MSG("[DIAG] %s() cmd=%d, arg=%ld", __func__, cmd, arg);
+	return 0;
+}
+
+struct file_operations snd_tune_fops = {
+	.owner    = THIS_MODULE,
+	.open     = snd_tune_open,
+	.release  = snd_tune_release,
+	.read     = snd_tune_read,
+	.write    = snd_tune_write,
+	.unlocked_ioctl    = snd_tune_ioctl,
+};
+
+static struct miscdevice snd_tune_dev = {
+	.minor    = MISC_DYNAMIC_MINOR,
+	.name     = SND_TUNE_DEV_NAME,
+	.fops     = &snd_tune_fops
+};
+
+#endif // CONFIG_SOUND_TUNE
+
 static const struct i2c_device_id wm8985_i2c_id[] = {
 	{ "wm8985", 1 },
 	{ }
@@ -1772,7 +1923,6 @@ static struct i2c_driver wm8985_i2c_driver = {
 static int __init wm8985_modinit(void)
 {
 	int ret = 0;
-
 
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret = i2c_add_driver(&wm8985_i2c_driver);
@@ -1802,13 +1952,13 @@ static int __init wm8985_modinit(void)
 	}
 #endif // CONFIG_SOUND_TUNE
 #endif
-//#if defined(CONFIG_SPI_MASTER)
-//	ret = spi_register_driver(&wm8985_spi_driver);
-//	if (ret != 0) {
-//		printk(KERN_ERR "Failed to register wm8985 SPI driver: %d\n",
-//		       ret);
-//
-//ndif
+#if defined(CONFIG_SPI_MASTER)
+	ret = spi_register_driver(&wm8985_spi_driver);
+	if (ret != 0) {
+		printk(KERN_ERR "Failed to register wm8985 SPI driver: %d\n",
+		       ret);
+	}
+#endif
 	return ret;
 }
 module_init(wm8985_modinit);
@@ -1825,9 +1975,9 @@ static void __exit wm8985_exit(void)
 	misc_deregister(&snd_tune_dev);
 #endif
 #endif
-//#if defined(CONFIG_SPI_MASTER)
-//	spi_unregister_driver(&wm8985_spi_driver);
-//#endif
+#if defined(CONFIG_SPI_MASTER)
+	spi_unregister_driver(&wm8985_spi_driver);
+#endif
 }
 module_exit(wm8985_exit);
 

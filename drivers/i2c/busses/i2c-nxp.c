@@ -38,7 +38,7 @@
 #include <mach/soc.h>
 
 /*
-#define pr_debug(msg...)
+#define pr_debug(msg...)   do{ printk("i2c-nxp:" msg); }while(0)
 */
 
 #define NOSTOP_GPIO 		(1)
@@ -623,8 +623,10 @@ static int	nxp_i2c_set_param(struct nxp_i2c_param *par, struct platform_device *
 	par->adapter.retries = plat->retry_cnt;
 	par->timeout = WAIT_ACK_TIME;
 	par->rate =	plat->rate ? plat->rate : I2C_CLOCK_RATE;
-	nxp_soc_gpio_set_io_func(par->hw.scl_io, 1);
-	nxp_soc_gpio_set_io_func(par->hw.sda_io, 1);
+	
+	//After power be supplied to tsc2007, change alt mode(i2c).
+	//nxp_soc_gpio_set_io_func(par->hw.scl_io, 1);
+	//nxp_soc_gpio_set_io_func(par->hw.sda_io, 1);
 
 	clk = clk_get(&pdev->dev, NULL);
 	if (IS_ERR(clk)) {

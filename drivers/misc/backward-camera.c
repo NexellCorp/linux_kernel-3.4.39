@@ -18,12 +18,15 @@
 #include <mach/nxp-backward-camera.h>
 
 #include <../drivers/gpu/ion/ion_priv.h>
+#include "tw_pglines.h"
+
+
 
 #ifndef MLC_LAYER_RGB_OVERLAY
 #define MLC_LAYER_RGB_OVERLAY 0
 #endif
 
-//#define __DEBUG__
+#define __DEBUG__
 
 #if defined( __DEBUG__ )
 #define debug_msg(args...) \
@@ -516,10 +519,101 @@ static void _mlc_rgb_overlay_set_param(int module, struct nxp_backward_camera_pl
 	NX_MLC_SetDirtyFlag(module, layer);
 }
 
+
+extern struct pgl_vertex pgls[];
+int pglines_onoff = 1;
+#define MAX_READ_CTR_TW_PGLINES  128
+
+static int __init pglines_config_setup(char *str)
+{
+  int i, ret, max_try;
+  char *token;
+
+  printk("+++++++++++++++++++++++++++++++++++=\n");
+
+  /* 
+   * e.g.) 
+   * parking.offset=1:729,404:733,404:427,732:445,732:867,404:871,404:1155,732:1173,732
+   */
+
+  pglines_onoff = str[0] == '1' ? 1 : 0;
+  str += 2;
+  
+  i = 0; max_try = 0;
+  while ((token = strsep(&str, ":")) != NULL) {
+    char *xy_pair;
+    char *str;
+    unsigned int xval, yval;
+
+    xy_pair = token;
+    printk("xy_pair : %s\n", xy_pair); 
+
+    if (xy_pair == NULL)
+      goto err;
+
+    str = strsep(&xy_pair, ",");
+
+    if (str == NULL)
+      goto err;
+
+    ret = kstrtoint(str, 10, &xval);
+    if (ret)
+      goto err;
+
+    if (xy_pair == NULL)
+      goto err;
+
+    ret = kstrtoint(xy_pair, 10, &yval);
+    if (ret)
+      goto err;
+
+     printk("x : %d\n", xval);
+     printk("y : %d\n", yval);
+
+    pgls[i].x = xval;
+    pgls[i].y = yval;
+
+    if (i <= 7)
+      i += 1;
+
+    if (max_try > MAX_READ_CTR_TW_PGLINES)
+      break;
+    
+    max_try += 1;
+  }
+
+  goto done;
+
+ err:
+  pglines_onoff = 1;
+  /* set default vertices */
+  for (i = 0; i < 8; i++) {
+    pgls[i].x = default_pglines[0].x;
+    pgls[i].y = default_pglines[0].y;
+  }
+
+ done:
+  return 1;
+}
+
+
+__setup("parking.offset=", pglines_config_setup);
+
+
+
 static void _mlc_rgb_overlay_draw(int module, struct nxp_backward_camera_platform_data *me, void *mem)
 {
-	if (me->draw_rgb_overlay)
-		me->draw_rgb_overlay(me, mem);
+
+    struct backward_camera_fb_info fb;
+
+    fb.width  = me->width;
+    fb.height = me->height;
+
+    fb.mem = (u32 *)mem;
+
+    draw_pglines(&fb);
+
+
 }
 
 static int _get_i2c_client(struct nxp_backward_camera_context *me)
@@ -711,6 +805,9 @@ static void _backgear_switch(int on)
 static void _decide(struct nxp_backward_camera_context *me)
 {
 	debug_msg("+++ %s +++\n", __func__);
+    printk("_decide !!!!!!!!!!!!!\n");
+
+
 
 	/*me->running = NX_MLC_GetLayerEnable(me->plat_data->mlc_module_num, 3); // video layer*/
 	me->running = _is_running(me);
@@ -849,7 +946,11 @@ static int _allocate_memory(struct nxp_backward_camera_context *me)
 		}
 		ion_buffer = me->dma_buf_rgb->priv;
 		me->plat_data->rgb_addr = ion_buffer->priv_phys;
-		me->virt_rgb = cma_get_virt(me->plat_data->rgb_addr, size, 1);
+		me->virt_rgb = cma_get_virt(me->plat_data->rgb_addr, size*4, 1);
+
+
+
+
 
 #if 1
 		debug_msg("%s: rgb 0x%x, virt %p\n",
@@ -952,7 +1053,7 @@ static ssize_t _stop_backward_camera(struct device *pdev,
 	struct nxp_backward_camera_context *me = &_context;
 	int module = me->plat_data->vip_module_num;
 
-	debug_msg("%s : module : %d\n", __func__, module);
+	//debug_msg("%s : module : %d\n", __func__, module);
 
 #if defined(CONFIG_ARCH_S5P6818)
 	if (module == 2) {
@@ -962,19 +1063,19 @@ static ssize_t _stop_backward_camera(struct device *pdev,
 #endif
 #if STOP_WAIT
 		while (is_backward_camera_on()) {
-			debug_msg("wait backward camera stopping...\n");
+//			debug_msg("wait backward camera stopping...\n");
 			schedule_timeout_interruptible(HZ/5);
 		}
 #endif
 		backward_camera_remove();
 		//register_backward_irq(); //register to sensor driver
-		debug_msg("end of backward_camera_remove()\n");
+//		debug_msg("end of backward_camera_remove()\n");
 	}
 
 	return n;
 }
 
-static struct device_attribute backward_camera_attr = __ATTR(stop, 0664, NULL, _stop_backward_camera);
+static struct device_attribute backward_camera_attr = __ATTR(stop, 0666, NULL, _stop_backward_camera);
 
 static struct attribute *attrs[] = {
 	&backward_camera_attr.attr,
@@ -1012,6 +1113,8 @@ static int nxp_backward_camera_probe(struct platform_device *pdev)
 	struct nxp_backward_camera_platform_data *pdata =
 				pdev->dev.platform_data;
 	struct nxp_backward_camera_context *me = &_context;
+
+    printk("nxp_backward_camera_probe\n");
 
 	debug_msg("+++ %s +++\n", __func__);
 
@@ -1135,6 +1238,8 @@ static int __init backward_camera_init(void)
 }
 
 subsys_initcall(backward_camera_init);
+//module_init(backward_camera_init);
+
 
 MODULE_AUTHOR("swpark <swpark@nexell.co.kr>");
 MODULE_DESCRIPTION("Backward Camera Driver for Nexell");

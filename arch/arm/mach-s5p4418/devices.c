@@ -1216,7 +1216,7 @@ static struct platform_device otg_plat_device = {
     .resource       = otg_resources,
 };
 
-//#define CFG_SWITCH_USB_5V_EN        (PAD_GPIO_D + 10)
+//#define CFG_SWITCH_USB_5V_EN        (PAD_GPIO_B + 18)
 //#define CFG_SWITCH_USB_HOST_DEVICE  (PAD_GPIO_D + 11)
 #define CFG_OTG_MODE_HOST           1
 #define CFG_OTG_MODE_DEVICE         0
@@ -1251,7 +1251,7 @@ EXPORT_SYMBOL(set_otg_mode);
 void otg_power_en(int enable)
 {
 	pr_debug("%s %d\n", __func__, enable);
-
+    printk("otg_power_en %d\n", enable);
 	nxp_soc_gpio_set_out_value(CFG_SWITCH_USB_5V_EN, enable);
 }
 EXPORT_SYMBOL(otg_power_en);

@@ -46,7 +46,7 @@
 static ssize_t set_mlc_gamma(int module, int gamma);
 
 struct NX_MLC_GammaTable_Parameter   nx_mlc_gammatable;
-static int g_gamma_val[2]={10,10}; //0: module 0, 1: module 1
+static int g_gamma_val[2]={13,13}; //0: module 0, 1: module 1
 
 
 
@@ -410,7 +410,7 @@ static int disp_multily_enable(struct disp_control_info *info, int enable)
 #if 1	//Gamma table
 		/* set gamma */
 	    if(module == 0) //set primary disp gamma
-			set_mlc_gamma(module, 10);
+			set_mlc_gamma(module, 13);
 #endif
 
 		NX_MLC_SetMLCEnable(module, CTRUE);

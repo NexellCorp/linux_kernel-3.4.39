@@ -38,10 +38,10 @@
 
 #include "nxp-i2s.h"
 
-/*
+
 #define pr_debug				printk
-*/
-#define	DEF_SAMPLE_RATE			48000
+
+#define	DEF_SAMPLE_RATE			44100
 #define	DEF_FRAME_BIT			32	// 32, 48 	 (BFS)
 
 #define	I2S_BASEADDR			PHY_BASEADDR_I2S0

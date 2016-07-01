@@ -45,12 +45,12 @@
 #include <mach/s5p4418_bus.h>
 
 const u8 g_DrexBRB_RD[2] = {
-	0x1,            // Port0
+	0x4,            // Port0
 	0xF             // Port1
 };
 
 const u8 g_DrexBRB_WR[2] = {
-	0x1,            // Port0
+	0x4,            // Port0
 	0xF             // Port1
 };
 
@@ -101,13 +101,13 @@ const u8 g_BottomBusSI[8] = {
 
 #if (CFG_BUS_RECONFIG_BOTTOMBUSQOS == 1)
 const u8 g_BottomQoSSI[2] = {
-	1,      // Tidemark
+	4,      // Tidemark
 	(1<<BOTBUS_SI_SLOT_1ST_ARM) |   // Control
 		(1<<BOTBUS_SI_SLOT_2ND_ARM) |
-		(1<<BOTBUS_SI_SLOT_MALI) |
+		(0<<BOTBUS_SI_SLOT_MALI) |
 		(1<<BOTBUS_SI_SLOT_TOP) |
-		(1<<BOTBUS_SI_SLOT_DEINTERLACE) |
-		(1<<BOTBUS_SI_SLOT_1ST_CODA)
+		(0<<BOTBUS_SI_SLOT_DEINTERLACE) |
+		(0<<BOTBUS_SI_SLOT_1ST_CODA)
 };
 #endif
 
@@ -128,10 +128,10 @@ const u8 g_DispBusSI[3] = {
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
 	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
-	.max_cpufreq	= 1400*1000,
-	.max_retention  =   20*1000,
-	.rest_cpufreq   =  800*1000,
-	.rest_retention =    1*1000,
+	//.max_cpufreq	= 1400*1000,
+	//.max_retention  =   20*1000,
+	//.rest_cpufreq   =  800*1000,
+	//.rest_retention =    1*1000,
 };
 
 static struct platform_device dfs_plat_device = {
@@ -162,7 +162,7 @@ struct nxp_adc_tmp_trigger adc_tmp_event[] = {
 	} ,
 #endif
 	{
-		.temp  = 56,  		/* thermal camera: 85 */
+		.temp  = 101,  		/* thermal camera: 85 */
 		.freq  = 800000,    /* freq = 0 :Set critical temp. Power off! */
 		.period = 1000, 	/* Ms */
 	}
@@ -172,7 +172,7 @@ struct nxp_adc_tmp_platdata adc_tmp_plat_data ={
     .channel    = 2,                                                            
     .tmp_offset = 0,                                                            
     .duration   = 1000,                                                         
-    .step_up    = 1,                                                            
+    .step_up    = 0,                                                            
     .event      = adc_tmp_event,                                                
     .eventsize = ARRAY_SIZE( adc_tmp_event),                                    
 };                                                                              
@@ -419,7 +419,6 @@ struct tsc2007_platform_data tsc2007_plat_data = {
         .fuzzx = 0,
         .fuzzy = 0,
         .fuzzz = 0,
-		.invert_y = true,
         .get_pendown_state = &tsc2007_get_pendown_state,
         #else
         .x_plate_ohms   = 10,
@@ -461,6 +460,53 @@ static struct platform_device key_plat_device = {
     },
 };
 #endif  /* CONFIG_KEYBOARD_NXP_KEY || CONFIG_KEYBOARD_NXP_KEY_MODULE */
+
+#if defined(CONFIG_KEYBOARD_GPIO_POLLED)
+#include <linux/gpio_keys.h>
+#include <linux/input.h>
+
+//static unsigned int  button_gpio[] = CFG_KEYPAD_KEY_BUTTON;
+
+static struct gpio_keys_button keys_polled_table[] = {
+    {
+        .code = KEY_BATTERY,
+        .gpio = PAD_GPIO_D + 25,
+        .active_low = 0,
+        .desc = "gpio-keys-polled: PWR_DET",
+        .type = EV_KEY,
+        .debounce_interval = 30,
+    },
+    {
+        .code = KEY_POWER,
+        .gpio = PAD_GPIO_ALV + 0,
+        .active_low = 0,
+        .desc = "gpio-keys-polled: PWR_KEY",
+        .type = EV_KEY,
+        .debounce_interval = 30,
+    },
+    {
+        .code = KEY_CONTROL_BOX,
+        .gpio = PAD_GPIO_E + 30,
+        .active_low = 0,
+        .desc = "gpio-keys-polled: CB_BOX_KEY",
+        .type = EV_KEY,
+        .debounce_interval = 30,
+    },
+};
+
+static struct gpio_keys_platform_data keys_polled_data = {
+    .buttons = keys_polled_table,
+    .nbuttons = ARRAY_SIZE(keys_polled_table),
+    .poll_interval = 25,
+};
+
+static struct platform_device keys_polled = {
+    .name = "gpio-keys-polled",
+    .dev = {
+        .platform_data = &keys_polled_data,
+    },
+};
+#endif
 
 #if defined(CONFIG_KEYBOARD_GPIO)
 #include <linux/gpio_keys.h>
@@ -1253,6 +1299,25 @@ static struct dw_mci_board _dwmci2_data = {
 #else
     .mode       	= PIO_MODE,
 #endif
+};
+
+static struct dw_mci_board _dwmci2_ext_cb_data = {
+	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
+	.bus_hz			= 100 * 1000 * 1000,
+	.caps			= MMC_CAP_CMD23,
+	.detect_delay_ms= 200,
+	.cd_type		= DW_MCI_CD_EXTERNAL,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(3) | DW_MMC_SAMPLE_PHASE(2),
+	.init			= _dwmci2_init,
+	.get_ro         = _dwmci_get_ro,
+	.get_cd			= _dwmci2_get_cd,
+	.ext_cd_init	= _dwmci_ext_cd_init,
+	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
+    .mode       	= DMA_MODE,
+#else
+    .mode       	= PIO_MODE,
+#endif
 
 };
 #endif
@@ -1475,7 +1540,7 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
 	.width              = 800,
 	.height             = 480,
 	.rgb_addr           = 0,
-	.draw_rgb_overlay   = _draw_rgb_overlay,
+//	.draw_rgb_overlay   = _draw_rgb_overlay,
 };
 
 //static struct platform_device backward_camera_device = {
@@ -1515,7 +1580,30 @@ void __init nxp_board_devices_register(void)
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
     #ifdef CONFIG_MMC_NXP_CH2
-	nxp_mmc_add_device(2, &_dwmci2_data);
+    printk("nxp_mmc_add_device\n");
+
+
+
+
+    if(0 != nxp_soc_gpio_get_in_value(CFG_SDMMC2_DETECT_CONTROL_BOX)){
+
+        printk("Don't detect Control Box\n");
+        nxp_mmc_add_device(2, &_dwmci2_data);
+
+    }else {
+
+        printk("Detect control Box\n");
+        //change drive's streng value: 1
+        nxp_soc_gpio_set_io_drv( (PAD_GPIO_C + 17), 2 );     // PAD_GPIOC17    SD_WP 
+        nxp_soc_gpio_set_io_drv( (PAD_GPIO_C + 18), 2 );     // PAD_GPIOC18    SD_CLK
+        nxp_soc_gpio_set_io_drv( (PAD_GPIO_C + 19), 2 );     // PAD_GPIOC19    SD_CMD
+        nxp_soc_gpio_set_io_drv( (PAD_GPIO_C + 20), 2 );     // PAD_GPIOC20    SD_DATA0
+        nxp_soc_gpio_set_io_drv( (PAD_GPIO_C + 21), 2 );     // PAD_GPIOC21    SD_DAT1
+        nxp_soc_gpio_set_io_drv( (PAD_GPIO_C + 22), 2 );     // PAD_GPIOC22    SD_DAT2
+        nxp_soc_gpio_set_io_drv( (PAD_GPIO_C + 23), 2 );     // PAD_GPIOC23    SD_DAT3
+
+        nxp_mmc_add_device(2, &_dwmci2_ext_cb_data);
+    }
 	#endif
     #ifdef CONFIG_MMC_NXP_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);
@@ -1535,6 +1623,12 @@ void __init nxp_board_devices_register(void)
     printk("plat: add device keypad\n");
     platform_device_register(&key_plat_device);
 #endif
+
+#if defined(CONFIG_KEYBOARD_GPIO_POLLED)
+    printk("plat: add device keys_polled\n");
+    platform_device_register(&keys_polled);
+#endif    
+
 #if defined(CONFIG_REGULATOR_NXE2000)
 	printk("plat: add device nxe2000 pmic\n");
 	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_i2c_boardinfo, ARRAY_SIZE(nxe2000_i2c_boardinfo));

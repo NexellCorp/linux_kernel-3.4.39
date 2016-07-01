@@ -589,8 +589,8 @@ NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
 NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V SYS */
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3000000, 1,  0);	/* 3.0V GPS */
-//NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 1,  0);	/* 1.8V AR */
-NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V AR */
+NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 1,  0);	/* 1.8V AR */
+//NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V AR */
 NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS1 */
 NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS */
 NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V LCD */
@@ -1254,18 +1254,20 @@ struct pl022_config_chip spi0_info = {
     .cs_control = spi0_cs,
 #endif
 	.clkdelay = SSP_FEEDBACK_CLK_DELAY_1T,
+	//.clkdelay = SSP_FEEDBACK_CLK_DELAY_NONE,
 
 };
 
 static struct spi_board_info spi_plat_board[] __initdata = {
     [0] = {
-        .modalias        = "spidev",    /* fixup */
+        .modalias        = "fc8080_spi",    /* fixup */
         //.max_speed_hz    = 3125000,     /* max spi clock (SCK) speed in HZ */
-        .max_speed_hz    = 8 * 1000 * 1000,     /* max spi clock (SCK) speed in HZ */
+        .platform_data   = NULL,
+        .max_speed_hz    = 15 * 1000 * 1000,     /* max spi clock (SCK) speed in HZ */
         .bus_num         = 0,           /* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
         .chip_select     = 0,           /* Note> set chip select num, must be smaller than spi cs_num */
         .controller_data = &spi0_info,
-        .mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
+        .mode            = SPI_MODE_0, //SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
     },
 };
 
@@ -1364,6 +1366,25 @@ static struct dw_mci_board _dwmci2_data = {
 	.detect_delay_ms= 200,
 	.cd_type		= DW_MCI_CD_EXTERNAL,
 	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.init			= _dwmci2_init,
+	.get_ro         = _dwmci_get_ro,
+	.get_cd			= _dwmci2_get_cd,
+	.ext_cd_init	= _dwmci_ext_cd_init,
+	.ext_cd_cleanup	= _dwmci_ext_cd_cleanup,
+#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
+    .mode       	= DMA_MODE,
+#else
+    .mode       	= PIO_MODE,
+#endif
+};
+
+static struct dw_mci_board _dwmci2_ext_cb_data = {
+	.quirks			= DW_MCI_QUIRK_HIGHSPEED,
+	.bus_hz			= 100 * 1000 * 1000,
+	.caps			= MMC_CAP_CMD23,
+	.detect_delay_ms= 200,
+	.cd_type		= DW_MCI_CD_EXTERNAL,
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(3) | DW_MMC_SAMPLE_PHASE(2),
 	.init			= _dwmci2_init,
 	.get_ro         = _dwmci_get_ro,
 	.get_cd			= _dwmci2_get_cd,
@@ -1712,7 +1733,30 @@ void __init nxp_board_devices_register(void)
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
     #ifdef CONFIG_MMC_NXP_CH2
-	nxp_mmc_add_device(2, &_dwmci2_data);
+    printk("nxp_mmc_add_device\n");
+
+
+
+
+    if(0 != nxp_soc_gpio_get_in_value(CFG_SDMMC2_DETECT_CONTROL_BOX)){
+
+        printk("Don't detect Control Box\n");
+        nxp_mmc_add_device(2, &_dwmci2_data);
+
+    }else {
+
+        printk("Detect control Box\n");
+        //change drive's streng value: 1
+        nxp_soc_gpio_set_io_drv( (PAD_GPIO_C + 17), 2 );     // PAD_GPIOC17    SD_WP 
+        nxp_soc_gpio_set_io_drv( (PAD_GPIO_C + 18), 2 );     // PAD_GPIOC18    SD_CLK
+        nxp_soc_gpio_set_io_drv( (PAD_GPIO_C + 19), 2 );     // PAD_GPIOC19    SD_CMD
+        nxp_soc_gpio_set_io_drv( (PAD_GPIO_C + 20), 2 );     // PAD_GPIOC20    SD_DATA0
+        nxp_soc_gpio_set_io_drv( (PAD_GPIO_C + 21), 2 );     // PAD_GPIOC21    SD_DAT1
+        nxp_soc_gpio_set_io_drv( (PAD_GPIO_C + 22), 2 );     // PAD_GPIOC22    SD_DAT2
+        nxp_soc_gpio_set_io_drv( (PAD_GPIO_C + 23), 2 );     // PAD_GPIOC23    SD_DAT3
+
+        nxp_mmc_add_device(2, &_dwmci2_ext_cb_data);
+    }
 	#endif
     #ifdef CONFIG_MMC_NXP_CH1
 	nxp_mmc_add_device(1, &_dwmci1_data);

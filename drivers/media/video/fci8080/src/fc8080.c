@@ -123,10 +123,10 @@ int fic_fci_callback(u32 hDevice, u8 *data, int len)
 				wake_up_interruptible(&(hOpen->RingBuffer.queue));				
 				return 0;		
 
-            }else{
-                print_log(hInit, "n_f\n");
-
             }
+			//else{
+            //    print_log(hInit, "n_f\n");
+            //}
 
 	//	print_log(0, "FIC 0x%x, 0x%x, 0x%x, 0x%x\n", data[0], data[1], data[2], data[3]);
 			FCI_RINGBUFFER_WRITE_BYTE(&hOpen->RingBuffer, len >> 8);
@@ -564,14 +564,16 @@ static long dmb_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		res = BBM_OK;
 		break;
 	case IOCTL_DMB_GET_BER:
+            //print_log(hInit,"IOCTL_DMB_GET_BER Enter\n");
           if (dmb_isr_sig == 1) {
-            /* print_log(hInit,"IOCTL_DMB_GET_BER conflict\n"); */
+            //print_log(hInit,"IOCTL_DMB_GET_BER conflict\n");
             res = BBM_NOK;			
           } else {		
             res = bbm_com_ber_overrun_read((HANDLE)hInit, (u32 *)(&info.buff[0]));
             if (info.buff[1] & 0x1)
               print_log(hInit,"IOCTL_DMB_GET_BER(%d), OVERRUN(%d)\n", info.buff[0], info.buff[1]);
-
+			
+            //print_log(hInit,"IOCTL_DMB_GET_BER results send\n");
             err |= copy_to_user((void *)arg, (void *)&info, size);
           }
           break;

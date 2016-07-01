@@ -42,6 +42,9 @@
 #define DBGOUT(msg...)		do {} while (0)
 #endif
 
+extern bool power_off_is_key;
+extern bool power_off_is_dc;
+
 #if (CFG_BUS_RECONFIG_ENB == 1)
 void nxp_set_bus_config(void)
 {
@@ -445,7 +448,7 @@ void nxp_cpu_shutdown(void)
 		nxp_cpu_core_shutdown(cpu);
 	}
 
-	printk(KERN_INFO "cpu.%d shutdown ...\n", cur);
+	printk("cpu.%d shutdown ...\n", cur);
 	NX_ALIVE_SetWriteEnable(CTRUE);			/* close alive gate */
 	NX_ALIVE_SetVDDPWRON(CFALSE, CFALSE);	/* Core power down */
 	NX_ALIVE_SetWriteEnable(CFALSE);			/* close alive gate */
@@ -455,7 +458,7 @@ void nxp_cpu_shutdown(void)
 
 void nxp_cpu_reset(char str, const char *cmd)
 {
-	printk(KERN_INFO "system reset: %s ...\n", cmd);
+	printk("system reset: %s ...\n", cmd);
 
 	if (nxp_board_reset)
 		nxp_board_reset(str, cmd);
@@ -469,9 +472,18 @@ void nxp_cpu_reset(char str, const char *cmd)
 	}
 	
 	if (cmd && !strcmp(cmd, "poweroff")) {
-		__raw_writel(POWEROFF_SIGNATURE, SCR_RESET_SIG_SET);
+		if(power_off_is_dc)
+        {
+        __raw_writel(POWEROFF_DC_SIGNATURE, SCR_RESET_SIG_SET);
 		__raw_readl (SCR_RESET_SIG_READ);	/* verify */
 		printk("reboot sign [0x%x:0x%x] \n", SCR_RESET_SIG_READ, readl(SCR_RESET_SIG_READ));
+        }
+        if(power_off_is_key)
+        {
+		__raw_writel(POWEROFF_KEY_SIGNATURE, SCR_RESET_SIG_SET);
+		__raw_readl (SCR_RESET_SIG_READ);	/* verify */
+		printk("reboot sign [0x%x:0x%x] \n", SCR_RESET_SIG_READ, readl(SCR_RESET_SIG_READ));
+        }
 	}
 
 	NX_ALIVE_SetWriteEnable(CFALSE);	/* close alive gate */

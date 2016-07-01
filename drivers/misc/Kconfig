@@ -581,6 +581,10 @@ config SLSIAP_NXPBOOT
     help
       If you say yes here, you can view boot logo
 
+config GPS_G6010
+    bool "G6010 GPS"
+    help
+    g6010 gps driver
 
 config FCI_FC8300
     bool "Support FCI FC8300 ISDBT MOUDULE"

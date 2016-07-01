@@ -26,34 +26,34 @@
  *	| PAD_MODE_XXX  | PAD_FUNC_ALT(0,1,2,3) | PAD_LEVEL_XXX | PAD_PULL_UP,OFF | PAD_STRENGTH_0,1,2,3
  *
  -----------------------------------------------------------------------------*/
-#define PAD_GPIOA0      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PVCLK               ,2:_                    ,3: TESTMODE[4]         =LCD_PCLK
-#define PAD_GPIOA1      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[0]          ,2:_                    ,3:_                    =LCD_XD_B0
-#define PAD_GPIOA2      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[1]          ,2:_                    ,3: TESTMODE[0]         =LCD_XD_B1
-#define PAD_GPIOA3      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[2]          ,2:_                    ,3: TESTMODE[1]         =LCD_XD_B2
-#define PAD_GPIOA4      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[3]          ,2:_                    ,3: TESTMODE[2]         =LCD_XD_B3
-#define PAD_GPIOA5      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[4]          ,2:_                    ,3: TESTMODE[3]         =LCD_XD_B4
-#define PAD_GPIOA6      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[5]          ,2:_                    ,3:_                    =LCD_XD_B5
-#define PAD_GPIOA7      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[6]          ,2:_                    ,3:_                    =LCD_XD_B6
-#define PAD_GPIOA8      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[7]          ,2:_                    ,3:_                    =LCD_XD_B7
-#define PAD_GPIOA9      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[8]          ,2:_                    ,3:_                    =LCD_XD_G0
-#define PAD_GPIOA10     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[9]          ,2:_                    ,3:_                    =LCD_XD_G1
-#define PAD_GPIOA11     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[10]         ,2:_                    ,3:_                    =LCD_XD_G2
-#define PAD_GPIOA12     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[11]         ,2:_                    ,3:_                    =LCD_XD_G3
-#define PAD_GPIOA13     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[12]         ,2:_                    ,3:_                    =LCD_XD_G4
-#define PAD_GPIOA14     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[13]         ,2:_                    ,3:_                    =LCD_XD_G5
-#define PAD_GPIOA15     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[14]         ,2:_                    ,3:_                    =LCD_XD_G6
-#define PAD_GPIOA16     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[15]         ,2:_                    ,3:-                    =LCD_XD_G7
-#define PAD_GPIOA17     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[16]         ,2:_                    ,3:_                    =LCD_XD_B0
-#define PAD_GPIOA18     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[17]         ,2:_                    ,3:_                    =LCD_XD_B1
-#define PAD_GPIOA19     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[18]         ,2:_                    ,3:_                    =LCD_XD_B2
-#define PAD_GPIOA20     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[19]         ,2:_                    ,3:_                    =LCD_XD_B3
-#define PAD_GPIOA21     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[20]         ,2:_                    ,3:_                    =LCD_XD_B4
-#define PAD_GPIOA22     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[21]         ,2:_                    ,3:_                    =LCD_XD_B5
-#define PAD_GPIOA23     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[22]         ,2:_                    ,3:_                    =LCD_XD_B6
-#define PAD_GPIOA24     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[23]         ,2:_                    ,3:_                    =LCD_XD_B7
-#define PAD_GPIOA25     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDVSYNC             ,2:_                    ,3:_                    =LCD_VSYNC
-#define PAD_GPIOA26     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDHSYNC             ,2:_                    ,3:_                    =LCD_HSYNC
-#define PAD_GPIOA27     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDDE                ,2:_                    ,3:_                    =LCD_DE
+#define PAD_GPIOA0      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PVCLK               ,2:_                    ,3: TESTMODE[4]         =LCD_PCLK
+#define PAD_GPIOA1      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[0]          ,2:_                    ,3:_                    =LCD_XD_B0
+#define PAD_GPIOA2      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[1]          ,2:_                    ,3: TESTMODE[0]         =LCD_XD_B1
+#define PAD_GPIOA3      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[2]          ,2:_                    ,3: TESTMODE[1]         =LCD_XD_B2
+#define PAD_GPIOA4      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[3]          ,2:_                    ,3: TESTMODE[2]         =LCD_XD_B3
+#define PAD_GPIOA5      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[4]          ,2:_                    ,3: TESTMODE[3]         =LCD_XD_B4
+#define PAD_GPIOA6      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[5]          ,2:_                    ,3:_                    =LCD_XD_B5
+#define PAD_GPIOA7      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[6]          ,2:_                    ,3:_                    =LCD_XD_B6
+#define PAD_GPIOA8      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[7]          ,2:_                    ,3:_                    =LCD_XD_B7
+#define PAD_GPIOA9      (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[8]          ,2:_                    ,3:_                    =LCD_XD_G0
+#define PAD_GPIOA10     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[9]          ,2:_                    ,3:_                    =LCD_XD_G1
+#define PAD_GPIOA11     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[10]         ,2:_                    ,3:_                    =LCD_XD_G2
+#define PAD_GPIOA12     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[11]         ,2:_                    ,3:_                    =LCD_XD_G3
+#define PAD_GPIOA13     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[12]         ,2:_                    ,3:_                    =LCD_XD_G4
+#define PAD_GPIOA14     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[13]         ,2:_                    ,3:_                    =LCD_XD_G5
+#define PAD_GPIOA15     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[14]         ,2:_                    ,3:_                    =LCD_XD_G6
+#define PAD_GPIOA16     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[15]         ,2:_                    ,3:-                    =LCD_XD_G7
+#define PAD_GPIOA17     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[16]         ,2:_                    ,3:_                    =LCD_XD_B0
+#define PAD_GPIOA18     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[17]         ,2:_                    ,3:_                    =LCD_XD_B1
+#define PAD_GPIOA19     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[18]         ,2:_                    ,3:_                    =LCD_XD_B2
+#define PAD_GPIOA20     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[19]         ,2:_                    ,3:_                    =LCD_XD_B3
+#define PAD_GPIOA21     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[20]         ,2:_                    ,3:_                    =LCD_XD_B4
+#define PAD_GPIOA22     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[21]         ,2:_                    ,3:_                    =LCD_XD_B5
+#define PAD_GPIOA23     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[22]         ,2:_                    ,3:_                    =LCD_XD_B6
+#define PAD_GPIOA24     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDRGB24[23]         ,2:_                    ,3:_                    =LCD_XD_B7
+#define PAD_GPIOA25     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDVSYNC             ,2:_                    ,3:_                    =LCD_VSYNC
+#define PAD_GPIOA26     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDHSYNC             ,2:_                    ,3:_                    =LCD_HSYNC
+#define PAD_GPIOA27     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_1)     // 0: GPIO          ,1: PDDE                ,2:_                    ,3:_                    =LCD_DE
 #define PAD_GPIOA28     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: VP0_EXTCLK          ,2: I2S2_CLK            ,3: I2S1_CLK            =AR_CAM_CLK
 #define PAD_GPIOA29     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC0_CCLK         ,2:_                    ,3:_                    =EMMC_CLK
 #define PAD_GPIOA30     (PAD_MODE_ALT  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: VIP0_VD[0]          ,2: SDEX[0]             ,3: I2S1_BCLK           =AR_CAM_D0
@@ -84,7 +84,7 @@
 #define PAD_GPIOB15     (PAD_MODE_ALT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_SD[1]    ,1: GPIO                ,2:_                    ,3:_                    =SD1
 #define PAD_GPIOB16     (PAD_MODE_IN  | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_nNOFE    ,1: MCUS_nNOFE1         ,2: GPIO                ,3:_                    =USB20H2_FLT
 #define PAD_GPIOB17     (PAD_MODE_ALT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_SD[2]    ,1: GPIO                ,2:_                    ,3:_                    =SD2
-#define PAD_GPIOB18     (PAD_MODE_OUT | PAD_FUNC_ALT2 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_nNFWE    ,1: MCUS_nNFWE1         ,2: GPIO                ,3:_                    =USBH1_PWR_EN
+#define PAD_GPIOB18     (PAD_MODE_OUT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_nNFWE    ,1: MCUS_nNFWE1         ,2: GPIO                ,3:_                    =USBH1_PWR_EN
 #define PAD_GPIOB19     (PAD_MODE_ALT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_SD[3]    ,1: GPIO                ,2:_                    ,3:_                    =SD3
 #define PAD_GPIOB20     (PAD_MODE_ALT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_SD[4]    ,1: GPIO                ,2:_                    ,3:_                    =SD4
 #define PAD_GPIOB21     (PAD_MODE_ALT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_SD[5]    ,1: GPIO                ,2:_                    ,3:_                    =SD5
@@ -168,9 +168,9 @@
 #define PAD_GPIOD19     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: UART1TXD            ,2:_                    ,3:_                    =GPS_TXD
 #define PAD_GPIOD20     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: UART2TXD            ,2:_                    ,3:_                    =Reserved
 #define PAD_GPIOD21     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: UART3TXD            ,2:_                    ,3:_                    =Reserved
-#define PAD_GPIOD22     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CCLK         ,2:_                    ,3:_                    =Reserved
-#define PAD_GPIOD23     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CMD          ,2:_                    ,3:_                    =DMB_INT
-#define PAD_GPIOD24     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CDATA[0]     ,2:_                    ,3:_                    =DMB_PWR_EN
+#define PAD_GPIOD22     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CCLK         ,2:_                    ,3:_                    =DMB_PWR_EN_1.8V
+#define PAD_GPIOD23     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_UP | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CMD          ,2:_                    ,3:_                    =DMB_INT
+#define PAD_GPIOD24     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CDATA[0]     ,2:_                    ,3:_                    =DMB_PWR_EN_3.3V
 #define PAD_GPIOD25     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CDATA[1]     ,2:_                    ,3:_                    =PWR_DET
 #define PAD_GPIOD26     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CDATA[3]     ,2:_                    ,3:_                    =HUB_RESET
 #define PAD_GPIOD27     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: SDMMC1_CDATA[3]     ,2:_                    ,3:_                    =SD_PWR_EN
@@ -198,7 +198,7 @@
 #define PAD_GPIOE9      (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXD[2]     ,2:_                    ,3:_                    =TW9912_RSTN
 #define PAD_GPIOE10     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXD[3]     ,2:_                    ,3:_                    =TW9912_PDN
 #define PAD_GPIOE11     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXEN       ,2:_                    ,3:_                    =AR_CAM_LOOK
-#define PAD_GPIOE12     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXER       ,2:_                    ,3:_                    =AR_ID_CHECK
+#define PAD_GPIOE12     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_TXER       ,2:_                    ,3:_                    =GPS EXT PWR_EN //AR_ID_CHECK
 #define PAD_GPIOE13     (PAD_MODE_ALT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_COL        ,2: VIP0_Ext_HSYNC      ,3:_                    =AR_CAM_HS
 #define PAD_GPIOE14     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_RXD[0]     ,2: SSP1_CLKIO          ,3:_                    =PMIC_SCL
 #define PAD_GPIOE15     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_RXD[1]     ,2: SSP1_FSS            ,3:_                    =PMIC_SDA
@@ -217,7 +217,7 @@
 #define PAD_GPIOE28     (PAD_MODE_ALT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: TCLK          1: GPIO                 ,2:_                    ,3:_                    =JTAG_TCLK
 #define PAD_GPIOE29     (PAD_MODE_ALT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: TDO           1: GPIO                 ,2:_                    ,3:_                    =JTAG_TDO
 #define PAD_GPIOE30     (PAD_MODE_OUT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_nSOE     1: GPIO                 ,2:_                    ,3:_                    =Reserved
-#define PAD_GPIOE31     (PAD_MODE_OUT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_nSWE     1: GPIO                 ,2:_                    ,3:_                    =Reserved
+#define PAD_GPIOE31     (PAD_MODE_IN  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_nSWE     1: GPIO                 ,2:_                    ,3:_                    =CB_DET
 
 /*------------------------------------------------------------------------------
  *	(GROUPALV)

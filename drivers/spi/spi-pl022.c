@@ -835,7 +835,7 @@ static void dma_callback(void *data)
 static void setup_dma_scatter(struct pl022 *pl022,
 			      void *buffer,
 			      unsigned int length,
-			      struct sg_table *sgtab)
+			      struct sg_table *sgtab, bool tx)
 {
 	struct scatterlist *sg;
 	int bytesleft = length;
@@ -851,17 +851,20 @@ static void setup_dma_scatter(struct pl022 *pl022,
 			 * we just feed in this, else we stuff in as much
 			 * as we can.
 			 */
-			if (bytesleft < (PAGE_SIZE - offset_in_page(bufp)))
+			//if (length == 2260)
+			//	printk("offset_page %x \n", offset_in_page(bufp));
+			//if (bytesleft < (PAGE_SIZE - offset_in_page(bufp)))
 				mapbytes = bytesleft;
-			else
-				mapbytes = PAGE_SIZE - offset_in_page(bufp);
+			//else
+			//	mapbytes = PAGE_SIZE - offset_in_page(bufp);
 			sg_set_page(sg, virt_to_page(bufp),
 				    mapbytes, offset_in_page(bufp));
 			bufp += mapbytes;
 			bytesleft -= mapbytes;
-			dev_dbg(&pl022->adev->dev,
-				"set RX/TX target page @ %p, %d bytes, %d left\n",
-				bufp, mapbytes, bytesleft);
+			//if (length == 2260)
+			//printk(
+			//	"[%d:%d] set %s target page @ %p, %d bytes, %d left (%p)\n",
+			//	sgtab->nents, i, tx ? "tx" : "rx", bufp, mapbytes, bytesleft, buffer);
 		}
 	} else {
 		/* Map the dummy buffer on every page */
@@ -879,7 +882,12 @@ static void setup_dma_scatter(struct pl022 *pl022,
 
 		}
 	}
+#if 0
+	if (length == 2260) {
+		printk("[%d:%s]\n", current->pid, current->comm);
+	}
 	BUG_ON(bytesleft);
+#endif
 }
 
 /**
@@ -1014,10 +1022,10 @@ static int configure_dma(struct pl022 *pl022)
 
 	/* Fill in the scatterlists for the RX+TX buffers */
 	setup_dma_scatter(pl022, pl022->rx,
-		  pl022->cur_transfer->len, &pl022->sgt_rx);
+		  pl022->cur_transfer->len, &pl022->sgt_rx, false);
 
 	setup_dma_scatter(pl022, pl022->tx,
-		  pl022->cur_transfer->len, &pl022->sgt_tx);
+		  pl022->cur_transfer->len, &pl022->sgt_tx, true);
 
 	/* Map DMA buffers */
 
@@ -1683,6 +1691,11 @@ static int calculate_effective_freq(struct pl022 *pl022, int freq, struct
 	/* cpsdvsr = 254 & scr = 255 */
 	min_tclk = spi_rate(rate, CPSDVR_MAX, SCR_MAX);
 
+    dev_info(&pl022->adev->dev,
+		"SSP Target Max: %d, Min Frequency is %d\n",
+		max_tclk, min_tclk);
+
+
 	if (freq > max_tclk)
 		dev_warn(&pl022->adev->dev,
 			"Max speed that can be programmed is %d Hz, you requested %d\n",
@@ -1702,6 +1715,9 @@ static int calculate_effective_freq(struct pl022 *pl022, int freq, struct
 	while ((cpsdvsr <= CPSDVR_MAX) && !found) {
 		while (scr <= SCR_MAX) {
 			tmp = spi_rate(rate, cpsdvsr, scr);
+
+           // dev_info(&pl022->adev->dev, "spi rate %d, \n", tmp);
+
 
 			if (tmp > freq) {
 				/* we need lower freq */
@@ -1736,11 +1752,22 @@ static int calculate_effective_freq(struct pl022 *pl022, int freq, struct
 
 	clk_freq->cpsdvsr = (u8) (best_cpsdvsr & 0xFF);
 	clk_freq->scr = (u8) (best_scr & 0xFF);
-	dev_dbg(&pl022->adev->dev,
+
+    dev_dbg(&pl022->adev->dev,
 		"SSP Target Frequency is: %u, Effective Frequency is %u\n",
 		freq, best_freq);
 	dev_dbg(&pl022->adev->dev, "SSP cpsdvsr = %d, scr = %d\n",
 		clk_freq->cpsdvsr, clk_freq->scr);
+   
+
+
+
+    dev_info(&pl022->adev->dev,
+		"SSP Target Frequency is: %u, Effective Frequency is %u\n",
+		freq, best_freq);
+	dev_info(&pl022->adev->dev, "SSP cpsdvsr = %d, scr = %d\n",
+		clk_freq->cpsdvsr, clk_freq->scr);
+
 
 	return 0;
 }
@@ -1849,7 +1876,6 @@ static int pl022_setup(struct spi_device *spi)
 
 	/* Now set controller state based on controller data */
 	chip->xfer_type = chip_info->com_mode;
-	printk("%s : com_mode = %d \n",__FUNCTION__, chip->xfer_type);
 	if (!chip_info->cs_control) {
 		chip->cs_control = null_cs_control;
 		dev_warn(&spi->dev,

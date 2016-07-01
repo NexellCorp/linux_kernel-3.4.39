@@ -113,17 +113,32 @@
 #define CFG_DISP_PRI_RESOL_WIDTH          		800	// X Resolution
 #define CFG_DISP_PRI_RESOL_HEIGHT				480	// Y Resolution
 
-#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH            20
-#define CFG_DISP_PRI_HSYNC_BACK_PORCH           46
-#define CFG_DISP_PRI_HSYNC_FRONT_PORCH          210
+
+
+
+//CHIMEI LCD ===========================================================
+// VS Blanking     (SYNC_WIDTH + BACK_PORCH )  : MIN 23, TPY 23, MAX 23
+// VS Front Porch                              : MIN 7           MAX 147
+
+// HS Blanking     (SYNC_WIDTH + BACK_PORCH )  : MIN 46, TPY 46, MAX 46
+// HS Front Porch                              : MIN 16          MAX 354
+//----------------------------------------------------------------------
+
+// CFG_DISP_PRI_HSYNC_SYNC_WIDTH + CFG_DISP_PRI_HSYNC_BACK_PORCH == 46 
+#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH           20
+#define CFG_DISP_PRI_HSYNC_BACK_PORCH           26
+#define CFG_DISP_PRI_HSYNC_FRONT_PORCH          300//160//300
 #define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CFALSE
+
+// CFG_DISP_PRI_VSYNC_SYNC_WIDTH + CFG_DISP_PRI_VSYNC_BACK_PORCH == 23 
 #define CFG_DISP_PRI_VSYNC_SYNC_WIDTH            10
-#define CFG_DISP_PRI_VSYNC_BACK_PORCH            23
-#define CFG_DISP_PRI_VSYNC_FRONT_PORCH           22
-#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CFALSE
+#define CFG_DISP_PRI_VSYNC_BACK_PORCH            13
+#define CFG_DISP_PRI_VSYNC_FRONT_PORCH           44
+#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH          CFALSE
+
 
 #define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL2
-#define CFG_DISP_PRI_CLKGEN0_DIV                17 //38Mhz
+#define CFG_DISP_PRI_CLKGEN0_DIV                18//20//18 //38Mhz
 #define CFG_DISP_PRI_CLKGEN0_DELAY              0
 #define CFG_DISP_PRI_CLKGEN0_INVERT				0
 #define CFG_DISP_PRI_CLKGEN1_SOURCE             DPC_VCLK_SRC_VCLK2
@@ -134,7 +149,8 @@
 #define CFG_DISP_PRI_PADCLKSEL                  DPC_PADCLKSEL_VCLK	/* VCLK=CLKGEN1, VCLK12=CLKGEN0 */
 
 //#define	CFG_DISP_PRI_PIXEL_CLOCK				800000000/CFG_DISP_PRI_CLKGEN0_DIV
-#define	CFG_DISP_PRI_PIXEL_CLOCK				614394000/CFG_DISP_PRI_CLKGEN0_DIV
+//#define	CFG_DISP_PRI_PIXEL_CLOCK				614394000/CFG_DISP_PRI_CLKGEN0_DIV
+#define	CFG_DISP_PRI_PIXEL_CLOCK				677599000/CFG_DISP_PRI_CLKGEN0_DIV
 
 #define	CFG_DISP_PRI_OUT_SWAPRB 				CFALSE
 #define CFG_DISP_PRI_OUT_FORMAT                 DPC_FORMAT_RGB888
@@ -161,7 +177,7 @@
 #define	CFG_AUDIO_I2S0_MASTER_MODE				CTRUE	// CTRUE
 #define	CFG_AUDIO_I2S0_TRANS_MODE				0		// 0:I2S, 1:Left 2:Right justified */
 #define	CFG_AUDIO_I2S0_FRAME_BIT				32		// 32, 48
-#define	CFG_AUDIO_I2S0_SAMPLE_RATE				48000
+#define	CFG_AUDIO_I2S0_SAMPLE_RATE				44100
 #define	CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK			1
 
 #define	CFG_AUDIO_I2S1_MASTER_MODE				CTRUE	// CTRUE
@@ -222,14 +238,20 @@
  * 	Keypad
  */
 
-#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_ALV + 0 }
-#define CFG_KEYPAD_KEY_CODE						{ KEY_DISPLAY_OFF }
+
+#define CFG_KEYPAD_KEY_BUTTON					{ PAD_GPIO_D + 25 , PAD_GPIO_ALV + 0 }
+#define CFG_KEYPAD_KEY_CODE					{ KEY_POWER       ,  KEY_POWER }
 #define CFG_KEYPAD_REPEAT						CFALSE /* 0: Repeat Off 1 : Repeat On */
 
 /*------------------------------------------------------------------------------
  * 	SDHC
  */
 #define	CFG_SDMMC2_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
+#define CFG_SDMMC2_DETECT_CONTROL_BOX         (PAD_GPIO_E + 31) /* detect control box */
+
+
+#define CFG_SWITCH_USB_5V_EN        (PAD_GPIO_B + 18)
+
 
 
 /*------------------------------------------------------------------------------
@@ -242,6 +264,11 @@
  * 1 : PMIC interrupt (FVUSBDETSINT)
  */
 #define CFG_USB_DET_FROM_PMIC_INT				(0)
+
+#define CFG_GPIO_DMB_INT                      PAD_GPIO_D + 23 //PAD_GPIO_E + 20
+#define CFG_GPIO_DMB_POWER                    (PAD_GPIO_D + 24)
+#define CFG_GPIO_DMB_POWER_1V2                (PAD_GPIO_D + 22)
+
 
 #define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_D + 16)
 #define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_D + 21)
