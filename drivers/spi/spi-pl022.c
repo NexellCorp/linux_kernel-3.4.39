@@ -1691,11 +1691,6 @@ static int calculate_effective_freq(struct pl022 *pl022, int freq, struct
 	/* cpsdvsr = 254 & scr = 255 */
 	min_tclk = spi_rate(rate, CPSDVR_MAX, SCR_MAX);
 
-    dev_info(&pl022->adev->dev,
-		"SSP Target Max: %d, Min Frequency is %d\n",
-		max_tclk, min_tclk);
-
-
 	if (freq > max_tclk)
 		dev_warn(&pl022->adev->dev,
 			"Max speed that can be programmed is %d Hz, you requested %d\n",
@@ -1715,9 +1710,6 @@ static int calculate_effective_freq(struct pl022 *pl022, int freq, struct
 	while ((cpsdvsr <= CPSDVR_MAX) && !found) {
 		while (scr <= SCR_MAX) {
 			tmp = spi_rate(rate, cpsdvsr, scr);
-
-           // dev_info(&pl022->adev->dev, "spi rate %d, \n", tmp);
-
 
 			if (tmp > freq) {
 				/* we need lower freq */
@@ -1752,22 +1744,11 @@ static int calculate_effective_freq(struct pl022 *pl022, int freq, struct
 
 	clk_freq->cpsdvsr = (u8) (best_cpsdvsr & 0xFF);
 	clk_freq->scr = (u8) (best_scr & 0xFF);
-
-    dev_dbg(&pl022->adev->dev,
+	dev_dbg(&pl022->adev->dev,
 		"SSP Target Frequency is: %u, Effective Frequency is %u\n",
 		freq, best_freq);
 	dev_dbg(&pl022->adev->dev, "SSP cpsdvsr = %d, scr = %d\n",
 		clk_freq->cpsdvsr, clk_freq->scr);
-   
-
-
-
-    dev_info(&pl022->adev->dev,
-		"SSP Target Frequency is: %u, Effective Frequency is %u\n",
-		freq, best_freq);
-	dev_info(&pl022->adev->dev, "SSP cpsdvsr = %d, scr = %d\n",
-		clk_freq->cpsdvsr, clk_freq->scr);
-
 
 	return 0;
 }
@@ -1876,6 +1857,7 @@ static int pl022_setup(struct spi_device *spi)
 
 	/* Now set controller state based on controller data */
 	chip->xfer_type = chip_info->com_mode;
+	printk("%s : com_mode = %d \n",__FUNCTION__, chip->xfer_type);
 	if (!chip_info->cs_control) {
 		chip->cs_control = null_cs_control;
 		dev_warn(&spi->dev,

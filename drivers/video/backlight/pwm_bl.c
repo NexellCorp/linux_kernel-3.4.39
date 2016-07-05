@@ -106,7 +106,7 @@ void runa_backlight_forced_brightness(int set_brightness)
 EXPORT_SYMBOL(runa_backlight_forced_brightness);
 
 
-extern bool backlight_activated;
+//extern bool backlight_activated;
 
 
 
@@ -146,7 +146,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
 	if (pb->notify_after)
 		pb->notify_after(pb->dev, brightness);
 
-backlight_activated = true;
+//backlight_activated = true;
 
 
 	return 0;
