@@ -41,6 +41,7 @@
 #else
 #define DBGOUT(msg...)		do {} while (0)
 #endif
+#define DEBUG_BUS_CONF
 
 extern bool power_off_is_key;
 extern bool power_off_is_dc;

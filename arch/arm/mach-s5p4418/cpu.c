@@ -169,6 +169,7 @@ static int __init cpu_l2cach_init(void)
 	#define _AUX_FULL_LINE_OF_ZERO		(1<< 0)
 
 	#define L2_AUX_DEF_MASK 0xfc000fff
+#if 0
 	#define L2_AUX_NEW_VAL 	_AUX_BRESP				|	\
 							_AUX_PREFETCH_I			|	\
 							_AUX_PREFETCH_D			|	\
@@ -176,13 +177,27 @@ static int __init cpu_l2cach_init(void)
 							_AUX_WAY_SIZE(3)		|	\
 							_AUX_16_WAY			 	|	\
 							_AUX_FULL_LINE_OF_ZERO
+#else
+    #define L2_AUX_NEW_VAL  _AUX_BRESP              |   \
+	                            _AUX_PREFETCH_I         |   \
+	                            _AUX_PREFETCH_D         |   \
+	                            _AUX_SHARED             |   \
+	                            _AUX_WAY_SIZE(3)        |   \
+	                            _AUX_16_WAY             |   \
+								_AUX_STORE_BUFFER_DEVICE |	\
+	                            _AUX_FULL_LINE_OF_ZERO
+
+#endif
 							
 	//_AUX_STORE_BUFFER_DEVICE|	\
 
 	unsigned int tag_latency  = (1<<8) | (2<<4) | (1<<0);
 	unsigned int data_latency = (1<<8) | (2<<4) | (1<<0);
+	#if 1
 	unsigned int prefetch_ctrl = 0x30000007;
-	//unsigned int prefetch_ctrl = 0x70800000;
+	#else
+	unsigned int prefetch_ctrl = 0x70800000;
+	#endif
 	unsigned int pwr_ctrl = (PL310_DYNAMIC_CLK_GATING_EN | PL310_STNDBY_MODE_EN);
 	unsigned int tieoff = __raw_readl((void*)IO_ADDRESS(PHY_BASEADDR_TIEOFF));	/* L2C SRAM TIEOFF */
 

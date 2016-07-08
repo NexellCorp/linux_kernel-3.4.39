@@ -87,6 +87,7 @@ const u8 g_TopQoSSI[2] = {
 #endif
 
 #if (CFG_BUS_RECONFIG_BOTTOMBUSSI == 1)
+#if 0
 const u8 g_BottomBusSI[8] = {
         BOTBUS_SI_SLOT_1ST_ARM,
         BOTBUS_SI_SLOT_MALI,
@@ -97,6 +98,18 @@ const u8 g_BottomBusSI[8] = {
         BOTBUS_SI_SLOT_TOP,
         BOTBUS_SI_SLOT_2ND_CODA
 };
+#else
+const u8 g_BottomBusSI[8] = {
+        BOTBUS_SI_SLOT_1ST_ARM,
+        BOTBUS_SI_SLOT_MALI,
+        BOTBUS_SI_SLOT_TOP,
+        BOTBUS_SI_SLOT_1ST_CODA,
+        BOTBUS_SI_SLOT_2ND_ARM,
+        BOTBUS_SI_SLOT_TOP,
+        BOTBUS_SI_SLOT_TOP,
+        BOTBUS_SI_SLOT_2ND_CODA
+};
+#endif
 #endif
 
 #if (CFG_BUS_RECONFIG_BOTTOMBUSQOS == 1)
@@ -110,6 +123,8 @@ const u8 g_BottomQoSSI[2] = {
 		(0<<BOTBUS_SI_SLOT_1ST_CODA)
 };
 #endif
+
+
 
 #if (CFG_BUS_RECONFIG_DISPBUSSI == 1)
 const u8 g_DispBusSI[3] = {
