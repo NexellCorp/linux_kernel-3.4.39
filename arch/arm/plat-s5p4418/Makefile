@@ -19,6 +19,14 @@ ifeq ($(CONFIG_PLAT_S5P4418_NAVI_REF),y)
 PLATBOARD :=navi_ref
 endif
 
+ifeq ($(CONFIG_PLAT_S5P4418_iA1),y)
+PLATBOARD :=iA1
+endif
+
+ifeq ($(CONFIG_PLAT_S5P4418_iA2),y)
+PLATBOARD :=iA2
+endif
+
 #
 # Build options
 #

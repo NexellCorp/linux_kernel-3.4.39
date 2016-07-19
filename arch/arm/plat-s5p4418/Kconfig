@@ -7,7 +7,7 @@ comment "Board features"
 
 choice
     prompt "Platform board"
-    default PLAT_S5P4418_DRONE
+    default PLAT_S5P4418_iA1
 
 	config PLAT_S5P4418_SVT
 		bool "SVT: Linux svt board"
@@ -28,6 +28,16 @@ choice
 		bool "NAVI: Android NAVI reference board"
 		help
    	 		Support for the NAVI reference board.
+
+	config PLAT_S5P4418_iA1
+		bool "iA1: Android iA1 board"
+		help
+   	 		Support for the iA1 board.
+
+	config PLAT_S5P4418_iA2
+		bool "iA2: Android iA2 board"
+		help
+   	 		Support for the iA2 board.
 
 endchoice
 

@@ -39,6 +39,6 @@ static int __init alsa_sound_last_init(void)
 }
 
 // psw0523 fix for quickbooting
-#if 0
+#if 1
 late_initcall_sync(alsa_sound_last_init);
 #endif

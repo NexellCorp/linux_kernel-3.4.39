@@ -1453,7 +1453,7 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 	}
 
 	/* card bind complete so register a sound card */
-#if defined (CONFIG_ARCH_CPU_SLSI)
+#if 0//defined (CONFIG_ARCH_CPU_SLSI)
 	char card_chk, card_id;
 	sprintf(&card_chk, "%s", dev_name(card->dev) + (sizeof(char) * strlen(dev_name(card->dev)) - 2)); 
 	sprintf(&card_id, "%s", dev_name(card->dev) + (sizeof(char) * strlen(dev_name(card->dev)) - 1)); 
@@ -1634,7 +1634,7 @@ card_probe_error:
 }
 
 // psw0523 test
-#if 1
+#if 0
 #include <linux/kthread.h>
 static int _card_instantiate(void *data)
 {
@@ -1652,7 +1652,7 @@ static int _card_instantiate(void *data)
  */
 static void snd_soc_instantiate_cards(void)
 {
-#if 0
+#if 1
 	struct snd_soc_card *card;
 	list_for_each_entry(card, &card_list, list)
 		snd_soc_instantiate_card(card);

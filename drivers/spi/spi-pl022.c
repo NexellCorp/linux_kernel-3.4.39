@@ -1886,6 +1886,7 @@ static int pl022_setup(struct spi_device *spi)
 	    && ((pl022->master_info)->enable_dma)) {
 		chip->enable_dma = true;
 		dev_dbg(&spi->dev, "DMA mode set in controller state\n");
+		printk("DMA mode set in controller state\n");
 		SSP_WRITE_BITS(chip->dmacr, SSP_DMA_ENABLED,
 			       SSP_DMACR_MASK_RXDMAE, 0);
 		SSP_WRITE_BITS(chip->dmacr, SSP_DMA_ENABLED,
@@ -1893,6 +1894,7 @@ static int pl022_setup(struct spi_device *spi)
 	} else {
 		chip->enable_dma = false;
 		dev_dbg(&spi->dev, "DMA mode NOT set in controller state\n");
+		printk("DMA mode NOT set in controller state\n");
 		SSP_WRITE_BITS(chip->dmacr, SSP_DMA_DISABLED,
 			       SSP_DMACR_MASK_RXDMAE, 0);
 		SSP_WRITE_BITS(chip->dmacr, SSP_DMA_DISABLED,

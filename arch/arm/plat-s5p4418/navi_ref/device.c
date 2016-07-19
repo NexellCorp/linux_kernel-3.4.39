@@ -1,4 +1,21 @@
 /*
+ *            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+ *                    Version 2, December 2004
+ * 
+ * Copyright (C) 2016 Nexell Co., Ltd.
+ * Author: Jongkeun, Choi <jkchoi@nexell.co.kr>
+ * 
+ * Everyone is permitted to copy and distribute verbatim or modified
+ * copies of this license document, and changing it is allowed as long
+ * as the name is changed.
+ * 
+ *            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+ *   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+ * 
+ *  0. You just DO WHAT THE FUCK YOU WANT TO.
+ */
+
+/*
  * (C) Copyright 2009
  * jung hyun kim, Nexell Co, <jhkim@nexell.co.kr>
  *
@@ -277,8 +294,23 @@ static struct nxp_fb_plat_data fb0_plat_data = {
 	.format			= CFG_DISP_PRI_SCREEN_RGB_FORMAT,
 	.bgcolor		= CFG_DISP_PRI_BACK_GROUND_COLOR,
 	.bitperpixel	= CFG_DISP_PRI_SCREEN_PIXEL_BYTE * 8,
+#if defined(CONFIG_NXP_DISPLAY_HDMI_1280_720P)
+	.x_resol		= 1280,
+	.y_resol		= 720,
+#elif defined(CONFIG_NXP_DISPLAY_HDMI_1920_1080P)
+	.x_resol		= 1920,
+	.y_resol		= 1080,
+#elif defined(CONFIG_NXP_DISPLAY_HDMI_800_480)
+	.x_resol		= 800,
+	.y_resol		= 480,
+#elif defined(CONFIG_NXP_DISPLAY_HDMI_720_480)
+	.x_resol		= 720,
+	.y_resol		= 480,
+#else
 	.x_resol		= CFG_DISP_PRI_RESOL_WIDTH,
 	.y_resol		= CFG_DISP_PRI_RESOL_HEIGHT,
+#endif
+
 	#ifdef CONFIG_ANDROID
 	.buffers		= 3,
 	.skip_pan_vsync	= 1,
@@ -673,6 +705,56 @@ static struct platform_device alc5623_dai = {
 };
 #endif
 
+#if defined(CONFIG_SND_CODEC_NULL)
+static struct platform_device snd_null = {
+	.name = "snd-null",
+	.id = -1,
+};
+
+struct nxp_snd_dai_plat_data snd_null_dai_data = {
+	.i2s_ch = 0,
+#if defined(CONFIG_SND_NXP_DFS)
+	.sample_rate = SNDRV_PCM_RATE_8000_192000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE,
+#else
+	.sample_rate = 48000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
+#endif
+};
+
+static struct platform_device snd_null_dai = {
+	.name = "snd-null-card",
+	.id = -1,
+	.dev = {
+		.platform_data = &snd_null_dai_data,
+	}
+};
+
+//-------------------------------------
+static struct platform_device snd_null_2 = {
+	.name = "snd-null",
+	.id = 1,
+};
+
+struct nxp_snd_dai_plat_data snd_null_dai_data_2 = {
+	.i2s_ch = 2,
+#if defined(CONFIG_SND_NXP_DFS)
+	.sample_rate = SNDRV_PCM_RATE_8000_192000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE,
+#else
+	.sample_rate = 48000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
+#endif
+};
+
+static struct platform_device snd_null_dai_2 = {
+	.name = "snd-null-card",
+	.id = 2,
+	.dev = {
+		.platform_data = &snd_null_dai_data_2 ,
+	}
+};
+#endif
 
 #if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)
 static struct platform_device spdif_transciever = {
@@ -1646,51 +1728,221 @@ static struct platform_device nxp_v4l2_dev = {
  */
 #if defined(CONFIG_SPI_SPIDEV) || defined(CONFIG_SPI_SPIDEV_MODULE)
 #include <linux/spi/spi.h>
-static void spi0_cs(u32 chipselect)
+static void spi0_0_cs(u32 chipselect)
 {
 #if (CFG_SPI0_CS_GPIO_MODE)
-	if(nxp_soc_gpio_get_io_func( CFG_SPI0_CS )!= nxp_soc_gpio_get_altnum( CFG_SPI0_CS))
-		nxp_soc_gpio_set_io_func( CFG_SPI0_CS, nxp_soc_gpio_get_altnum( CFG_SPI0_CS));
+	if(nxp_soc_gpio_get_io_func(CFG_SPI0_0_CS) != nxp_soc_gpio_get_altnum(CFG_SPI0_0_CS))
+		nxp_soc_gpio_set_io_func(CFG_SPI0_0_CS, nxp_soc_gpio_get_altnum(CFG_SPI0_0_CS));
 
-	nxp_soc_gpio_set_io_dir( CFG_SPI0_CS,1);
-	nxp_soc_gpio_set_out_value(	 CFG_SPI0_CS , chipselect);
+	nxp_soc_gpio_set_io_dir(CFG_SPI0_0_CS, 1);
+	nxp_soc_gpio_set_out_value(CFG_SPI0_0_CS, chipselect);
 #else
 	;
 #endif
 }
 
-struct pl022_config_chip spi0_info = {
-    /* available POLLING_TRANSFER, INTERRUPT_TRANSFER, DMA_TRANSFER */
-    .com_mode = CFG_SPI0_COM_MODE,
-    .iface = SSP_INTERFACE_MOTOROLA_SPI,
-    /* We can only act as master but SSP_SLAVE is possible in theory */
-    .hierarchy = SSP_SLAVE,
-    /* 0 = drive TX even as slave, 1 = do not drive TX as slave */
-    .slave_tx_disable = 1,
-    .rx_lev_trig = SSP_RX_4_OR_MORE_ELEM,
-    .tx_lev_trig = SSP_TX_4_OR_MORE_EMPTY_LOC,
-    .ctrl_len = SSP_BITS_8,
-    .wait_state = SSP_MWIRE_WAIT_ZERO,
-    .duplex = SSP_MICROWIRE_CHANNEL_FULL_DUPLEX,
-    /*
-     * This is where you insert a call to a function to enable CS
-     * (usually GPIO) for a certain chip.
-     */
+static void spi0_1_cs(u32 chipselect)
+{
+#if (CFG_SPI1_CS_GPIO_MODE)
+	if(nxp_soc_gpio_get_io_func(CFG_SPI0_1_CS) != nxp_soc_gpio_get_altnum(CFG_SPI0_1_CS))
+		nxp_soc_gpio_set_io_func(CFG_SPI0_1_CS, nxp_soc_gpio_get_altnum(CFG_SPI0_1_CS));
+
+	nxp_soc_gpio_set_io_dir(CFG_SPI0_1_CS, 1);
+	nxp_soc_gpio_set_out_value(CFG_SPI0_1_CS, chipselect);
+#else
+	;
+#endif
+}
+
+static void spi1_0_cs(u32 chipselect)
+{
+#if (CFG_SPI1_CS_GPIO_MODE)
+	if(nxp_soc_gpio_get_io_func(CFG_SPI1_0_CS) != nxp_soc_gpio_get_altnum(CFG_SPI1_0_CS))
+		nxp_soc_gpio_set_io_func(CFG_SPI1_0_CS, nxp_soc_gpio_get_altnum(CFG_SPI1_0_CS));
+
+	nxp_soc_gpio_set_io_dir(CFG_SPI1_0_CS, 1);
+	nxp_soc_gpio_set_out_value(CFG_SPI1_0_CS, chipselect);
+#else
+	;
+#endif
+}
+
+static void spi1_1_cs(u32 chipselect)
+{
+#if (CFG_SPI1_CS_GPIO_MODE)
+	if(nxp_soc_gpio_get_io_func(CFG_SPI1_1_CS) != nxp_soc_gpio_get_altnum(CFG_SPI1_1_CS))
+		nxp_soc_gpio_set_io_func(CFG_SPI1_1_CS, nxp_soc_gpio_get_altnum(CFG_SPI1_1_CS));
+
+	nxp_soc_gpio_set_io_dir(CFG_SPI1_1_CS, 1);
+	nxp_soc_gpio_set_out_value(CFG_SPI1_1_CS, chipselect);
+#else
+	;
+#endif
+}
+
+static void spi2_cs(u32 chipselect)
+{
+#if (CFG_SPI1_CS_GPIO_MODE)
+	if(nxp_soc_gpio_get_io_func(CFG_SPI2_CS) != nxp_soc_gpio_get_altnum(CFG_SPI2_CS))
+		nxp_soc_gpio_set_io_func(CFG_SPI2_CS, nxp_soc_gpio_get_altnum(CFG_SPI2_CS));
+
+	nxp_soc_gpio_set_io_dir(CFG_SPI2_CS, 1);
+	nxp_soc_gpio_set_out_value(CFG_SPI2_CS, chipselect);
+#else
+	;
+#endif
+}
+
+struct pl022_config_chip spi0_0_info = {
+	/* available POLLING_TRANSFER, INTERRUPT_TRANSFER, DMA_TRANSFER */
+	.com_mode = CFG_SPI0_COM_MODE,
+	.iface = SSP_INTERFACE_MOTOROLA_SPI,
+	/* We can only act as master but SSP_SLAVE is possible in theory */
+	.hierarchy = SSP_MASTER,
+	/* 0 = drive TX even as slave, 1 = do not drive TX as slave */
+	.slave_tx_disable = 1,
+	.rx_lev_trig = SSP_RX_4_OR_MORE_ELEM,
+	.tx_lev_trig = SSP_TX_4_OR_MORE_EMPTY_LOC,
+	.ctrl_len = SSP_BITS_8,
+	.wait_state = SSP_MWIRE_WAIT_ZERO,
+	.duplex = SSP_MICROWIRE_CHANNEL_FULL_DUPLEX,
+	/*
+	* This is where you insert a call to a function to enable CS
+	* (usually GPIO) for a certain chip.
+	*/
 #if (CFG_SPI0_CS_GPIO_MODE)
-    .cs_control = spi0_cs,
+	.cs_control = spi0_0_cs,
 #endif
 	.clkdelay = SSP_FEEDBACK_CLK_DELAY_1T,
+};
 
+struct pl022_config_chip spi0_1_info = {
+	/* available POLLING_TRANSFER, INTERRUPT_TRANSFER, DMA_TRANSFER */
+	.com_mode = CFG_SPI0_COM_MODE,
+	.iface = SSP_INTERFACE_MOTOROLA_SPI,
+	/* We can only act as master but SSP_SLAVE is possible in theory */
+	.hierarchy = SSP_MASTER,
+	/* 0 = drive TX even as slave, 1 = do not drive TX as slave */
+	.slave_tx_disable = 1,
+	.rx_lev_trig = SSP_RX_4_OR_MORE_ELEM,
+	.tx_lev_trig = SSP_TX_4_OR_MORE_EMPTY_LOC,
+	.ctrl_len = SSP_BITS_8,
+	.wait_state = SSP_MWIRE_WAIT_ZERO,
+	.duplex = SSP_MICROWIRE_CHANNEL_FULL_DUPLEX,
+	/*
+	* This is where you insert a call to a function to enable CS
+	* (usually GPIO) for a certain chip.
+	*/
+#if (CFG_SPI1_CS_GPIO_MODE)
+	.cs_control = spi0_1_cs,
+#endif
+	.clkdelay = SSP_FEEDBACK_CLK_DELAY_1T,
+};
+
+struct pl022_config_chip spi1_0_info = {
+	/* available POLLING_TRANSFER, INTERRUPT_TRANSFER, DMA_TRANSFER */
+	.com_mode = CFG_SPI1_COM_MODE,
+	.iface = SSP_INTERFACE_MOTOROLA_SPI,
+	/* We can only act as master but SSP_SLAVE is possible in theory */
+	.hierarchy = SSP_MASTER,
+	/* 0 = drive TX even as slave, 1 = do not drive TX as slave */
+	.slave_tx_disable = 1,
+	.rx_lev_trig = SSP_RX_4_OR_MORE_ELEM,
+	.tx_lev_trig = SSP_TX_4_OR_MORE_EMPTY_LOC,
+	.ctrl_len = SSP_BITS_8,
+	.wait_state = SSP_MWIRE_WAIT_ZERO,
+	.duplex = SSP_MICROWIRE_CHANNEL_FULL_DUPLEX,
+	/*
+	* This is where you insert a call to a function to enable CS
+	* (usually GPIO) for a certain chip.
+	*/
+#if (CFG_SPI1_CS_GPIO_MODE)
+	.cs_control = spi1_0_cs,
+#endif
+	.clkdelay = SSP_FEEDBACK_CLK_DELAY_1T,
+};
+
+struct pl022_config_chip spi1_1_info = {
+	/* available POLLING_TRANSFER, INTERRUPT_TRANSFER, DMA_TRANSFER */
+	.com_mode = CFG_SPI1_COM_MODE,
+	.iface = SSP_INTERFACE_MOTOROLA_SPI,
+	/* We can only act as master but SSP_SLAVE is possible in theory */
+	.hierarchy = SSP_MASTER,
+	/* 0 = drive TX even as slave, 1 = do not drive TX as slave */
+	.slave_tx_disable = 1,
+	.rx_lev_trig = SSP_RX_4_OR_MORE_ELEM,
+	.tx_lev_trig = SSP_TX_4_OR_MORE_EMPTY_LOC,
+	.ctrl_len = SSP_BITS_8,
+	.wait_state = SSP_MWIRE_WAIT_ZERO,
+	.duplex = SSP_MICROWIRE_CHANNEL_FULL_DUPLEX,
+	/*
+	* This is where you insert a call to a function to enable CS
+	* (usually GPIO) for a certain chip.
+	*/
+#if (CFG_SPI1_CS_GPIO_MODE)
+	.cs_control = spi1_1_cs,
+#endif
+	.clkdelay = SSP_FEEDBACK_CLK_DELAY_1T,
+};
+
+struct pl022_config_chip spi2_info = {
+	/* available POLLING_TRANSFER, INTERRUPT_TRANSFER, DMA_TRANSFER */
+	.com_mode = CFG_SPI2_COM_MODE,
+	.iface = SSP_INTERFACE_MOTOROLA_SPI,
+	/* We can only act as master but SSP_SLAVE is possible in theory */
+	.hierarchy = SSP_SLAVE,
+	/* 0 = drive TX even as slave, 1 = do not drive TX as slave */
+	.slave_tx_disable = 1,
+	.rx_lev_trig = SSP_RX_4_OR_MORE_ELEM,
+	.tx_lev_trig = SSP_TX_4_OR_MORE_EMPTY_LOC,
+	.ctrl_len = SSP_BITS_8,
+	.wait_state = SSP_MWIRE_WAIT_ZERO,
+	.duplex = SSP_MICROWIRE_CHANNEL_FULL_DUPLEX,
+	/*
+	* This is where you insert a call to a function to enable CS
+	* (usually GPIO) for a certain chip.
+	*/
+#if (CFG_SPI2_CS_GPIO_MODE)
+	.cs_control = spi2_cs,
+#endif
+	.clkdelay = SSP_FEEDBACK_CLK_DELAY_1T,
 };
 
 static struct spi_board_info spi_plat_board[] __initdata = {
     [0] = {
-        .modalias        = "spidev",    /* fixup */
-        .max_speed_hz    = 3125000,     /* max spi clock (SCK) speed in HZ */
-        .bus_num         = 0,           /* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
-        .chip_select     = 0,           /* Note> set chip select num, must be smaller than spi cs_num */
-        .controller_data = &spi0_info,
-        .mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
+        .modalias        = "mtv_tdmb",	/* fixup */
+        .max_speed_hz    = 3125000,		/* max spi clock (SCK) speed in HZ */
+        .bus_num         = 0,			/* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
+        .chip_select     = 0,			/* Note> set chip select num, must be smaller than spi cs_num */
+        .controller_data = &spi0_0_info,
+        //.mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
+    },
+
+    [1] = {
+        .modalias        = "mtv_tpeg",	/* fixup */
+        .max_speed_hz    = 3125000,		/* max spi clock (SCK) speed in HZ */
+        .bus_num         = 0,			/* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
+        .chip_select     = 1,			/* Note> set chip select num, must be smaller than spi cs_num */
+        .controller_data = &spi0_1_info,
+        //.mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
+    },
+
+    [2] = {
+        .modalias        = "spidev",	/* fixup */
+        .max_speed_hz    = 3125000,		/* max spi clock (SCK) speed in HZ */
+        .bus_num         = 1,			/* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
+        .chip_select     = 0,			/* Note> set chip select num, must be smaller than spi cs_num */
+        .controller_data = &spi1_0_info,
+        //.mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
+    },
+
+    [3] = {
+        .modalias        = "spidev",	/* fixup */
+        .max_speed_hz    = 3125000,		/* max spi clock (SCK) speed in HZ */
+        .bus_num         = 2,			/* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
+        .chip_select     = 0,			/* Note> set chip select num, must be smaller than spi cs_num */
+        .controller_data = &spi2_info,
+        //.mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
     },
 };
 
@@ -2290,6 +2542,20 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device asoc-alc5623\n");
 	i2c_register_board_info(ALC5623_I2C_BUS, &alc5623_i2c_bdi, 1);
 	platform_device_register(&alc5623_dai);
+#endif
+
+#if defined(CONFIG_SND_CODEC_NULL)
+	printk("plat: add device snd_null\n");
+	platform_device_register(&snd_null);
+
+	printk("plat: add device snd_null_dai\n");
+	platform_device_register(&snd_null_dai);
+
+	printk("plat: add device snd_null_2\n");
+	platform_device_register(&snd_null_2);
+
+	printk("plat: add device snd_null_dai_2\n");
+	platform_device_register(&snd_null_dai_2);
 #endif
 
 #if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)

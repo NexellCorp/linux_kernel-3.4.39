@@ -182,6 +182,7 @@ static inline unsigned long _get_clk_hz(int preset)
         return 27000000;
     case V4L2_DV_480P60:
         return 27027000;
+	case V4L2_DV_800_480_60:
     case V4L2_DV_576P50:
         return 27000000;
     case V4L2_DV_720P50:
@@ -216,6 +217,20 @@ static int _get_vsync_info(struct nxp_hdmi_context *me)
     case V4L2_DV_480P60:
         /* 480p: 720x480 */
         vsync->h_active_len = 720;
+        vsync->h_sync_width = 62;
+        vsync->h_back_porch = 60;
+        vsync->h_front_porch = 16;
+        vsync->h_sync_invert = 0;
+        vsync->v_active_len = 480;
+        vsync->v_sync_width = 6;
+        vsync->v_back_porch = 30;
+        vsync->v_front_porch = 9;
+        vsync->v_sync_invert = 0;
+        break;
+
+	case V4L2_DV_800_480_60:
+        /* 800x480 */
+        vsync->h_active_len = 800;
         vsync->h_sync_width = 62;
         vsync->h_back_porch = 60;
         vsync->h_front_porch = 16;

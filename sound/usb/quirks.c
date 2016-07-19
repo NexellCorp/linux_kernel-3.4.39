@@ -676,9 +676,8 @@ int snd_usb_apply_boot_quirk(struct usb_device *dev,
 			printk("Apple IAP2 USB %s\n", __func__);
 			return snd_usb_fasttrackpro_boot_quirk(dev);
 		}
-#endif
 	}
-
+#endif
 	return 0;
 }
 

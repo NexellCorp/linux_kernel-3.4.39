@@ -65,6 +65,80 @@ static const struct hdmi_preset_conf hdmi_conf_480p60 = {
 	.vic = 3,
 };
 
+static const struct hdmi_preset_conf hdmi_conf_800_480 = {
+	.core = {
+		.h_blank = {0x90, 0x00},
+		.v2_blank = {0x71, 0x02},
+		.v1_blank = {0x31, 0x00},
+		.v_line = {0x71, 0x02},
+		.h_line = {0x60, 0x03},
+		.hsync_pol = {0x01},
+		.vsync_pol = {0x01},
+		.int_pro_mode = {0x00},
+		.v_blank_f0 = {0xff, 0xff},
+		.v_blank_f1 = {0xff, 0xff},
+		.h_sync_start = {0x0a, 0x00},
+		.h_sync_end = {0x4a, 0x00},
+		.v_sync_line_bef_2 = {0x0a, 0x00},
+		.v_sync_line_bef_1 = {0x05, 0x00},
+		.v_sync_line_aft_2 = {0xff, 0xff},
+		.v_sync_line_aft_1 = {0xff, 0xff},
+		.v_sync_line_aft_pxl_2 = {0xff, 0xff},
+		.v_sync_line_aft_pxl_1 = {0xff, 0xff},
+		.v_blank_f2 = {0xff, 0xff},
+		.v_blank_f3 = {0xff, 0xff},
+		.v_blank_f4 = {0xff, 0xff},
+		.v_blank_f5 = {0xff, 0xff},
+		.v_sync_line_aft_3 = {0xff, 0xff},
+		.v_sync_line_aft_4 = {0xff, 0xff},
+		.v_sync_line_aft_5 = {0xff, 0xff},
+		.v_sync_line_aft_6 = {0xff, 0xff},
+		.v_sync_line_aft_pxl_3 = {0xff, 0xff},
+		.v_sync_line_aft_pxl_4 = {0xff, 0xff},
+		.v_sync_line_aft_pxl_5 = {0xff, 0xff},
+		.v_sync_line_aft_pxl_6 = {0xff, 0xff},
+		/* other don't care */
+	},
+
+		0x00, /* cmd */
+		0x5a, 0x03, /* h_fsz */
+		0x8a, 0x00, 0xd0, 0x02, /* hact */
+		0x0d, 0x02, /* v_fsz */
+		0x01, 0x00, 0x33, 0x02, /* vsync */
+		0x2d, 0x00, 0xe0, 0x01, /* vact */
+		0x33, 0x02, /* field_chg */
+		0x48, 0x02, /* vact_st2 */
+		0x00, 0x00, /* vact_st3 */
+		0x00, 0x00, /* vact_st4 */
+		0x01, 0x00, 0x01, 0x00, /* vsync top/bot */
+		0x01, 0x00, 0x33, 0x02, /* field top/bot */
+		0x00, /* 3d FP */
+
+
+	.tg = {
+		0x00, /* cmd */
+		0x60, 0x03, /* h_fsz */
+		0x90, 0x00, 0xd0, 0x02, /* hact */
+		0x71, 0x02, /* v_fsz */
+		0x01, 0x00, 0x33, 0x02, /* vsync */
+		0x31, 0x00, 0x40, 0x02, /* vact */
+		0x33, 0x02, /* field_chg */
+		0x48, 0x02, /* vact_st2 */
+		0x00, 0x00, /* vact_st3 */
+		0x00, 0x00, /* vact_st4 */
+		0x01, 0x00, 0x01, 0x00, /* vsync top/bot */
+		0x01, 0x00, 0x33, 0x02, /* field top/bot */
+		0x00, /* 3d FP */
+	},
+	.mbus_fmt = {
+		.width = 800,
+		.height = 480,
+		.code = V4L2_MBUS_FMT_FIXED, /* means RGB888 */
+		.field = V4L2_FIELD_NONE,
+	},
+	.vic = 18,
+};
+
 static const struct hdmi_preset_conf hdmi_conf_720p60 = {
 	.core = {
 		.h_blank = {370%256, 370 >> 8},
@@ -2187,6 +2261,7 @@ static const struct hdmi_3d_info info_3d_fp = {
 const struct hdmi_conf hdmi_conf[] = {
     { V4L2_DV_480P59_94,        &hdmi_conf_480p59_94,       &info_2d },
     { V4L2_DV_480P60,           &hdmi_conf_480p60,          &info_2d },
+    { V4L2_DV_800_480_60,       &hdmi_conf_576p50,          &info_2d },
     { V4L2_DV_576P50,           &hdmi_conf_576p50,          &info_2d },
     { V4L2_DV_720P50,           &hdmi_conf_720p50,          &info_2d },
     { V4L2_DV_720P59_94,        &hdmi_conf_720p59_94,       &info_2d },

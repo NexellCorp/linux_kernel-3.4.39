@@ -26,6 +26,7 @@
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/platform_device.h>
+#include <linux/videodev2.h>
 
 /* nexell soc headers */
 #include <mach/platform.h>
@@ -372,6 +373,12 @@ static struct disp_vsync_info  __hdmi_vsync = {
 	#elif defined (CONFIG_NXP_DISPLAY_HDMI_1920_1080P)
 	.h_active_len	= 1920,
 	.v_active_len	= 1080,
+	#elif defined (CONFIG_NXP_DISPLAY_HDMI_800_480)
+	.h_active_len	= 800,
+	.v_active_len	= 480,
+	#elif defined (CONFIG_NXP_DISPLAY_HDMI_720_480)
+	.h_active_len	= 720,
+	.v_active_len	= 480,
 	#else
 	#error "***** NOT SUPPORT HDMI RESOLUTION !!! *****"
 	#endif
@@ -382,6 +389,10 @@ static struct disp_hdmi_param  __hdmi_devpar = {
 	.preset = 0,
 	#elif defined (CONFIG_NXP_DISPLAY_HDMI_1920_1080P)
 	.preset = 1,
+	#elif defined (CONFIG_NXP_DISPLAY_HDMI_800_480)
+	.preset = V4L2_DV_800_480_60,
+	#elif defined (CONFIG_NXP_DISPLAY_HDMI_720_480)
+	.preset = V4L2_DV_480P60,
 	#endif
 };
 

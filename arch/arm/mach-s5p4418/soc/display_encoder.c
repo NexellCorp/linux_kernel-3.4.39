@@ -35,122 +35,6 @@
 #endif
 #define ERROUT(msg...)		{ printk(KERN_ERR msg); }
 
-static void _release_hdmi_reset(void)
-{
-	NX_RSTCON_SetBaseAddress((void*)IO_ADDRESS(NX_RSTCON_GetPhysicalAddress()));
-	NX_RSTCON_SetRST(RESETINDEX_OF_DISPLAYTOP_MODULE_i_HDMI_nRST, 1);
-	NX_RSTCON_SetRST(RESETINDEX_OF_DISPLAYTOP_MODULE_i_HDMI_VIDEO_nRST, 1);
-	NX_RSTCON_SetRST(RESETINDEX_OF_DISPLAYTOP_MODULE_i_HDMI_SPDIF_nRST, 1);
-	NX_RSTCON_SetRST(RESETINDEX_OF_DISPLAYTOP_MODULE_i_HDMI_TMDS_nRST, 1);
-	NX_RSTCON_SetRST(RESETINDEX_OF_DISPLAYTOP_MODULE_i_HDMI_PHY_nRST, 1);
-}
-
-static void _set_hdmi_clk_27MHz(void)
-{
-	NX_HDMI_SetBaseAddress(0, (void*)IO_ADDRESS(NX_HDMI_GetPhysicalAddress(0)));
-
-	NX_TIEOFF_Initialize();
-	NX_TIEOFF_SetBaseAddress((void*)IO_ADDRESS(NX_TIEOFF_GetPhysicalAddress()));
-	NX_TIEOFF_Set(TIEOFFINDEX_OF_DISPLAYTOP0_i_HDMI_PHY_REFCLK_SEL, 1);
-
-	// HDMI PCLK Enable
-	NX_DISPTOP_CLKGEN_SetBaseAddress(HDMI_CLKGEN, (void*)IO_ADDRESS(NX_DISPTOP_CLKGEN_GetPhysicalAddress(HDMI_CLKGEN)));
-	NX_DISPTOP_CLKGEN_SetClockPClkMode(HDMI_CLKGEN, NX_PCLKMODE_ALWAYS);
-
-	// Enter Reset
-	NX_RSTCON_SetRST  (NX_HDMI_GetResetNumber(0, i_nRST_PHY) , 0);
-	NX_RSTCON_SetRST  (NX_HDMI_GetResetNumber(0, i_nRST)     , 0); // APB
-
-	// Release Reset
-	NX_RSTCON_SetRST  (NX_HDMI_GetResetNumber(0, i_nRST_PHY) , 1);
-	NX_RSTCON_SetRST  (NX_HDMI_GetResetNumber(0, i_nRST)     , 1); // APB
-
-	NX_DISPTOP_CLKGEN_SetClockPClkMode      (HDMI_CLKGEN, NX_PCLKMODE_ALWAYS);
-
-	pr_info("%s - HDMI Address : 0x%x\n", __func__, HDMI_PHY_Reg7C);
-
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg7C, (0<<7) );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg7C, (0<<7) );    /// MODE_SET_DONE : APB Set
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg04, (0<<4) );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg04, (0<<4) );    ///CLK_SEL : REF OSC or INT_CLK
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg24, (1<<7) );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg24, (1<<7) );    // INT REFCLK : ³»ºÎÀÇ syscon¿¡¼­ ¹Þ´Â clock
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg04, 0xD1   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg04, 0xD1   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg08, 0x22   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg08, 0x22   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg0C, 0x51   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg0C, 0x51   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg10, 0x40   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg10, 0x40   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg14, 0x8    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg14, 0x8    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg18, 0xFC   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg18, 0xFC   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg1C, 0xE0   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg1C, 0xE0   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg20, 0x98   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg20, 0x98   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg24, 0xE8   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg24, 0xE8   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg28, 0xCB   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg28, 0xCB   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg2C, 0xD8   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg2C, 0xD8   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg30, 0x45   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg30, 0x45   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg34, 0xA0   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg34, 0xA0   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg38, 0xAC   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg38, 0xAC   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg3C, 0x80   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg3C, 0x80   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg40, 0x6    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg40, 0x6    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg44, 0x80   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg44, 0x80   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg48, 0x9    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg48, 0x9    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg4C, 0x84   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg4C, 0x84   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg50, 0x5    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg50, 0x5    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg54, 0x22   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg54, 0x22   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg58, 0x24   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg58, 0x24   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg5C, 0x86   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg5C, 0x86   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg60, 0x54   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg60, 0x54   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg64, 0xE4   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg64, 0xE4   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg68, 0x24   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg68, 0x24   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg6C, 0x0    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg6C, 0x0    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg70, 0x0    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg70, 0x0    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg74, 0x0    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg74, 0x0    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg78, 0x1    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg78, 0x1    );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg7C, 0x80   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg7C, 0x80   );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg7C, (1<<7) );
-	NX_HDMI_SetReg( 0, HDMI_PHY_Reg7C, (1<<7) );    /// MODE_SET_DONE : APB Set Done
-
-	// wait phy ready
-	{
-		U32 Is_HDMI_PHY_READY = CFALSE;
-		while(Is_HDMI_PHY_READY == CFALSE) {
-			if(NX_HDMI_GetReg( 0, HDMI_LINK_PHY_STATUS_0 ) & 0x01) {
-				Is_HDMI_PHY_READY = CTRUE;
-			}
-		}
-	}
-}
-
 static int encoder_set_vsync(struct disp_process_dev *pdev, struct disp_vsync_info *psync)
 {
 	RET_ASSERT_VAL(pdev && psync, -EINVAL);
@@ -208,9 +92,6 @@ static int  encoder_enable(struct disp_process_dev *pdev, int enable)
   		pdev->status &= ~PROC_STATUS_ENABLE;
 	} else {
 		encoder_prepare(pdev);
-
-		_release_hdmi_reset();
-		_set_hdmi_clk_27MHz();
 
 		pdev->status |=  PROC_STATUS_ENABLE;
   	}

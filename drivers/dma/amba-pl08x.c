@@ -2599,8 +2599,10 @@ static struct amba_driver pl08x_amba_driver = {
 	.drv.name	= DRIVER_NAME,
 	.id_table	= pl08x_ids,
 	.probe		= pl08x_probe,
+#ifdef CONFIG_PM
     .suspend 	= pl08x_suspend,
     .resume 	= pl08x_resume,
+#endif
 };
 
 static int __init pl08x_init(void)

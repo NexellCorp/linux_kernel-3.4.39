@@ -386,7 +386,9 @@ static inline unsigned int __calc_crc(void *addr, int len)
 static void suspend_mark(suspend_state_t stat)
 {
 	struct suspend_mark_up mark = {
+#ifdef CONFIG_SUSPEND
 		.resume_fn = (U32)virt_to_phys(cpu_resume),
+#endif
 		.signature = SUSPEND_SIGNATURE,
 		.save_phy_addr = (u32)PM_SAVE_ADDR,
 		.save_phy_len = PM_SAVE_SIZE,
@@ -851,7 +853,9 @@ void nxp_cpu_goto_stop(void)
 	/*
 	 * goto suspend off
 	 */
+#ifdef CONFIG_SUSPEND
 	cpu_suspend(0, __powerdown);
+#endif
 }
 EXPORT_SYMBOL(nxp_cpu_goto_stop);
 

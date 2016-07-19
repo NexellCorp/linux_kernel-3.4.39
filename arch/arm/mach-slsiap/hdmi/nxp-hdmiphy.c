@@ -96,6 +96,7 @@ static const u8 hdmiphy_preset148_5[32] = {
 const struct hdmiphy_preset hdmiphy_preset[] = {
 	{ V4L2_DV_480P59_94, hdmiphy_preset27 },
 	{ V4L2_DV_480P60, hdmiphy_preset27_027 },
+	{ V4L2_DV_800_480_60, hdmiphy_preset27 },
 	{ V4L2_DV_576P50, hdmiphy_preset27 },
 	{ V4L2_DV_720P50, hdmiphy_preset74_25 },
 	{ V4L2_DV_720P59_94, hdmiphy_preset74_175 },

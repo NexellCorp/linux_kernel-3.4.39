@@ -73,7 +73,13 @@ config NXP_DISPLAY_HDMI
 	choice
 		prompt "Resolution"
 		depends on NXP_DISPLAY_HDMI
-		default NXP_DISPLAY_HDMI_1280_720P
+		default NXP_DISPLAY_HDMI_800_480
+
+	config	NXP_DISPLAY_HDMI_720_480
+		bool "720 * 480"
+
+	config	NXP_DISPLAY_HDMI_800_480
+		bool "800 * 480"
 
 	config	NXP_DISPLAY_HDMI_1280_720P
 		bool "1280 *  720p"

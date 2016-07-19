@@ -843,7 +843,7 @@ static void spi_init(int ch)
 
 static struct pl022_ssp_controller ssp0_platform_data = {
     .bus_id         = 0,
-    .num_chipselect = 1,
+    .num_chipselect = 2,
 #if defined(CONFIG_USE_DMA_PORT0) && defined(CONFIG_AMBA_PL08X)
     .enable_dma     = 1,
     .dma_filter     = pl08x_filter_id,
