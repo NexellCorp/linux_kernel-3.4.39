@@ -1246,13 +1246,14 @@ static int __spi_sync(struct spi_device *spi, struct spi_message *message,
 
 	status = spi_async_locked(spi, message);
 
-	if (!bus_locked)
-		mutex_unlock(&master->bus_lock_mutex);
-
 	if (status == 0) {
 		wait_for_completion(&done);
 		status = message->status;
 	}
+
+	if (!bus_locked)
+		mutex_unlock(&master->bus_lock_mutex);
+
 	message->context = NULL;
 	return status;
 }

@@ -730,6 +730,7 @@ static struct platform_device snd_null_dai = {
 	}
 };
 
+#if 0
 //-------------------------------------
 static struct platform_device snd_null_2 = {
 	.name = "snd-null",
@@ -754,6 +755,7 @@ static struct platform_device snd_null_dai_2 = {
 		.platform_data = &snd_null_dai_data_2 ,
 	}
 };
+#endif
 #endif
 
 #if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)
@@ -1338,16 +1340,16 @@ static struct spi_board_info spi_plat_board[] __initdata = {
         .controller_data = &spi0_0_info,
         //.mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
     },
-    [0] = {
+    [1] = {
         .modalias        = "mtv_tdmb",	/* fixup */
-        .max_speed_hz    = 15 * 1000 * 1000,		/* max spi clock (SCK) speed in HZ */
+        .max_speed_hz    = 14 * 1000 * 1000,		/* max spi clock (SCK) speed in HZ */
         .bus_num         = 1,			/* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
         .chip_select     = 0,			/* Note> set chip select num, must be smaller than spi cs_num */
         .controller_data = &spi1_0_info,
         .mode            = SPI_MODE_0,// SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
     },
 
-    [1] = {
+    [2] = {
         .modalias        = "mtv_tpeg",	/* fixup */
         .max_speed_hz    = 14 * 1000 * 1000,		/* max spi clock (SCK) speed in HZ */
         .bus_num         = 1,			/* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
@@ -1356,7 +1358,7 @@ static struct spi_board_info spi_plat_board[] __initdata = {
         .mode            = SPI_MODE_0,// SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
     },
 
-    [2] = {
+    [3] = {
         .modalias        = "spidev",	/* fixup */
         .max_speed_hz    = 3125000,		/* max spi clock (SCK) speed in HZ */
         .bus_num         = 2,			/* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
@@ -1576,8 +1578,10 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_SND_CODEC_NULL)
     platform_device_register(&snd_null);
     platform_device_register(&snd_null_dai);
-    //platform_device_register(&snd_null_2);
-    //platform_device_register(&snd_null_dai_2);
+#if 0
+    platform_device_register(&snd_null_2);
+    platform_device_register(&snd_null_dai_2);
+#endif
 #endif
 
 #if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)
