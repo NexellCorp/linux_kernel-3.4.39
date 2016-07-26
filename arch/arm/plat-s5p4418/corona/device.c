@@ -175,7 +175,7 @@ struct nxp_adc_tmp_trigger adc_tmp_event[] = {
 		.period = 1000, /* Ms */
 	} , {
 		.temp  = 60,
-		.freq  = 600000,		/* freq = 0 :Set critical temp. Power off! */
+		.freq  = 600000,
 		.period = 1000, /* Ms */
 	} , {
         .temp  = 65,
@@ -1855,12 +1855,12 @@ static int _dwmci1_init(u32 slot_id, irq_handler_t handler, void *data)
 	struct dw_mci *host = (struct dw_mci *)data;
 	int io  = CFG_SDMMC1_DETECT_IO;
 	int irq = IRQ_GPIO_START + io;
-	int id  = 0, ret = 0;
+	int id  = 1, ret = 0;
 
 	printk("dw_mmc dw_mmc.%d: Using external card detect irq %3d (io %2d)\n", id, irq, io);
 
 	ret  = request_irq(irq, handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
-				DEV_NAME_SDHC "0", (void*)host->slot[slot_id]);
+				DEV_NAME_SDHC "1", (void*)host->slot[slot_id]);
 	if (0 > ret)
 		pr_err("dw_mmc dw_mmc.%d: fail request interrupt %d ...\n", id, irq);
 	return 0;
