@@ -202,6 +202,9 @@ static int  encoder_prepare(struct disp_process_dev *pdev)
 
 static int  encoder_enable(struct disp_process_dev *pdev, int enable)
 {
+	struct disp_vsync_info *psync = &pdev->vsync;	
+	int clk_src_lv0 = psync->clk_src_lv0;
+
 	PM_DBGOUT("%s %s, %s\n", __func__, dev_to_str(pdev->dev_id), enable?"ON":"OFF");
 
 	if (! enable) {
@@ -209,8 +212,10 @@ static int  encoder_enable(struct disp_process_dev *pdev, int enable)
 	} else {
 		encoder_prepare(pdev);
 
-		_release_hdmi_reset();
-		_set_hdmi_clk_27MHz();
+		if (clk_src_lv0 == 4) {	
+			_release_hdmi_reset();
+			_set_hdmi_clk_27MHz();
+		}
 
 		pdev->status |=  PROC_STATUS_ENABLE;
   	}
