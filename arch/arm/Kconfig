@@ -1032,24 +1032,24 @@ config ARCH_S5P4418
 	help
 	  Support for nexell S5P4418 dual/quard core (ARM Cortex A9) platform
 
-config ARCH_S5P6818
-	bool "SLsiAP S5P6818"
-	select ARCH_CPU_SLSI
-	select CPU_V7
-	select ARM_AMBA
-	select HAVE_SMP
-	select ARCH_HAS_CPUFREQ
-	select GENERIC_TIME
-	select GENERIC_CLOCKEVENTS
-	select ZONE_DMA
-	select HAVE_MACH_CLKDEV
-	select NEED_MACH_MEMORY_H
-	select NEED_MACH_IO_H
-	select ARCH_REQUIRE_GPIOLIB
-	select ARM_PATCH_PHYS_VIRT
-	help
-	  Support for nexell NXP5430 octa core (ARM Cortex A53) platform
-	  compatible with ARMv7
+#config ARCH_S5P6818
+#	bool "SLsiAP S5P6818"
+#	select ARCH_CPU_SLSI
+#	select CPU_V7
+#	select ARM_AMBA
+#	select HAVE_SMP
+#	select ARCH_HAS_CPUFREQ
+#	select GENERIC_TIME
+#	select GENERIC_CLOCKEVENTS
+#	select ZONE_DMA
+#	select HAVE_MACH_CLKDEV
+#	select NEED_MACH_MEMORY_H
+#	select NEED_MACH_IO_H
+#	select ARCH_REQUIRE_GPIOLIB
+#	select ARM_PATCH_PHYS_VIRT
+#	help
+#	  Support for nexell NXP5430 octa core (ARM Cortex A53) platform
+#	  compatible with ARMv7
 
 endchoice
 
