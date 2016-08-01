@@ -386,9 +386,9 @@ static struct disp_vsync_info  __hdmi_vsync = {
 
 static struct disp_hdmi_param  __hdmi_devpar = {
 	#if	  defined (CONFIG_NXP_DISPLAY_HDMI_1280_720P)
-	.preset = 0,
+	.preset = V4L2_DV_720P60,
 	#elif defined (CONFIG_NXP_DISPLAY_HDMI_1920_1080P)
-	.preset = 1,
+	.preset = V4L2_DV_1080P60,
 	#elif defined (CONFIG_NXP_DISPLAY_HDMI_800_480)
 	.preset = V4L2_DV_800_480_60,
 	#elif defined (CONFIG_NXP_DISPLAY_HDMI_720_480)
@@ -421,8 +421,14 @@ static void __disp_hdmi_dev_data(struct disp_vsync_info *vsync,
 
 	if (dev_par) {
 		switch (src->preset) {
-		case  0: vsc->h_active_len = 1280, vsc->v_active_len =  720; break;
-		case  1: vsc->h_active_len = 1920, vsc->v_active_len = 1080; break;
+		case  V4L2_DV_720P60: vsc->h_active_len = 1280, vsc->v_active_len =  720; break;
+		case  V4L2_DV_1080P60: vsc->h_active_len = 1920, vsc->v_active_len = 1080; break;
+		#if defined (CONFIG_NXP_DISPLAY_HDMI_800_480)
+		case  V4L2_DV_800_480_60: vsc->h_active_len = 800, vsc->v_active_len = 480; break;
+		#endif
+		#if defined (CONFIG_NXP_DISPLAY_HDMI_720_480)
+		case  V4L2_DV_480P60: vsc->h_active_len = 720, vsc->v_active_len = 480; break;
+		#endif
 		default: printk("***** %s: NOT SUPPORT HDMI RESOLUTION PRESET (%d) *****\n",
 					__func__, src->preset);
 				return;

@@ -294,8 +294,23 @@ static struct nxp_fb_plat_data fb0_plat_data = {
 	.format			= CFG_DISP_PRI_SCREEN_RGB_FORMAT,
 	.bgcolor		= CFG_DISP_PRI_BACK_GROUND_COLOR,
 	.bitperpixel	= CFG_DISP_PRI_SCREEN_PIXEL_BYTE * 8,
+#if defined(CONFIG_NXP_DISPLAY_HDMI_1280_720P)
+	.x_resol		= 1280,
+	.y_resol		= 720,
+#elif defined(CONFIG_NXP_DISPLAY_HDMI_1920_1080P)
+	.x_resol		= 1920,
+	.y_resol		= 1080,
+#elif defined(CONFIG_NXP_DISPLAY_HDMI_800_480)
+	.x_resol		= 800,
+	.y_resol		= 480,
+#elif defined(CONFIG_NXP_DISPLAY_HDMI_720_480)
+	.x_resol		= 720,
+	.y_resol		= 480,
+#else
 	.x_resol		= CFG_DISP_PRI_RESOL_WIDTH,
 	.y_resol		= CFG_DISP_PRI_RESOL_HEIGHT,
+#endif
+
 	#ifdef CONFIG_ANDROID
 	.buffers		= 3,
 	.skip_pan_vsync	= 1,
@@ -690,6 +705,32 @@ static struct platform_device alc5623_dai = {
 };
 #endif
 
+#if defined(CONFIG_SND_CODEC_NULL)
+static struct platform_device snd_null = {
+	.name = "snd-null",
+	.id = -1,
+};
+
+struct nxp_snd_dai_plat_data snd_null_dai_data = {
+	.i2s_ch = 0,
+#if defined(CONFIG_SND_NXP_DFS)
+	.sample_rate = SNDRV_PCM_RATE_8000_192000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE,
+#else
+	.sample_rate = 48000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
+#endif
+};
+
+static struct platform_device snd_null_dai = {
+	.name = "snd-null-card",
+	.id = -1,
+	.dev = {
+		.platform_data = &snd_null_dai_data,
+	}
+};
+
+#endif
 
 #if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)
 static struct platform_device spdif_transciever = {
@@ -1099,7 +1140,7 @@ static void spi0_0_cs(u32 chipselect)
 
 static void spi0_1_cs(u32 chipselect)
 {
-#if (CFG_SPI1_CS_GPIO_MODE)
+#if (CFG_SPI0_CS_GPIO_MODE)//(CFG_SPI1_CS_GPIO_MODE)
 	if(nxp_soc_gpio_get_io_func(CFG_SPI0_1_CS) != nxp_soc_gpio_get_altnum(CFG_SPI0_1_CS))
 		nxp_soc_gpio_set_io_func(CFG_SPI0_1_CS, nxp_soc_gpio_get_altnum(CFG_SPI0_1_CS));
 
@@ -1138,7 +1179,7 @@ static void spi1_1_cs(u32 chipselect)
 
 static void spi2_cs(u32 chipselect)
 {
-#if (CFG_SPI1_CS_GPIO_MODE)
+#if (CFG_SPI2_CS_GPIO_MODE)//(CFG_SPI1_CS_GPIO_MODE)
 	if(nxp_soc_gpio_get_io_func(CFG_SPI2_CS) != nxp_soc_gpio_get_altnum(CFG_SPI2_CS))
 		nxp_soc_gpio_set_io_func(CFG_SPI2_CS, nxp_soc_gpio_get_altnum(CFG_SPI2_CS));
 
@@ -1174,7 +1215,7 @@ struct pl022_config_chip spi0_0_info = {
 
 struct pl022_config_chip spi0_1_info = {
 	/* available POLLING_TRANSFER, INTERRUPT_TRANSFER, DMA_TRANSFER */
-	.com_mode = CFG_SPI0_COM_MODE,
+	.com_mode = CFG_SPI0_COM_MODE,//CFG_SPI1_COM_MODE,
 	.iface = SSP_INTERFACE_MOTOROLA_SPI,
 	/* We can only act as master but SSP_SLAVE is possible in theory */
 	.hierarchy = SSP_MASTER,
@@ -1189,7 +1230,7 @@ struct pl022_config_chip spi0_1_info = {
 	* This is where you insert a call to a function to enable CS
 	* (usually GPIO) for a certain chip.
 	*/
-#if (CFG_SPI1_CS_GPIO_MODE)
+#if (CFG_SPI0_CS_GPIO_MODE)//(CFG_SPI1_CS_GPIO_MODE)
 	.cs_control = spi0_1_cs,
 #endif
 	.clkdelay = SSP_FEEDBACK_CLK_DELAY_1T,
@@ -1200,9 +1241,9 @@ struct pl022_config_chip spi1_0_info = {
 	.com_mode = CFG_SPI1_COM_MODE,
 	.iface = SSP_INTERFACE_MOTOROLA_SPI,
 	/* We can only act as master but SSP_SLAVE is possible in theory */
-	.hierarchy = SSP_MASTER,
+	.hierarchy = SSP_MASTER,//SSP_SLAVE,
 	/* 0 = drive TX even as slave, 1 = do not drive TX as slave */
-	.slave_tx_disable = 1,
+	.slave_tx_disable = 1,//.slave_tx_disable = 0,
 	.rx_lev_trig = SSP_RX_4_OR_MORE_ELEM,
 	.tx_lev_trig = SSP_TX_4_OR_MORE_EMPTY_LOC,
 	.ctrl_len = SSP_BITS_8,
@@ -1248,7 +1289,7 @@ struct pl022_config_chip spi2_info = {
 	/* We can only act as master but SSP_SLAVE is possible in theory */
 	.hierarchy = SSP_SLAVE,
 	/* 0 = drive TX even as slave, 1 = do not drive TX as slave */
-	.slave_tx_disable = 1,
+	.slave_tx_disable = 0,//.slave_tx_disable = 1,
 	.rx_lev_trig = SSP_RX_4_OR_MORE_ELEM,
 	.tx_lev_trig = SSP_TX_4_OR_MORE_EMPTY_LOC,
 	.ctrl_len = SSP_BITS_8,
@@ -1266,30 +1307,29 @@ struct pl022_config_chip spi2_info = {
 
 static struct spi_board_info spi_plat_board[] __initdata = {
     [0] = {
-        .modalias        = "mtv_tdmb",	/* fixup */
+        .modalias        = "spidev",	/* fixup */
         .max_speed_hz    = 3125000,		/* max spi clock (SCK) speed in HZ */
         .bus_num         = 0,			/* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
         .chip_select     = 0,			/* Note> set chip select num, must be smaller than spi cs_num */
         .controller_data = &spi0_0_info,
         //.mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
     },
-
     [1] = {
-        .modalias        = "mtv_tpeg",	/* fixup */
-        .max_speed_hz    = 3125000,		/* max spi clock (SCK) speed in HZ */
-        .bus_num         = 0,			/* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
-        .chip_select     = 1,			/* Note> set chip select num, must be smaller than spi cs_num */
-        .controller_data = &spi0_1_info,
-        //.mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
-    },
-
-    [2] = {
-        .modalias        = "spidev",	/* fixup */
-        .max_speed_hz    = 3125000,		/* max spi clock (SCK) speed in HZ */
+        .modalias        = "mtv_tdmb",	/* fixup */
+        .max_speed_hz    = 14 * 1000 * 1000,		/* max spi clock (SCK) speed in HZ */
         .bus_num         = 1,			/* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
         .chip_select     = 0,			/* Note> set chip select num, must be smaller than spi cs_num */
         .controller_data = &spi1_0_info,
-        //.mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
+        .mode            = SPI_MODE_0,// SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
+    },
+
+    [2] = {
+        .modalias        = "mtv_tpeg",	/* fixup */
+        .max_speed_hz    = 14 * 1000 * 1000,		/* max spi clock (SCK) speed in HZ */
+        .bus_num         = 1,			/* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
+        .chip_select     = 1,			/* Note> set chip select num, must be smaller than spi cs_num */
+        .controller_data = &spi1_1_info,
+        .mode            = SPI_MODE_0,// SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
     },
 
     [3] = {
@@ -1301,8 +1341,8 @@ static struct spi_board_info spi_plat_board[] __initdata = {
         //.mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
     },
 };
-
 #endif
+
 
 /*------------------------------------------------------------------------------
  * DW MMC board config
@@ -1507,6 +1547,15 @@ void __init nxp_board_devices_register(void)
 	printk("plat: add device spdif playback\n");
 	platform_device_register(&spdif_transciever);
 	platform_device_register(&spdif_trans_dai);
+#endif
+
+#if defined(CONFIG_SND_CODEC_NULL)
+    platform_device_register(&snd_null);
+    platform_device_register(&snd_null_dai);
+#if 0
+    platform_device_register(&snd_null_2);
+    platform_device_register(&snd_null_dai_2);
+#endif
 #endif
 
 #if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)

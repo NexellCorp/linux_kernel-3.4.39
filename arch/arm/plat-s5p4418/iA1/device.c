@@ -730,32 +730,6 @@ static struct platform_device snd_null_dai = {
 	}
 };
 
-#if 0
-//-------------------------------------
-static struct platform_device snd_null_2 = {
-	.name = "snd-null",
-	.id = 1,
-};
-
-struct nxp_snd_dai_plat_data snd_null_dai_data_2 = {
-	.i2s_ch = 2,
-#if defined(CONFIG_SND_NXP_DFS)
-	.sample_rate = SNDRV_PCM_RATE_8000_192000,
-	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE,
-#else
-	.sample_rate = 48000,
-	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
-#endif
-};
-
-static struct platform_device snd_null_dai_2 = {
-	.name = "snd-null-card",
-	.id = 2,
-	.dev = {
-		.platform_data = &snd_null_dai_data_2 ,
-	}
-};
-#endif
 #endif
 
 #if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)
