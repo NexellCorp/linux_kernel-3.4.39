@@ -1152,6 +1152,11 @@ static int dwc_otg_driver_probe(
 #endif
                     );
 #endif
+#if defined(CONFIG_USB_USE_DESCRIPTOR_DMA)
+	dwc_otg_set_param_dma_enable(dwc_otg_device->core_if,1);
+	if(!dwc_otg_is_host_mode(dwc_otg_device->core_if))
+		dwc_otg_set_param_dma_desc_enable(dwc_otg_device->core_if,0);
+#endif
 #endif /*IRQF_TRIGGER_LOW*/
 
 	/*

@@ -5624,13 +5624,6 @@ int dwc_otg_set_param_dma_desc_enable(dwc_otg_core_if_t * core_if, int32_t val)
 {
 	int retval = 0;
 
-#if defined(CONFIG_ARCH_CPU_SLSI)
-	val = 0;
-#if defined(CONFIG_USB_VIDEO_CLASS)
-	val = 1;
-#endif
-#endif
-
 	if (DWC_OTG_PARAM_TEST(val, 0, 1)) {
 		DWC_WARN("Wrong value for dma_enable\n");
 		DWC_WARN("dma_desc_enable must be 0 or 1\n");
