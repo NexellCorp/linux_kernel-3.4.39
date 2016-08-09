@@ -11,6 +11,10 @@ ifeq ($(CONFIG_PLAT_S5P6818_AVN_REF),y)
 PLATBOARD :=avn_ref
 endif
 
+ifeq ($(CONFIG_PLAT_S5P6818_AVN_REF_BT),y)
+PLATBOARD :=avn_ref_bt
+endif
+
 #
 # Build options
 #
