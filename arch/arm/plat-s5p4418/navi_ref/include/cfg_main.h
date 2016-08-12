@@ -29,7 +29,7 @@
  * 	System Name
  */
 #define	CFG_SYS_CPU_NAME			"s5p4418"
-#define	CFG_SYS_BOARD_NAME			"s5p4418-avn_ref"
+#define	CFG_SYS_BOARD_NAME			"s5p4418-navi_ref"
 
 /*------------------------------------------------------------------------------
  * 	BUS config
