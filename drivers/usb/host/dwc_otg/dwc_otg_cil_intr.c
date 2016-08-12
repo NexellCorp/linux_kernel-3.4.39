@@ -47,10 +47,13 @@
 #include "dwc_otg_hcd.h"
 #include "dwc_otg_mphi_fix.h"
 
+/* nexell soc headers */
+#include <mach/platform.h>
 #ifdef CONFIG_BATTERY_NXE2000 
 #include <linux/power/nxe2000_battery.h>
-#endif
-#ifdef CONFIG_KP_AXP22
+#elif defined (CFG_SWITCH_USB_5V_EN)
+extern void otg_power_en(int enable);
+#elif defined (CONFIG_KP_AXP22)
 extern int axp_otg_power_control(int enable);
 #endif
 
@@ -296,6 +299,10 @@ void w_conn_id_status_change(void *p)
 		otgid_power_control_by_dwc(0);
 #elif defined(CONFIG_KP_AXP22)
 		axp_otg_power_control(0);
+#endif
+#if defined (CFG_SWITCH_USB_5V_EN)
+		printk("OTG Power disable\n");
+		otg_power_en(0);
 #endif
 		dwc_otg_set_prtpower(core_if, 0);
 		core_if->host_flag = 0;

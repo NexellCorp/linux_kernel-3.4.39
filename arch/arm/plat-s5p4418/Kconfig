@@ -29,6 +29,10 @@ choice
 		help
    	 		Support for the NAVI reference board.
 
+    config PLAT_S5P4418_AP700A
+        bool "AVN: Android AP700A reference board"
+        help
+            Support for the AP700A reference board.
 endchoice
 
 #

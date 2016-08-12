@@ -2267,6 +2267,7 @@ void dwc_otg_core_host_init(dwc_otg_core_if_t * core_if)
 
 	/* Turn on the vbus power. */
 	DWC_PRINTF("Init: Port Power? op_state=%d\n", core_if->op_state);
+	printk("Init: Port Power? op_state=%d\n", core_if->op_state);
 	if (core_if->op_state == A_HOST) {
 #if defined(CONFIG_BATTERY_NXE2000) || defined(CONFIG_KP_AXP22)
 		do{
@@ -2279,6 +2280,7 @@ void dwc_otg_core_host_init(dwc_otg_core_if_t * core_if)
 				dwc_msleep(100);
 		} while(ret < 0);
 #elif defined (CFG_SWITCH_USB_5V_EN)
+		printk("OTG Power Enable\n");
 		otg_power_en(1);
 #endif
 		for(i = 0; i < 10; i++){

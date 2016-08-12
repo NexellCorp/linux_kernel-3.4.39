@@ -41,7 +41,7 @@
 
 #define DRVNAME	"nxp-adc-tmp"
 #define STEP_FREQ	100000
-#define CORE_DOWN_TEMP_LEVEL	74
+#define CORE_DOWN_TEMP_LEVEL	70
 
 struct nxp_adc_tmp_event {
 	int  temp;
@@ -95,21 +95,22 @@ struct nxp_adc_tmp {
 
 /* initialize table for register value matching with tmp_value */
 static int tmp_table[][2] = {
-
-//	[0]  = {12900, 20}, // 0
-//	[1]  = {12200, 25}, // 0
-	[0]  = {11500, 30},
-	[1]  = {10700, 35}, 
-	[2]  = { 9900, 40}, 
-	[3]  = { 9100, 45},
-	[4]  = { 8400, 50},
-	[5]  = { 7700, 55},
-	[6]  = { 7000, 60}, 
-	[7]  = { 6300, 65}, 
-	[8] =  { 5700, 70},
-	[9] =  { 5200, 75},
-	[10] = { 4700, 80},
-	[11] = { 4200, 85}  
+	[0]  = {2786, 25}, // 0
+	[1]  = {2616, 30},
+	[2]  = {2443, 35}, 
+	[3]  = {2268, 40}, 
+	[4]  = {2094, 45},
+	[5]  = {1923, 50},
+	[6]  = {1758, 55},
+	[7]  = {1600, 60}, 
+	[8]  = {1453, 65}, 
+	[9]  = {1317, 70},
+	[10] = {1190, 75},
+	[11] = {1073, 80},
+	[12] = { 967, 85},  
+	[13] = { 870, 90},  
+	[14] = { 782, 95},  
+	[15] = { 703, 100}  
 };
 
 #define TEMP_TABLAE_SIZE	ARRAY_SIZE(tmp_table)
@@ -213,7 +214,9 @@ static long nxp_read_adc_tmp(struct nxp_adc_tmp *tmp)
 		return -1;
 
 	tmp->adc_value = val;
-	voltage = (18*val*1000)/4096;
+//	voltage = (18*val*1000)/4095;
+	voltage = val;
+//	printk("val = %d, voltage = %d\n", val);
 	/*
 	 * according to Register Voltage table,
 	 * calculate board tmp_value.
@@ -228,9 +231,9 @@ static long nxp_read_adc_tmp(struct nxp_adc_tmp *tmp)
 	}
 
 	if (i == TEMP_TABLAE_SIZE) {
-		tmp->tmp_value = 90;
+		tmp->tmp_value = 100;
 	} else if (j == 0) {
-		tmp->tmp_value = 30;
+		tmp->tmp_value = 25;
 	} else {
 		int n = tmp_table[i-1][0] - j;
 		tmp->tmp_value = tmp_table[i-1][1];
@@ -550,7 +553,6 @@ static int __devinit nxp_adc_tmp_probe(struct platform_device *pdev)
 	tmp->channel =	plat->channel;
 	tmp->id = pdev->id;
 	tmp->name = DRVNAME;
-	tmp->channel = plat->channel;
 	tmp->delay_ms = plat->duration ? plat->duration : STATE_CHECK_TIME;
 	tmp->tmp_offset = plat->tmp_offset;
 	tmp->min_freq = policy.cpuinfo.min_freq;

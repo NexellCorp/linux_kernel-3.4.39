@@ -52,7 +52,7 @@ struct reg_val {
 static struct reg_val _sensor_init_data[] =
 {
     {0x02, 0x40}, //MUX0
-//    {0x02, 0x44}, //MUX1
+//  {0x02, 0x44}, //MUX1
     {0x03, 0xa2},
     {0x07, 0x02},
     {0x08, 0x12},
@@ -479,6 +479,7 @@ static void _work_handler(struct work_struct *work)
 
 static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 {
+	#if 0
 	//printk("%s : enable : %d, state : %d\n", __func__, enable, _state.first);
     if (enable) {
         if (_state.first) 
@@ -525,6 +526,7 @@ static int tw9900_s_stream(struct v4l2_subdev *sd, int enable)
 			}
 		}
     }
+	#endif
 
     return 0;
 }

@@ -8,7 +8,7 @@ comment "Board features"
 
 choice
     prompt "Platform board"
-    default PLAT_S5P6818_AVN_REF_BT
+    default PLAT_S5P6818_DRONE
 
    	config PLAT_S5P6818_SVT
 		bool "SVT: Android SVT board"
@@ -19,11 +19,6 @@ choice
 		bool "S5P6818 Android AVN board"
 		help
    	 		Support for the AVN REF board.
-
-   	config PLAT_S5P6818_AVN_REF_BT
-		bool "S5P6818 Android AVN BT board"
-		help
-   	 		Support for the AVN REF BT board.
 
 endchoice
 

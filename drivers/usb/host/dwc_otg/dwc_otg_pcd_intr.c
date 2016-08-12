@@ -1374,6 +1374,7 @@ static inline void do_gadget_setup(dwc_otg_pcd_t * pcd,
 }
 
 #ifdef DWC_UTE_CFI
+33:
 /**
  * This functions delegates the CFI setup commands to the gadget driver.
  * This function will return a negative value to indicate a failure.

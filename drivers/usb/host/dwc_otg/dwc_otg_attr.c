@@ -1129,7 +1129,7 @@ static ssize_t otg_mode_store(struct device *_dev,
         printk(KERN_INFO "set otg mode to host\n");
         set_otg_mode(CFG_OTG_MODE_HOST, 0);
     } else {
-        printk("set otg mode to device\n");
+        printk(KERN_INFO "set otg mode to device\n");
         set_otg_mode(CFG_OTG_MODE_DEVICE, 0);
     }
     return count;

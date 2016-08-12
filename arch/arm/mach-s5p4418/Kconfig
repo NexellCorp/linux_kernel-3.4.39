@@ -70,12 +70,6 @@ config HAVE_PWM
 	select NXP_PWM
 	default y
 
-config HAVE_PWM
-	prompt "PWM driver"
-	bool
-	select NXP_PWM
-	default y
-
 config PWM_SYSFS
 	bool "/sys/devices/platform/pwm.N (sysfs interface)"
 	depends on HAVE_PWM

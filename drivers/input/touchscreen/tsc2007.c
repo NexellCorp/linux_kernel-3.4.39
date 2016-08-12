@@ -281,7 +281,7 @@ int tsc207_sample_average(struct tsc2007 *ts, struct ts_event *tc)
 
     if(ValidNum<TOUCH_VALID_VALUE)
     {
-	printk("Touch raw data not valid to get avgerage\n");
+//		printk("Touch raw data not valid to get avgerage\n");
         goto digi_int_exit;
     }
 			

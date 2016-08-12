@@ -1075,13 +1075,9 @@ void otg_phy_init(void)
     udelay(10);
 
     // 1-1. VBUS reconfig - Over current Issue
-#if 1
-    temp  = readl(SOC_VA_TIEOFF + 0x38) & ~(0x7<<23);
 #if defined(CFG_OTG_OVC_VALUE)
+    temp  = readl(SOC_VA_TIEOFF + 0x38) & ~(0x7<<23);
     temp |= (CFG_OTG_OVC_VALUE << 23);
-#else
-    temp |= (0x3<<23);
-#endif
     writel(temp, SOC_VA_TIEOFF + 0x38);
 #endif
 
@@ -1216,8 +1212,6 @@ static struct platform_device otg_plat_device = {
     .resource       = otg_resources,
 };
 
-//#define CFG_SWITCH_USB_5V_EN        (PAD_GPIO_D + 10)
-//#define CFG_SWITCH_USB_HOST_DEVICE  (PAD_GPIO_D + 11)
 #define CFG_OTG_MODE_HOST           1
 #define CFG_OTG_MODE_DEVICE         0
 #if !defined(CFG_OTG_BOOT_MODE)

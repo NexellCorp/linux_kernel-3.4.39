@@ -531,18 +531,24 @@ static int nxp_cpufreq_pm_notify(struct notifier_block *this,
 }
 
 // initialize table for register value matching with temperature
-static int drone_temperature_table[10][2] =
+static int drone_temperature_table[][2] =
 {
-	{9900, 40}, // 0
-	{9100, 45},
-	{8400, 50},
-	{7700, 55},
-	{7000, 60}, // 4
-	{6300, 65}, // 5
-	{5700, 70},
-	{5200, 75},
-	{4700, 80},
-	{4200, 85}  // 9
+    [0]  = {12245, 25}, // 0
+    [1]  = {11500, 30},
+    [2]  = {10737, 35},
+    [3]  = { 9969, 40},
+    [4]  = { 9203, 45},
+    [5]  = { 8453, 50},
+    [6]  = { 7727, 55},
+    [7]  = { 7033, 60},
+    [8]  = { 6389, 65},
+    [9]  = { 5789, 70},
+    [10] = { 5230, 75},
+    [11] = { 4717, 80},
+    [12] = { 4248, 85},
+    [13] = { 4248, 90},
+    [14] = { 4248, 95},
+    [15] = { 4248, 100}
 };
 
 static void nxl_monitor_work_func(struct work_struct *work)
@@ -560,13 +566,15 @@ static void nxl_monitor_work_func(struct work_struct *work)
 	if (!test_bit(STATE_RESUME_DONE, &adc->resume_state))
 		goto exit_mon;
 
-	chan = &nxp_adc_iio_channels[2];
+#if defined(CFG_ADC_CHANNEL)
+	chan = &nxp_adc_iio_channels[CFG_ADC_CHANNEL];
+#endif
 	nxp_read_raw(adc->iio, chan, &val, &val2, 0);
 
 	adc->tmp_voltage = (18*val*1000)/4096;
 
 	//  according to Register Voltage table, calculate board temperature.
-	for(num_grade=0, interval=0; num_grade<10; num_grade++)
+	for(num_grade=0, interval=0; num_grade<16; num_grade++)
 	{
 		if(adc->tmp_voltage > drone_temperature_table[num_grade][0])
 		{
@@ -578,13 +586,13 @@ static void nxl_monitor_work_func(struct work_struct *work)
 		}
 	}
 
-	if(num_grade == 10)
+	if(num_grade == 12)
 	{
 		adc->board_temperature = 90;
 	}
 	else if(interval == 0)
 	{
-		adc->board_temperature = 40;
+		adc->board_temperature = 30;
 	}
 	else
 	{
