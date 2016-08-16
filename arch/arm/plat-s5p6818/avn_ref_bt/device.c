@@ -712,7 +712,7 @@ static struct regulator_consumer_supply nxe2000_ldo9_supply_0[] = {
 	REGULATOR_SUPPLY("vcam_3.3V", NULL),
 };
 static struct regulator_consumer_supply nxe2000_ldo10_supply_0[] = {
-	REGULATOR_SUPPLY("vdumy2_1.2V", NULL),
+	REGULATOR_SUPPLY("vcore_1.0V", NULL),
 };
 static struct regulator_consumer_supply nxe2000_ldortc1_supply_0[] = {
 	REGULATOR_SUPPLY("valive_1.8V", NULL),
@@ -755,15 +755,15 @@ NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1200000, 1,  4);	/* 1.1V
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
 NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V SYS */
-NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0,     -1, 0,  0);	/* 3.3V  */
-NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 0, 0,     -1, 0,  0);	/* 1.8V  */
+NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* 3.3V  */
+NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* 1.8V  */
 NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 1, 1800000, 1,  2);	/* 1.8V SYS1 */
-NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 0, 0,     -1, 0,  2);	/* 1.8V  */
-NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 0, 0,     -1, 0,  0);	/* 2.8V  */
+NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 0, 0,      -1, 0,  2);	/* 1.8V  */
+NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* 2.8V  */
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 1, 3300000, 1, -1);	/* 3.3V ALIVE */
-NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 0, 0,     -1, 0,  1);	/* 2.8V VID */
-NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,     -1, 0,  0);	/* Not Use */
-NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 0, 0,     -1, 0,  0);	/* 2.8V  */
+NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 0, 0,      -1, 0,  1);	/* 2.8V VID */
+NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Use */
+NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* 2.8V  */
 NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 1, 1, 1000000, 1,  4);	/* 1.0V VCC1P0_CORE */
 NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 1, 1, 1800000, 1, -1);	/* 1.8V ALIVE */
 NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 1, 1, 1000000, 1, -1);	/* 1.0V ALIVE */
