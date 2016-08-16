@@ -804,7 +804,7 @@ static struct regulator_consumer_supply nxe2000_ldo9_supply_0[] = {
 	REGULATOR_SUPPLY("vcam_3.3V", NULL),
 };
 static struct regulator_consumer_supply nxe2000_ldo10_supply_0[] = {
-	REGULATOR_SUPPLY("vdumy2_1.2V", NULL),
+	REGULATOR_SUPPLY("vcore_1.0V", NULL),
 };
 static struct regulator_consumer_supply nxe2000_ldortc1_supply_0[] = {
 	REGULATOR_SUPPLY("valive_1.8V", NULL),
@@ -854,7 +854,7 @@ NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 1,  0);	/* 3.3V
 #endif
 NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 1, 1, 1800000, 0,  0);	/* 1.8V CAM1 */
 NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1900000, 1,  2);	/* 1.8V SYS1 */
-NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1900000, 1,  2);	/* 1.9V SYS */
+NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS */
 NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 1, 1, 2800000, 0,  0);	/* 2.8V VCAM */
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
 NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 1, 0, 2800000, 1,  1);	/* 2.8V VID */
