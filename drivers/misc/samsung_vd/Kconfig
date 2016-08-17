@@ -1,0 +1,7 @@
+config SAMSUNG_DIGITAL_CINEMA_FPGA
+    bool "Support I2C Samsung Digital Cinema FPGA board"
+    depends on I2C && PLAT_S5P6818_DIGITAL_CINEMA
+	default n
+    help
+      Say Y here if you have a samsung digital cinema FPGA board feature.
+

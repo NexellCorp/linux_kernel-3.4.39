@@ -532,6 +532,17 @@ static struct platform_device fc8300_dai = {
 };
 #endif
 
+#if defined(CONFIG_SAMSUNG_DIGITAL_CINEMA_FPGA)
+#include <linux/i2c.h>
+#define SAMSUNG_FPGA_I2C_BUS	(1)
+
+/* FPGA */
+static struct i2c_board_info __initdata samsung_fpga_i2c_bdi = {
+    .type   = "ditigal_cinema_fpga",
+    .addr   = (0x07>>1),		// 0x07(8BIT)
+};
+#endif
+
 #if defined(CONFIG_SND_CODEC_RT5640)
 #include <linux/i2c.h>
 
@@ -2154,6 +2165,11 @@ void __init nxp_board_devs_register(void)
 	printk("plat: add device fc8300 I2C\n");
 	i2c_register_board_info(FC8300_I2C_BUS, &fc8300_i2c_bdi, 1);
 	platform_device_register(&fc8300_dai);
+#endif
+
+#if defined(CONFIG_SAMSUNG_DIGITAL_CINEMA_FPGA)
+	printk("plat: add device digital_cinema-fpga\n");
+	i2c_register_board_info(SAMSUNG_FPGA_I2C_BUS, &samsung_fpga_i2c_bdi, 1);
 #endif
 
 #if defined(CONFIG_SND_CODEC_RT5640) || defined(CONFIG_SND_CODEC_RT5640_MODULE)

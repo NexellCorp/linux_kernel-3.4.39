@@ -25,6 +25,10 @@ choice
 		help
    	 		Support for the AVN REF BT board.
 
+    config PLAT_S5P6818_DIGITAL_CINEMA
+        bool "S5P6818 Android Digital Cinema board (Samsung VD)"
+        help
+            Support for the digital cinema board.
 endchoice
 
 #

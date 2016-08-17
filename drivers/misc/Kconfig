@@ -565,6 +565,7 @@ source "drivers/misc/lis3lv02d/Kconfig"
 source "drivers/misc/carma/Kconfig"
 source "drivers/misc/altera-stapl/Kconfig"
 source "drivers/misc/coda960/Kconfig"
+source "drivers/misc/samsung_vd/Kconfig"
 
 config SLSIAP_BACKWARD_CAMERA
     bool "SLSIAP Fast Preview of Backward Camera"
@@ -580,4 +581,5 @@ config FCI_FC8300
     default n
     help
 		support fci fc8300 isdbt.
+
 endmenu

@@ -15,6 +15,10 @@ ifeq ($(CONFIG_PLAT_S5P6818_AVN_REF_BT),y)
 PLATBOARD :=avn_ref_bt
 endif
 
+ifeq ($(CONFIG_PLAT_S5P6818_DIGITAL_CINEMA),y)
+PLATBOARD :=digital_cinema
+endif
+
 #
 # Build options
 #
