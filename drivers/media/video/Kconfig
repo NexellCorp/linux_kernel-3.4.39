@@ -1502,3 +1502,10 @@ config VIDEO_MX2_EMMAPRP
 	    conversion.
 
 endif # V4L_MEM2MEM_DRIVERS
+
+config FCI_8080
+    bool "FCI8080 tdmb device"
+    default n
+    help
+      Say Y here if you want support for the FCI8080 tdmb device.
+
