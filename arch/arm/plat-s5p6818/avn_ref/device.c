@@ -532,7 +532,15 @@ static struct platform_device fc8300_dai = {
 };
 #endif
 
+#if 1
+#include <linux/i2c.h>
+#define SAMSUNG_FPGA_I2C_BUS	(1)
 
+static struct i2c_board_info __initdata samsung_fpga_i2c_bdi = {
+    .type   = "samsung_fpga",
+    .addr   = (0x07>>1),		// 0x07(8BIT)
+};
+#endif
 
 #if defined(CONFIG_SND_CODEC_RT5640)
 #include <linux/i2c.h>
@@ -542,7 +550,7 @@ static struct platform_device fc8300_dai = {
 /* CODEC */
 static struct i2c_board_info __initdata rt5640_i2c_bdi = {
 	.type	= "rt5640",			// compatilbe with wm8976
-	.addr	= (0x38>>1),		// 0x1A (7BIT), 0x34(8BIT)
+	.addr	= (0x38>>1),		// 0x1C (7BIT), 0x38(8BIT)
 };
 
 /* DAI */
@@ -2158,6 +2166,10 @@ void __init nxp_board_devs_register(void)
 	platform_device_register(&fc8300_dai);
 #endif
 
+#if 1
+	printk("plat: add device samsung-fpga\n");
+	i2c_register_board_info(SAMSUNG_FPGA_I2C_BUS, &samsung_fpga_i2c_bdi, 1);
+#endif
 
 #if defined(CONFIG_SND_CODEC_RT5640) || defined(CONFIG_SND_CODEC_RT5640_MODULE)
 	printk("plat: add device asoc-rt5640\n");
