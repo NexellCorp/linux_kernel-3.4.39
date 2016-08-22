@@ -120,7 +120,7 @@ const u8 g_BottomQoSSI[2] = {
 		(0<<BOTBUS_SI_SLOT_MALI) |
 		(1<<BOTBUS_SI_SLOT_TOP) |
 		(0<<BOTBUS_SI_SLOT_DEINTERLACE) |
-		(0<<BOTBUS_SI_SLOT_1ST_CODA)
+		(1<<BOTBUS_SI_SLOT_1ST_CODA)
 };
 #endif
 
