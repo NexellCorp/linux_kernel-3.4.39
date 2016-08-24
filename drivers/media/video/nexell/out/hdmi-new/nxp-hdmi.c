@@ -150,13 +150,18 @@ static int nxp_hdmi_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
         if (ctrl->value > 0) {
             u32 regval = NX_HDMI_GetReg(0, HDMI_LINK_HDMI_CON_0);
             regval |= 0x01;
-            NX_HDMI_SetReg(0, HDMI_LINK_HDMI_CON_0, regval);
-            printk("HDMI ON\n");
+#ifndef CONFIG_NXP_HDMI_USE_HDCP
+			   NX_HDMI_SetReg(0, HDMI_LINK_HDMI_CON_0, regval);
+#endif         
+			   printk("HDMI ON\n");
+
         } else {
             u32 regval = NX_HDMI_GetReg(0, HDMI_LINK_HDMI_CON_0);
             regval &= ~0x01;
+#ifndef CONFIG_NXP_HDMI_USE_HDCP
             NX_HDMI_SetReg(0, HDMI_LINK_HDMI_CON_0, regval);
-            printk("HDMI OFF\n");
+#endif
+			printk("HDMI OFF\n");
         }
         break;
 
