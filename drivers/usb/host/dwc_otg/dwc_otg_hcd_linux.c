@@ -375,6 +375,88 @@ static int dwc_otg_hcd_resume(struct usb_hcd *hcd)
 #endif
 #endif	/* CONFIG_PM && CONFIG_ARCH_CPU_SLSI */
 
+#if defined(CONFIG_ARCH_CPU_SLSI)
+
+struct dwc_temp_buffer {
+	void *virt;
+	void *old_virt;
+	dma_addr_t phy;
+	dma_addr_t old_phy;
+	int num_sgs;
+};
+
+static int dwc_otg_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
+				   gfp_t mem_flags)
+{
+	if (urb->transfer_flags & 0x80000000) {
+		int ret = 0;
+		enum dma_data_direction dir;
+
+		dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+
+		if (usb_endpoint_xfer_control(&urb->ep->desc))
+			ret = usb_hcd_map_urb_for_dma(hcd, urb, mem_flags);
+		else {
+			if ((dir != DMA_TO_DEVICE)) {
+				struct dwc_temp_buffer *temp_buffer;
+				temp_buffer = kzalloc(sizeof(*temp_buffer), GFP_KERNEL);
+				temp_buffer->virt = dma_alloc_coherent(NULL,
+								       urb->transfer_buffer_length,
+								       &temp_buffer->phy, mem_flags);
+				temp_buffer->old_virt = urb->transfer_buffer;
+				temp_buffer->old_phy  = urb->transfer_dma;
+				temp_buffer->num_sgs = urb->num_sgs;
+				urb->transfer_buffer = temp_buffer;
+				urb->transfer_dma = temp_buffer->phy;
+				urb->num_sgs = 0xffff;
+				urb->transfer_flags |= URB_DMA_MAP_SINGLE;
+			} else
+				ret = usb_hcd_map_urb_for_dma(hcd, urb, mem_flags);
+		}
+		return ret;
+	} else 
+		return usb_hcd_map_urb_for_dma(hcd, urb, mem_flags);
+}
+
+static void dwc_otg_unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb)
+{
+	if (urb->transfer_flags & 0x80000000) {
+		enum dma_data_direction dir;
+
+		dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+		if ((dir != DMA_TO_DEVICE) && (urb->transfer_flags & URB_DMA_MAP_SINGLE)) {
+			if (urb->num_sgs == 0xffff) {
+				struct dwc_temp_buffer *temp_buffer;
+				dwc_otg_hcd_t *dwc_otg_hcd = hcd_to_dwc_otg_hcd(hcd);
+				int irqoff = irqs_disabled();
+
+				temp_buffer = urb->transfer_buffer;
+				urb->transfer_buffer = temp_buffer->old_virt;
+				urb->transfer_dma = temp_buffer->old_phy;
+				urb->num_sgs = temp_buffer->num_sgs;
+				memcpy(urb->transfer_buffer, temp_buffer->virt,
+				       urb->transfer_buffer_length);
+
+				if (irqoff)
+					local_irq_enable();
+				dma_free_coherent(NULL,
+						  urb->transfer_buffer_length,
+						  temp_buffer->virt,
+						  temp_buffer->phy);
+				if (irqoff)
+					local_irq_disable();
+				kfree(temp_buffer);
+			} else
+				usb_hcd_unmap_urb_for_dma(hcd, urb);
+		} else {
+			if (!usb_endpoint_xfer_control(&urb->ep->desc))
+				usb_hcd_unmap_urb_for_dma(hcd, urb);
+		}
+	} else 
+		return usb_hcd_unmap_urb_for_dma(hcd, urb);
+}
+#endif
+
 static struct hc_driver dwc_otg_hc_driver = {
 
 	.description = dwc_otg_hcd_name,
@@ -393,6 +475,10 @@ static struct hc_driver dwc_otg_hc_driver = {
 
 	.urb_enqueue = dwc_otg_urb_enqueue,
 	.urb_dequeue = dwc_otg_urb_dequeue,
+#if defined(CONFIG_ARCH_CPU_SLSI)
+	.map_urb_for_dma = dwc_otg_map_urb_for_dma,
+	.unmap_urb_for_dma = dwc_otg_unmap_urb_for_dma,
+#endif
 	.endpoint_disable = endpoint_disable,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
 	.endpoint_reset = endpoint_reset,
