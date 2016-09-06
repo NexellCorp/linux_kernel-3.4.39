@@ -259,12 +259,22 @@ static int nxp_fb_dev_suspend(struct nxp_fb_param *par)
 
 	PM_DBGOUT("%s\n", __func__);
 	ret = nxp_soc_disp_device_suspend_all(module);
+
+#endif
+
+#if defined (CONFIG_PLAT_S5P4418_DC_NAP)
+	nxp_soc_gpio_set_out_value(CFG_IO_NLCDRST, 0);
 #endif
 	return ret;
 }
 
 static int nxp_fb_dev_resume(struct nxp_fb_param *par)
 {
+#if defined (CONFIG_PLAT_S5P4418_DC_NAP)
+	// LCD Reset
+    nxp_soc_gpio_set_out_value(CFG_IO_NLCDRST, 1);
+#endif
+
 #ifdef CONFIG_NXP_DISPLAY
 	int module = par->fb_dev.device_id;
 	if (-1 == module)

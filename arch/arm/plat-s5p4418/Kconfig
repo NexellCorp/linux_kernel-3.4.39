@@ -29,10 +29,38 @@ choice
 		help
    	 		Support for the drone board.
 
+    config PLAT_S5P4418_DIGITAL_CINEMA
+        bool "DIGITAL CINEMA: Android Digital Cinema board"
+        help
+            Support for the Digital Cinema board.
+
+    config PLAT_S5P4418_AVN_REF
+        bool "AVN: Android avn_ref board"
+        help
+            Support for the avn_ref board.
 endchoice
 
 #
 # Board dependent configure
 #
 
+choice
+    prompt "Digital Cinema board feature"
+	depends on PLAT_S5P4418_DIGITAL_CINEMA
+    default PLAT_S5P4418_DC_NAP
 
+    config PLAT_S5P4418_DC_NAP
+        bool "N.AP"
+        help
+            N.AP Digital Cinema board feature (Non-secure)
+
+    config PLAT_S5P4418_DC_SAP
+        bool "S.AP"
+        help
+            N.AP Digital Cinema board feature (Secure)
+endchoice
+
+    config SAMSUNG_DIGITAL_CINEMA_FPGA
+        bool "Support the Samsung FPGA board"
+        default y
+        depends on PLAT_S5P4418_DIGITAL_CINEMA

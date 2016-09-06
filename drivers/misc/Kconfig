@@ -573,4 +573,11 @@ config SLSIAP_BACKWARD_CAMERA
       If you say yes here, you can view camera as soon as kernel booting, and
       this driver switch on/off camera by gpio interrupt
 
+config USB_HUB_GL852G
+    tristate "GL852G USB HUB Driver"
+    depends on I2C
+    default n
+    help
+      Support the genesys logic usb hub driver.
+
 endmenu

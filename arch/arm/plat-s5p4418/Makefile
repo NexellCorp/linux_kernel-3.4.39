@@ -19,6 +19,14 @@ ifeq ($(CONFIG_PLAT_S5P4418_LEPUS),y)
 PLATBOARD :=lepus
 endif
 
+ifeq ($(CONFIG_PLAT_S5P4418_DIGITAL_CINEMA),y)
+PLATBOARD :=digital_cinema
+endif
+
+ifeq ($(CONFIG_PLAT_S5P4418_AVN_REF),y)
+PLATBOARD :=avn_ref
+endif
+
 #
 # Build options
 #
