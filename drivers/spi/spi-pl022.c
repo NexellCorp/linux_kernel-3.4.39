@@ -777,7 +777,7 @@ static void dma_callback(void *data)
 	struct spi_message *msg = pl022->cur_msg;
 
 	BUG_ON(!pl022->sgt_rx.sgl);
-	printk(" callback\n");
+
 	complete(&pl022->xfer_completion);
 #ifdef VERBOSE_DEBUG
 	/*
@@ -1361,7 +1361,6 @@ static void pump_transfers(unsigned long data)
 	flush(pl022);
 
 	if (pl022->cur_chip->enable_dma) {
-		printk("fifo let go\n");
 		if (configure_dma(pl022)) {
 			dev_dbg(&pl022->adev->dev,
 				"configuration of DMA failed, fall back to interrupt mode\n");
