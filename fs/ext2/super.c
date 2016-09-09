@@ -872,7 +872,7 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
 	if (features) {
 //		ext2_msg(sb, KERN_ERR,	"error: couldn't mount because of "
 //		       "unsupported optional features (%x)",
-			le32_to_cpu(features));
+//			le32_to_cpu(features));
 		goto failed_mount;
 	}
 	if (!(sb->s_flags & MS_RDONLY) &&
