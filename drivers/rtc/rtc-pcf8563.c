@@ -12,6 +12,8 @@
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
+ *
+ * Modified by chris <kjlee@nexell.co.kr>
  */
 
 #include <linux/i2c.h>
@@ -22,6 +24,8 @@
 #include <linux/of.h>
 #include <linux/err.h>
 #include <linux/delay.h>
+
+#define RTC_DEBUG
 
 #define DRV_VERSION "0.4.3"
 
@@ -207,13 +211,14 @@ static int pcf8563_get_datetime(struct i2c_client *client, struct rtc_time *tm)
                 "low voltage detected, date/time is not reliable.\n");
         }
 
+#ifdef RTC_DEBUG
         printk("%s: raw data is st1=%02x, st2=%02x, sec=%02x, min=%02x, hr=%02x, "
                 "mday=%02x, wday=%02x, mon=%02x, year=%02x\n",
                 __func__,
                 buf[0], buf[1], buf[2], buf[3],
                 buf[4], buf[5], buf[6], buf[7],
                 buf[8]);
-
+#endif
 
         tm->tm_sec = bcd2bin(buf[PCF8563_REG_SC] & 0x7F);
         tm->tm_min = bcd2bin(buf[PCF8563_REG_MN] & 0x7F);
@@ -228,11 +233,13 @@ static int pcf8563_get_datetime(struct i2c_client *client, struct rtc_time *tm)
         pcf8563->c_polarity = (buf[PCF8563_REG_MO] & PCF8563_MO_C) ?
                 (tm->tm_year >= 100) : (tm->tm_year < 100);
 
+#ifdef RTC_DEBUG
         printk("%s: tm is secs=%d, mins=%d, hours=%d, "
                 "mday=%d, mon=%d, year=%d, wday=%d\n",
                 __func__,
                 tm->tm_sec, tm->tm_min, tm->tm_hour,
                 tm->tm_mday, tm->tm_mon, tm->tm_year, tm->tm_wday);
+#endif
 
         /* the clock can give out invalid datetime, but we cannot return
          * -EINVAL otherwise hwclock will refuse to set the time on bootup.
@@ -248,11 +255,13 @@ static int pcf8563_set_datetime(struct i2c_client *client, struct rtc_time *tm)
         struct pcf8563 *pcf8563 = i2c_get_clientdata(client);
         unsigned char buf[9];
 
+#ifdef RTC_DEBUG
         printk("%s: secs=%d, mins=%d, hours=%d, "
                 "mday=%d, mon=%d, year=%d, wday=%d\n",
                 __func__,
                 tm->tm_sec, tm->tm_min, tm->tm_hour,
                 tm->tm_mday, tm->tm_mon, tm->tm_year, tm->tm_wday);
+#endif
 
         /* hours, minutes and seconds */
         buf[PCF8563_REG_SC] = bin2bcd(tm->tm_sec);
@@ -333,8 +342,10 @@ static int pcf8563_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *tm)
         if (err)
                 return err;
 
+#ifdef RTC_DEBUG
         printk("%s: raw data is min=%02x, hr=%02x, mday=%02x, wday=%02x\n",
                 __func__, buf[0], buf[1], buf[2], buf[3]);
+#endif
 
         tm->time.tm_min = bcd2bin(buf[0] & 0x7F);
         tm->time.tm_hour = bcd2bin(buf[1] & 0x3F);
@@ -349,10 +360,12 @@ static int pcf8563_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *tm)
         if (err < 0)
                 return err;
 
+#ifdef RTC_DEBUG
         printk("%s: tm is mins=%d, hours=%d, mday=%d, wday=%d,"
                 " enabled=%d, pending=%d\n", __func__, tm->time.tm_min,
                 tm->time.tm_hour, tm->time.tm_mday, tm->time.tm_wday,
                 tm->enabled, tm->pending);
+#endif
 
         return 0;
 }
@@ -371,10 +384,12 @@ static int pcf8563_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *tm)
                 rtc_time_to_tm(alarm_time, &tm->time);
         }
 
-        printk("%s, min=%d hour=%d wday=%d mday=%d "
+#ifdef RTC_DEBUG
+        printk("%s: min=%d hour=%d wday=%d mday=%d "
                 "enabled=%d pending=%d\n", __func__,
                 tm->time.tm_min, tm->time.tm_hour, tm->time.tm_wday,
                 tm->time.tm_mday, tm->enabled, tm->pending);
+#endif
 
         buf[0] = bin2bcd(tm->time.tm_min);
         buf[1] = bin2bcd(tm->time.tm_hour);
