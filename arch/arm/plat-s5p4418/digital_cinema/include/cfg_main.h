@@ -69,10 +69,6 @@
  */
 #define CFG_ETHER_LOOPBACK_MODE					0       /* 0: disable, 1: 10M, 2: 100M(x), 3: 1000M(x) */
 
-/* For RTL8211 */
-#define	CFG_ETHER_GMAC_PHY_IRQ_NUM				(IRQ_GPIO_D_START + 30)
-#define	CFG_ETHER_GMAC_PHY_RST_NUM				(PAD_GPIO_A + 12)
-
 /* OTG */
 #define CFG_OTG_OVC_VALUE						0
 
@@ -150,8 +146,9 @@
  * 	PWM
  */
 #define CFG_LCD_PRI_PWM_CH						0
-#define CFG_LCD_PRI_PWM_FREQ					30000
+#define CFG_LCD_PRI_PWM_FREQ					20000
 #define CFG_LCD_PRI_PWM_DUTYCYCLE				50		/* (%) */
+#define CFG_PWM0_CLK_INV            			1
 
 /*------------------------------------------------------------------------------
  * 	Audio I2S (0, 1, 2)
@@ -190,8 +187,8 @@
 #define CFG_I2C3_CLK							100000
 #define CFG_I2C4_CLK							100000
 #define CFG_I2C5_CLK							100000
-#define CFG_I2C6_CLK							400000	/* Touch */
-#define CFG_I2C7_CLK							100000	/* RTC */
+#define CFG_I2C6_CLK							100000
+#define CFG_I2C7_CLK							100000
 
 /*------------------------------------------------------------------------------
  * 	SPI
@@ -267,18 +264,33 @@
  */
 
 /* Wakeup Source : ALIVE [0~7] */
+#if defined (CONFIG_PLAT_S5P4418_DC_NAP)
 #define CFG_PWR_WAKEUP_SRC_ALIVE0				CTRUE					/* KEY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE0				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE1				CTRUE
+#define CFG_PWR_WAKEUP_SRC_ALIVE1				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_BOTHEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE2				CTRUE					/* PMIC - VUSB*/
+#define CFG_PWR_WAKEUP_SRC_ALIVE2				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE3				CFALSE					/* PMIC - CRITICAL LOW BATTERY */
-#define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_ASYNC_LOWLEVEL
+#define CFG_PWR_WAKEUP_SRC_ALIVE3				CTRUE
+#define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_ASYNC_LOWLEVEL /* Lower BAT */
 #define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR */
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE
+#elif defined (CONFIG_PLAT_S5P4418_DC_SAP)
+#define CFG_PWR_WAKEUP_SRC_ALIVE0               CTRUE                   /* KEY */
+#define CFG_PWR_WAKEUP_MOD_ALIVE0               PWR_DECT_FALLINGEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE1               CFALSE
+#define CFG_PWR_WAKEUP_MOD_ALIVE1               PWR_DECT_BOTHEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE2               CFALSE
+#define CFG_PWR_WAKEUP_MOD_ALIVE2               PWR_DECT_BOTHEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE3               CFALSE
+#define CFG_PWR_WAKEUP_MOD_ALIVE3               PWR_DECT_ASYNC_LOWLEVEL
+#define CFG_PWR_WAKEUP_SRC_ALIVE4               CTRUE                   /* PMIC INTR */
+#define CFG_PWR_WAKEUP_MOD_ALIVE4               PWR_DECT_FALLINGEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE5               CFALSE
+#define CFG_PWR_WAKEUP_MOD_ALIVE5               PWR_DECT_FALLINGEDGE
+#endif
 
 /*
  * Wakeup Source : RTC ALARM

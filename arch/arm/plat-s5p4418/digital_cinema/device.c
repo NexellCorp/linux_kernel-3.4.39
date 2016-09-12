@@ -221,6 +221,110 @@ static struct platform_device dm9000_plat_device = {
 #endif	/* CONFIG_DM9000 || CONFIG_DM9000_MODULE */
 
 /*------------------------------------------------------------------------------
+ * DW GMAC board config
+ */
+#if defined(CONFIG_NXPMAC_ETH)
+#include <linux/phy.h>
+#include <linux/nxpmac.h>
+#include <linux/delay.h>
+#include <linux/gpio.h>
+int nxpmac_init(struct platform_device *pdev)
+{
+    u32 addr;
+
+    // Clock control
+    NX_CLKGEN_Initialize();
+    addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
+    NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (void*)IO_ADDRESS(addr) );
+
+    NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 4);     // Sync mode for 100 & 10Base-T : External RX_clk
+    NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);    // Sync mode for 100 & 10Base-T
+
+    NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);    // TX Clk invert off : 100 & 10Base-T
+
+    NX_CLKGEN_SetClockDivisorEnable( CLOCKINDEX_OF_DWC_GMAC_MODULE, CTRUE);
+
+    // Reset control
+    NX_RSTCON_Initialize();
+    addr = NX_RSTCON_GetPhysicalAddress();
+    NX_RSTCON_SetBaseAddress( (void*)IO_ADDRESS(addr) );
+    NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
+    udelay(100);
+    NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_DISABLE);
+    udelay(100);
+    NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
+    udelay(100);
+
+
+    gpio_request(CFG_ETHER_GMAC_PHY_RST_NUM,"Ethernet Rst pin");
+    gpio_direction_output(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
+    udelay( 100 );
+    gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 0 );
+    udelay( 100 );
+    gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
+
+    gpio_free(CFG_ETHER_GMAC_PHY_RST_NUM);
+
+    printk("NXP mac init ..................\n");
+    return 0;
+}
+
+int gmac_phy_reset(void *priv)
+{
+    // Set GPIO nReset
+    gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
+    udelay( 100 );
+    gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 0 );
+    udelay( 100 );
+    gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
+    msleep( 30 );
+
+    return 0;
+}
+
+static struct stmmac_mdio_bus_data nxpmac0_mdio_bus = {
+    .phy_reset = gmac_phy_reset,
+    .phy_mask = 0,
+    .probed_phy_irq = CFG_ETHER_GMAC_PHY_IRQ_NUM,
+};
+
+static struct plat_stmmacenet_data nxpmac_plat_data = {
+    .phy_addr = 3,      /* hw config */
+    .clk_csr = 0x4,     /* PCLK 150~250 Mhz */
+    .interface = PHY_INTERFACE_MODE_RGMII,
+    .autoneg = AUTONEG_ENABLE, /* AUTONEG_ENABLE or AUTONEG_DISABLE */
+    .speed = SPEED_1000,/* speed & duplex settings apply only when AUTONEG_DISABLE */
+    .duplex = DUPLEX_FULL,
+    .pbl = 16,          /* burst 16 */
+    .has_gmac = 1,      /* GMAC ethernet */
+    .enh_desc = 1,
+    .mdio_bus_data = &nxpmac0_mdio_bus,
+    //.init = &nxpmac_init,
+};
+
+/* DWC GMAC Controller registration */
+
+static struct resource nxpmac_resource[] = {
+    [0] = DEFINE_RES_MEM(PHY_BASEADDR_GMAC, SZ_8K),
+    [1] = DEFINE_RES_IRQ_NAMED(IRQ_PHY_GMAC, "macirq"),
+};
+
+static u64 nxpmac_dmamask = DMA_BIT_MASK(32);
+
+struct platform_device nxp_gmac_dev = {
+    .name           = "stmmaceth",  //"s5p4418-gmac",
+    .id             = -1,
+    .num_resources  = ARRAY_SIZE(nxpmac_resource),
+    .resource       = nxpmac_resource,
+    .dev            = {
+        .dma_mask           = &nxpmac_dmamask,
+        .coherent_dma_mask  = DMA_BIT_MASK(32),
+        .platform_data      = &nxpmac_plat_data,
+    }
+};
+#endif
+ 
+/*------------------------------------------------------------------------------
  * DISPLAY (LVDS) / FB
  */
 #if defined (CONFIG_FB_NXP)
@@ -267,10 +371,11 @@ static struct platform_device *fb_devices[] = {
 #include <linux/pwm_backlight.h>
 
 static struct platform_pwm_backlight_data bl_plat_data = {
-	.pwm_id			= CFG_LCD_PRI_PWM_CH,
-	.max_brightness = 255,//	/* 255 is 100%, set over 100% */
-	.dft_brightness = 100,//	/* 99% */
-	.pwm_period_ns	= 1000000000/CFG_LCD_PRI_PWM_FREQ,
+    .pwm_id         = CFG_LCD_PRI_PWM_CH,
+    .max_brightness = 255,  /* 255 is 100%, set over 100% */
+    .dft_brightness = 128,  /* 50% */
+    .lth_brightness = 75,   /* about to 5% */
+    .pwm_period_ns  = 1000000000/CFG_LCD_PRI_PWM_FREQ,
 };
 
 static struct platform_device bl_plat_device = {
@@ -698,7 +803,7 @@ static struct i2c_board_info __initdata tsc2007_i2c_bdi = {
 static struct i2c_board_info __initdata pcf8563_i2c_bdi = {
     .type   = "pcf8563",
     .addr   = (0xA2>>1),
-//  .irq    = PB_PIO_IRQ(CFG_IO_RTC_INT),
+	.irq    = PB_PIO_IRQ(CFG_IO_RTC_INT),
 };
 #endif
 
@@ -1409,6 +1514,11 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_RFKILL_NXP)
     printk("plat: add device rfkill\n");
     platform_device_register(&rfkill_device);
+#endif
+
+#if defined(CONFIG_NXPMAC_ETH)
+    printk("plat: add device nxp-gmac\n");
+    platform_device_register(&nxp_gmac_dev);
 #endif
 
 #if defined(CONFIG_NXP_HDMI_CEC)

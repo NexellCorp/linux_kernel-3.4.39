@@ -28,17 +28,21 @@
 #include <linux/i2c/tsc2007.h>
 #include <linux/pm.h>
 
+#include <mach/platform.h>
+#include <mach/devices.h>
+#include <mach/soc.h>
+
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
 #define TSC2007_SUSPEND_LEVEL 1
 #endif
 
-#define TSC2007_MEASURE_TEMP0		(0x0 << 4)
+#define TSC2007_MEASURE_TEMP0	(0x0 << 4)
 #define TSC2007_MEASURE_AUX		(0x2 << 4)
-#define TSC2007_MEASURE_TEMP1		(0x4 << 4)
+#define TSC2007_MEASURE_TEMP1	(0x4 << 4)
 #define TSC2007_ACTIVATE_XN		(0x8 << 4)
 #define TSC2007_ACTIVATE_YN		(0x9 << 4)
-#define TSC2007_ACTIVATE_YP_XN		(0xa << 4)
+#define TSC2007_ACTIVATE_YP_XN	(0xa << 4)
 #define TSC2007_SETUP			(0xb << 4)
 #define TSC2007_MEASURE_X		(0xc << 4)
 #define TSC2007_MEASURE_Y		(0xd << 4)
@@ -351,7 +355,6 @@ static void tsc2007_send_up_event(struct tsc2007 *tsc)
 	struct input_dev *input = tsc->input;
 
 	dev_dbg(&tsc->client->dev, "UP\n");
-	//printk("UP\n");
 
 	input_report_key(input, BTN_TOUCH, 0);
 	input_report_abs(input, ABS_PRESSURE, 0);
@@ -503,6 +506,8 @@ static int tsc2007_suspend(struct device *dev)
 		}
 	}
 
+	nxp_soc_gpio_set_out_value(CFG_IO_TOUCH_PWR_EN, 0);
+
 	return 0;
 }
 
@@ -510,6 +515,8 @@ static int tsc2007_resume(struct device *dev)
 {
 	int rc;
 	struct tsc2007	*ts = dev_get_drvdata(dev);
+
+	nxp_soc_gpio_set_out_value(CFG_IO_TOUCH_PWR_EN, 1);
 
 	if (ts->power_shutdown) {
 		rc = ts->power_shutdown(false);
