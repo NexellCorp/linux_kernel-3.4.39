@@ -255,12 +255,11 @@ int nxpmac_init(struct platform_device *pdev)
     NX_RSTCON_SetnRST(RESETINDEX_OF_DWC_GMAC_MODULE_aresetn_i, RSTCON_ENABLE);
     udelay(100);
 
-
     gpio_request(CFG_ETHER_GMAC_PHY_RST_NUM,"Ethernet Rst pin");
     gpio_direction_output(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
-    udelay( 100 );
+    udelay(100);
     gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 0 );
-    udelay( 100 );
+    udelay(100);
     gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
 
     gpio_free(CFG_ETHER_GMAC_PHY_RST_NUM);
@@ -273,11 +272,11 @@ int gmac_phy_reset(void *priv)
 {
     // Set GPIO nReset
     gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
-    udelay( 100 );
+    udelay(100);
     gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 0 );
-    udelay( 100 );
+    udelay(100);
     gpio_set_value(CFG_ETHER_GMAC_PHY_RST_NUM, 1 );
-    msleep( 30 );
+    msleep(30);
 
     return 0;
 }

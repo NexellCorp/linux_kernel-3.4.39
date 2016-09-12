@@ -941,7 +941,7 @@ static int stmmac_init_phy(struct net_device *dev)
 	phydev = phy_connect(dev, phy_id_fmt, &stmmac_adjust_link, 0, interface);
 	// [ADD] by freestyle
 	__trace("%s phydev->autoneg: %x\n", __func__, phydev->autoneg);
-	//if (phydev->autoneg == AUTONEG_DISABLE)
+	if (phydev->autoneg == AUTONEG_DISABLE)
 		phy_stop(phydev);
 	// [ADD]
 
