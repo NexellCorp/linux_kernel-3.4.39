@@ -44,7 +44,7 @@
 #define PAD_GPIOA13     (PAD_MODE_OUT  | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[12]         ,2:_                    ,3:_                    =
 #define PAD_GPIOA14     (PAD_MODE_IN   | PAD_FUNC_ALT0 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[13]         ,2:_                    ,3:_                    =
 #define PAD_GPIOA15     (PAD_MODE_IN   | PAD_FUNC_ALT0 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[14]         ,2:_                    ,3:_                    =
-#define PAD_GPIOA16     (PAD_MODE_OUT  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW   | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[15]         ,2:_                    ,3:-                    =
+#define PAD_GPIOA16     (PAD_MODE_OUT  | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[15]         ,2:_                    ,3:-                    =
 #define PAD_GPIOA17     (PAD_MODE_IN   | PAD_FUNC_ALT0 | PAD_LEVEL_LOW   | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[16]         ,2:_                    ,3:_                    =
 #define PAD_GPIOA18     (PAD_MODE_IN   | PAD_FUNC_ALT0 | PAD_LEVEL_LOW   | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[17]         ,2:_                    ,3:_                    =
 #define PAD_GPIOA19     (PAD_MODE_IN   | PAD_FUNC_ALT0 | PAD_LEVEL_LOW   | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: PDRGB24[18]         ,2:_                    ,3:_                    =
@@ -159,8 +159,8 @@
 #define PAD_GPIOD7      (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: I2C2_SDA            ,2:_                    ,3:_                    =
 #define PAD_GPIOD8      (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: PPM_IN              ,2:_                    ,3:_                    =
 #define PAD_GPIOD9      (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: I2S0_SDO            ,2: AC97_ACSDATAOUT     ,3:_                    =
-#define PAD_GPIOD10     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: I2S0_BCLK           ,2: AC97_ACBITCLK       ,3:_                    =
-#define PAD_GPIOD11     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: I2S0_SDI            ,2: AC97_ACSDATAIN      ,3:_                    =
+#define PAD_GPIOD10     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: I2S0_BCLK           ,2: AC97_ACBITCLK       ,3:_                    =
+#define PAD_GPIOD11     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: I2S0_SDI            ,2: AC97_ACSDATAIN      ,3:_                    =
 #define PAD_GPIOD12     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: I2S0_LRCLK          ,2: AC97_ACSYNC         ,3:_                    =
 #define PAD_GPIOD13     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: GPIO          ,1: I2S0_CODCLK         ,2: AC97_nACRESET       ,3:_                    =
 #define PAD_GPIOD14     (PAD_MODE_ALT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          ,1: UART0RXD            ,2: UART1_SMCAYEN       ,3:_                    =
@@ -455,12 +455,6 @@
 
 /* Control GPIO */
 #if defined (CONFIG_PLAT_S5P4418_DC_NAP)
-/* Board Dependency */
-#define CFG_IO_SUSPEND						(PAD_GPIO_A + 13)
-#define CFG_IO_FPGA_DONE					(PAD_GPIO_A + 14)
-#define CFG_IO_DBG_I2CMODE					(PAD_GPIO_A + 15)	// High : Debug I2C, Low : FPGA I2C
-#define CFG_IO_SAP_PWRKEY					(PAD_GPIO_ALV + 1)
-
 /* Touch */
 #define	CFG_IO_TOUCH_PENDOWN_DETECT			(PAD_GPIO_D + 8)
 #define	CFG_IO_TOUCH_PWR_EN					(PAD_GPIO_D + 19)
@@ -476,14 +470,8 @@
 #define CFG_IO_NLCDRST						(PAD_GPIO_B + 24)
 #endif
 
-/* Common */
-#define CFG_IO_UART_RQST					(PAD_GPIO_A + 16)
-#define CFG_IO_BOOTOK1						(PAD_GPIO_D + 10)
-#define CFG_IO_BOOTOK0						(PAD_GPIO_D + 11)
-#define CFG_IO_FPGA_GPIOA					(PAD_GPIO_ALV + 3)
-
 /* GMAC PHY */
-/* for rtl8211 */
+/* RTL8211 */
 #define CFG_ETHER_GMAC_PHY_IRQ_NUM          (IRQ_GPIO_A_START + 11)
 #define CFG_ETHER_GMAC_PHY_RST_NUM          (PAD_GPIO_A + 12)
 
