@@ -174,7 +174,6 @@ static irqreturn_t pcf8563_irq(int irq, void *dev_id)
         int err;
         char pending;
 
-		printk("rtc interrupt!!!!\n");
         err = pcf8563_get_alarm_mode(pcf8563->client, NULL, &pending);
         if (err)
                 return IRQ_NONE;
@@ -205,7 +204,7 @@ static int pcf8563_get_datetime(struct i2c_client *client, struct rtc_time *tm)
         if (buf[PCF8563_REG_SC] & PCF8563_SC_LV) {
                 pcf8563->voltage_low = 1;
                 dev_info(&client->dev,
-                        "low voltage detected, date/time is not reliable.\n");
+                "low voltage detected, date/time is not reliable.\n");
         }
 
         printk("%s: raw data is st1=%02x, st2=%02x, sec=%02x, min=%02x, hr=%02x, "
@@ -249,7 +248,7 @@ static int pcf8563_set_datetime(struct i2c_client *client, struct rtc_time *tm)
         struct pcf8563 *pcf8563 = i2c_get_clientdata(client);
         unsigned char buf[9];
 
-        dev_dbg(&client->dev, "%s: secs=%d, mins=%d, hours=%d, "
+        printk("%s: secs=%d, mins=%d, hours=%d, "
                 "mday=%d, mon=%d, year=%d, wday=%d\n",
                 __func__,
                 tm->tm_sec, tm->tm_min, tm->tm_hour,
@@ -334,8 +333,7 @@ static int pcf8563_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *tm)
         if (err)
                 return err;
 
-        dev_dbg(&client->dev,
-                "%s: raw data is min=%02x, hr=%02x, mday=%02x, wday=%02x\n",
+        printk("%s: raw data is min=%02x, hr=%02x, mday=%02x, wday=%02x\n",
                 __func__, buf[0], buf[1], buf[2], buf[3]);
 
         tm->time.tm_min = bcd2bin(buf[0] & 0x7F);
@@ -351,7 +349,7 @@ static int pcf8563_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *tm)
         if (err < 0)
                 return err;
 
-        dev_dbg(&client->dev, "%s: tm is mins=%d, hours=%d, mday=%d, wday=%d,"
+        printk("%s: tm is mins=%d, hours=%d, mday=%d, wday=%d,"
                 " enabled=%d, pending=%d\n", __func__, tm->time.tm_min,
                 tm->time.tm_hour, tm->time.tm_mday, tm->time.tm_wday,
                 tm->enabled, tm->pending);
@@ -373,7 +371,7 @@ static int pcf8563_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *tm)
                 rtc_time_to_tm(alarm_time, &tm->time);
         }
 
-        dev_dbg(dev, "%s, min=%d hour=%d wday=%d mday=%d "
+        printk("%s, min=%d hour=%d wday=%d mday=%d "
                 "enabled=%d pending=%d\n", __func__,
                 tm->time.tm_min, tm->time.tm_hour, tm->time.tm_wday,
                 tm->time.tm_mday, tm->enabled, tm->pending);

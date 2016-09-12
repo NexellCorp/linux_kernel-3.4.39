@@ -496,8 +496,8 @@ CONFIG_ARM_FLUSH_CONSOLE_ON_RESTART=y
 # Boot options
 #
 # CONFIG_USE_OF is not set
-CONFIG_ZBOOT_ROM_TEXT=0
-CONFIG_ZBOOT_ROM_BSS=0
+CONFIG_ZBOOT_ROM_TEXT=0x0
+CONFIG_ZBOOT_ROM_BSS=0x0
 CONFIG_CMDLINE="console=ttyAMA1,115200n8 androidboot.hardware=s5p4418_digital_cinema androidboot.console=ttyAMA1 androidboot.serialno=0123456789abcdef initrd=0x49000000,0x200000 init=/init"
 CONFIG_CMDLINE_FROM_BOOTLOADER=y
 # CONFIG_CMDLINE_EXTEND is not set
