@@ -276,7 +276,7 @@
 #define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR */
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
-#define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE
+#define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_BOTHEDGE
 #elif defined (CONFIG_PLAT_S5P4418_DC_SAP)
 #define CFG_PWR_WAKEUP_SRC_ALIVE0               CTRUE                   /* KEY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE0               PWR_DECT_FALLINGEDGE
@@ -285,18 +285,18 @@
 #define CFG_PWR_WAKEUP_SRC_ALIVE2               CFALSE
 #define CFG_PWR_WAKEUP_MOD_ALIVE2               PWR_DECT_BOTHEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE3               CFALSE
-#define CFG_PWR_WAKEUP_MOD_ALIVE3               PWR_DECT_ASYNC_LOWLEVEL
+#define CFG_PWR_WAKEUP_MOD_ALIVE3               PWR_DECT_BOTHEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE4               CTRUE                   /* PMIC INTR */
 #define CFG_PWR_WAKEUP_MOD_ALIVE4               PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE5               CFALSE
-#define CFG_PWR_WAKEUP_MOD_ALIVE5               PWR_DECT_FALLINGEDGE
+#define CFG_PWR_WAKEUP_MOD_ALIVE5               PWR_DECT_BOTHEDGE
 #endif
 
 /*
  * Wakeup Source : RTC ALARM
  * ifndef Enable ALARM Wakeup
  */
-#define	CFG_PWR_WAKEUP_SRC_ALARM				CTRUE
+#define	CFG_PWR_WAKEUP_SRC_ALARM				CFALSE
 
 //------------------------------------------------------------------------------
 // Static Bus #0 ~ #9, NAND, IDE configuration
