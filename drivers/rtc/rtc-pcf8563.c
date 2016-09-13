@@ -25,7 +25,7 @@
 #include <linux/err.h>
 #include <linux/delay.h>
 
-#define RTC_DEBUG
+//#define RTC_DEBUG
 
 #define DRV_VERSION "0.4.3"
 
@@ -440,7 +440,9 @@ static int pcf8563_probe(struct i2c_client *client,
 
         i2c_set_clientdata(client, pcf8563);
         pcf8563->client = client;
-        device_set_wakeup_capable(&client->dev, 1);
+
+		if (!device_can_wakeup(&client->dev))
+			device_init_wakeup(&client->dev, 1);
 
         /* Set timer to lowest frequency to save power (ref Haoyu datasheet) */
         buf = PCF8563_TMRC_1_60;
@@ -484,6 +486,16 @@ static int pcf8563_probe(struct i2c_client *client,
         return 0;
 }
 
+static int pcf8563_suspend(struct i2c_client *client, pm_message_t mesg)
+{
+	return 0;
+}
+
+static int pcf8563_resume(struct i2c_client *client)
+{
+	return 0;
+}
+
 static const struct i2c_device_id pcf8563_id[] = {
         { "pcf8563", 0 },
         { "rtc8564", 0 },
@@ -506,6 +518,8 @@ static struct i2c_driver pcf8563_driver = {
                 .of_match_table = of_match_ptr(pcf8563_of_match),
         },
         .probe          = pcf8563_probe,
+	    .resume  	   	= pcf8563_resume,
+	    .suspend   		= pcf8563_suspend,
         .id_table       = pcf8563_id,
 };
 
