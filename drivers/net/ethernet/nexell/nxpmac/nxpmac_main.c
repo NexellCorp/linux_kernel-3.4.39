@@ -63,9 +63,9 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-/*
+
 #define pr_debug	printk
-*/
+
 
 //#define __NX_DEBUG__
 #ifdef __NX_DEBUG__
@@ -941,14 +941,17 @@ static int stmmac_init_phy(struct net_device *dev)
 	phydev = phy_connect(dev, phy_id_fmt, &stmmac_adjust_link, 0, interface);
 	// [ADD] by freestyle
 	__trace("%s phydev->autoneg: %x\n", __func__, phydev->autoneg);
-	if (phydev->autoneg == AUTONEG_DISABLE)
-		phy_stop(phydev);
+//	if (phydev->autoneg == AUTONEG_DISABLE)
+//		phy_stop(phydev);
 	// [ADD]
 
 	if (IS_ERR(phydev)) {
 		pr_err("%s: Could not attach to PHY\n", dev->name);
 		return PTR_ERR(phydev);
 	}
+
+	if (phydev->autoneg == AUTONEG_DISABLE)
+			        phy_stop(phydev);
 
 	/* Stop Advertising 1000BASE Capability if interface is not GMII */
 	if ((interface == PHY_INTERFACE_MODE_MII) ||

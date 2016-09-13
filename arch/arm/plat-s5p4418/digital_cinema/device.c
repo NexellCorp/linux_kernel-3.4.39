@@ -298,7 +298,7 @@ static struct plat_stmmacenet_data nxpmac_plat_data = {
     .has_gmac = 1,      /* GMAC ethernet */
     .enh_desc = 1,
     .mdio_bus_data = &nxpmac0_mdio_bus,
-    //.init = &nxpmac_init,
+    .init = &nxpmac_init,
 };
 
 /* DWC GMAC Controller registration */
