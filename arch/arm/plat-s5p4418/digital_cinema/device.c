@@ -283,8 +283,10 @@ int gmac_phy_reset(void *priv)
 
 static struct stmmac_mdio_bus_data nxpmac0_mdio_bus = {
     .phy_reset = gmac_phy_reset,
-    .phy_mask = 0,
+    .phy_mask = ~(1<<3),	// 0
+#if defined (CONFIG_PLAT_S5P4418_DC_NAP)
     .probed_phy_irq = CFG_ETHER_GMAC_PHY_IRQ_NUM,
+#endif
 };
 
 static struct plat_stmmacenet_data nxpmac_plat_data = {

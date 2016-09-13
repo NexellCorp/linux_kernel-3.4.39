@@ -64,7 +64,7 @@
 #include <mach/soc.h>
 
 
-#define pr_debug	printk
+//#define pr_debug	printk
 
 
 //#define __NX_DEBUG__
