@@ -512,7 +512,7 @@ static int calc_soc_on_ocv(struct nxe2000_battery_info *info, int Ocv)
 		}
 	}
 
-	PM_LOGOUT(KERN_INFO "PMU: %s capacity(%d)\n",
+	PM_LOGOUT(KERN_ERR "PMU: %s capacity(%d)\n",
 			 __func__, capacity);
 
 	return capacity;
@@ -1048,8 +1048,8 @@ static void nxe2000_displayed_work(struct work_struct *work)
 		return;
 	}
 
-	PM_LOGOUT("\n######################################################\n");
-	PM_LOGOUT("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
+	PM_LOGOUT(KERN_ERR "\n######################################################\n");
+	PM_LOGOUT(KERN_ERR "## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 
 	mutex_lock(&info->lock);
 
@@ -1826,11 +1826,11 @@ end_flow:
 
 	}
 
-	PM_LOGOUT("PMU:STATUS= %d: IBAT= %5d: VSYS= %7d: VBAT= %7d: DSOC= %5d: RSOC= %5d: rsoc_ready= %d: full_rate= %d\n",
+	PM_LOGOUT(KERN_ERR "PMU:STATUS= %d: IBAT= %5d: VSYS= %7d: VBAT= %7d: DSOC= %5d: RSOC= %5d: rsoc_ready= %d: full_rate= %d\n",
 		info->soca->status, info->soca->Ibat_ave, info->soca->Vsys_ave, info->soca->Vbat_ave,
 		info->soca->displayed_soc, info->soca->soc, info->soca->rsoc_ready_flag, full_rate);
 
-	PM_LOGOUT( "## Rsys:%d, target_ibat:%d, target_vsys:%d, cutoff_ocv:%d, fg_poff_vbat:%d \n",
+	PM_LOGOUT(KERN_ERR  "## Rsys:%d, target_ibat:%d, target_vsys:%d, cutoff_ocv:%d, fg_poff_vbat:%d \n",
 						info->soca->Rsys, info->soca->target_ibat, info->soca->target_vsys, info->soca->cutoff_ocv, info->fg_poff_vbat);
 
 #ifdef DISABLE_CHARGER_TIMER
