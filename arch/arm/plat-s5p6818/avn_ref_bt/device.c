@@ -569,7 +569,7 @@ struct nxp_snd_dai_plat_data alc5623_i2s_dai_data = {
 		.detect_io		= PAD_GPIO_E + 8,
 		.detect_level	= 1,
 	},
-#endif	
+#endif
 };
 
 static struct platform_device alc5623_dai = {

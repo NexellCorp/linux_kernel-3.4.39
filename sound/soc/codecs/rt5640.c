@@ -1636,7 +1636,7 @@ static void rt5640_pmu_depop(struct snd_soc_codec *codec)
 	msleep(5);
 	snd_soc_update_bits(codec, RT5640_HP_VOL,
 		RT5640_L_MUTE | RT5640_R_MUTE, 0);
-	msleep(65);
+	msleep(100);
 	//snd_soc_update_bits(codec, RT5640_HP_CALIB_AMP_DET,
 	//	RT5640_HPD_PS_MASK, RT5640_HPD_PS_EN);
 }
@@ -2712,8 +2712,12 @@ static int rt5640_hw_params(struct snd_pcm_substream *substream,
 			RT5640_HP_SG_MASK | RT5640_HP_CB_MASK, RT5640_HP_SG_MASK | RT5640_HP_CB_MASK);
 		snd_soc_update_bits(codec, RT5640_DEPOP_M2,
 			RT5640_DEPOP_MASK | RT5640_DIG_DP_MASK, RT5640_DEPOP_AUTO | RT5640_DIG_DP_MASK);
+		hp_amp_power(codec, 1);
+		/* headphone unmute sequence */
+		msleep(5);
 		snd_soc_update_bits(codec, RT5640_HP_VOL,
 			RT5640_L_MUTE | RT5640_VOL_L_MUTE | RT5640_R_MUTE | RT5640_VOL_R_MUTE, 0);
+		msleep(200);
 	}
 #endif // CONFIG_NOUSE_SND_DAPM
 
@@ -3872,6 +3876,19 @@ void rt5640_shutdown_sound_path(void)
 
 	snd_soc_write(codec, 0x4f, 0x01ff);
 	snd_soc_write(codec, 0x52, 0x01ff);
+
+	snd_soc_update_bits(codec, RT5640_DEPOP_M3,
+		RT5640_CP_FQ1_MASK | RT5640_CP_FQ2_MASK | RT5640_CP_FQ3_MASK,
+		(RT5640_CP_FQ_96_KHZ << RT5640_CP_FQ1_SFT) |
+		(RT5640_CP_FQ_12_KHZ << RT5640_CP_FQ2_SFT) |
+		(RT5640_CP_FQ_96_KHZ << RT5640_CP_FQ3_SFT));
+	rt5640_index_write(codec, RT5640_MAMP_INT_REG2, 0x7c00);
+	snd_soc_update_bits(codec, RT5640_HP_VOL,
+		RT5640_L_MUTE | RT5640_R_MUTE,
+		RT5640_L_MUTE | RT5640_R_MUTE);
+	msleep(50);
+	hp_amp_power(codec, 0);
+	snd_soc_write(codec, RT5640_DEPOP_M1, 0x8);
 }
 
 void rt5640_shutdown(struct snd_pcm_substream *pcm,struct snd_soc_dai *dai)

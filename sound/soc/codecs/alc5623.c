@@ -1028,7 +1028,9 @@ static int alc5623_mute(struct snd_soc_dai *dai, int mute)
 	struct snd_soc_codec *codec = dai->codec;
 	u16 hp_mute = ALC5623_MISC_M_DAC_L_INPUT | ALC5623_MISC_M_DAC_R_INPUT;
 	u16 mute_reg = i2c_smbus_read_word_data(i2c, ALC5623_MISC_CTRL) & ~hp_mute;
-    pr_debug("%s .....%d.....mute : %d..\n",__func__,__LINE__,mute);
+
+	mute_reg |= ALC5623_MISC_DISABLE_FAST_VREG;
+	pr_debug("%s .....%d.....mute : %d..\n",__func__,__LINE__,mute);
 	if (mute)
 		mute_reg |= hp_mute;
 

@@ -645,13 +645,14 @@ static struct i2c_board_info __initdata rt5640_i2c_bdi = {
 struct nxp_snd_dai_plat_data rt5640_i2s_dai_data = {
 	.i2s_ch	= 0,
 	.sample_rate	= 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
 #if 0
    	.hp_jack 		= {
 		.support    	= 1,
 		.detect_io		= PAD_GPIO_E + 8,
 		.detect_level	= 1,
 	},
-#endif	
+#endif
 };
 
 static struct platform_device rt5640_dai = {
@@ -678,13 +679,14 @@ static struct i2c_board_info __initdata alc5623_i2c_bdi = {
 struct nxp_snd_dai_plat_data alc5623_i2s_dai_data = {
 	.i2s_ch	= 1,
 	.sample_rate	= 48000,
+	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
 #if 0
    	.hp_jack 		= {
 		.support    	= 1,
 		.detect_io		= PAD_GPIO_E + 8,
 		.detect_level	= 1,
 	},
-#endif	
+#endif
 };
 
 static struct platform_device alc5623_dai = {
