@@ -108,7 +108,9 @@
 #define CFG_DISP_PRI_OUT_INTERLACE              CFALSE
 #define CFG_DISP_PRI_OUT_INVERT_FIELD           CFALSE
 #define CFG_DISP_LCD_MPY_TYPE                   0
+
 #else	// CONFIG_NXP_DISPLAY_ENCODER
+
 #define CFG_DISP_PRI_SCREEN_LAYER               0
 #define CFG_DISP_PRI_SCREEN_RGB_FORMAT          MLC_RGBFMT_A8R8G8B8
 #define CFG_DISP_PRI_SCREEN_PIXEL_BYTE	        4
