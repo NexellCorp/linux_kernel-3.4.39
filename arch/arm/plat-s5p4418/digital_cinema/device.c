@@ -128,10 +128,10 @@ const u8 g_DispBusSI[3] = {
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	   	= CONFIG_NXP_CPUFREQ_PLLDEV,
 	.supply_name	= "vdd_arm_1.25V",	//refer to CONFIG_REGULATOR_NXE2000
-//	.max_cpufreq	= 1400*1000,
-//	.max_retention  =   20*1000,
-//	.rest_cpufreq   =  400*1000,
-//	.rest_retention =    1*1000,
+//	.max_cpufreq	= 800*1000,
+//	.max_retention  = 20*1000,
+//	.rest_cpufreq   = 400*1000,
+//	.rest_retention = 1*1000,
 };
 
 static struct platform_device dfs_plat_device = {
@@ -146,15 +146,15 @@ static struct platform_device dfs_plat_device = {
 struct nxp_adc_tmp_trigger adc_tmp_event[] = {
 	{
 		.temp  = 50,
-		.freq  = 1200000,
+		.freq  = 700000,
 		.period = 1000, /* Ms */
 	} , {
 		.temp  = 55,
-		.freq  = 1000000,
+		.freq  = 600000,
 		.period = 1000, /* Ms */
 	} , {
 		.temp  = 60,
-		.freq  = 800000,
+		.freq  = 500000,
 		.period = 1000, /* Ms */
 	} , {
 		.temp  = 65,
@@ -169,7 +169,7 @@ struct nxp_adc_tmp_platdata adc_tmp_plat_data ={
 	.duration	= 1000,
 	.step_up 	= 1,
 	.event 		= adc_tmp_event,
-	.eventsize = ARRAY_SIZE( adc_tmp_event),
+	.eventsize = ARRAY_SIZE(adc_tmp_event),
 };
 
 static struct platform_device adc_temp_plat_device = {
@@ -518,11 +518,11 @@ static struct platform_device wm8976_dai = {
 #if defined(CONFIG_SND_CODEC_ALC5623)
 #include <linux/i2c.h>
 
-#define	WM8976_I2C_BUS		(0)
+#define	ALC5623_I2C_BUS		(0)
 
 /* CODEC */
 static struct i2c_board_info __initdata alc5623_i2c_bdi = {
-	.type	= "alc562x-codec",			// compatilbe with wm8976
+	.type	= "alc562x-codec",	// compatilbe with alc5623
 	.addr	= (0x34>>1),		// 0x1A (7BIT), 0x34(8BIT)
 };
 
@@ -1470,7 +1470,7 @@ void __init nxp_board_devices_register(void)
 
 #if defined(CONFIG_SND_CODEC_ALC5623) || defined(CONFIG_SND_CODEC_ALC5623_MODULE)
 	printk("plat: add device asoc-alc5623\n");
-	i2c_register_board_info(0, &alc5623_i2c_bdi, 1);
+	i2c_register_board_info(ALC5623_I2C_BUS, &alc5623_i2c_bdi, 1);
 	platform_device_register(&alc5623_dai);
 #endif
 

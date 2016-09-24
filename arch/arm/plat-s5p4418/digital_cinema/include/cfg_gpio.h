@@ -447,7 +447,7 @@
  -----------------------------------------------------------------------------*/
 #define PAD_GPIOALV0    (PAD_MODE_INT | PAD_LEVEL_LOW | PAD_PULL_OFF)             //  AP_AGP0_PWRKEY
 #define PAD_GPIOALV1    (PAD_MODE_IN  | PAD_LEVEL_LOW | PAD_PULL_DN)             
-#define PAD_GPIOALV2    (PAD_MODE_IN  | PAD_LEVEL_LOW | PAD_PULL_OFF)             //  AP_AGP2_FPGA_GPIOA
+#define PAD_GPIOALV2    (PAD_MODE_IN  | PAD_LEVEL_LOW | PAD_PULL_OFF)
 #define PAD_GPIOALV3    (PAD_MODE_IN  | PAD_LEVEL_LOW | PAD_PULL_DN)              
 #define PAD_GPIOALV4    (PAD_MODE_INT | PAD_LEVEL_LOW | PAD_PULL_OFF)             //  AP_AGP4_PMIC_INT
 #define PAD_GPIOALV5    (PAD_MODE_IN  | PAD_LEVEL_LOW | PAD_PULL_DN)
