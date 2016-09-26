@@ -20,6 +20,11 @@
 #include <linux/pwm.h>
 #include <linux/pwm_backlight.h>
 #include <linux/slab.h>
+#include <linux/delay.h>
+
+#include <mach/platform.h>
+#include <mach/devices.h>
+#include <mach/soc.h>
 
 struct pwm_bl_data {
 	struct pwm_device	*pwm;
@@ -171,6 +176,10 @@ static int pwm_backlight_suspend(struct device *dev)
 	struct backlight_device *bl = dev_get_drvdata(dev);
 	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
 
+#if defined (CONFIG_PLAT_S5P4418_DC_NAP)
+	nxp_soc_gpio_set_out_value(CFG_IO_LED_PWR_ENB, 0);
+#endif
+
 	if (pb->notify)
 		pb->notify(pb->dev, 0);
 	pwm_config(pb->pwm, 0, pb->period);
@@ -183,8 +192,13 @@ static int pwm_backlight_suspend(struct device *dev)
 static int pwm_backlight_resume(struct device *dev)
 {
 	struct backlight_device *bl = dev_get_drvdata(dev);
-
 	backlight_update_status(bl);
+
+#if defined (CONFIG_PLAT_S5P4418_DC_NAP)
+	mdelay(100);
+	nxp_soc_gpio_set_out_value(CFG_IO_LED_PWR_ENB, 1);
+#endif
+
 	return 0;
 }
 

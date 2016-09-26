@@ -467,6 +467,9 @@
 #define CFG_IO_HUB_PWREN					(PAD_GPIO_D + 15)
 
 /* LCD */
+#define CFG_IO_LCD_GATE_ENB                 (PAD_GPIO_B + 25)
+#define CFG_IO_LCD_PWR_ENB                  (PAD_GPIO_B + 28)
+#define CFG_IO_LED_PWR_ENB                  (PAD_GPIO_B + 27)
 #define CFG_IO_NLCDRST						(PAD_GPIO_B + 24)
 #endif
 
