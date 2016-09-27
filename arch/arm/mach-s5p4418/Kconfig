@@ -51,7 +51,7 @@ choice
 		bool "Goto Power Off when Suspend"
 		depends on SUSPEND
 
-	config SUSPEND_IDLE
+	config S5P4418_PM_IDLE
 		bool "Goto idle when Suspend"
 		depends on SUSPEND
 endchoice
