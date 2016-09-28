@@ -139,6 +139,13 @@ static int nxp_key_suspend(struct platform_device *pdev, pm_message_t state)
 	struct key_code *code = key->code;
 	int i = 0;
 
+#if defined(CONFIG_PLAT_S5P4418_DC_NAP)
+    input_report_key(key_input, KEY_POWER, 1);
+    input_sync(key_input);
+    input_report_key(key_input, KEY_POWER, 0);
+    input_sync(key_input);
+#endif
+
 	for (i = 0; key->keys > i; i++, code++) {
 		if (code->keycode == KEY_POWER &&
 			code->irq_disabled) {

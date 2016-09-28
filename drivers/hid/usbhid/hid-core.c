@@ -28,7 +28,7 @@
 #include <linux/input.h>
 #include <linux/wait.h>
 #include <linux/workqueue.h>
-
+#include <linux/delay.h>
 #include <linux/usb.h>
 
 #include <linux/hid.h>
@@ -36,6 +36,10 @@
 #include <linux/hid-debug.h>
 #include <linux/hidraw.h>
 #include "usbhid.h"
+
+#include <mach/platform.h>
+#include <mach/devices.h>
+#include <mach/soc.h>
 
 /*
  * Version Information
@@ -140,6 +144,13 @@ static void hid_reset(struct work_struct *work)
 			hid_to_usb_dev(hid)->devpath,
 			usbhid->ifnum, rc);
 		/* FALLTHROUGH */
+#if defined(CFG_IO_HUB_NRST)
+	case -EPROTO:
+		/* Forcely reset */
+		nxp_soc_gpio_set_out_value(CFG_IO_HUB_NRST, 0);
+		mdelay(100);
+		nxp_soc_gpio_set_out_value(CFG_IO_HUB_NRST, 1);
+#endif
 	case -EHOSTUNREACH:
 	case -ENODEV:
 	case -EINTR:
