@@ -282,8 +282,11 @@ static void spdif_stop(struct nxp_spdif_snd_param *par, int stream)
 #endif
 }
 
+static struct snd_soc_dai_driver spdif_dai_driver;
+
 static int nxp_spdif_check_param(struct nxp_spdif_snd_param *par)
 {
+	static struct snd_soc_dai_driver *dai = &spdif_dai_driver;
 	struct spdif_register *spdif = &par->spdif;
 	struct nxp_pcm_dma_param *dmap = &par->dma;
 	unsigned long request = 0, rate_hz = 0;
@@ -323,6 +326,13 @@ static int nxp_spdif_check_param(struct nxp_spdif_snd_param *par)
 	par->master_ratio = RATIO;
 
 	dmap->real_clock = rate_hz/(RATIO_256==RATIO?256:384);
+
+	dai->playback.rates = snd_pcm_rate_to_rate_bit(par->sample_rate);
+
+	if (RATIO == RATIO_256 || PCM != PCM_24BIT) {
+		dai->playback.formats &= ~(SNDRV_PCM_FMTBIT_S24_LE |
+					   SNDRV_PCM_FMTBIT_U24_LE);
+	}
 
 	spdif->clkcon 	= 	(MCLK << CLKCON_MCLK_SEL_POS);
 	spdif->con 		= 	(CON_FIFO_LEVEL_15 	<< CON_FIFO_TH_POS)	| \
@@ -374,8 +384,6 @@ static int nxp_spdif_set_plat_param(struct nxp_spdif_snd_param *par, void *data)
 
 	return nxp_spdif_check_param(par);
 }
-
-static struct snd_soc_dai_driver spdif_dai_driver;
 
 static int nxp_spdif_setup(struct snd_soc_dai *dai)
 {
@@ -558,18 +566,19 @@ static int nxp_spdif_dai_remove(struct snd_soc_dai *dai)
 
 static struct snd_soc_dai_driver spdif_dai_driver = {
 	.playback	= {
-		.channels_min 	= 2,
-		.channels_max 	= 2,
-		.formats		= SND_SOC_SPDIF_TX_FORMATS,
-		.rates			= SND_SOC_SPDIF_RATES,
-		.rate_min 		= 0,
-		.rate_max 		= 1562500,
+		.stream_name = "Playback"
+		.channels_min	= 2,
+		.channels_max	= 2,
+		.formats	= SND_SOC_SPDIF_TX_FORMATS,
+		.rates		= SND_SOC_SPDIF_RATES,
+		.rate_min	= 0,
+		.rate_max	= 1562500,
 		},
-	.probe 		= nxp_spdif_dai_probe,
+	.probe		= nxp_spdif_dai_probe,
 	.remove		= nxp_spdif_dai_remove,
 	.suspend	= nxp_spdif_dai_suspend,
-	.resume 	= nxp_spdif_dai_resume,
-	.ops 		= &nxp_spdif_ops,
+	.resume		= nxp_spdif_dai_resume,
+	.ops		= &nxp_spdif_ops,
 };
 
 static __devinit int nxp_spdif_probe(struct platform_device *pdev)
