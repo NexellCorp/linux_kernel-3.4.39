@@ -225,35 +225,29 @@
  *	| MODE(IN/OUT/DETECT) | ALIVE OUT or ALIVE DETMODE0 | PullUp |
  *
  -----------------------------------------------------------------------------*/
-#define PAD_GPIOALV0    (PAD_MODE_INT | PAD_LEVEL_LOW  | PAD_PULL_UP )		//
-#define PAD_GPIOALV1    (PAD_MODE_INT | PAD_LEVEL_LOW  | PAD_PULL_UP )		//
-#define PAD_GPIOALV2    (PAD_MODE_INT | PAD_LEVEL_LOW  | PAD_PULL_UP )		//
-#define PAD_GPIOALV3    (PAD_MODE_IN  | PAD_LEVEL_LOW  | PAD_PULL_UP )		//
-#define PAD_GPIOALV4    (PAD_MODE_INT | PAD_LEVEL_LOW  | PAD_PULL_UP )		//
-#define PAD_GPIOALV5    (PAD_MODE_OUT | PAD_LEVEL_LOW  | PAD_PULL_OFF)		//
+#define PAD_GPIOALV0    (PAD_MODE_IN  | PAD_LEVEL_LOW | PAD_PULL_UP)		// AP_AGP0_POWER_KEY
+#define PAD_GPIOALV1    (PAD_MODE_IN  | PAD_LEVEL_LOW | PAD_PULL_UP)		// AP_AGP1
+#define PAD_GPIOALV2    (PAD_MODE_IN  | PAD_LEVEL_LOW | PAD_PULL_UP)		// AP_AGP2_SDCARD_DET
+#define PAD_GPIOALV3    (PAD_MODE_IN  | PAD_LEVEL_LOW | PAD_PULL_DN)		//
+#define PAD_GPIOALV4    (PAD_MODE_IN  | PAD_LEVEL_LOW | PAD_PULL_UP)		// AP_AGP4_PMIC_INT
+#define PAD_GPIOALV5    (PAD_MODE_IN  | PAD_LEVEL_LOW | PAD_PULL_DN)		//
 
 /*------------------------------------------------------------------------------
  *	TOUCH
  */
-#define	CFG_IO_TOUCH_PENDOWN_DETECT			((PAD_GPIO_D + 8))
-
-/*------------------------------------------------------------------------------
- *	AUDIO
- */
-
-#define CFG_IO_AUDIO_RT5623_AMP_POWER              (PAD_GPIO_D + 31)
+#define	CFG_IO_TOUCH_PENDOWN_DETECT			(PAD_GPIO_D + 8)
 
 /*------------------------------------------------------------------------------
  *	Backward Camera	
  */
 
-#define CFG_BACKWARD_GEAR					(PAD_GPIO_ALV + 3)
+#define CFG_BACKWARD_GEAR					(-1)
 
 /*------------------------------------------------------------------------------
  *  CAMERA Back Power Down
  */
 
-#define CFG_IO_CAMERA_BACK_POWER_DOWN     	((PAD_GPIO_E + 12) | PAD_FUNC_ALT0)        /* GPIO */
+#define CFG_IO_CAMERA_BACK_POWER_DOWN     	(-1)
 
 
 
