@@ -362,28 +362,32 @@ static irqreturn_t i2c_irq_thread(int irqno, void *dev_id)
 				return IRQ_HANDLED;
 			}
 
-			msg->buf[cnt - 1] = _GETDATA((void *)base);
+			if (msg->len) {
+				msg->buf[cnt - 1] = _GETDATA((void *)base);
 
-			if (len == par->trans_count) {
-				par->trans_status = I2C_TRANS_DONE;
-				goto __irq_end;
-			} else {
-				i2c_trans_dev(base, ack, last);
-				par->trans_count += 1;
-				return IRQ_HANDLED;
+				if (len == par->trans_count) {
+					par->trans_status = I2C_TRANS_DONE;
+					goto __irq_end;
+				} else {
+					i2c_trans_dev(base, ack, last);
+					par->trans_count += 1;
+					return IRQ_HANDLED;
+				}
 			}
 		} else {
-			par->pre_data = msg->buf[cnt];
-			par->request_ack = (msg->flags & I2C_M_IGNORE_NAK) ? 0 : 1;
-			par->trans_count += 1;
+			if (msg->len) {
+				par->pre_data = msg->buf[cnt];
+				par->request_ack = (msg->flags & I2C_M_IGNORE_NAK) ? 0 : 1;
+				par->trans_count += 1;
 
-			if (len == par->trans_count)
-				par->trans_status = I2C_TRANS_DONE;
+				if (len == par->trans_count)
+					par->trans_status = I2C_TRANS_DONE;
 
-			_SETDATA((void *)base, msg->buf[cnt]);
-			i2c_trans_dev(base, 0, par->trans_status == I2C_TRANS_DONE ? 1 : 0);
+				_SETDATA((void *)base, msg->buf[cnt]);
+				i2c_trans_dev(base, 0, par->trans_status == I2C_TRANS_DONE ? 1 : 0);
 
-			return IRQ_HANDLED;
+				return IRQ_HANDLED;
+			}
 		}
 	}
 

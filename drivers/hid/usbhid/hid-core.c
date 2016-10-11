@@ -38,8 +38,6 @@
 #include "usbhid.h"
 
 #include <mach/platform.h>
-#include <mach/devices.h>
-#include <mach/soc.h>
 
 /*
  * Version Information
@@ -146,10 +144,6 @@ static void hid_reset(struct work_struct *work)
 		/* FALLTHROUGH */
 #if defined(CFG_IO_HUB_NRST)
 	case -EPROTO:
-		/* Forcely reset */
-		nxp_soc_gpio_set_out_value(CFG_IO_HUB_NRST, 0);
-		mdelay(100);
-		nxp_soc_gpio_set_out_value(CFG_IO_HUB_NRST, 1);
 #endif
 	case -EHOSTUNREACH:
 	case -ENODEV:

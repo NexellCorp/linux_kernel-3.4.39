@@ -405,7 +405,9 @@ static int pcf8563_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *tm)
 
 static int pcf8563_irq_enable(struct device *dev, unsigned int enabled)
 {
-        dev_dbg(dev, "%s: en=%d\n", __func__, enabled);
+#ifdef RTC_DEBUG
+        printk("%s: en=%d\n", __func__, enabled);
+#endif
         return pcf8563_set_alarm_mode(to_i2c_client(dev), !!enabled);
 }
 

@@ -713,8 +713,8 @@ static struct platform_device i2c_device_ch5 = {
 };
 
 /* gpio i2c 6 */
-#define I2C6_SCL    (PAD_GPIO_D + 27)
-#define I2C6_SDA    (PAD_GPIO_D + 26)
+#define I2C6_SCL    (PAD_GPIO_D + 26)
+#define I2C6_SDA    (PAD_GPIO_D + 27)
 static struct i2c_gpio_platform_data nxp_i2c_gpio_port6 = {
     .sda_pin    = I2C6_SDA,
     .scl_pin    = I2C6_SCL,

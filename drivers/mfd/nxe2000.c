@@ -36,6 +36,9 @@
 #include <mach/platform.h>
 #include <mach/pm.h>
 
+#include <mach/platform.h>
+#include <mach/devices.h>
+#include <mach/soc.h>
 
 static struct i2c_client *nxe2000_i2c_client;
 
@@ -660,26 +663,28 @@ void nxe2000_power_off(void)
 		return;
 
 #if defined(CONFIG_BATTERY_NXE2000)
-	reg_val = g_soc;
-	reg_val &= 0x7f;
+	if (nxp_soc_gpio_get_in_value(CFG_IO_USEBAT_DET)) {
+		reg_val = g_soc;
+		reg_val &= 0x7f;
 
-	ret = nxe2000_write(&nxe2000_i2c_client->dev, NXE2000_PSWR, reg_val);
-	if (ret < 0)
-		dev_err(&nxe2000_i2c_client->dev, 
-					"Error in writing PSWR_REG\n");
-
-	if (g_fg_on_mode == 0) {
-		/* Clear NXE2000_FG_CTRL 0x01 bit */
-		ret = nxe2000_read(&nxe2000_i2c_client->dev,
-						NXE2000_FG_CTRL, &reg_val);
-		if (reg_val & 0x01) {
-			reg_val &= ~0x01;
-			ret = nxe2000_write(&nxe2000_i2c_client->dev,
-						NXE2000_FG_CTRL, reg_val);
-		}
+		ret = nxe2000_write(&nxe2000_i2c_client->dev, NXE2000_PSWR, reg_val);
 		if (ret < 0)
 			dev_err(&nxe2000_i2c_client->dev, 
-					"Error in writing FG_CTRL\n");
+						"Error in writing PSWR_REG\n");
+
+		if (g_fg_on_mode == 0) {
+			/* Clear NXE2000_FG_CTRL 0x01 bit */
+			ret = nxe2000_read(&nxe2000_i2c_client->dev,
+							NXE2000_FG_CTRL, &reg_val);
+			if (reg_val & 0x01) {
+				reg_val &= ~0x01;
+				ret = nxe2000_write(&nxe2000_i2c_client->dev,
+							NXE2000_FG_CTRL, reg_val);
+			}
+			if (ret < 0)
+				dev_err(&nxe2000_i2c_client->dev,
+						"Error in writing FG_CTRL\n");
+		}
 	}
 #endif
 

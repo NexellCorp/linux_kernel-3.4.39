@@ -4203,25 +4203,26 @@ static void otgid_detect_irq_work(struct work_struct *work)
 
 int otgid_power_control_by_dwc(int enable)
 {
-	if(info_by_dwc == NULL)
-		return -ENODEV;
+	if (nxp_soc_gpio_get_in_value(CFG_IO_USEBAT_DET)) {
+		if(info_by_dwc == NULL)
+			return -ENODEV;
 
 #ifdef ENABLE_DEBUG
-	PM_DBGOUT(KERN_ERR "## [\e[31m%s\e[0m():%d] enable:%d\n", __func__, __LINE__, enable);
+		PM_DBGOUT(KERN_ERR "## [\e[31m%s\e[0m():%d] enable:%d\n", __func__, __LINE__, enable);
 #endif
 
-	//if (info_by_dwc->gpio_otg_usbid > -1) 
-	//{
-		if (enable){
-			info_by_dwc->gpio_otg_usbid_status = 0;
-			set_otg_power_control(info_by_dwc, 0);
-		}
-		else{
-			set_otg_power_control(info_by_dwc, 1);
-			info_by_dwc->gpio_otg_usbid_status = 1;
-		}
-	//}
-
+		//if (info_by_dwc->gpio_otg_usbid > -1)
+		//{
+			if (enable){
+				info_by_dwc->gpio_otg_usbid_status = 0;
+				set_otg_power_control(info_by_dwc, 0);
+			}
+			else{
+				set_otg_power_control(info_by_dwc, 1);
+				info_by_dwc->gpio_otg_usbid_status = 1;
+			}
+		//}
+	}
 	return 0;
 }
 EXPORT_SYMBOL(otgid_power_control_by_dwc);
@@ -6553,13 +6554,17 @@ static struct platform_driver nxe2000_battery_driver = {
 
 static int __init nxe2000_battery_init(void)
 {
-	return platform_driver_register(&nxe2000_battery_driver);
+	if (nxp_soc_gpio_get_in_value(CFG_IO_USEBAT_DET))
+		return platform_driver_register(&nxe2000_battery_driver);
+	else
+		return 0;
 }
 subsys_initcall(nxe2000_battery_init);
 
 static void __exit nxe2000_battery_exit(void)
 {
-	platform_driver_unregister(&nxe2000_battery_driver);
+	if (nxp_soc_gpio_get_in_value(CFG_IO_USEBAT_DET))
+		platform_driver_unregister(&nxe2000_battery_driver);
 }
 module_exit(nxe2000_battery_exit);
 
