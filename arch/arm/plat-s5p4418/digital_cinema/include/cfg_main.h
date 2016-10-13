@@ -181,9 +181,9 @@
 /*------------------------------------------------------------------------------
  * 	I2C
  */
-#define CFG_I2C0_CLK							100000
-#define CFG_I2C1_CLK							100000
-#define CFG_I2C2_CLK							100000
+#define CFG_I2C0_CLK							900000
+#define CFG_I2C1_CLK							900000
+#define CFG_I2C2_CLK							900000
 #define CFG_I2C3_CLK							100000
 #define CFG_I2C4_CLK							100000
 #define CFG_I2C5_CLK							100000
