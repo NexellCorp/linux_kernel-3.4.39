@@ -4203,7 +4203,11 @@ static void otgid_detect_irq_work(struct work_struct *work)
 
 int otgid_power_control_by_dwc(int enable)
 {
+#if defined(CFG_IO_USEBAT_DET)
 	if (nxp_soc_gpio_get_in_value(CFG_IO_USEBAT_DET)) {
+#else
+	if (true) {
+#endif
 		if(info_by_dwc == NULL)
 			return -ENODEV;
 
@@ -6554,7 +6558,11 @@ static struct platform_driver nxe2000_battery_driver = {
 
 static int __init nxe2000_battery_init(void)
 {
+#if defined(CFG_IO_USEBAT_DET)
 	if (nxp_soc_gpio_get_in_value(CFG_IO_USEBAT_DET))
+#else
+	if (true)
+#endif
 		return platform_driver_register(&nxe2000_battery_driver);
 	else
 		return 0;
@@ -6563,7 +6571,9 @@ subsys_initcall(nxe2000_battery_init);
 
 static void __exit nxe2000_battery_exit(void)
 {
+#if defined(CFG_IO_USEBAT_DET)
 	if (nxp_soc_gpio_get_in_value(CFG_IO_USEBAT_DET))
+#endif
 		platform_driver_unregister(&nxe2000_battery_driver);
 }
 module_exit(nxe2000_battery_exit);

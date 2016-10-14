@@ -663,7 +663,11 @@ void nxe2000_power_off(void)
 		return;
 
 #if defined(CONFIG_BATTERY_NXE2000)
+#if defined(CFG_IO_USEBAT_DET)
 	if (nxp_soc_gpio_get_in_value(CFG_IO_USEBAT_DET)) {
+#else
+	if (true) {
+#endif
 		reg_val = g_soc;
 		reg_val &= 0x7f;
 
