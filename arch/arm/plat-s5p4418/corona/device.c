@@ -290,20 +290,21 @@ static struct platform_device mpegts_plat_device = {
 /*------------------------------------------------------------------------------
  * DISPLAY / FB
  */
-#if defined (CONFIG_FB_NXP)
-#if defined (CONFIG_FB0_NXP)
+#if defined(CONFIG_FB_NXP)
+#if defined(CONFIG_FB0_NXP)
 static struct nxp_fb_plat_data fb0_plat_data = {
 	.module			= CONFIG_FB0_NXP_DISPOUT,
+#if (CONFIG_FB0_NXP_DISPOUT == 0)
 	.layer			= CFG_DISP_PRI_SCREEN_LAYER,
 	.format			= CFG_DISP_PRI_SCREEN_RGB_FORMAT,
 	.bgcolor		= CFG_DISP_PRI_BACK_GROUND_COLOR,
 	.bitperpixel	= CFG_DISP_PRI_SCREEN_PIXEL_BYTE * 8,
-#ifdef CONFIG_NXP_DISPLAY_HDMI
-	.x_resol		= CFG_DISP_PRI_RESOL_WIDTH,
-	.y_resol		= CFG_DISP_PRI_RESOL_HEIGHT,
-#else
+#ifdef FB0_USE_ENCODER
 	.x_resol		= CFG_DISP_PRI_RESOL_WIDTH,
 	.y_resol		= CFG_DISP_PRI_RESOL_HEIGHT * 2,
+#else
+	.x_resol		= CFG_DISP_PRI_RESOL_WIDTH,
+	.y_resol		= CFG_DISP_PRI_RESOL_HEIGHT,
 #endif
 	#ifdef CONFIG_ANDROID
 	.buffers		= 3,
@@ -311,9 +312,33 @@ static struct nxp_fb_plat_data fb0_plat_data = {
 	#else
 	.buffers		= 2,
 	#endif
-#ifndef CONFIG_NXP_DISPLAY_HDMI
+#ifdef FB0_USE_ENCODER
 	.lcd_with_mm	= CFG_DISP_PRI_LCD_WIDTH_MM,
 	.lcd_height_mm	= CFG_DISP_PRI_LCD_HEIGHT_MM,
+#endif
+
+#else	// CONFIG_FB0_NXP_DISPOUT == 1
+    .layer          = CFG_DISP_SEC_SCREEN_LAYER,
+    .format         = CFG_DISP_SEC_SCREEN_RGB_FORMAT,
+    .bgcolor        = CFG_DISP_SEC_BACK_GROUND_COLOR,
+    .bitperpixel    = CFG_DISP_SEC_SCREEN_PIXEL_BYTE * 8,
+#ifdef FB0_USE_ENCODER
+    .x_resol        = CFG_DISP_SEC_RESOL_WIDTH,
+    .y_resol        = CFG_DISP_SEC_RESOL_HEIGHT * 2,
+#else
+    .x_resol        = CFG_DISP_SEC_RESOL_WIDTH,
+    .y_resol        = CFG_DISP_SEC_RESOL_HEIGHT,
+#endif
+    #ifdef CONFIG_ANDROID
+    .buffers        = 3,
+    .skip_pan_vsync = 1,
+    #else
+    .buffers        = 2,
+    #endif
+#ifdef FB0_USE_ENCODER
+    .lcd_with_mm    = CFG_DISP_SEC_LCD_WIDTH_MM,
+    .lcd_height_mm  = CFG_DISP_SEC_LCD_HEIGHT_MM,
+#endif
 #endif
 };
 
@@ -327,9 +352,73 @@ static struct platform_device fb0_device = {
 };
 #endif
 
+#if defined(CONFIG_FB1_NXP)
+static struct nxp_fb_plat_data fb1_plat_data = {
+    .module         = CONFIG_FB1_NXP_DISPOUT,
+#if (CONFIG_FB1_NXP_DISPOUT == 0)
+    .layer          = CFG_DISP_PRI_SCREEN_LAYER,
+    .format         = CFG_DISP_PRI_SCREEN_RGB_FORMAT,
+    .bgcolor        = CFG_DISP_PRI_BACK_GROUND_COLOR,
+    .bitperpixel    = CFG_DISP_PRI_SCREEN_PIXEL_BYTE * 8,
+#ifdef FB1_USE_ENCODER
+    .x_resol        = CFG_DISP_PRI_RESOL_WIDTH,
+    .y_resol        = CFG_DISP_PRI_RESOL_HEIGHT * 2,
+#else
+    .x_resol        = CFG_DISP_PRI_RESOL_WIDTH,
+    .y_resol        = CFG_DISP_PRI_RESOL_HEIGHT,
+#endif
+    #ifdef CONFIG_ANDROID
+    .buffers        = 3,
+    .skip_pan_vsync = 1,
+    #else
+    .buffers        = 2,
+    #endif
+#ifdef FB1_USE_ENCODER
+    .lcd_with_mm    = CFG_DISP_PRI_LCD_WIDTH_MM,
+    .lcd_height_mm  = CFG_DISP_PRI_LCD_HEIGHT_MM,
+#endif
+
+#else	// CONFIG_FB1_NXP_DISPOUT == 1
+    .layer          = CFG_DISP_SEC_SCREEN_LAYER,
+    .format         = CFG_DISP_SEC_SCREEN_RGB_FORMAT,
+    .bgcolor        = CFG_DISP_SEC_BACK_GROUND_COLOR,
+    .bitperpixel    = CFG_DISP_SEC_SCREEN_PIXEL_BYTE * 8,
+#ifdef FB1_USE_ENCODER
+    .x_resol        = CFG_DISP_SEC_RESOL_WIDTH,
+    .y_resol        = CFG_DISP_SEC_RESOL_HEIGHT * 2,
+#else
+    .x_resol        = CFG_DISP_SEC_RESOL_WIDTH,
+    .y_resol        = CFG_DISP_SEC_RESOL_HEIGHT,
+#endif
+    #ifdef CONFIG_ANDROID
+    .buffers        = 3,
+    .skip_pan_vsync = 1,
+    #else
+    .buffers        = 2,
+    #endif
+#ifdef FB1_USE_ENCODER
+    .lcd_with_mm    = CFG_DISP_SEC_LCD_WIDTH_MM,
+    .lcd_height_mm  = CFG_DISP_SEC_LCD_HEIGHT_MM,
+#endif
+#endif
+};
+
+static struct platform_device fb1_device = {
+    .name   = DEV_NAME_FB,
+    .id     = 1,    /* FB device node num */
+    .dev    = {
+        .coherent_dma_mask  = 0xffffffffUL, /* for DMA allocate */
+        .platform_data      = &fb1_plat_data
+    },
+};
+#endif
+
 static struct platform_device *fb_devices[] = {
 	#if defined (CONFIG_FB0_NXP)
 	&fb0_device,
+	#endif
+	#if defined (CONFIG_FB1_NXP)
+	&fb1_device,
 	#endif
 };
 #endif /* CONFIG_FB_NXP */

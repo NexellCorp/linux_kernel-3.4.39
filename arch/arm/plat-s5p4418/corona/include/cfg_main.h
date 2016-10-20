@@ -82,79 +82,122 @@
 /*------------------------------------------------------------------------------
  * 	Display (DPC and MLC)
  */
-/* Primary */
-#ifdef CONFIG_NXP_DISPLAY_HDMI
-#define CFG_DISP_PRI_SCREEN_LAYER				0
-#define CFG_DISP_PRI_SCREEN_RGB_FORMAT          MLC_RGBFMT_A8R8G8B8
-#define CFG_DISP_PRI_SCREEN_PIXEL_BYTE          4
-#define CFG_DISP_PRI_SCREEN_COLOR_KEY           0x090909
+#if defined(CONFIG_NXP_DISPLAY_HDMI_IN)
+	#if (CONFIG_NXP_DISPLAY_HDMI_IN == 0)
+		/* Primary */
+		#define CFG_DISP_PRI_SCREEN_LAYER				0
+		#define CFG_DISP_PRI_SCREEN_RGB_FORMAT          MLC_RGBFMT_A8R8G8B8
+		#define CFG_DISP_PRI_SCREEN_PIXEL_BYTE          4
 
-#define CFG_DISP_PRI_VIDEO_PRIORITY             2   // 0, 1, 2, 3
-#define CFG_DISP_PRI_BACK_GROUND_COLOR          0x000000
+		#define CFG_DISP_PRI_BACK_GROUND_COLOR          0x000000
 
-#define CFG_DISP_PRI_MLC_INTERLACE              CFALSE
+		#ifdef CONFIG_NXP_DISPLAY_HDMI_1280_720P
+			#define CFG_DISP_PRI_RESOL_WIDTH                1280    // X Resolution
+			#define CFG_DISP_PRI_RESOL_HEIGHT               720		// Y Resolution
+		#elif defined (CONFIG_NXP_DISPLAY_HDMI_1920_1080P)
+			#define CFG_DISP_PRI_RESOL_WIDTH                1920    // X Resolution
+			#define CFG_DISP_PRI_RESOL_HEIGHT               1080	// Y Resolution
+		#endif
+	#else
+		/* Secondary */
+        #define CFG_DISP_SEC_SCREEN_LAYER               0
+        #define CFG_DISP_SEC_SCREEN_RGB_FORMAT          MLC_RGBFMT_A8R8G8B8
+        #define CFG_DISP_SEC_SCREEN_PIXEL_BYTE          4
 
-#ifdef CONFIG_NXP_DISPLAY_HDMI_1280_720P
-#define CFG_DISP_PRI_RESOL_WIDTH                1280    // X Resolution
-#define CFG_DISP_PRI_RESOL_HEIGHT               720		// Y Resolution
-#elif defined (CONFIG_NXP_DISPLAY_HDMI_1920_1080P)
-#define CFG_DISP_PRI_RESOL_WIDTH                1920    // X Resolution
-#define CFG_DISP_PRI_RESOL_HEIGHT               1080	// Y Resolution
+        #define CFG_DISP_SEC_BACK_GROUND_COLOR          0x000000
+
+        #ifdef CONFIG_NXP_DISPLAY_HDMI_1280_720P
+            #define CFG_DISP_SEC_RESOL_WIDTH                1280    // X Resolution
+            #define CFG_DISP_SEC_RESOL_HEIGHT               720     // Y Resolution
+        #elif defined (CONFIG_NXP_DISPLAY_HDMI_1920_1080P)
+            #define CFG_DISP_SEC_RESOL_WIDTH                1920    // X Resolution
+            #define CFG_DISP_SEC_RESOL_HEIGHT               1080    // Y Resolution
+        #endif
+	#endif
 #endif
 
-#define CFG_DISP_PRI_OUT_SWAPRB                 CFALSE
-#define CFG_DISP_PRI_OUT_FORMAT                 DPC_FORMAT_RGB888
-#define CFG_DISP_PRI_OUT_YCORDER                DPC_YCORDER_CbYCrY
-#define CFG_DISP_PRI_OUT_INTERLACE              CFALSE
-#define CFG_DISP_PRI_OUT_INVERT_FIELD           CFALSE
-#define CFG_DISP_LCD_MPY_TYPE                   0
+#if defined(CONFIG_NXP_DISPLAY_ENCODER_IN)
+	#define FB0_USE_ENCODER
+//	#define FB1_USE_ENCODER
+	#if (CONFIG_NXP_DISPLAY_ENCODER_IN == 0)
+		/* Primary */
+		#define CFG_DISP_PRI_SCREEN_LAYER               0
+		#define CFG_DISP_PRI_SCREEN_RGB_FORMAT          MLC_RGBFMT_A8R8G8B8
+		#define CFG_DISP_PRI_SCREEN_PIXEL_BYTE	        4
 
-#else	// CONFIG_NXP_DISPLAY_ENCODER
+		#define CFG_DISP_PRI_BACK_GROUND_COLOR			0xFF	// Blue
 
-#define CFG_DISP_PRI_SCREEN_LAYER               0
-#define CFG_DISP_PRI_SCREEN_RGB_FORMAT          MLC_RGBFMT_A8R8G8B8
-#define CFG_DISP_PRI_SCREEN_PIXEL_BYTE	        4
-#define CFG_DISP_PRI_SCREEN_COLOR_KEY	        0x090909
+		#define	CFG_DISP_PRI_LCD_WIDTH_MM				155
+		#define	CFG_DISP_PRI_LCD_HEIGHT_MM				90
 
-#define CFG_DISP_PRI_VIDEO_PRIORITY				2		// 0, 1, 2, 3
-#define CFG_DISP_PRI_BACK_GROUND_COLOR			0xFF	// Blue
+		#define CFG_DISP_PRI_RESOL_WIDTH				720	// X Resolution - DPC
+		#define CFG_DISP_PRI_RESOL_HEIGHT				240	// Y Resolution - DPC : FB_X = DPC_Y * 2
 
-#define CFG_DISP_PRI_MLC_INTERLACE              CTRUE
+		#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH           62	
+		#define CFG_DISP_PRI_HSYNC_BACK_PORCH           60	
+		#define CFG_DISP_PRI_HSYNC_FRONT_PORCH          16
+		#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CFALSE
+		#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH           3
+		#define CFG_DISP_PRI_VSYNC_BACK_PORCH           15
+		#define CFG_DISP_PRI_VSYNC_FRONT_PORCH          4
+		#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH			CFALSE
 
-#define	CFG_DISP_PRI_LCD_WIDTH_MM				155
-#define	CFG_DISP_PRI_LCD_HEIGHT_MM				90
+		#define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL0
+		#define CFG_DISP_PRI_CLKGEN0_DIV                10
+		#define CFG_DISP_PRI_CLKGEN0_DELAY              0
+		#define CFG_DISP_PRI_CLKGEN0_INVERT				1
+		#define CFG_DISP_PRI_CLKGEN1_SOURCE             DPC_VCLK_SRC_VCLK2
+		#define CFG_DISP_PRI_CLKGEN1_DIV                2	// 1
+		#define CFG_DISP_PRI_CLKGEN1_DELAY              0
+		#define CFG_DISP_PRI_CLKGEN1_INVERT				1
+		#define CFG_DISP_PRI_CLKSEL1_SELECT				0
+		#define CFG_DISP_PRI_PADCLKSEL                  DPC_PADCLKSEL_VCLK2	/* VCLK=CLKGEN1, VCLK2=CLKGEN0 */
 
-#define CFG_DISP_PRI_RESOL_WIDTH				720	// X Resolution - DPC
-#define CFG_DISP_PRI_RESOL_HEIGHT				240	// Y Resolution - DPC : FB_X = DPC_Y * 2
+		#define	CFG_DISP_PRI_PIXEL_CLOCK				27000000
 
-#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH           62	
-#define CFG_DISP_PRI_HSYNC_BACK_PORCH           60	
-#define CFG_DISP_PRI_HSYNC_FRONT_PORCH          16
-#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CFALSE
-#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH           3
-#define CFG_DISP_PRI_VSYNC_BACK_PORCH           15
-#define CFG_DISP_PRI_VSYNC_FRONT_PORCH          4
-#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH			CFALSE
+		#define CFG_DISP_PRI_OUT_FORMAT                 DPC_FORMAT_CCIR656
+		#define CFG_DISP_PRI_OUT_INTERLACE              CTRUE
+		#define CFG_DISP_PRI_OUT_INVERT_FIELD           CFALSE
+	#else
+		/* Secondary */
+		#define CFG_DISP_SEC_SCREEN_LAYER               0
+		#define CFG_DISP_SEC_SCREEN_RGB_FORMAT          MLC_RGBFMT_A8R8G8B8
+		#define CFG_DISP_SEC_SCREEN_PIXEL_BYTE          4
 
-#define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL0
-#define CFG_DISP_PRI_CLKGEN0_DIV                10
-#define CFG_DISP_PRI_CLKGEN0_DELAY              0
-#define CFG_DISP_PRI_CLKGEN0_INVERT				1
-#define CFG_DISP_PRI_CLKGEN1_SOURCE             DPC_VCLK_SRC_VCLK2
-#define CFG_DISP_PRI_CLKGEN1_DIV                2	// 1
-#define CFG_DISP_PRI_CLKGEN1_DELAY              0
-#define CFG_DISP_PRI_CLKGEN1_INVERT				1
-#define CFG_DISP_PRI_CLKSEL1_SELECT				0
-#define CFG_DISP_PRI_PADCLKSEL                  DPC_PADCLKSEL_VCLK2	/* VCLK=CLKGEN1, VCLK2=CLKGEN0 */
+		#define CFG_DISP_SEC_BACK_GROUND_COLOR          0xFF    // Blue
 
-#define	CFG_DISP_PRI_PIXEL_CLOCK				27000000
+		#define CFG_DISP_SEC_LCD_WIDTH_MM               155
+		#define CFG_DISP_SEC_LCD_HEIGHT_MM              90
 
-#define	CFG_DISP_PRI_OUT_SWAPRB					CFALSE
-#define CFG_DISP_PRI_OUT_FORMAT                 DPC_FORMAT_CCIR656
-#define CFG_DISP_PRI_OUT_YCORDER                DPC_YCORDER_CbYCrY
-#define CFG_DISP_PRI_OUT_INTERLACE              CTRUE
-#define CFG_DISP_PRI_OUT_INVERT_FIELD           CFALSE
-#define CFG_DISP_LCD_MPY_TYPE					0
+		#define CFG_DISP_SEC_RESOL_WIDTH                720 // X Resolution - DPC
+		#define CFG_DISP_SEC_RESOL_HEIGHT               240 // Y Resolution - DPC : FB_X = DPC_Y * 2
+
+		#define CFG_DISP_SEC_HSYNC_SYNC_WIDTH           62  
+		#define CFG_DISP_SEC_HSYNC_BACK_PORCH           60  
+		#define CFG_DISP_SEC_HSYNC_FRONT_PORCH          16
+		#define CFG_DISP_SEC_HSYNC_ACTIVE_HIGH          CFALSE
+		#define CFG_DISP_SEC_VSYNC_SYNC_WIDTH           3
+		#define CFG_DISP_SEC_VSYNC_BACK_PORCH           15
+		#define CFG_DISP_SEC_VSYNC_FRONT_PORCH          4
+		#define CFG_DISP_SEC_VSYNC_ACTIVE_HIGH          CFALSE
+
+		#define CFG_DISP_SEC_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL0
+		#define CFG_DISP_SEC_CLKGEN0_DIV                10
+		#define CFG_DISP_SEC_CLKGEN0_DELAY              0
+		#define CFG_DISP_SEC_CLKGEN0_INVERT             1
+		#define CFG_DISP_SEC_CLKGEN1_SOURCE             DPC_VCLK_SRC_VCLK2
+		#define CFG_DISP_SEC_CLKGEN1_DIV                2   // 1
+		#define CFG_DISP_SEC_CLKGEN1_DELAY              0
+		#define CFG_DISP_SEC_CLKGEN1_INVERT             1
+		#define CFG_DISP_SEC_CLKSEL1_SELECT             0
+		#define CFG_DISP_SEC_PADCLKSEL                  DPC_PADCLKSEL_VCLK2 /* VCLK=CLKGEN1, VCLK2=CLKGEN0 */
+
+		#define CFG_DISP_SEC_PIXEL_CLOCK                27000000
+
+		#define CFG_DISP_SEC_OUT_FORMAT                 DPC_FORMAT_CCIR656
+		#define CFG_DISP_SEC_OUT_INTERLACE              CTRUE
+		#define CFG_DISP_SEC_OUT_INVERT_FIELD           CFALSE
+	#endif
 #endif
 
 /*------------------------------------------------------------------------------

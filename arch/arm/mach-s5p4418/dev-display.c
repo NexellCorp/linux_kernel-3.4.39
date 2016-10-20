@@ -69,29 +69,29 @@
 #if defined(CONFIG_NXP_DISPLAY_LCD)
 	#if (0 == CONFIG_NXP_DISPLAY_LCD) && !defined(CONFIG_NXP_DISPLAY_1ST)
 	#define CONFIG_NXP_DISPLAY_1ST
-	#elif !defined(CONFIG_NXP_DISPLAY_2ST)
-	#define CONFIG_NXP_DISPLAY_2ST
+	#elif !defined(CONFIG_NXP_DISPLAY_2ND)
+	#define CONFIG_NXP_DISPLAY_2ND
 	#endif
 #endif
 #if defined(CONFIG_NXP_DISPLAY_LVDS)
 	#if (0 == CONFIG_NXP_DISPLAY_LVDS) && !defined(CONFIG_NXP_DISPLAY_1ST)
 	#define CONFIG_NXP_DISPLAY_1ST
-	#elif !defined(CONFIG_NXP_DISPLAY_2ST)
-	#define CONFIG_NXP_DISPLAY_2ST
+	#elif !defined(CONFIG_NXP_DISPLAY_2ND)
+	#define CONFIG_NXP_DISPLAY_2ND
 	#endif
 #endif
 #if defined(CONFIG_NXP_DISPLAY_MIPI)
 	#if (0 == CONFIG_NXP_DISPLAY_MIPI) && !defined(CONFIG_NXP_DISPLAY_1ST)
 	#define CONFIG_NXP_DISPLAY_1ST
-	#elif !defined(CONFIG_NXP_DISPLAY_2ST)
-	#define CONFIG_NXP_DISPLAY_2ST
+	#elif !defined(CONFIG_NXP_DISPLAY_2ND)
+	#define CONFIG_NXP_DISPLAY_2ND
 	#endif
 #endif
 #if defined(CONFIG_NXP_DISPLAY_HDMI)
 	#if (0 == CONFIG_NXP_DISPLAY_HDMI) && !defined(CONFIG_NXP_DISPLAY_1ST)
 	#define CONFIG_NXP_DISPLAY_1ST
-	#elif !defined(CONFIG_NXP_DISPLAY_2ST)
-	#define CONFIG_NXP_DISPLAY_2ST
+	#elif !defined(CONFIG_NXP_DISPLAY_2ND)
+	#define CONFIG_NXP_DISPLAY_2ND
 	#endif
 #endif
 
@@ -101,8 +101,8 @@ static struct platform_device syncgen_1st_dev = {
 	.id		= 0,	/* module id */
 };
 #endif
-#if defined(CONFIG_NXP_DISPLAY_2ST)
-static struct platform_device syncgen_2st_dev = {
+#if defined(CONFIG_NXP_DISPLAY_2ND)
+static struct platform_device syncgen_2nd_dev = {
 	.name	= DEV_NAME_DISP,
 	.id		= 1,	/* module id */
 };
@@ -112,8 +112,8 @@ static struct platform_device *syncgen_devices[] __initdata = {
 	#if defined(CONFIG_NXP_DISPLAY_1ST)
 	&syncgen_1st_dev,
 	#endif
-	#if defined(CONFIG_NXP_DISPLAY_2ST)
-	&syncgen_2st_dev,
+	#if defined(CONFIG_NXP_DISPLAY_2ND)
+	&syncgen_2nd_dev,
 	#endif
 };
 
@@ -125,6 +125,7 @@ static struct platform_device *syncgen_devices[] __initdata = {
 
 static struct disp_vsync_info __lcd_vsync = {
 	/* default parameters refer to cfg_main.h */
+#if (CONFIG_NXP_DISPLAY_ENCODER_IN == 0)
 	#if defined(CFG_DISP_PRI_RESOL_WIDTH) && defined(CFG_DISP_PRI_RESOL_HEIGHT)
 	.interlace	= CFG_DISP_PRI_OUT_INTERLACE,
 	.h_active_len	= CFG_DISP_PRI_RESOL_WIDTH,
@@ -143,10 +144,31 @@ static struct disp_vsync_info __lcd_vsync = {
 	.clk_src_lv1	= CFG_DISP_PRI_CLKGEN1_SOURCE,
 	.clk_div_lv1	= CFG_DISP_PRI_CLKGEN1_DIV,
 	#endif
+#else
+	#if defined(CFG_DISP_SEC_RESOL_WIDTH) && defined(CFG_DISP_SEC_RESOL_HEIGHT)
+    .interlace  = CFG_DISP_SEC_OUT_INTERLACE,
+    .h_active_len   = CFG_DISP_SEC_RESOL_WIDTH,
+    .h_sync_width   = CFG_DISP_SEC_HSYNC_SYNC_WIDTH,
+    .h_back_porch   = CFG_DISP_SEC_HSYNC_BACK_PORCH,
+    .h_front_porch  = CFG_DISP_SEC_HSYNC_FRONT_PORCH,
+    .h_sync_invert  = CFG_DISP_SEC_HSYNC_ACTIVE_HIGH,
+    .v_active_len   = CFG_DISP_SEC_RESOL_HEIGHT,
+    .v_sync_width   = CFG_DISP_SEC_VSYNC_SYNC_WIDTH,
+    .v_back_porch   = CFG_DISP_SEC_VSYNC_BACK_PORCH,
+    .v_front_porch  = CFG_DISP_SEC_VSYNC_FRONT_PORCH,
+    .v_sync_invert  = CFG_DISP_SEC_VSYNC_ACTIVE_HIGH,
+    .pixel_clock_hz = CFG_DISP_SEC_PIXEL_CLOCK,
+    .clk_src_lv0    = CFG_DISP_SEC_CLKGEN0_SOURCE,
+    .clk_div_lv0    = CFG_DISP_SEC_CLKGEN0_DIV,
+    .clk_src_lv1    = CFG_DISP_SEC_CLKGEN1_SOURCE,
+    .clk_div_lv1    = CFG_DISP_SEC_CLKGEN1_DIV,
+#endif
+#endif
 };
 static struct disp_lcd_param   __lcd_devpar;
 
 static struct disp_syncgen_par __lcd_syncgen = {
+#if (CONFIG_NXP_DISPLAY_ENCODER_IN == 0)
 	#if defined(CFG_DISP_PRI_RESOL_WIDTH) && defined(CFG_DISP_PRI_RESOL_HEIGHT)
 	.interlace	= CFG_DISP_PRI_OUT_INTERLACE, 
 	.out_format	= CFG_DISP_PRI_OUT_FORMAT,
@@ -158,6 +180,19 @@ static struct disp_syncgen_par __lcd_syncgen = {
 	.clk_sel_div1	= CFG_DISP_PRI_CLKSEL1_SELECT,
 	.invert_field	= CFG_DISP_PRI_OUT_INVERT_FIELD,
 	#endif
+#else
+#if defined(CFG_DISP_SEC_RESOL_WIDTH) && defined(CFG_DISP_SEC_RESOL_HEIGHT)
+    .interlace  = CFG_DISP_SEC_OUT_INTERLACE,
+    .out_format = CFG_DISP_SEC_OUT_FORMAT,
+    .vclk_select    = CFG_DISP_SEC_PADCLKSEL,
+    .clk_inv_lv0    = CFG_DISP_SEC_CLKGEN0_INVERT,
+    .clk_delay_lv0  = CFG_DISP_SEC_CLKGEN0_DELAY,
+    .clk_inv_lv1    = CFG_DISP_SEC_CLKGEN1_INVERT,
+    .clk_delay_lv1  = CFG_DISP_SEC_CLKGEN1_DELAY,
+    .clk_sel_div1   = CFG_DISP_SEC_CLKSEL1_SELECT,
+    .invert_field   = CFG_DISP_SEC_OUT_INVERT_FIELD,
+#endif
+#endif
 };
 
 static struct nxp_lcd_plat_data lcd_data = {

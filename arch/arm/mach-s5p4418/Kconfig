@@ -107,7 +107,7 @@ config NXP_DISPLAY_1ST
 	bool "Primary   display output (MLC0/DPC0)"
 	depends on NXP_DISPLAY
 
-config NXP_DISPLAY_2ST
+config NXP_DISPLAY_2ND
 	bool "Secondary display output (MLC1/DPC1)"
 	depends on NXP_DISPLAY
 
