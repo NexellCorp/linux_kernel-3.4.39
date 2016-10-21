@@ -35,6 +35,10 @@ enum {
 };
 
 enum {
+	PING_TRANSACTION    = B_PACK_CHARS('_','P','N','G'),
+};
+
+enum {
 	FLAT_BINDER_FLAG_PRIORITY_MASK = 0xff,
 	FLAT_BINDER_FLAG_ACCEPTS_FDS = 0x100,
 };
