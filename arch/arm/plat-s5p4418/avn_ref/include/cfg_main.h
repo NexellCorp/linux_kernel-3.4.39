@@ -42,7 +42,7 @@
 #define CFG_BUS_RECONFIG_TOPBUSSI           0
 #define CFG_BUS_RECONFIG_TOPBUSQOS          0
 #define CFG_BUS_RECONFIG_BOTTOMBUSSI        0
-#define CFG_BUS_RECONFIG_BOTTOMBUSQOS       0
+#define CFG_BUS_RECONFIG_BOTTOMBUSQOS       1
 #define CFG_BUS_RECONFIG_DISPBUSSI          1
 
 /*------------------------------------------------------------------------------
