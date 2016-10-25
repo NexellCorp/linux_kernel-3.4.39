@@ -70,6 +70,7 @@ struct tmu_info {
 	int temp_label;
 	int temp_max;
 	long max_cpufreq;
+	long min_cpufreq;
 	long old_cpufreq;
 	long new_cpufreq;
 	long limit_cpufreq;
@@ -94,7 +95,6 @@ struct tmu_info {
 
 #define TMU_IRQ_MAX				3	/* ms */
 #define TMU_CPU_FREQ_STEP		100000	/* khz */
-#define TMU_CPU_FREQ_MIN		400000	/* khz */
 
 static int nxp_tmu_frequency(long new)
 {
@@ -353,6 +353,9 @@ static int nxp_tmu_triggers(struct nxp_tmu_platdata *plat, struct tmu_info *info
 	NX_TMU_ClearInterruptPendingAll(channel);
 	NX_TMU_SetP0IntEn(channel, temp_intr);
 
+	for (i = 0; info->trigger_size > i; i++)
+		trig[i].triggered = 1;
+	schedule_delayed_work(&info->mon_work, msecs_to_jiffies(100));
 	return 0;
 }
 
@@ -399,7 +402,7 @@ static void nxp_tmu_monitor(struct work_struct *work)
 		if (temp >= trig->trig_degree) {
 			if (current_time >= trig->expire_time) {
 
-				if (TMU_CPU_FREQ_MIN > trig->new_cpufreq)
+				if (info->min_cpufreq > trig->new_cpufreq)
 					continue;
 
 				if (0 > nxp_tmu_frequency(trig->new_cpufreq))
@@ -418,6 +421,8 @@ static void nxp_tmu_monitor(struct work_struct *work)
 		} else {
 
 			info->is_limited &= ~(1<<i);
+			NX_TMU_SetP0IntClear(channel, 1<<(i*4));
+			NX_TMU_SetP0IntEn(channel, NX_TMU_GetP0IntEn(channel) | 1<<(i*4));
 			if ((0 == info->is_limited) && trig->limited) {
 				if (0 > nxp_tmu_frequency(info->new_cpufreq))
 					continue;
@@ -426,8 +431,6 @@ static void nxp_tmu_monitor(struct work_struct *work)
 			/*
 			 * enable irq to detect over temp
 			 */
-			NX_TMU_SetP0IntClear(channel, 1<<(i*4));
-			NX_TMU_SetP0IntEn(channel, NX_TMU_GetP0IntEn(channel) | 1<<(i*4));
 
 			trig->new_cpufreq = trig->trig_cpufreq;
 			trig->expire_time = 0;
@@ -584,6 +587,7 @@ static int __devinit nxp_tmu_probe(struct platform_device *pdev)
 {
 	struct nxp_tmu_platdata *plat = pdev->dev.platform_data;
 	struct tmu_info *info = NULL;
+	struct cpufreq_policy policy = { .cpuinfo = { .min_freq = 0, .min_freq = 0 }, };
 	int err = -1;
 	char name[16] ;
 
@@ -600,12 +604,14 @@ static int __devinit nxp_tmu_probe(struct platform_device *pdev)
 
 	sprintf(name, "tmu.%d", plat->channel);
 
+	cpufreq_get_policy(&policy, 0);
 	info->channel =	plat->channel;
 	info->name = DRVNAME;
 	info->channel = plat->channel;
 	info->poll_duration = plat->poll_duration ? plat->poll_duration : TMU_POLL_TIME;
 	info->callback = plat->callback;
-	info->max_cpufreq = cpufreq_quick_get_max(raw_smp_processor_id());
+	info->min_cpufreq = policy.cpuinfo.min_freq;
+	info->max_cpufreq = policy.cpuinfo.max_freq;
 	info->new_cpufreq = info->max_cpufreq;
 	info->old_cpufreq = info->max_cpufreq;
 #if (CHECK_CHARGE_STATE)

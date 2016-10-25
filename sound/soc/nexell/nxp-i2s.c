@@ -41,6 +41,11 @@
 /*
 #define pr_debug				printk
 */
+
+#if defined(CONFIG_SND_NXP_DFS)
+#define SND_NXP_DFS_PLLNO		5 // virtual no
+#endif
+
 #define	DEF_SAMPLE_RATE			48000
 #define	DEF_FRAME_BIT			32	// 32, 48 	 (BFS)
 
@@ -140,6 +145,7 @@ static struct clock_ratio clk_ratio [] = {
 	{  64000, 16384000, 24576000 },
 	{  88200, 22579200, 33868800 },
 	{  96000, 24576000, 36864000 },
+	{ 176400, 45158400, 67737600 },
 	{ 192000, 49152000, 73728000 },
 };
 
@@ -148,11 +154,11 @@ static struct clock_ratio clk_ratio [] = {
  */
 struct nxp_i2s_snd_param {
 	int channel;
-	int master_mode;   	/* 0 = master_mode, 1 = slave */
-	int mclk_in;
-	int trans_mode; 	/* 0 = I2S, 2 = Left-Justified, 3 = Right-Justified  */
-	int sample_rate;
-	int	frame_bit;		/* 16, 24, 32, 48 */
+    int master_mode;   	/* 0 = master_mode, 1 = slave */
+    int mclk_in;
+    int trans_mode; 	/* 0 = I2S, 2 = Left-Justified, 3 = Right-Justified  */
+    int sample_rate;
+    int	frame_bit;		/* 16, 24, 32, 48 */
 	int LR_pol_inv;
 	int in_clkgen;
 	int pre_supply_mclk;
@@ -176,6 +182,7 @@ struct nxp_i2s_snd_param {
 #define	SND_I2S_LOCK(x, f)		spin_lock_irqsave(x, f);
 #define	SND_I2S_UNLOCK(x, f)		spin_unlock_irqrestore(x, f);
 
+#if !defined(CONFIG_SND_NXP_DFS)
 /*
  * return 0 = clkgen, 1 = peripheral clock
  */
@@ -222,6 +229,7 @@ done:
 	clk_put(pclk);
 	return ret;
 }
+#endif // #if !defined(CONFIG_SND_NXP_DFS)
 
 static void supply_master_clock(struct nxp_i2s_snd_param *par)
 {
@@ -362,22 +370,22 @@ static struct snd_soc_dai_driver i2s_dai_driver;
 
 static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 {
+#if !defined(CONFIG_SND_NXP_DFS)
 	static struct snd_soc_dai_driver *dai = &i2s_dai_driver;
+	int divide = 0;
+#endif
 	struct i2s_register *i2s = &par->i2s;
 	struct nxp_pcm_dma_param *dmap_play = &par->play;
 	struct nxp_pcm_dma_param *dmap_capt = &par->capt;
 	unsigned int base = par->base_addr;
 	unsigned long request = 0, rate_hz = 0;
-	int divide = 0, i = 0;
-#if defined(CONFIG_ARCH_S5P4418)
-	int prescale = 0, en_pclk = 0;
+	int i = 0;
+#if defined(CONFIG_ARCH_S5P4418) && !defined(CONFIG_SND_NXP_DFS)
+	int prescale = 0, en_pclk = 0, PSRAEN = 0;
 #endif
 
 	int LRP, IMS, BLC = BLC_16BIT, BFS = 0, RFS = RATIO_256;
 	int SDF = 0, OEN = 0;
-#if defined(CONFIG_ARCH_S5P4418)
-	int PSRAEN = 0;
-#endif
 
 	IMS = par->master_mode ? 0 : IMS_BIT_SLAVE;
 	SDF = par->trans_mode & 0x03;	/* 0:I2S, 1:Left 2:Right justfied */
@@ -385,8 +393,9 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 	OEN = !par->master_mode ? 1 : par->mclk_in; /* Active low : MLCK out enable */
 
 	switch (par->frame_bit) {
-	case 32: BFS = BFS_32BIT; break;
-	case 48: BFS = BFS_48BIT; break;
+	case 16: BFS = BFS_16BIT;BLC = BLC_8BIT;  break;
+	case 32: BFS = BFS_32BIT;BLC = BLC_16BIT; break;
+	case 48: BFS = BFS_48BIT;BLC = BLC_24BIT; break;
 	default:
 		printk(KERN_ERR "Fail, not support i2s frame bits %d (32, 48)\n",
 			par->frame_bit);
@@ -419,8 +428,31 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 		else	
 			request = clk_ratio[i].ratio_256;
 	    par->set_ext_mclk(request, par->channel);
+	} 
+#if defined(CONFIG_SND_NXP_DFS)
+	else {
+		if (BFS_48BIT == BFS) {
+			request = par->sample_rate * 384;RFS = RATIO_384;
+		} else {
+			request = par->sample_rate * 256;RFS = RATIO_256;
+		}
+		rate_hz = request;
+	
+		cutoff_master_clock(par);
+		clk_disable(par->clk);
+		nxp_cpu_pll_change_frequency(SND_NXP_DFS_PLLNO, request);
+#if defined(CONFIG_ARCH_S5P4418)
+		nxp_cpu_clock_update_rate(CONFIG_SND_NXP_PLLDEV);
+#elif defined(CONFIG_ARCH_S5P6818)
+		nxp_cpu_clock_update_pll(CONFIG_SND_NXP_PLLDEV);
+#endif
+		clk_set_rate(par->clk, request);
+		clk_enable(par->clk);
+		supply_master_clock(par);
 	}
-
+	par->in_clkgen = 1;
+	IMS |= IMS_BIT_EXTCLK;
+#else
  	/* 384 RATIO */
 	RFS = RATIO_384, request = clk_ratio[i].ratio_384;
 #if defined(CONFIG_ARCH_S5P4418)
@@ -477,6 +509,7 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 	par->clk_rate = clk_set_rate(par->clk, rate_hz);
 	par->in_clkgen = 1;
 #endif
+#endif // #if defined(CONFIG_SND_NXP_DFS)
 
 done:
 	i2s->CSR = 	(BLC << CSR_BLC_POS) |
@@ -486,7 +519,7 @@ done:
 				(SDF << CSR_SDF_POS) |
 				(RFS << CSR_RFS_POS) |
 				(BFS << CSR_BFS_POS);
-#if defined(CONFIG_ARCH_S5P4418)
+#if defined(CONFIG_ARCH_S5P4418) && !defined(CONFIG_SND_NXP_DFS)
 	i2s->PSR = 	((PSRAEN &0x1) << PSR_PSRAEN_POS) | ((prescale & 0x3f) << PSR_PSVALA_POS);
 #endif
 	i2s_reset(par);
@@ -512,20 +545,16 @@ done:
 		par->sample_rate, rate_hz/(RATIO_256==RFS?256:384),
 		par->frame_bit, rate_hz, (RATIO_256==RFS?256:384));
 	pr_debug("snd i2s: BLC=%d, IMS=%d, LRP=%d, SDF=%d, RFS=%d, BFS=%d\n", BLC, IMS, LRP, SDF, RFS, BFS);
-#if defined(CONFIG_ARCH_S5P4418)
+#if defined(CONFIG_ARCH_S5P4418) && !defined(CONFIG_SND_NXP_DFS)
 	pr_debug("snd i2s: PSRAEN=%d, PSVALA=%d \n", PSRAEN, prescale);
 #endif
-
-	/* i2s support rates */
-	dai->playback.rates = snd_pcm_rate_to_rate_bit(par->sample_rate);
-	dai->capture.rates = snd_pcm_rate_to_rate_bit(par->sample_rate);	
-
+#if !defined(CONFIG_SND_NXP_DFS)
 	/* i2s support format */
 	if (RFS == RATIO_256 || BFS != BFS_48BIT) {
 		dai->playback.formats &= ~(SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_U24_LE);
 		dai->capture.formats  &= ~(SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_U24_LE);
 	}
-
+#endif
 	return 0;
 }
 
@@ -538,13 +567,13 @@ static int nxp_i2s_set_plat_param(struct nxp_i2s_snd_param *par, void *data)
 	int i = 0, ret = 0;
 
 	par->channel = pdev->id;
-	par->master_mode = plat->master_mode;
-	par->mclk_in = plat->master_clock_in;
-	par->trans_mode = plat->trans_mode;
-	par->sample_rate = plat->sample_rate ? plat->sample_rate : DEF_SAMPLE_RATE;
-	par->frame_bit = plat->frame_bit ? plat->frame_bit : DEF_FRAME_BIT;
-	par->LR_pol_inv = plat->LR_pol_inv;
-	par->pre_supply_mclk = plat->pre_supply_mclk;
+    par->master_mode = plat->master_mode;
+    par->mclk_in = plat->master_clock_in;
+    par->trans_mode = plat->trans_mode;
+    par->sample_rate = plat->sample_rate ? plat->sample_rate : DEF_SAMPLE_RATE;
+    par->frame_bit = plat->frame_bit ? plat->frame_bit : DEF_FRAME_BIT;
+    par->LR_pol_inv = plat->LR_pol_inv;
+    par->pre_supply_mclk = plat->pre_supply_mclk;
 	if (plat->ext_is_en) {
 		par->ext_is_en = plat->ext_is_en();
 		par->mclk_in = par->ext_is_en ? 1 : plat->master_clock_in;
@@ -556,7 +585,7 @@ static int nxp_i2s_set_plat_param(struct nxp_i2s_snd_param *par, void *data)
 	par->base_addr = IO_ADDRESS(phy_base);
 	SND_I2S_LOCK_INIT(&par->lock);
 
-	for (i = 0; 2 > i; i++, dma = &par->capt) {
+    for (i = 0; 2 > i; i++, dma = &par->capt) {
 		if (! plat->dma_play_ch) {
 			dma->active = false;
 			continue;
@@ -668,7 +697,7 @@ static int nxp_i2s_trigger(struct snd_pcm_substream *substream,
 		break;
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-	case SNDRV_PCM_TRIGGER_STOP:
+    case SNDRV_PCM_TRIGGER_STOP:
 		i2s_stop(par, stream);
 #ifdef CONFIG_NXP_DFS_BCLK
         bclk_put(BCLK_USER_DMA);
@@ -681,24 +710,216 @@ static int nxp_i2s_trigger(struct snd_pcm_substream *substream,
 	return 0;
 }
 
+#if defined(CONFIG_SND_NXP_DFS)
+static int nxp_i2s_set_dai_sysclk(struct snd_soc_dai *cpu_dai,
+                                      int clk_id, unsigned int freq, int dir)
+{
+	struct nxp_i2s_snd_param 	*par = snd_soc_dai_get_drvdata(cpu_dai);
+	struct i2s_register *i2s = &par->i2s;
+	int LRP, IMS, BFS = 0;
+	int SDF = 0;
+	BFS = (i2s->CSR >> CSR_BFS_POS) & 0x3;
+
+	IMS = par->master_mode ? 0 : IMS_BIT_SLAVE;
+	SDF = par->trans_mode & 0x03;	/* 0:I2S, 1:Left 2:Right justfied */
+	LRP = par->LR_pol_inv ? 1 : 0;
+
+    pr_debug(" %s, clk_id %d, sample_rate = %u, dir = %d\n", __func__, clk_id, freq, dir);
+
+	par->sample_rate = freq;
+
+    return 0;
+}
+
+static int nxp_i2s_set_dfs_sysclk(struct nxp_i2s_snd_param *par)
+{
+	struct i2s_register *i2s = &par->i2s;
+	struct nxp_pcm_dma_param *dmap_play = &par->play;
+	struct nxp_pcm_dma_param *dmap_capt = &par->capt;
+	unsigned int base = par->base_addr;
+	unsigned long request = 0, rate_hz = 0;
+	int i = 0;
+	int LRP, IMS, BFS = 0, RFS = RATIO_256;
+	int SDF = 0, OEN = 0;
+	int BLC = (i2s->CSR >> CSR_BLC_POS) & 0x3;
+
+	BFS = (i2s->CSR >> CSR_BFS_POS) & 0x3;
+	IMS = par->master_mode ? 0 : IMS_BIT_SLAVE;
+	SDF = par->trans_mode & 0x03;	/* 0:I2S, 1:Left 2:Right justfied */
+	LRP = par->LR_pol_inv ? 1 : 0;
+
+	switch (BFS) {
+		case BFS_16BIT: par->frame_bit = 16;pr_debug("==BFS 16BIT==\n"); break;
+		case BFS_32BIT: par->frame_bit = 32;pr_debug("==BFS 32BIT==\n"); break;
+		case BFS_48BIT: par->frame_bit = 48;pr_debug("==BFS 48BIT==\n"); break;
+		default:
+			printk(KERN_ERR "Fail, not support i2s frame bits %d (32, 48)\n",
+				BFS);
+		return -EINVAL;
+	}
+
+	for (i = 0; ARRAY_SIZE(clk_ratio) > i; i++) {
+		if (par->sample_rate == clk_ratio[i].sample_rate)
+			break;
+	}
+
+	if (i >= ARRAY_SIZE(clk_ratio)) {
+		printk(KERN_ERR "Fail, not support i2s sample rate %d \n",
+			par->sample_rate);
+		return -EINVAL;
+	}
+
+	if (!par->master_mode){ 
+	 	/* 384 RATIO */
+		RFS = RATIO_384, request = clk_ratio[i].ratio_384;
+		/* 256 RATIO */
+		if (BFS_32BIT == BFS)
+			RFS = RATIO_256, request = clk_ratio[i].ratio_256;
+		goto done;
+	}
+
+	if (par->ext_is_en) {
+		if (BFS_48BIT == BFS)
+			request = clk_ratio[i].ratio_384;
+		else	
+			request = clk_ratio[i].ratio_256;
+	    par->set_ext_mclk(request, par->channel);
+	} else {
+		if (BFS_48BIT == BFS) {
+			request = par->sample_rate * 384;RFS = RATIO_384;
+		} else {
+			request = par->sample_rate * 256;RFS = RATIO_256;
+		}
+		rate_hz = request;
+	
+		cutoff_master_clock(par);
+		clk_disable(par->clk);
+		nxp_cpu_pll_change_frequency(SND_NXP_DFS_PLLNO, request);
+#if defined(CONFIG_ARCH_S5P4418)
+		nxp_cpu_clock_update_rate(CONFIG_SND_NXP_PLLDEV);
+#elif defined(CONFIG_ARCH_S5P6818)
+		nxp_cpu_clock_update_pll(CONFIG_SND_NXP_PLLDEV);
+#endif
+		clk_set_rate(par->clk, request);
+		clk_enable(par->clk);
+		supply_master_clock(par);
+	}
+	par->in_clkgen = 1;
+	IMS |= IMS_BIT_EXTCLK;
+
+done:
+	i2s->CSR =  (BLC << CSR_BLC_POS) |
+				(OEN << CSR_CDCLKCON_POS) |
+				(IMS << CSR_IMS_POS) |
+				(LRP << CSR_LRP_POS) |
+				(SDF << CSR_SDF_POS) |
+				(RFS << CSR_RFS_POS) |
+				(BFS << CSR_BFS_POS);
+
+	i2s_reset(par);
+
+	if (par->pre_supply_mclk) {
+		if (par->ext_is_en)
+	    	rate_hz = par->set_ext_mclk(CTRUE, par->channel);
+		supply_master_clock(par);
+		i2s->CON |=  1 << CON_I2SACTIVE_POS;
+		writel(i2s->CON, (base+I2S_CON_OFFSET));
+	} else {
+		if (par->ext_is_en) {
+	    	rate_hz = par->set_ext_mclk(CTRUE, par->channel);
+	    	par->set_ext_mclk(CFALSE, par->channel);
+		}
+	}
+
+	dmap_play->real_clock = rate_hz/(RATIO_256==RFS?256:384);
+	dmap_capt->real_clock = rate_hz/(RATIO_256==RFS?256:384);
+	pr_debug("snd i2s: ch %d, %s, %s mode, %d(%ld)hz, %d FBITs, MCLK=%ldhz, RFS=%d\n",
+		par->channel, par->master_mode?"master":"slave",
+		par->trans_mode==0?"iis":(par->trans_mode==1?"left justified":"right justified"),
+		par->sample_rate, rate_hz/(RATIO_256==RFS?256:384),
+		par->frame_bit, rate_hz, (RATIO_256==RFS?256:384));
+	pr_debug("snd i2s: BLC=%d, IMS=%d, LRP=%d, SDF=%d, RFS=%d, BFS=%d\n", BLC, IMS, LRP, SDF, RFS, BFS);
+
+    return 0;
+}
+
+static int nxp_i2s_set_dai_fmt(struct snd_soc_dai *cpu_dai, unsigned int fmt)
+{
+    pr_debug(" %s \n", __func__);
+
+    switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
+		case SND_SOC_DAIFMT_CBS_CFS:
+			pr_debug("SND_SOC_DAIFMT_CBS_CFS\n");
+			break;
+		case SND_SOC_DAIFMT_CBM_CFS:
+			pr_debug("SND_SOC_DAIFMT_CBM_CFS\n");
+			break;
+		default:
+			pr_debug("SND_SOC_DAIFMT_MASTER_MASK Error\n");
+			break;
+    }
+
+	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
+		case SND_SOC_DAIFMT_I2S:
+			pr_debug("SND_SOC_DAIFMT_I2S\n");
+			break;
+		case SND_SOC_DAIFMT_LEFT_J:
+			pr_debug("SND_SOC_DAIFMT_LEFT_J\n");
+			break;
+		case SND_SOC_DAIFMT_DSP_A:
+			pr_debug("SND_SOC_DAIFMT_DSP_A\n");
+			break;
+		case SND_SOC_DAIFMT_DSP_B:
+			pr_debug("SND_SOC_DAIFMT_DSP_B\n");
+			break;
+		default:
+			pr_debug("SND_SOC_DAIFMT_FORMAT_MASK Error\n");
+			return -EINVAL;
+	}
+
+	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
+		case SND_SOC_DAIFMT_NB_NF:
+			pr_debug("SND_SOC_DAIFMT_NB_NF\n");
+			break;
+		case SND_SOC_DAIFMT_IB_NF:
+			pr_debug("SND_SOC_DAIFMT_IB_NF\n");
+			break;
+		default:
+			pr_debug("SND_SOC_DAIFMT_INV_MASK Error\n");
+			return -EINVAL;
+	}
+
+    return 0;
+}
+#endif
+
 static int nxp_i2s_hw_params(struct snd_pcm_substream *substream,
 				 struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
 {
 	struct nxp_i2s_snd_param *par = snd_soc_dai_get_drvdata(dai);
 	struct i2s_register *i2s = &par->i2s;
 	unsigned int format = params_format(params);
+#if !defined(CONFIG_SND_NXP_DFS)
 	int RFS = (i2s->CSR >> CSR_RFS_POS) & 0x3;
 	int BFS = (i2s->CSR >> CSR_BFS_POS) & 0x3;
+#endif
 	int BLC = (i2s->CSR >> CSR_BLC_POS) & 0x3;
 	int ret = 0;
 
+	pr_debug("nxp_i2s_hw_params, %d\n", format);
+
 	switch (format) {
 	case SNDRV_PCM_FORMAT_S8:
+	case SNDRV_PCM_FORMAT_U8:
 		pr_debug("i2s: change sample bits S08\n");
 		if (BLC != BLC_8BIT) {
 			i2s->CSR &= ~(0x3 << CSR_BLC_POS);
 			i2s->CSR |=  (BLC_8BIT << CSR_BLC_POS);
 		}
+#if defined(CONFIG_SND_NXP_DFS)
+		i2s->CSR &= ~(0x3 << CSR_BFS_POS);
+		i2s->CSR |=  (BFS_16BIT << CSR_BFS_POS);
+#endif
 		break;
 	case SNDRV_PCM_FORMAT_S16_LE:
 		pr_debug("i2s: change i2s sample bits %s -> S16\n", BLC==BLC_16BIT?"S16":"S24");
@@ -706,26 +927,47 @@ static int nxp_i2s_hw_params(struct snd_pcm_substream *substream,
 			i2s->CSR &= ~(0x3 << CSR_BLC_POS);
 			i2s->CSR |=  (BLC_16BIT << CSR_BLC_POS);
 		}
+#if defined(CONFIG_SND_NXP_DFS)
+		i2s->CSR &= ~(0x3 << CSR_BFS_POS);
+		i2s->CSR |=  (BFS_32BIT << CSR_BFS_POS);
+#endif
 		break;
 	case SNDRV_PCM_FORMAT_S24_LE:
 		pr_debug("i2s: change i2s sample bits %s -> S24\n", BLC==BLC_16BIT?"S16":"S24");
+#if !defined(CONFIG_SND_NXP_DFS)
 		if (RFS == RATIO_256 || BFS != BFS_48BIT) {
 			printk(KERN_ERR "Fail, i2s RFS 256/BFS 32 not support 24 sample bits\n");
 			return -EINVAL;
 		}
+#endif
 		if (BLC != BLC_24BIT) {
+			pr_debug("i2s: BLC != BLC_24BIT\n");
 			i2s->CSR &= ~(0x3 << CSR_BLC_POS);
 			i2s->CSR |=  (BLC_24BIT << CSR_BLC_POS);
 		}
+		else
+			pr_debug("i2s: BLC == BLC_24BIT\n");
+#if defined(CONFIG_SND_NXP_DFS)
+		i2s->CSR &= ~(0x3 << CSR_BFS_POS);
+		i2s->CSR |=  (BFS_48BIT << CSR_BFS_POS);
+#endif
 		break;
 	default:
+		pr_debug("i2s: default %d\n", format);
 		return -EINVAL;
 	}
+#if defined(CONFIG_SND_NXP_DFS)
+	nxp_i2s_set_dfs_sysclk(par);
+#endif
 
 	return ret;
 }
 
 static struct snd_soc_dai_ops nxp_i2s_ops = {
+#if defined(CONFIG_SND_NXP_DFS)
+    .set_sysclk = nxp_i2s_set_dai_sysclk,
+    .set_fmt    = nxp_i2s_set_dai_fmt,
+#endif
 	.startup	= nxp_i2s_startup,
 	.shutdown	= nxp_i2s_shutdown,
 	.trigger	= nxp_i2s_trigger,
@@ -793,7 +1035,6 @@ static struct snd_soc_dai_driver i2s_dai_driver = {
 	.suspend	= nxp_i2s_dai_suspend,
 	.resume 	= nxp_i2s_dai_resume,
 	.playback	= {
-		.stream_name = "Playback",
 		.channels_min 	= 2,
 		.channels_max 	= 2,
 		.formats		= SND_SOC_I2S_FORMATS,
@@ -802,7 +1043,6 @@ static struct snd_soc_dai_driver i2s_dai_driver = {
 		.rate_max 		= 1562500,
 		},
 	.capture 	= {
-		.stream_name = "Capture",
 		.channels_min 	= 2,
 		.channels_max 	= 2,
 		.formats		= SND_SOC_I2S_FORMATS,
@@ -819,12 +1059,12 @@ static __devinit int nxp_i2s_probe(struct platform_device *pdev)
 	struct nxp_i2s_snd_param *par;
 	int ret = 0;
 
-	/*  allocate i2c_port data */
-	par = kzalloc(sizeof(struct nxp_i2s_snd_param), GFP_KERNEL);
-	if (! par) {
-		printk(KERN_ERR "fail, %s allocate driver info ...\n", pdev->name);
-		return -ENOMEM;
-	}
+    /*  allocate i2c_port data */
+    par = kzalloc(sizeof(struct nxp_i2s_snd_param), GFP_KERNEL);
+    if (! par) {
+        printk(KERN_ERR "fail, %s allocate driver info ...\n", pdev->name);
+        return -ENOMEM;
+    }
 
 	ret = nxp_i2s_set_plat_param(par, pdev);
 	if (ret)

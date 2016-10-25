@@ -66,6 +66,9 @@ static struct snd_pcm_hardware nxp_pcm_hardware = {
 				    		SNDRV_PCM_INFO_PAUSE |
 				    		SNDRV_PCM_INFO_RESUME,	//  | SNDRV_PCM_INFO_BLOCK_TRANSFER
 	.formats			= SND_SOC_PCM_FORMATS,
+#if defined(CONFIG_SND_NXP_DFS)
+   	.rates        = SNDRV_PCM_RATE_8000_192000,
+#endif
 	.rate_min			= 8000,
 	.rate_max			= 192000,
 	.channels_min		= 1,

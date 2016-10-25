@@ -337,8 +337,8 @@ static irqreturn_t i2c_irq_thread(int irqno, void *dev_id)
 
 	/* Arbitration Check. */
 	if ((_ARBITSTAT((void *)base) != 0)) {
-//		pr_err("Fail, arbit i2c.%d  addr [0x%02x] data[0x%02x], trans[%2d:%2d]\n",
-//			par->hw.port, (msg->addr<<1), par->pre_data, cnt, len);
+		pr_err("Fail, arbit i2c.%d  addr [0x%02x] data[0x%02x], trans[%2d:%2d]\n",
+			par->hw.port, (msg->addr<<1), par->pre_data, cnt, len);
 		par->trans_status = I2C_TRANS_ERR;
 		goto __irq_end;
 	}
@@ -545,6 +545,8 @@ static int nxp_i2c_algo_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, 
 
 	par->polling = 1;
 
+	nxp_soc_gpio_set_io_func(par->hw.scl_io, 1);
+	nxp_soc_gpio_set_io_func(par->hw.sda_io, 1);
 	/* lock */
 	if (!preempt_count()) {
 		mutex_lock(&par->lock);

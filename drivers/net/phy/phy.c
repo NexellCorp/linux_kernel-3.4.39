@@ -15,6 +15,9 @@
  * option) any later version.
  *
  */
+
+//#define __TRACE__
+
 #include <linux/kernel.h>
 #include <linux/string.h>
 #include <linux/errno.h>
@@ -58,6 +61,54 @@ void phy_print_status(struct phy_device *phydev)
 	printk(KERN_CONT "\n");
 }
 EXPORT_SYMBOL(phy_print_status);
+
+#ifdef CFG_ETHER_LOOPBACK_MODE
+/**
+ * @speed: 0: disable, 1: 10M, 2: 100M, 3: 1000M
+ */
+static int
+nxpmac_set_phy_loopback(struct phy_device *phydev, int speed)
+{
+	//unsigned long flags;
+
+	if (phydev == NULL)
+		return -1;
+
+	if (speed <= 0 || speed > 3)
+		return -1;
+
+	//spin_lock_irqsave(&priv->lock, flags);
+
+	/* disable PCS loopback */
+	phy_write(phydev, 31, 0);
+	phy_write(phydev, 0, 0x1140);
+	msleep(200);
+
+	/* enable PCS loopback */
+	phy_write(phydev, 31, 0);
+	phy_write(phydev, 0, 0x8000);
+	msleep(200);
+	switch (speed) {
+	case 1:	/* 10M */
+		phy_write(phydev, 0, 0x4100);
+		break;
+	case 2: /* 100M */
+		phy_write(phydev, 0, 0x6100);
+		break;
+	case 3: /* 1000M */
+		phy_write(phydev, 0, 0x4140);
+		break;
+	default:
+		break;
+	}
+	msleep(200);
+	//phy_write(phydev, 0, 0x8000);
+
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	return 0;
+}
+#endif /* CFG_ETHER_LOOPBACK_MODE */
 
 
 /**
@@ -396,6 +447,7 @@ int phy_start_aneg(struct phy_device *phydev)
 
 	mutex_lock(&phydev->lock);
 
+	__trace("phydev autoneg: %d\n", phydev->autoneg);
 	if (AUTONEG_DISABLE == phydev->autoneg)
 		phy_sanitize_settings(phydev);
 
@@ -404,6 +456,7 @@ int phy_start_aneg(struct phy_device *phydev)
 	if (err < 0)
 		goto out_unlock;
 
+	__trace("phy state: %d\n", phydev->state);
 	if (phydev->state != PHY_HALTED) {
 		if (AUTONEG_ENABLE == phydev->autoneg) {
 			phydev->state = PHY_AN;
@@ -599,7 +652,6 @@ int phy_start_interrupts(struct phy_device *phydev)
 
 	atomic_set(&phydev->irq_disable, 0);
 	if (request_irq(phydev->irq, phy_interrupt,
-				//IRQF_TRIGGER_LOW | IRQF_SHARED,
 				IRQF_SHARED,
 				"phy_interrupt",
 				phydev) < 0) {
@@ -747,85 +799,40 @@ out_unlock:
  */
 void phy_start(struct phy_device *phydev)
 {
+	bool do_resume = false;
+	int err = 0;
+
+	__trace("phy start...\n");
+
 	mutex_lock(&phydev->lock);
 
 	switch (phydev->state) {
-		case PHY_STARTING:
-			phydev->state = PHY_PENDING;
+	case PHY_STARTING:
+		phydev->state = PHY_PENDING;
+		break;
+	case PHY_READY:
+		phydev->state = PHY_UP;
+		break;
+	case PHY_HALTED:
+		/* make sure interrupts are re-enabled for the PHY */
+		err = phy_enable_interrupts(phydev);
+		if (err < 0)
 			break;
-		case PHY_READY:
-			phydev->state = PHY_UP;
-			break;
-		case PHY_HALTED:
-			phydev->state = PHY_RESUMING;
-		default:
-			break;
+
+		phydev->state = PHY_RESUMING;
+		do_resume = true;
+		break;
+	default:
+		break;
 	}
 	mutex_unlock(&phydev->lock);
+
+	/* if phy was suspended, bring the physical link up again */
+	if (do_resume)
+		phy_resume(phydev);
 }
 EXPORT_SYMBOL(phy_stop);
 EXPORT_SYMBOL(phy_start);
-
-#ifdef CFG_ETHER_LOOPBACK_MODE
-static int
-nxpmac_set_phy_loopback(struct phy_device *phydev, int speed)
-{
-	//unsigned long flags;
-
-	if (phydev == NULL)
-		return -1;
-
-	if (speed <= 0 || speed > 3)
-		return -1;
-
-	//spin_lock_irqsave(&priv->lock, flags);
-
-	/* disable PCS loopback */
-	phy_write(phydev, 31, 0);
-	phy_write(phydev, 0, 0x1140);
-
-	mdelay(100);
-
-	/* enable PCS loopback */
-	phy_write(phydev, 31, 0);
-	phy_write(phydev, 0, 0x8000);
-	mdelay(100);
-	switch (speed) {
-	case 1:	/* 10M */
-		phy_write(phydev, 0, 0x4100);
-		break;
-	case 2: /* 100M */
-		phy_write(phydev, 0, 0x6100);
-		break;
-	case 3: /* 1000M */
-		phy_write(phydev, 0, 0x4140);
-		break;
-	default:
-		break;
-	}
-	mdelay(100);
-
-	switch (speed) {
-	case 1:	/* 10M */
-		phy_write(phydev, 0, 0x4100);
-		break;
-	case 2: /* 100M */
-		phy_write(phydev, 0, 0x6100);
-		break;
-	case 3: /* 1000M */
-		phy_write(phydev, 0, 0x4140);
-		break;
-	default:
-		break;
-	}
-	mdelay(100);
-
-
-	//spin_unlock_irqrestore(&priv->lock, flags);
-
-	return 0;
-}
-#endif
 
 /**
  * phy_state_machine - Handle the state machine
@@ -836,7 +843,7 @@ void phy_state_machine(struct work_struct *work)
 	struct delayed_work *dwork = to_delayed_work(work);
 	struct phy_device *phydev =
 			container_of(dwork, struct phy_device, state_queue);
-	int needs_aneg = 0;
+	bool needs_aneg = false, do_suspend = false;
 	int err = 0;
 
 	mutex_lock(&phydev->lock);
@@ -852,12 +859,11 @@ void phy_state_machine(struct work_struct *work)
 			break;
 		case PHY_UP:
 			needs_aneg = 1;
-
 			phydev->link_timeout = PHY_AN_TIMEOUT;
 
 			break;
 		case PHY_AN:
-#ifdef CFG_ETHER_LOOPBACK_MODE
+#if defined(CFG_ETHER_LOOPBACK_MODE) && CFG_ETHER_LOOPBACK_MODE >= 1
 			nxpmac_set_phy_loopback(phydev, CFG_ETHER_LOOPBACK_MODE);
 #endif
 			err = phy_read_status(phydev);
@@ -885,7 +891,7 @@ void phy_state_machine(struct work_struct *work)
 				phydev->state = PHY_RUNNING;
 				netif_carrier_on(phydev->attached_dev);
 				phydev->adjust_link(phydev->attached_dev);
-#ifdef CFG_ETHER_LOOPBACK_MODE
+#if defined(CFG_ETHER_LOOPBACK_MODE) && CFG_ETHER_LOOPBACK_MODE >= 1
 				return ;
 #endif
 
@@ -977,6 +983,7 @@ void phy_state_machine(struct work_struct *work)
 				phydev->link = 0;
 				netif_carrier_off(phydev->attached_dev);
 				phydev->adjust_link(phydev->attached_dev);
+				do_suspend = true;
 			}
 			break;
 		case PHY_RESUMING:
@@ -1034,6 +1041,8 @@ void phy_state_machine(struct work_struct *work)
 
 	if (needs_aneg)
 		err = phy_start_aneg(phydev);
+	else if (do_suspend)
+		phy_suspend(phydev);
 
 	if (err < 0)
 		phy_error(phydev);
