@@ -196,6 +196,15 @@ void dump_register(int module)
 #endif
 }
 
+void dump_register_value(int module)
+{
+#if (DUMP_REGISTER)
+#define DBGOUT(args...)  printk(args)
+    NX_VIP_RegisterSet *pREG =
+        (NX_VIP_RegisterSet*)NX_VIP_GetBaseAddress(module);
+	DBGOUT(" VIP_SYNCCTRL   = 0x%04x\r\n", pREG->VIP_SYNCCTRL);
+#endif
+}
 static int _hw_get_irq_num(struct nxp_capture *me)
 {
 #if defined(CONFIG_ARCH_S5P4418)
@@ -380,6 +389,7 @@ static void _restore_register(int module)
     pREG->CLIP_STRIDEL = pBackupReg->CLIP_STRIDEL;
     pREG->VIP_CDENB = pBackupReg->VIP_CDENB;
     pREG->VIP_CONFIG = pBackupReg->VIP_CONFIG;
+    pREG->VIP_VIP1 = pBackupReg->VIP_VIP1;
 #elif defined(CONFIG_ARCH_S5P6818)
     pREG->VIP_SYNCCTRL = pBackupReg->VIP_SYNCCTRL;
     pREG->VIP_VBEGIN = pBackupReg->VIP_VBEGIN;

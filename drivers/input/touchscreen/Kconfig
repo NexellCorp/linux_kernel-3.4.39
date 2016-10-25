@@ -939,4 +939,18 @@ config TOUCHSCREEN_GOODIX
           Say Y here if you have the GOODIX touchscreen.
 
           If unsure, say N.
+config MS_GT80X_MSD
+        tristate "GT80X_MSD Capacitive touch screen driver"
+        help
+          Say Y here to enable the driver for the touchscreen.
+          If unsure, say Y.
+          To compile this driver as a module, choose M here: the
+          module will be called gt80x.
+config GT9XX_10_VW
+        tristate "GT9XX_10_VW Capacitive touch screen driver"
+        help
+          Say Y here to enable the driver for the touchscreen.
+          If unsure, say Y.
+          To compile this driver as a module, choose M here: the
+          module will be called gt80x.
 endif

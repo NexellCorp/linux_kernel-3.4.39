@@ -922,6 +922,43 @@ static void dw_mci_queue_request(struct dw_mci *host, struct dw_mci_slot *slot,
 	}
 }
 
+#ifdef CONFIG_MMC_NXP_MMC_SWITCH_DDR_SDR_TRANSMODE
+#define DW_MCI_SDR_TRAN_MODE 0 
+#define DW_MCI_DDR_TRAN_MODE 1
+static int trans_mode  = DW_MCI_SDR_TRAN_MODE;
+static int trans_switch_en =  1;
+extern int mmc_switch_transfer(struct mmc_host *host);
+int dw_mci_transmode_switch(struct dw_mci *host)
+{
+	int ret = 0;
+    int i;
+    for (i = 0; i < host->num_slots; i++) {
+        ret = mmc_switch_transfer(host->slot[i]->mmc);
+   }
+}
+EXPORT_SYMBOL(dw_mci_transmode_switch);
+static ssize_t show_switch(struct kobject *kobj, struct kobj_attribute *attr,char *buf)
+{
+	printk("%d \n",trans_mode );
+	return 0;
+}
+static ssize_t set_switch(struct kobject *kobj, struct kobj_attribute *attr,const char *buf, size_t count )
+{
+	int status = strlen(buf);
+	int p  = buf[0] - '0';
+	trans_switch_en  = p;
+	return status;
+}
+static struct kobj_attribute mmc_attr =
+	__ATTR(enable, 0644 , show_switch, set_switch);
+static struct attribute * g[] = {
+    &mmc_attr.attr,
+    NULL,
+};
+static struct attribute_group attr_group = {
+   .attrs = g,
+};
+#endif
 static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
 	struct dw_mci_slot *slot = mmc_priv(mmc);
@@ -930,6 +967,26 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	u32 status;
 
 	WARN_ON(slot->mrq);
+#ifdef CONFIG_MMC_NXP_MMC_SWITCH_DDR_SDR_TRANSMODE
+	if (!trans_switch_en  && trans_mode == DW_MCI_DDR_TRAN_MODE )
+	{
+		mmc->caps = (mmc->caps & (~MMC_CAP_1_8V_DDR) );
+        trans_mode = DW_MCI_SDR_TRAN_MODE;
+        dw_mci_transmode_switch(host);
+	}
+    if(  (slot->host->pdata->caps & MMC_CAP_UHS_DDR50 ) &&  trans_switch_en )
+    {
+     if((mrq->cmd->opcode == MMC_WRITE_BLOCK || mrq->cmd->opcode == MMC_WRITE_MULTIPLE_BLOCK ) && (trans_mode      == DW_MCI_DDR_TRAN_MODE )) {
+             mmc->caps = (mmc->caps & (~MMC_CAP_1_8V_DDR) );
+             trans_mode = DW_MCI_SDR_TRAN_MODE;
+             dw_mci_transmode_switch(host);
+    } else if((mrq->cmd->opcode == MMC_READ_SINGLE_BLOCK ||  mrq->cmd->opcode == MMC_READ_MULTIPLE_BLOCK) &&      (trans_mode == DW_MCI_SDR_TRAN_MODE )) {
+           trans_mode = DW_MCI_DDR_TRAN_MODE;
+           mmc->caps = (mmc->caps | (MMC_CAP_1_8V_DDR) );
+           dw_mci_transmode_switch(host);
+       }
+   }
+#endif
 
 	if (test_bit(DW_MMC_CARD_PRESENT, &slot->flags)) {
 		do {
@@ -2515,6 +2572,9 @@ int dw_mci_probe(struct dw_mci *host)
 {
 	int width, i, ret = 0;
 	u32 fifo_size;
+#ifdef CONFIG_MMC_NXP_MMC_SWITCH_DDR_SDR_TRANSMODE
+	struct kobject *kobj;
+#endif
 
 	if (!host->pdata || !host->pdata->init) {
 		dev_err(&host->dev,
@@ -2687,6 +2747,16 @@ int dw_mci_probe(struct dw_mci *host)
 	if (host->quirks & DW_MCI_QUIRK_IDMAC_DTO)
 		dev_info(&host->dev, "Internal DMAC interrupt fix enabled.\n");
 
+#ifdef CONFIG_MMC_NXP_MMC_SWITCH_DDR_SDR_TRANSMODE
+	if (host->pdata->caps & MMC_CAP_UHS_DDR50) {
+		if (host->pdata->caps & MMC_CAP_1_8V_DDR) 
+			trans_mode = DW_MCI_DDR_TRAN_MODE; 
+		kobj = kobject_create_and_add("mmc_switch",&platform_bus.kobj);
+   		if (! kobj)
+    		return -ENOMEM;
+		 sysfs_create_group(kobj, &attr_group);
+	}
+#endif
 	return 0;
 
 err_init_slot:

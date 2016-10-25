@@ -526,6 +526,11 @@ int usb_match_device(struct usb_device *dev, const struct usb_device_id *id)
 	    (id->bDeviceProtocol != dev->descriptor.bDeviceProtocol))
 		return 0;
 
+#if defined (CONFIG_HID_IUI)
+	if ((id->match_flags & USB_DEVICE_ID_MATCH_PRODUCT_HI) &&
+	    id->idProduct != (0xff00 & le16_to_cpu(dev->descriptor.idProduct)))
+		return 0;
+#endif
 	return 1;
 }
 

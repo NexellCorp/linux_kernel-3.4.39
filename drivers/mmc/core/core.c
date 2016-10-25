@@ -2435,6 +2435,16 @@ int mmc_resume_host(struct mmc_host *host)
 }
 EXPORT_SYMBOL(mmc_resume_host);
 
+#ifdef CONFIG_MMC_NXP_MMC_SWITCH_DDR_SDR_TRANSMODE
+int mmc_switch_transfer(struct mmc_host *host)
+{
+	int err = 0;
+	mmc_bus_get(host);
+	mmc_power_up(host);
+	err = host->bus_ops->resume(host);
+}
+EXPORT_SYMBOL(mmc_switch_transfer);
+#endif
 /* Do the card removal on suspend if card is assumed removeable
  * Do that in pm notifier while userspace isn't yet frozen, so we will be able
    to sync the card.
