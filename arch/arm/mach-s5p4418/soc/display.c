@@ -1180,8 +1180,8 @@ int nxp_soc_disp_rgb_set_position(int module, int layer, int x, int y, int waitv
 	DISP_MULTILY_RGB(module, prgb, layer);
 	int left = prgb->pos_x = x;
 	int top = prgb->pos_y = y;
-	int right = prgb->right;
-	int bottom = prgb->bottom;
+	int right = x + prgb->right;
+	int bottom = y + prgb->bottom;
 	RET_ASSERT_VAL(prgb->format, -EINVAL);
 
 	DBGOUT("%s: %s, wait=%d - L=%d, T=%d, R=%d, B=%d\n",
