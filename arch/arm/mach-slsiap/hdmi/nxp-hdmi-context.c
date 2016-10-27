@@ -1145,6 +1145,27 @@ void hdmi_avmute(u32 enable)
 }
 EXPORT_SYMBOL(hdmi_avmute);
 
+void hdmi_pattern_gen(u32 enable)
+{
+	U32 value=0x0;
+
+	if(__me == NULL){
+		printk(KERN_ERR "## [%s():%s:%d\t] __me : NULL \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__, enable);
+		return 0;
+	}
+
+    if (enable) {
+		hdmi_enable(false);
+		NX_HDMI_SetReg(0, HDMI_LINK_VIDEO_PATTERN_GEN, 0x1);
+		_hdmi_enable(__me);
+    } else {
+		hdmi_enable(false);
+		NX_HDMI_SetReg(0, HDMI_LINK_VIDEO_PATTERN_GEN, 0x0);
+		_hdmi_enable(__me);
+    }
+}
+EXPORT_SYMBOL(hdmi_pattern_gen);
+
 void hdmi_enable_audio(struct nxp_hdmi_context *me, bool enable)
 {
     me->audio_enable = enable;

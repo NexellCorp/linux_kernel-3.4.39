@@ -1194,8 +1194,11 @@ static int nxp_fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *inf
 #define NXPFB_GET_ACTIVE	_IOR('N', 103, __u32)
 #endif
 
-#define NXPFB_HDMI_AVMUTE	 	_IOW('N', 105, __u32)
-extern void hdmi_avmute(bool enable);
+#define NXPFB_HDMI_AVMUTE	 		_IOW('N', 105, __u32)
+#define NXPFB_HDMI_PATTERN_GEN	 	_IOW('N', 106, __u32)
+
+extern void hdmi_avmute(u32 enable);
+extern void hdmi_pattern_gen(u32 enable);
 
 static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
 {
@@ -1214,8 +1217,20 @@ static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
 				ret = -EFAULT;
 				break;
 			}
-			printk(KERN_ERR "## [%s():%s:%d\t] en_tmp:%d \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__, en_tmp);
+			printk(KERN_ERR "## [%s():%s:%d\t] NXPFB_HDMI_AVMUTE en_tmp:%d \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__, en_tmp);
 			hdmi_avmute(en_tmp);
+		}
+		break;
+
+    case NXPFB_HDMI_PATTERN_GEN:
+		{
+			u32 en_tmp;
+			if (get_user(en_tmp, (u32 __user *)arg)) {
+				ret = -EFAULT;
+				break;
+			}
+			printk(KERN_ERR "## [%s():%s:%d\t] NXPFB_HDMI_PATTERN_GEN en_tmp:%d \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__, en_tmp);
+			hdmi_pattern_gen(en_tmp);
 		}
 		break;
 
