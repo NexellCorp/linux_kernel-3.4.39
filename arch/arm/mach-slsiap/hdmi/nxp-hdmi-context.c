@@ -1124,6 +1124,27 @@ void hdmi_start_dummy(void)
 }
 #endif
 
+void hdmi_avmute(u32 enable)
+{
+	U32 value=0x0;
+
+	value = NX_HDMI_GetReg(0, HDMI_LINK_HDMI_CON_0);
+	printk(KERN_ERR "## [%s():%s:%d\t] enable:%d, GetReg=value:0x%x \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__, enable, value);
+
+	if (enable) {
+		value |= 1 << 5;
+		value &= ~(1 << 2);
+	} else {
+		value |= 1 << 2;
+		value &= ~(1 << 5);
+	}
+
+	printk(KERN_ERR "## [%s():%s:%d\t] SetReg=value:0x%x \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__, value);
+	NX_HDMI_SetReg(0, HDMI_LINK_HDMI_CON_0, value);
+
+}
+EXPORT_SYMBOL(hdmi_avmute);
+
 void hdmi_enable_audio(struct nxp_hdmi_context *me, bool enable)
 {
     me->audio_enable = enable;

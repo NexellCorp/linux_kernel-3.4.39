@@ -1194,6 +1194,9 @@ static int nxp_fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *inf
 #define NXPFB_GET_ACTIVE	_IOR('N', 103, __u32)
 #endif
 
+#define NXPFB_HDMI_AVMUTE	 	_IOW('N', 105, __u32)
+extern void hdmi_avmute(bool enable);
+
 static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
 {
 	struct nxp_fb_param *par = info->par;
@@ -1204,6 +1207,18 @@ static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
 	pr_debug("%s (cmd:0x%x, type:%c, nr:%d) \n\n", __func__, cmd, _IOC_TYPE(cmd), _IOC_NR(cmd));
 
     switch (cmd) {
+    case NXPFB_HDMI_AVMUTE:
+		{
+			u32 en_tmp;
+			if (get_user(en_tmp, (u32 __user *)arg)) {
+				ret = -EFAULT;
+				break;
+			}
+			printk(KERN_ERR "## [%s():%s:%d\t] en_tmp:%d \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__, en_tmp);
+			hdmi_avmute(en_tmp);
+		}
+		break;
+
     case NXPFB_SET_POS:
         {
             int pos[3] = { 0, };	/* left, right, waitsycn */
