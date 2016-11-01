@@ -550,13 +550,43 @@ static int nxp_vb2_buf_finish(struct vb2_buffer *vb)
 
 static int nxp_vb2_start_streaming(struct vb2_queue *q, unsigned int count)
 {
+	struct nxp_video *me = q->drv_priv;
+	struct v4l2_subdev *sd;
+	u32 pad;
+
     pr_debug("%s\n", __func__);
+
+	sd = _get_remote_subdev(me,
+			       me->type == NXP_VIDEO_TYPE_OUT ?
+			       V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE :
+			       V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
+			       &pad);
+
+	if (sd)
+		return v4l2_subdev_call(sd, video, s_stream, 1);
+	else
+		return -EINVAL;
     return 0;
 }
 
 static int nxp_vb2_stop_streaming(struct vb2_queue *q)
 {
-    pr_debug("%s\n", __func__);
+
+
+	struct nxp_video *me = q->drv_priv;
+	struct v4l2_subdev *sd;
+	u32 pad;
+    
+	pr_debug("%s\n", __func__);
+
+	sd = _get_remote_subdev(me,
+			       me->type == NXP_VIDEO_TYPE_OUT ?
+			       V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE :
+			       V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
+			       &pad);
+	if (sd)
+		v4l2_subdev_call(sd, video, s_stream, 0);
+
     return 0;
 }
 
@@ -899,7 +929,7 @@ static int nxp_video_streamon(struct file *file, void *fh,
     void *hostdata_back;
 
      vmsg("%s: me %p, %s\n", __func__, me, me->name);
-
+#if 0 
     if (me->vbq) {
         ret = vb2_streamon(me->vbq, i);
         if (ret < 0) {
@@ -915,12 +945,26 @@ static int nxp_video_streamon(struct file *file, void *fh,
         }
     }
 
+
     /* for mlc subdev */
     hostdata_back = v4l2_get_subdev_hostdata(subdev);
     v4l2_set_subdev_hostdata(subdev, me->name);
     ret = v4l2_subdev_call(subdev, video, s_stream, 1);
     v4l2_set_subdev_hostdata(subdev, hostdata_back);
     return ret;
+#else
+	if (!subdev) {
+		WARN_ON(1);
+		return -ENODEV;
+	}
+
+	v4l2_set_subdev_hostdata(subdev, me->name);
+
+	if (me->vbq)
+		return vb2_streamon(me->vbq, i);
+
+	return -EINVAL;
+#endif
 }
 
 static int nxp_video_streamoff(struct file *file, void *fh,
@@ -936,6 +980,7 @@ static int nxp_video_streamoff(struct file *file, void *fh,
     me = file->private_data;
     subdev = _get_remote_subdev(me, i, &pad);
 
+#if 0
     if (me->vbq) {
         ret = vb2_streamoff(me->vbq, i);
         if (ret < 0) {
@@ -959,6 +1004,19 @@ static int nxp_video_streamoff(struct file *file, void *fh,
     v4l2_set_subdev_hostdata(subdev, hostdata_back);
 
     vmsg("%s: %s exit\n", __func__, me->name);
+#else
+	if (!subdev) {
+		pr_err("[nx video] no subdev device linked\n");
+		return -ENODEV;
+	}
+
+	v4l2_set_subdev_hostdata(subdev, me->name);
+
+	if (me->vbq)
+		return vb2_streamoff(me->vbq, i);
+
+	return -EINVAL;
+#endif
 
     return ret;
 }
