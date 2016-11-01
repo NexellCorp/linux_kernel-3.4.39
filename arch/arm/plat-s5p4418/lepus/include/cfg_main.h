@@ -228,6 +228,11 @@
 #define	CFG_SDMMC2_DETECT_IO					(PAD_GPIO_ALV + 1)	/* external cd */
 
 
+/*
+ * DWCOTG
+ */
+#define CFG_OTG_OVC_VALUE               		0   // OTGTUNE : -12%
+
 /*------------------------------------------------------------------------------
  * 	NXE2000 PMIC
  */
