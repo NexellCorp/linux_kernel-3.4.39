@@ -244,6 +244,7 @@
 #define CFG_SWITCH_USB_5V_EN        			(PAD_GPIO_ALV + 5)
 #define CFG_SWITCH_USB_HOST_DEVICE     			(PAD_GPIO_B + 20)
 #define CFG_OTG_BOOT_MODE           			CFG_OTG_MODE_DEVICE
+#define CFG_OTG_OVC_VALUE               		0   // OTGTUNE : -12%
 
 /*------------------------------------------------------------------------------
  * 	ADC
