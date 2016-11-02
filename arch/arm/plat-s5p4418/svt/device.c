@@ -873,8 +873,8 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 	}
 /* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
 /*                 range from min to max voltage according to NXE2000 specification. */
-NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1250000, 1,  4); /* 1.1V ARM */
-NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1100000, 1,  4); /* 1.0V CORE */
+NXE2000_PDATA_INIT(dc1,      0,  950000, 2000000, 1, 1, 1250000, 1,  4); /* 1.25V ARM */
+NXE2000_PDATA_INIT(dc2,      0, 1000000, 2000000, 1, 1, 1100000, 1,  4); /* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0, 1000000, 3500000, 1, 1, 3300000, 1,  0); /* 3.3V SYS */
 NXE2000_PDATA_INIT(dc4,      0, 1000000, 2000000, 1, 1, 1500000, 1, -1); /* 1.5V DDR */
 NXE2000_PDATA_INIT(dc5,      0, 1000000, 2000000, 1, 1, 1500000, 1,  4); /* 1.5V SYS */
@@ -892,7 +892,7 @@ NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 0,  0); /* 3.3V
 NXE2000_PDATA_INIT(ldo8,     0, 1000000, 3500000, 0, 0, 3300000, 1,  0); /* 3.3V WIFI */
 #endif
 NXE2000_PDATA_INIT(ldo9,     0, 1000000, 3500000, 1, 0, 3300000, 1,  0); /* 3.3V HUB */
-NXE2000_PDATA_INIT(ldo10,    0, 1000000, 3500000, 1, 0, 1200000, 0,  0); /* 1.2V HSIC */
+NXE2000_PDATA_INIT(ldo10,    0, 1000000, 3500000, 1, 1, 1000000, 1,  4); /* 1.0V HSIC */
 NXE2000_PDATA_INIT(ldortc1,  0, 1700000, 3500000, 1, 0, 1800000, 1, -1); /* 1.8V ALIVE */
 NXE2000_PDATA_INIT(ldortc2,  0, 1000000, 3500000, 1, 0, 1000000, 1, -1); /* 1.0V ALIVE */
 
