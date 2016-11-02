@@ -911,8 +911,15 @@ static int __init kernel_init(void * unused)
 	 * the work
 	 */
 
-	if (!ramdisk_execute_command)
+	if (!ramdisk_execute_command) {
 		ramdisk_execute_command = "/init";
+		#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+        extern struct platform_device backward_camera_device;
+        extern int platform_device_register(struct platform_device *);
+        printk("%s: register device backward-camera platform device\n", __func__);
+        platform_device_register(&backward_camera_device);
+		#endif
+	}
 
 	if (sys_access((const char __user *) ramdisk_execute_command, 0) != 0) {
 		ramdisk_execute_command = NULL;
