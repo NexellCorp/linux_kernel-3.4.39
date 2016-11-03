@@ -788,7 +788,7 @@ static void _mlc_video_set_param(int module, struct nxp_backward_camera_platform
     NX_MLC_SetVideoLayerScale(module, srcw, srch, dstw, dsth,
             (CBOOL)hf, (CBOOL)hf, (CBOOL)vf, (CBOOL)vf);
     NX_MLC_SetPosition(module, MLC_LAYER_VIDEO,
-            8, 0, dstw - 1, dsth - 1);
+            0, 0, dstw - 1, dsth - 1);
 #if 0 //keun 2015. 08. 17
     NX_MLC_SetLayerPriority(module, 0);
 #else
