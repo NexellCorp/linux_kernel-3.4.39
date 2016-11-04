@@ -1398,7 +1398,8 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
 	mutex_init (&dev->phy_mutex);
 
 	dev->net = net;
-	strcpy (net->name, "usb%d");
+	//strcpy (net->name, "usb%d");
+	strcpy (net->name, "eth%d");
 	memcpy (net->dev_addr, node_id, sizeof node_id);
 
 	/* rx and tx sides can use different message sizes;
