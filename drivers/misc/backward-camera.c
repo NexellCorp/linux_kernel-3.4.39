@@ -79,11 +79,11 @@ struct save_file_buf file_bufs[FILE_SAVE_CNT];
 #define MLC_LAYER_VIDEO     3
 #endif
 
-#define __DEBUG__
+//#define __DEBUG__
 
 #if defined( __DEBUG__ )
     #define debug_msg(args...) \
-        printk(KERN_ERR args);
+        printk(KERN_INFO args);
     #define debug_stream(args...) \
         printk(KERN_ERR args);
 #else
@@ -1981,18 +1981,6 @@ static void _work_handler_backgear(struct work_struct *work)
     mutex_lock(&me->decide_work_lock);
     _decide(&_context);
     mutex_unlock(&me->decide_work_lock);
-
-        printk(KERN_ERR "%s: lu 0x%x, cb 0x%x, cr 0x%x, virt %p\n",
-                __func__,
-                me->plat_data->lu_addr,
-                me->plat_data->cb_addr,
-                me->plat_data->cr_addr,
-                me->virt_video);
-
-        printk(KERN_ERR "%s: stride lu %d, cb %d, cr %d\n", __func__,
-                me->plat_data->lu_stride,
-                me->plat_data->cb_stride,
-                me->plat_data->cr_stride);
 }
 
 static void _set_display_irq_callback(struct nxp_backward_camera_context *me)
