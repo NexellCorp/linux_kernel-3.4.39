@@ -24,7 +24,6 @@
 #include <nx_ecid.h>
 #include <nx_tieoff.h>
 
-#include <linux/kobject.h>
 #include <mach/hdmi/nxp-hdmi-context.h>
 
 extern int test_hdmi(void);
@@ -38,37 +37,6 @@ extern int test_hdmi(void);
  * static var : nxp_hdmi_context;
  */
 static struct nxp_hdmi_context *__me = NULL;
-
-static int bootcomplete = 0;
-
-static ssize_t sysfs_write(struct kobject *kobj,struct kobj_attribute *attr,const char *buf,ssize_t count)
-{
-	
-	if(!strncmp("1",buf,1))
-	{
-		printk("recieve boot complete command \n");
-		bootcomplete=1;
-	}
-	if(count)
-	  return count;
-
-	return 1;
-}
-
-static struct kobj_attribute hdmi_sysfs_write = __ATTR(write,S_IWUGO,NULL,sysfs_write);
-
-static struct attribute *hdmi_sysfs[]={
-	&hdmi_sysfs_write.attr,
-	NULL,
-};
-
-static struct attribute_group hdmi_attr_group = {
-	.attrs = hdmi_sysfs,
-};
-
-struct kobject *hdmi_kobj = NULL;
-
-
 
 /**
  * Initialize Sequence
@@ -848,11 +816,6 @@ static void _hdmi_hpd_work(struct work_struct *work)
 {
     int state;
     struct nxp_hdmi_context *me = container_of(work, struct nxp_hdmi_context, hpd_work.work);
-	while(bootcomplete==0)
-	{
-	//	printk("hdmi not ready....\n");
-		msleep(2000);
-	}
     state = hdmi_hpd_status();
     if (!nxp_cpu_version()) {
         /* no revision */
@@ -938,24 +901,8 @@ int hdmi_init_context(struct nxp_hdmi_context *me,
         goto error_hdcp_prepare;
     }
 #endif
-	hdmi_kobj = kobject_create_and_add("hdmi_sysfs",NULL);
-	if(!hdmi_kobj)
-	{
-		printk("failed to create object hdmi \n");
-		goto error_req_irq;
-	}
-	ret = sysfs_create_group(hdmi_kobj,&hdmi_attr_group);
-	if(ret)
-	{
-		printk("failed to create SYSFS hdmi \n");
-		goto error_sysfs_create;
-	}
 
     return 0;
-
-error_sysfs_create:
-	kobject_put(hdmi_kobj);
-	sysfs_remove_group(hdmi_kobj,&hdmi_attr_group);
 
 #if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NXP_DISPLAY_HDMI_USE_HDCP)
 error_hdcp_prepare:
@@ -1087,7 +1034,7 @@ int hdmi_run(struct nxp_hdmi_context *me, bool set_remote_sync)
     if (me->audio_enable)
         hdmi_audio_enable(true);
 
-    hdmi_set_dvi_mode(me->is_dvi);
+    /* hdmi_set_dvi_mode(me->is_dvi); */
 
     _hdmi_enable(me);
 
