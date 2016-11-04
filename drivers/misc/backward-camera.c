@@ -930,7 +930,9 @@ static void _turn_on(struct nxp_backward_camera_context *me)
 {
     debug_msg("+++ %s +++\n", __func__);
 
-    if (me->is_on) return;
+    if (me->is_on)
+		return;
+
     me->is_on = true;
 
     if (me->plat_data->pre_turn_on) {
@@ -955,17 +957,17 @@ static void _turn_on(struct nxp_backward_camera_context *me)
             _mlc_rgb_overlay_set_param(me->plat_data->mlc_module_num, me->plat_data);
             _mlc_rgb_overlay_draw(me->plat_data->mlc_module_num, me->plat_data, me->virt_rgb);
         }
-//        me->is_first = false;
+		//me->is_first = false;
     }
 
     if (!me->plat_data->use_deinterlacer) {
-        //	_mlc_dump_register(me->plat_data->mlc_module_num);
+		//_mlc_dump_register(me->plat_data->mlc_module_num);
         _mlc_video_run(me->plat_data->mlc_module_num);
         _mlc_overlay_run(me->plat_data->mlc_module_num);
     } else {
         _reset_values(me);
         _enqueue_all_buffer_to_empty_queue(me);
-        //_vip_run(me->plat_data->vip_module_num);
+		//_vip_run(me->plat_data->vip_module_num);
 
         /**
          * HACK : real start here!!!
@@ -1072,7 +1074,7 @@ static inline bool _is_running(struct nxp_backward_camera_context *me)
 
     return mlcenb && vipenb && sepenb && clipenb;
 #else
-    return NX_MLC_GetLayerEnable(me->plat_data->mlc_module_num, 3);
+	return NX_MLC_GetLayerEnable(me->plat_data->mlc_module_num, 3);
 #endif
 }
 
@@ -1102,12 +1104,12 @@ static void _decide(struct nxp_backward_camera_context *me)
     me->backgear_on = _is_backgear_on(me->plat_data);
     printk(KERN_ERR "%s: running %d, backgear on %d\n", __func__, me->running, me->backgear_on);
     if (me->backgear_on && !me->running) {
-            _turn_on(me);
+		_turn_on(me);
 #if ENABLE_UEVENT
 		_backgear_switch(1);
 #endif
-    } else if (me->running && !me->backgear_on) {
-            _turn_off(me);
+    } else if ((me->running && !me->backgear_on) || (!me->running && !me->backgear_on)) {
+		_turn_off(me);
 #if ENABLE_UEVENT
 		_backgear_switch(0);
 #endif
