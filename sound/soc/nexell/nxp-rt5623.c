@@ -25,6 +25,7 @@
 #include <sound/soc-dai.h>
 #include <sound/jack.h>
 #include <linux/gpio.h>
+#include <linux/delay.h>
 #include <mach/platform.h>
 
 #include "../codecs/alc5623.h"
@@ -34,8 +35,11 @@
 /*
 #define	pr_debug	printk
 */
-#if defined (CFG_IO_SPEAKER_AMP_nSHUTDOWN)
-#define	AUDIO_AMP_POWER		CFG_IO_SPEAKER_AMP_nSHUTDOWN
+#if defined (CFG_IO_AUDIO_RT5623_AMP_POWER )
+#define	AUDIO_AMP_POWER		CFG_IO_AUDIO_RT5623_AMP_POWER
+#endif
+#if defined (CFG_IO_AUDIO_RT5623_AMP_EN )
+#define	AUDIO_AMP_EN		CFG_IO_AUDIO_RT5623_AMP_EN
 #endif
 
 //static struct snd_soc_jack_gpio jack_gpio;
@@ -96,7 +100,10 @@ static int alc5623_jack_status_check(void)
 	#endif
 		    snd_soc_update_bits(codec, 0x04, 0x8080, 0x8080);
 #if defined (AUDIO_AMP_POWER)
-			gpio_direction_output(AUDIO_AMP_POWER, 0);
+			gpio_direction_output(AUDIO_AMP_POWER, 1);
+#endif
+#if defined (AUDIO_AMP_EN)
+			gpio_direction_output(AUDIO_AMP_EN, 1);
 #endif
 		} else {
 	#if defined(CONFIG_PLAT_S5P4418_NBOX)
@@ -106,8 +113,11 @@ static int alc5623_jack_status_check(void)
 			NXL_JackInOut = 0x02; // 1: jack In
 	#endif
 		    snd_soc_update_bits(codec, 0x04, 0x8080, 0);
+#if defined (AUDIO_AMP_EN)
+			gpio_direction_output(AUDIO_AMP_EN, 0);
+#endif
 #if defined (AUDIO_AMP_POWER)
-			gpio_direction_output(AUDIO_AMP_POWER, 1);
+			gpio_direction_output(AUDIO_AMP_POWER, 0);
 #endif
 		}
 
@@ -178,14 +188,20 @@ static int alc5623_startup(struct snd_pcm_substream *substream)
 			switch_set_state(&switch_nxl_jack_detection, 0x2); //
 	#endif
 #if defined (AUDIO_AMP_POWER)
-			gpio_direction_output(AUDIO_AMP_POWER, 0);
+			gpio_direction_output(AUDIO_AMP_POWER, 1);
+#endif
+#if defined (AUDIO_AMP_EN)
+			gpio_direction_output(AUDIO_AMP_EN, 1);
 #endif
 		}
 		//jack_report_enable=1;
 	} else {
 			pr_debug("AMP ON\n");
 #if defined (AUDIO_AMP_POWER)
-			gpio_direction_output(AUDIO_AMP_POWER, 0);
+			gpio_direction_output(AUDIO_AMP_POWER, 1);
+#endif
+#if defined (AUDIO_AMP_EN)
+			gpio_direction_output(AUDIO_AMP_EN, 1);
 #endif
 	}
 	return 0;
@@ -207,8 +223,11 @@ static void alc5623_shutdown(struct snd_pcm_substream *substream)
 		/***************************************/
 		switch_set_state(&switch_nxl_jack_detection, 0); //  1->Jack In
 		#endif
+#if defined (AUDIO_AMP_EN)
+			gpio_direction_output(AUDIO_AMP_EN, 0);
+#endif
 #if defined (AUDIO_AMP_POWER)
-		gpio_direction_output(AUDIO_AMP_POWER, 1);
+		gpio_direction_output(AUDIO_AMP_POWER, 0);
 #endif
 }
 }
@@ -216,6 +235,10 @@ static void alc5623_shutdown(struct snd_pcm_substream *substream)
 static int alc5623_suspend_pre(struct snd_soc_card *card)
 {
 	struct snd_soc_codec *codec = alc5623;
+
+	//snd_soc_update_bits(codec, WM8978_LOUT1_HP_CONTROL, 0x40, 0x40);
+	//snd_soc_update_bits(codec, WM8978_ROUT1_HP_CONTROL, 0x40, 0x40);
+	//gpio_direction_output(AUDIO_AMP_POWER, 0);
 	return 0;
 }
 
@@ -301,10 +324,9 @@ static struct snd_soc_dai_link alc5623_dai_link = {
 	.cpu_dai_name 	= str_dai_name,			/* nxp_snd_i2s_driver name */
 	.platform_name  = DEV_NAME_PCM,			/* nxp_snd_pcm_driver name */
 	.codec_dai_name = "alc5621-hifi",		/* alc5623_dai's name */
-#if defined(CONFIG_PLAT_S5P4418_AVN_REF) || \
-	defined(CONFIG_PLAT_S5P6818_AVN_REF) || \
-	defined(CONFIG_PLAT_S5P4418_NAVI_REF) || \
-	defined(CONFIG_PLAT_S5P4418_AP700A)
+#if defined( CONFIG_PLAT_S5P4418_AVN_REF ) || \
+	defined( CONFIG_PLAT_S5P6818_AVN_REF ) || \
+	defined( CONFIG_PLAT_S5P4418_NAVI_REF )
 	.codec_name 	= "alc562x-codec.3-001a",		/* alc5623_i2c_driver name + '.' + bus + '-' + address(7bit) */
 #else
 	.codec_name 	= "alc562x-codec.0-001a",		/* alc5623_i2c_driver name + '.' + bus + '-' + address(7bit) */
@@ -352,8 +374,12 @@ static int alc5623_probe(struct platform_device *pdev)
 		sprintf(str_dai_name, "%s.%d", DEV_NAME_I2S, plat->i2s_ch);	// set I2S name
 	}
 #if defined (AUDIO_AMP_POWER)
-    gpio_request(AUDIO_AMP_POWER, "alc5621");
+    gpio_request(AUDIO_AMP_POWER, "alc5621_amp_power");
 #endif
+#if defined (AUDIO_AMP_EN)
+    gpio_request(AUDIO_AMP_EN, "alc5621_amp_en");
+#endif
+
 	/*
 	 * register card
 	 */
@@ -401,6 +427,9 @@ static int alc5623_remove(struct platform_device *pdev)
 	snd_soc_unregister_card(card);
 #if defined (AUDIO_AMP_POWER)
 	gpio_free(AUDIO_AMP_POWER);
+#endif
+#if defined (AUDIO_AMP_EN)
+	gpio_free(AUDIO_AMP_EN);
 #endif
 	return 0;
 }

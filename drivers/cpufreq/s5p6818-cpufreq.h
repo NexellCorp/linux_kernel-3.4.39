@@ -85,31 +85,31 @@ struct asv_tb_info {
 static struct asv_tb_info asv_tables[] = {
 	[0] = {	.ids = 6, .ro = 90,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1350), UV(1350),	/* OVER FREQ */
+			.uV  = { UV(1360), UV(1350),	/* OVER FREQ */
 					 UV(1325), UV(1275), UV(1225), UV(1175), UV(1150), UV(1125),
 					 UV(1100), UV(1075), UV(1050), UV(1025), UV(1000) },
 	},
 	[1] = {	.ids = 15, .ro = 130,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1300), UV(1300),	/* OVER FREQ */
+			.uV  = { UV(1350), UV(1280),	/* OVER FREQ */
 				     UV(1275), UV(1225), UV(1175), UV(1125), UV(1100), UV(1075),
 					 UV(1050), UV(1025), UV(1000), UV(1000), UV(1000) },
 	},
 	[2] = {	.ids = 38, .ro = 170,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1250), UV(1250),	/* OVER FREQ */
+			.uV  = { UV(1270), UV(1240),	/* OVER FREQ */
 					 UV(1225), UV(1175), UV(1125), UV(1075), UV(1050), UV(1025),
 					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
 	},
 	[3] = {	.ids = 78, .ro = 200,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1200), UV(1200),	/* OVER FREQ */
+			.uV  = { UV(1240), UV(1210),	/* OVER FREQ */
 					 UV(1175), UV(1125), UV(1075), UV(1050), UV(1025), UV(1000),
 					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
 	},
 	[4] = {	.ids = 78, .ro = 200,
 			.Mhz = ASB_FREQ_MHZ,
-			.uV  = { UV(1175), UV(1175),	/* OVER FREQ */
+			.uV  = { UV(1225), UV(1175),	/* OVER FREQ */
 					 UV(1125), UV(1075), UV(1025), UV(1000), UV(1000), UV(1000),
 					 UV(1000), UV(1000), UV(1000), UV(1000), UV(1000) },
 	},

@@ -82,7 +82,8 @@ struct save_file_buf file_bufs[FILE_SAVE_CNT];
 #define __DEBUG__
 
 #if defined( __DEBUG__ )
-    #define debug_msg(args...)
+    #define debug_msg(args...) \
+        printk(KERN_INFO args);
     #define debug_stream(args...) \
         printk(KERN_ERR args);
 #else
@@ -788,7 +789,7 @@ static void _mlc_video_set_param(int module, struct nxp_backward_camera_platform
     NX_MLC_SetVideoLayerScale(module, srcw, srch, dstw, dsth,
             (CBOOL)hf, (CBOOL)hf, (CBOOL)vf, (CBOOL)vf);
     NX_MLC_SetPosition(module, MLC_LAYER_VIDEO,
-            8, 0, dstw - 1, dsth - 1);
+            0, 0, dstw - 1, dsth - 1);
 #if 0 //keun 2015. 08. 17
     NX_MLC_SetLayerPriority(module, 0);
 #else
@@ -954,11 +955,11 @@ static void _turn_on(struct nxp_backward_camera_context *me)
             _mlc_rgb_overlay_set_param(me->plat_data->mlc_module_num, me->plat_data);
             _mlc_rgb_overlay_draw(me->plat_data->mlc_module_num, me->plat_data, me->virt_rgb);
         }
-        me->is_first = false;
+//		me->is_first = false;
     }
 
     if (!me->plat_data->use_deinterlacer) {
-        //	_mlc_dump_register(me->plat_data->mlc_module_num);
+        //_mlc_dump_register(me->plat_data->mlc_module_num);
         _mlc_video_run(me->plat_data->mlc_module_num);
         _mlc_overlay_run(me->plat_data->mlc_module_num);
     } else {
@@ -1101,11 +1102,11 @@ static void _decide(struct nxp_backward_camera_context *me)
     me->backgear_on = _is_backgear_on(me->plat_data);
     printk(KERN_ERR "%s: running %d, backgear on %d\n", __func__, me->running, me->backgear_on);
     if (me->backgear_on && !me->running) {
-            _turn_on(me);
+		_turn_on(me);
 #if ENABLE_UEVENT
 		_backgear_switch(1);
 #endif
-    } else if (me->running && !me->backgear_on) {
+    } else if ((me->running && !me->backgear_on) || (!me->running && !me->backgear_on)) {
             _turn_off(me);
 #if ENABLE_UEVENT
 		_backgear_switch(0);

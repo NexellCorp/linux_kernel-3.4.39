@@ -34,7 +34,7 @@
 /*
  * PDM Record
  */
-#define STUB_RATES		SNDRV_PCM_RATE_48000
+#define STUB_RATES		SND_SOC_PDM_RATES
 #define STUB_FORMATS	SND_SOC_PDM_FORMATS
 
 static struct snd_soc_codec_driver soc_codec_pdm_rec;

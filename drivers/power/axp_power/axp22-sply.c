@@ -14,11 +14,12 @@
 //--------------------------------------------------------------------
 //
 //
+//10-19-2015			modify
 //02-15-2015			modify	
 //
 ///////////////////////////////////////////////////////////////////////
 
-#define AXP228_BATTERY_VERSION "AXP228_BATTERY_VERSION:(2015.02.15:modify)"
+#define AXP228_BATTERY_VERSION "AXP228_BATTERY_VERSION:(2015.10.19:modify)"
 
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -92,6 +93,8 @@ extern void otg_clk_disable(void);
 
 extern int  dwc_otg_pcd_get_ep0_state(void);
 extern void dwc_otg_pcd_clear_ep0_state(void);
+
+extern int axp_otg_power_control(int enable);
 #endif
 
 extern void axp_run_irq_handler(void);
@@ -461,6 +464,13 @@ static void axp_charger_update_state(struct axp_charger *charger)
 	axp_reads(charger->master,0xe4,2,val);
 	charger->OCV_percentage = (val[0] & 0x7f);
 	charger->Coulumb_percentage = (val[1] & 0x7f);
+
+#if 1
+	if(charger->ac_valid || (charger->usb_charge_type == POWER_SUPPLY_PROP_AC_USB))
+		axp_update(charger->master, AXP22_CHARGE_CONTROL3, (AC_LIMIT_CURRENT_1500 -200001)/150000, 0x0F);
+	else
+		axp_update(charger->master, AXP22_CHARGE_CONTROL3, (AC_LIMIT_CURRENT_500 -200001)/150000, 0x0F);
+#endif
 }
 
 static void axp_charger_update(struct axp_charger *charger)
@@ -850,6 +860,9 @@ static int axp_usb_limit_set(struct axp_charger *charger)
 		{
 			val |= 0x03;
 			charger->usb_charge_type = POWER_SUPPLY_PROP_AC_USB;
+#if 1
+			axp_update(charger->master, AXP22_CHARGE_CONTROL3, (AC_LIMIT_CURRENT_1500 -200001)/150000, 0x0F);
+#endif
 		}
 	}
 	else
@@ -857,7 +870,7 @@ static int axp_usb_limit_set(struct axp_charger *charger)
 		val |= 0x01;
 		charger->usb_charge_type = POWER_SUPPLY_PROP_DISCHARGE;
 	}
-	DBG_PSY_MSG("write reg : 0x%02x, 0x%02x, var:%d\n", AXP22_CHARGE_VBUS, val, var);
+	DBG_PSY_MSG("write reg : 0x%02x, 0x%02x, var:%d, usb_valid:%d\n", AXP22_CHARGE_VBUS, val, var, charger->usb_valid);
 	axp_write(charger->master, AXP22_CHARGE_VBUS,val);
 
 	return var;
@@ -895,6 +908,7 @@ static void axp_change(struct axp_charger *charger, unsigned long event)
 	DBG_MSG("## [\e[31m%s\e[0m():%d]\n", __func__, __LINE__);
 	axp_charger_update_state(charger);
 	axp_charger_update(charger);
+	DBG_PSY_MSG("charger->ac_valid  = %d\n",charger->ac_valid);
 	DBG_PSY_MSG("charger->usb_valid = %d\n",charger->usb_valid);
 
 	if(event & AXP22_IRQ_EXTLOWARN2)
@@ -1537,7 +1551,9 @@ static void axp_earlysuspend(struct early_suspend *h)
 {
 #if defined (CONFIG_AXP_CHGCHANGE)
 	uint8_t tmp;
-	DBG_PSY_MSG("======early suspend=======\n");
+
+    PM_DBGOUT("+%s\n", __func__);
+	//DBG_PSY_MSG("======early suspend=======\n");
 
 	early_suspend_flag = 1;
 	if(EARCHGCUR == 0)
@@ -1549,6 +1565,9 @@ static void axp_earlysuspend(struct early_suspend *h)
 		tmp = (EARCHGCUR -200001)/150000;
 		axp_update(axp_charger->master, AXP22_CHARGE_CONTROL1, tmp,0x0F);
 	}
+
+    PM_DBGOUT("-%s\n", __func__);
+
 #endif
 
 }
@@ -1556,7 +1575,9 @@ static void axp_lateresume(struct early_suspend *h)
 {
 #if defined (CONFIG_AXP_CHGCHANGE)
 	uint8_t tmp;
-	DBG_PSY_MSG("======late resume=======\n");
+
+    PM_DBGOUT("+%s\n", __func__);
+	//DBG_PSY_MSG("======late resume=======\n");
 
 	early_suspend_flag = 0;
 	if(STACHGCUR == 0)
@@ -1574,6 +1595,9 @@ static void axp_lateresume(struct early_suspend *h)
 	else{
 		axp_set_bits(axp_charger->master, AXP22_CHARGE_CONTROL1,0x0F);
 	}
+
+    PM_DBGOUT("-%s\n", __func__);
+
 #endif
 
 }
@@ -2400,6 +2424,8 @@ static int axp22_suspend(struct platform_device *dev, pm_message_t state)
 
 	struct axp_charger *charger = platform_get_drvdata(dev);
 
+    PM_DBGOUT("+%s\n", __func__);
+
 	cancel_delayed_work_sync(&charger->work);
 	cancel_delayed_work_sync(&usbwork);
 
@@ -2433,10 +2459,15 @@ static int axp22_suspend(struct platform_device *dev, pm_message_t state)
 	}
 #endif
 
+#if defined(CONFIG_USB_DWCOTG)
+	axp_otg_power_control(0);
+#endif
+
 #ifdef ENABLE_DEBUG
 	axp_sply_register_dump(charger, 0);
 #endif
 
+    PM_DBGOUT("-%s\n", __func__);
 	return 0;
 }
 
@@ -2448,6 +2479,8 @@ static int axp22_resume(struct platform_device *dev)
 	uint8_t val,tmp;
 	/*wakeup IQR notifier work sequence*/
 	//axp_register_notifier(charger->master, &charger->nb, AXP22_NOTIFIER_ON);
+
+    PM_DBGOUT("+%s\n", __func__);
 
 #ifdef ENABLE_DEBUG
 	axp_sply_register_dump(charger, 0);
@@ -2494,6 +2527,8 @@ static int axp22_resume(struct platform_device *dev)
 	charger->usbwork_count = FEATURE_USBWORK_CNT;
 	//dwc_otg_pcd_clear_ep0_state();
 	schedule_delayed_work(&usbwork, msecs_to_jiffies(1 * 1000));
+
+    PM_DBGOUT("-%s\n", __func__);
 
 	return 0;
 }

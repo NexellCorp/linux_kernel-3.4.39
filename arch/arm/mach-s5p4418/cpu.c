@@ -169,12 +169,13 @@ static int __init cpu_l2cach_init(void)
 	#define _AUX_FULL_LINE_OF_ZERO		(1<< 0)
 
 	#define L2_AUX_DEF_MASK 0xfc000fff
-	#define L2_AUX_NEW_VAL 	_AUX_BRESP				|	\
-							_AUX_PREFETCH_I			|	\
-							_AUX_PREFETCH_D			|	\
-							_AUX_SHARED				|	\
-							_AUX_WAY_SIZE(3)		|	\
-							_AUX_16_WAY			 	|	\
+	#define L2_AUX_NEW_VAL 	_AUX_BRESP				 |	\
+							_AUX_PREFETCH_I			 |	\
+							_AUX_PREFETCH_D			 |	\
+							_AUX_SHARED				 |	\
+							_AUX_WAY_SIZE(3)	  	 |	\
+							_AUX_16_WAY			  	 |	\
+							_AUX_STORE_BUFFER_DEVICE |  \
 							_AUX_FULL_LINE_OF_ZERO
 
 	unsigned int tag_latency  = (1<<8) | (2<<4) | (1<<0);

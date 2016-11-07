@@ -2022,7 +2022,9 @@ int usb_new_device(struct usb_device *udev)
 		add_device_randomness(udev->manufacturer,
 				      strlen(udev->manufacturer));
 
+#if !defined(CONFIG_ARCH_CPU_SLSI)
 	device_enable_async_suspend(&udev->dev);
+#endif
 
 	/*
 	 * check whether the hub marks this port as non-removable. Do it

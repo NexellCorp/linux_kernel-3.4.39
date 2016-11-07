@@ -45,12 +45,12 @@
 #include <mach/s5p4418_bus.h>
 
 const u8 g_DrexBRB_RD[2] = {
-	0x1,            // Port0
+	0x4,            // Port0
 	0xF             // Port1
 };
 
 const u8 g_DrexBRB_WR[2] = {
-	0x1,            // Port0
+	0x4,            // Port0
 	0xF             // Port1
 };
 
@@ -90,10 +90,10 @@ const u8 g_TopQoSSI[2] = {
 const u8 g_BottomBusSI[8] = {
         BOTBUS_SI_SLOT_1ST_ARM,
         BOTBUS_SI_SLOT_MALI,
-        BOTBUS_SI_SLOT_DEINTERLACE,
+        BOTBUS_SI_SLOT_TOP,
         BOTBUS_SI_SLOT_1ST_CODA,
         BOTBUS_SI_SLOT_2ND_ARM,
-        BOTBUS_SI_SLOT_SCALER,
+        BOTBUS_SI_SLOT_TOP,
         BOTBUS_SI_SLOT_TOP,
         BOTBUS_SI_SLOT_2ND_CODA
 };
@@ -101,12 +101,12 @@ const u8 g_BottomBusSI[8] = {
 
 #if (CFG_BUS_RECONFIG_BOTTOMBUSQOS == 1)
 const u8 g_BottomQoSSI[2] = {
-	1,      // Tidemark
+	4,      // Tidemark
 	(1<<BOTBUS_SI_SLOT_1ST_ARM) |   // Control
 		(1<<BOTBUS_SI_SLOT_2ND_ARM) |
-		(1<<BOTBUS_SI_SLOT_MALI) |
+		(0<<BOTBUS_SI_SLOT_MALI) |
 		(1<<BOTBUS_SI_SLOT_TOP) |
-		(1<<BOTBUS_SI_SLOT_DEINTERLACE) |
+		(0<<BOTBUS_SI_SLOT_DEINTERLACE) |
 		(1<<BOTBUS_SI_SLOT_1ST_CODA)
 };
 #endif
@@ -128,10 +128,10 @@ const u8 g_DispBusSI[3] = {
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	= CONFIG_NXP_CPUFREQ_PLLDEV,
 	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
-	.max_cpufreq	= 1400*1000,
-	.max_retention  =   20*1000,
-	.rest_cpufreq   =  400*1000,
-	.rest_retention =    1*1000,
+//	.max_cpufreq	= 1400*1000,
+//	.max_retention  =   20*1000,
+//	.rest_cpufreq   =  400*1000,
+//	.rest_retention =    1*1000,
 };
 
 static struct platform_device dfs_plat_device = {
