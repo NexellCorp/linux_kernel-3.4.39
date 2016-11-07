@@ -241,7 +241,7 @@
  *	AUDIO
  */
 
-#define CFG_IO_AUDIO_RT5623_AMP_POWER			(PAD_GPIO_D + 31)
+#define CFG_IO_AUDIO_RT5623_AMP_POWER		(PAD_GPIO_D + 31)
 #define CFG_IO_AUDIO_RT5623_AMP_EN			(PAD_GPIO_E + 0)
 
 /*------------------------------------------------------------------------------
