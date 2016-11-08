@@ -386,6 +386,7 @@ struct pl022 {
 	enum ssp_tx_level_trig		tx_lev_trig;
 	/* DMA settings */
 #ifdef CONFIG_DMA_ENGINE
+	struct completion               xfer_completion;
 	struct dma_chan			*dma_rx_channel;
 	struct dma_chan			*dma_tx_channel;
 	struct sg_table			sgt_rx;
@@ -492,10 +493,11 @@ static void giveback(struct pl022 *pl022)
 	pl022->cur_msg = NULL;
 	pl022->cur_transfer = NULL;
 	pl022->cur_chip = NULL;
-
+	//spi_finalize_current_message(pl022->master);
 	/* disable the SPI/SSP operation */
 	writew((readw(SSP_CR1(pl022->virtbase)) &
 		(~SSP_CR1_MASK_SSE)), SSP_CR1(pl022->virtbase));
+
 	spi_finalize_current_message(pl022->master);
 }
 
@@ -650,6 +652,8 @@ static void readwriter(struct pl022 *pl022)
 	dev_dbg(&pl022->adev->dev,
 		"%s, rx: %p, rxend: %p, tx: %p, txend: %p\n",
 		__func__, pl022->rx, pl022->rx_end, pl022->tx, pl022->tx_end);
+	//printk(	"%s, rx: %p, rxend: %p, tx: %p, txend: %p\n",
+	//	__func__, pl022->rx, pl022->rx_end, pl022->tx, pl022->tx_end);
 
 	/* Read as much as you can */
 	while ((readw(SSP_SR(pl022->virtbase)) & SSP_SR_MASK_RNE)
@@ -776,7 +780,8 @@ static void dma_callback(void *data)
 	struct spi_message *msg = pl022->cur_msg;
 
 	BUG_ON(!pl022->sgt_rx.sgl);
-
+	
+	complete(&pl022->xfer_completion);
 #ifdef VERBOSE_DEBUG
 	/*
 	 * Optionally dump out buffers to inspect contents, this is
@@ -832,7 +837,7 @@ static void dma_callback(void *data)
 static void setup_dma_scatter(struct pl022 *pl022,
 			      void *buffer,
 			      unsigned int length,
-			      struct sg_table *sgtab)
+			      struct sg_table *sgtab, bool tx)
 {
 	struct scatterlist *sg;
 	int bytesleft = length;
@@ -848,17 +853,20 @@ static void setup_dma_scatter(struct pl022 *pl022,
 			 * we just feed in this, else we stuff in as much
 			 * as we can.
 			 */
-			if (bytesleft < (PAGE_SIZE - offset_in_page(bufp)))
+			//if (length == 2260)
+			//	printk("offset_page %x \n", offset_in_page(bufp));
+			//if (bytesleft < (PAGE_SIZE - offset_in_page(bufp)))
 				mapbytes = bytesleft;
-			else
-				mapbytes = PAGE_SIZE - offset_in_page(bufp);
+			//else
+			//	mapbytes = PAGE_SIZE - offset_in_page(bufp);
 			sg_set_page(sg, virt_to_page(bufp),
 				    mapbytes, offset_in_page(bufp));
 			bufp += mapbytes;
 			bytesleft -= mapbytes;
-			dev_dbg(&pl022->adev->dev,
-				"set RX/TX target page @ %p, %d bytes, %d left\n",
-				bufp, mapbytes, bytesleft);
+			//if (length == 2260)
+			//printk(
+			//	"[%d:%d] set %s target page @ %p, %d bytes, %d left (%p)\n",
+			//	sgtab->nents, i, tx ? "tx" : "rx", bufp, mapbytes, bytesleft, buffer);
 		}
 	} else {
 		/* Map the dummy buffer on every page */
@@ -876,7 +884,12 @@ static void setup_dma_scatter(struct pl022 *pl022,
 
 		}
 	}
+#if 0
+	if (length == 2260) {
+		printk("[%d:%s]\n", current->pid, current->comm);
+	}
 	BUG_ON(bytesleft);
+#endif
 }
 
 /**
@@ -1011,10 +1024,10 @@ static int configure_dma(struct pl022 *pl022)
 
 	/* Fill in the scatterlists for the RX+TX buffers */
 	setup_dma_scatter(pl022, pl022->rx,
-		  pl022->cur_transfer->len, &pl022->sgt_rx);
+		  pl022->cur_transfer->len, &pl022->sgt_rx, false);
 
 	setup_dma_scatter(pl022, pl022->tx,
-		  pl022->cur_transfer->len, &pl022->sgt_tx);
+		  pl022->cur_transfer->len, &pl022->sgt_tx, true);
 
 	/* Map DMA buffers */
 
@@ -1180,7 +1193,7 @@ static irqreturn_t pl022_interrupt_handler(int irq, void *dev_id)
 	struct spi_message *msg = pl022->cur_msg;
 	u16 irq_status = 0;
 	u16 flag = 0;
-	
+
 	if (unlikely(!msg)) {
 		dev_err(&pl022->adev->dev,
 			"bad message state in interrupt handler");
@@ -1310,7 +1323,7 @@ static void pump_transfers(unsigned long data)
 	struct spi_message *message = NULL;
 	struct spi_transfer *transfer = NULL;
 	struct spi_transfer *previous = NULL;
-	
+
 	/* Get current state information */
 	message = pl022->cur_msg;
 	transfer = pl022->cur_transfer;
@@ -1372,8 +1385,47 @@ err_config_dma:
 	writew(ENABLE_ALL_INTERRUPTS & ~SSP_IMSC_MASK_RXIM, SSP_IMSC(pl022->virtbase));
 }
 
+static void stop_dma(struct pl022 *pl022)
+{
+	struct dma_chan *rxchan = pl022->dma_rx_channel;
+	struct dma_chan *txchan = pl022->dma_tx_channel;
+	
+	dmaengine_terminate_all(txchan);
+	dmaengine_terminate_all(rxchan);
+	dma_unmap_sg(txchan->device->dev, pl022->sgt_tx.sgl,
+		pl022->sgt_tx.nents, DMA_TO_DEVICE);
+	dma_unmap_sg(rxchan->device->dev, pl022->sgt_rx.sgl,
+		pl022->sgt_tx.nents, DMA_FROM_DEVICE);
+	sg_free_table(&pl022->sgt_tx);
+	sg_free_table(&pl022->sgt_rx);
+
+	pl022->dma_running = false;
+	kfree(pl022->dummypage);
+}
+
+
+
+static void wait_for_xfer(struct pl022 *pl022)
+{
+	unsigned long val;
+	
+	val = msecs_to_jiffies(1000) + 10;
+
+	val = wait_for_completion_timeout(&pl022->xfer_completion, val);
+	if (!val) {
+		pr_err("Transfer fail: Timeout \n");
+		stop_dma(pl022);
+		if (pl022->cur_transfer->cs_change)
+			pl022->cur_chip->cs_control(SSP_CHIP_DESELECT);
+
+		giveback(pl022);
+		/* Move to next transfer */
+	}
+
+}
 static void do_interrupt_dma_transfer(struct pl022 *pl022)
 {
+	int dma_mode = 0;
 	/*
 	 * Default is to enable all interrupts except RX -
 	 * this will be enabled once TX is complete
@@ -1396,12 +1448,14 @@ static void do_interrupt_dma_transfer(struct pl022 *pl022)
 	if (pl022->cur_chip->enable_dma && !(pl022->cur_transfer->len % 4) &&  (pl022->cur_transfer->len < 4096)) {		//bok add
 //	if (pl022->cur_chip->enable_dma) {
 		/* Configure DMA transfer */
+		INIT_COMPLETION(pl022->xfer_completion);
 		if (configure_dma(pl022)) {
 			dev_dbg(&pl022->adev->dev,
 				"configuration of DMA failed, fall back to interrupt mode\n");
 			goto err_config_dma;
 		}
 		/* Disable interrupts in DMA mode, IRQ from DMA controller */
+		dma_mode = 1;
 		irqflags = DISABLE_ALL_INTERRUPTS;
 	}
 err_config_dma:
@@ -1409,6 +1463,9 @@ err_config_dma:
 	writew((readw(SSP_CR1(pl022->virtbase)) | SSP_CR1_MASK_SSE),
 	       SSP_CR1(pl022->virtbase));
 	writew(irqflags, SSP_IMSC(pl022->virtbase));
+
+	if(dma_mode)	
+		wait_for_xfer(pl022);
 
 }
 
@@ -1488,8 +1545,6 @@ out:
 	giveback(pl022);
 	return;
 }
-
-
 
 static int pl022_transfer_one_message(struct spi_master *master,
 				      struct spi_message *msg)
@@ -1848,6 +1903,7 @@ static int pl022_setup(struct spi_device *spi)
 
 	/* Now set controller state based on controller data */
 	chip->xfer_type = chip_info->com_mode;
+	printk("%s : com_mode = %d \n",__FUNCTION__, chip->xfer_type);
 	if (!chip_info->cs_control) {
 		chip->cs_control = null_cs_control;
 		dev_warn(&spi->dev,
@@ -1888,6 +1944,7 @@ static int pl022_setup(struct spi_device *spi)
 	    && ((pl022->master_info)->enable_dma)) {
 		chip->enable_dma = true;
 		dev_dbg(&spi->dev, "DMA mode set in controller state\n");
+		printk("DMA mode set in controller state\n");
 		SSP_WRITE_BITS(chip->dmacr, SSP_DMA_ENABLED,
 			       SSP_DMACR_MASK_RXDMAE, 0);
 		SSP_WRITE_BITS(chip->dmacr, SSP_DMA_ENABLED,
@@ -1895,6 +1952,7 @@ static int pl022_setup(struct spi_device *spi)
 	} else {
 		chip->enable_dma = false;
 		dev_dbg(&spi->dev, "DMA mode NOT set in controller state\n");
+		printk("DMA mode NOT set in controller state\n");
 		SSP_WRITE_BITS(chip->dmacr, SSP_DMA_DISABLED,
 			       SSP_DMACR_MASK_RXDMAE, 0);
 		SSP_WRITE_BITS(chip->dmacr, SSP_DMA_DISABLED,
@@ -2107,6 +2165,7 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
 			platform_info->enable_dma = 0;
 	}
 
+	init_completion(&pl022->xfer_completion);
 	/* Register with the SPI framework */
 	amba_set_drvdata(adev, pl022);
 	status = spi_register_master(master);
