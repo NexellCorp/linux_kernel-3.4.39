@@ -1666,7 +1666,7 @@ struct pl022_config_chip spi0_info = {
     .com_mode = CFG_SPI0_COM_MODE,
     .iface = SSP_INTERFACE_MOTOROLA_SPI,
     /* We can only act as master but SSP_SLAVE is possible in theory */
-    .hierarchy = SSP_SLAVE,
+    .hierarchy = SSP_MASTER,
     /* 0 = drive TX even as slave, 1 = do not drive TX as slave */
     .slave_tx_disable = 1,
     .rx_lev_trig = SSP_RX_4_OR_MORE_ELEM,
@@ -1687,12 +1687,12 @@ struct pl022_config_chip spi0_info = {
 
 static struct spi_board_info spi_plat_board[] __initdata = {
     [0] = {
-        .modalias        = "spidev",    /* fixup */
-        .max_speed_hz    = 3125000,     /* max spi clock (SCK) speed in HZ */
+        .modalias        = "mtvspi",    /* fixup */
+        .max_speed_hz    = 10*1000*1000,     /* max spi clock (SCK) speed in HZ */
         .bus_num         = 0,           /* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
         .chip_select     = 0,           /* Note> set chip select num, must be smaller than spi cs_num */
         .controller_data = &spi0_info,
-        .mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
+        .mode            = SPI_MODE_0,
     },
 };
 
