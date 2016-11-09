@@ -146,16 +146,12 @@ struct nxp_adc_tmp_trigger adc_tmp_event[] = {
 		.freq  = 1200000,
 		.period = 1000, /* Ms */
 	} , {
-		.temp  = 49,
+		.temp  = 53,
 		.freq  = 1000000,
 		.period = 1000, /* Ms */
 	} , {
-		.temp  = 53,
-		.freq  = 800000,
-		.period = 1000, /* Ms */
-	} , {
-		.temp  = 55,
-		.freq  = 400000,		/* freq = 0 :Set critical temp. Power off! */
+		.temp  = 60,
+		.freq  = 800000,		/* freq = 0 :Set critical temp. Power off! */
 		.period = 1000, /* Ms */
 	}
 };
@@ -1476,8 +1472,8 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_SND_CODEC_NULL)
     platform_device_register(&snd_null);
     platform_device_register(&snd_null_dai);
-    platform_device_register(&snd_null_2);
-    platform_device_register(&snd_null_dai_2);
+//  platform_device_register(&snd_null_2);
+//  platform_device_register(&snd_null_dai_2);
 #endif
 
 #if defined(CONFIG_SND_CODEC_ALC5623) || defined(CONFIG_SND_CODEC_ALC5623_MODULE)
