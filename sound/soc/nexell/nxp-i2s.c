@@ -549,6 +549,10 @@ done:
 	pr_debug("snd i2s: PSRAEN=%d, PSVALA=%d \n", PSRAEN, prescale);
 #endif
 #if !defined(CONFIG_SND_NXP_DFS)
+	/* i2s support rates */
+	dai->playback.rates = snd_pcm_rate_to_rate_bit(par->sample_rate);
+	dai->capture.rates = snd_pcm_rate_to_rate_bit(par->sample_rate);
+
 	/* i2s support format */
 	if (RFS == RATIO_256 || BFS != BFS_48BIT) {
 		dai->playback.formats &= ~(SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_U24_LE);
