@@ -190,11 +190,11 @@
 /*------------------------------------------------------------------------------
  * 	SPI
  */
-#define CFG_SPI0_CLK				10000000
+#define CFG_SPI0_CLK				20000000
 #define CFG_SPI1_CLK				10000000
 #define CFG_SPI2_CLK				10000000
 
-#define CFG_SPI0_COM_MODE			1 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
+#define CFG_SPI0_COM_MODE			2 /* available 0: INTERRUPT_TRANSFER, 1: POLLING_TRANSFER, 2: DMA_TRANSFER */
 
 #define CFG_SPI0_CS_GPIO_MODE			1		/* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
 

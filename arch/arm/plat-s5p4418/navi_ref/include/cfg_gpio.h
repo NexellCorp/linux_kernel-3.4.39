@@ -114,11 +114,13 @@
 #define PAD_GPIOC5      (PAD_MODE_ALT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_ADDR[5]  ,1: GPIO                ,2: UART1_CTS           ,3: SDMMC0_WP           =
 #define PAD_GPIOC6      (PAD_MODE_ALT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_ADDR[6]  ,1: GPIO                ,2: UART1_RTS           ,3: SDMMC0_DETECT       =
 #define PAD_GPIOC7      (PAD_MODE_OUT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_ADDR[7]  ,1: GPIO                ,2: UART1_DSR           ,3: SDMMC1_nRST         =
-#define PAD_GPIOC8      (PAD_MODE_IN  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_0)     // 0: MCUS_ADDR[8]  ,1: GPIO                ,2: UART1_DTR           ,3: SDMMC1_CARD_nint    =
+// nxp irq
+#define PAD_GPIOC8      (PAD_MODE_IN  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_DN  | PAD_STRENGTH_3)     // 0: MCUS_ADDR[8]  ,1: GPIO                ,2: UART1_DTR           ,3: SDMMC1_CARD_nint    =
 #define PAD_GPIOC9      (PAD_MODE_OUT | PAD_FUNC_ALT1 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_ADDR[9]  ,1: GPIO                ,2: SSP2_CLK_IO         ,3: PDM_STROBE          =
 #define PAD_GPIOC10     (PAD_MODE_OUT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_ADDR[10] ,1: GPIO                ,2: SSP2_FSS            ,3: MCUS_nNCS[2]        =
 #define PAD_GPIOC11     (PAD_MODE_OUT | PAD_FUNC_ALT1 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_ADDR[11] ,1: GPIO                ,2: SSP2_RXD            ,3: USB2.0OTG0_DRVBUS   =
-#define PAD_GPIOC12     (PAD_MODE_OUT | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_ADDR[12] ,1: GPIO                ,2: SSP2_TXD            ,3: SDMMC2_nRST         =
+// nxb en
+#define PAD_GPIOC12     (PAD_MODE_OUT | PAD_FUNC_ALT1 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_3)     // 0: MCUS_ADDR[12] ,1: GPIO                ,2: SSP2_TXD            ,3: SDMMC2_nRST         =
 #define PAD_GPIOC13     (PAD_MODE_ALT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_ADDR[13] ,1: GPIO                ,2: PWM1_OUT            ,3: SDMMC2_CARD_nint    =
 #define PAD_GPIOC14     (PAD_MODE_IN  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_ADDR[14] ,1: GPIO                ,2: PWM2_OUT            ,3: VIP0_ExtCLK2        =
 #define PAD_GPIOC15     (PAD_MODE_IN  | PAD_FUNC_ALT1 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: MCUS_ADDR[15] ,1: GPIO                ,2: MPEGTSI0_TSCLK      ,3: VIP0_HSYNC2         =
@@ -243,6 +245,22 @@
 
 #define CFG_IO_AUDIO_RT5623_AMP_POWER		(PAD_GPIO_D + 31)
 #define CFG_IO_AUDIO_RT5623_AMP_EN			(PAD_GPIO_E + 0)
+
+#if defined(CONFIG_NXDTV_TDMB) || defined(CONFIG_NXDTV_ISDBT_ONESEG) || defined(CONFIG_MTV_NXB110)
+/*------------------------------------------------------------------------------
+ * 	DMB
+ */
+/* NX110 Primary */
+#define	CFG_DMB_ENABLE					((PAD_GPIO_C + 12) | PAD_FUNC_ALT0)
+#define	CFG_DMB_IRQ						((PAD_GPIO_C + 8) | PAD_FUNC_ALT0)
+
+#if defined(CONFIG_NXDTV_TDMB_2CHIP_AV_TPEG) // 2 chip Solution 
+/* NX110 Secondary */
+#define	CFG_DMB1_ENABLE					((PAD_GPIO_C + 12) | PAD_FUNC_ALT0)
+#define	CFG_DMB1_IRQ					((PAD_GPIO_C + 8) | PAD_FUNC_ALT0)
+#endif
+
+#endif
 
 /*------------------------------------------------------------------------------
  *	Backward Camera	
