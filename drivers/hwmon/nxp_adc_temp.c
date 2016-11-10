@@ -34,10 +34,11 @@
 #include <linux/regulator/consumer.h>
 #include <linux/reboot.h>
 #include <linux/syscalls.h>
+#include <linux/delay.h>
 
-/*
-#define	pr_debug	printk
-*/
+
+//#define	pr_debug	printk
+
 
 #define DRVNAME	"nxp-adc-tmp"
 #define STEP_FREQ	100000
@@ -201,6 +202,43 @@ static void tmp_cpufreq_register(struct nxp_adc_tmp *thermal)
 	cpufreq_register_notifier(nb, CPUFREQ_POLICY_NOTIFIER);
 }
 
+#define MAX_NUM_ADC_DATA	10
+#define SORT_C_NUM			3
+static int nxp_sort_adc(struct nxp_adc_tmp *tmp)
+{
+	int i,j,temp;
+	int sample_val[MAX_NUM_ADC_DATA];
+	int err=0;
+	int avg=0;
+	
+	memset(sample_val, 0, sizeof(sample_val));
+
+	for(i=0;i<MAX_NUM_ADC_DATA;i++) {
+		err = iio_st_read_channel_raw(tmp->iio, &sample_val[i]);
+		pr_debug("%s : %d \n",__FUNCTION__, sample_val[i]);
+		mdelay(1);
+		if (0 > err)
+			return -1;
+	}
+
+	for(i=0;i<MAX_NUM_ADC_DATA-1;i++) {
+		for(j=0;j<MAX_NUM_ADC_DATA-1;j++) {
+			if(sample_val[j] > sample_val[j+1]) {
+                temp=sample_val[j];
+                sample_val[j]=sample_val[j+1];
+                sample_val[j+1]=temp;
+            }
+        }
+    }
+
+	for(i=SORT_C_NUM; i<(MAX_NUM_ADC_DATA-SORT_C_NUM) ; i++) {
+		avg += sample_val[i];
+		pr_debug("%s : %d \n",__FUNCTION__, sample_val[i]);
+	}
+
+	return (int) (avg / (MAX_NUM_ADC_DATA-(SORT_C_NUM*2) ));
+}
+
 static long nxp_read_adc_tmp(struct nxp_adc_tmp *tmp)
 {
 	int i = 0, j = 0, val = 0;
@@ -208,10 +246,14 @@ static long nxp_read_adc_tmp(struct nxp_adc_tmp *tmp)
 	int err = 0;
 
 	/* read adc and convert tmp */
+	#if 0
 	err = iio_st_read_channel_raw(tmp->iio, &val);
 	if (0 > err)
 		return -1;
 
+	#else
+	val = nxp_sort_adc(tmp);
+	#endif
 	tmp->adc_value = val;
 	voltage = (18*val*1000)/4096;
 	/*
@@ -594,7 +636,7 @@ static int __devinit nxp_adc_tmp_probe(struct platform_device *pdev)
 //		printk("%s: failed to regulator_get() for vdd_core_1.2V", __func__);
 
 	INIT_DELAYED_WORK(&tmp->mon_work, nxp_adc_tmp_monfn);
-//	tmp->core_voltage_down_workqueue = create_singlethread_workqueue("Core voltage down monitor");
+//	tp->core_voltage_down_workqueue = create_singlethread_workqueue("Core voltage down monitor");
 //	INIT_DELAYED_WORK_DEFERRABLE(&tmp->core_down_work, nxp_core_down);
 	schedule_delayed_work(&tmp->mon_work, msecs_to_jiffies(1));
 //	queue_delayed_work(tmp->core_voltage_down_workqueue, &tmp->core_down_work, 15*HZ);
