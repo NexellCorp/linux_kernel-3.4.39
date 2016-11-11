@@ -132,6 +132,7 @@ static int tmp_table[][2] = {
     [13] = { 461, 90},
     [14] = { 409, 95},
     [15] = { 363, 100}
+#endif
 };
 
 #define TEMP_TABLAE_SIZE	ARRAY_SIZE(tmp_table)

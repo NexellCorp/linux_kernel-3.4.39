@@ -386,6 +386,7 @@ struct pl022 {
 	enum ssp_tx_level_trig		tx_lev_trig;
 	/* DMA settings */
 #ifdef CONFIG_DMA_ENGINE
+	struct completion		xfer_completion;
 	struct dma_chan			*dma_rx_channel;
 	struct dma_chan			*dma_tx_channel;
 	struct sg_table			sgt_rx;
@@ -777,6 +778,7 @@ static void dma_callback(void *data)
 
 	BUG_ON(!pl022->sgt_rx.sgl);
 
+	complete(&pl022->xfer_completion);
 #ifdef VERBOSE_DEBUG
 	/*
 	 * Optionally dump out buffers to inspect contents, this is
@@ -832,7 +834,7 @@ static void dma_callback(void *data)
 static void setup_dma_scatter(struct pl022 *pl022,
 			      void *buffer,
 			      unsigned int length,
-			      struct sg_table *sgtab)
+			      struct sg_table *sgtab, bool tx)
 {
 	struct scatterlist *sg;
 	int bytesleft = length;
@@ -848,10 +850,10 @@ static void setup_dma_scatter(struct pl022 *pl022,
 			 * we just feed in this, else we stuff in as much
 			 * as we can.
 			 */
-			if (bytesleft < (PAGE_SIZE - offset_in_page(bufp)))
+//			if (bytesleft < (PAGE_SIZE - offset_in_page(bufp)))
 				mapbytes = bytesleft;
-			else
-				mapbytes = PAGE_SIZE - offset_in_page(bufp);
+//			else
+//				mapbytes = PAGE_SIZE - offset_in_page(bufp);
 			sg_set_page(sg, virt_to_page(bufp),
 				    mapbytes, offset_in_page(bufp));
 			bufp += mapbytes;
@@ -1011,10 +1013,10 @@ static int configure_dma(struct pl022 *pl022)
 
 	/* Fill in the scatterlists for the RX+TX buffers */
 	setup_dma_scatter(pl022, pl022->rx,
-		  pl022->cur_transfer->len, &pl022->sgt_rx);
+		  pl022->cur_transfer->len, &pl022->sgt_rx, false);
 
 	setup_dma_scatter(pl022, pl022->tx,
-		  pl022->cur_transfer->len, &pl022->sgt_tx);
+		  pl022->cur_transfer->len, &pl022->sgt_tx, true);
 
 	/* Map DMA buffers */
 
@@ -1372,8 +1374,46 @@ err_config_dma:
 	writew(ENABLE_ALL_INTERRUPTS & ~SSP_IMSC_MASK_RXIM, SSP_IMSC(pl022->virtbase));
 }
 
+static void stop_dma(struct pl022 *pl022)
+{
+	struct dma_chan *rxchan = pl022->dma_rx_channel;
+	struct dma_chan *txchan = pl022->dma_tx_channel;
+	
+	dmaengine_terminate_all(txchan);
+	dmaengine_terminate_all(rxchan);
+	dma_unmap_sg(txchan->device->dev, pl022->sgt_tx.sgl,
+		pl022->sgt_tx.nents, DMA_TO_DEVICE);
+	dma_unmap_sg(rxchan->device->dev, pl022->sgt_rx.sgl,
+		pl022->sgt_tx.nents, DMA_FROM_DEVICE);
+	sg_free_table(&pl022->sgt_tx);
+	sg_free_table(&pl022->sgt_rx);
+
+	pl022->dma_running = false;
+	kfree(pl022->dummypage);
+}
+
+static void wait_for_xfer(struct pl022 *pl022)
+{
+	unsigned long val;
+	
+	val = msecs_to_jiffies(1000) + 10;
+
+	val = wait_for_completion_timeout(&pl022->xfer_completion, val);
+	if (!val) {
+		pr_err("Transfer fail: Timeout \n");
+		stop_dma(pl022);
+		if (pl022->cur_transfer->cs_change)
+			pl022->cur_chip->cs_control(SSP_CHIP_DESELECT);
+
+		giveback(pl022);
+		/* Move to next transfer */
+	}
+}
+
 static void do_interrupt_dma_transfer(struct pl022 *pl022)
 {
+	int dma_mode = 0;
+
 	/*
 	 * Default is to enable all interrupts except RX -
 	 * this will be enabled once TX is complete
@@ -1396,12 +1436,14 @@ static void do_interrupt_dma_transfer(struct pl022 *pl022)
 	if (pl022->cur_chip->enable_dma && !(pl022->cur_transfer->len % 4) &&  (pl022->cur_transfer->len < 4096)) {		//bok add
 //	if (pl022->cur_chip->enable_dma) {
 		/* Configure DMA transfer */
+		INIT_COMPLETION(pl022->xfer_completion);
 		if (configure_dma(pl022)) {
 			dev_dbg(&pl022->adev->dev,
 				"configuration of DMA failed, fall back to interrupt mode\n");
 			goto err_config_dma;
 		}
 		/* Disable interrupts in DMA mode, IRQ from DMA controller */
+		dma_mode = 1;
 		irqflags = DISABLE_ALL_INTERRUPTS;
 	}
 err_config_dma:
@@ -1410,6 +1452,8 @@ err_config_dma:
 	       SSP_CR1(pl022->virtbase));
 	writew(irqflags, SSP_IMSC(pl022->virtbase));
 
+	if (dma_mode)
+		wait_for_xfer(pl022);
 }
 
 static void do_polling_transfer(struct pl022 *pl022)
@@ -2105,6 +2149,7 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
 			platform_info->enable_dma = 0;
 	}
 
+	init_completion(&pl022->xfer_completion);
 	/* Register with the SPI framework */
 	amba_set_drvdata(adev, pl022);
 	status = spi_register_master(master);
