@@ -34,6 +34,7 @@
 #include <linux/regulator/consumer.h>
 #include <linux/reboot.h>
 #include <linux/syscalls.h>
+#include <linux/delay.h>
 
 /*
 #define	pr_debug	printk
@@ -95,22 +96,42 @@ struct nxp_adc_tmp {
 
 /* initialize table for register value matching with tmp_value */
 static int tmp_table[][2] = {
-	[0]  = {2786, 25}, // 0
+#if 0
+// R1 : 4.7K
+	[0]  = {2786, 25},
 	[1]  = {2616, 30},
-	[2]  = {2443, 35}, 
-	[3]  = {2268, 40}, 
+	[2]  = {2443, 35},
+	[3]  = {2268, 40},
 	[4]  = {2094, 45},
 	[5]  = {1923, 50},
 	[6]  = {1758, 55},
-	[7]  = {1600, 60}, 
-	[8]  = {1453, 65}, 
+	[7]  = {1600, 60},
+	[8]  = {1453, 65},
 	[9]  = {1317, 70},
 	[10] = {1190, 75},
 	[11] = {1073, 80},
-	[12] = { 967, 85},  
-	[13] = { 870, 90},  
-	[14] = { 782, 95},  
-	[15] = { 703, 100}  
+	[12] = { 967, 85},
+	[13] = { 870, 90},
+	[14] = { 782, 95},
+	[15] = { 703, 100}
+#else
+// R1 : 10K
+    [0]  = {2048, 25},
+    [1]  = {1859, 30},
+    [2]  = {1679, 35},
+    [3]  = {1509, 40},
+    [4]  = {1350, 45},
+    [5]  = {1203, 50},
+    [6]  = {1070, 55},
+    [7]  = { 948, 60},
+    [8]  = { 841, 65},
+    [9]  = { 746, 70},
+    [10] = { 661, 75},
+    [11] = { 586, 80},
+    [12] = { 519, 85},
+    [13] = { 461, 90},
+    [14] = { 409, 95},
+    [15] = { 363, 100}
 };
 
 #define TEMP_TABLAE_SIZE	ARRAY_SIZE(tmp_table)
@@ -202,6 +223,43 @@ static void tmp_cpufreq_register(struct nxp_adc_tmp *thermal)
 	cpufreq_register_notifier(nb, CPUFREQ_POLICY_NOTIFIER);
 }
 
+#define MAX_NUM_ADC_DATA    10
+#define SORT_C_NUM          3
+static int nxp_sort_adc(struct nxp_adc_tmp *tmp)
+{
+    int i,j,temp;
+    int sample_val[MAX_NUM_ADC_DATA];
+    int err=0;
+    int avg=0;
+
+    memset(sample_val, 0, sizeof(sample_val));
+
+    for(i=0;i<MAX_NUM_ADC_DATA;i++) {
+        err = iio_st_read_channel_raw(tmp->iio, &sample_val[i]);
+        pr_debug("%s : %d \n",__FUNCTION__, sample_val[i]);
+        mdelay(1);
+        if (0 > err)
+            return -1;
+    }
+
+    for(i=0;i<MAX_NUM_ADC_DATA-1;i++) {
+        for(j=0;j<MAX_NUM_ADC_DATA-1;j++) {
+            if(sample_val[j] > sample_val[j+1]) {
+                temp=sample_val[j];
+                sample_val[j]=sample_val[j+1];
+                sample_val[j+1]=temp;
+            }
+        }
+    }
+
+    for(i=SORT_C_NUM; i<(MAX_NUM_ADC_DATA-SORT_C_NUM) ; i++) {
+        avg += sample_val[i];
+        pr_debug("%s : %d \n",__FUNCTION__, sample_val[i]);
+    }
+
+    return (int) (avg / (MAX_NUM_ADC_DATA-(SORT_C_NUM*2) ));
+}
+
 static long nxp_read_adc_tmp(struct nxp_adc_tmp *tmp)
 {
 	int i = 0, j = 0, val = 0;
@@ -209,14 +267,17 @@ static long nxp_read_adc_tmp(struct nxp_adc_tmp *tmp)
 	int err = 0;
 
 	/* read adc and convert tmp */
+#if 0
 	err = iio_st_read_channel_raw(tmp->iio, &val);
 	if (0 > err)
 		return -1;
-
+#else
+	val = nxp_sort_adc(tmp);
+#endif
 	tmp->adc_value = val;
 //	voltage = (18*val*1000)/4095;
-	voltage = val;
-//	printk("val = %d, voltage = %d\n", val);
+	voltage = tmp->adc_value;
+
 	/*
 	 * according to Register Voltage table,
 	 * calculate board tmp_value.
@@ -231,9 +292,9 @@ static long nxp_read_adc_tmp(struct nxp_adc_tmp *tmp)
 	}
 
 	if (i == TEMP_TABLAE_SIZE) {
-		tmp->tmp_value = 100;
+		tmp->tmp_value = 105;
 	} else if (j == 0) {
-		tmp->tmp_value = 25;
+		tmp->tmp_value = 20;
 	} else {
 		int n = tmp_table[i-1][0] - j;
 		tmp->tmp_value = tmp_table[i-1][1];
