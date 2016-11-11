@@ -96,21 +96,23 @@ struct nxp_adc_tmp {
 
 /* initialize table for register value matching with tmp_value */
 static int tmp_table[][2] = {
-
-//	[0]  = {12900, 20}, // 0
-//	[1]  = {12200, 25}, // 0
-	[0]  = {11500, 30},
-	[1]  = {10700, 35}, 
-	[2]  = { 9900, 40}, 
-	[3]  = { 9100, 45},
-	[4]  = { 8400, 50},
-	[5]  = { 7700, 55},
-	[6]  = { 7000, 60}, 
-	[7]  = { 6300, 65}, 
-	[8] =  { 5700, 70},
-	[9] =  { 5200, 75},
-	[10] = { 4700, 80},
-	[11] = { 4200, 85}  
+// R1 : 4.7K
+    [0]  = {2786, 25},
+    [1]  = {2615, 30},
+    [2]  = {2440, 35},
+    [3]  = {2263, 40},
+    [4]  = {2088, 45},
+    [5]  = {1918, 50},
+    [6]  = {1753, 55},
+    [7]  = {1597, 60},
+    [8]  = {1450, 65},
+    [9]  = {1311, 70},
+    [10] = {1187, 75},
+    [11] = {1071, 80},
+    [12] = { 966, 85},
+    [13] = { 871, 90},
+    [14] = { 786, 95},
+    [15] = { 709, 100}
 };
 
 #define TEMP_TABLAE_SIZE	ARRAY_SIZE(tmp_table)
@@ -255,7 +257,9 @@ static long nxp_read_adc_tmp(struct nxp_adc_tmp *tmp)
 	val = nxp_sort_adc(tmp);
 	#endif
 	tmp->adc_value = val;
-	voltage = (18*val*1000)/4096;
+//	voltage = (18*val*1000)/4096;
+	voltage = tmp->adc_value;
+
 	/*
 	 * according to Register Voltage table,
 	 * calculate board tmp_value.
@@ -270,9 +274,9 @@ static long nxp_read_adc_tmp(struct nxp_adc_tmp *tmp)
 	}
 
 	if (i == TEMP_TABLAE_SIZE) {
-		tmp->tmp_value = 90;
+		tmp->tmp_value = 105;
 	} else if (j == 0) {
-		tmp->tmp_value = 30;
+		tmp->tmp_value = 20;
 	} else {
 		int n = tmp_table[i-1][0] - j;
 		tmp->tmp_value = tmp_table[i-1][1];
