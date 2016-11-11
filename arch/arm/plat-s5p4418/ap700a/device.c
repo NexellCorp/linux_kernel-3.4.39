@@ -125,10 +125,10 @@ const u8 g_DispBusSI[3] = {
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	= CONFIG_NXP_CPUFREQ_PLLDEV,
 	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
-	//.max_cpufreq	= 1400*1000,
-	//.max_retention  =   20*1000,
-	//.rest_cpufreq   =  400*1000,
-	//.rest_retention =    1*1000,
+//	.max_cpufreq	= 1400*1000,
+//	.max_retention  =   20*1000,
+//	.rest_cpufreq   =  400*1000,
+//	.rest_retention =    1*1000,
 };
 
 static struct platform_device dfs_plat_device = {
@@ -142,11 +142,11 @@ static struct platform_device dfs_plat_device = {
 #if defined (CONFIG_SENSORS_NXP_ADC_TEMP)
 struct nxp_adc_tmp_trigger adc_tmp_event[] = {
 	{
-		.temp  = 45,
+		.temp  = 57,
 		.freq  = 1200000,
 		.period = 1000, /* Ms */
 	} , {
-		.temp  = 53,
+		.temp  = 59,
 		.freq  = 1000000,
 		.period = 1000, /* Ms */
 	} , {
@@ -639,7 +639,7 @@ NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 3.3V
 NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 1,  0);	/* 3.3V GPS */
 #endif
 NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 0, 0,      -1, 0,  0);	/* Not Used */
-NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1900000, 1,  2);	/* 1.8V SYS1 */
+NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 0, 1800000, 1,  2);	/* 1.8V SYS1 */
 NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 0, 0, 	 -1, 0,  0);	/* Not Used */
 NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 0, 0, 	 -1, 0,  0);	/* Not Used */
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 0, 3300000, 1, -1);	/* 3.3V ALIVE */
