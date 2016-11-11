@@ -971,7 +971,6 @@ static int nxp_video_streamoff(struct file *file, void *fh,
     struct v4l2_subdev *subdev;
     void *hostdata_back;
 
-
     me = file->private_data;
     subdev = _get_remote_subdev(me, i, &pad);
 #if 0
@@ -998,8 +997,6 @@ static int nxp_video_streamoff(struct file *file, void *fh,
     v4l2_set_subdev_hostdata(subdev, hostdata_back);
 
     vmsg("%s: %s exit\n", __func__, me->name);
-
-    return ret;
 #else
 	if (!subdev) {
 		pr_err("[nx video] no subdev device linked\n");
@@ -1013,6 +1010,7 @@ static int nxp_video_streamoff(struct file *file, void *fh,
 
 	return -EINVAL;
 #endif
+	return ret;
 }
 
 static int nxp_video_enum_input(struct file *file, void *fh,
