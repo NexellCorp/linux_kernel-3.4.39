@@ -149,11 +149,7 @@ struct nxp_adc_tmp_trigger adc_tmp_event[] = {
 		.freq  = 1200000,
 		.period = 1000, /* Ms */
 	} , {
-		.temp  = 54,
-		.freq  = 1000000,
-		.period = 1000, /* Ms */
-	} , {
-		.temp  = 55,
+		.temp  = 56,
 		.freq  = 800000,
 		.period = 1000, /* Ms */
 	}
