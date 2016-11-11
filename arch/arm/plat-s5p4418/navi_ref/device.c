@@ -156,6 +156,7 @@ struct nxp_adc_tmp_trigger adc_tmp_event[] = {
 		.temp  = 55,
 		.freq  = 800000,
 		.period = 1000, /* Ms */
+	}
 };
 
 struct nxp_adc_tmp_platdata adc_tmp_plat_data ={
