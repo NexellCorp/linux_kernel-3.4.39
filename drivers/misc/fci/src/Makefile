@@ -7,16 +7,15 @@ OBJS += fc8300_tun.o fc8300b_tun.o
 #OBJS += fc8300_tun.4d.o fc8300b_tun.4d.o
 
 EXTRA_CFLAGS += -I$(PWD)/../inc
-#KDIR = /home/mv4412/src/mv4412-kernel-3.0.15
-KDIR = ../../../../../kernel/kernel-3.4.39
-ODIR = $(PWD)/../bin
+KDIR = /home/mv4412/src/mv4412-kernel-3.0.15
+ODIR = $(PWD)/../
 
 obj-m = isdbt.o
 isdbt-objs = $(OBJS)
 
 all:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
-	mv *.ko			$(ODIR)
+	mv *.ko			$(ODIR)../
 	mv *.o			$(ODIR)
 	mv isdbt.mod.c		$(ODIR)
 	mv Module.symvers	$(ODIR)

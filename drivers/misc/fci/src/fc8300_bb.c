@@ -28,7 +28,7 @@
 #include "fci_tun.h"
 #include "fc8300_regs.h"
 
-#define SCAN_CHK_PERIOD 10 /* 20 ms */
+#define SCAN_CHK_PERIOD 1 /* 1 ms */
 
 static enum BROADCAST_TYPE broadcast_type;
 
@@ -3605,15 +3605,13 @@ static s32 fc8300_set_default_core_clk(HANDLE handle, DEVICEID devid)
 #ifdef BBM_I2C_TSIF
 static s32 fc8300_set_tsif_clk(HANDLE handle, DEVICEID devid)
 {
+	bbm_byte_write(handle, devid, BBM_TS_CLK_DIV, 0x00);
+
 #ifdef BBM_TSIF_CLK_ARBITRARY
 	u32 pre_sel, post_sel = 0, multi = 0, div_sel;
 	u32 input_freq;
 	u32 multi_3, multi_2, multi_1;
-#endif
 
-	bbm_byte_write(handle, devid, BBM_TS_CLK_DIV, 0x00);
-
-#ifdef BBM_TSIF_CLK_ARBITRARY
 	if (BBM_XTAL_FREQ <= 10000)
 		pre_sel = 0;
 	else if (BBM_XTAL_FREQ <= 20000)
@@ -3968,6 +3966,37 @@ s32 fc8300_init(HANDLE handle, DEVICEID devid)
 	bbm_word_write(handle, DIV_BROADCAST, BBM_FD_RD_LATENCY_1SEG, 0x0620);
 	bbm_byte_write(handle, DIV_BROADCAST, BBM_DC_EST_EN, 0x00);
 
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_CFTSCFG_CACPGPOWTH_13SEG,
+			0x20);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_CFTSCFG_CIRPGPOWTH_13SEG,
+			0x10);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_CFTSCFG_CIRMRGPOWTH_13SEG,
+			0x10);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_IFTSCFG_HDDONLOCKCNT, 0x04);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_IFTSCFG_HDDOFFLOCKCNT, 0x20);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_CIR_MARGIN_22, 0x3e);
+	bbm_word_write(handle, DIV_BROADCAST, BBM_CIR_THR_22, 0x0080);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_FAIP_MTD_SR_SHIFT_VALUE,
+			0x0c);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_MSNR_1D_SWT_EN, 0x00);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_IFTSCFG_ISIC_ENMFDLIMIT,
+			0x01);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_FAIP_MTD_SR_SHIFT_TH, 0x40);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_CID_THRESH_13SEG, 0x38);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_CFTSCFG_ORDERFMDISTTH_13SEG,
+			0x01);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_CFTSCFG_CACPGDISTTH_13SEG,
+			0x32);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_CFTSCFG_CIRPGDISTTH_13SEG,
+			0x3f);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_CFTSCFG_CIRMRGDISTTH_13SEG,
+			0x3f);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_IFTSCFG_HDDEN, 0x01);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_CFTSCFG_CIRPGDISTMAX_13SEG,
+			0xff);
+	bbm_byte_write(handle, DIV_BROADCAST, BBM_CFTSCFG_ORDERMDSDISTTH_13SEG,
+			0xff);
+
 #if !defined(BBM_2_DIVERSITY) && !defined(BBM_4_DIVERSITY)
 	bbm_byte_write(handle, DIV_MASTER, BBM_FD_OUT_MODE, 0x02);
 	bbm_byte_write(handle, DIV_MASTER, BBM_DIV_START_MODE, 0x16);
@@ -4005,8 +4034,6 @@ s32 fc8300_init(HANDLE handle, DEVICEID devid)
 	bbm_byte_write(handle, DIV_MASTER, BBM_TS_CTRL, 0x8e);
 #endif
 
-	bbm_byte_write(handle, DIV_MASTER, BBM_TS_CTRL, 0x0e);	//	TS IF : Serial, Phase mode 0, Polarity mode 0, Fail/Sync/Valid Active High
-
 #ifdef BBM_AUX_INT
 	bbm_byte_write(handle, DIV_MASTER, BBM_SYS_MD_INT_EN, 0x7f);
 	bbm_byte_write(handle, DIV_MASTER, BBM_AUX_INT_EN, 0xff);
@@ -4014,10 +4041,6 @@ s32 fc8300_init(HANDLE handle, DEVICEID devid)
 	bbm_byte_write(handle, DIV_MASTER, BBM_BER_AUTO_UP, 0xff);
 	bbm_byte_write(handle, DIV_MASTER, BBM_OSS_CFG_EN, 0x01);
 #endif
-
-
-	bbm_byte_write(handle, DIV_BROADCAST, BBM_MFD_MAN_VALUE, 0x0f);
-	bbm_byte_write(handle, DIV_BROADCAST, BBM_CIR_THR_23, 0x02);
 
 #ifdef BBM_NULL_PID_FILTER
 	bbm_byte_write(handle, DIV_MASTER, BBM_NULL_PID_FILTERING, 0x01);
@@ -4073,15 +4096,15 @@ s32 fc8300_deinit(HANDLE handle, DEVICEID devid)
 #if defined(BBM_2_DIVERSITY) || defined(BBM_4_DIVERSITY)
 s32 fc8300_scan_status(HANDLE handle, DEVICEID devid)
 {
-    u32 ifagc_timeout       = 70 / SCAN_CHK_PERIOD;
-    u32 ofdm_timeout        = 160 / SCAN_CHK_PERIOD;
-    u32 ffs_lock_timeout    = 100 / SCAN_CHK_PERIOD;
-    u32 cfs_timeout         = 120 / SCAN_CHK_PERIOD;
-    u32 tmcc_timeout        = 1050 / SCAN_CHK_PERIOD;
-    u32 ts_err_free_timeout = 0;
-    u32 data                = 0;
-    u8  a, run;
-    u32 i;
+	u32 ifagc_timeout       = 70;
+	u32 ofdm_timeout        = 160;
+	u32 ffs_lock_timeout    = 100;
+	u32 cfs_timeout         = 120;
+	u32 tmcc_timeout        = 1050;
+	u32 ts_err_free_timeout = 0;
+	u32 data                = 0;
+	u8  a, run;
+	u32 i;
 #ifdef BBM_2_DIVERSITY
 	u8 done = 0x03;
 #else
@@ -4303,7 +4326,7 @@ s32 fc8300_scan_status(HANDLE handle, DEVICEID devid)
 	if (i == tmcc_timeout)
 		return BBM_NOK;
 
-	ts_err_free_timeout = 950 / SCAN_CHK_PERIOD;
+	ts_err_free_timeout = 950;
 
 	switch (broadcast_type) {
 	case ISDBT_1SEG:
@@ -4311,12 +4334,12 @@ s32 fc8300_scan_status(HANDLE handle, DEVICEID devid)
 			return BBM_NOK;
 
 		if ((data & 0x00001c70) == 0x00001840)
-			ts_err_free_timeout = 700 / SCAN_CHK_PERIOD;
+			ts_err_free_timeout = 700;
 
 		break;
 	case ISDBTMM_1SEG:
 		if ((data & 0x00001c70) == 0x00001820)
-			ts_err_free_timeout = 700 / SCAN_CHK_PERIOD;
+			ts_err_free_timeout = 700;
 
 		break;
 	case ISDBTSB_1SEG:
@@ -4325,17 +4348,17 @@ s32 fc8300_scan_status(HANDLE handle, DEVICEID devid)
 		break;
 	case ISDBT_13SEG:
 		if ((data & 0x3f8e1c78) == 0x0d0c1848)
-			ts_err_free_timeout = 700 / SCAN_CHK_PERIOD;
+			ts_err_free_timeout = 700;
 
 		break;
 	case ISDBTMM_13SEG:
 		if ((data & 0x3f8e1c78) == 0x0f041828)
-			ts_err_free_timeout = 700 / SCAN_CHK_PERIOD;
+			ts_err_free_timeout = 700;
 
 		break;
 	case ISDBT_CATV_13SEG:
 		if ((data & 0x3f8e1c78) == 0x0d0c1848)
-			ts_err_free_timeout = 700 / SCAN_CHK_PERIOD;
+			ts_err_free_timeout = 700;
 
 		break;
 	case ISDBT_CATV_1SEG:
@@ -4343,7 +4366,7 @@ s32 fc8300_scan_status(HANDLE handle, DEVICEID devid)
 			return BBM_NOK;
 
 		if ((data & 0x00001c70) == 0x00001840)
-			ts_err_free_timeout = 700 / SCAN_CHK_PERIOD;
+			ts_err_free_timeout = 700;
 
 		break;
 	default:
@@ -4367,11 +4390,11 @@ s32 fc8300_scan_status(HANDLE handle, DEVICEID devid)
 #else /* SINGLE */
 s32 fc8300_scan_status(HANDLE handle, DEVICEID devid)
 {
-	u32 ifagc_timeout       = 70 / SCAN_CHK_PERIOD;
-	u32 ofdm_timeout        = 160 / SCAN_CHK_PERIOD;
-	u32 ffs_lock_timeout    = 100 / SCAN_CHK_PERIOD;
-	u32 cfs_timeout         = 120 / SCAN_CHK_PERIOD;
-	u32 tmcc_timeout        = 1050 / SCAN_CHK_PERIOD;
+	u32 ifagc_timeout       = 70;
+	u32 ofdm_timeout        = 160;
+	u32 ffs_lock_timeout    = 100;
+	u32 cfs_timeout         = 120;
+	u32 tmcc_timeout        = 1050;
 	u32 ts_err_free_timeout = 0;
 	u32 data                = 0;
 	u8  a;
@@ -4445,7 +4468,7 @@ s32 fc8300_scan_status(HANDLE handle, DEVICEID devid)
 	if (i == tmcc_timeout)
 		return BBM_NOK;
 
-	ts_err_free_timeout = 950 / SCAN_CHK_PERIOD;
+	ts_err_free_timeout = 950;
 
 	switch (broadcast_type) {
 	case ISDBT_1SEG:
@@ -4455,14 +4478,14 @@ s32 fc8300_scan_status(HANDLE handle, DEVICEID devid)
 			return BBM_NOK;
 
 		if ((data & 0x1c70) == 0x1840)
-			ts_err_free_timeout = 700 / SCAN_CHK_PERIOD;
+			ts_err_free_timeout = 700;
 
 		break;
 	case ISDBTMM_1SEG:
 		bbm_word_read(handle, DIV_MASTER, 0x4113, (u16 *) &data);
 
 		if ((data & 0x1c70) == 0x1820)
-			ts_err_free_timeout = 700 / SCAN_CHK_PERIOD;
+			ts_err_free_timeout = 700;
 
 		break;
 	case ISDBTSB_1SEG:
@@ -4473,21 +4496,21 @@ s32 fc8300_scan_status(HANDLE handle, DEVICEID devid)
 		bbm_long_read(handle, DIV_MASTER, 0x4113, &data);
 
 		if ((data & 0x3f8e1c78) == 0x0d0c1848)
-			ts_err_free_timeout = 700 / SCAN_CHK_PERIOD;
+			ts_err_free_timeout = 700;
 
 		break;
 	case ISDBTMM_13SEG:
 		bbm_long_read(handle, DIV_MASTER, 0x4113, &data);
 
 		if ((data & 0x3f8e1c78) == 0x0f041828)
-			ts_err_free_timeout = 700 / SCAN_CHK_PERIOD;
+			ts_err_free_timeout = 700;
 
 		break;
 	case ISDBT_CATV_13SEG:
 		bbm_long_read(handle, DIV_MASTER, 0x4113, &data);
 
 		if ((data & 0x3f8e1c78) == 0x0d0c1848)
-			ts_err_free_timeout = 700 / SCAN_CHK_PERIOD;
+			ts_err_free_timeout = 700;
 
 		break;
 	case ISDBT_CATV_1SEG:
@@ -4497,7 +4520,7 @@ s32 fc8300_scan_status(HANDLE handle, DEVICEID devid)
 			return BBM_NOK;
 
 		if ((data & 0x1c70) == 0x1840)
-			ts_err_free_timeout = 700 / SCAN_CHK_PERIOD;
+			ts_err_free_timeout = 700;
 
 		break;
 	default:

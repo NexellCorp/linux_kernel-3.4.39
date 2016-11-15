@@ -27,7 +27,7 @@
 
 #include "fci_types.h"
 
-#define DRIVER_VER "S1.21.0"
+#define DRIVER_VER "S1.21.1"
 
 #ifdef __cplusplus
 extern "C" {

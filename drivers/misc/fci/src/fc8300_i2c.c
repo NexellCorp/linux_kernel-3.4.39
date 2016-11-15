@@ -26,10 +26,17 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 
+#include <mach/platform.h>
+#include <mach/nxp_mp2ts.h>
+
 #include "fci_types.h"
 #include "fc8300_regs.h"
 #include "fci_oal.h"
 #include "fc8300_spi.h"
+
+#include "fc8300_nexell_tsif.h"
+
+#define NEXELL_TSIF 1
 
 #define I2C_M_FCIRD 1
 #define I2C_M_FCIWR 0
@@ -129,6 +136,9 @@ static s32 i2c_bulkwrite(HANDLE handle, u8 chip, u16 addr, u8 *data, u16 length)
 s32 fc8300_i2c_init(HANDLE handle, u16 param1, u16 param2)
 {
 	s32 res;
+
+	pr_err("+++ %s +++\n", __func__);
+
 	fc8300_i2c = kzalloc(sizeof(struct i2c_ts_driver), GFP_KERNEL);
 
 	if (fc8300_i2c == NULL)
@@ -139,10 +149,14 @@ s32 fc8300_i2c_init(HANDLE handle, u16 param1, u16 param2)
 	res = i2c_add_driver(&fc8300_i2c_driver);
 
 #ifdef BBM_I2C_SPI
-	fc8300_spi_init(handle, 0, 0);
 #else
 	/* ts_initialize(); */
+#if NEXELL_TSIF
+	tsif_init(tsif_get_channel_num());
 #endif
+#endif
+
+	pr_err("--- %s ---\n", __func__);
 
 	return res;
 }

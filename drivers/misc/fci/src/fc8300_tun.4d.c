@@ -29,8 +29,10 @@
 	1p9 -> 20131209
 	2p2 -> 20131226
 	2p3 -> 20140108
+	2p6 -> 20150116
 	2p9 -> 20140124
 	3p0 -> 20140124
+	3p2 -> 20150323
 ******************************************************************************/
 #include "fci_types.h"
 #include "fci_oal.h"
@@ -39,7 +41,7 @@
 #include "fc8300_tun.h"
 #include "fc8300_tun_table.h"
 
-#define DRIVER_VERSION         0x30 /* Driver S1_V3p0 */
+#define DRIVER_VERSION         0x32 /* Driver S1_V3p2 */
 #define RFADC_COUNT            3
 #define CAL_REPEAT             1
 
@@ -247,7 +249,8 @@ static s32 fc8300_tuner_set_pll(HANDLE handle, DEVICEID devid, u32 freq,
 
 	f_diff_shifted = f_diff << (20 - pre_shift_bits);
 
-	k_val = f_diff_shifted / (FC8300_XTAL_FREQ >> pre_shift_bits);
+	k_val = (f_diff_shifted /
+		(FC8300_XTAL_FREQ >> (pre_shift_bits - 1))) << 1;
 	k_val = k_val | 1;
 
 	data_0x57 = ((n_val >> 3) & 0x20);
@@ -392,9 +395,9 @@ static void fc8300_1seg_init(HANDLE handle, DEVICEID devid, u16 filter_cal)
 	fc8300_write(handle, devid, 0x91, 0x68);
 
 	fc8300_write(handle, devid, 0xb2, 0x00);
-	fc8300_write(handle, devid, 0xb3, 0x04);
+	fc8300_write(handle, devid, 0xb3, 0x07);
 	fc8300_write(handle, devid, 0xb4, 0x00);
-	fc8300_write(handle, devid, 0xb5, 0x04);
+	fc8300_write(handle, devid, 0xb5, 0x07);
 	fc8300_write(handle, devid, 0xb6, 0x00);
 	fc8300_write(handle, devid, 0xb7, 0x07);
 	fc8300_write(handle, devid, 0xb8, 0x00);
@@ -772,9 +775,9 @@ static void fc8300_13seg_init(HANDLE handle, DEVICEID devid, u8 filter_cal)
 	fc8300_write(handle, devid, 0x90, 0xb2);
 
 	fc8300_write(handle, devid, 0xb2, 0x00);
-	fc8300_write(handle, devid, 0xb3, 0x04);
+	fc8300_write(handle, devid, 0xb3, 0x07);
 	fc8300_write(handle, devid, 0xb4, 0x00);
-	fc8300_write(handle, devid, 0xb5, 0x04);
+	fc8300_write(handle, devid, 0xb5, 0x07);
 	fc8300_write(handle, devid, 0xb6, 0x00);
 	fc8300_write(handle, devid, 0xb7, 0x07);
 	fc8300_write(handle, devid, 0xb8, 0x00);
@@ -963,9 +966,9 @@ static void fc8300_catv_h_init(HANDLE handle, DEVICEID devid, u8 filter_cal)
 	fc8300_write(handle, devid, 0x90, 0xb2);
 
 	fc8300_write(handle, devid, 0xb2, 0x00);
-	fc8300_write(handle, devid, 0xb3, 0x01);
+	fc8300_write(handle, devid, 0xb3, 0x07);
 	fc8300_write(handle, devid, 0xb4, 0x00);
-	fc8300_write(handle, devid, 0xb5, 0x02);
+	fc8300_write(handle, devid, 0xb5, 0x07);
 	fc8300_write(handle, devid, 0xb6, 0x00);
 	fc8300_write(handle, devid, 0xb7, 0x07);
 	fc8300_write(handle, devid, 0xb8, 0x00);
@@ -1065,9 +1068,9 @@ static void fc8300_catv_l_init(HANDLE handle, DEVICEID devid, u8 filter_cal)
 	fc8300_write(handle, devid, 0x91, 0x68);
 
 	fc8300_write(handle, devid, 0xb2, 0x00);
-	fc8300_write(handle, devid, 0xb3, 0x04);
+	fc8300_write(handle, devid, 0xb3, 0x07);
 	fc8300_write(handle, devid, 0xb4, 0x00);
-	fc8300_write(handle, devid, 0xb5, 0x04);
+	fc8300_write(handle, devid, 0xb5, 0x07);
 	fc8300_write(handle, devid, 0xb6, 0x00);
 	fc8300_write(handle, devid, 0xb7, 0x07);
 	fc8300_write(handle, devid, 0xb8, 0x00);
@@ -1280,6 +1283,9 @@ s32 fc8300_tuner_init(HANDLE handle, DEVICEID devid,
 		}
 	}
 
+	fc8300_write(handle, devid, 0x7e, 0xff);
+	fc8300_write(handle, devid, 0x7f, 0xff);
+
 	if (FC8300_XTAL_FREQ == 19200) {
 		fc8300_write(handle, devid, 0xee, 0x02);
 		fc8300_write(handle, devid, 0xf1, 0x52);
@@ -1288,8 +1294,6 @@ s32 fc8300_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300_write(handle, devid, 0xf4, 0x22);
 
 		fc8300_write(handle, devid, 0x7c, 0x30);
-		fc8300_write(handle, devid, 0x7e, 0x05);
-		fc8300_write(handle, devid, 0x7f, 0x0a);
 	} else if (FC8300_XTAL_FREQ == 24000) {
 		fc8300_write(handle, devid, 0xee, 0x02);
 		fc8300_write(handle, devid, 0xf1, 0x52);
@@ -1298,8 +1302,6 @@ s32 fc8300_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300_write(handle, devid, 0xf4, 0x2c);
 
 		fc8300_write(handle, devid, 0x7c, 0x30);
-		fc8300_write(handle, devid, 0x7e, 0x05);
-		fc8300_write(handle, devid, 0x7f, 0x0a);
 	} else if (FC8300_XTAL_FREQ == 26000) {
 		fc8300_write(handle, devid, 0xee, 0x02);
 		fc8300_write(handle, devid, 0xf1, 0x52);
@@ -1308,8 +1310,6 @@ s32 fc8300_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300_write(handle, devid, 0xf4, 0x30);
 
 		fc8300_write(handle, devid, 0x7c, 0x30);
-		fc8300_write(handle, devid, 0x7e, 0x05);
-		fc8300_write(handle, devid, 0x7f, 0x0a);
 	} else if (FC8300_XTAL_FREQ == 27120) {
 		fc8300_write(handle, devid, 0xee, 0x02);
 		fc8300_write(handle, devid, 0xf1, 0x52);
@@ -1318,8 +1318,6 @@ s32 fc8300_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300_write(handle, devid, 0xf4, 0x32);
 
 		fc8300_write(handle, devid, 0x7c, 0x30);
-		fc8300_write(handle, devid, 0x7e, 0x05);
-		fc8300_write(handle, devid, 0x7f, 0x0a);
 	} else if (FC8300_XTAL_FREQ == 32000) {
 		fc8300_write(handle, devid, 0xee, 0x02);
 		fc8300_write(handle, devid, 0xf1, 0x53);
@@ -1328,8 +1326,6 @@ s32 fc8300_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300_write(handle, devid, 0xf4, 0x1a);
 
 		fc8300_write(handle, devid, 0x7c, 0x30);
-		fc8300_write(handle, devid, 0x7e, 0x05);
-		fc8300_write(handle, devid, 0x7f, 0x0a);
 	} else if (FC8300_XTAL_FREQ == 37200) {
 		fc8300_write(handle, devid, 0xee, 0x02);
 		fc8300_write(handle, devid, 0xf1, 0x53);
@@ -1338,8 +1334,6 @@ s32 fc8300_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300_write(handle, devid, 0xf4, 0x20);
 
 		fc8300_write(handle, devid, 0x7c, 0x30);
-		fc8300_write(handle, devid, 0x7e, 0x05);
-		fc8300_write(handle, devid, 0x7f, 0x0a);
 	} else if (FC8300_XTAL_FREQ == 37400) {
 		fc8300_write(handle, devid, 0xee, 0x02);
 		fc8300_write(handle, devid, 0xf1, 0x53);
@@ -1348,8 +1342,6 @@ s32 fc8300_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300_write(handle, devid, 0xf4, 0x21);
 
 		fc8300_write(handle, devid, 0x7c, 0x30);
-		fc8300_write(handle, devid, 0x7e, 0x05);
-		fc8300_write(handle, devid, 0x7f, 0x0a);
 	}
 
 	if (devid == DIV_BROADCAST) {
@@ -1603,6 +1595,8 @@ static void fc8300_set_freq_catv_13seg(HANDLE handle, DEVICEID devid, u32 freq)
 	u8 i;
 
 	for (i = 0; i < 112; i++) {
+		if ((ch_mode_6[xtal_freq][0][0] - 2000) > freq)
+			break;
 		if (((ch_mode_6[xtal_freq][i][0] + 2000) > freq) &&
 			((ch_mode_6[xtal_freq][i][0] - 2000) <= freq))
 			break;
@@ -1693,7 +1687,7 @@ s32 fc8300_set_freq(HANDLE handle, DEVICEID devid, u32 freq)
 		} else if (tf_offset[0][11] < freq) {
 			fc8300_write(handle, devid, 0x1c, 0x10);
 		} else {
-			for (i = 0; i < 11; i++) {
+			for (i = 0; i < 12; i++) {
 				if ((tf_offset[0][i] < freq) &&
 					(tf_offset[0][i + 1] >= freq))
 					break;

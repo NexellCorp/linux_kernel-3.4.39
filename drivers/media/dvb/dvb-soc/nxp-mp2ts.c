@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2016  Nexell Co., Ltd.
+ * Author: Jongkeun, Choi <jkchoi@nexell.co.kr>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* This driver is for nexell nxp mpeg ts interface */
 #include <linux/module.h>
 #include <linux/slab.h>
@@ -28,7 +46,7 @@
 
 #define MP2TS_DBG_HEADER "[NXP-TS]"
 
-//#define NEXELL_MPEGTS_DEBUG
+/*	#define NEXELL_MPEGTS_DEBUG	*/
 
 #ifdef NEXELL_MPEGTS_DEBUG
 #define MP2TS_DBG(args...) printk(MP2TS_DBG_HEADER ":" args)
@@ -36,9 +54,7 @@
 #define MP2TS_DBG(args...) do{}while(0)
 #endif
 
-
 #define ALLOC_ALIGN(size)   ALIGN(size, 16)
-
 
 static struct ts_drv_context *s_ctx = NULL;
 static int  one_sec_ticks = 100;
@@ -475,6 +491,7 @@ static int _power_on_device(u8 ch_num)
         {
             /* Set pad capture ch0 */
             nxp_soc_gpio_set_io_pull_enb(PAD_GPIO_B+24, CFALSE);        // DATA[0]
+#ifndef CONFIG_NXP_MP2TS_IF_FCI
 			if(!NX_MPEGTSI_GetSerialEnable(ch_num)){
             	nxp_soc_gpio_set_io_pull_enb(PAD_GPIO_B+25, CFALSE);        // DATA[1]
             	nxp_soc_gpio_set_io_pull_enb(PAD_GPIO_B+26, CFALSE);        // DATA[2]
@@ -484,11 +501,13 @@ static int _power_on_device(u8 ch_num)
             	nxp_soc_gpio_set_io_pull_enb(PAD_GPIO_B+30, CFALSE);        // DATA[6]
             	nxp_soc_gpio_set_io_pull_enb(PAD_GPIO_B+31, CFALSE);        // DATA[7]
 			}
+#endif
             nxp_soc_gpio_set_io_pull_enb(PAD_GPIO_C+15, CFALSE);        // CLk
             nxp_soc_gpio_set_io_pull_enb(PAD_GPIO_C+16, CFALSE);        // SYNC
             nxp_soc_gpio_set_io_pull_enb(PAD_GPIO_C+17, CFALSE);        // VALID
 
             nxp_soc_gpio_set_io_func(PAD_GPIO_B+24, NX_GPIO_PADFUNC_2); // DATA[0]
+#ifndef CONFIG_NXP_MP2TS_IF_FCI
 			if(!NX_MPEGTSI_GetSerialEnable(ch_num)){
             	nxp_soc_gpio_set_io_func(PAD_GPIO_B+25, NX_GPIO_PADFUNC_2); // DATA[1]
             	nxp_soc_gpio_set_io_func(PAD_GPIO_B+26, NX_GPIO_PADFUNC_2); // DATA[2]
@@ -498,6 +517,7 @@ static int _power_on_device(u8 ch_num)
             	nxp_soc_gpio_set_io_func(PAD_GPIO_B+30, NX_GPIO_PADFUNC_2); // DATA[6]
             	nxp_soc_gpio_set_io_func(PAD_GPIO_B+31, NX_GPIO_PADFUNC_2); // DATA[7]
 			}
+#endif
             nxp_soc_gpio_set_io_func(PAD_GPIO_C+15, NX_GPIO_PADFUNC_2); // CLk
             nxp_soc_gpio_set_io_func(PAD_GPIO_C+16, NX_GPIO_PADFUNC_2); // SYNC
             nxp_soc_gpio_set_io_func(PAD_GPIO_C+17, NX_GPIO_PADFUNC_2); // VALID
@@ -1093,7 +1113,7 @@ repeat_init:
             }
 
             msleep(1);
-			_start_dma(ch_num, s_ctx);
+	_start_dma(ch_num, s_ctx);
             ret = _enable_device(&ts_op);
             if( ret == 0 )
             {
@@ -1724,6 +1744,228 @@ error_prepare:
 #endif	// #if (CFG_MPEGTS_IDMA_MODE == 1)
 
 
+
+
+
+int ts_initialize(
+			struct ts_config_descr *config_descr,
+			struct ts_param_descr *param_descr,
+			struct ts_buf_init_info *buf_info
+		)
+{
+	int ret = 0;
+	u8 ch_num;
+
+	s_ctx->is_opened = 1;
+	s_ctx->swich_ch = 0xFF;
+
+	ch_num = config_descr->ch_num;
+
+	/*	0. power off	*/
+	_power_off_device(ch_num);
+
+	/*	1. power on	*/
+	_power_on_device(ch_num);
+
+	/*	2. set config	*/
+	ret = _set_config(config_descr);
+	if (ret < 0) {
+		pr_err("%s: failed _set_config function.\n", __func__);
+		return ret;
+	}
+
+	if (s_ctx->ch_info[ch_num].is_running == 0 &&
+		s_ctx->ch_info[ch_num].is_malloced == 0) {
+#if (CFG_MPEGTS_IDMA_MODE == 1)
+		ret = _init_buf(s_ctx, buf_info);
+		if (ret == 0)
+			s_ctx->ch_info[ch_num].is_malloced  = 1;
+#else
+		ret = _init_dma(ch_num, s_ctx);
+		if (ret < 0)
+			return ret;
+
+		ret = _init_buf(s_ctx, buf_info);
+		if (ret < 0)
+			_deinit_dma(ch_num, s_ctx);
+
+		s_ctx->ch_info[ch_num].is_malloced	= 1;
+#endif
+		pr_info("tsif_init - %s: [MP2TS] Memory Alloc Step\n",
+			__func__);
+	}
+
+	/*	3. set param	*/
+	ret = _set_param(param_descr);
+	if (ret < 0) {
+		pr_err("%s: failed _set_param function.\n", __func__);
+		return -1;
+	}
+
+	return ret;
+}
+EXPORT_SYMBOL(ts_initialize);
+
+int ts_deinitialize(U8 ch_num)
+{
+	if ((s_ctx->ch_info[ch_num].is_running) ||
+		(!s_ctx->ch_info[ch_num].is_malloced))
+			return -EBUSY;
+
+	pr_info("IOCTL : [MP2TS] Memory Dealloc Step.0\n");
+
+	_deinit_dma(ch_num, s_ctx);
+	_deinit_buf(ch_num, s_ctx);
+
+	s_ctx->ch_info[ch_num].is_malloced  = 0;
+
+	return 0;
+}
+EXPORT_SYMBOL(ts_deinitialize);
+
+int ts_start(struct ts_op_mode *ts_op)
+{
+	u8 temp_chnum;
+	int ret;
+	int ch_num = ts_op->ch_num;
+
+	/*	start		*/
+	if (!s_ctx->ch_info[ch_num].is_malloced)
+		return -1;
+
+	if (s_ctx->ch_info[ch_num].is_running)
+		return -2;
+
+	temp_chnum = ch_num;
+re_init:
+	s_ctx->ch_info[temp_chnum].cnt      = 0;
+	s_ctx->ch_info[temp_chnum].w_pos    = 0;
+	s_ctx->ch_info[temp_chnum].r_pos    = 0;
+
+	if (temp_chnum == NXP_MP2TS_ID_CORE) {
+		temp_chnum++;
+		goto re_init;
+	}
+
+	msleep(1);
+	_start_dma(ch_num, s_ctx);
+	ret = _enable_device(ts_op);
+	if (ret == 0) {
+		s_ctx->ch_info[ch_num].is_running = 1;
+		ret = 0;
+	} else {
+		s_ctx->ch_info[ch_num].is_running = 0;
+		_stop_dma(ch_num, s_ctx);
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(ts_start);
+
+void ts_stop(U8 ch_num)
+{
+	/*	stop		*/
+	if (s_ctx->ch_info[ch_num].is_running) {
+		s_ctx->ch_info[ch_num].is_running = 0;
+
+		_stop_dma(ch_num, s_ctx);
+		_disable_device(ch_num, s_ctx);
+	}
+}
+EXPORT_SYMBOL(ts_stop);
+
+
+int ts_read(struct ts_param_descr *param_desc)
+{
+	u8 ch_num;
+	int ret = -1;
+
+	/*	read		*/
+	ch_num  = (u8)param_desc->info.un.bits.ch_num;
+
+	if (!s_ctx->ch_info[ch_num].is_running) {
+		/* pr_err("ISDBT data is not receiving(is not running)\n"); */
+
+		return -EPERM;
+	}
+
+	if (param_desc->info.un.bits.type != NXP_MP2TS_PARAM_TYPE_BUF)
+		return -EFAULT;
+
+	if (s_ctx->ch_info[ch_num].tx_mode == 1)
+		return -EFAULT;
+
+	s_ctx->ch_info[ch_num].wait_time = param_desc->wait_time;
+
+	ret = (int)mpegts_read_buf(ch_num, param_desc);
+	if (ret > 0)
+		ret = 0;
+
+	return ret;
+}
+EXPORT_SYMBOL(ts_read);
+
+int ts_init_buf(struct ts_buf_init_info *buf_info)
+{
+	int ret = 0;
+	u8 ch_num = 1;
+
+	if (s_ctx->ch_info[ch_num].is_running == 0 &&
+		s_ctx->ch_info[ch_num].is_malloced == 0) {
+#if (CFG_MPEGTS_IDMA_MODE == 1)
+		ret = _init_buf(s_ctx, buf_info);
+		if (ret == 0)
+			s_ctx->ch_info[ch_num].is_malloced  = 1;
+#else
+		ret = _init_dma(ch_num, s_ctx);
+		if (ret < 0)
+			return ret;
+
+		ret = _init_buf(s_ctx, buf_info);
+		if (ret < 0)
+			_deinit_dma(ch_num, s_ctx);
+
+		s_ctx->ch_info[ch_num].is_malloced	= 1;
+#endif
+		pr_info("tsif_init - %s: [MP2TS] Memory Alloc Step\n",
+			__func__);
+	}
+
+	return ret;
+}
+EXPORT_SYMBOL(ts_init_buf);
+
+int ts_write(struct ts_param_descr *param_desc)
+{
+	u8 ch_num;
+	int ret = -1;
+
+	/*	write		*/
+	ch_num      = (u8)param_desc->info.un.bits.ch_num;
+
+	if (!s_ctx->ch_info[ch_num].is_running) {
+		printk(KERN_ERR "Error: Invalid operation.(is not running)\n");
+
+		return -EPERM;
+	}
+
+	if (param_desc->info.un.bits.type != NXP_MP2TS_PARAM_TYPE_BUF)
+		return -EFAULT;
+
+
+	if (s_ctx->ch_info[ch_num].tx_mode == 0)
+		return -EFAULT;
+
+	s_ctx->ch_info[ch_num].wait_time = param_desc->wait_time;
+
+	ret = (int)mpegts_write_buf(ch_num, param_desc);
+	if (ret > 0)
+		ret = 0;
+
+	return ret;
+}
+EXPORT_SYMBOL(ts_write);
+
 /* register/remove driver */
 static int nexell_mpegts_probe(struct platform_device *pdev)
 {
@@ -1880,6 +2122,7 @@ static void __exit nexell_mpegts_exit(void)
 }
 
 module_init(nexell_mpegts_init);
+/* rootfs_initcall(nexell_mpegts_init); */
 module_exit(nexell_mpegts_exit);
 
 MODULE_DESCRIPTION("Nexell MPEGTS Interface driver");
