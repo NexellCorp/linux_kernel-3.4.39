@@ -34,6 +34,9 @@
 #include <linux/module.h>
 #include <linux/io.h>
 
+#include <mach/platform.h>
+#include <mach/nxp_mp2ts.h>
+
 #include "fc8300.h"
 #include "bbm.h"
 #include "fci_oal.h"
@@ -42,18 +45,27 @@
 #include "fc8300_isr.h"
 #include "fci_hal.h"
 
+#include "fc8300_nexell_tsif.h"
+
 struct ISDBT_INIT_INFO_T *hInit;
 
 #define RING_BUFFER_SIZE	(188 * 320 * 8)
 
-#define FC8300_DEBUG
+/*	#define FC8300_DEBUG	*/
+
+#define NEXELL_TSIF 1
 
 /* GPIO(RESET & INTRRUPT) Setting */
 #define FC8300_NAME		"isdbt"
 
 #define GPIO_ISDBT_IRQ		0x24
-#define GPIO_ISDBT_PWR_EN	1			//	Cannot control power en/diable function in avn refererence board.
-#define GPIO_ISDBT_RST		(32*2+14)	//	GPIOC_14 
+#define GPIO_ISDBT_PWR_EN	1	/*
+						Cannot control power en/diable
+						function in avn refererence
+						board.
+					*/
+/*#define GPIO_ISDBT_RST		(32*2+14)	*//* GPIOC_14 */
+#define GPIO_ISDBT_RST		(32*2+12)	/*	GPIOC_14 */
 
 
 struct ISDBT_OPEN_INFO_T hOpen_Val;
@@ -273,9 +285,9 @@ void isdbt_hw_init(void)
 
 	gpio_set_value(GPIO_ISDBT_RST, 0);
 	//gpio_set_value(GPIO_ISDBT_PWR_EN, 1);
-	mdelay(5);
+	mdelay(20);
 	gpio_set_value(GPIO_ISDBT_RST, 1);
-	mdelay(5);
+	mdelay(20);
 	driver_mode = ISDBT_POWERON;
 	mutex_unlock(&driver_mode_lock);
 	print_log(0, "isdbt_hw_init--\n");
@@ -413,12 +425,15 @@ int isdbt_open(struct inode *inode, struct file *filp)
 
 ssize_t isdbt_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
 {
+	ssize_t read_len = 0;
+#if !NEXELL_TSIF
 	s32 avail;
 	s32 non_blocking = filp->f_flags & O_NONBLOCK;
 	struct ISDBT_OPEN_INFO_T *hOpen
 		= (struct ISDBT_OPEN_INFO_T *)filp->private_data;
 	struct fci_ringbuffer *cibuf = &hOpen->RingBuffer;
-	ssize_t len, read_len = 0;
+	ssize_t len;
+
 
 	if (!cibuf->data || !count)	{
 		/*print_log(hInit, " return 0\n"); */
@@ -435,9 +450,7 @@ ssize_t isdbt_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
 		print_log(hInit, "return ERESTARTSYS\n");
 		return -ERESTARTSYS;
 	}
-
 	mutex_lock(&ringbuffer_lock);
-
 	avail = fci_ringbuffer_avail(cibuf);
 
 	if (count >= avail)
@@ -448,6 +461,11 @@ ssize_t isdbt_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
 	read_len = fci_ringbuffer_read_user(cibuf, buf, len);
 
 	mutex_unlock(&ringbuffer_lock);
+#else
+	mutex_lock(&ringbuffer_lock);
+	read_len = tsif_read(tsif_get_channel_num(), buf, count);
+	mutex_unlock(&ringbuffer_lock);
+#endif
 
 	return read_len;
 }
@@ -652,7 +670,8 @@ long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #endif
 			res = bbm_com_tuner_set_freq(hInit
 				, (u16)info.buff[2], f_rf, subch);
-#ifdef FC8300_DEBUG
+/*	#ifdef FC8300_DEBUG	*/
+#if 1
 		print_log(hInit
 		, "[FC8300] IOCTL_ISDBT_TUNER_SET_FREQ [0x%x][%d][0x%x]\n"
 		, (u16)info.buff[2], f_rf, subch);
@@ -677,6 +696,26 @@ long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #endif
 		break;
 	case IOCTL_ISDBT_TS_START:
+
+#if NEXELL_TSIF
+#if 1
+		if (tsif_init(tsif_get_channel_num()) < 0) {
+			pr_err("%s: failed ts initialization!!\n", __func__);
+			return -1;
+		}
+#else
+		if (tsif_alloc_buf(tsif_get_channel_num()) < 0) {
+			pr_err("%s: failed ts init buffer!!\n", __func__);
+			return -1;
+		}
+#endif
+
+		if (tsif_start(tsif_get_channel_num()) < 0) {
+			pr_err("%s: failed ts ts_start!!\n", __func__);
+			res = -1;
+		}
+#endif
+
 #ifdef FEATURE_TS_CHECK
 				create_tspacket_anal();
 				check_cnt_size = 0;
@@ -689,6 +728,11 @@ long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	case IOCTL_ISDBT_TS_STOP:
 		hOpen->isdbttype = 0;
+
+#if NEXELL_TSIF
+		tsif_stop(tsif_get_channel_num());
+#endif
+
 #ifdef FC8300_DEBUG
 		print_log(hInit, "[FC8300] IOCTL_ISDBT_TS_STOP\n");
 #endif
@@ -708,7 +752,8 @@ long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case IOCTL_ISDBT_SCAN_STATUS:
 		err = copy_from_user((void *)&info, (void *)arg, size);
 		res = bbm_com_scan_status(hInit, (u16)info.buff[0]);
-#ifdef FC8300_DEBUG
+/*	#ifdef FC8300_DEBUG	*/
+#if 1
 		print_log(hInit
 		, "[FC8300] IOCTL_ISDBT_SCAN_STATUS [0x%x]\n"
 		, (u16)info.buff[0]);
@@ -728,6 +773,15 @@ long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	case IOCTL_ISDBT_DEINIT:
 		res = bbm_com_deinit(hInit, DIV_BROADCAST);
+		pr_err("%s - Line : %d\n", __func__, __LINE__);
+
+#if NEXELL_TSIF
+		if (tsif_deinit(tsif_get_channel_num()) < 0) {
+			pr_err("%s: failed deinitialization!!\n", __func__);
+			res = -1;
+		}
+#endif
+
 #ifdef FC8300_DEBUG
 		print_log(hInit, "[FC8300] IOCTL_ISDBT_DEINIT\n");
 #endif
@@ -751,6 +805,8 @@ int isdbt_init(void)
 	s32 res;
 
 	print_log(hInit, "isdbt_init 20150918\n");
+
+	pr_err("+++ %s +++\n", __func__);
 
 	res = misc_register(&fc8300_misc_device);
 
@@ -783,6 +839,7 @@ int isdbt_init(void)
 
 	INIT_LIST_HEAD(&(hInit->hHead));
 
+	pr_err("--- %s ---\n", __func__);
 	return 0;
 }
 
@@ -816,7 +873,8 @@ void isdbt_exit(void)
 
 }
 
-module_init(isdbt_init);
+/*	module_init(isdbt_init);	*/
+late_initcall(isdbt_init);
 module_exit(isdbt_exit);
 
 MODULE_LICENSE("Dual BSD/GPL");

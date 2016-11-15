@@ -24,6 +24,7 @@
 	0p5 -> 20140114
 	0p6 -> 20140123
 	0p7 -> 20140324
+	0p8 -> 20160825
 ******************************************************************************/
 #include "fci_types.h"
 #include "fci_oal.h"
@@ -34,7 +35,7 @@
 
 #define FC8300B_FREQ_XTAL BBM_XTAL_FREQ
 
-#define DRIVER_VERSION         0x07 /* Driver B1_V0p7 */
+#define DRIVER_VERSION         0x08 /* Driver B1_V0p7 */
 #define RFADC_COUNT            3
 #define CAL_REPEAT             1
 
@@ -305,7 +306,7 @@ static void fc8300b_1seg_init(HANDLE handle, DEVICEID devid, u16 filter_cal)
 	fc8300b_write(handle, devid, 0x13, 0x07);
 	fc8300b_write(handle, devid, 0x19, 0x53);
 	fc8300b_write(handle, devid, 0x1d, 0x10);
-	fc8300b_write(handle, devid, 0x1f, 0x72);
+	fc8300b_write(handle, devid, 0x1f, 0x79);
 	fc8300b_write(handle, devid, 0x20, 0x22);
 	fc8300b_write(handle, devid, 0x21, 0x30);
 	fc8300b_write(handle, devid, 0x24, 0x98);
@@ -348,9 +349,9 @@ static void fc8300b_1seg_init(HANDLE handle, DEVICEID devid, u16 filter_cal)
 	fc8300b_write(handle, devid, 0x91, 0xf8);
 
 	fc8300b_write(handle, devid, 0xb2, 0x00);
-	fc8300b_write(handle, devid, 0xb3, 0x04);
+	fc8300b_write(handle, devid, 0xb3, 0x07);
 	fc8300b_write(handle, devid, 0xb4, 0x00);
-	fc8300b_write(handle, devid, 0xb5, 0x04);
+	fc8300b_write(handle, devid, 0xb5, 0x07);
 	fc8300b_write(handle, devid, 0xb6, 0x00);
 	fc8300b_write(handle, devid, 0xb7, 0x07);
 	fc8300b_write(handle, devid, 0xb8, 0x00);
@@ -405,7 +406,7 @@ static void fc8300b_tmm_1seg_init(HANDLE handle, DEVICEID devid, u16 filter_cal)
 	fc8300b_write(handle, devid, 0x1a, 0x42);
 	fc8300b_write(handle, devid, 0x1c, 0x00);
 	fc8300b_write(handle, devid, 0x1d, 0x00);
-	fc8300b_write(handle, devid, 0x1f, 0x74);
+	fc8300b_write(handle, devid, 0x1f, 0x79);
 
 	fc8300b_write(handle, devid, 0x20, 0x21);
 	fc8300b_write(handle, devid, 0x21, 0x10);
@@ -445,9 +446,9 @@ static void fc8300b_tmm_1seg_init(HANDLE handle, DEVICEID devid, u16 filter_cal)
 	fc8300b_write(handle, devid, 0x91, 0xf8);
 
 	fc8300b_write(handle, devid, 0xb2, 0x00);
-	fc8300b_write(handle, devid, 0xb3, 0x04);
+	fc8300b_write(handle, devid, 0xb3, 0x07);
 	fc8300b_write(handle, devid, 0xb4, 0x00);
-	fc8300b_write(handle, devid, 0xb5, 0x02);
+	fc8300b_write(handle, devid, 0xb5, 0x07);
 	fc8300b_write(handle, devid, 0xb6, 0x00);
 	fc8300b_write(handle, devid, 0xb7, 0x07);
 	fc8300b_write(handle, devid, 0xb8, 0x00);
@@ -498,7 +499,7 @@ static void fc8300b_tsb_1seg_init(HANDLE handle, DEVICEID devid, u16 filter_cal)
 	fc8300b_write(handle, devid, 0x1a, 0x42);
 	fc8300b_write(handle, devid, 0x1b, 0x42);
 	fc8300b_write(handle, devid, 0x1d, 0x00);
-	fc8300b_write(handle, devid, 0x1f, 0x74);
+	fc8300b_write(handle, devid, 0x1f, 0x79);
 	fc8300b_write(handle, devid, 0x20, 0x21);
 	fc8300b_write(handle, devid, 0x21, 0x10);
 	fc8300b_write(handle, devid, 0x24, 0x98);
@@ -541,9 +542,9 @@ static void fc8300b_tsb_1seg_init(HANDLE handle, DEVICEID devid, u16 filter_cal)
 	fc8300b_write(handle, devid, 0x91, 0x78);
 
 	fc8300b_write(handle, devid, 0xb2, 0x00);
-	fc8300b_write(handle, devid, 0xb3, 0x04);
+	fc8300b_write(handle, devid, 0xb3, 0x07);
 	fc8300b_write(handle, devid, 0xb4, 0x00);
-	fc8300b_write(handle, devid, 0xb5, 0x04);
+	fc8300b_write(handle, devid, 0xb5, 0x07);
 	fc8300b_write(handle, devid, 0xb6, 0x00);
 	fc8300b_write(handle, devid, 0xb7, 0x07);
 	fc8300b_write(handle, devid, 0xb8, 0x00);
@@ -594,7 +595,7 @@ static void fc8300b_tsb_3seg_init(HANDLE handle, DEVICEID devid, u8 filter_cal)
 	fc8300b_write(handle, devid, 0x1a, 0x42);
 	fc8300b_write(handle, devid, 0x1b, 0x42);
 	fc8300b_write(handle, devid, 0x1d, 0x00);
-	fc8300b_write(handle, devid, 0x1f, 0x74);
+	fc8300b_write(handle, devid, 0x1f, 0x79);
 
 	fc8300b_write(handle, devid, 0x20, 0x21);
 	fc8300b_write(handle, devid, 0x21, 0x10);
@@ -635,9 +636,9 @@ static void fc8300b_tsb_3seg_init(HANDLE handle, DEVICEID devid, u8 filter_cal)
 	fc8300b_write(handle, devid, 0x91, 0x68);
 
 	fc8300b_write(handle, devid, 0xb2, 0x00);
-	fc8300b_write(handle, devid, 0xb3, 0x04);
+	fc8300b_write(handle, devid, 0xb3, 0x07);
 	fc8300b_write(handle, devid, 0xb4, 0x00);
-	fc8300b_write(handle, devid, 0xb5, 0x04);
+	fc8300b_write(handle, devid, 0xb5, 0x07);
 	fc8300b_write(handle, devid, 0xb6, 0x00);
 	fc8300b_write(handle, devid, 0xb7, 0x07);
 	fc8300b_write(handle, devid, 0xb8, 0x00);
@@ -684,7 +685,7 @@ static void fc8300b_13seg_init(HANDLE handle, DEVICEID devid, u8 filter_cal)
 	fc8300b_write(handle, devid, 0x15, 0x46);
 	fc8300b_write(handle, devid, 0x19, 0x53);
 	fc8300b_write(handle, devid, 0x1d, 0x10);
-	fc8300b_write(handle, devid, 0x1f, 0x74);
+	fc8300b_write(handle, devid, 0x1f, 0x79);
 
 	fc8300b_write(handle, devid, 0x20, 0x42);
 	fc8300b_write(handle, devid, 0x21, 0x30);
@@ -727,9 +728,9 @@ static void fc8300b_13seg_init(HANDLE handle, DEVICEID devid, u8 filter_cal)
 	fc8300b_write(handle, devid, 0x90, 0xb2);
 
 	fc8300b_write(handle, devid, 0xb2, 0x00);
-	fc8300b_write(handle, devid, 0xb3, 0x04);
+	fc8300b_write(handle, devid, 0xb3, 0x07);
 	fc8300b_write(handle, devid, 0xb4, 0x00);
-	fc8300b_write(handle, devid, 0xb5, 0x02);
+	fc8300b_write(handle, devid, 0xb5, 0x07);
 	fc8300b_write(handle, devid, 0xb6, 0x00);
 	fc8300b_write(handle, devid, 0xb7, 0x07);
 	fc8300b_write(handle, devid, 0xb8, 0x00);
@@ -783,7 +784,7 @@ static void fc8300b_tmm_13seg_init(HANDLE handle, DEVICEID devid, u8 filter_cal)
 	fc8300b_write(handle, devid, 0x1a, 0x42);
 	fc8300b_write(handle, devid, 0x1c, 0x00);
 	fc8300b_write(handle, devid, 0x1d, 0x00);
-	fc8300b_write(handle, devid, 0x1f, 0x74);
+	fc8300b_write(handle, devid, 0x1f, 0x79);
 
 	fc8300b_write(handle, devid, 0x20, 0x42);
 	fc8300b_write(handle, devid, 0x21, 0x10);
@@ -822,9 +823,9 @@ static void fc8300b_tmm_13seg_init(HANDLE handle, DEVICEID devid, u8 filter_cal)
 	fc8300b_write(handle, devid, 0x91, 0xf8);
 
 	fc8300b_write(handle, devid, 0xb2, 0x00);
-	fc8300b_write(handle, devid, 0xb3, 0x04);
+	fc8300b_write(handle, devid, 0xb3, 0x07);
 	fc8300b_write(handle, devid, 0xb4, 0x00);
-	fc8300b_write(handle, devid, 0xb5, 0x04);
+	fc8300b_write(handle, devid, 0xb5, 0x07);
 	fc8300b_write(handle, devid, 0xb6, 0x00);
 	fc8300b_write(handle, devid, 0xb7, 0x07);
 	fc8300b_write(handle, devid, 0xb8, 0x00);
@@ -1003,8 +1004,8 @@ s32 fc8300b_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300b_write(handle, devid, 0xf4, 0x22);
 
 		fc8300b_write(handle, devid, 0x7c, 0x30);
-		fc8300b_write(handle, devid, 0x7e, 0x05);
-		fc8300b_write(handle, devid, 0x7f, 0x0a);
+		fc8300b_write(handle, devid, 0x7e, 0xff);
+		fc8300b_write(handle, devid, 0x7f, 0xff);
 	} else if (FC8300B_XTAL_FREQ == 24000) {
 		fc8300b_write(handle, devid, 0xee, 0x02);
 		fc8300b_write(handle, devid, 0xf1, 0x52);
@@ -1013,8 +1014,8 @@ s32 fc8300b_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300b_write(handle, devid, 0xf4, 0x2c);
 
 		fc8300b_write(handle, devid, 0x7c, 0x30);
-		fc8300b_write(handle, devid, 0x7e, 0x05);
-		fc8300b_write(handle, devid, 0x7f, 0x0a);
+		fc8300b_write(handle, devid, 0x7e, 0xff);
+		fc8300b_write(handle, devid, 0x7f, 0xff);
 	} else if (FC8300B_XTAL_FREQ == 26000) {
 		fc8300b_write(handle, devid, 0xee, 0x02);
 		fc8300b_write(handle, devid, 0xf1, 0x52);
@@ -1023,8 +1024,8 @@ s32 fc8300b_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300b_write(handle, devid, 0xf4, 0x30);
 
 		fc8300b_write(handle, devid, 0x7c, 0x30);
-		fc8300b_write(handle, devid, 0x7e, 0x05);
-		fc8300b_write(handle, devid, 0x7f, 0x0a);
+		fc8300b_write(handle, devid, 0x7e, 0xff);
+		fc8300b_write(handle, devid, 0x7f, 0xff);
 	} else if (FC8300B_XTAL_FREQ == 27120) {
 		fc8300b_write(handle, devid, 0xee, 0x02);
 		fc8300b_write(handle, devid, 0xf1, 0x52);
@@ -1033,8 +1034,8 @@ s32 fc8300b_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300b_write(handle, devid, 0xf4, 0x32);
 
 		fc8300b_write(handle, devid, 0x7c, 0x30);
-		fc8300b_write(handle, devid, 0x7e, 0x05);
-		fc8300b_write(handle, devid, 0x7f, 0x0a);
+		fc8300b_write(handle, devid, 0x7e, 0xff);
+		fc8300b_write(handle, devid, 0x7f, 0xff);
 	} else if (FC8300B_XTAL_FREQ == 32000) {
 		fc8300b_write(handle, devid, 0xee, 0x02);
 		fc8300b_write(handle, devid, 0xf1, 0x53);
@@ -1043,8 +1044,8 @@ s32 fc8300b_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300b_write(handle, devid, 0xf4, 0x1a);
 
 		fc8300b_write(handle, devid, 0x7c, 0x30);
-		fc8300b_write(handle, devid, 0x7e, 0x05);
-		fc8300b_write(handle, devid, 0x7f, 0x0a);
+		fc8300b_write(handle, devid, 0x7e, 0xff);
+		fc8300b_write(handle, devid, 0x7f, 0xff);
 	} else if (FC8300B_XTAL_FREQ == 37200) {
 		fc8300b_write(handle, devid, 0xee, 0x02);
 		fc8300b_write(handle, devid, 0xf1, 0x53);
@@ -1053,8 +1054,8 @@ s32 fc8300b_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300b_write(handle, devid, 0xf4, 0x20);
 
 		fc8300b_write(handle, devid, 0x7c, 0x30);
-		fc8300b_write(handle, devid, 0x7e, 0x05);
-		fc8300b_write(handle, devid, 0x7f, 0x0a);
+		fc8300b_write(handle, devid, 0x7e, 0xff);
+		fc8300b_write(handle, devid, 0x7f, 0xff);
 	} else if (FC8300B_XTAL_FREQ == 37400) {
 		fc8300b_write(handle, devid, 0xee, 0x02);
 		fc8300b_write(handle, devid, 0xf1, 0x53);
@@ -1063,8 +1064,8 @@ s32 fc8300b_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300b_write(handle, devid, 0xf4, 0x21);
 
 		fc8300b_write(handle, devid, 0x7c, 0x30);
-		fc8300b_write(handle, devid, 0x7e, 0x05);
-		fc8300b_write(handle, devid, 0x7f, 0x0a);
+		fc8300b_write(handle, devid, 0x7e, 0xff);
+		fc8300b_write(handle, devid, 0x7f, 0xff);
 	}
 
 	if (devid == DIV_BROADCAST) {
@@ -1079,7 +1080,7 @@ s32 fc8300b_tuner_init(HANDLE handle, DEVICEID devid,
 		fc8300b_set_freq(handle, devid, 545143);
 
 		fc8300b_write(handle, devid, 0x1e, 0x10);
-		fc8300b_write(handle, devid, 0x1f, 0xf2);
+		fc8300b_write(handle, devid, 0x1f, 0xf9);
 		fc8300b_write(handle, devid, 0x78, 0x37);
 
 		fc8300b_write(handle, devid, 0x04, 0x12);
@@ -1100,7 +1101,7 @@ s32 fc8300b_tuner_init(HANDLE handle, DEVICEID devid,
 		}
 
 		fc8300b_write(handle, devid, 0x1e, 0x00);
-		fc8300b_write(handle, devid, 0x1f, 0x72);
+		fc8300b_write(handle, devid, 0x1f, 0x79);
 		fc8300b_write(handle, devid, 0x78, 0x31);
 		fc8300b_write(handle, devid, 0x04, 0x10);
 		fc8300b_write(handle, devid, 0x22, 0x00);
@@ -1149,7 +1150,7 @@ static void fc8300b_set_freq_13seg(HANDLE handle, DEVICEID devid, u32 freq)
 
 	fc8300b_write(handle, devid, 0xe9, b_ch_mode_4[xtal_freq][i][1]);
 	fc8300b_write(handle, devid, 0x52, b_ch_mode_4[xtal_freq][i][2]);
-	fc8300b_write(handle, devid, 0x1f, 0x74);
+	fc8300b_write(handle, devid, 0x1f, 0x79);
 }
 
 static void fc8300b_set_freq_tmm_13seg(HANDLE handle, DEVICEID devid, u32 freq)
@@ -1243,7 +1244,7 @@ s32 fc8300b_set_freq(HANDLE handle, DEVICEID devid, u32 freq)
 		} else if (tf_offset[0][11] < freq) {
 			fc8300b_write(handle, devid, 0x1c, 0x10);
 		} else {
-			for (i = 0; i < 11; i++) {
+			for (i = 0; i < 12; i++) {
 				if ((tf_offset[0][i] < freq) &&
 					(tf_offset[0][i + 1] >= freq))
 					break;

@@ -31,7 +31,7 @@ extern "C" {
 
 /* #define BBM_I2C_SPI */
 #define BBM_I2C_TSIF
-#define BBM_INT_LOW_ACTIVE
+/* #define BBM_INT_LOW_ACTIVE */
 /* #define BBM_AUX_INT */
 /* #define BBM_NULL_PID_FILTER */
 /* #define BBM_FAIL_FRAME */
@@ -39,7 +39,7 @@ extern "C" {
 /* #define BBM_2_DIVERSITY */
 /* #define BBM_4_DIVERSITY */
 /* #define BBM_DESCRAMBLER */
-/* #define BBM_SPI_30M */
+/* #define BBM_SPI_30M */ /* ONLY CS */
 /* #define BBM_I2C_PARALLEL_TSIF */
 /* #define BBM_BRAZIL_FREQ */
 
@@ -264,15 +264,30 @@ extern "C" {
 #define BBM_SFS_FTS_ERR_MAX_3SEG    0x2015
 #define BBM_SFS_MTH                 0x2016
 #define BBM_IIFOECFG_EARLYSTOP_THM  0x2021
+#define BBM_CID_THRESH_13SEG        0x2097
 
 	/* FTS */
+#define BBM_CFTSCFG_CACPGPOWTH_13SEG        0x2502
+#define BBM_CFTSCFG_CACPGDISTTH_13SEG       0x2505
+#define BBM_CFTSCFG_CIRPGDISTTH_13SEG       0x250e
+#define BBM_CFTSCFG_CIRPGDISTMAX_13SEG      0x2514
+#define BBM_CFTSCFG_ORDERFMDISTTH_13SEG     0x2518
+#define BBM_CFTSCFG_ORDERMDSDISTTH_13SEG    0x251e
+#define BBM_CFTSCFG_CIRMRGDISTTH_13SEG      0x2532
+#define BBM_CFTSCFG_CIRMRGPOWTH_13SEG       0x2535
 #define BBM_CFTSCFG_CIRGRMASKEXPSIZE_13SEG  0x2542
+#define BBM_CFTSCFG_CIRPGPOWTH_13SEG        0x2548
+#define BBM_IFTSCFG_HDDEN                   0x2550
+#define BBM_IFTSCFG_HDDONLOCKCNT            0x2551
+#define BBM_IFTSCFG_HDDOFFLOCKCNT           0x2552
 #define BBM_CFTSCFG_CIRGRMASKEXPSIZE2_13SEG 0x255c
+#define BBM_IFTSCFG_ISIC_ENMFDLIMIT         0x257c
 
 	/* DEMOD */
 #define BBM_SYSTEM_MODE             0x3010
 #define BBM_CENTER_CH_NUM           0x3011
 #define BBM_GMASK_AUTO              0x3022
+#define BBM_MSNR_1D_SWT_EN          0x3032
 #define BBM_RESYNC_ENABLE           0x3040
 #define BBM_HOLD_RST_EN             0x3052
 /* 1/12-SEG auto switch enable */
@@ -287,10 +302,11 @@ extern "C" {
 
 	/* CE */
 #define BBM_WSCN_MSQ                0x4063
-#define BBM_MFD_MAN_VALUE           0x406f
 #define BBM_AD_GAIN_PERIOD          0x4070
+#define BBM_FAIP_MTD_SR_SHIFT_TH    0x417e
 #define BBM_FAIP_MTD_SR_SHIFT_VALUE 0x417f
-#define BBM_CIR_THR_23              0x41c7
+#define BBM_CIR_THR_22              0x41c6
+#define BBM_CIR_MARGIN_22           0x41e5
 #define BBM_MAN_PARTIAL_EN          0x41f1
 #define BBM_MAN_LAYER_A_SEG_NUM     0x41f2
 #define BBM_MAN_LAYER_B_SEG_NUM     0x41f3

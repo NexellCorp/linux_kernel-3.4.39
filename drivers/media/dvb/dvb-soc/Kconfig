@@ -1,5 +1,14 @@
-config NXP_MP2TS_IF
-	tristate "NXP MP2TS driver"
+menuconfig NXP_MP2TS_IF
+	bool "NXP MP2TS driver"
 	depends on I2C
+	default n
+	---help---
+      	  Say Y to select nxp mp2ts driver
+
+config NXP_MP2TS_IF_FCI
+	tristate "Select fc8300 sensor of FCI"
+	depends on NXP_MP2TS_IF
 	help
-	  Support for MP2TS I/F based on the NXP.
+	  Support for fc8300 sensor of FCI.
+
+	  Say Y if you own such a device and want to use it.

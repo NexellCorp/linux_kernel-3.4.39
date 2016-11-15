@@ -16,5 +16,6 @@ fci-objs += src/fci_ringbuffer.o
 fci-objs += src/fci_tun.o
 fci-objs += src/fc8300_tun.o
 fci-objs += src/fc8300b_tun.o
+fci-objs += src/fc8300_nexell_tsif.o
 
 EXTRA_CFLAGS += -Idrivers/misc/fci/inc
