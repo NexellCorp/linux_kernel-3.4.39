@@ -1314,7 +1314,7 @@ struct platform_device nxp_device_ion = {
 #if defined(CONFIG_NXP_ADC)
 
 #ifndef CFG_ADC_SAMPLE_RATE
-#define CFG_ADC_SAMPLE_RATE		200000	/* 200K */
+#define CFG_ADC_SAMPLE_RATE		150000	/* 150K */
 #endif
 static unsigned long adc_sample_rate = CFG_ADC_SAMPLE_RATE;
 
