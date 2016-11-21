@@ -208,6 +208,14 @@ struct nxp_cpufreq_plat_data {
 	long supply_delay_us;
 };
 
+#ifdef CONFIG_ARM_NXP_CPUFREQ
+void nx_dvfs_target_lock(void);
+void nx_dvfs_target_unlock(void);
+#else
+static void nx_dvfs_target_lock(void) { }
+static void nx_dvfs_target_unlock(void) { }
+#endif
+
 /*
  *  SDHC platform data
  */

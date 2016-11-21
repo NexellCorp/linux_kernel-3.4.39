@@ -631,6 +631,20 @@ static unsigned int nxp_cpufreq_get_speed(unsigned int cpu)
 	return rate_khz;
 }
 
+void nx_dvfs_target_lock(void)
+{
+	struct cpufreq_dvfs_info *dvfs = get_dvfs_ptr();
+	mutex_lock(&dvfs->lock);
+}
+EXPORT_SYMBOL(nx_dvfs_target_lock);
+
+void nx_dvfs_target_unlock(void)
+{
+	struct cpufreq_dvfs_info *dvfs = get_dvfs_ptr();
+	mutex_unlock(&dvfs->lock);
+}
+EXPORT_SYMBOL(nx_dvfs_target_unlock);
+
 static int nxp_cpufreq_target(struct cpufreq_policy *policy,
 				unsigned int target_freq,
 				unsigned int relation)
