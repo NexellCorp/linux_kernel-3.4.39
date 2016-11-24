@@ -568,6 +568,28 @@ config VIDEO_MT9D111_CAM
 	  This is a Video4Linux2 sensor-level driver for the Micron
 	  MT9D111 1600x1200 CMOS sensor.
 
+config VIDEO_NVP6114A
+    tristate "Nextchip NVP6114A sensor support(nexell work)"
+    depends on I2C && VIDEO_V4L2
+    ---help---
+	  This is a Video4Linux2 sensor-level driver for Nextchip
+	  NVP6114A AHD sensor.
+choice
+depends on VIDEO_NVP6114A
+prompt "Camera position for NVP6114A"
+default NVP6114A_GENERAL
+config NVP6114A_GENERAL
+	bool "general camera"
+	help
+	  This set as gerneral camera
+
+config NVP6114A_BACKWARD
+	bool "backward camera"
+	depends on SLSIAP_BACKWARD_CAMERA
+	help
+	  This set as backward camera
+endchoice
+
 source "drivers/media/video/thine/Kconfig"
 
 config VIDEO_TCM825X
