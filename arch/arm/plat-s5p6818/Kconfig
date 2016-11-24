@@ -8,7 +8,7 @@ comment "Board features"
 
 choice
     prompt "Platform board"
-    default PLAT_S5P6818_DRONE
+    default PLAT_S5P6818_GENERAL
 
 	config PLAT_S5P6818_VTK
 		bool "VTK: Validation Kit board"
@@ -19,6 +19,11 @@ choice
 		bool "DRONE: Android drone board"
 		help
    	 		Support for the drone board.
+
+	config PLAT_S5P6818_GENERAL
+		bool "GENERAL: Android general board"
+		help
+   	 		Support for the general board.
 
    	config PLAT_S5P6818_FDONE
 		bool "FDONE: Android FDONE board"
