@@ -2337,17 +2337,6 @@ static void nxe2000_sw_ubc_work(struct work_struct *work)
 
 	info->is_sdp_type = dwc_otg_pcd_get_ep0_state();
 
-	if(!info->is_sdp_type)
-	{
-		nxe2000_read(info->dev->parent, NXE2000_REG_EXTIF_GCHGDET, &extif_gchgdet);
-
-		if(extif_gchgdet == 0x08)
-		{
-			info->is_sdp_type = 1;
-		}
-
-	}
-
 	ret = nxe2000_read(info->dev->parent, NXE2000_REG_REGISET2, &val);
 	if (ret < 0) {
 		dev_err(info->dev, "Can't read NXE2000_REG_REGISET2 register. : %d\n", ret);
@@ -5628,7 +5617,7 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 	dwc_otg_pcd_clear_ep0_state();
 	info->pmic_vbuschk_count = PMIC_VBUSCHK_COUNT;
 	info->flag_set_ilimit = false;
-	queue_delayed_work(info->monitor_wqueue, &info->sw_ubc_work, msecs_to_jiffies(1000));
+	queue_delayed_work(info->monitor_wqueue, &info->sw_ubc_work, msecs_to_jiffies(3000));
 #else
 
 	if (info->gpio_pmic_vbus > -1) {
@@ -5636,7 +5625,7 @@ static __devinit int nxe2000_battery_probe(struct platform_device *pdev)
 			dwc_otg_pcd_clear_ep0_state();
 			info->pmic_vbuschk_count = PMIC_VBUSCHK_COUNT;
 			info->flag_set_ilimit = false;
-			queue_delayed_work(info->monitor_wqueue, &info->sw_ubc_work, msecs_to_jiffies(1000));
+			queue_delayed_work(info->monitor_wqueue, &info->sw_ubc_work, msecs_to_jiffies(3000));
 		}
 	}
 #endif
@@ -6555,7 +6544,7 @@ static int __init nxe2000_battery_init(void)
 {
 	return platform_driver_register(&nxe2000_battery_driver);
 }
-subsys_initcall(nxe2000_battery_init);
+module_init(nxe2000_battery_init);
 
 static void __exit nxe2000_battery_exit(void)
 {
