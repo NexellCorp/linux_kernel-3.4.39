@@ -1,0 +1,5 @@
+config MTV_NXB111_TDMB
+    tristate "NXB111 TDMB module support"
+    depends on SPI || I2C
+    help
+      This enables support for the NXB110 module
