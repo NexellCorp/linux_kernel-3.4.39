@@ -1,0 +1,38 @@
+#
+# NXDTV config states
+#
+
+config NXDTV_TDMB
+	bool "Nexell TDMB Broadcast"
+	help
+	  This allows TDMB.
+choice
+	depends on NXDTV_TDMB
+	prompt "TDMB"
+	default NXDTV_TDMB_1CHIP_AV_TPEG
+
+	config NXDTV_TDMB_1CHIP_AV_ONLY
+		bool "1 chip: AV only"
+
+	config NXDTV_TDMB_1CHIP_AV_TPEG
+		bool "1 chip: AV and TPEG"
+
+	config NXDTV_TDMB_2CHIP_AV_TPEG
+		bool "2 chips: AV and TPEG"
+endchoice
+
+
+config NXDTV_ISDBT_ONESEG
+	bool "Nexell ISDB-T 1seg Broadcast"
+	help
+	  This allows ISDB-T 1seg.
+
+config NXDTV_ISDBT_FULLSEG
+	bool "Nexell ISDB-T fullseg Broadcast"
+     	depends on (I2C && NXP_MP2TS_IF)
+    	default n
+	help
+	  This allows ISDB-T fullseg.
+	  
+
+
