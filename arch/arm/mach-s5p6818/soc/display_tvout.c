@@ -5,6 +5,9 @@
 #include <linux/init.h>
 #include <mach/platform.h>
 #include <linux/platform_device.h>
+#include <linux/switch.h>
+
+#include <linux/delay.h>
 
 #include <mach/devices.h>
 #include <mach/soc.h>
@@ -204,6 +207,7 @@ static void _dpc_set_encoder(void)
 
 static void _dac_power_control(bool power_on)
 {
+    // TODO : low 3bit value adjust
     volatile U32 * reg = (U32*)(IO_ADDRESS(0xC00110F8));
     if (power_on)
         *reg = *reg | ((1<<4)); // DAC.PD set LOW !! (LOW : Normal Operation, HIGH : Power Down)
@@ -399,7 +403,7 @@ static void _mlc_set(void)
             SECON );
 
     NX_MLC_SetScreenSize(module, 720, 480);
-    NX_MLC_SetBackground(module, 0xFFFFFF);
+    NX_MLC_SetBackground(module, 0xFF0000);
     NX_MLC_SetSRAMMODE(module, TOPMLC, SLEEPMODE);
     NX_MLC_SetSRAMMODE(module, TOPMLC, RUN);
 
@@ -414,89 +418,429 @@ static void _mlc_set(void)
     NX_MLC_SetLayerRegFinish(module, RGB0);
 }
 
+static U32  cur_tvout_enable_state = 0;
+
+#define NX_CONSOLE_Printf(a...)
+
+static CBOOL	SetDisplayMode( NX_DISPLAY_MODE *pDisMode )
+{
+	NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+	NX_ASSERT( CNULL != pDisMode );
+	NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+
+	NX_DISPLAY_TFTLCD	*pTFTLCD        = pDisMode->pTFTLCD;
+	NX_ENCODER_MODE		*pEncoderMode	= pDisMode->pEncoderMode;
+
+	U32 				dwVCLKDivider=0, dwSyncDelay=0;
+	NX_DPC_DITHER 	    RDither, GDither, BDither;
+	CBOOL				bEmbeddedSync, bRGBMode;
+
+	RDither = GDither = BDither = NX_DPC_DITHER_5BIT;
+	bEmbeddedSync = bRGBMode = CFALSE;
+	NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+
+	U32 g_DPCIndex = 1;
+
+	if( g_DPCIndex )
+	{
+		//NX_DPC_SetHorizontalUpScaler( g_DPCIndex, CTRUE, 320, 720 );		// DPC1's upscale test
+		NX_DPC_SetHorizontalUpScaler( g_DPCIndex, CFALSE, 720, 720 );
+	}
+	else
+		NX_DPC_SetHorizontalUpScaler( g_DPCIndex, CFALSE, 2, 2 );
+
+	//--------------------------------------------------------------------------
+	NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+	NX_DPC_SetDPCEnable( g_DPCIndex, CFALSE );
+	NX_DPC_SetClockDivisorEnable(g_DPCIndex, CFALSE);
+
+	//--------------------------------------------------------------------------
+	// RGB or YUV?
+	NX_ASSERT( CNULL != pTFTLCD );
+	NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+
+	if( (U32)NX_DPC_FORMAT_MRGB888B  >= pTFTLCD->dwOutputMode || (U32)NX_DPC_FORMAT_SRGB888  == pTFTLCD->dwOutputMode)
+	{
+		bRGBMode = CTRUE;
+	}
+	else
+	{
+		bRGBMode = CFALSE;
+	}
+
+	// VCLK = VCLK2 / ?
+	if( ((U32)NX_DPC_FORMAT_RGB888   >= pTFTLCD->dwOutputMode)  ||
+		((U32)NX_DPC_FORMAT_CCIR601A   == pTFTLCD->dwOutputMode)   )
+	{
+		dwVCLKDivider = 1;
+	}
+	else if((U32)NX_DPC_FORMAT_SRGB888 == pTFTLCD->dwOutputMode )
+	{
+		dwVCLKDivider = 6;
+	}
+	else if((U32)NX_DPC_FORMAT_SRGBD8888 == pTFTLCD->dwOutputMode )
+	{
+		dwVCLKDivider = 4;
+	}
+	else
+	{
+		dwVCLKDivider = 2;
+	}
+
+	NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+	// Dithering
+    if( ((U32)NX_DPC_FORMAT_RGB555   == pTFTLCD->dwOutputMode) ||
+		((U32)NX_DPC_FORMAT_MRGB555A == pTFTLCD->dwOutputMode) ||
+		((U32)NX_DPC_FORMAT_MRGB555B == pTFTLCD->dwOutputMode) )
+	{
+		RDither = GDither = BDither = NX_DPC_DITHER_5BIT;
+	}
+	else if( ((U32)NX_DPC_FORMAT_RGB565  == pTFTLCD->dwOutputMode) ||
+			 ((U32)NX_DPC_FORMAT_MRGB565 == pTFTLCD->dwOutputMode) )
+	{
+		RDither = BDither = NX_DPC_DITHER_5BIT;
+		GDither           = NX_DPC_DITHER_6BIT;
+	}
+	else if( ((U32)NX_DPC_FORMAT_RGB666  == pTFTLCD->dwOutputMode) ||
+			 ((U32)NX_DPC_FORMAT_MRGB666 == pTFTLCD->dwOutputMode) )
+	{
+		RDither = GDither = BDither = NX_DPC_DITHER_6BIT;
+	}
+	else
+	{
+		RDither = GDither = BDither = NX_DPC_DITHER_BYPASS;
+	}
+
+	NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+	// Embedded Sync?
+	if( ((U32)NX_DPC_FORMAT_CCIR656 == pTFTLCD->dwOutputMode ) )
+			bEmbeddedSync = CTRUE;
+	else	bEmbeddedSync = CFALSE;
+
+	// Sync Delay?
+	if( bRGBMode )
+	{
+/*			2009/5/28 NXC-1000 databook 26.4.6 Delay
+		if( 0 == g_DPCIndex )   dwSyncDelay = 7 * dwVCLKDivider;    // Primary DPC
+		else                    dwSyncDelay = 4 * dwVCLKDivider;    // Secondary DPC
+*/
+		dwSyncDelay = 7 * dwVCLKDivider;
+
+		//NX_CONSOLE_Printf( "SyncDelay:%d, VCLKDivider:%d \n", dwSyncDelay, dwVCLKDivider );
+
+	}
+	else
+	{
+	    dwSyncDelay = 6 * dwVCLKDivider;
+	}
+
+	NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+	//--------------------------------------------------------------------------
+	// VCLK2 : CLKGEN0
+	NX_DPC_SetClockSource  (g_DPCIndex, 0, pTFTLCD->dwClockSource);		// CLKSRCSEL
+	NX_DPC_SetClockDivisor (g_DPCIndex, 0, pTFTLCD->dwClockDivider);		// CLKDIV
+	NX_DPC_SetClockOutDelay(g_DPCIndex, 0, pTFTLCD->dwClockDelay); 		// OUTCLKDELAY
+
+	// VCLK : CLKGEN1
+	NX_DPC_SetClockSource  (g_DPCIndex, 1, 7);								// CLKSRCSEL  : CLKGEN0's out
+	NX_DPC_SetClockDivisor (g_DPCIndex, 1, dwVCLKDivider);					// CLKDIV
+	NX_DPC_SetClockOutDelay(g_DPCIndex, 1, pTFTLCD->dwClockDelay); 		// OUTCLKDELAY
+
+	//--------------------------------------------------------------------------
+	NX_DPC_PADCLK clock = NX_DPC_PADCLK_VCLK;
+
+	clock = (pTFTLCD->bDualEdge) ? NX_DPC_PADCLK_VCLK : NX_DPC_PADCLK_VCLK2;
+
+	NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+	if(pTFTLCD->dwOutputMode == NX_DPC_FORMAT_SRGBD8888)
+		clock = NX_DPC_PADCLK_VCLK;
+	else if(pTFTLCD->dwOutputMode == NX_DPC_FORMAT_SRGB888)
+		clock = NX_DPC_PADCLK_VCLK3;
+
+
+	NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+	NX_DPC_SetMode(g_DPCIndex,
+					(NX_DPC_FORMAT)pTFTLCD->dwOutputMode,		// FORMAT
+					pTFTLCD->bInterlace,     					// SCANMODE
+					pTFTLCD->bInvertField,   					// POLFIELD
+					bRGBMode, 									// RGBMODE
+					CFALSE,       								// SWAPRB
+					NX_DPC_YCORDER_CbYCrY ,					// YCORDER
+					(bEmbeddedSync) ? CTRUE : CFALSE,			// YCCLIP
+					bEmbeddedSync,  							// Embedded sync
+					clock,		// PADCLKSEL
+					pTFTLCD->bClockRisingEdge,					// PADCLKINV
+					pTFTLCD->bDualView
+					);
+	NX_DPC_SetHSync( g_DPCIndex,
+					pTFTLCD->dwHorActive,
+					pTFTLCD->dwHorSyncWidth,
+					pTFTLCD->dwHorFrontPorch,
+					pTFTLCD->dwHorBackPorch,
+					pTFTLCD->bHorSyncHighActive );
+
+	NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+	NX_DPC_SetVSync( g_DPCIndex,
+					pTFTLCD->dwVerActive,
+					pTFTLCD->dwVerSyncWidth,
+					pTFTLCD->dwVerFrontPorch,
+					pTFTLCD->dwVerBackPorch,
+					pTFTLCD->bVerSyncHighActive,
+					pTFTLCD->dwEvenVerActive,
+					pTFTLCD->dwEvenVerSyncWidth,
+					pTFTLCD->dwEvenVerFrontPorch,
+					pTFTLCD->dwEvenVerBackPorch );
+
+	NX_DPC_SetVSyncOffset( g_DPCIndex,
+							pTFTLCD->dwVerSyncStartOffset,
+							pTFTLCD->dwVerSyncEndOffset,
+							pTFTLCD->dwEvenVerSyncStartOffset,
+							pTFTLCD->dwEvenVerSyncEndOffset );
+
+	NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+	NX_DPC_SetDelay(g_DPCIndex,
+					0,				// DELAYRGB
+					dwSyncDelay,		// DELAYHS_CP1
+					dwSyncDelay,		// DELAYVS_FRAM
+					dwSyncDelay );		// DELAYDE_CP2
+
+	if( bRGBMode )
+	{
+		NX_DPC_SetDither( g_DPCIndex, RDither, GDither, BDither );
+	}
+	else
+	{
+		NX_DPC_SetDither( g_DPCIndex, NX_DPC_DITHER_BYPASS, NX_DPC_DITHER_BYPASS, NX_DPC_DITHER_BYPASS );
+	}
+	NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+
+	//--------------------------------------------------------------------------
+	if( 1 == g_DPCIndex )
+	{
+		if( CNULL != pEncoderMode )
+		{
+			NX_DPC_SetENCEnable( g_DPCIndex, CTRUE );
+			NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+
+    		//NX_TIMER_TickCountDelay( 100 );
+    		//NX_DPC_SetClockDivisorEnable( g_DPCIndex, CTRUE );
+    		//NX_TIMER_TickCountDelay( 100 );
+    		//NX_DPC_SetENCEnable( g_DPCIndex, CFALSE );
+    		//NX_TIMER_TickCountDelay( 100 );
+    		//NX_DPC_SetClockDivisorEnable( g_DPCIndex, CFALSE );
+    		//NX_TIMER_TickCountDelay( 100 );
+			NX_DPC_SetClockDivisorEnable(g_DPCIndex, CTRUE);	// CLKENB : Provides internal operating clock.
+
+    		NX_DPC_SetENCEnable( g_DPCIndex, CTRUE );
+
+			//NX_DPC_SetVideoEncoderPowerDown(  g_DPCIndex, CTRUE );
+			NX_DPC_SetVideoEncoderMode( g_DPCIndex, (NX_DPC_VBS)pEncoderMode->dwBroadcast, pEncoderMode->bPedestal ) ;
+			NX_DPC_SetVideoEncoderFSCAdjust( g_DPCIndex, 0 );
+			NX_DPC_SetVideoEncoderBandwidth( g_DPCIndex, (NX_DPC_BANDWIDTH)pEncoderMode->dwYBandWidth,
+											 (NX_DPC_BANDWIDTH)pEncoderMode->dwCBandWidth ) ;
+			NX_DPC_SetVideoEncoderColorControl( g_DPCIndex, 0, 0, 0, 0, 0 );
+			NX_DPC_SetVideoEncoderTiming( g_DPCIndex,
+										  pEncoderMode->dwHorSyncStart,
+										  pEncoderMode->dwHorSyncEnd,
+										  pEncoderMode->dwVerSyncStart,
+										  pEncoderMode->dwVerSyncEnd );
+			NX_DPC_SetVideoEncoderPowerDown( g_DPCIndex, CFALSE );
+			NX_DPC_SetENCEnable( g_DPCIndex, CTRUE );
+			NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+		}
+		else
+		{
+			NX_DPC_SetENCEnable( g_DPCIndex, CFALSE );
+		}
+	}
+
+	//--------------------------------------------------------------------------
+	NX_DPC_SetClockDivisorEnable(g_DPCIndex, CTRUE);	// CLKENB : Provides internal operating clock.
+
+	NX_CONSOLE_Printf("\n[DEBUG] %s, %d", __func__, __LINE__ );
+	return CTRUE;
+}
+
+static void _dpc_mode1()
+{
+
+	NX_DISPLAY_MODE *pDisMode;
+	U32		modenum;
+
+	U32 g_DisplayMode = 0;
+
+	//------------------------------------------------------------------------------
+	// NXP3200 Internal Video Encoder - NTSC
+	//------------------------------------------------------------------------------
+	// HTotal : 858 = 720 + 16 + 32 + 90
+	// VTotal : 525 = (240 + 4 + 3 + 15) + (240 + 5 + 3 + 15)
+	// Desired CLK = 27,000,000 Hz
+	// XTI / 1 = 27,000,000 / 1 = 27,000,000 Hz
+	// Actual : 27,000,000 / (858 x 525 x 2) = 29.97 Hz
+	//------------------------------------------------------------------------------
+	enum DPC_CLKSRC
+	{
+		DPC_CLKSRC_PLL0     = 0,
+		DPC_CLKSRC_PLL1     = 1,
+		DPC_CLKSRC_PLL2     = 2,
+		DPC_CLKSRC_i_VCLK   = 3,
+		DPC_CLKSRC_HDMICLK  = 4,
+		DPC_CLKSRC_i_VCLK27 = 5,
+		DPC_CLKSRC_PLL3     = 6,
+		DPC_CLKSRC_CLK0     = 7,
+		DPC_CLKSRC_FORCE32  = 0x7fffffff
+	};
+	NX_DISPLAY_TFTLCD  MODE_InternalVideoEncoder_NTSC_TFTLCD =
+	{
+		// Output Format
+		(U32)NX_DPC_FORMAT_CCIR601B,	    // dwOutputMode
+		CTRUE,		// bInterlace			: Interlace Scan mode
+		CFALSE,		// bInvertField			: Bypass
+
+		DPC_CLKSRC_HDMICLK,			// dwClockSource		: HDMI PHY
+		1,			// dwClockDivider		: 1
+		0,			// dwClockDelay			: Not used.
+		CFALSE,		// bClockRisingEdge		: Not used.
+		CFALSE,		// bDualEdge			: Not used.
+
+		CFALSE,		// bDualView			: Not Dual View LCD
+
+		720,		// dwHorActive
+		16,			// dwHorFrontPorch
+		33,			// dwHorSyncWidth
+		90,			// dwHorBackPorch
+		CFALSE,		// bHorSyncHighActive	: Not used.
+
+		240,		// dwVerActive
+		4,			// dwVerFrontPorch
+		3,			// dwVerSyncWidth
+		15,			// dwVerBackPorch
+		CFALSE,		// bVerSyncHighActive	: Not used.
+
+		240,		// dwEvenVerActive
+		4,			// dwEvenVerFrontPorch
+		3,			// dwEvenVerSyncWidth
+		15,			// dwEvenVerBackPorch
+
+		0,			// dwVerSyncStartOffset
+		0,			// dwVerSyncEndOffset
+		0,			// dwEvenVerSyncStartOffset
+		0			// dwEvenVerSyncEndOffset
+	};
+
+	NX_ENCODER_MODE	MODE_InternalVideoEncoder_NTSC_EncoderMode =
+	{
+		(U32)NX_DPC_VBS_NTSC_M ,		// dwOutputMode
+		CTRUE,                          // bPedestal
+		//(U32)NX_DPC_BANDWIDTH_LOW ,	// dwYBandWidth
+		//(U32)NX_DPC_BANDWIDTH_LOW ,	// dwCBandWidth
+		(U32)NX_DPC_BANDWIDTH_HIGH ,	// dwYBandWidth
+		(U32)NX_DPC_BANDWIDTH_HIGH ,	// dwCBandWidth
+
+		63,			// dwHorSyncStart
+		1715,		// dwHorSyncEnd
+		0,			// dwVerSyncStart
+		3			// dwVerSyncEnd
+	};
+
+
+	NX_DISPLAY_MODE 	MODE_InternalVideoEncoder_NTSC =
+	{
+		&MODE_InternalVideoEncoder_NTSC_TFTLCD,         // pTFTLCD
+		&MODE_InternalVideoEncoder_NTSC_EncoderMode		// pEncoderMode
+	};
+
+	pDisMode = &MODE_InternalVideoEncoder_NTSC;
+
+	//--------------------------------------------------------------------------
+	// Share variables
+	// SetDelay
+	U32 	DelayRGB_PVD, DelayHS_CP1, DelayVS_FRAM, DelayDE_CP2;
+	// SetDither
+	NX_DPC_DITHER DitherR, DitherG, DitherB;
+	SetDisplayMode( pDisMode );
+}
+
+static void _dpc_ntsc_on()
+{
+	U32 ModuleIndex = 1; // secondary
+
+    //TODO
+#if 1
+    NX_DPC_SetEncoderSHCPhaseControl    (ModuleIndex, 255);
+    NX_DPC_SetVideoEncoderFSCAdjust(ModuleIndex, 0);
+#endif
+
+	// MLC Disable
+	NX_MLC_SetMLCTopControlParameter(ModuleIndex,
+							CTRUE, // Field Enable(interlace or progressive)
+							CTRUE, // MLC Operation Enable
+							1,  // Layer preference decide
+							SECON );
+	NX_MLC_SetLayerRegFinish(ModuleIndex, TOPMLC);
+	NX_DPC_SetDPCEnable( ModuleIndex, CTRUE );
+	//NX_DPC_SetRegFlush ( ModuleIndex );
+}
+
 static int tvout_enable(struct disp_process_dev *pdev, int enable)
 {
-    printk("%s entered, enable %d\n", __func__, enable);
+    if (enable && (cur_tvout_enable_state == 0)) {
+		cur_tvout_enable_state = 1;
 
-    if (!enable)
-        return 0;
+        _release_reset();
+        _set_hdmi_clk_27MHz();
+        _dpc_clk_enable();
 
-    _release_reset();
-    _set_hdmi_clk_27MHz();
-    _dpc_clk_enable();
-    _dpc_set_encoder();
-    _dac_power_control(false);
-    _dac_power_control(true);
-
-    {
-        NX_DISPLAY_MODE *pDisMode;
-        NX_DISPLAY_TFTLCD  MODE_InternalVideoEncoder_NTSC_TFTLCD =
         {
-            // Output Format
-            (U32)NX_DPC_FORMAT_CCIR601B,	    // dwOutputMode
-            CTRUE,		// bInterlace			: Interlace Scan mode
-            CFALSE,		// bInvertField			: Bypass
+            volatile U32 *vol_reg = (volatile U32 *)IO_ADDRESS(0xC0102DFC);
+            *vol_reg = 0;
+        }
 
-            DPC_CLKSRC_HDMICLK,			// dwClockSource		: HDMI PHY
-            1,			// dwClockDivider		: 1
-            0,			// dwClockDelay			: Not used.
-            CFALSE,		// bClockRisingEdge		: Not used.
-            CFALSE,		// bDualEdge			: Not used.
+        _mlc_set();
 
-            CFALSE,		// bDualView			: Not Dual View LCD
+		NX_DPC_SetEncoderDACPowerEnable( 1, 1 );
+        NX_DPC_SetRegFlush( 1 );
 
-            720,		// dwHorActive
-            16,			// dwHorFrontPorch
-            33,			// dwHorSyncWidth
-            90,			// dwHorBackPorch
-            CFALSE,		// bHorSyncHighActive	: Not used.
+        _dpc_set_encoder();
 
-            240,		// dwVerActive
-            4,			// dwVerFrontPorch
-            3,			// dwVerSyncWidth
-            15,			// dwVerBackPorch
-            CFALSE,		// bVerSyncHighActive	: Not used.
+        _dac_power_control(false);
+        mdelay(100);
+        _dac_power_control(true);
 
-            240,		// dwEvenVerActive
-            4,			// dwEvenVerFrontPorch
-            3,			// dwEvenVerSyncWidth
-            15,			// dwEvenVerBackPorch
+        _dpc_mode1();
+        _dpc_ntsc_on();
 
-            0,			// dwVerSyncStartOffset
-            0,			// dwVerSyncEndOffset
-            0,			// dwEvenVerSyncStartOffset
-            0			// dwEvenVerSyncEndOffset
-        };
+        //[KEUN]160118 dpc enable & interrupt enable
+        NX_DPC_SetDPCEnable(1, CTRUE);
+        NX_DPC_ClearInterruptPendingAll(1);
+        NX_DPC_SetInterruptEnableAll(1, CTRUE);
 
-        NX_ENCODER_MODE	MODE_InternalVideoEncoder_NTSC_EncoderMode =
-        {
-            (U32)NX_DPC_VBS_NTSC_M ,		// dwOutputMode
-            CTRUE,                          // bPedestal
-            //(U32)NX_DPC_BANDWIDTH_LOW ,	// dwYBandWidth
-            //(U32)NX_DPC_BANDWIDTH_LOW ,	// dwCBandWidth
-            (U32)NX_DPC_BANDWIDTH_HIGH ,	// dwYBandWidth
-            (U32)NX_DPC_BANDWIDTH_HIGH ,	// dwCBandWidth
+    } else if (enable == 0){
+		cur_tvout_enable_state = 0;
 
-            63,			// dwHorSyncStart
-            1715,		// dwHorSyncEnd
-            0,			// dwVerSyncStart
-            3			// dwVerSyncEnd
-        };
+        NX_MLC_SetMLCTopControlParameter(1,
+                CTRUE, // Field Enable(interlace or progressive)
+                CFALSE, // MLC Operation Enable
+                1,  // Layer preference decide
+                SECON );
+        NX_MLC_SetLayerRegFinish(1, TOPMLC);
+        NX_DPC_SetEnable_WITH_INTERLACE (1,
+                CFALSE,   ///< [in] display controller enable
+                CFALSE,  ///< [in] output format reb & ycbcr enable : CFALSE : RGB, CTURE : YUV
+                CFALSE,   ///< [in] use NTSC encoder sync
+                CFALSE,   ///< [in] use analog output(use DAC)
+                CFALSE ); ///< [in] Start of active and End of activ
+        NX_DPC_SetRegFlush(1);
+        mdelay(20);
+        NX_DPC_SetEncoderDACPowerEnable(1, 0);
+        NX_DPC_SetRegFlush(1);
 
+        //[KEUN]160118 dpc disable & clock disable
+        NX_DPC_SetDPCEnable(1, CFALSE);
+        NX_DPC_SetClockDivisorEnable(1, CFALSE); 
 
-        NX_DISPLAY_MODE 	MODE_InternalVideoEncoder_NTSC =
-        {
-            &MODE_InternalVideoEncoder_NTSC_TFTLCD,         // pTFTLCD
-            &MODE_InternalVideoEncoder_NTSC_EncoderMode		// pEncoderMode
-        };
-
-        pDisMode = &MODE_InternalVideoEncoder_NTSC;
-        _dpc_set_display_mode(pDisMode);
+        _dac_power_control(false);
     }
-
-    NX_DPC_SetDPCEnable(1, CTRUE);
-
-    _mlc_set();
 
     printk("%s exit\n", __func__);
     return 0;
@@ -556,9 +900,14 @@ static int _create_sysfs(void)
     return 0;
 }
 
->>>>>>> 83322c7... [FIX] tvout dynamic enable/disable
 static int tvout_probe(struct platform_device *pdev)
 {
+    if (_create_sysfs()) {
+        printk(KERN_ERR "%s: failed to create sysfs()\n", __func__);
+        return -1;
+    }
+    tvout_switch.name = "tvout";
+    switch_dev_register(&tvout_switch);
     nxp_soc_disp_register_proc_ops(DISP_DEVICE_TVOUT, &tvout_ops);
     return 0;
 }
