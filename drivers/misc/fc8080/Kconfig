@@ -1,0 +1,5 @@
+config FCI_8080
+    tristate "FC8080 TDMB module support"
+    depends on SPI || I2C
+    help
+      This enables support for the FC8080 module=======
