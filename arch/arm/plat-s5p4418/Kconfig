@@ -28,6 +28,10 @@ choice
 		bool "DRONE: Android lepus board"
 		help
    	 		Support for the drone board.
+	config PLAT_S5P4418_GENERAL
+        bool "GENERAL: Android general board"
+        help
+            Support for the general board.
 
 endchoice
 

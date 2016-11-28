@@ -531,6 +531,7 @@ int usb_match_device(struct usb_device *dev, const struct usb_device_id *id)
 	    id->idProduct != (0xff00 & le16_to_cpu(dev->descriptor.idProduct)))
 		return 0;
 #endif
+
 	return 1;
 }
 

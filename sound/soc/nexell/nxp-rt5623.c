@@ -324,9 +324,12 @@ static struct snd_soc_dai_link alc5623_dai_link = {
 	.cpu_dai_name 	= str_dai_name,			/* nxp_snd_i2s_driver name */
 	.platform_name  = DEV_NAME_PCM,			/* nxp_snd_pcm_driver name */
 	.codec_dai_name = "alc5621-hifi",		/* alc5623_dai's name */
-#if defined( CONFIG_PLAT_S5P4418_AVN_REF ) || \
-	defined( CONFIG_PLAT_S5P6818_AVN_REF ) || \
-	defined( CONFIG_PLAT_S5P4418_NAVI_REF )
+#if defined(CONFIG_PLAT_S5P4418_AVN_REF)	|| \
+	defined(CONFIG_PLAT_S5P4418_NAVI_REF)	|| \
+	defined(CONFIG_PLAT_S5P4418_GENERAL)	|| \
+	defined(CONFIG_PLAT_S5P6818_AVN_REF)	|| \
+	defined(CONFIG_PLAT_S5P6818_AVN_REF_BT)	|| \
+	defined(CONFIG_PLAT_S5P6818_GENERAL)
 	.codec_name 	= "alc562x-codec.3-001a",		/* alc5623_i2c_driver name + '.' + bus + '-' + address(7bit) */
 #else
 	.codec_name 	= "alc562x-codec.0-001a",		/* alc5623_i2c_driver name + '.' + bus + '-' + address(7bit) */

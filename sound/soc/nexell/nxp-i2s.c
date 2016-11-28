@@ -549,6 +549,10 @@ done:
 	pr_debug("snd i2s: PSRAEN=%d, PSVALA=%d \n", PSRAEN, prescale);
 #endif
 #if !defined(CONFIG_SND_NXP_DFS)
+	/* i2s support rates */
+	dai->playback.rates = snd_pcm_rate_to_rate_bit(par->sample_rate);
+	dai->capture.rates = snd_pcm_rate_to_rate_bit(par->sample_rate);
+
 	/* i2s support format */
 	if (RFS == RATIO_256 || BFS != BFS_48BIT) {
 		dai->playback.formats &= ~(SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_U24_LE);
@@ -1035,6 +1039,7 @@ static struct snd_soc_dai_driver i2s_dai_driver = {
 	.suspend	= nxp_i2s_dai_suspend,
 	.resume 	= nxp_i2s_dai_resume,
 	.playback	= {
+		.stream_name	= "Playback",
 		.channels_min 	= 2,
 		.channels_max 	= 2,
 		.formats		= SND_SOC_I2S_FORMATS,
@@ -1043,6 +1048,7 @@ static struct snd_soc_dai_driver i2s_dai_driver = {
 		.rate_max 		= 1562500,
 		},
 	.capture 	= {
+		.stream_name	= "Capture",
 		.channels_min 	= 2,
 		.channels_max 	= 2,
 		.formats		= SND_SOC_I2S_FORMATS,

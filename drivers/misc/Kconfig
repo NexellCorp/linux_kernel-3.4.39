@@ -564,6 +564,8 @@ source "drivers/misc/ti-st/Kconfig"
 source "drivers/misc/lis3lv02d/Kconfig"
 source "drivers/misc/carma/Kconfig"
 source "drivers/misc/altera-stapl/Kconfig"
+source "drivers/misc/coda960/Kconfig"
+source "drivers/misc/nxb110/Kconfig"
 
 config SLSIAP_BACKWARD_CAMERA
     bool "SLSIAP Fast Preview of Backward Camera"
@@ -573,4 +575,10 @@ config SLSIAP_BACKWARD_CAMERA
       If you say yes here, you can view camera as soon as kernel booting, and
       this driver switch on/off camera by gpio interrupt
 
+config FCI_FC8300
+    bool "Support FCI FC8300 ISDBT MOUDULE"
+    depends on (I2C && NXP_MP2TS_IF)
+    default n
+    help
+        support fci fc8300 isdbt.
 endmenu
