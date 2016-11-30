@@ -34,10 +34,11 @@
 #include <linux/regulator/consumer.h>
 #include <linux/reboot.h>
 #include <linux/syscalls.h>
+#include <linux/delay.h>
 
-/*
-#define	pr_debug	printk
-*/
+
+//#define	pr_debug	printk
+
 
 #define DRVNAME	"nxp-adc-tmp"
 #define STEP_FREQ	100000
@@ -95,21 +96,23 @@ struct nxp_adc_tmp {
 
 /* initialize table for register value matching with tmp_value */
 static int tmp_table[][2] = {
-
-//	[0]  = {12900, 20}, // 0
-//	[1]  = {12200, 25}, // 0
-	[0]  = {11500, 30},
-	[1]  = {10700, 35}, 
-	[2]  = { 9900, 40}, 
-	[3]  = { 9100, 45},
-	[4]  = { 8400, 50},
-	[5]  = { 7700, 55},
-	[6]  = { 7000, 60}, 
-	[7]  = { 6300, 65}, 
-	[8] =  { 5700, 70},
-	[9] =  { 5200, 75},
-	[10] = { 4700, 80},
-	[11] = { 4200, 85}  
+// R1 : 4.7K
+    [0]  = {2786, 25},
+    [1]  = {2615, 30},
+    [2]  = {2440, 35},
+    [3]  = {2263, 40},
+    [4]  = {2088, 45},
+    [5]  = {1918, 50},
+    [6]  = {1753, 55},
+    [7]  = {1597, 60},
+    [8]  = {1450, 65},
+    [9]  = {1311, 70},
+    [10] = {1187, 75},
+    [11] = {1071, 80},
+    [12] = { 966, 85},
+    [13] = { 871, 90},
+    [14] = { 786, 95},
+    [15] = { 709, 100}
 };
 
 #define TEMP_TABLAE_SIZE	ARRAY_SIZE(tmp_table)
@@ -201,6 +204,43 @@ static void tmp_cpufreq_register(struct nxp_adc_tmp *thermal)
 	cpufreq_register_notifier(nb, CPUFREQ_POLICY_NOTIFIER);
 }
 
+#define MAX_NUM_ADC_DATA	10
+#define SORT_C_NUM			3
+static int nxp_sort_adc(struct nxp_adc_tmp *tmp)
+{
+	int i,j,temp;
+	int sample_val[MAX_NUM_ADC_DATA];
+	int err=0;
+	int avg=0;
+
+	memset(sample_val, 0, sizeof(sample_val));
+
+	for(i=0;i<MAX_NUM_ADC_DATA;i++) {
+		err = iio_st_read_channel_raw(tmp->iio, &sample_val[i]);
+		pr_debug("%s : %d \n",__FUNCTION__, sample_val[i]);
+		mdelay(1);
+		if (0 > err)
+			return -1;
+	}
+
+	for(i=0;i<MAX_NUM_ADC_DATA-1;i++) {
+		for(j=0;j<MAX_NUM_ADC_DATA-1;j++) {
+			if(sample_val[j] > sample_val[j+1]) {
+                temp=sample_val[j];
+                sample_val[j]=sample_val[j+1];
+                sample_val[j+1]=temp;
+            }
+        }
+    }
+
+	for(i=SORT_C_NUM; i<(MAX_NUM_ADC_DATA-SORT_C_NUM) ; i++) {
+		avg += sample_val[i];
+		pr_debug("%s : %d \n",__FUNCTION__, sample_val[i]);
+	}
+
+	return (int) (avg / (MAX_NUM_ADC_DATA-(SORT_C_NUM*2) ));
+}
+
 static long nxp_read_adc_tmp(struct nxp_adc_tmp *tmp)
 {
 	int i = 0, j = 0, val = 0;
@@ -208,12 +248,18 @@ static long nxp_read_adc_tmp(struct nxp_adc_tmp *tmp)
 	int err = 0;
 
 	/* read adc and convert tmp */
+	#if 0
 	err = iio_st_read_channel_raw(tmp->iio, &val);
 	if (0 > err)
 		return -1;
 
+	#else
+	val = nxp_sort_adc(tmp);
+	#endif
 	tmp->adc_value = val;
-	voltage = (18*val*1000)/4096;
+//	voltage = (18*val*1000)/4096;
+	voltage = tmp->adc_value;
+
 	/*
 	 * according to Register Voltage table,
 	 * calculate board tmp_value.
@@ -228,9 +274,9 @@ static long nxp_read_adc_tmp(struct nxp_adc_tmp *tmp)
 	}
 
 	if (i == TEMP_TABLAE_SIZE) {
-		tmp->tmp_value = 90;
+		tmp->tmp_value = 105;
 	} else if (j == 0) {
-		tmp->tmp_value = 30;
+		tmp->tmp_value = 20;
 	} else {
 		int n = tmp_table[i-1][0] - j;
 		tmp->tmp_value = tmp_table[i-1][1];
@@ -302,7 +348,7 @@ static void nxp_adc_tmp_monfn(struct work_struct *work)
 		goto exit_mon;
 
 	temp = nxp_read_adc_tmp(tmp);
-	if(temp < tmp_table[0][1] ){
+	if(temp <tmp_table[0][1] ){
 		goto exit_mon;
 	}
 
@@ -594,7 +640,7 @@ static int __devinit nxp_adc_tmp_probe(struct platform_device *pdev)
 //		printk("%s: failed to regulator_get() for vdd_core_1.2V", __func__);
 
 	INIT_DELAYED_WORK(&tmp->mon_work, nxp_adc_tmp_monfn);
-//	tmp->core_voltage_down_workqueue = create_singlethread_workqueue("Core voltage down monitor");
+//	tp->core_voltage_down_workqueue = create_singlethread_workqueue("Core voltage down monitor");
 //	INIT_DELAYED_WORK_DEFERRABLE(&tmp->core_down_work, nxp_core_down);
 	schedule_delayed_work(&tmp->mon_work, msecs_to_jiffies(1));
 //	queue_delayed_work(tmp->core_voltage_down_workqueue, &tmp->core_down_work, 15*HZ);
