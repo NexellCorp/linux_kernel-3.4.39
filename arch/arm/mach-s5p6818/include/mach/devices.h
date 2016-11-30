@@ -206,6 +206,14 @@ struct nxp_cpufreq_plat_data {
 	long supply_delay_us;
 };
 
+#ifdef CONFIG_ARM_NXP_CPUFREQ
+extern void nx_dvfs_target_lock(void);
+extern void nx_dvfs_target_unlock(void);
+#else
+static void nx_dvfs_target_lock(void) { }
+static void nx_dvfs_target_unlock(void) { }
+#endif
+
 /*
  *  SDHC platform data
  */
@@ -312,6 +320,7 @@ struct nxp_ehci_platdata {
 struct nxp_ohci_platdata {
 	int (*phy_init)(struct platform_device *pdev, int type);
 	int (*phy_exit)(struct platform_device *pdev, int type);
+	int resume_delay_time;	/* unit ms, more than 100 ms */
 };
 
 /*

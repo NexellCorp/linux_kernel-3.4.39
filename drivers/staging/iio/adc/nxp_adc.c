@@ -1,11 +1,11 @@
 /*
- * (C) Copyright 2009
- * jung hyun kim, Nexell Co, <jhkim@nexell.co.kr>
+ * Copyright (C) 2016  Nexell Co., Ltd.
+ * Author: Bon-gyu, KOO <freestyle@nexell.co.kr>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -13,11 +13,8 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-//#define DEBUG
 
 #include <linux/module.h>
 #include <linux/platform_device.h>
@@ -44,56 +41,56 @@
 #include "nxp_adc.h"
 
 #ifdef CONFIG_ARCH_S5P4418
-//#define ADC_USING_PROTOTYPE
-#else /* CONFIG_ARCH_S5P6818 */
-//#define ADC_USING_PROTOTYPE
-#endif
-
-#ifdef CONFIG_ARCH_S5P4418
-#define ADC_LOCK_INIT(LOCK)			spin_lock_init(LOCK)
+#define ADC_LOCK_INIT(LOCK)		spin_lock_init(LOCK)
 #define ADC_LOCK(LOCK, FLAG)		spin_lock_irqsave(LOCK, FLAG)
 #define ADC_UNLOCK(LOCK, FLAG)		spin_unlock_irqrestore(LOCK, FLAG)
 #else	/* CONFIG_ARCH_S5P6818 */
-#define ADC_LOCK_INIT(LOCK)			do { } while (0)
+#define ADC_LOCK_INIT(LOCK)		do { } while (0)
 #define ADC_LOCK(LOCK, FLAG)		do { } while (0)
 #define ADC_UNLOCK(LOCK, FLAG)		do { } while (0)
 #endif
+
+#ifdef CONFIG_ARM_NXP_CPUFREQ
+#else
+#endif
+
+#define ADC_ACCESS_DELAY		80 // ns
+
+#define	ADC_HW_RESET()	do { nxp_soc_peri_reset_set(RESET_ID_ADC); } while (0)
 
 
 /*
  * ADC data
  */
 struct nxp_adc_info {
+	struct nxp_adc_data *data;
 	void __iomem *adc_base;
-	ulong clock_rate;
+	ulong clk_rate;
 	ulong sample_rate;
-	ulong max_sampele_rate;
-	ulong min_sampele_rate;
+	ulong max_sample_rate;
+	ulong min_sample_rate;
+	ulong polling_wait;
 	int		value;
 	int		prescale;
-	spinlock_t	lock;
 	struct completion completion;
-	int support_interrupt;
 	int irq;
 	struct iio_map *map;
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-	struct iio_dev *iio;
-	struct workqueue_struct *monitoring_wqueue;
-	struct delayed_work monitoring_work;
-
-	int board_temperature;
-	int tmp_voltage;
-	int prev_board_temperature;
-
-	int isValid;
-	int bFirst;
-	int isCheckedCount;
-	struct notifier_block pm_notifier;
-	unsigned long resume_state;
-#endif
+	spinlock_t	lock;
 };
 
-#define	STATE_RESUME_DONE	0
+struct nxp_adc_data {
+	int version;
+
+	int (*adc_con)(struct nxp_adc_info *adc);
+	int (*read_polling)(struct nxp_adc_info *adc, int ch);
+	int (*read_val)(struct iio_dev *indio_dev,
+			struct iio_chan_spec const *chan,
+			int *val,
+			int *val2,
+			long mask);
+};
+
+static int after_powerup;
 
 static const char *str_adc_ch[] = {
 	"adc.0", "adc.1", "adc.2", "adc.3",
@@ -105,11 +102,11 @@ static const char *str_adc_label[] = {
 	"ADC4", "ADC5", "ADC6", "ADC7",
 };
 
-#define ADC_CHANNEL_SPEC(_id) {	\
+#define ADC_CHANNEL_SPEC(_id) {		\
 	.type = IIO_VOLTAGE,		\
-	.indexed = 1,				\
-	.channel = _id,				\
-	.scan_index = _id,			\
+	.indexed = 1,			\
+	.channel = _id,			\
+	.scan_index = _id,		\
 }
 
 static struct iio_chan_spec nxp_adc_iio_channels [] = {
@@ -150,147 +147,260 @@ static struct iio_map nxp_adc_iio_maps [] = {
 extern int iio_map_array_register(struct iio_dev *indio_dev, struct iio_map *maps);
 extern int iio_map_array_unregister(struct iio_dev *indio_dev, struct iio_map *maps);
 
+static int setup_adc_con(struct nxp_adc_info *adc)
+{
+	if (adc->data->adc_con)
+		adc->data->adc_con(adc);
+
+	return 0;
+}
+
 /*
  * ADC functions
  */
-#ifdef CONFIG_NXP_ADC_INTERRUPT
-static irqreturn_t nxp_adc_isr(int irq, void *dev_id)
+static irqreturn_t nxp_adc_v2_isr(int irq, void *dev_id)
 {
 	struct nxp_adc_info *adc = (struct nxp_adc_info *)dev_id;
-	struct adc_register *reg = adc->adc_base;
+	void __iomem *reg = adc->adc_base;
 
-	__raw_writel(1, &reg->ADCINTCLR);
+	writel(ADC_V2_INTCLR_CLR, ADC_V2_INTCLR(reg));	/* pending clear */
+	adc->value = readl(ADC_V2_DAT(reg));	/* get value */
 
-	adc->value = __raw_readl(&reg->ADCDAT);	/* get */
 	complete(&adc->completion);
+
 	return IRQ_HANDLED;
 }
-#endif
 
-/*
- * XXX Do not use in release version XXX
- */
-#ifdef DEBUG
-static void nxp_adc_dump_regs(struct nxp_adc_info *adc)
-{
-	struct adc_register *reg = adc->adc_base;
-	struct adc_register adc_regs;
-
-	adc_regs.ADCCON = reg->ADCCON;
-	adc_regs.ADCDAT = reg->ADCDAT;
-	adc_regs.ADCINTENB = reg->ADCINTENB;
-	adc_regs.ADCINTCLR = reg->ADCINTCLR;
-#ifdef CONFIG_ARCH_S5P6818
-	adc_regs.ADCPRESCON = reg->ADCPRESCON;
-#endif
-
-#ifdef CONFIG_ARCH_S5P4418
-	pr_info("CON:%08X, DAT:%08X, INTENB:%08X, INTCLR:%08x \n",
-		adc_regs.ADCCON, adc_regs.ADCDAT, adc_regs.ADCINTENB, adc_regs.ADCINTCLR);
-#else /* CONFIG_ARCH_S5P6818 */
-	pr_info("CON:%08X, DAT:%08X, INTENB:%08X, INTCLR:%08x, PRESCON:%08x \n",
-		adc_regs.ADCCON, adc_regs.ADCDAT, adc_regs.ADCINTENB, adc_regs.ADCINTCLR, adc_regs.ADCPRESCON);
-#endif
-}
-#else
-static void nxp_adc_dump_regs(struct nxp_adc_info *adc) { }
-#endif
-
-
-#define	ADC_HW_RESET()		do { nxp_soc_peri_reset_set(RESET_ID_ADC); } while (0)
-
-
-static int __turn_around_invalid_first_read(struct nxp_adc_info *adc)
+static void nxp_adc_v1_ch_start(void __iomem *reg, int ch)
 {
 	unsigned int adcon = 0;
-	struct adc_register *reg = adc->adc_base;
-	volatile int value = 0;
-	unsigned long wait = loops_per_jiffy * (HZ/10);
 
-	adcon  = __raw_readl(&reg->ADCCON) & ~(0x07 << ASEL_BITP) & ~(0x01 << ADEN_BITP);
-	adcon |= 0 << ASEL_BITP;	// channel
-	__raw_writel(adcon, &reg->ADCCON);
+	adcon = readl(ADC_V1_CON(reg)) & ~ADC_V1_CON_ASEL(7);
+	adcon &= ~ADC_V1_CON_ADEN;
+	adcon |= ADC_V1_CON_ASEL(ch);	/* channel */
+	writel(adcon, ADC_V1_CON(reg));
+	adcon = readl(ADC_V1_CON(reg));
 
-	adcon |= 1 << ADEN_BITP;	// start
-	__raw_writel(adcon, &reg->ADCCON);
+	adcon |= ADC_V1_CON_ADEN;	/* start */
+	writel(adcon, ADC_V1_CON(reg));
+}
 
-	__raw_writel(0x1, &reg->ADCINTCLR);
-	__raw_writel(0x1, &reg->ADCINTENB);
+static int nxp_adc_v1_read_polling(struct nxp_adc_info *adc, int ch)
+{
+	void __iomem *reg = adc->adc_base;
+	unsigned long wait = adc->polling_wait;
+	unsigned long flags = 0;
+
+	unsigned long need_delay;
+
+	ADC_LOCK(&adc->lock, flags);
+
+	nxp_adc_v1_ch_start(reg, ch);
+
+	dsb();
+	while (wait > 0) {
+		if (!(readl(ADC_V1_CON(reg)) & ADC_V1_CON_ADEN)) {
+			/* get value */
+			adc->value = readl(ADC_V1_DAT(reg));
+			/* pending clear */
+			writel(ADC_V1_INTCLR_CLR, ADC_V1_INTCLR(reg));
+			break;
+		}
+		wait--;
+
+		dsb();
+	}
+
+	need_delay = 1000000000 / (adc->clk_rate) * (adc->prescale) * 5;
+	need_delay = DIV_ROUND_UP(need_delay, 1000);
+
+	ADC_UNLOCK(&adc->lock, flags);
+
+	if (wait == 0)
+		return -ETIMEDOUT;
+
+	usleep_range(need_delay, need_delay);
+
+	return 0;
+}
+
+static int nxp_adc_v1_adc_con(struct nxp_adc_info *adc)
+{
+	unsigned int adcon = 0;
+	void __iomem *reg = adc->adc_base;
+
+	adcon = ADC_V1_CON_APSV(adc->prescale);
+	adcon &= ~ADC_V1_CON_STBY;
+	writel(adcon, ADC_V1_CON(reg));
+	adcon |= ADC_V1_CON_APEN;	/* after APSV setting */
+	writel(adcon, ADC_V1_CON(reg));
+
+	/* ********************************************************
+	 * Turn-around invalid value after Power On
+	 * ********************************************************/
+	if (after_powerup) {
+		nxp_adc_v1_read_polling(adc, 0);
+		adc->value = 0;
+
+		writel(ADC_V1_INTCLR_CLR, ADC_V1_INTCLR(reg));
+		writel(ADC_V1_INTENB_ENB, ADC_V1_INTENB(reg));
+	}
+
+	return 0;
+}
+
+static int nxp_adc_v1_read_val(struct iio_dev *indio_dev,
+		struct iio_chan_spec const *chan,
+		int *val,
+		int *val2,
+		long mask)
+{
+	struct nxp_adc_info *adc = iio_priv(indio_dev);
+	int ch = chan->channel;
+	int ret = 0;
+
+	INIT_COMPLETION(adc->completion);
+
+	if (adc->data->read_polling)
+		ret = adc->data->read_polling(adc, ch);
+	if (ret < 0) {
+		dev_warn(&indio_dev->dev,
+				"Conversion timed out! resetting....\n");
+		ADC_HW_RESET();
+		setup_adc_con(adc);
+		ret = -ETIMEDOUT;
+	}
+
+	return ret;
+}
+
+static const struct nxp_adc_data nxp_adc_s5p4418_data = {
+	.version	= 1,
+	.adc_con	= nxp_adc_v1_adc_con,
+	.read_polling	= nxp_adc_v1_read_polling,
+	.read_val	= nxp_adc_v1_read_val,
+};
+
+static void nxp_adc_v2_ch_start(void __iomem *reg, int ch)
+{
+	unsigned int adcon = 0;
+
+	adcon = readl(ADC_V2_CON(reg)) & ~ADC_V2_CON_ASEL(7);
+	adcon &= ~ADC_V2_CON_ADEN;
+	adcon |= ADC_V2_CON_ASEL(ch);	/* channel */
+	writel(adcon, ADC_V2_CON(reg));
+	adcon = readl(ADC_V2_CON(reg));
+
+	adcon |= ADC_V2_CON_ADEN;	/* start */
+	writel(adcon, ADC_V2_CON(reg));
+}
+
+static int nxp_adc_v2_read_polling(struct nxp_adc_info *adc, int ch)
+{
+	void __iomem *reg = adc->adc_base;
+	unsigned long wait = adc->polling_wait;
+	unsigned long flags = 0;
+
+	ADC_LOCK(&adc->lock, flags);
+
+	nxp_adc_v2_ch_start(reg, ch);
 
 	while (wait > 0) {
-		if (__raw_readl(&reg->ADCINTCLR) & (1<<AICL_BITP)) {
-			__raw_writel(0x1, &reg->ADCINTCLR);	/* pending clear */
-			value = __raw_readl(&reg->ADCDAT);	/* get value */
+		if (readl(ADC_V2_INTCLR(reg)) & ADC_V2_INTCLR_CLR) {
+			/* pending clear */
+			writel(ADC_V2_INTCLR_CLR, ADC_V2_INTCLR(reg));
+			/* get value */
+			adc->value = readl(ADC_V2_DAT(reg));
 			break;
 		}
 		wait--;
 	}
+
+	ADC_UNLOCK(&adc->lock, flags);
+
+	if (wait == 0)
+		return -ETIMEDOUT;
+
 	return 0;
 }
 
-#ifdef ADC_USING_PROTOTYPE
-#else
-static int setup_adc_con(struct nxp_adc_info *adc)
+static int nxp_adc_v2_adc_con(struct nxp_adc_info *adc)
 {
-	struct adc_register *reg = adc->adc_base;
 	unsigned int adcon = 0;
-
-#ifdef CONFIG_ARCH_S5P4418
-	adcon = ((adc->prescale & 0xFF) << APSV_BITP) |
-			(0 << ADCON_STBY);
-	__raw_writel(adcon, &reg->ADCCON);
-
-	adcon |= (1 << APEN_BITP);
-	__raw_writel(adcon, &reg->ADCCON);
-#else	/* CONFIG_ARCH_S5P6818 */
 	unsigned int pres = 0;
+	void __iomem *reg = adc->adc_base;
 
-	adcon = ((DATA_SEL_VAL & 0xf) << DATA_SEL_BITP) |
-			((CLK_CNT_VAL & 0xf)  << CLK_CNT_BITP) |
-			(0 << ADCON_STBY);
-	__raw_writel(adcon, &reg->ADCCON);
+	adcon = ADC_V2_CON_DATA_SEL(ADC_V2_DATA_SEL_VAL) |
+		ADC_V2_CON_CLK_CNT(ADC_V2_CLK_CNT_VAL);
+	adcon &= ~ADC_V2_CON_STBY;
+	writel(adcon, ADC_V2_CON(reg));
 
-	pres = ((adc->prescale & 0x3FF) << PRES_BITP);
-	__raw_writel(pres, &reg->ADCPRESCON);
-	pres |= (1 << APEN_BITP);
-	__raw_writel(pres, &reg->ADCPRESCON);
-#endif
+	pres = ADC_V2_PRESCON_PRES(adc->prescale);
+	writel(pres, ADC_V2_PRESCON(reg));
+	pres |= ADC_V2_PRESCON_APEN;
+	writel(pres, ADC_V2_PRESCON(reg));
 
-	/* *****************************************************
+	/* ********************************************************
 	 * Turn-around invalid value after Power On
-	 * *****************************************************/
-	__turn_around_invalid_first_read(adc);
+	 * ********************************************************/
+	if (after_powerup) {
+		nxp_adc_v2_read_polling(adc, 0);
+		adc->value = 0;
 
-
-	if (adc->support_interrupt) {
-		__raw_writel(1, &reg->ADCINTCLR);
-		__raw_writel(1, &reg->ADCINTENB);
-		init_completion(&adc->completion);
+		writel(ADC_V2_INTCLR_CLR, ADC_V2_INTCLR(reg));
+		writel(ADC_V2_INTENB_ENB, ADC_V2_INTENB(reg));
 	}
 
 	return 0;
 }
-#endif
+
+static int nxp_adc_v2_read_val(struct iio_dev *indio_dev,
+		struct iio_chan_spec const *chan,
+		int *val,
+		int *val2,
+		long mask)
+{
+	struct nxp_adc_info *adc = iio_priv(indio_dev);
+	void __iomem *reg = adc->adc_base;
+	int ch = chan->channel;
+	unsigned long timeout;
+	int ret = 0;
+
+	INIT_COMPLETION(adc->completion);
+
+	nxp_adc_v2_ch_start(reg, ch);
+
+	timeout = wait_for_completion_timeout(&adc->completion, ADC_TIMEOUT);
+	if (timeout == 0) {
+		dev_warn(&indio_dev->dev,
+				"Conversion timed out! resetting....\n");
+		ADC_HW_RESET();
+		setup_adc_con(adc);
+		ret = -ETIMEDOUT;
+	}
+
+	return ret;
+}
+
+static const struct nxp_adc_data nxp_adc_s5p6818_data = {
+	.version	= 2,
+	.adc_con	= nxp_adc_v2_adc_con,
+	.read_polling	= nxp_adc_v2_read_polling,
+	.read_val	= nxp_adc_v2_read_val,
+};
+
 
 
 static int nxp_adc_setup(struct nxp_adc_info *adc, struct platform_device *pdev)
 {
-	struct clk *clk = NULL;
-	ulong sample_rate, clk_rate, min_rate;
-	int irq = 0, interrupt = 0, prescale = 0;
+	ulong sample_rate, min_rate;
+	int prescale = 0;
 	int ret = 0;
 
-	clk	= clk_get(&pdev->dev, NULL);
-	if (IS_ERR(clk)) {
-		pr_err("Fail: getting clock ADC !!!\n");
-		return -EINVAL;
-	}
- 	clk_rate = clk_get_rate(clk);
-	clk_put(clk);
-
 	sample_rate = *(ulong *)(pdev->dev.platform_data);
-	prescale = clk_rate/(sample_rate * ADC_MAX_SAMPLE_BITS);
-	min_rate = clk_rate/(ADC_MAX_PRESCALE * ADC_MAX_SAMPLE_BITS);
+
+	prescale = (adc->clk_rate) / (sample_rate * ADC_MAX_SAMPLE_BITS);
+	min_rate = (adc->clk_rate) / (ADC_MAX_PRESCALE * ADC_MAX_SAMPLE_BITS);
 
 	if (sample_rate > ADC_MAX_SAMPLE_RATE ||
 		min_rate > sample_rate) {
@@ -299,66 +409,28 @@ static int nxp_adc_setup(struct nxp_adc_info *adc, struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-#ifdef CONFIG_NXP_ADC_INTERRUPT
-	irq = platform_get_irq(pdev, 0);
-	if ((irq >= 0) || (NR_IRQS > irq)) {
-		ret = request_irq(irq, nxp_adc_isr, 0, DEV_NAME_ADC, adc);
-		if (0 == ret)
-			interrupt = 1;
-		ret = 0;
-	}
-#endif
-
-	adc->clock_rate = clk_rate;
-	adc->support_interrupt = interrupt;
-	adc->irq = irq;
 	adc->sample_rate = sample_rate;
-	adc->max_sampele_rate = ADC_MAX_SAMPLE_RATE;
-	adc->min_sampele_rate = min_rate;
-	adc->prescale = prescale;
+	adc->max_sample_rate = ADC_MAX_SAMPLE_RATE;
+	adc->min_sample_rate = min_rate;
+	adc->prescale = prescale-1;
+	adc->polling_wait = (ADC_MAX_SAMPLE_BITS + 1) * \
+		(1000000000 / (adc->sample_rate * ADC_ACCESS_DELAY));
+
 	ADC_LOCK_INIT(&adc->lock);
 
-#ifdef ADC_USING_PROTOTYPE
-	ADC_HW_RESET();
-
-	NX_ADC_Initialize();
-	NX_ADC_SetBaseAddress(0, (void*)IO_ADDRESS(NX_ADC_GetPhysicalAddress(0)));
- 	NX_ADC_OpenModule(0);
-
-	NX_ADC_SetInputChannel(0, 0);
-	NX_ADC_SetStandbyMode(0, CFALSE);
-	NX_ADC_SetPrescalerValue(0, adc->prescale);
-	NX_ADC_ClearInterruptPendingAll(0);
-	NX_ADC_SetPrescalerEnable(0, CTRUE);
-	NX_ADC_SetInterruptEnableAll(0, CTRUE);
-	#ifdef CONFIG_ARCH_S5P6818
-	NX_ADC_SetADCDataDelay(0, DATA_SEL_VAL);
-	NX_ADC_SetSOCDelay(0, CLK_CNT_VAL);
-	#endif
-
-    pr_debug(" [Standy Mode            ] : %12s 			  \r\n", NX_ADC_GetStandbyMode( 0 ) ? "ADC Power Off(Stand By)" : "ADC Power On" ); 
-    pr_debug(" [Prescaler Divide Value ] : %8d  			  \r\n", NX_ADC_GetPrescalerValue( 0 ) ); 
-    pr_debug(" [Prescaler Divide Enable] : %8s  			  \r\n", NX_ADC_GetPrescalerEnable( 0 ) ? "ENABLE" : "DISABLE" );    
-    pr_debug(" [Interrup Enable Bit    ] : %8s  			  \r\n", NX_ADC_GetInterruptEnable( 0, 0 ) ? "ENABLE" : "DISABLE" );
-
-#else
-	ADC_HW_RESET();
-
 	setup_adc_con(adc);
-#endif
+	init_completion(&adc->completion);
 
-	pr_info("ADC: CHs %d, %ld(%ld ~ %ld) sample rate, %s mode, scale=%d(bit %d)\n",
+	pr_info("ADC: CHs %d, %ld(%ld ~ %ld) sample rate, scale=%d(bit %d)\n",
 		ARRAY_SIZE(nxp_adc_iio_channels), adc->sample_rate,
-		adc->max_sampele_rate, adc->min_sampele_rate,
-		interrupt?"irq":"polling", prescale, ADC_MAX_SAMPLE_BITS);
+		adc->max_sample_rate, adc->min_sample_rate,
+		adc->prescale, ADC_MAX_SAMPLE_BITS);
 
 	return ret;
 }
 
 static void nxp_adc_release(struct nxp_adc_info *adc)
 {
-	if (adc->support_interrupt)
-		free_irq(adc->irq, adc);
 }
 
 static int nxp_read_raw(struct iio_dev *indio_dev,
@@ -368,102 +440,29 @@ static int nxp_read_raw(struct iio_dev *indio_dev,
 				long mask)
 {
 	struct nxp_adc_info *adc = iio_priv(indio_dev);
-	struct adc_register *reg = adc->adc_base;
-	int ch = chan->channel;
-	unsigned long wait = loops_per_jiffy * (HZ/10);
-	volatile unsigned int adcon = 0;
-	volatile int value = 0;
-	unsigned long flags = flags;
+	int ret;
 
-	if (adc->support_interrupt) {
-		mutex_lock(&indio_dev->mlock);
+	mutex_lock(&indio_dev->mlock);
 
-		adcon  = __raw_readl(&reg->ADCCON) & ~(0x07 << ASEL_BITP);
-		adcon |= ch << ASEL_BITP;	// channel
-		__raw_writel(adcon, &reg->ADCCON);
+	nx_dvfs_target_lock();
 
-		adcon |=  1 << ADEN_BITP;	// start
-		__raw_writel(adcon, &reg->ADCCON);
-
-		wait_for_completion(&adc->completion);
-		*val = adc->value;
-
-		mutex_unlock(&indio_dev->mlock);
-	} else {
-#ifdef ADC_USING_PROTOTYPE
-
-		ADC_LOCK(&adc->lock, flags);
-
-		NX_ADC_SetInputChannel(0, ch);
-		NX_ADC_ClearInterruptPendingAll(0);
-		NX_ADC_Start(0);
-
-		while (wait > 0) {
-			if (NX_ADC_GetInterruptPendingAll(0)) {
-				value = NX_ADC_GetConvertedData(0);
-				NX_ADC_ClearInterruptPendingAll(0);
-				break;
-			}
-			wait--;
-		}
-
-		nxp_adc_dump_regs(adc);
-
-		if (0 >= wait) {
-			ADC_UNLOCK(&adc->lock, flags);
-			return -EINVAL;
-		}
-
-		*val = value;
-		ADC_UNLOCK(&adc->lock, flags);
-
-#else
-		ADC_LOCK(&adc->lock, flags);
-
-		adcon  = __raw_readl(&reg->ADCCON) & ~(0x07 << ASEL_BITP) & ~(0x01 << ADEN_BITP);
-		adcon |= ch << ASEL_BITP;	// channel
-		__raw_writel(adcon, &reg->ADCCON);
-
-		adcon |=  1 << ADEN_BITP;	// start
-		__raw_writel(adcon, &reg->ADCCON);
-		
-		__raw_writel(0x1, &reg->ADCINTCLR);
-		__raw_writel(0x1, &reg->ADCINTENB);
-
-		/* *****************************************************
-		 * Set register values direct for test.
-		 * *****************************************************/
-		//#ifdef CONFIG_ARCH_S5P6818
-		//__raw_writel(0x80F9, &reg->ADCPRESCON);
-		//#endif
-		//__raw_writel(0x8180, &reg->ADCCON);
-
-		while (wait > 0) {
-			if (__raw_readl(&reg->ADCINTCLR) & (1<<AICL_BITP)) {
-				__raw_writel(0x1, &reg->ADCINTCLR);	/* pending clear */
-				value = __raw_readl(&reg->ADCDAT);	/* get value */
-				break;
-			}
-			wait--;
-		}
-
-		nxp_adc_dump_regs(adc);
-
-		*val = value;
-
-
-		if (0 >= wait) {
-			ADC_UNLOCK(&adc->lock, flags);
-			return -EINVAL;
-		}
-		ADC_UNLOCK(&adc->lock, flags);
-#endif
+	if (adc->data->read_val) {
+		ret = adc->data->read_val(indio_dev, chan, val, val2, mask);
+		if (ret < 0)
+			goto out;
 	}
 
-	usleep_range (1, 10);
-	pr_debug("%s, ch=%d, val=0x%x\n", __func__, ch, *val);
+	*val = adc->value;
+	*val2 = 0;
+	ret = IIO_VAL_INT;
 
-	return IIO_VAL_INT;
+	pr_debug("%s, ch=%d, val=0x%x\n", __func__, chan->channel, *val);
+
+out:
+	nx_dvfs_target_unlock();
+	mutex_unlock(&indio_dev->mlock);
+
+	return ret;
 }
 
 static const struct iio_info nxp_adc_iio_info = {
@@ -473,6 +472,7 @@ static const struct iio_info nxp_adc_iio_info = {
 
 static int nxp_adc_suspend(struct platform_device *pdev, pm_message_t state)
 {
+	after_powerup = 0;
 	return 0;
 }
 
@@ -481,197 +481,24 @@ static int nxp_adc_resume(struct platform_device *pdev)
 	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
 	struct nxp_adc_info *adc = iio_priv(indio_dev);
 
-#ifdef ADC_USING_PROTOTYPE
-	NX_ADC_SetBaseAddress(0, (void*)IO_ADDRESS(NX_ADC_GetPhysicalAddress(0)));
- 	NX_ADC_OpenModule(0);
-
-	ADC_HW_RESET();
-	//NX_ADC_SetInputChannel(0, ch);
-	NX_ADC_SetStandbyMode(0, CFALSE);
-	NX_ADC_SetPrescalerValue(0, adc->prescale) ;
-	NX_ADC_ClearInterruptPendingAll(0);
-	NX_ADC_SetPrescalerEnable(0, CTRUE);
-	NX_ADC_SetInterruptEnableAll(0, CTRUE);
-	#ifdef CONFIG_ARCH_S5P6818
-	NX_ADC_SetADCDataDelay(0, DATA_SEL_VAL);
-	NX_ADC_SetSOCDelay(0, CLK_CNT_VAL);
-	#endif
-#else
 	ADC_HW_RESET();
 
+	after_powerup = 1;
 	setup_adc_con(adc);
-#endif
+
 	return 0;
 }
-
-
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-int eBoard_temperature = 0;
-int NXP_Get_BoardTemperature(void)
-{
-	return eBoard_temperature;
-}
-EXPORT_SYMBOL_GPL(NXP_Get_BoardTemperature);
-
-static int nxp_cpufreq_pm_notify(struct notifier_block *this,
-        unsigned long mode, void *unused)
-{
-	struct nxp_adc_info *adc = container_of(this,
-					struct nxp_adc_info, pm_notifier);
-
-    switch(mode) {
-    case PM_SUSPEND_PREPARE:
-    	clear_bit(STATE_RESUME_DONE, &adc->resume_state);
-    	break;
-    case PM_POST_SUSPEND:
-    	set_bit(STATE_RESUME_DONE, &adc->resume_state);
-    	break;
-    }
-	return 0;
-}
-
-// initialize table for register value matching with temperature
-static int drone_temperature_table[10][2] =
-{
-	{9900, 40}, // 0
-	{9100, 45},
-	{8400, 50},
-	{7700, 55},
-	{7000, 60}, // 4
-	{6300, 65}, // 5
-	{5700, 70},
-	{5200, 75},
-	{4700, 80},
-	{4200, 85}  // 9
-};
-
-static void nxl_monitor_work_func(struct work_struct *work)
-{
-	struct nxp_adc_info *adc = container_of(work, struct nxp_adc_info, monitoring_work.work);
-	struct iio_chan_spec const *chan;
-	int val = 0;
-	int val2 = 0;
-	// calculate temperature
-	int voltage_table_interval;
-	int interval;
-	int num_grade;
-
-
-	if (!test_bit(STATE_RESUME_DONE, &adc->resume_state))
-		goto exit_mon;
-
-	chan = &nxp_adc_iio_channels[2];
-	nxp_read_raw(adc->iio, chan, &val, &val2, 0);
-
-	adc->tmp_voltage = (18*val*1000)/4096;
-
-	//  according to Register Voltage table, calculate board temperature.
-	for(num_grade=0, interval=0; num_grade<10; num_grade++)
-	{
-		if(adc->tmp_voltage > drone_temperature_table[num_grade][0])
-		{
-			if(num_grade != 0)
-			{
-				interval = (drone_temperature_table[num_grade-1][0] - drone_temperature_table[num_grade][0])/5;
-				break;
-			}
-		}
-	}
-
-	if(num_grade == 10)
-	{
-		adc->board_temperature = 90;
-	}
-	else if(interval == 0)
-	{
-		adc->board_temperature = 40;
-	}
-	else
-	{
-		adc->board_temperature = drone_temperature_table[num_grade-1][1];
-		voltage_table_interval = drone_temperature_table[num_grade-1][0] - interval;
-		for(; voltage_table_interval>drone_temperature_table[num_grade][0]; voltage_table_interval-=interval)
-		{
-			if(adc->tmp_voltage > voltage_table_interval)
-				break;
-			adc->board_temperature++;
-		}
-		if(adc->board_temperature > drone_temperature_table[num_grade][1])
-			adc->board_temperature = drone_temperature_table[num_grade][1];
-	}
-
-	// ignore the temperature value when booting.
-	if(adc->isValid == 0)
-	{
-		if(adc->bFirst == 0)
-		{
-			adc->bFirst = 1;
-			adc->prev_board_temperature = adc->board_temperature;
-		}
-		else
-		{
-			if(adc->prev_board_temperature == adc->board_temperature)
-				adc->isCheckedCount++;
-			else
-				adc->isCheckedCount = 0;
-			adc->prev_board_temperature = adc->board_temperature;
-
-			if(adc->isCheckedCount == 3)
-				adc->isValid = 1;
-		}
-		if(adc->isValid == 0)
-		{
-			queue_delayed_work(adc->monitoring_wqueue, &adc->monitoring_work, HZ);
-			return;
-		}
-	}
-
-
-	// adjust the temperature value .
-	if(adc->prev_board_temperature <= adc->board_temperature)
-	{
-		int gap = adc->board_temperature - adc->prev_board_temperature;
-		if(gap >= 5) // ignore.
-		{
-			adc->board_temperature = adc->prev_board_temperature;
-		}
-		else
-		{
-			adc->prev_board_temperature = adc->board_temperature;
-		}
-	}
-	else
-	{
-		int gap = adc->prev_board_temperature  - adc->board_temperature;
-		if(gap >= 5) // ignore.
-		{
-			adc->board_temperature = adc->prev_board_temperature;
-		}
-		else
-		{
-			adc->prev_board_temperature = adc->board_temperature;
-		}
-	}
-
-	eBoard_temperature = adc->board_temperature;
-
-exit_mon:
-	queue_delayed_work(adc->monitoring_wqueue, &adc->monitoring_work, HZ);
-
-}
-#endif
 
 static int __devinit nxp_adc_probe(struct platform_device *pdev)
 {
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-	static struct notifier_block *pm_notifier;
-#endif
+	struct clk *clk = NULL;
 	struct iio_dev *iio = NULL;
 	struct nxp_adc_info *adc = NULL;
 	struct iio_chan_spec *spec;
 	struct resource	*mem;
 	struct iio_map *map;
-	int i = 0, ret = -ENODEV;
+	int i = 0;
+	int ret = -ENODEV;
 
 	iio = iio_allocate_device(sizeof(struct nxp_adc_info));
 	if (!iio) {
@@ -681,6 +508,12 @@ static int __devinit nxp_adc_probe(struct platform_device *pdev)
 
 	adc = iio_priv(iio);
 
+#ifdef CONFIG_ARCH_S5P4418
+	adc->data = (struct nxp_adc_data *)&nxp_adc_s5p4418_data;
+#else
+	adc->data = (struct nxp_adc_data *)&nxp_adc_s5p6818_data;
+#endif
+
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	adc->adc_base = devm_request_and_ioremap(&pdev->dev, mem);
 	if (!adc->adc_base) {
@@ -688,11 +521,49 @@ static int __devinit nxp_adc_probe(struct platform_device *pdev)
 		goto err_iio_free;
 	}
 
+	after_powerup = 1;
+
+	/* setup: clock */
+	clk	= clk_get(&pdev->dev, NULL);
+	if (IS_ERR(clk)) {
+		pr_err("Fail: getting clock ADC !!!\n");
+		return -EINVAL;
+	}
+	adc->clk_rate = clk_get_rate(clk);
+	clk_put(clk);
+
+	/* setup: reset */
+	ADC_HW_RESET();
+
+	/* setup: irq */
+	if (adc->data->version == 2) {
+		int irq;
+
+		irq = platform_get_irq(pdev, 0);
+		if (irq < 0) {
+			pr_err("failed get irq resource\n");
+			goto err_iio_release;
+		}
+		if ((irq >= 0) || (NR_IRQS > irq)) {
+			ret = devm_request_irq(&pdev->dev, irq, nxp_adc_v2_isr,
+					0, DEV_NAME_ADC, adc);
+			if (ret < 0) {
+				pr_err("failed get irq (%d)\n", irq);
+				goto err_iio_release;
+			}
+		}
+
+		adc->irq = irq;
+	}
+
+	/* setup: adc */
 	ret = nxp_adc_setup(adc, pdev);
 	if (0 > ret) {
 		pr_err("Fail: setup iio ADC device\n");
 		goto err_iio_free;
 	}
+
+	platform_set_drvdata(pdev, iio);
 
 	iio->name = DEV_NAME_ADC;
 	iio->dev.parent = &pdev->dev;
@@ -701,11 +572,9 @@ static int __devinit nxp_adc_probe(struct platform_device *pdev)
 	iio->channels = nxp_adc_iio_channels;
 	iio->num_channels = ARRAY_SIZE(nxp_adc_iio_channels);
 
-	platform_set_drvdata(pdev, iio);
-
 	/*
-	* sys interface : user interface
-	*/
+	 * sys interface : user interface
+	 */
 	spec = nxp_adc_iio_channels;
 	for (i = 0; iio->num_channels > i; i++)
 		spec[i].datasheet_name = str_adc_label[i];
@@ -723,30 +592,12 @@ static int __devinit nxp_adc_probe(struct platform_device *pdev)
 		map[i].adc_channel_label = str_adc_label[i];
 	}
 
-    ret = iio_map_array_register(iio, map);
-    if (ret)
-        goto err_iio_register;
+	ret = iio_map_array_register(iio, map);
+	if (ret)
+		goto err_iio_register;
 
 	adc->map = nxp_adc_iio_maps;
 
-#if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-	adc->isCheckedCount = 0;
-	adc->isValid = 0;
-	adc->bFirst = 0;
-
-	adc->iio = iio;
-	adc->monitoring_wqueue = create_singlethread_workqueue("monitoring_wqueue");
-	INIT_DELAYED_WORK_DEFERRABLE(&adc->monitoring_work, nxl_monitor_work_func);
-	queue_delayed_work(adc->monitoring_wqueue, &adc->monitoring_work, 15*HZ);
-
-	pm_notifier = &adc->pm_notifier;
-	pm_notifier->notifier_call = nxp_cpufreq_pm_notify;
-	if (register_pm_notifier(pm_notifier)) {
-		dev_err(&pdev->dev, "%s: Cannot pm notifier \n", __func__);
-		return -1;
-	}
-	set_bit(STATE_RESUME_DONE, &adc->resume_state);
-#endif
 
 	pr_debug("ADC init success\n");
 
@@ -791,6 +642,6 @@ static struct platform_driver nxp_adc_driver = {
 
 module_platform_driver(nxp_adc_driver);
 
-MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
+MODULE_AUTHOR("Bon-gyu, KOO <freestyle@nexell.co.kr>");
 MODULE_DESCRIPTION("ADC driver for the Nexell");
 MODULE_LICENSE("GPL");

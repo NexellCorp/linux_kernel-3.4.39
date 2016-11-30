@@ -631,6 +631,20 @@ static unsigned int nxp_cpufreq_get_speed(unsigned int cpu)
 	return rate_khz;
 }
 
+void nx_dvfs_target_lock(void)
+{
+	struct cpufreq_dvfs_info *dvfs = get_dvfs_ptr();
+	mutex_lock(&dvfs->lock);
+}
+EXPORT_SYMBOL(nx_dvfs_target_lock);
+
+void nx_dvfs_target_unlock(void)
+{
+	struct cpufreq_dvfs_info *dvfs = get_dvfs_ptr();
+	mutex_unlock(&dvfs->lock);
+}
+EXPORT_SYMBOL(nx_dvfs_target_unlock);
+
 static int nxp_cpufreq_target(struct cpufreq_policy *policy,
 				unsigned int target_freq,
 				unsigned int relation)
@@ -870,7 +884,7 @@ static void *nxp_cpufreq_make_table(struct platform_device *pdev,
 	tb_size = (pdata->table_size ? pdata->table_size : asv_size);
 
 	/* alloc with end table */
-	freq_table = kzalloc((sizeof(*freq_table)*tb_size + 1), GFP_KERNEL);
+	freq_table = kzalloc((sizeof(*freq_table) * (tb_size + 1)), GFP_KERNEL);
 	if (!freq_table) {
 		dev_err(&pdev->dev, "failed allocate freq table !!!\n");
 		return NULL;
@@ -900,7 +914,7 @@ static void *nxp_cpufreq_make_table(struct platform_device *pdev,
 			id++;
 		}
 	} else {
-		for (id = 0; tb_size > id; id++, freq_table++) {
+		for (id = 0; tb_size > id; id++) {
 			dvfs_tables[id][0] = plat_tbs[id][0];	/* frequency */
 			dvfs_tables[id][1] = plat_tbs[id][1];	/* voltage */
 			freq_table[id].index = id;
@@ -932,7 +946,6 @@ static int nxp_cpufreq_set_supply(struct platform_device *pdev,
 				pdata->supply_name);
 		return -1;
 	}
-	dvfs->boot_voltage = regulator_get_voltage(dvfs->volt);
 
 	pm_notifier = &dvfs->pm_notifier;
 	pm_notifier->notifier_call = nxp_cpufreq_pm_notify;
@@ -1027,7 +1040,21 @@ static int nxp_cpufreq_probe(struct platform_device *pdev)
 	printk("DVFS: cpu %s with PLL.%d [tables=%d]\n",
 		dvfs->volt?"DVFS":"DFS", pdata->pll_dev, dvfs->table_size);
 
-	return cpufreq_register_driver(&nxp_cpufreq_driver);
+	ret = cpufreq_register_driver(&nxp_cpufreq_driver);
+
+	/* change boot frequency & voltage */
+#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE
+	if (!ret && dvfs->volt) {
+		struct cpufreq_freqs freqs;
+		freqs.cpu = 0;
+		freqs.new = dvfs->boot_frequency;
+		freqs.old = clk_get_rate(dvfs->clk)/1000;
+		nxp_cpufreq_change_frequency(dvfs, &freqs, false);
+		dvfs->boot_voltage = regulator_get_voltage(dvfs->volt);
+	}
+#endif
+
+	return ret;
 
 err_free_table:
 	if (dvfs)
