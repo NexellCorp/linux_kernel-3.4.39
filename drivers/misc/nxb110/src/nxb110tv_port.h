@@ -1,30 +1,30 @@
-/******************************************************************************** 
+/********************************************************************************
 * (c) COPYRIGHT 2010 NEXELL, Inc. ALL RIGHTS RESERVED.
-* 
-* This software is the property of NEXELL and is furnished under license by NEXELL.                
-* This software may be used only in accordance with the terms of said license.                         
-* This copyright noitce may not be remoced, modified or obliterated without the prior                  
-* written permission of NEXELL, Inc.                                                                 
-*                                                                                                      
-* This software may not be copied, transmitted, provided to or otherwise made available                
-* to any other person, company, corporation or other entity except as specified in the                 
-* terms of said license.                                                                               
-*                                                                                                      
-* No right, title, ownership or other interest in the software is hereby granted or transferred.       
-*                                                                                                      
-* The information contained herein is subject to change without notice and should 
-* not be construed as a commitment by NEXELL, Inc.                                                                    
-* 
-* TITLE 	  : NEXELL TV configuration header file. 
+*
+* This software is the property of NEXELL and is furnished under license by NEXELL.
+* This software may be used only in accordance with the terms of said license.
+* This copyright noitce may not be remoced, modified or obliterated without the prior
+* written permission of NEXELL, Inc.
+*
+* This software may not be copied, transmitted, provided to or otherwise made available
+* to any other person, company, corporation or other entity except as specified in the
+* terms of said license.
+*
+* No right, title, ownership or other interest in the software is hereby granted or transferred.
+*
+* The information contained herein is subject to change without notice and should
+* not be construed as a commitment by NEXELL, Inc.
+*
+* TITLE 	  : NEXELL TV configuration header file.
 *
 * FILENAME    : nxb110tv_port.h
 *
-* DESCRIPTION : 
+* DESCRIPTION :
 *		Configuration for NEXELL TV Services.
 *
 ********************************************************************************/
 
-/******************************************************************************** 
+/********************************************************************************
 * REVISION HISTORY
 *
 *    DATE	  	  NAME				REMARKS
@@ -33,10 +33,10 @@
 * 10/01/2010  Ko, Kevin        Changed the debug message macro names.
 * 09/27/2010  Ko, Kevin        Creat for CS Realease
 *             /Yang, Maverick  1.Reformating for CS API
-*                              2.pll table, ADC clock switching, SCAN function, 
+*                              2.pll table, ADC clock switching, SCAN function,
 *								 FM function added..
-* 04/09/2010  Yang, Maverick   REV1 SETTING 
-* 01/25/2010  Yang, Maverick   Created.                                                   
+* 04/09/2010  Yang, Maverick   REV1 SETTING
+* 01/25/2010  Yang, Maverick   Created.
 ********************************************************************************/
 
 #ifndef __NXB110TV_PORT_H__
@@ -44,7 +44,7 @@
 
 /*=============================================================================
  * Includes the user header files if neccessry.
- *============================================================================*/ 
+ *============================================================================*/
 #if defined(__KERNEL__) /* Linux kernel */
     #include <linux/io.h>
     #include <linux/kernel.h>
@@ -52,17 +52,17 @@
     #include <linux/mm.h>
     #include <linux/mutex.h>
     #include <linux/uaccess.h>
-	
+
 #elif defined(WINCE)
     #include <windows.h>
     #include <drvmsg.h>
-    
+
 #else
-	#include <stdio.h>   
+	#include <stdio.h>
 #endif
 
-#ifdef __cplusplus 
-extern "C"{ 
+#ifdef __cplusplus
+extern "C"{
 #endif
 
 #define NXB110TV_MAX_NUM_DEMOD_CHIP	1
@@ -75,7 +75,7 @@ extern "C"{
 /*============================================================================
 * The slave address for I2C and SPI, the base address for EBI2.
 *===========================================================================*/
-#define NXB110TV_CHIP_ADDR	0x86 
+#define NXB110TV_CHIP_ADDR	0x86
 
 /*============================================================================
 * Modifies the basic data types if neccessry.
@@ -92,7 +92,7 @@ typedef int                 INT;
 typedef unsigned int        UINT;
 typedef long                LONG;
 typedef unsigned long       ULONG;
- 
+
 typedef volatile U8			VU8;
 typedef volatile U16		VU16;
 typedef volatile U32		VU32;
@@ -130,16 +130,16 @@ typedef volatile U32		VU32;
 * Defines the external source freqenecy in KHz.
 * Ex> #define RTV_SRC_CLK_FREQ_KHz	36000 // 36MHz
 *=============================================================================
-* MTV250 : #define RTV_SRC_CLK_FREQ_KHz  32000  //must be defined 
-* MTV350 : #define RTV_SRC_CLK_FREQ_KHz  24576  //must be defined 
+* MTV250 : #define RTV_SRC_CLK_FREQ_KHz  32000  //must be defined
+* MTV350 : #define RTV_SRC_CLK_FREQ_KHz  24576  //must be defined
 *===========================================================================*/
 #define RTV_SRC_CLK_FREQ_KHz			24576//36000//24576
 //#define RTV_SRC_CLK_FREQ_KHz			19200
-	
+
 
 /*============================================================================
 * Define the power type.
-*============================================================================*/  
+*============================================================================*/
 //#define RTV_PWR_EXTERNAL
 #define RTV_PWR_LDO
 //#define RTV_PWR_DCDC
@@ -162,7 +162,7 @@ typedef volatile U32		VU32;
 /*============================================================================
 * Defines the Host interface.
 *===========================================================================*/
-//#define RTV_IF_MPEG2_SERIAL_TSIF // I2C + TSIF Master Mode. 
+//#define RTV_IF_MPEG2_SERIAL_TSIF // I2C + TSIF Master Mode.
 //#define RTV_IF_MPEG2_PARALLEL_TSIF // I2C + TSIF Master Mode. Support only 1seg &TDMB Application!
 //#define RTV_IF_QUALCOMM_TSIF // I2C + TSIF Master Mode
 #define RTV_IF_SPI // AP: SPI Master Mode
@@ -171,7 +171,7 @@ typedef volatile U32		VU32;
 
 //#if defined(RTV_ISDBT_ENABLE)  //Do not use
 //	#ifdef RTV_IF_MPEG2_PARALLEL_TSIF
-	//	#define RTV_FEC_SERIAL_ENABLE  
+	//	#define RTV_FEC_SERIAL_ENABLE
 //	#endif
 //#endif
 
@@ -211,15 +211,15 @@ typedef volatile U32		VU32;
 *===========================================================================*/
 #if 1
 	#define RTV_DBGMSG0(fmt)					printk(fmt)
-	#define RTV_DBGMSG1(fmt, arg1)				printk(fmt, arg1) 
-	#define RTV_DBGMSG2(fmt, arg1, arg2)		printk(fmt, arg1, arg2) 
-	#define RTV_DBGMSG3(fmt, arg1, arg2, arg3)	printk(fmt, arg1, arg2, arg3) 
+	#define RTV_DBGMSG1(fmt, arg1)				printk(fmt, arg1)
+	#define RTV_DBGMSG2(fmt, arg1, arg2)		printk(fmt, arg1, arg2)
+	#define RTV_DBGMSG3(fmt, arg1, arg2, arg3)	printk(fmt, arg1, arg2, arg3)
 #else
 	/* To eliminates the debug messages. */
-	#define RTV_DBGMSG0(fmt)					((void)0) 
-	#define RTV_DBGMSG1(fmt, arg1)				((void)0) 
-	#define RTV_DBGMSG2(fmt, arg1, arg2)		((void)0) 
-	#define RTV_DBGMSG3(fmt, arg1, arg2, arg3)	((void)0) 
+	#define RTV_DBGMSG0(fmt)					((void)0)
+	#define RTV_DBGMSG1(fmt, arg1)				((void)0)
+	#define RTV_DBGMSG2(fmt, arg1, arg2)		((void)0)
+	#define RTV_DBGMSG3(fmt, arg1, arg2, arg3)	((void)0)
 #endif
 /*#### End of Common ###########*/
 
@@ -236,7 +236,7 @@ typedef volatile U32		VU32;
 *===========================================================================*/
 //#if defined(RTV_ISDBT_ENABLE)  //Do not use
 //	#ifdef NXB110TV_CHIP_PKG_WLCSP
-	//	#define RTV_NOTCH_FILTER_ENABLE  
+	//	#define RTV_NOTCH_FILTER_ENABLE
 //	#endif
 //#endif
 
@@ -257,10 +257,10 @@ typedef volatile U32		VU32;
 	#define RTV_TII_PERIOD_1_FRAME
 
 	/* Defines the number of AV service. (0 ~ 1) */
-	#define RTV_MAX_NUM_DAB_AV_SVC	1
+	#define RTV_MAX_NUM_DAB_AV_SVC		1
 
 	/* Defines the number of DATA services. (TSIF: 0 ~ 3, SPI: 0 ~ 4) */
-	#define RTV_MAX_NUM_DAB_DATA_SVC	1
+	#define RTV_MAX_NUM_DAB_DATA_SVC	0
 
 	#if defined(RTV_IF_SERIAL_TSIF) || defined(RTV_IF_SPI_SLAVE) || defined(RTV_IF_TSIF)
 		/*========================================================*/
@@ -314,7 +314,7 @@ typedef volatile U32		VU32;
 ############################################################################*/
 #if defined(RTV_IF_TSIF) || defined(RTV_IF_SPI_SLAVE)
 	/*=================================================================
-	* Defines the TSIF interface for MPEG2 or QUALCOMM TSIF.	 
+	* Defines the TSIF interface for MPEG2 or QUALCOMM TSIF.
 	*================================================================*/
 	//#define RTV_TSIF_FORMAT_1
 	//#define RTV_TSIF_FORMAT_2
@@ -353,14 +353,14 @@ typedef volatile U32		VU32;
 
 	#define	RTV_REG_GET(demod_no, reg)            			(U8)mtv_spi_read(demod_no, (U8)(reg))
 	#define	RTV_REG_BURST_GET(demod_no, reg, buf, size) 	mtv_spi_read_burst(demod_no, (U8)(reg), buf, (size))
-	#define	RTV_REG_SET(demod_no, reg, val)       			mtv_spi_write(demod_no, (U8)(reg), (U8)(val))       
+	#define	RTV_REG_SET(demod_no, reg, val)       			mtv_spi_write(demod_no, (U8)(reg), (U8)(val))
 	#define	RTV_REG_MASK_SET(demod_no, reg, mask, val)\
 		do {					\
 			U8 tmp;				\
 			tmp = (RTV_REG_GET(demod_no, reg)|(U8)(mask)) & (U8)((~(mask))|(val));\
 			RTV_REG_SET(demod_no, reg, tmp);		\
 		} while(0)
-    
+
 #elif defined(RTV_IF_EBI2)
 	unsigned char mtv_ebi2_read(unsigned char reg);
 	void mtv_ebi2_read_burst(unsigned char reg, unsigned char *buf, int size);
@@ -421,10 +421,10 @@ typedef volatile U32		VU32;
 		#endif
 		#define RTV_NUM_FIC_SVC 	0
 	#endif
-	
+
 	/* Defines the number of Sub Channel to be open simultaneously. (AV + DATA) */
 	#define RTV_NUM_DAB_AVD_SERVICE	(RTV_MAX_NUM_DAB_AV_SVC+RTV_MAX_NUM_DAB_DATA_SVC)
-	
+
 	#if ((RTV_NUM_DAB_AVD_SERVICE + RTV_NUM_FIC_SVC) >= 2)
 		#define RTV_MULTI_SERVICE_MODE
 	#endif
@@ -472,7 +472,7 @@ typedef volatile U32		VU32;
 
 
 #if (defined(RTV_TDMB_ENABLE)||defined(RTV_DAB_ENABLE))\
-&& !(defined(RTV_ISDBT_ENABLE)||defined(RTV_FM_ENABLE)) 
+&& !(defined(RTV_ISDBT_ENABLE)||defined(RTV_FM_ENABLE))
 	/* Only TDMB or DAB enabled. */
 	#define RTV_TDMBorDAB_ONLY_ENABLED
 
@@ -492,14 +492,14 @@ typedef volatile U32		VU32;
 # Define the critical object.
 ############################################################################*/
 #if defined(RTV_IF_SPI) || defined(RTV_FIC_I2C_INTR_ENABLED)
-	#if defined(__KERNEL__)	
+	#if defined(__KERNEL__)
 		extern struct mutex nxb110tv_guard[NXB110TV_MAX_NUM_DEMOD_CHIP];
 		#define RTV_GUARD_INIT(demod_no)		mutex_init(&nxb110tv_guard[demod_no])
 		#define RTV_GUARD_LOCK(demod_no)		mutex_lock(&nxb110tv_guard[demod_no])
 		#define RTV_GUARD_FREE(demod_no)		mutex_unlock(&nxb110tv_guard[demod_no])
 		#define RTV_GUARD_DEINIT(demod_no)		((void)0)
-		
-    #elif defined(WINCE)        
+
+    #elif defined(WINCE)
 	        extern CRITICAL_SECTION		nxb110tv_guard[2];
 	        #define RTV_GUARD_INIT(demod_no)	InitializeCriticalSection(&nxb110tv_guard[demod_no])
 	        #define RTV_GUARD_LOCK(demod_no)	EnterCriticalSection(&nxb110tv_guard[demod_no])
@@ -512,7 +512,7 @@ typedef volatile U32		VU32;
 		#define RTV_GUARD_FREE(demod_no) 	((void)0)
 		#define RTV_GUARD_DEINIT 	((void)0)
 	#endif
-	
+
 #else
 	#define RTV_GUARD_INIT		((void)0)
 	#define RTV_GUARD_LOCK(demod_no)		((void)0)
@@ -539,7 +539,7 @@ typedef volatile U32		VU32;
 	#error "Must define I/O voltage!"
 #endif
 
- 
+
 #if defined(RTV_IF_TSIF) || defined(RTV_IF_SPI_SLAVE) ||defined(RTV_IF_SPI)
     #if (NXB110TV_CHIP_ADDR >= 0xFF)
         #error "Invalid chip address"
@@ -548,7 +548,7 @@ typedef volatile U32		VU32;
     #if (NXB110TV_CHIP_ADDR <= 0xFF)
         #error "Invalid chip address"
     #endif
-    
+
 #else
 	#error "Must define the interface definition !"
 #endif
@@ -599,7 +599,7 @@ typedef volatile U32		VU32;
 			&& defined(RTV_FIC__SCAN_TSIF__PLAY_I2C)\
 			&& defined(RTV_FIC__SCAN_TSIF__PLAY_TSIF)
 			#error "Should select only one FIC path for TSIF!"
-		#endif		
+		#endif
 	#endif
 #endif
 
@@ -616,7 +616,7 @@ typedef volatile U32		VU32;
 	|| defined(NXB110TV_CHIP_PKG_WLCSP)  || defined(NXB110TV_CHIP_PKG_LGA)
 		#error "Not support parallel TSIF!"
 	#endif
-	
+
 	#if defined(RTV_TDMB_ENABLE) && (RTV_NUM_DAB_AVD_SERVICE > 1)
 		#error "Not support T-DMB multi sub channel mode!"
 	#endif
@@ -643,9 +643,9 @@ typedef volatile U32		VU32;
 void rtvOEM_ConfigureInterrupt(int demod_no);
 void rtvOEM_PowerOn(int demod_no, int on);
 
-#ifdef __cplusplus 
-} 
-#endif 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __NXB110TV_PORT_H__ */
 
