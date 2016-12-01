@@ -36,8 +36,6 @@
 
 #include "fc8300_nexell_tsif.h"
 
-#define NEXELL_TSIF 1
-
 #define I2C_M_FCIRD 1
 #define I2C_M_FCIWR 0
 #define I2C_MAX_SEND_LENGTH 256
@@ -151,7 +149,7 @@ s32 fc8300_i2c_init(HANDLE handle, u16 param1, u16 param2)
 #ifdef BBM_I2C_SPI
 #else
 	/* ts_initialize(); */
-#if NEXELL_TSIF
+#ifdef CONFIG_NXP_MP2TS_IF_FCI
 	tsif_init(tsif_get_channel_num());
 #endif
 #endif
