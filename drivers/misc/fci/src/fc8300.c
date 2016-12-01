@@ -53,8 +53,6 @@ struct ISDBT_INIT_INFO_T *hInit;
 
 /*	#define FC8300_DEBUG	*/
 
-#define NEXELL_TSIF 1
-
 /* GPIO(RESET & INTRRUPT) Setting */
 #define FC8300_NAME		"isdbt"
 
@@ -340,7 +338,7 @@ int data_callback(ulong hDevice, u8 bufid, u8 *data, int len)
 				}
 			}
 #endif
-			
+
 		}
 	}
 
@@ -426,7 +424,7 @@ int isdbt_open(struct inode *inode, struct file *filp)
 ssize_t isdbt_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
 {
 	ssize_t read_len = 0;
-#if !NEXELL_TSIF
+#ifndef CONFIG_NXP_MP2TS_IF_FCI
 	s32 avail;
 	s32 non_blocking = filp->f_flags & O_NONBLOCK;
 	struct ISDBT_OPEN_INFO_T *hOpen
@@ -697,18 +695,11 @@ long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	case IOCTL_ISDBT_TS_START:
 
-#if NEXELL_TSIF
-#if 1
+#ifdef CONFIG_NXP_MP2TS_IF_FCI
 		if (tsif_init(tsif_get_channel_num()) < 0) {
 			pr_err("%s: failed ts initialization!!\n", __func__);
 			return -1;
 		}
-#else
-		if (tsif_alloc_buf(tsif_get_channel_num()) < 0) {
-			pr_err("%s: failed ts init buffer!!\n", __func__);
-			return -1;
-		}
-#endif
 
 		if (tsif_start(tsif_get_channel_num()) < 0) {
 			pr_err("%s: failed ts ts_start!!\n", __func__);
@@ -720,7 +711,7 @@ long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				create_tspacket_anal();
 				check_cnt_size = 0;
 #endif
-		
+
 		hOpen->isdbttype = TS_TYPE;
 #ifdef FC8300_DEBUG
 		print_log(hInit, "[FC8300] IOCTL_ISDBT_TS_START\n");
@@ -729,7 +720,7 @@ long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case IOCTL_ISDBT_TS_STOP:
 		hOpen->isdbttype = 0;
 
-#if NEXELL_TSIF
+#ifdef CONFIG_NXP_MP2TS_IF_FCI
 		tsif_stop(tsif_get_channel_num());
 #endif
 
@@ -773,9 +764,8 @@ long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	case IOCTL_ISDBT_DEINIT:
 		res = bbm_com_deinit(hInit, DIV_BROADCAST);
-		pr_err("%s - Line : %d\n", __func__, __LINE__);
 
-#if NEXELL_TSIF
+#ifdef CONFIG_NXP_MP2TS_IF_FCI
 		if (tsif_deinit(tsif_get_channel_num()) < 0) {
 			pr_err("%s: failed deinitialization!!\n", __func__);
 			res = -1;
