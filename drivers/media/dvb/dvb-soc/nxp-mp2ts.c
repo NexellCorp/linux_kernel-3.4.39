@@ -2066,6 +2066,8 @@ static int nexell_mpegts_probe(struct platform_device *pdev)
         goto fail_misc_register;
     }
 
+    pr_info("nxp-mp2ts probed!!!!\n");
+
     return 0;
 
 fail_misc_register:
