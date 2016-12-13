@@ -34,16 +34,19 @@ extern int test_hdmi(void);
 #define DEFAULT_BITS_PER_SAMPLE	16
 #define DEFAULT_AUDIO_CODEC	    HDMI_AUDIO_PCM
 
+//#define HDMI_SYS
+
 /**
  * static var : nxp_hdmi_context;
  */
 static struct nxp_hdmi_context *__me = NULL;
 
+#ifdef HDMI_SYS
 static int bootcomplete = 0;
 
 static ssize_t sysfs_write(struct kobject *kobj,struct kobj_attribute *attr,const char *buf,ssize_t count)
 {
-	
+
 	if(!strncmp("1",buf,1))
 	{
 		printk("recieve boot complete command \n");
@@ -67,7 +70,7 @@ static struct attribute_group hdmi_attr_group = {
 };
 
 struct kobject *hdmi_kobj = NULL;
-
+#endif
 
 
 /**
@@ -848,11 +851,15 @@ static void _hdmi_hpd_work(struct work_struct *work)
 {
     int state;
     struct nxp_hdmi_context *me = container_of(work, struct nxp_hdmi_context, hpd_work.work);
+
+#ifdef HDMI_SYS
 	while(bootcomplete==0)
 	{
 	//	printk("hdmi not ready....\n");
 		msleep(2000);
 	}
+#endif
+
     state = hdmi_hpd_status();
     if (!nxp_cpu_version()) {
         /* no revision */
@@ -938,6 +945,8 @@ int hdmi_init_context(struct nxp_hdmi_context *me,
         goto error_hdcp_prepare;
     }
 #endif
+
+#ifdef HDMI_SYS
 	hdmi_kobj = kobject_create_and_add("hdmi_sysfs",NULL);
 	if(!hdmi_kobj)
 	{
@@ -950,12 +959,15 @@ int hdmi_init_context(struct nxp_hdmi_context *me,
 		printk("failed to create SYSFS hdmi \n");
 		goto error_sysfs_create;
 	}
+#endif
 
     return 0;
 
+#ifdef HDMI_SYS
 error_sysfs_create:
 	kobject_put(hdmi_kobj);
 	sysfs_remove_group(hdmi_kobj,&hdmi_attr_group);
+#endif
 
 #if defined(CONFIG_NXP_HDMI_USE_HDCP) || defined(CONFIG_NXP_DISPLAY_HDMI_USE_HDCP)
 error_hdcp_prepare:
