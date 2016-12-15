@@ -96,7 +96,7 @@ struct nxp_adc_tmp {
 
 /* initialize table for register value matching with tmp_value */
 static int tmp_table[][2] = {
-#if 0
+#if 1
 // R1 : 4.7K
 	[0]  = {2786, 25},
 	[1]  = {2616, 30},
@@ -305,7 +305,7 @@ static long nxp_read_adc_tmp(struct nxp_adc_tmp *tmp)
 				break;
 			tmp->tmp_value++;
 		}
-	
+
 		if (tmp->tmp_value > tmp_table[i][1])
 			tmp->tmp_value = tmp_table[i][1];
 	}
@@ -371,7 +371,7 @@ static void nxp_adc_tmp_monfn(struct work_struct *work)
 		goto exit_mon;
 	}
 
-	time = ktime_to_ms(ktime_get());	
+	time = ktime_to_ms(ktime_get());
 	curr =  cpufreq_get_max(tmp);
 	next = curr;
 	delay= tmp->delay_ms;
@@ -385,7 +385,7 @@ static void nxp_adc_tmp_monfn(struct work_struct *work)
 			{
 				up_max = 1;
 				next =  event->freq;
-			} 
+			}
 			if(tmp->up_max)
 				up_max = 1;
 		} else  { /* freq down */
@@ -420,7 +420,7 @@ static void nxp_adc_tmp_monfn(struct work_struct *work)
 			schedule_delayed_work(&tmp->mon_work, msecs_to_jiffies(delay));
 
 		}
-	} else if (up_max) { 
+	} else if (up_max) {
 		if( tmp->max_freq > next) {
 			if(tmp->step_up){
 				cpufreq_set_max(tmp,curr + STEP_FREQ);
@@ -439,7 +439,7 @@ static void nxp_adc_tmp_monfn(struct work_struct *work)
 exit_mon:
 	if (tmp->callback)
 		tmp->callback(tmp->channel, tmp->adc_value, tmp->tmp_value, true);
-	
+
 	schedule_delayed_work(&tmp->mon_work, msecs_to_jiffies(tmp->delay_ms));
 
 	return;
@@ -447,7 +447,7 @@ exit_mon:
 
 static void nxp_core_down(struct work_struct *work) {
 	struct nxp_adc_tmp *tmp = container_of(work, struct nxp_adc_tmp, core_down_work.work);
-	
+
 
 	if (tmp->temperature > CORE_DOWN_TEMP_LEVEL) {
 		// Core voltage down
@@ -638,7 +638,6 @@ static int __devinit nxp_adc_tmp_probe(struct platform_device *pdev)
 	}
 	platform_set_drvdata(pdev, tmp);
 
-	
 	err = sysfs_create_group(&pdev->dev.kobj, &adc_temp_group);
 	if (err)
 		goto exit_free;

@@ -142,12 +142,16 @@ static struct platform_device dfs_plat_device = {
 #if defined (CONFIG_SENSORS_NXP_ADC_TEMP)
 struct nxp_adc_tmp_trigger adc_tmp_event[] = {
 	{
-		.temp  = 56,
+		.temp  = 57,
 		.freq  = 1200000,
 		.period = 1000, /* Ms */
 	} , {
-		.temp  = 58,
-		.freq  = 800000,		/* freq = 0 :Set critical temp. Power off! */
+		.temp  = 60,
+		.freq  = 1000000,		/* freq = 0 :Set critical temp. Power off! */
+		.period = 1000, /* Ms */
+	} , {
+		.temp  = 63,
+		.freq  = 900000,		/* freq = 0 :Set critical temp. Power off! */
 		.period = 1000, /* Ms */
 	}
 };
