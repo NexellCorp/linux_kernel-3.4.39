@@ -217,7 +217,7 @@ struct s3c64xx_spi_driver_data {
 	unsigned                        state;
 	unsigned                        cur_mode, cur_bpw;
 	unsigned                        cur_speed;
-	
+
 #ifdef CONFIG_DMA_ENGINE
 	void                			*tx;
 	void                			*tx_end;
@@ -227,7 +227,7 @@ struct s3c64xx_spi_driver_data {
 	struct spi_message      		*cur_msg;
 	struct spi_transfer     		*cur_transfer;
 	struct chip_data        		*cur_chip;
-	
+
 	struct tasklet_struct       	pump_transfers;
 
     struct dma_chan         		*dma_rx_channel;
@@ -333,7 +333,7 @@ static void dma_callback(void *data)
 
 	/* Update total bytes transferred */
 	msg->actual_length += sdd->cur_transfer->len;
-	
+
 
 	/* Move to next transfer */
 	msg->state = next_transfer(sdd);
@@ -416,7 +416,7 @@ static int configure_dma(struct s3c64xx_spi_driver_data *sdd, struct spi_transfe
 	 * not trigger on 2 elements this needs explicit mapping rather than
 	 * calculation.
 	 */
-	
+
 		rx_conf.src_maxburst = 1;
 		tx_conf.dst_maxburst = 1;
 
@@ -458,12 +458,12 @@ static int configure_dma(struct s3c64xx_spi_driver_data *sdd, struct spi_transfe
 			   sdd->sgt_tx.nents, DMA_TO_DEVICE);
 	if (!tx_sglen)
 		goto err_tx_sgmap;
-	
+
 	rx_sglen = dma_map_sg(rxchan->device->dev, sdd->sgt_rx.sgl,
 			   sdd->sgt_rx.nents, DMA_FROM_DEVICE);
 	if (!rx_sglen)
 		goto err_rx_sgmap;
-	
+
 	/* Send both scatterlists */
 	txdesc = dmaengine_prep_slave_sg(txchan,
 				      sdd->sgt_tx.sgl,
@@ -517,7 +517,7 @@ static void stop_dma(struct s3c64xx_spi_driver_data *sdd)
 {
 	struct dma_chan *rxchan = sdd->dma_rx_channel;
 	struct dma_chan *txchan = sdd->dma_tx_channel;
-	
+
 	dmaengine_terminate_all(txchan);
 	dmaengine_terminate_all(rxchan);
 	dma_unmap_sg(txchan->device->dev, sdd->sgt_tx.sgl,
@@ -526,7 +526,7 @@ static void stop_dma(struct s3c64xx_spi_driver_data *sdd)
 		sdd->sgt_tx.nents, DMA_FROM_DEVICE);
 	sg_free_table(&sdd->sgt_tx);
 	sg_free_table(&sdd->sgt_rx);
-			
+
 	kfree(sdd->dummypage);
 }
 static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
@@ -709,7 +709,7 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 		if (xfer->rx_buf == NULL) {
 			val = msecs_to_loops(10);
 			status = readl(regs + S3C64XX_SPI_STATUS);
-			
+
 			while ((TX_FIFO_LVL(status, sci)
 				|| !S3C64XX_SPI_ST_TX_DONE(status, sci))
 					&& --val) {
@@ -719,7 +719,7 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 
 			if (!val)
 				return -EIO;
-			
+
 		}
 		else
 		{
@@ -956,7 +956,7 @@ static int set_up_next_transfer(struct s3c64xx_spi_driver_data *sdd,
 
 	/* Sanity check the message for this bus width */
 	residue = sdd->cur_transfer->len % 1;// sdd->cur_chip->n_bytes;
-	
+
 	if (unlikely(residue != 0)) {
 		dev_err(&sdd->pdev->dev,
 			"message of %u bytes to transmit but the current "
@@ -1041,7 +1041,7 @@ static void pump_transfers(unsigned long data)
 err_config_dma:
 	/* enable all interrupts except RX */
 	/* add  spi int off */
-	
+
      writel(~S3C64XX_SPI_INT_RX_OVERRUN_EN | ~S3C64XX_SPI_INT_RX_UNDERRUN_EN |
             ~S3C64XX_SPI_INT_TX_OVERRUN_EN | ~S3C64XX_SPI_INT_TX_UNDERRUN_EN,
             sdd->regs + S3C64XX_SPI_INT_EN);
@@ -1075,12 +1075,12 @@ static int dma_probe(struct s3c64xx_spi_driver_data *sdd)
 	    dev_dbg(&sdd->pdev->dev, "no TX DMA channel!\n");
 	    goto err_no_txchan;
     }
-	
+
 	sdd->dummypage = kmalloc(PAGE_SIZE, GFP_KERNEL);
     if (!sdd->dummypage) {
 	 	dev_dbg(&sdd->pdev->dev, "no DMA dummypage!\n");
 	   	 goto err_no_dummypage;
-	}    
+	}
 
 	return 0;
 err_no_dummypage:
@@ -1105,7 +1105,7 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
 	int status = 0, cs_toggle = 0;
 	u32 speed;
 	u8 bpw;
-	
+
 	sdd->cur_msg = msg;
 	msg->state = STATE_START;
 	sdd->cur_transfer = list_entry(msg->transfers.next,
@@ -1118,7 +1118,7 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
 		sdd->cur_bpw = spi->bits_per_word;
 		sdd->cur_speed = spi->max_speed_hz;
 		sdd->cur_mode = spi->mode;
-		
+
 			    /* Setup the SPI using the per chip configuration */
 
 		s3c64xx_spi_config(sdd, cs);
@@ -1189,12 +1189,12 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
 		S3C64XX_SPI_AUTO(sdd);
 
 		spin_unlock_irqrestore(&sdd->lock, flags);
-		
+
 		status = wait_for_xfer(sdd, xfer, use_dma);
 
 		/* Quiese the signals */
 		S3C64XX_SPI_DEACT(sdd);
-		
+
 		if (status) {
 			dev_err(&spi->dev, "I/O Error: "
 				"rx-%d tx-%d res:rx-%c tx-%c len-%d\n",
@@ -1229,7 +1229,7 @@ out:
 		disable_cs(sdd, spi);
 	else
 		sdd->tgl_spi = spi;
-	
+
 		/* Pending only which is to be done */
 		sdd->state &= ~RXBUSY;
 		sdd->state &= ~TXBUSY;
@@ -1239,7 +1239,7 @@ out:
 	/* Free DMA channels */
 
 	dma_release_channel(sdd->dma_tx_channel);
-	dma_release_channel(sdd->dma_rx_channel);	
+	dma_release_channel(sdd->dma_rx_channel);
 	kfree(sdd->dummypage);
 
 	spi_finalize_current_message(master);
@@ -1279,7 +1279,7 @@ static int s3c64xx_spi_setup(struct spi_device *spi)
 	struct spi_message *msg;
 	unsigned long flags;
 	int err = 0;
-	
+
 	if (cs == NULL || cs->set_level == NULL) {
 		dev_err(&spi->dev, "No CS for SPI(%d)\n", spi->chip_select);
 		return -ENODEV;
@@ -1370,13 +1370,13 @@ static irqreturn_t s3c64xx_spi_irq(int irq, void *data)
 		S3C64XX_SPI_PND_TX_OVERRUN_CLR |
 		S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
 
-	if(status &  S3C64XX_SPI_ST_RX_OVERRUN_ERR) 
+	if(status &  S3C64XX_SPI_ST_RX_OVERRUN_ERR)
 		val |= S3C64XX_SPI_PND_RX_OVERRUN_CLR;
-	if(status &  S3C64XX_SPI_ST_RX_UNDERRUN_ERR) 
+	if(status &  S3C64XX_SPI_ST_RX_UNDERRUN_ERR)
 		val |= S3C64XX_SPI_PND_RX_UNDERRUN_CLR;
-	if(status &  S3C64XX_SPI_ST_TX_OVERRUN_ERR) 
+	if(status &  S3C64XX_SPI_ST_TX_OVERRUN_ERR)
 		val |= S3C64XX_SPI_PND_TX_OVERRUN_CLR;
-	if(status &  S3C64XX_SPI_ST_TX_UNDERRUN_ERR) 
+	if(status &  S3C64XX_SPI_ST_TX_UNDERRUN_ERR)
 		val |= S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
 
 	writel(val, sdd->regs + S3C64XX_SPI_PENDING_CLR);
@@ -1399,7 +1399,7 @@ static void s3c64xx_spi_hwinit(struct s3c64xx_spi_driver_data *sdd, int channel)
 	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
 	void __iomem *regs = sdd->regs;
 	unsigned int val;
-	
+
 	sdd->cur_speed = 0;
 
 	S3C64XX_SPI_DEACT(sdd);
@@ -1436,7 +1436,7 @@ static int __init s3c64xx_spi_probe(struct platform_device *pdev)
 	struct spi_master *master;
 	int ret, irq;
 	char clk_name[16];
-	
+
 	if (pdev->id < 0) {
 		dev_err(&pdev->dev,
 				"Invalid platform device id-%d\n", pdev->id);
@@ -1516,7 +1516,7 @@ static int __init s3c64xx_spi_probe(struct platform_device *pdev)
 
 	sdd->regs = ioremap(mem_res->start, resource_size(mem_res));
 	sdd->phybase = mem_res->start;
-	
+
 	if (sdd->regs == NULL) {
 		dev_err(&pdev->dev, "Unable to remap IO\n");
 		ret = -ENXIO;
@@ -1537,7 +1537,7 @@ static int __init s3c64xx_spi_probe(struct platform_device *pdev)
 		goto err3;
 	}
 
-	sprintf(clk_name, "nxp_spi%d", sci->src_clk_nr);
+	sprintf(clk_name, "nxp-spi.%d", sci->src_clk_nr);
 	sdd->src_clk = clk_get(&pdev->dev, clk_name);
 	if (IS_ERR(sdd->src_clk)) {
 		dev_err(&pdev->dev,
@@ -1561,7 +1561,7 @@ static int __init s3c64xx_spi_probe(struct platform_device *pdev)
 	spin_lock_init(&sdd->lock);
 	init_completion(&sdd->xfer_completion);
 	INIT_LIST_HEAD(&sdd->queue);
- 	
+
 	tasklet_init(&sdd->pump_transfers, pump_transfers,
 			(unsigned long)sdd);
 
@@ -1728,7 +1728,7 @@ static int s3c64xx_spi_runtime_resume(struct device *dev)
 
 	if (sci->gpio_pull_up)
 		sci->gpio_pull_up(true);
-	
+
 	return 0;
 }
 #endif /* CONFIG_PM_RUNTIME */
