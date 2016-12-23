@@ -1537,7 +1537,7 @@ static int __init s3c64xx_spi_probe(struct platform_device *pdev)
 		goto err3;
 	}
 
-	sprintf(clk_name, "nxp_spi%d", sci->src_clk_nr);
+	sprintf(clk_name, "nxp-spi.%d", sci->src_clk_nr);
 	sdd->src_clk = clk_get(&pdev->dev, clk_name);
 	if (IS_ERR(sdd->src_clk)) {
 		dev_err(&pdev->dev,
