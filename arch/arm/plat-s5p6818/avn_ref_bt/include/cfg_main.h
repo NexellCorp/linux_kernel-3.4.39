@@ -119,7 +119,11 @@
  */
 #define CFG_DISP_LVDS_LCD_FORMAT                LVDS_LCDFORMAT_VESA
 
-
+/*------------------------------------------------------------------------------
+ * 	HDMI
+ */
+#define CFG_DISP_PRI_HDMI_I2C_CHANNEL			6	/* HDMI Primary i2c channel */
+#define CFG_HDMIPHY_TX_LEVEL                    31	/* HDMIPHY TX Level : 0 ~ 31 */
 
 /*------------------------------------------------------------------------------
  * 	PWM
@@ -172,7 +176,7 @@
 #define CFG_I2C8_CLK							100000
 #define CFG_I2C9_CLK							100000
 
-#define CFG_I2C1_RETRY_CNT 						10	
+#define CFG_I2C1_RETRY_CNT 						10
 #define CFG_I2C1_RETRY_DELAY 					500
 
 /*------------------------------------------------------------------------------
@@ -187,7 +191,7 @@
 
 #define CFG_SPI0_CS_GPIO_MODE                   1       /* 0 FSS CONTROL, 1: CS CONTRO GPIO MODE */
 
-#define CFG_SPI0_CS                         	PAD_GPIO_C + 30 
+#define CFG_SPI0_CS                         	PAD_GPIO_C + 30
 
 /*------------------------------------------------------------------------------
  * 	Keypad
@@ -256,9 +260,6 @@
  */
 #define CFG_GPIO_PMIC_INTR						(PAD_GPIO_E + 10)
 //#define CONFIG_ENABLE_INIT_VOLTAGE					/* Enalbe init voltage for ARM, CORE */
-
-/* HDMIPHY TX Level : 0 ~ 31 */
-#define CFG_HDMIPHY_TX_LEVEL                    31
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode

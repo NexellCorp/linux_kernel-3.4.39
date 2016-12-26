@@ -126,7 +126,7 @@ static struct i2c_board_info hdmi_edid_i2c_boardinfo = {
 
 static struct nxp_v4l2_i2c_board_info edid = {
     .board_info = &hdmi_edid_i2c_boardinfo,
-    .i2c_adapter_id = 0,
+    .i2c_adapter_id = CFG_DISP_PRI_HDMI_I2C_CHANNEL,
 };
 
 static struct i2c_board_info hdmi_hdcp_i2c_boardinfo = {
@@ -135,7 +135,7 @@ static struct i2c_board_info hdmi_hdcp_i2c_boardinfo = {
 
 static struct nxp_v4l2_i2c_board_info hdcp = {
     .board_info = &hdmi_hdcp_i2c_boardinfo,
-    .i2c_adapter_id = 0,
+    .i2c_adapter_id = CFG_DISP_PRI_HDMI_I2C_CHANNEL,
 };
 
 static void _set_hdmi_mux(struct nxp_hdmi_context *ctx)
