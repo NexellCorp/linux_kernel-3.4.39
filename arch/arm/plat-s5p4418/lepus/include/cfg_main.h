@@ -145,6 +145,12 @@
 #define CFG_DISP_LVDS_LCD_FORMAT             	LVDS_LCDFORMAT_VESA
 
 /*------------------------------------------------------------------------------
+ * 	HDMI
+ */
+#define CFG_DISP_PRI_HDMI_I2C_CHANNEL			0	/* HDMI Primary i2c channel */
+#define CFG_HDMIPHY_TX_LEVEL						23	/* HDMIPHY TX Level : 0 ~ 31 */
+
+/*------------------------------------------------------------------------------
  * 	PWM
  */
 #define CFG_LCD_PRI_PWM_CH						0
@@ -252,9 +258,6 @@
 #define CFG_PMIC_BAT_CHG_SUPPORT				(1)
 //#define CONFIG_ENABLE_INIT_VOLTAGE				/* Enalbe init voltage for ARM, CORE */
 
-
-/* HDMIPHY TX Level : 0 ~ 31 */
-#define CFG_HDMIPHY_TX_LEVEL                    23
 
 /*------------------------------------------------------------------------------
  * 	Suspend mode
