@@ -8,6 +8,7 @@
 #define NVP6124	0x60
 #define NVP6124_R0_ID 	0x84
 #define NVP6114A_R0_ID 	0x85
+#define NVP6124B_R0_ID  0x86
 
 //FIXME HI3520 Register
 #define VIU_CH_CTRL					0x08
@@ -23,11 +24,11 @@
 #define VDEC_INVALID_MODE	4
 #define	VIDEO_NTSC_960_4CH	6
 #define	VIDEO_PAL_960_4CH	7
-#define	VIDEO_NTSC_960_720P	8 
+#define	VIDEO_NTSC_960_720P	8
 #define	VIDEO_PAL_960_720P	9
 #define	VIDEO_NTSC_720P_960	10
 #define	VIDEO_PAL_720P_960	11
-#define	VIDEO_NTSC_720P_2CH	36	
+#define	VIDEO_NTSC_720P_2CH	36
 #define	VIDEO_PAL_720P_2CH	37
 
 #define NVP1114A_IOC_MAGIC            't'
@@ -64,7 +65,7 @@
 
 //Hwarang
 #define IOC_VDEC_SET_VIDEO_MODE			0x07
-#define IOC_VDEC_GET_INPUT_VIDEO_FMT	0x08  
+#define IOC_VDEC_GET_INPUT_VIDEO_FMT	0x08
 #define IOC_VDEC_GET_VIDEO_LOSS     	0x09
 #define IOC_VDEC_SET_SYNC		     	0x0A
 #define IOC_VDEC_SET_EQUALIZER			0x0B
