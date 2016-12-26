@@ -4,8 +4,10 @@
 #include "nvp6124.h"
 
 void nvp6124_ntsc_common_init(void);
+void nvp6124B_ntsc_common_init(void);
 void nvp6124_pal_common_init(void);
 void nvp6124_outport_1mux_chseq(void);
+void nvp6124B_outport_1mux(unsigned char vformat, unsigned char port1_mode, unsigned char port2_mode);
 void nvp6124_outport_2mux(unsigned char vformat, unsigned char port1_mode, unsigned char port2_mode);
 void nvp6124_outport_4mux(unsigned char vformat, unsigned char port1_mode);
 void nvp6114a_outport_1mux_chseq(void);
