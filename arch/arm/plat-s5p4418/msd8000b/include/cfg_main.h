@@ -121,6 +121,12 @@
 #define CFG_DISP_LVDS_LCD_FORMAT             	LVDS_LCDFORMAT_VESA
 
 /*------------------------------------------------------------------------------
+ * 	HDMI
+ */
+#define CFG_DISP_PRI_HDMI_I2C_CHANNEL			0	/* HDMI Primary i2c channel */
+#define CFG_HDMIPHY_TX_LEVEL                    31	/* HDMIPHY TX Level : 0 ~ 31 */
+
+/*------------------------------------------------------------------------------
  * 	PWM
  */
 #define CFG_LCD_PRI_PWM_CH						0
