@@ -25,6 +25,7 @@
 
 #define NVP6124_R0_ID   0x84
 #define NVP6114A_R0_ID  0x85
+#define NVP6124B_R0_ID  0x86
 
 #define PID 0xF4
 
@@ -68,8 +69,16 @@ bool check_id(struct i2c_client *client)
     u8 pid = 0;
     i2c_smbus_write_byte_data(client, 0XFF, 0x00);
     pid = i2c_smbus_read_byte_data(client, PID);
-    if( pid == NVP6114A_R0_ID )
+    printk(KERN_ERR "NVP chip id: 0x%02X\n", pid);
+    if( pid == NVP6114A_R0_ID ) {
+    	chip_id[0]  = NVP6114A_R0_ID;
         return true;
+	}
+	else if( pid == NVP6124B_R0_ID ) {
+    	chip_id[0]  = NVP6124B_R0_ID;
+        return true;
+	}
+
 
     printk(KERN_ERR "fail to check id: 0x%02X\n", pid);
     return false;
@@ -108,7 +117,7 @@ static int _i2c_read_byte(struct i2c_client *client, u8 addr, u8 *data)
 	s8 i = 0;
 	s8 ret = 0;
 	u8 buf = 0;
-	
+
 	struct i2c_msg msg[2];
 
 	msg[0].addr = client->addr;
@@ -129,7 +138,7 @@ static int _i2c_read_byte(struct i2c_client *client, u8 addr, u8 *data)
 
 	if (unlikely(ret != 2)) {
 		dev_err(&client->dev, "%s failed reg:0x%02x\n", __func__, addr);
-		return -EIO;	
+		return -EIO;
 	}
 
 	*data = buf;
@@ -174,7 +183,7 @@ static int nvp6114a_initialize_ctrls(struct dev_state *me)
 }
 
 static int nvp6114a_write_table(struct i2c_client *client,
-								unsigned char addr, 
+								unsigned char addr,
 								unsigned char *tbl_ptr, unsigned char tbl_cnt)
 {
 	unsigned char i=0;
@@ -188,18 +197,18 @@ static int nvp6114a_write_table(struct i2c_client *client,
 			printk(KERN_ERR "%s : fail to write addr 0x%02X, val 0x%02X\n", __func__, (addr+i), *(tbl_ptr+i));
 			//break;
 		}
-	}	
+	}
 
 	return 0;
 }
 
 static int nvp6114a_write_data(struct i2c_client *client, u8 write_addr, unsigned char reg_val[])
 {
-	if(_i2c_write_byte(client, 0xFF, write_addr) == 0) 
+	if(_i2c_write_byte(client, 0xFF, write_addr) == 0)
 	{
 		printk("%s - write_addr : 0x%02X\n", __func__, write_addr);
 
-		nvp6114a_write_table(client, 0x00, reg_val, 254); 
+		nvp6114a_write_table(client, 0x00, reg_val, 254);
 	}
 
 	return 0;
@@ -249,7 +258,7 @@ int nvp6114a_initialization(void)
     client= state->i2c_client;
 
     nvp6124_cnt = 1;
-    chip_id[0]  = NVP6114A_R0_ID; 
+    //chip_id[0]  = NVP6114A_R0_ID;
     nvp6124_mode = NTSC;
 
     if( !state->first )
@@ -261,14 +270,26 @@ int nvp6114a_initialization(void)
         if (_i2c_read_byte(client, PID, &data) == 0)
             printk("nvp6114a reg =0xF4, data = 0x%02X\n", data);
 #endif
-        nvp6124_ntsc_common_init();
+		if(chip_id[0] == NVP6114A_R0_ID) {
+	        nvp6124_ntsc_common_init();
+		}
+		else if(chip_id[0] == NVP6124B_R0_ID) {
+	        nvp6124B_ntsc_common_init();
+		}
+
 
         for (i=0 ; i<nvp6124_cnt ; i++)
             audio_init(nvp6124_slave_addr[i],16,0,0);
 
         state->first = true;
     }
-    nvp6114a_outport_1mux(nvp6124_mode%2, 0x10|NVP6124_VI_720P_2530, 0x00|NVP6124_VI_720P_2530);
+
+	if(chip_id[0] == NVP6114A_R0_ID) {
+	    nvp6114a_outport_1mux(nvp6124_mode%2, 0x10|NVP6124_VI_720P_2530, 0x00|NVP6124_VI_720P_2530);
+	}
+	else if(chip_id[0] == NVP6124B_R0_ID) {
+	    nvp6124B_outport_1mux(nvp6124_mode%2, 0x10|NVP6124_VI_720P_2530, 0x00|NVP6124_VI_720P_2530);
+	}
 
     return 0;
 }
@@ -278,13 +299,13 @@ EXPORT_SYMBOL(nvp6114a_initialization);
 static int nvp6114a_s_stream(struct v4l2_subdev *sd, int enable)
 {
     struct dev_state *state = to_state(sd);
-    struct i2c_client *client = v4l2_get_subdevdata(sd);	
+    struct i2c_client *client = v4l2_get_subdevdata(sd);
     unsigned char data;
     int i=0;
     int width, height;
 
     nvp6124_cnt = 1;
-    chip_id[0]  = NVP6114A_R0_ID; 
+    //chip_id[0]  = NVP6114A_R0_ID;
     nvp6124_mode = NTSC;
 
     if( enable )
@@ -297,7 +318,12 @@ static int nvp6114a_s_stream(struct v4l2_subdev *sd, int enable)
             if (_i2c_read_byte(client, PID, &data) == 0)
             	printk(KERN_ERR "nvp6114a reg =0xF4, data = 0x%02X\n", data);
 #endif
-            nvp6124_ntsc_common_init();
+		if(chip_id[0] == NVP6114A_R0_ID) {
+	        nvp6124_ntsc_common_init();
+		}
+		else if(chip_id[0] == NVP6124B_R0_ID) {
+	        nvp6124B_ntsc_common_init();
+		}
 
             for (i=0 ; i<nvp6124_cnt ; i++)
                 audio_init(nvp6124_slave_addr[i],16,0,0);
@@ -312,12 +338,25 @@ static int nvp6114a_s_stream(struct v4l2_subdev *sd, int enable)
 	width -= 32;
 	height -= 1;
 #endif
-
-        if (width == 1920 && height == 1080)  
-            nvp6114a_outport_1mux(nvp6124_mode%2, 0x10|NVP6124_VI_1080P_2530, 0x00|NVP6124_VI_1080P_2530);
-        else if (width == 1280 && height == 720)
-            nvp6114a_outport_1mux(nvp6124_mode%2, 0x10|NVP6124_VI_720P_2530, 0x00|NVP6124_VI_720P_2530);
-    }
+		if(chip_id[0] == NVP6114A_R0_ID) {
+	        if (width == 1920 && height == 1080)
+    	        nvp6114a_outport_1mux(nvp6124_mode%2,
+					0x10|NVP6124_VI_1080P_2530, 0x00|NVP6124_VI_1080P_2530);
+        	else if (width == 1280 && height == 720)
+            	nvp6114a_outport_1mux(nvp6124_mode%2,
+					0x10|NVP6124_VI_720P_2530, 0x00|NVP6124_VI_720P_2530);
+	    }
+		#if 1
+		else if(chip_id[0] == NVP6124B_R0_ID) {
+	        if (width == 1920 && height == 1080)
+    	        nvp6124B_outport_1mux(nvp6124_mode%2,
+					0x10|NVP6124_VI_1080P_2530, 0x00|NVP6124_VI_1080P_2530);
+        	else if (width == 1280 && height == 720)
+            	nvp6124B_outport_1mux(nvp6124_mode%2,
+					0x10|NVP6124_VI_720P_2530, 0x00|NVP6124_VI_720P_2530);
+		}
+		#endif
+	}
 
 	return 0;
 }
@@ -325,23 +364,45 @@ static int nvp6114a_s_stream(struct v4l2_subdev *sd, int enable)
 static int nvp6114a_g_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
     struct v4l2_subdev_format *fmt)
 {
-   
+
    return 0;
 }
 
-static int nvp6114a_s_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh, 
+static int nvp6114a_s_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 	struct v4l2_subdev_format *fmt)
 {
 	int err=0;
 	struct v4l2_mbus_framefmt *_fmt = &fmt->format;
 	struct dev_state *state = to_state(sd);
-	
+	int width, height;
+
 	vmsg("%s\n", __func__);
 
 	state->width = _fmt->width;
 	state->height = _fmt->height;
 
 	printk("%s : mode %d, %dx%d\n", __func__, state->mode, state->width, state->height);
+
+#if defined(CONFIG_ARCH_S5P4418)
+	    width -= 32;
+		height -= 1;
+#endif
+        if(chip_id[0] == NVP6114A_R0_ID) {
+            if (width == 1920 && height == 1080)
+                nvp6114a_outport_1mux(nvp6124_mode%2,
+                    0x10|NVP6124_VI_1080P_2530, 0x00|NVP6124_VI_1080P_2530);
+            else if (width == 1280 && height == 720)
+                nvp6114a_outport_1mux(nvp6124_mode%2,
+                    0x10|NVP6124_VI_720P_2530, 0x00|NVP6124_VI_720P_2530);
+        }
+        else if(chip_id[0] == NVP6124B_R0_ID) {
+            if (width == 1920 && height == 1080)
+                nvp6124B_outport_1mux(nvp6124_mode%2,
+                    0x10|NVP6124_VI_1080P_2530, 0x00|NVP6124_VI_1080P_2530);
+            else if (width == 1280 && height == 720)
+                nvp6124B_outport_1mux(nvp6124_mode%2,
+                    0x10|NVP6124_VI_720P_2530, 0x00|NVP6124_VI_720P_2530);
+        }
 
 	return err;
 }
@@ -435,7 +496,7 @@ static struct i2c_driver nvp6114a_i2c_driver = {
 	.driver = {
 		.name = AHD_DEV_NAME,
 		.owner = THIS_MODULE,
-	}, 
+	},
 	.probe = nvp6214_probe,
 	.remove = __devexit_p(nvp6114a_remove),
 	.id_table = nvp6114a_id,

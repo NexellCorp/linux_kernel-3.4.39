@@ -43,7 +43,7 @@ struct dev_state {
 	char brightness;
 
 	/* worker */
-	struct work_struct work;	
+	struct work_struct work;
 };
 
 #endif
