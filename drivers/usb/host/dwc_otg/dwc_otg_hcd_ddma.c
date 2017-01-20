@@ -41,6 +41,10 @@
 
 extern bool microframe_schedule;
 
+static void desc_list_free(dwc_otg_qh_t * qh);
+
+void dump_frame_list(dwc_otg_hcd_t * hcd);
+
 static inline uint8_t frame_list_idx(uint16_t frame)
 {
 	return (frame & (MAX_FRLIST_EN_NUM - 1));
@@ -80,30 +84,34 @@ static int desc_list_alloc(dwc_otg_qh_t * qh)
 	int retval = 0;
 
 	qh->desc_list = (dwc_otg_host_dma_desc_t *)
-	    DWC_DMA_ALLOC(sizeof(dwc_otg_host_dma_desc_t) * max_desc_num(qh),
+	    DWC_DMA_ALLOC_ATOMIC(sizeof(dwc_otg_host_dma_desc_t) * max_desc_num(qh),
 			  &qh->desc_list_dma);
 
 	if (!qh->desc_list) {
 		retval = -DWC_E_NO_MEMORY;
 		DWC_ERROR("%s: DMA descriptor list allocation failed\n", __func__);
-		
+		goto exit_cleanup;
 	}
 
 	dwc_memset(qh->desc_list, 0x00,
 		   sizeof(dwc_otg_host_dma_desc_t) * max_desc_num(qh));
 
 	qh->n_bytes =
-	    (uint32_t *) DWC_ALLOC(sizeof(uint32_t) * max_desc_num(qh));
+	    (uint32_t *) DWC_ALLOC_ATOMIC(sizeof(uint32_t) * max_desc_num(qh));
 
 	if (!qh->n_bytes) {
 		retval = -DWC_E_NO_MEMORY;
 		DWC_ERROR
 		    ("%s: Failed to allocate array for descriptors' size actual values\n",
 		     __func__);
-
+		goto exit_cleanup;
 	}
-	return retval;
+	return 0;
 
+exit_cleanup:
+	desc_list_free(qh);
+
+	return retval;
 }
 
 static void desc_list_free(dwc_otg_qh_t * qh)
@@ -123,33 +131,45 @@ static void desc_list_free(dwc_otg_qh_t * qh)
 static int frame_list_alloc(dwc_otg_hcd_t * hcd)
 {
 	int retval = 0;
+
 	if (hcd->frame_list)
 		return 0;
 
-	hcd->frame_list = DWC_DMA_ALLOC(4 * MAX_FRLIST_EN_NUM,
+	hcd->frame_list = DWC_DMA_ALLOC_ATOMIC(4 * MAX_FRLIST_EN_NUM,
 					&hcd->frame_list_dma);
 	if (!hcd->frame_list) {
 		retval = -DWC_E_NO_MEMORY;
 		DWC_ERROR("%s: Frame List allocation failed\n", __func__);
+		goto error0;
 	}
 
 	dwc_memset(hcd->frame_list, 0x00, 4 * MAX_FRLIST_EN_NUM);
 
+error0:
 	return retval;
 }
 
 static void frame_list_free(dwc_otg_hcd_t * hcd)
 {
-	if (!hcd->frame_list)
+	uint32_t *frame_list;
+	dma_addr_t frame_list_dma;
+	dwc_irqflags_t flags;
+
+	DWC_SPINLOCK_IRQSAVE(hcd->lock, &flags);
+	if (!hcd->frame_list) {
+		DWC_SPINUNLOCK_IRQRESTORE(hcd->lock, flags);
 		return;
-	
-	DWC_DMA_FREE(4 * MAX_FRLIST_EN_NUM, hcd->frame_list, hcd->frame_list_dma);
+	}
+
+	frame_list = hcd->frame_list;
+	frame_list_dma = hcd->frame_list_dma;
 	hcd->frame_list = NULL;
+	DWC_SPINUNLOCK_IRQRESTORE(hcd->lock, flags);
+	DWC_DMA_FREE(4 * MAX_FRLIST_EN_NUM, frame_list, frame_list_dma);
 }
 
 static void per_sched_enable(dwc_otg_hcd_t * hcd, uint16_t fr_list_en)
 {
-
 	hcfg_data_t hcfg;
 
 	hcfg.d32 = DWC_READ_REG32(&hcd->core_if->host_if->host_global_regs->hcfg);
@@ -183,7 +203,6 @@ static void per_sched_enable(dwc_otg_hcd_t * hcd, uint16_t fr_list_en)
 
 	DWC_DEBUGPL(DBG_HCD, "Enabling Periodic schedule\n");
 	DWC_WRITE_REG32(&hcd->core_if->host_if->host_global_regs->hcfg, hcfg.d32);
-
 }
 
 static void per_sched_disable(dwc_otg_hcd_t * hcd)
@@ -191,7 +210,7 @@ static void per_sched_disable(dwc_otg_hcd_t * hcd)
 	hcfg_data_t hcfg;
 
 	hcfg.d32 = DWC_READ_REG32(&hcd->core_if->host_if->host_global_regs->hcfg);
-	
+
 	if (!hcfg.b.perschedena) {
 		/* already disabled */
 		return;
@@ -202,8 +221,8 @@ static void per_sched_disable(dwc_otg_hcd_t * hcd)
 	DWC_WRITE_REG32(&hcd->core_if->host_if->host_global_regs->hcfg, hcfg.d32);
 }
 
-/* 
- * Activates/Deactivates FrameList entries for the channel 
+/*
+ * Activates/Deactivates FrameList entries for the channel
  * based on endpoint servicing period.
  */
 void update_frame_list(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh, uint8_t enable)
@@ -286,17 +305,27 @@ static void release_channel_ddma(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 		else
 			hcd->available_host_channels++;
 		DWC_SPINUNLOCK_IRQRESTORE(channel_lock, flags);
-	} else
+	} else {
+		DWC_SPINLOCK_IRQSAVE(channel_lock, &flags);
 		update_frame_list(hcd, qh, 0);
+		hcd->available_host_channels++;
+		DWC_SPINUNLOCK_IRQRESTORE(channel_lock, flags);
+	}
 
-	/* 
+	/*
 	 * The condition is added to prevent double cleanup try in case of device
 	 * disconnect. See channel cleanup in dwc_otg_hcd_disconnect_cb().
 	 */
 	if (hc->qh) {
-		dwc_otg_hc_cleanup(hcd->core_if, hc);
-		DWC_CIRCLEQ_INSERT_TAIL(&hcd->free_hc_list, hc, hc_list_entry);
-		hc->qh = NULL;
+		if (dwc_qh_is_non_per(qh)) {
+			dwc_otg_hc_cleanup(hcd->core_if, hc);
+			DWC_CIRCLEQ_INSERT_TAIL(&hcd->free_hc_list, hc, hc_list_entry);
+			hc->qh = NULL;
+		} else {
+			dwc_otg_hc_cleanup(hcd->core_if, hc);
+			//DWC_CIRCLEQ_INSERT_TAIL(&hcd->free_hc_list, hc, hc_list_entry);
+			hc->qh = NULL;
+		}
 	}
 
 	qh->channel = NULL;
@@ -325,8 +354,8 @@ int dwc_otg_hcd_qh_init_ddma(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 
 	if (qh->do_split) {
 		DWC_ERROR("SPLIT Transfers are not supported in Descriptor DMA.\n");
-    		return -1;
-    	}
+		return -1;
+	}
 
 	retval = desc_list_alloc(qh);
 
@@ -355,6 +384,8 @@ int dwc_otg_hcd_qh_init_ddma(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
  */
 void dwc_otg_hcd_qh_free_ddma(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 {
+	dwc_irqflags_t flags;
+
 	desc_list_free(qh);
 
 	/* 
@@ -364,8 +395,11 @@ void dwc_otg_hcd_qh_free_ddma(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 	 * when it comes here from endpoint disable routine
 	 * channel remains assigned.
 	 */
-	if (qh->channel)
+	DWC_SPINLOCK_IRQSAVE(hcd->lock, &flags);
+	if (qh->channel) {
 		release_channel_ddma(hcd, qh);
+	}
+	DWC_SPINUNLOCK_IRQRESTORE(hcd->lock, flags);
 
 	if ((qh->ep_type == UE_ISOCHRONOUS || qh->ep_type == UE_INTERRUPT)
 	    && (microframe_schedule || !hcd->periodic_channels) && hcd->frame_list) {
@@ -730,7 +764,6 @@ void dwc_otg_hcd_start_xfer_ddma(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 		dwc_otg_hc_start_transfer_ddma(hcd->core_if, hc);
 		break;
 	case DWC_OTG_EP_TYPE_ISOC:
-
 		if (!qh->ntd)
 			skip_frames = recalc_initial_desc_idx(hcd, qh);
 

@@ -1403,8 +1403,8 @@ void dwc_otg_core_init(dwc_otg_core_if_t * core_if)
 #if defined(CONFIG_ARCH_CPU_SLSI)
 		//ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_SINGLE;
 		//ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR;
-		ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR4;
-		//ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR16;
+		//ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR4;
+		ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR16;
 #else
 		/* Broadcom had altered to (1<<3)|(0<<0) - WRESP=1, max 4 beats */
 		ahbcfg.b.hburstlen = (1<<3)|(0<<0);//DWC_GAHBCFG_INT_DMA_BURST_INCR4;
@@ -2627,7 +2627,7 @@ void dwc_otg_hc_cleanup(dwc_otg_core_if_t * core_if, dwc_hc_t * hc)
 	 */
 	hc_regs = core_if->host_if->hc_regs[hc->hc_num];
 	DWC_WRITE_REG32(&hc_regs->hcintmsk, 0);
-	DWC_WRITE_REG32(&hc_regs->hcint, 0xFFFFFFFF);
+	DWC_WRITE_REG32(&hc_regs->hcint, 0xFFFFFFFF & ~(0x3ffff << 14));
 #ifdef DEBUG
 	DWC_TIMER_CANCEL(core_if->hc_xfer_timer[hc->hc_num]);
 #endif

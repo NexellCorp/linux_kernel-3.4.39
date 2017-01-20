@@ -800,16 +800,16 @@ static int dwc_udc_start(struct usb_gadget_driver *driver,
 
 	DWC_DEBUGPL(DBG_PCD, "%s: %s\n", __func__, driver->driver.name);
 
-    /* check error */
-    if (!gadget_wrapper) {
-        printk(KERN_ERR "%s: No gadget_wrapper\n", __func__);
-        return -ENODEV;
-    }
+	/* check error */
+	if (!gadget_wrapper) {
+		printk(KERN_ERR "%s: No gadget_wrapper\n", __func__);
+		return -ENODEV;
+	}
 
-    if (!driver || !bind || !driver->setup) {
-        printk(KERN_ERR "%s: invalid args\n", __func__);
-        return -EINVAL;
-    }
+	if (!driver || !bind || !driver->setup) {
+		printk(KERN_ERR "%s: invalid args\n", __func__);
+		return -EINVAL;
+	}
 
 	if (gadget_wrapper->driver != 0) {
 		DWC_DEBUGPL(DBG_PCDV, "EBUSY (%p)\n", gadget_wrapper->driver);
@@ -911,8 +911,8 @@ static const struct usb_gadget_ops dwc_otg_pcd_ops = {
 	.pullup = dwc_udc_pullup,
 	.vbus_session = dwc_vbus_enable,
 	.vbus_draw = dwc_vbus_draw,
+	.start = dwc_udc_start,
 	.stop = dwc_udc_stop,
-    .start = dwc_udc_start,
 #endif
 };
 
