@@ -1,4 +1,4 @@
-#define DEBUG 1
+/* #define DEBUG 1 */
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -119,7 +119,8 @@ static int _edid_read_block(struct nxp_edid *me, int block, u8 *buf, size_t len)
     u8 offset = EDID_OFFSET(block);
     u8 sum = 0;
 
-    pr_debug("%s: block %d, segment %d, offset %d\n", __func__, block, segment, offset);
+    pr_debug("%s: block %d, segment %d, offset %d\n", __func__, block, segment,
+	     offset);
 
     if (len < EDID_BLOCK_SIZE) {
         printk("%s: invalid len %d\n", __func__, len);
@@ -132,16 +133,8 @@ static int _edid_read_block(struct nxp_edid *me, int block, u8 *buf, size_t len)
         return ret;
     }
 
-    // psw0523 test code making EDID all zeros for HDMI Compliance Test
 #ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
-#if 0
-    for (i = 0; i < EDID_BLOCK_SIZE; i++)
-        buf[i] = 0;
-#endif
-#endif
-
-#ifdef CONFIG_PATCH_HDMI_COMPLIANCE_TEST
-    if (!_is_edid_header_valid(buf)) {
+    if (block < 1 && !_is_edid_header_valid(buf)) {
         printk(KERN_ERR "%s: edid header is invalid!!!\n", __func__);
         return -EINVAL;
     }
@@ -274,10 +267,13 @@ static int nxp_edid_update(struct nxp_edid *me)
     if (ret < 0)
         goto out;
 
+#ifdef DEBUG
     print_hex_dump_bytes("EDID: ", DUMP_PREFIX_OFFSET, edid,
-            ret * EDID_BLOCK_SIZE);
+			 ret * EDID_BLOCK_SIZE);
+#endif
 
-    if (_edid_find_target_cec_address(edid, ret * EDID_BLOCK_SIZE, &cec_phy_address) == true)
+    if (_edid_find_target_cec_address(edid, ret * EDID_BLOCK_SIZE,
+				      &cec_phy_address) == true)
         me->cec_phy_address = cec_phy_address;
 
     fb_edid_to_monspecs(edid, &specs);
@@ -291,10 +287,12 @@ static int nxp_edid_update(struct nxp_edid *me)
     for (i = 0; i < specs.modedb_len; i++) {
         preset = _edid_find_preset(&specs.modedb[i]);
         if (preset) {
-            pr_debug("%s: EDID found %s\n", __func__, preset->name);
+            pr_debug("%s: EDID found %s, first %d\n", __func__, preset->name,
+		     first);
             preset->supported = true;
             if (first) {
                 me->preset = preset->preset;
+		pr_debug("%s: set preset %d\n", __func__, me->preset);
                 first = false;
             }
         }
