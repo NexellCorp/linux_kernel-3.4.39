@@ -21,6 +21,7 @@
 #include <linux/slab.h>
 #include <linux/sched.h>
 #include <linux/init.h>
+#include <linux/delay.h>
 #include <mach/platform.h>
 #include <linux/platform_device.h>
 
@@ -40,6 +41,11 @@
 #define	BANDCTL_100MHz		0x1
 #define	PLLPMS_80MHz		0x3283
 #define	BANDCTL_80MHz		0x0
+
+static bool dp_disable;
+
+MODULE_PARM_DESC(disable, "MiPi display out disable");
+module_param_named(disable, dp_disable, bool, 0600);
 
 static int  mipi_set_vsync(struct disp_process_dev *pdev, struct disp_vsync_info *psync)
 {
@@ -267,6 +273,10 @@ static int  mipi_suspend(struct disp_process_dev *pdev)
 	return mipi_enable(pdev, 0);
 }
 
+extern void nxp_soc_rsc_enter(int);
+extern void nxp_soc_rsc_exit(int);
+extern int  nxp_soc_rsc_status(int);
+
 static void mipi_resume(struct disp_process_dev *pdev)
 {
 	int index = 0;
@@ -340,6 +350,13 @@ static int mipi_probe(struct platform_device *pdev)
 				   plat->display_dev == DISP_DEVICE_MIPI ||
 				   plat->display_in == DISP_DEVICE_RESCONV, -EINVAL);
 	RET_ASSERT_VAL(plat->vsync, -EINVAL);
+
+	if (dp_disable) {
+	    printk("MiPi: display out disabled\n");
+	    printk("MiPi: check module param 'disable' [%s]\n",
+	    	dp_disable ? "off" : "on" );
+		return 0;
+	}
 
 	pmipi = kzalloc(sizeof(*pmipi), GFP_KERNEL);
 	RET_ASSERT_VAL(pmipi, -EINVAL);
