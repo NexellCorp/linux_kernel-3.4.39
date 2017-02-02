@@ -153,3 +153,10 @@ void nxp_soc_rsc_exit(int id)
 	nxp_soc_peri_reset_exit(id);
 }
 EXPORT_SYMBOL_GPL(nxp_soc_rsc_exit);
+
+int nxp_soc_rsc_status(int id)
+{
+	return nxp_soc_peri_reset_status(id);
+}
+EXPORT_SYMBOL_GPL(nxp_soc_rsc_status);
+
