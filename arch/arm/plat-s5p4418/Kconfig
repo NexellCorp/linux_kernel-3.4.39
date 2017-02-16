@@ -27,7 +27,13 @@ choice
 	config PLAT_S5P4418_LEPUS
 		bool "DRONE: Android lepus board"
 		help
-   	 		Support for the drone board.
+   	 		Support for the lepus board.
+
+	config PLAT_S5P4418_RETRO
+		bool "RETRO: Android retro board"
+		help
+   	 		Support for the retro board.
+
 	config PLAT_S5P4418_GENERAL
         bool "GENERAL: Android general board"
         help
