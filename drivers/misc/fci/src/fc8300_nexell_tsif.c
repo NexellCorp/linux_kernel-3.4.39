@@ -35,15 +35,16 @@ int tsif_init(u8 ch_num)
 {
 	struct ts_config_descr	config_descr;
 	struct ts_param_descr	param_descr;
-	struct ts_param_descr   param_desc;
 	struct ts_buf_init_info	buf_info;
 
-	void *clear_buf = kmalloc(64, GFP_KERNEL);
+	void *clear_buf = kzalloc(64, GFP_KERNEL);
+
+	int ret = 0;
 
 	/*      configuration   */
 	config_descr.ch_num                 = ch_num;
 	config_descr.un.bits.clock_pol      = 1;
-	config_descr.un.bits.valid_pol      = 1;
+	config_descr.un.bits.valid_pol      = 0;
 	config_descr.un.bits.sync_pol       = 1;
 	config_descr.un.bits.err_pol        = 1;
 	config_descr.un.bits.data_width1    = 1; /* Serial Setting */
@@ -53,14 +54,10 @@ int tsif_init(u8 ch_num)
 
 	/*	set param - bypass	*/
 	if (clear_buf) {
-		memset(clear_buf, 0x00, sizeof(clear_buf));
-
-		param_desc.info.un.bits.ch_num	= ch_num;
-		param_desc.info.un.bits.type	= NXP_MP2TS_PARAM_TYPE_PID;
-		param_desc.buf			= (void *)clear_buf;
+		param_descr.info.un.bits.ch_num	= ch_num;
+		param_descr.info.un.bits.type	= NXP_MP2TS_PARAM_TYPE_PID;
+		param_descr.buf			= (void *)clear_buf;
 		param_descr.buf_size            = sizeof(clear_buf);
-
-		kfree(clear_buf);
 	}
 
 	/*	set buffer information	*/
@@ -72,10 +69,15 @@ int tsif_init(u8 ch_num)
 
 	if (ts_initialize(&config_descr, &param_descr, &buf_info) < 0) {
 		pr_err("%s: failed ts initialization!!\n", __func__);
-		return -1;
+		ret = -1;
 	}
 
-	return 0;
+	if (clear_buf) {
+		kfree(clear_buf);
+		clear_buf = NULL;
+	}
+
+	return ret;
 }
 
 int tsif_deinit(u8 ch_num)
