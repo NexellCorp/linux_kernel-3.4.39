@@ -738,7 +738,7 @@ static int bdev_try_to_free_page(struct super_block *sb, struct page *page,
 	if (!page_has_buffers(page))
 		return 0;
 	if (journal)
-		return journal_try_to_free_buffers(journal, page, 
+		return journal_try_to_free_buffers(journal, page,
 						   wait & ~__GFP_WAIT);
 	return try_to_free_buffers(page);
 }
@@ -1745,8 +1745,8 @@ static int ext3_fill_super (struct super_block *sb, void *data, int silent)
 	features = EXT3_HAS_INCOMPAT_FEATURE(sb, ~EXT3_FEATURE_INCOMPAT_SUPP);
 	if (features) {
 		ext3_msg(sb, KERN_ERR,
-			"error: couldn't mount because of unsupported "
-			"optional features (%x)", le32_to_cpu(features));
+//			"error: couldn't mount because of unsupported "
+//			"optional features (%x)", le32_to_cpu(features));
 		goto failed_mount;
 	}
 	features = EXT3_HAS_RO_COMPAT_FEATURE(sb, ~EXT3_FEATURE_RO_COMPAT_SUPP);

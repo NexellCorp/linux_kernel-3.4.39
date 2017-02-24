@@ -32,7 +32,10 @@ choice
         bool "GENERAL: Android general board"
         help
             Support for the general board.
-
+	config PLAT_S5P4418_KTWS
+        bool "BEFS: KT Wiz Stick"
+        help
+            Support for the befs board.
 endchoice
 
 #

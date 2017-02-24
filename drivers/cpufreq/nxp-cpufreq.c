@@ -53,7 +53,7 @@ struct cpufreq_asv_ops {
 	long (*get_vol_margin)(long uV, long val, bool dn, bool percent);
 };
 
-#if    defined (CONFIG_ARCH_S5P4418)
+#if defined (CONFIG_ARCH_S5P4418)
 #include "s5p4418-cpufreq.h"
 #elif defined (CONFIG_ARCH_S5P6818)
 #include "s5p6818-cpufreq.h"
