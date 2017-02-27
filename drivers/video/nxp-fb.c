@@ -223,6 +223,7 @@ static void nxp_fb_dev_set_addr(struct nxp_fb_param *par, unsigned phys, int wai
 static int nxp_fb_dev_enable(struct nxp_fb_param *par, bool on, int force)
 {
 #if defined CONFIG_NXP_DISPLAY && !defined(CONFIG_LOGO_NXP_COPY)
+#if !defined(CONFIG_SLSIAP_NXPBOOT)
 	int module = par->fb_dev.device_id;
 	int stat = 0;
 
@@ -234,6 +235,7 @@ static int nxp_fb_dev_enable(struct nxp_fb_param *par, bool on, int force)
 
 	if (!stat)
 		nxp_soc_disp_device_enable_all(module, on ? 1: 0);
+#endif
 #endif
 	return 0;
 }
@@ -1199,6 +1201,9 @@ static int nxp_fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *inf
 #define NXPFB_GET_FB_FD 	_IOWR('N', 101, __u32)
 #define NXPFB_SET_FB_FD 	_IOW('N', 102, __u32)
 #define NXPFB_GET_ACTIVE	_IOR('N', 103, __u32)
+#if defined(CONFIG_SLSIAP_NXPBOOT)
+extern bool is_nxp_boot_animation_run(void);
+#endif
 #endif
 
 static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
@@ -1317,6 +1322,9 @@ static int nxp_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
             } else {
                 if (dev->fb_pan_phys != d->context[i].dma_addr) {
                     dev->fb_pan_phys = d->context[i].dma_addr;
+#if defined(CONFIG_SLSIAP_NXPBOOT)
+                    if (!is_nxp_boot_animation_run())
+#endif
                     nxp_fb_update_buffer(info, 1);
                 }
             }

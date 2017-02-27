@@ -60,3 +60,4 @@ obj-$(CONFIG_AUDIENCE_ES305)	+= es305.o
 obj-$(CONFIG_SLSIAP_BACKWARD_CAMERA) += backward-camera.o
 obj-y               += coda960/
 obj-$(CONFIG_FCI_FC8300) += fci/
+obj-$(CONFIG_SLSIAP_NXPBOOT)	+= nxp-boot.o

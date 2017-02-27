@@ -94,7 +94,7 @@
  * 	Display (DPC and MLC)
  */
 /* Primary */
-#define CFG_DISP_PRI_SCREEN_LAYER               0
+#define CFG_DISP_PRI_SCREEN_LAYER               1
 #define CFG_DISP_PRI_SCREEN_RGB_FORMAT          MLC_RGBFMT_A8R8G8B8
 #define CFG_DISP_PRI_SCREEN_PIXEL_BYTE	        4
 #define CFG_DISP_PRI_SCREEN_COLOR_KEY	        0x090909
@@ -110,17 +110,17 @@
 #define CFG_DISP_PRI_RESOL_WIDTH          		480	// X Resolution
 #define CFG_DISP_PRI_RESOL_HEIGHT				800	// Y Resolution
 
-#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH           10
-#define CFG_DISP_PRI_HSYNC_BACK_PORCH           10
-#define CFG_DISP_PRI_HSYNC_FRONT_PORCH          10
-#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CTRUE
-#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH           10
-#define CFG_DISP_PRI_VSYNC_BACK_PORCH           10
-#define CFG_DISP_PRI_VSYNC_FRONT_PORCH          10
-#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CTRUE
+#define CFG_DISP_PRI_HSYNC_SYNC_WIDTH           2
+#define CFG_DISP_PRI_HSYNC_BACK_PORCH           120
+#define CFG_DISP_PRI_HSYNC_FRONT_PORCH          140
+#define CFG_DISP_PRI_HSYNC_ACTIVE_HIGH          CFALSE
+#define CFG_DISP_PRI_VSYNC_SYNC_WIDTH           2
+#define CFG_DISP_PRI_VSYNC_BACK_PORCH           20
+#define CFG_DISP_PRI_VSYNC_FRONT_PORCH          20
+#define CFG_DISP_PRI_VSYNC_ACTIVE_HIGH 	        CFALSE
 
 #define CFG_DISP_PRI_CLKGEN0_SOURCE             DPC_VCLK_SRC_PLL2
-#define CFG_DISP_PRI_CLKGEN0_DIV                18 // even divide
+#define CFG_DISP_PRI_CLKGEN0_DIV                20 // even divide
 #define CFG_DISP_PRI_CLKGEN0_DELAY              0
 #define CFG_DISP_PRI_CLKGEN0_INVERT				0
 #define CFG_DISP_PRI_CLKGEN1_SOURCE             DPC_VCLK_SRC_VCLK2
@@ -132,7 +132,7 @@
 
 #define	CFG_DISP_PRI_PIXEL_CLOCK				800000000/CFG_DISP_PRI_CLKGEN0_DIV
 
-#define	CFG_DISP_PRI_OUT_SWAPRB 				CFALSE
+#define	CFG_DISP_PRI_OUT_SWAPRB 				CTRUE
 #define CFG_DISP_PRI_OUT_FORMAT                 DPC_FORMAT_RGB888
 #define CFG_DISP_PRI_OUT_YCORDER                DPC_YCORDER_CbYCrY
 #define CFG_DISP_PRI_OUT_INTERLACE              CFALSE

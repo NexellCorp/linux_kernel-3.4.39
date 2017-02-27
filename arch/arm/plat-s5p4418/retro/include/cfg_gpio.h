@@ -203,7 +203,7 @@
 #define PAD_GPIOE14     (PAD_MODE_ALT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_RXD[0]     ,2: SSP1_CLKIO          ,3:_                    =
 #define PAD_GPIOE15     (PAD_MODE_ALT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_RXD[1]     ,2: SSP1_FSS            ,3:_                    =
 #define PAD_GPIOE16     (PAD_MODE_IN  | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_RXD[2]     ,2:_                    ,3:_                    = VG_EN
-#define PAD_GPIOE17     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_RXD[3]     ,2:_                    ,3:_                    =
+#define PAD_GPIOE17     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_HIGH | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_RXD[3]     ,2:_                    ,3:_                    =
 #define PAD_GPIOE18     (PAD_MODE_ALT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_CLK_RX         ,2: SSP1_RXD            ,3:_                    =
 #define PAD_GPIOE19     (PAD_MODE_ALT | PAD_FUNC_ALT2 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_PHY_RX_DV      ,2: SSP1_TXD            ,3:_                    =
 #define PAD_GPIOE20     (PAD_MODE_OUT | PAD_FUNC_ALT0 | PAD_LEVEL_LOW  | PAD_PULL_OFF | PAD_STRENGTH_0)     // 0: GPIO          1: GMAC0_GMII_MDC       ,2:_                    ,3:_                    =
@@ -235,8 +235,8 @@
 /*------------------------------------------------------------------------------
  *	TOUCH
  */
-#define	CFG_IO_TOUCH_PENDOWN_DETECT			(PAD_GPIO_E + 11)
-#define	CFG_IO_TOUCH_RESET_PIN				(PAD_GPIO_C + 12)						/* for aw5306 */
+#define	CFG_IO_TOUCH_PENDOWN_DETECT			(PAD_GPIO_E + 12)
+//#define	CFG_IO_TOUCH_RESET_PIN				(PAD_GPIO_C + 12)						/* for aw5306 */
 
 /*------------------------------------------------------------------------------
  *	GPIO EEPROM

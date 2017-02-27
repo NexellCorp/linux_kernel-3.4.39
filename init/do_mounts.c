@@ -501,6 +501,9 @@ void __init mount_root(void)
 /*
  * Prepare the namespace - decide what/where to mount, load ramdisks, etc.
  */
+#ifdef CONFIG_SLSIAP_NXPBOOT
+extern void start_nxp_load(void);
+#endif
 void __init prepare_namespace(void)
 {
 	int is_floppy;
@@ -557,4 +560,9 @@ out:
 	devtmpfs_mount("dev");
 	sys_mount(".", "/", NULL, MS_MOVE, NULL);
 	sys_chroot((const char __user __force *)".");
+
+#ifdef CONFIG_SLSIAP_NXPBOOT
+    start_nxp_load();
+#endif
+
 }

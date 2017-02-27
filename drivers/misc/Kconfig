@@ -581,4 +581,12 @@ config FCI_FC8300
     default n
     help
         support fci fc8300 isdbt.
+
+config SLSIAP_NXPBOOT
+    bool "SLSIAP Boot Animation in Kernel"
+    depends on (ARCH_S5P4418 || ARCH_S5P6818)
+    default n
+    help
+      If you say yes here, you can view boot animation
+
 endmenu

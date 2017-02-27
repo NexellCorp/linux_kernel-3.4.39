@@ -820,8 +820,16 @@ static void __init do_pre_smp_initcalls(void)
 		do_one_initcall(*fn);
 }
 
+#ifdef CONFIG_SLSIAP_NXPBOOT
+extern void start_nxp_load(void);
+extern void start_nxp_animation(void);
+#endif
 static void run_init_process(const char *init_filename)
 {
+#ifdef CONFIG_SLSIAP_NXPBOOT
+	start_nxp_load();
+    start_nxp_animation();
+#endif
 	argv_init[0] = init_filename;
 	kernel_execve(init_filename, argv_init, envp_init);
 }
@@ -833,9 +841,7 @@ static noinline int init_post(void)
 {
 	/* need to finish all async __init code before freeing the memory */
 	async_synchronize_full();
-#ifndef CONFIG_DEFERRED_INIT_CALL
 	free_initmem();
-#endif
 	mark_rodata_ro();
 	system_state = SYSTEM_RUNNING;
 	numa_default_policy();

@@ -349,6 +349,17 @@ static struct i2c_board_info __initdata gslX680_i2c_bdi = {
 };
 #endif
 
+#if defined(CONFIG_TOUCHSCREEN_MELFAS_MMS438) || defined(CONFIG_TOUCHSCREEN_MELFAS_MMS438S)
+#include <linux/i2c.h>
+#define	MMS438_I2C_BUS		(1)
+
+static struct i2c_board_info __initdata mms438_i2c_bdi = {
+	.type	= "mip4_ts",
+	.addr	= (0x48),
+	.irq    = PB_PIO_IRQ(CFG_IO_TOUCH_PENDOWN_DETECT),
+};
+#endif
+
 
 /*------------------------------------------------------------------------------
  * Keypad platform device
@@ -679,15 +690,15 @@ NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V
 NXE2000_PDATA_INIT(dc4,      0,	1000000, 2000000, 1, 1, 1500000, 1, -1);	/* 1.5V DDR */
 NXE2000_PDATA_INIT(dc5,      0,	1000000, 2000000, 1, 1, 1500000, 1,  4);	/* 1.5V SYS */
 
-NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 3300000, 0,  0);	/* 1.1V CAM */
-NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 0, 0, 1800000, 0,  2);	/* 1.2V ISP */
+NXE2000_PDATA_INIT(ldo1,     0,	1000000, 3500000, 0, 0, 1100000, 0,  0);	/* 1.1V CAM */
+NXE2000_PDATA_INIT(ldo2,     0,	1000000, 3500000, 0, 0, 1200000, 0,  2);	/* 1.2V ISP */
 NXE2000_PDATA_INIT(ldo3,     0,	1000000, 3500000, 1, 1, 1800000, 1,  2);	/* 1.8V SYS1 */
 NXE2000_PDATA_INIT(ldo4,     0,	1000000, 3500000, 0, 0, 1800000, 0,  2);	/* 1.8V ISP */
-NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 0, 0, 2800000, 0,  1);	/* 1.8V CAM */
+NXE2000_PDATA_INIT(ldo5,     0,	1000000, 3500000, 0, 0, 1800000, 0,  1);	/* 1.8V CAM */
 NXE2000_PDATA_INIT(ldo6,     0,	1000000, 3500000, 1, 1, 3300000, 1, -1);	/* 3.3V ALIVE */
 NXE2000_PDATA_INIT(ldo7,     0,	1000000, 3500000, 0, 0, 2800000, 0,  1);	/* 2.8V CAM */
 NXE2000_PDATA_INIT(ldo8,     0,	1000000, 3500000, 0, 0, 2500000, 0,  3);	/* 2.5V CAM */
-NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 1, 1, 2800000, 1,  1);	/* 3.3V TSP */
+NXE2000_PDATA_INIT(ldo9,     0,	1000000, 3500000, 0, 0, 3300000, 0,  1);	/* 3.3V TSP */
 NXE2000_PDATA_INIT(ldo10,    0,	1000000, 3500000, 1, 1, 3300000, 1,  4);	/* 3.3V LCD */
 NXE2000_PDATA_INIT(ldortc1,  0,	1700000, 3500000, 1, 1, 1800000, 1, -1);	/* 1.8V ALIVE */
 NXE2000_PDATA_INIT(ldortc2,  0,	1000000, 3500000, 1, 1, 1000000, 1, -1);	/* 1.0V ALIVE */
@@ -1603,6 +1614,11 @@ void __init nxp_board_devices_register(void)
 #if defined(CONFIG_TOUCHSCREEN_GSLX680)
 	printk("plat: add touch(gslX680) device\n");
 	i2c_register_board_info(GSLX680_I2C_BUS, &gslX680_i2c_bdi, 1);
+#endif
+
+#if defined(CONFIG_TOUCHSCREEN_MELFAS_MMS438) || defined(CONFIG_TOUCHSCREEN_MELFAS_MMS438S)
+	printk("plat: add touch(mms438) device\n");
+	i2c_register_board_info(MMS438_I2C_BUS, &mms438_i2c_bdi, 1);
 #endif
 
 #if defined(CONFIG_SENSORS_MMA865X) || defined(CONFIG_SENSORS_MMA865X_MODULE)

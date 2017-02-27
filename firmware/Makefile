@@ -26,6 +26,26 @@ fw-shipped- += acenic/tg1.bin
 else
 acenic-objs := acenic/tg1.bin acenic/tg2.bin
 endif
+
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MMS427) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MMS438) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MMS438S) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MMS449) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MMS458) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MMS500) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MMS587N) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MMS600) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MCS6000) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MCS8040L) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MFS10) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MFS10VE) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MOS50) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MIT200) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MIT300) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MIT400) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MIT401) += melfas/melfas_mip4_ts.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MELFAS_MIT410) += melfas/melfas_mip4_ts.fw
+
 fw-shipped-$(CONFIG_3C359) += 3com/3C359.bin
 fw-shipped-$(CONFIG_ACENIC) += $(acenic-objs)
 fw-shipped-$(CONFIG_ADAPTEC_STARFIRE) += adaptec/starfire_rx.bin \
