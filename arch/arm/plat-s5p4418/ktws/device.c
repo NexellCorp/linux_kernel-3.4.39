@@ -29,7 +29,7 @@
 #include <linux/amba/pl022.h>
 #include <linux/gpio.h>
 
-/* nexell soc headers */
+/* Nexell SoC Headers */
 #include <mach/platform.h>
 #include <mach/devices.h>
 #include <mach/soc.h>
@@ -59,7 +59,6 @@ const u16 g_DrexQoS[2] = {
 	0xFFF           // S1, Default value
 };
 
-
 #if (CFG_BUS_RECONFIG_TOPBUSSI == 1)
 const u8 g_TopBusSI[8] = {
 	TOPBUS_SI_SLOT_DMAC0,
@@ -75,8 +74,8 @@ const u8 g_TopBusSI[8] = {
 
 #if (CFG_BUS_RECONFIG_TOPBUSQOS == 1)
 const u8 g_TopQoSSI[2] = {
-	1,      // Tidemark
-	(1<<TOPBUS_SI_SLOT_DMAC0) |     // Control
+	1,								// Tidemark
+	(1<<TOPBUS_SI_SLOT_DMAC0) |		// Control
 	(1<<TOPBUS_SI_SLOT_MP2TS) |
 	(1<<TOPBUS_SI_SLOT_DMAC1) |
 	(1<<TOPBUS_SI_SLOT_SDMMC) |
@@ -88,26 +87,26 @@ const u8 g_TopQoSSI[2] = {
 
 #if (CFG_BUS_RECONFIG_BOTTOMBUSSI == 1)
 const u8 g_BottomBusSI[8] = {
-        BOTBUS_SI_SLOT_1ST_ARM,
-        BOTBUS_SI_SLOT_MALI,
-        BOTBUS_SI_SLOT_TOP,
-        BOTBUS_SI_SLOT_1ST_CODA,
-        BOTBUS_SI_SLOT_2ND_ARM,
-        BOTBUS_SI_SLOT_TOP,
-        BOTBUS_SI_SLOT_TOP,
-        BOTBUS_SI_SLOT_2ND_CODA
+	BOTBUS_SI_SLOT_1ST_ARM,
+	BOTBUS_SI_SLOT_MALI,
+	BOTBUS_SI_SLOT_TOP,
+	BOTBUS_SI_SLOT_1ST_CODA,
+	BOTBUS_SI_SLOT_2ND_ARM,
+	BOTBUS_SI_SLOT_TOP,
+	BOTBUS_SI_SLOT_TOP,
+	BOTBUS_SI_SLOT_2ND_CODA
 };
 #endif
 
 #if (CFG_BUS_RECONFIG_BOTTOMBUSQOS == 1)
 const u8 g_BottomQoSSI[2] = {
-	4,      // Tidemark
-	(1<<BOTBUS_SI_SLOT_1ST_ARM) |   // Control
-		(1<<BOTBUS_SI_SLOT_2ND_ARM) |
-		(0<<BOTBUS_SI_SLOT_MALI) |
-		(1<<BOTBUS_SI_SLOT_TOP) |
-		(0<<BOTBUS_SI_SLOT_DEINTERLACE) |
-		(1<<BOTBUS_SI_SLOT_1ST_CODA)
+	4,								// Tidemark
+	(1<<BOTBUS_SI_SLOT_1ST_ARM) |	// Control
+	(1<<BOTBUS_SI_SLOT_2ND_ARM) |
+	(0<<BOTBUS_SI_SLOT_MALI) |
+	(1<<BOTBUS_SI_SLOT_TOP) |
+	(0<<BOTBUS_SI_SLOT_DEINTERLACE) |
+	(1<<BOTBUS_SI_SLOT_1ST_CODA)
 };
 #endif
 
@@ -135,8 +134,8 @@ struct nxp_cpufreq_plat_data dfs_plat_data = {
 };
 
 static struct platform_device dfs_plat_device = {
-	.name			= DEV_NAME_CPUFREQ,
-	.dev			= {
+	.name	= DEV_NAME_CPUFREQ,
+	.dev	= {
 		.platform_data	= &dfs_plat_data,
 	}
 };
@@ -146,13 +145,13 @@ static struct platform_device dfs_plat_device = {
 struct nxp_adc_tmp_trigger adc_tmp_event[] = {
 	{
 		// TMU Policy
-		.temp  = 52,
+		.temp  = 55,
 		.freq  = 600000,
-		.period = 1000, /* Ms */
+		.period = 1000, /* ms */
 	} , {
-		.temp  = 56,
+		.temp  = 60,
 		.freq  = 400000,
-		.period = 1000, /* Ms */
+		.period = 1000, /* ms */
 	}
 };
 
@@ -166,8 +165,8 @@ struct nxp_adc_tmp_platdata adc_tmp_plat_data ={
 };
 
 static struct platform_device adc_temp_plat_device = {
-	.name			= "nxp-adc-tmp",
-	.dev			= {
+	.name	= "nxp-adc-tmp",
+	.dev	= {
 		.platform_data	= &adc_tmp_plat_data,
 	}
 };
@@ -190,10 +189,10 @@ int nxpmac_init(struct platform_device *pdev)
     addr = NX_CLKGEN_GetPhysicalAddress(CLOCKINDEX_OF_DWC_GMAC_MODULE);
     NX_CLKGEN_SetBaseAddress( CLOCKINDEX_OF_DWC_GMAC_MODULE, (void*)IO_ADDRESS(addr));
 
-    NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 4);     // Sync mode for 100 & 10Base-T : External RX_clk
-    NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);    // Sync mode for 100 & 10Base-T
+    NX_CLKGEN_SetClockSource( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 4);			// Sync mode for 100 & 10Base-T : External RX_clk
+    NX_CLKGEN_SetClockDivisor( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, 1);		// Sync mode for 100 & 10Base-T
 
-    NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);    // TX Clk invert off : 100 & 10Base-T
+    NX_CLKGEN_SetClockOutInv( CLOCKINDEX_OF_DWC_GMAC_MODULE, 0, CFALSE);	// TX Clk invert off : 100 & 10Base-T
 
     NX_CLKGEN_SetClockDivisorEnable( CLOCKINDEX_OF_DWC_GMAC_MODULE, CTRUE);
 
@@ -242,21 +241,20 @@ static struct stmmac_mdio_bus_data nxpmac0_mdio_bus = {
 };
 
 static struct plat_stmmacenet_data nxpmac_plat_data = {
-    .phy_addr = 3,      /* hw config */
-    .clk_csr = 0x4,     /* PCLK 150~250 Mhz */
+    .phy_addr = 3,							/* hw config */
+    .clk_csr = 0x4,							/* PCLK 150~250 Mhz */
     .interface = PHY_INTERFACE_MODE_RGMII,
-    .autoneg = AUTONEG_ENABLE, /* AUTONEG_ENABLE or AUTONEG_DISABLE */
-    .speed = SPEED_1000,/* speed & duplex settings apply only when AUTONEG_DISABLE */
+    .autoneg = AUTONEG_ENABLE,				/* AUTONEG_ENABLE or AUTONEG_DISABLE */
+    .speed = SPEED_1000,					/* speed & duplex settings apply only when AUTONEG_DISABLE */
     .duplex = DUPLEX_FULL,
-    .pbl = 16,          /* burst 16 */
-    .has_gmac = 1,      /* GMAC ethernet */
+    .pbl = 16,								/* burst 16 */
+    .has_gmac = 1,							/* GMAC ethernet */
     .enh_desc = 1,
     .mdio_bus_data = &nxpmac0_mdio_bus,
     .init = &nxpmac_init,
 };
 
 /* DWC GMAC Controller registration */
-
 static struct resource nxpmac_resource[] = {
     [0] = DEFINE_RES_MEM(PHY_BASEADDR_GMAC, SZ_8K),
     [1] = DEFINE_RES_IRQ_NAMED(IRQ_PHY_GMAC, "macirq"),
@@ -265,7 +263,7 @@ static struct resource nxpmac_resource[] = {
 static u64 nxpmac_dmamask = DMA_BIT_MASK(32);
 
 struct platform_device nxp_gmac_dev = {
-    .name           = "stmmaceth",  //"s5p4418-gmac",
+    .name           = "stmmaceth",
     .id             = -1,
     .num_resources  = ARRAY_SIZE(nxpmac_resource),
     .resource       = nxpmac_resource,
@@ -287,8 +285,8 @@ struct platform_device nxp_gmac_dev = {
 static struct mtd_partition nxp_nand_parts[] = {
 #if 0
 	{
-		.name           = "root",
-		.offset         =   0 * SZ_1M,
+		.name		= "root",
+		.offset		=   0 * SZ_1M,
 	},
 #else
 	{
@@ -411,7 +409,6 @@ static struct regulator_consumer_supply nxe2000_dc4_supply_0[] = {
 static struct regulator_consumer_supply nxe2000_dc5_supply_0[] = {
 	REGULATOR_SUPPLY("vdd_sys_1.6V", NULL),
 };
-
 static struct regulator_consumer_supply nxe2000_ldo1_supply_0[] = {
 	REGULATOR_SUPPLY("vgps_3.3V", NULL),
 };
@@ -475,8 +472,8 @@ static struct regulator_consumer_supply nxe2000_ldortc2_supply_0[] = {
 		.init_enable	= _init_enable,	\
 		.sleep_slots	= _slp_slots,	\
 	}
-/* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a*/
-/*                 range from min to max voltage according to NXE2000 specification. */
+/* min_uV/max_uV : Please set the appropriate value for the devices that the power supplied within a	*/
+/*                 range from min to max voltage according to NXE2000 specification. 					*/
 NXE2000_PDATA_INIT(dc1,      0,	 950000, 2000000, 1, 1, 1125000, 1,  4);	/* 1.2V ARM */
 NXE2000_PDATA_INIT(dc2,      0,	1000000, 2000000, 1, 1, 1000000, 1,  4);	/* 1.1V CORE */
 NXE2000_PDATA_INIT(dc3,      0,	1000000, 3500000, 1, 1, 3300000, 1,  0);	/* 3.3V SYS */
@@ -532,6 +529,7 @@ static struct nxe2000_pwrkey_platform_data nxe2000_pwrkey_data = {
 	.irq 		= NXE2000_IRQ_BASE,
 	.delay_ms 	= 20,
 };
+
 #define NXE2000_PWRKEY_REG		\
 {	\
 	.id 	= -1,	\
@@ -562,7 +560,6 @@ static struct nxe2000_subdev_info nxe2000_devs_dcdc[] = {
 	NXE2000_DEV_REG,
 	NXE2000_PWRKEY_REG,
 };
-
 
 #define NXE2000_GPIO_INIT(_init_apply, _output_mode, _output_val, _led_mode, _led_func) \
 	{									\
@@ -652,7 +649,6 @@ static struct spi_board_info spi_plat_board[] __initdata = {
         .mode            = SPI_MODE_0,
     },
 };
-
 #endif
 
 /*------------------------------------------------------------------------------
@@ -740,11 +736,11 @@ void __init nxp_board_devices_register(void)
 
 #if defined(CONFIG_MMC_DW)
 	#ifdef CONFIG_MMC_NXP_CH0
-	nxp_mmc_add_device(0, &_dwmci0_data);
+		nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
 
 	#ifdef CONFIG_MMC_NXP_CH1
-	nxp_mmc_add_device(1, &_dwmci1_data);
+		nxp_mmc_add_device(1, &_dwmci1_data);
 	#endif
 #endif
 

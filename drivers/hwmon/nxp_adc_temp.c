@@ -36,13 +36,12 @@
 #include <linux/syscalls.h>
 #include <linux/delay.h>
 
-
 //#define	pr_debug	printk
-
 
 #define DRVNAME	"nxp-adc-tmp"
 #define STEP_FREQ	100000
-#define CORE_DOWN_TEMP_LEVEL	74
+#define CORE_DOWN_TEMP_LEVEL	80
+#define TMP_MODULE_TSM1A103J34D3RZ
 
 struct nxp_adc_tmp_event {
 	int  temp;
@@ -97,6 +96,25 @@ struct nxp_adc_tmp {
 /* initialize table for register value matching with tmp_value */
 static int tmp_table[][2] = {
 // R1 : 4.7K
+#ifdef TMP_MODULE_TSM1A103J34D3RZ
+    [0]  = {2786, 25},
+    [1]  = {2614, 30},
+    [2]  = {2438, 35},
+    [3]  = {2261, 40},
+    [4]  = {2088, 45},
+    [5]  = {1911, 50},
+    [6]  = {1752, 55},
+    [7]  = {1597, 60},
+    [8]  = {1451, 65},
+    [9]  = {1314, 70},
+    [10] = {1188, 75},
+    [11] = {1072, 80},
+    [12] = { 966, 85},
+    [13] = { 870, 90},
+    [14] = { 783, 95},
+    [15] = { 704, 100}
+#else
+// DAE06GJ103H3435V
     [0]  = {2786, 25},
     [1]  = {2615, 30},
     [2]  = {2440, 35},
@@ -113,6 +131,7 @@ static int tmp_table[][2] = {
     [13] = { 871, 90},
     [14] = { 786, 95},
     [15] = { 709, 100}
+#endif
 };
 
 #define TEMP_TABLAE_SIZE	ARRAY_SIZE(tmp_table)
