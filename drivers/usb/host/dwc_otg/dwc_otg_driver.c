@@ -59,8 +59,8 @@
 #include "dwc_otg_regs.h"
 #include "dwc_otg_cil.h"
 
-#ifdef CONFIG_BATTERY_NXE2000
-#include <linux/power/nxe2000_battery.h>
+#ifdef CONFIG_MFD_NXE2000
+#include <linux/mfd/nxe2000.h>
 #endif
 
 /*
@@ -302,7 +302,7 @@ extern void otg_phy_init(void);
 extern void otg_phy_off(void);
 extern void otg_clk_enable(void);
 extern void otg_clk_disable(void);
-#ifdef CONFIG_BATTERY_NXE2000
+#ifdef CONFIG_MFD_NXE2000
 extern void nxp_otgvbus_pwr_set(int enable);
 #endif
 #else
@@ -396,7 +396,7 @@ static int dwc_otg_driver_suspend(struct platform_device *_dev , pm_message_t st
     if(core_if->op_state == A_HOST) {
     	DWC_PRINTF("%s,A_HOST mode\n", __func__);
     	otg_phy_off();	// diabled clock at dwc_otg_hcd_linux.c
-#ifdef CONFIG_BATTERY_NXE2000
+#ifdef CONFIG_MFD_NXE2000
 		nxp_otgvbus_pwr_set(0);
 #endif
     	return 0;

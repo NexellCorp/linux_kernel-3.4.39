@@ -175,7 +175,4 @@ struct nxe2000_battery_platform_data {
 	unsigned long	monitor_time;
 	struct nxe2000_battery_type_data type[BATTERY_TYPE_NUM];
 };
-
-extern int otgid_power_control_by_dwc(int enable);
-
 #endif

@@ -361,4 +361,6 @@ extern void nxe2000_power_off(void);
 extern int nxe2000_irq_init(struct nxe2000 *nxe2000);
 extern int nxe2000_irq_exit(struct nxe2000 *nxe2000);
 
+extern int otgid_power_control_by_dwc(int enable);
+
 #endif

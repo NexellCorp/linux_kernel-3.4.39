@@ -61,8 +61,8 @@
 #include "dwc_otg_regs.h"
 #include "dwc_otg_cil.h"
 
-#ifdef CONFIG_BATTERY_NXE2000
-#include <linux/power/nxe2000_battery.h>
+#ifdef CONFIG_MFD_NXE2000
+#include <linux/mfd/nxe2000.h>
 #endif
 #ifdef CONFIG_KP_AXP22
 extern int axp_otg_power_control(int enable);
@@ -2110,7 +2110,7 @@ void dwc_otg_core_host_init(dwc_otg_core_if_t * core_if)
 	hfir_data_t hfir;
 	dwc_otg_hc_regs_t *hc_regs;
 	int num_channels;
-#if defined(CONFIG_BATTERY_NXE2000) || defined(CONFIG_KP_AXP22)
+#if defined(CONFIG_MFD_NXE2000) || defined(CONFIG_KP_AXP22)
 	int ret;
 #endif
 	gotgctl_data_t gotgctl = {.d32 = 0 };
@@ -2265,9 +2265,9 @@ void dwc_otg_core_host_init(dwc_otg_core_if_t * core_if)
 	/* Turn on the vbus power. */
 	DWC_PRINTF("Init: Port Power? op_state=%d\n", core_if->op_state);
 	if (core_if->op_state == A_HOST) {
-#if defined(CONFIG_BATTERY_NXE2000) || defined(CONFIG_KP_AXP22)
+#if defined(CONFIG_MFD_NXE2000) || defined(CONFIG_KP_AXP22)
 		do{
-#if defined(CONFIG_BATTERY_NXE2000)
+#if defined(CONFIG_MFD_NXE2000)
 			ret = otgid_power_control_by_dwc(1);
 #elif defined(CONFIG_KP_AXP22)
 			ret = axp_otg_power_control(1);
@@ -5194,11 +5194,11 @@ void dwc_otg_core_reset(dwc_otg_core_if_t * core_if)
     gotgctl.d32 = DWC_READ_REG32(&global_regs->gotgctl);
 
 	if (core_if->host_flag) {
-		do {    
+		do {
 			gintsts.d32 = DWC_READ_REG32(&global_regs->gintsts);
-			if (++count > 100) 
+			if (++count > 100)
 			{
-				DWC_WARN("%s() ERROR! Force host mode GINTSTS=%0x\n", __func__, 
+				DWC_WARN("%s() ERROR! Force host mode GINTSTS=%0x\n", __func__,
 					gintsts.d32);
 				break;
 			}

@@ -1782,7 +1782,7 @@ int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on)
 }
 EXPORT_SYMBOL(nxp_hsic_phy_pwr_on);
 
-#ifdef CONFIG_BATTERY_NXE2000
+#ifdef CONFIG_MFD_NXE2000
 /*------------------------------------------------------------------------------
  * USB OTGVBUS power control.
  */

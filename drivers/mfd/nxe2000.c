@@ -35,6 +35,7 @@
 #include <linux/mfd/nxe2000.h>
 #include <mach/platform.h>
 #include <mach/pm.h>
+#include <nxe2000-private.h>
 
 
 static struct i2c_client *nxe2000_i2c_client;
@@ -369,6 +370,50 @@ out:
 	return ret;
 }
 
+#ifndef CONFIG_BATTERY_NXE2000
+int otgid_power_control_by_dwc(int enable)
+{
+	int ret = 0;
+	uint8_t set_val = 0;
+
+	if (!nxe2000_i2c_client)
+		return 0;
+
+	ret = nxe2000_read(&nxe2000_i2c_client->dev, NXE2000_REG_CHGCTL1, &set_val);
+	if (ret < 0)
+		ret = nxe2000_read(&nxe2000_i2c_client->dev, NXE2000_REG_CHGCTL1, &set_val);
+
+	if (enable)
+	{
+		set_val |= (0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
+
+		ret = nxe2000_write(&nxe2000_i2c_client->dev, NXE2000_REG_CHGCTL1, set_val);
+		if (ret < 0)
+			ret = nxe2000_write(&nxe2000_i2c_client->dev, NXE2000_REG_CHGCTL1, set_val);
+
+		/* OTG POWER ON */
+		if (CFG_GPIO_OTG_VBUS_DET > -1)
+			gpio_set_value(CFG_GPIO_OTG_VBUS_DET, 1);
+	}
+	else
+	{
+		/* OTG POWER OFF */
+		if (CFG_GPIO_OTG_VBUS_DET > -1)
+			gpio_set_value(CFG_GPIO_OTG_VBUS_DET, 0);
+
+		set_val &= ~(0x1 << NXE2000_POS_CHGCTL1_OTG_BOOST_EN);
+
+		ret = nxe2000_write(&nxe2000_i2c_client->dev, NXE2000_REG_CHGCTL1, set_val);
+		if (ret < 0)
+			ret = nxe2000_write(&nxe2000_i2c_client->dev, NXE2000_REG_CHGCTL1, set_val);
+
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(otgid_power_control_by_dwc);
+#endif
+
 #ifdef CONFIG_NXE2000_WDG_TEST
 static irqreturn_t nxe2000_watchdog_isr(int irq, void *data)
 {
@@ -385,7 +430,7 @@ static void nxe2000_watchdog_init(struct nxe2000 *nxe2000)
 	int ret;
 
 	printk(KERN_ERR "## \e[31m%s\e[0m() \n", __func__);
-	
+
 	ret = request_threaded_irq((IRQ_SYSTEM_END + NXE2000_IRQ_WD),
 					NULL, nxe2000_watchdog_isr, IRQF_ONESHOT, "nxe2000_watchdog_isr", nxe2000);
 
@@ -665,7 +710,7 @@ void nxe2000_power_off(void)
 
 	ret = nxe2000_write(&nxe2000_i2c_client->dev, NXE2000_PSWR, reg_val);
 	if (ret < 0)
-		dev_err(&nxe2000_i2c_client->dev, 
+		dev_err(&nxe2000_i2c_client->dev,
 					"Error in writing PSWR_REG\n");
 
 	if (g_fg_on_mode == 0) {
@@ -678,7 +723,7 @@ void nxe2000_power_off(void)
 						NXE2000_FG_CTRL, reg_val);
 		}
 		if (ret < 0)
-			dev_err(&nxe2000_i2c_client->dev, 
+			dev_err(&nxe2000_i2c_client->dev,
 					"Error in writing FG_CTRL\n");
 	}
 #endif
@@ -698,7 +743,7 @@ void nxe2000_power_off(void)
 		ret = nxe2000_write(&nxe2000_i2c_client->dev,
 							TIMSET_REG, reg_val);
 	if (ret < 0)
-		dev_err(&nxe2000_i2c_client->dev, 
+		dev_err(&nxe2000_i2c_client->dev,
 				"Error in writing the TIMSET_Reg\n");
 
 	/* Disable all Interrupt */
@@ -843,7 +888,7 @@ static int nxe2000_i2c_resume(struct i2c_client *client)
 		__nxe2000_write(client, NXE2000_INT_IR_SYS, 0x0);
 	}
 	enable_irq(client->irq);
-	
+
 	/* Enable all Interrupt */
 	__nxe2000_write(client, NXE2000_INTC_INTEN, 0xff);
 
