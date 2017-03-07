@@ -1,7 +1,7 @@
 /*
- * drivers/media/video/tw/tw9992.c --  Video Decoder driver for the tw9992
+ * drivers/media/video/socionext/m10mo.c --  Video Decoder driver for the m10mo
  *
- * Copyright(C) 2009. Nexell Co., <pjsin865@nexell.co.kr>
+ * Copyright(C) 2017. Nexell Co.,
  *
  * See file CREDITS for list of people who contributed to this project.
  *
@@ -30,6 +30,7 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/switch.h>
+#include <linux/gpio.h>
 
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
@@ -40,12 +41,15 @@
 #include <mach/devices.h>
 #include <mach/soc.h>
 
-#include "tw9992_video.h"
-#include "tw9992_preset.h"
+#include "m10mo_video.h"
+#include "m10mo_preset.h"
 
+#ifdef CONFIG_PLAT_S5P4418_RETRO
+extern bool is_mipi_camera_power_state(void);
+#endif
 
-#define DEFAULT_SENSOR_WIDTH			720
-#define DEFAULT_SENSOR_HEIGHT			480
+#define DEFAULT_SENSOR_WIDTH			1280
+#define DEFAULT_SENSOR_HEIGHT			720
 #define DEFAULT_SENSOR_CODE				(V4L2_MBUS_FMT_YUYV8_2X8)
 
 #define FORMAT_FLAGS_COMPRESSED			0x3
@@ -56,7 +60,7 @@
 #define POLL_TIME_MS					10
 #define CAPTURE_POLL_TIME_MS    		1000
 
-#define THINE_I2C_RETRY_CNT				3
+#define THINE_I2C_RETRY_CNT				1
 
 
 /* maximum time for one frame at minimum fps (15fps) in normal mode */
@@ -81,30 +85,11 @@
 #define FIRST_SETTING_FOCUS_MODE_DELAY_MS	100
 #define SECOND_SETTING_FOCUS_MODE_DELAY_MS	200
 
-#ifdef CONFIG_VIDEO_TW9992_DEBUG
-enum {
-	TW9992_DEBUG_I2C		= 1U << 0,
-	TW9992_DEBUG_I2C_BURSTS	= 1U << 1,
-};
-static uint32_t tw9992_debug_mask = TW9992_DEBUG_I2C_BURSTS;
-module_param_named(debug_mask, tw9992_debug_mask, uint, S_IWUSR | S_IRUGO);
+#define M10MO_VERSION_1_1	0x11
 
-#define tw9992_debug(mask, x...) \
-	do { \
-		if (tw9992_debug_mask & mask) \
-			pr_info(x);	\
-	} while (0)
-#else
-
-#define tw9992_debug(mask, x...)
-
-#endif
-
-#define TW9992_VERSION_1_1	0x11
-
-enum tw9992_hw_power {
-	TW9992_HW_POWER_OFF,
-	TW9992_HW_POWER_ON,
+enum m10mo_hw_power {
+	M10MO_HW_POWER_OFF,
+	M10MO_HW_POWER_ON,
 };
 
 /* result values returned to HAL */
@@ -120,29 +105,29 @@ enum af_operation_status {
 	AF_CANCEL,
 };
 
-enum tw9992_oprmode {
-	TW9992_OPRMODE_VIDEO = 0,
-	TW9992_OPRMODE_IMAGE = 1,
-	TW9992_OPRMODE_MAX,
+enum m10mo_oprmode {
+	M10MO_OPRMODE_VIDEO = 0,
+	M10MO_OPRMODE_IMAGE = 1,
+	M10MO_OPRMODE_MAX,
 };
 
-struct tw9992_resolution {
+struct m10mo_resolution {
 	u8			value;
-	enum tw9992_oprmode	type;
+	enum m10mo_oprmode	type;
 	u16			width;
 	u16			height;
 };
 
 /* M5MOLS default format (codes, sizes, preset values) */
-static struct v4l2_mbus_framefmt default_fmt[TW9992_OPRMODE_MAX] = {
-	[TW9992_OPRMODE_VIDEO] = {
+static struct v4l2_mbus_framefmt default_fmt[M10MO_OPRMODE_MAX] = {
+	[M10MO_OPRMODE_VIDEO] = {
 		.width		= DEFAULT_SENSOR_WIDTH,
 		.height		= DEFAULT_SENSOR_HEIGHT,
 		.code		= DEFAULT_SENSOR_CODE,
 		.field		= V4L2_FIELD_NONE,
 		.colorspace	= V4L2_COLORSPACE_JPEG,
 	},
-	[TW9992_OPRMODE_IMAGE] = {
+	[M10MO_OPRMODE_IMAGE] = {
 		.width		= 1920,
 		.height		= 1080,
 		.code		= V4L2_MBUS_FMT_JPEG_1X8,
@@ -152,63 +137,63 @@ static struct v4l2_mbus_framefmt default_fmt[TW9992_OPRMODE_MAX] = {
 };
 
 #define SIZE_DEFAULT_FFMT	ARRAY_SIZE(default_fmt)
-enum tw9992_preview_frame_size {
-	TW9992_PREVIEW_VGA,			/* 640x480 */
-	TW9992_PREVIEW_D1,			/* 720x480 */
-	TW9992_PREVIEW_MAX,
+enum m10mo_preview_frame_size {
+	M10MO_PREVIEW_VGA,			/* 640x480 */
+	M10MO_PREVIEW_D1,			/* 720x480 */
+	M10MO_PREVIEW_MAX,
 };
 
-enum tw9992_capture_frame_size {
-	TW9992_CAPTURE_VGA = 0,		/* 640x480 */
-	TW9992_CAPTURE_D1,
-	TW9992_CAPTURE_MAX,
+enum m10mo_capture_frame_size {
+	M10MO_CAPTURE_VGA = 0,		/* 640x480 */
+	M10MO_CAPTURE_D1,
+	M10MO_CAPTURE_MAX,
 };
 
 /* make look-up table */
-static const struct tw9992_resolution tw9992_resolutions[] = {
-	{TW9992_PREVIEW_D1  	, TW9992_OPRMODE_VIDEO, DEFAULT_SENSOR_WIDTH,  DEFAULT_SENSOR_HEIGHT  },
+static const struct m10mo_resolution m10mo_resolutions[] = {
+	{M10MO_PREVIEW_D1  	, M10MO_OPRMODE_VIDEO, DEFAULT_SENSOR_WIDTH,  DEFAULT_SENSOR_HEIGHT  },
 
-	{TW9992_CAPTURE_D1  , TW9992_OPRMODE_IMAGE, DEFAULT_SENSOR_WIDTH, DEFAULT_SENSOR_HEIGHT   },
+	{M10MO_CAPTURE_D1  , M10MO_OPRMODE_IMAGE, DEFAULT_SENSOR_WIDTH, DEFAULT_SENSOR_HEIGHT   },
 };
 
-struct tw9992_framesize {
+struct m10mo_framesize {
 	u32 index;
 	u32 width;
 	u32 height;
 };
 
-static const struct tw9992_framesize tw9992_preview_framesize_list[] = {
-	{TW9992_PREVIEW_D1, 	DEFAULT_SENSOR_WIDTH,		DEFAULT_SENSOR_HEIGHT}
+static const struct m10mo_framesize m10mo_preview_framesize_list[] = {
+	{M10MO_PREVIEW_D1, 	DEFAULT_SENSOR_WIDTH,		DEFAULT_SENSOR_HEIGHT}
 };
 
-static const struct tw9992_framesize tw9992_capture_framesize_list[] = {
-	{TW9992_CAPTURE_D1,		DEFAULT_SENSOR_WIDTH,		DEFAULT_SENSOR_HEIGHT},
+static const struct m10mo_framesize m10mo_capture_framesize_list[] = {
+	{M10MO_CAPTURE_D1,		DEFAULT_SENSOR_WIDTH,		DEFAULT_SENSOR_HEIGHT},
 };
 
-struct tw9992_version {
+struct m10mo_version {
 	u32 major;
 	u32 minor;
 };
 
-struct tw9992_date_info {
+struct m10mo_date_info {
 	u32 year;
 	u32 month;
 	u32 date;
 };
 
-enum tw9992_runmode {
-	TW9992_RUNMODE_NOTREADY,
-	TW9992_RUNMODE_IDLE,
-	TW9992_RUNMODE_RUNNING,
-	TW9992_RUNMODE_CAPTURE,
+enum m10mo_runmode {
+	M10MO_RUNMODE_NOTREADY,
+	M10MO_RUNMODE_IDLE,
+	M10MO_RUNMODE_RUNNING,
+	M10MO_RUNMODE_CAPTURE,
 };
 
-struct tw9992_firmware {
+struct m10mo_firmware {
 	u32 addr;
 	u32 size;
 };
 
-struct tw9992_jpeg_param {
+struct m10mo_jpeg_param {
 	u32 enable;
 	u32 quality;
 	u32 main_size;		/* Main JPEG file size */
@@ -218,7 +203,7 @@ struct tw9992_jpeg_param {
 	u32 postview_offset;
 };
 
-struct tw9992_position {
+struct m10mo_position {
 	int x;
 	int y;
 };
@@ -230,101 +215,101 @@ struct gps_info_common {
 	u32 second;
 };
 
-struct tw9992_gps_info {
+struct m10mo_gps_info {
 	unsigned char gps_buf[8];
 	unsigned char altitude_buf[4];
 	int gps_timeStamp;
 };
 
-struct tw9992_regset {
+struct m10mo_regset {
 	u32 size;
 	u8 *data;
 };
 
-struct tw9992_regset_table {
+struct m10mo_regset_table {
 	const u32	*reg;
 	int		array_size;
 };
 
-#define TW9992_REGSET(x, y)		\
+#define M10MO_REGSET(x, y)		\
 	[(x)] = {					\
 		.reg		= (y),			\
 		.array_size	= ARRAY_SIZE((y)),	\
 }
 
-#define TW9992_REGSET_TABLE(y)		\
+#define M10MO_REGSET_TABLE(y)		\
 	{					\
 		.reg		= (y),			\
 		.array_size	= ARRAY_SIZE((y)),	\
 }
 
-struct tw9992_regs {
-	struct tw9992_regset_table ev[EV_MAX];
-	struct tw9992_regset_table metering[METERING_MAX];
-	struct tw9992_regset_table iso[ISO_MAX];
-	struct tw9992_regset_table effect[V4L2_IMAGE_EFFECT_MAX];
-	struct tw9992_regset_table white_balance[V4L2_WHITE_BALANCE_MAX];
-	struct tw9992_regset_table preview_size[TW9992_PREVIEW_MAX];
-	struct tw9992_regset_table capture_size[TW9992_CAPTURE_MAX];
-	struct tw9992_regset_table scene_mode[V4L2_SCENE_MODE_MAX];
-	struct tw9992_regset_table saturation[V4L2_SATURATION_MAX];
-	struct tw9992_regset_table contrast[V4L2_CONTRAST_MAX];
-	struct tw9992_regset_table sharpness[V4L2_SHARPNESS_MAX];
-	struct tw9992_regset_table fps[FRAME_RATE_MAX];
-	struct tw9992_regset_table preview_return;
-	struct tw9992_regset_table jpeg_quality_high;
-	struct tw9992_regset_table jpeg_quality_normal;
-	struct tw9992_regset_table jpeg_quality_low;
-	struct tw9992_regset_table flash_start;
-	struct tw9992_regset_table flash_end;
-	struct tw9992_regset_table af_assist_flash_start;
-	struct tw9992_regset_table af_assist_flash_end;
-	struct tw9992_regset_table af_low_light_mode_on;
-	struct tw9992_regset_table af_low_light_mode_off;
-	struct tw9992_regset_table aeawb_lockunlock[V4L2_AE_AWB_MAX];
-	//struct tw9992_regset_table ae_awb_lock_on;
-	//struct tw9992_regset_table ae_awb_lock_off;
-	struct tw9992_regset_table low_cap_on;
-	struct tw9992_regset_table low_cap_off;
-	struct tw9992_regset_table wdr_on;
-	struct tw9992_regset_table wdr_off;
-	struct tw9992_regset_table face_detection_on;
-	struct tw9992_regset_table face_detection_off;
-	struct tw9992_regset_table capture_start;
-	struct tw9992_regset_table af_macro_mode_1;
-	struct tw9992_regset_table af_macro_mode_2;
-	struct tw9992_regset_table af_macro_mode_3;
-	struct tw9992_regset_table af_normal_mode_1;
-	struct tw9992_regset_table af_normal_mode_2;
-	struct tw9992_regset_table af_normal_mode_3;
-	struct tw9992_regset_table af_return_macro_position;
-	struct tw9992_regset_table single_af_start;
-	struct tw9992_regset_table single_af_off_1;
-	struct tw9992_regset_table single_af_off_2;
-	struct tw9992_regset_table continuous_af_on;
-	struct tw9992_regset_table continuous_af_off;
-	struct tw9992_regset_table dtp_start;
-	struct tw9992_regset_table dtp_stop;
-	struct tw9992_regset_table init_reg_1;
-	struct tw9992_regset_table init_reg_2;
-	struct tw9992_regset_table init_reg_3;
-	struct tw9992_regset_table init_reg_4;
-	struct tw9992_regset_table flash_init;
-	struct tw9992_regset_table reset_crop;
-	struct tw9992_regset_table get_ae_stable_status;
-	struct tw9992_regset_table get_light_level;
-	struct tw9992_regset_table get_1st_af_search_status;
-	struct tw9992_regset_table get_2nd_af_search_status;
-	struct tw9992_regset_table get_capture_status;
-	struct tw9992_regset_table get_esd_status;
-	struct tw9992_regset_table get_iso;
-	struct tw9992_regset_table get_shutterspeed;
-	struct tw9992_regset_table get_frame_count;
+struct m10mo_regs {
+	struct m10mo_regset_table ev[EV_MAX];
+	struct m10mo_regset_table metering[METERING_MAX];
+	struct m10mo_regset_table iso[ISO_MAX];
+	struct m10mo_regset_table effect[V4L2_IMAGE_EFFECT_MAX];
+	struct m10mo_regset_table white_balance[V4L2_WHITE_BALANCE_MAX];
+	struct m10mo_regset_table preview_size[M10MO_PREVIEW_MAX];
+	struct m10mo_regset_table capture_size[M10MO_CAPTURE_MAX];
+	struct m10mo_regset_table scene_mode[V4L2_SCENE_MODE_MAX];
+	struct m10mo_regset_table saturation[V4L2_SATURATION_MAX];
+	struct m10mo_regset_table contrast[V4L2_CONTRAST_MAX];
+	struct m10mo_regset_table sharpness[V4L2_SHARPNESS_MAX];
+	struct m10mo_regset_table fps[FRAME_RATE_MAX];
+	struct m10mo_regset_table preview_return;
+	struct m10mo_regset_table jpeg_quality_high;
+	struct m10mo_regset_table jpeg_quality_normal;
+	struct m10mo_regset_table jpeg_quality_low;
+	struct m10mo_regset_table flash_start;
+	struct m10mo_regset_table flash_end;
+	struct m10mo_regset_table af_assist_flash_start;
+	struct m10mo_regset_table af_assist_flash_end;
+	struct m10mo_regset_table af_low_light_mode_on;
+	struct m10mo_regset_table af_low_light_mode_off;
+	struct m10mo_regset_table aeawb_lockunlock[V4L2_AE_AWB_MAX];
+	//struct m10mo_regset_table ae_awb_lock_on;
+	//struct m10mo_regset_table ae_awb_lock_off;
+	struct m10mo_regset_table low_cap_on;
+	struct m10mo_regset_table low_cap_off;
+	struct m10mo_regset_table wdr_on;
+	struct m10mo_regset_table wdr_off;
+	struct m10mo_regset_table face_detection_on;
+	struct m10mo_regset_table face_detection_off;
+	struct m10mo_regset_table capture_start;
+	struct m10mo_regset_table af_macro_mode_1;
+	struct m10mo_regset_table af_macro_mode_2;
+	struct m10mo_regset_table af_macro_mode_3;
+	struct m10mo_regset_table af_normal_mode_1;
+	struct m10mo_regset_table af_normal_mode_2;
+	struct m10mo_regset_table af_normal_mode_3;
+	struct m10mo_regset_table af_return_macro_position;
+	struct m10mo_regset_table single_af_start;
+	struct m10mo_regset_table single_af_off_1;
+	struct m10mo_regset_table single_af_off_2;
+	struct m10mo_regset_table continuous_af_on;
+	struct m10mo_regset_table continuous_af_off;
+	struct m10mo_regset_table dtp_start;
+	struct m10mo_regset_table dtp_stop;
+	struct m10mo_regset_table init_reg_1;
+	struct m10mo_regset_table init_reg_2;
+	struct m10mo_regset_table init_reg_3;
+	struct m10mo_regset_table init_reg_4;
+	struct m10mo_regset_table flash_init;
+	struct m10mo_regset_table reset_crop;
+	struct m10mo_regset_table get_ae_stable_status;
+	struct m10mo_regset_table get_light_level;
+	struct m10mo_regset_table get_1st_af_search_status;
+	struct m10mo_regset_table get_2nd_af_search_status;
+	struct m10mo_regset_table get_capture_status;
+	struct m10mo_regset_table get_esd_status;
+	struct m10mo_regset_table get_iso;
+	struct m10mo_regset_table get_shutterspeed;
+	struct m10mo_regset_table get_frame_count;
 };
 
 
-struct tw9992_state {
-	struct tw9992_platform_data 	*pdata;
+struct m10mo_state {
+	struct m10mo_platform_data 	*pdata;
 	struct media_pad	 	pad; /* for media deivce pad */
 	struct v4l2_subdev 		sd;
     struct switch_dev       switch_dev;
@@ -333,20 +318,21 @@ struct tw9992_state {
 	struct v4l2_pix_format		pix;
 	struct v4l2_mbus_framefmt	ffmt[2]; /* for media deivce fmt */
 	struct v4l2_fract		timeperframe;
-	struct tw9992_jpeg_param	jpeg;
-	struct tw9992_version		fw;
-	struct tw9992_version		prm;
-	struct tw9992_date_info	dateinfo;
-	struct tw9992_position	position;
+	struct m10mo_jpeg_param	jpeg;
+	struct m10mo_version		fw;
+	struct m10mo_version		prm;
+	struct m10mo_date_info	dateinfo;
+	struct m10mo_position	position;
 	struct v4l2_streamparm		strm;
 	struct v4l2_streamparm		stored_parm;
-	struct tw9992_gps_info	gps_info;
+	struct m10mo_gps_info	gps_info;
 	struct mutex			ctrl_lock;
 	struct completion		af_complete;
-	enum tw9992_runmode		runmode;
-	enum tw9992_oprmode		oprmode;
+	enum m10mo_runmode		runmode;
+	enum m10mo_oprmode		oprmode;
 	enum af_operation_status	af_status;
 	enum v4l2_mbus_pixelcode	code; /* for media deivce code */
+    int					irq;
 	int 				res_type;
 	u8 				resolution;
 	int				preview_framesize_index;
@@ -363,7 +349,7 @@ struct tw9992_state {
 	bool 				initialized;
 	bool 				restore_preview_size_needed;
 	int 				one_frame_delay_ms;
-	const struct 			tw9992_regs *regs;
+	const struct 			m10mo_regs *regs;
 
     struct i2c_client *i2c_client;
     struct v4l2_ctrl_handler handler;
@@ -376,6 +362,9 @@ struct tw9992_state {
 
     /* nexell: detect worker */
     struct delayed_work work;
+
+	unsigned int init_wait_q;
+	wait_queue_head_t wait;
 };
 
 static const struct v4l2_fmtdesc capture_fmts[] = {
@@ -388,126 +377,15 @@ static const struct v4l2_fmtdesc capture_fmts[] = {
 	},
 };
 
-struct tw9992_state *_state = NULL;
-#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
+struct m10mo_state *_state = NULL;
 
-#define REARCAM_BACKDETECT_TIME 10
-#define REARCAM_MPOUT_TIME      300
-
-#ifdef CONFIG_SLSIAP_BACKWARD_CAMERA
-extern int get_backward_module_num(void);
-#endif
-
-
-static int tw9992_i2c_read_byte(struct i2c_client *, u8, u8 *);
-
-static inline bool _is_backgear_on(void)
+static inline struct m10mo_state *ctrl_to_me(struct v4l2_ctrl *ctrl)
 {
-    int val = nxp_soc_gpio_get_in_value(CFG_BACKWARD_GEAR);
-    if (!val) {
-
-        //NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_CAM_PWR_EN), PAD_GET_BITNO(CFG_IO_CAM_PWR_EN), 1);
-        //_i2c_write_byte(_state.i2c_client, 0x02, 0x44);
-
-        return true;
-    } else {
-        return false;
-    }
+    return container_of(ctrl->handler, struct m10mo_state, handler);
 }
-
-static inline bool _is_camera_on(void)
-{
-    u8 data;
-    u8 cin;
-    extern int mux_status;
-
-    tw9992_i2c_read_byte(_state->i2c_client, 0x03, &data);
-    //printk(KERN_ERR "%s: data 0x%x\n", __func__, data);
 
 #if 0
-    NX_GPIO_SetOutputValue(PAD_GET_GROUP(CFG_IO_CAM_PWR_EN), PAD_GET_BITNO(CFG_IO_CAM_PWR_EN), 1);
-    tw9992_i2c_write_byte(me->i2c_client, 0x02, 0x40);
-
-    if(mux_status == MUX0)
-    {
-        _i2c_read_byte(_state.i2c_client, SV_DET, &cin0);
-        printk(KERN_ERR "%s: cin0 0x%x\n", __func__, cin0);
-        cin0 &= (1<<6);
-        if(cin0) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-#endif
-
-    if (data & 0x80)
-        return false;
-
-    if ((data & 0x40) && (data & 0x08))
-        return true;
-
-    return false;
-}
-
-static irqreturn_t _irq_handler(int irq, void *devdata)
-{
-    printk("IRQ1\n");
-    __cancel_delayed_work(&_state->work);
-    if (switch_get_state(&_state->switch_dev) && !_is_backgear_on()) {
-        printk(KERN_ERR "BACKGEAR OFF\n");
-        switch_set_state(&_state->switch_dev, 0);
-    } else if (!switch_get_state(&_state->switch_dev) && _is_backgear_on()) {
-        schedule_delayed_work(&_state->work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
-    }
-
-    return IRQ_HANDLED;
-}
-
-
-int register_backward_irq_tw9992(void)
-{
-    int ret=0;
-
-#if 0
-    _state->switch_dev.name = "rearcam";
-    switch_dev_register(&_state->switch_dev);
-    switch_set_state(&_state->switch_dev, 0);
-#endif
-
-    ret = request_irq(IRQ_GPIO_START + CFG_BACKWARD_GEAR, _irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "tw9900", &_state);
-    if (ret<0) {
-        pr_err("%s: failed to request_irq(irqnum %d), ret : %d\n", __func__, IRQ_ALIVE_1, ret);
-        return -1;
-    }
-
-    return 0;
-}
-
-static void _work_handler(struct work_struct *work)
-{
-    if (_is_backgear_on() && _is_camera_on()) {
-        printk(KERN_ERR "BACK GEAR ON && CAMERA ON\n");
-        switch_set_state(&_state->switch_dev, 1);
-        return;
-    } else if (switch_get_state(&_state->switch_dev)) {
-        printk(KERN_ERR "BACKGEAR OFF\n");
-        switch_set_state(&_state->switch_dev, 0);
-    }
-    else if (_is_backgear_on())
-    {
-        schedule_delayed_work(&_state->work, msecs_to_jiffies(REARCAM_BACKDETECT_TIME));
-        printk(KERN_ERR "Rearcam check\n");
-    }
-}
-#endif
-
-static inline struct tw9992_state *ctrl_to_me(struct v4l2_ctrl *ctrl)
-{
-    return container_of(ctrl->handler, struct tw9992_state, handler);
-}
-
-static int tw9992_i2c_read_byte(struct i2c_client *client, u8 addr, u8 *data)
+static int m10mo_i2c_read_byte(struct i2c_client *client, u8 addr, u8 *data)
 {
 	s8 i = 0;
 	s8 ret = 0;
@@ -524,18 +402,16 @@ static int tw9992_i2c_read_byte(struct i2c_client *client, u8 addr, u8 *data)
 	msg[1].len = 1;
 	msg[1].buf = &buf;
 
-	for(i=0; i<THINE_I2C_RETRY_CNT; i++)
-	{
+	for (i=0; i<THINE_I2C_RETRY_CNT; i++) {
 		ret = i2c_transfer(client->adapter, msg, 2);
 		if (likely(ret == 2))
 			break;
 		//mdelay(POLL_TIME_MS);
-		//dev_err(&client->dev, "\e[31mtw9992_i2c_write_byte failed reg:0x%02x retry:%d\e[0m\n", addr, i);
+		//dev_err(&client->dev, "\e[31mm10mo_i2c_write_byte failed reg:0x%02x retry:%d\e[0m\n", addr, i);
 	}
 
-	if (unlikely(ret != 2))
-	{
-		dev_err(&client->dev, "\e[31mtw9992_i2c_read_byte failed reg:0x%02x \e[0m\n", addr);
+	if (unlikely(ret != 2)) {
+		dev_err(&client->dev, "\e[31mm10mo_i2c_read_byte failed reg:0x%02x \e[0m\n", addr);
 		return -EIO;
 	}
 
@@ -543,7 +419,7 @@ static int tw9992_i2c_read_byte(struct i2c_client *client, u8 addr, u8 *data)
 	return 0;
 }
 
-static int tw9992_i2c_write_byte(struct i2c_client *client, u8 addr, u8 val)
+static int m10mo_i2c_write_byte(struct i2c_client *client, u8 addr, u8 val)
 {
 	s8 i = 0;
 	s8 ret = 0;
@@ -559,28 +435,63 @@ static int tw9992_i2c_write_byte(struct i2c_client *client, u8 addr, u8 val)
 	buf[0] = addr;
 	buf[1] = val ;
 
-	for(i=0; i<THINE_I2C_RETRY_CNT; i++)
-	{
+	for (i=0; i<THINE_I2C_RETRY_CNT; i++) {
 		ret = i2c_transfer(client->adapter, &msg, 1);
 		if (likely(ret == 1))
 			break;
 		//mdelay(POLL_TIME_MS);
-		//dev_err(&client->dev, "\e[31mtw9992_i2c_write_byte failed reg:0x%02x write:0x%04x, retry:%d\e[0m\n", addr, val, i);
+		//dev_err(&client->dev, "\e[31mm10mo_i2c_write_byte failed reg:0x%02x write:0x%04x, retry:%d\e[0m\n", addr, val, i);
 	}
 
-	if (ret != 1)
-	{
-		tw9992_i2c_read_byte(client, addr, &read_val);
-		dev_err(&client->dev, "\e[31mtw9992_i2c_write_byte failed reg:0x%02x write:0x%04x, read:0x%04x, retry:%d\e[0m\n", addr, val, read_val, i);
+	if (ret != 1) {
+		m10mo_i2c_read_byte(client, addr, &read_val);
+		dev_err(&client->dev, "\e[31mm10mo_i2c_write_byte failed reg:0x%02x write:0x%04x, read:0x%04x, retry:%d\e[0m\n", addr, val, read_val, i);
 		return -EIO;
 	}
 
 	return 0;
 }
+#endif
 
-static int tw9992_i2c_write_block(struct v4l2_subdev *sd, u8 *buf, int size)
+
+static int m10mo_i2c_read_block(struct i2c_client *client, u8 *buf, int size)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	s8 i = 0;
+	s8 ret = 0;
+	struct i2c_msg msg[2];
+
+	msg[0].addr = client->addr;
+	msg[0].flags = I2C_M_RD;
+	msg[0].len = size+1;
+	msg[0].buf = buf;
+
+#if 0
+	msg[1].addr = client->addr;
+	msg[1].flags = I2C_M_RD;
+	msg[1].len = size;
+	msg[1].buf = &buf;
+#endif
+
+	for (i=0; i<THINE_I2C_RETRY_CNT; i++) {
+		ret = i2c_transfer(client->adapter, msg, 1);
+		if (likely(ret == 2))
+			break;
+		//mdelay(POLL_TIME_MS);
+		//dev_err(&client->dev, "\e[31mm10mo_i2c_write_byte failed reg:0x%02x retry:%d\e[0m\n", addr, i);
+	}
+
+#if 0
+	if (unlikely(ret != 2)) {
+		dev_err(&client->dev, "\e[31mm10mo_i2c_read_block failed \e[0m\n");
+		return -EIO;
+	}
+#endif
+	return 0;
+}
+
+
+static int m10mo_i2c_write_block(struct i2c_client *client, u8 *buf, int size)
+{
 	s8 i = 0;
 	s8 ret = 0;
 	struct i2c_msg msg;
@@ -590,17 +501,16 @@ static int tw9992_i2c_write_block(struct v4l2_subdev *sd, u8 *buf, int size)
 	msg.len = size;
 	msg.buf = buf;
 
-	for(i=0; i<THINE_I2C_RETRY_CNT; i++)
-	{
+	for (i=0; i<THINE_I2C_RETRY_CNT; i++) {
 		ret = i2c_transfer(client->adapter, &msg, 1);
 		if (likely(ret == 1))
 			break;
 		msleep(POLL_TIME_MS);
 	}
 
-	if (ret != 1)
-	{
-		dev_err(&client->dev, "\e[31mtw9992_i2c_write_block failed size:%d \e[0m\n", size);
+	if (ret != 1) {
+		for (i=0; i<size; i++)
+			dev_err(&client->dev, "\e[31mm10mo_i2c_write_block failed\e[0m buff[%d]:0x%02x \n", i, buf[i]);
 		return -EIO;
 	}
 
@@ -608,142 +518,60 @@ static int tw9992_i2c_write_block(struct v4l2_subdev *sd, u8 *buf, int size)
 }
 
 
-static int tw9992_reg_set_write(struct i2c_client *client, u8 *RegSet)
-{
-	u8 index, val;
-	int ret = 0;
-
-	while (( RegSet[0] != 0xFF ) || ( RegSet[1]!= 0xFF )) {			// 0xff, 0xff is end of data
-		index = *RegSet;
-		val = *(RegSet+1);
-
-		ret = tw9992_i2c_write_byte(client, index, val);
-		if(ret < 0)
-			return ret;
-
-		RegSet+=2;
-	}
-
-	return 0;
-}
-
 /**
  * psw0523 add private controls
  */
 #define V4L2_CID_MUX        (V4L2_CTRL_CLASS_USER | 0x1001)
 #define V4L2_CID_STATUS     (V4L2_CTRL_CLASS_USER | 0x1002)
 
-static int tw9992_set_mux(struct v4l2_ctrl *ctrl)
+static int m10mo_set_mux(struct v4l2_ctrl *ctrl)
 {
-    struct tw9992_state *me = ctrl_to_me(ctrl);
-    /*printk("%s: val %d\n", __func__, ctrl->val);*/
-    if (ctrl->val == 0) {
-        // MUX 0 : Black Box
-        tw9992_i2c_write_byte(me->i2c_client, 0x02, 0x44);
-        tw9992_i2c_write_byte(me->i2c_client, 0x3b, 0x30);
-    } else {
-        // MUX 1 : Front Camera
-        tw9992_i2c_write_byte(me->i2c_client, 0x02, 0x46);
-        tw9992_i2c_write_byte(me->i2c_client, 0x3b, 0x0c);
-    }
-
-
     return 0;
 }
 
-static int tw9992_get_status(struct v4l2_ctrl *ctrl)
+static int m10mo_get_status(struct v4l2_ctrl *ctrl)
 {
-    struct tw9992_state *me = ctrl_to_me(ctrl);
-    u8 data = 0;
-    u8 mux;
-    u8 val = 0;
-
-    tw9992_i2c_read_byte(me->i2c_client, 0x02, &data);
-    data = data & 0x0f;
-    if (data == 0x4)
-        mux = 0;
-    else
-        mux = 1;
-
-    if (mux == 0) {
-        // black box
-        /*printk("mux ==> blackbox\n");*/
-        printk("mux ==> blackbox\n");
-        tw9992_i2c_read_byte(me->i2c_client, 0x03, &data);
-        if (!(data & 0x80))
-            val |= 1 << 0;
-
-        tw9992_i2c_write_byte(me->i2c_client, 0x52, 0x03);
-        tw9992_i2c_read_byte(me->i2c_client, 0x52, &data);
-        if (data == 0x03)
-            val |= 1 << 1;
-    } else {
-        // front camera
-        /*printk("mux ==> frontcamera\n");*/
-        printk("mux ==> frontcamera\n");
-        tw9992_i2c_read_byte(me->i2c_client, 0x03, &data);
-        if (!(data & 0x80))
-            val |= 1 << 1;
-
-        tw9992_i2c_write_byte(me->i2c_client, 0x52, 0x03);
-        tw9992_i2c_read_byte(me->i2c_client, 0x52, &data);
-        if (data == 0x03)
-            val |= 1 << 0;
-    }
-
-    /*printk("status: 0x%x\n", val);*/
-    ctrl->val = val;
     return 0;
 }
 
-static int tw9992_set_brightness(struct v4l2_ctrl *ctrl)
+static int m10mo_set_brightness(struct v4l2_ctrl *ctrl)
 {
-    struct tw9992_state *me = ctrl_to_me(ctrl);
-    if (me->runmode != TW9992_RUNMODE_RUNNING) {
-        me->brightness = ctrl->val;
-    } else {
-        if (ctrl->val != me->brightness) {
-            printk(KERN_ERR "%s: set brightness %d\n", __func__, ctrl->val);
-            tw9992_i2c_write_byte(me->i2c_client, 0x10, ctrl->val);
-            me->brightness = ctrl->val;
-        }
-    }
     return 0;
 }
 
-static int tw9992_s_ctrl(struct v4l2_ctrl *ctrl)
+static int m10mo_s_ctrl(struct v4l2_ctrl *ctrl)
 {
     switch (ctrl->id) {
     case V4L2_CID_MUX:
-        return tw9992_set_mux(ctrl);
+        return m10mo_set_mux(ctrl);
     case V4L2_CID_BRIGHTNESS:
         printk("%s: brightness\n", __func__);
-        return tw9992_set_brightness(ctrl);
+        return m10mo_set_brightness(ctrl);
     default:
         printk(KERN_ERR "%s: invalid control id 0x%x\n", __func__, ctrl->id);
         return -EINVAL;
     }
 }
 
-static int tw9992_g_volatile_ctrl(struct v4l2_ctrl *ctrl)
+static int m10mo_g_volatile_ctrl(struct v4l2_ctrl *ctrl)
 {
     switch (ctrl->id) {
     case V4L2_CID_STATUS:
-        return tw9992_get_status(ctrl);
+        return m10mo_get_status(ctrl);
     default:
         printk(KERN_ERR "%s: invalid control id 0x%x\n", __func__, ctrl->id);
         return -EINVAL;
     }
 }
 
-static const struct v4l2_ctrl_ops tw9992_ctrl_ops = {
-     .s_ctrl = tw9992_s_ctrl,
-     .g_volatile_ctrl = tw9992_g_volatile_ctrl,
+static const struct v4l2_ctrl_ops m10mo_ctrl_ops = {
+     .s_ctrl = m10mo_s_ctrl,
+     .g_volatile_ctrl = m10mo_g_volatile_ctrl,
 };
 
-static const struct v4l2_ctrl_config tw9992_custom_ctrls[] = {
+static const struct v4l2_ctrl_config m10mo_custom_ctrls[] = {
     {
-        .ops  = &tw9992_ctrl_ops,
+        .ops  = &m10mo_ctrl_ops,
         .id   = V4L2_CID_MUX,
         .type = V4L2_CTRL_TYPE_INTEGER,
         .name = "MuxControl",
@@ -753,7 +581,7 @@ static const struct v4l2_ctrl_config tw9992_custom_ctrls[] = {
         .step = 1,
     },
     {
-        .ops  = &tw9992_ctrl_ops,
+        .ops  = &m10mo_ctrl_ops,
         .id   = V4L2_CID_STATUS,
         .type = V4L2_CTRL_TYPE_INTEGER,
         .name = "Status",
@@ -766,23 +594,23 @@ static const struct v4l2_ctrl_config tw9992_custom_ctrls[] = {
 };
 
 #define NUM_CTRLS 3
-static int tw9992_initialize_ctrls(struct tw9992_state *me)
+static int m10mo_initialize_ctrls(struct m10mo_state *me)
 {
     v4l2_ctrl_handler_init(&me->handler, NUM_CTRLS);
 
-    me->ctrl_mux = v4l2_ctrl_new_custom(&me->handler, &tw9992_custom_ctrls[0], NULL);
+    me->ctrl_mux = v4l2_ctrl_new_custom(&me->handler, &m10mo_custom_ctrls[0], NULL);
     if (!me->ctrl_mux) {
          printk(KERN_ERR "%s: failed to v4l2_ctrl_new_custom for mux\n", __func__);
          return -ENOENT;
     }
 
-    me->ctrl_status = v4l2_ctrl_new_custom(&me->handler, &tw9992_custom_ctrls[1], NULL);
+    me->ctrl_status = v4l2_ctrl_new_custom(&me->handler, &m10mo_custom_ctrls[1], NULL);
     if (!me->ctrl_status) {
          printk(KERN_ERR "%s: failed to v4l2_ctrl_new_custom for status\n", __func__);
          return -ENOENT;
     }
 
-    me->ctrl_brightness = v4l2_ctrl_new_std(&me->handler, &tw9992_ctrl_ops,
+    me->ctrl_brightness = v4l2_ctrl_new_std(&me->handler, &m10mo_ctrl_ops,
             V4L2_CID_BRIGHTNESS, -128, 127, 1, -112);
     if (!me->ctrl_brightness) {
         printk(KERN_ERR "%s: failed to v4l2_ctrl_new_std for brightness\n", __func__);
@@ -799,138 +627,9 @@ static int tw9992_initialize_ctrls(struct tw9992_state *me)
     return 0;
 }
 
-
-/*
- * Parse the init_reg2 array into a number of register sets that
- * we can send over as i2c burst writes instead of writing each
- * entry of init_reg2 as a single 4 byte write.  Write the
- * new data structures and then free them.
- */
-static int tw9992_write_init_reg2_burst(struct v4l2_subdev *sd) __attribute__((unused));
-static int tw9992_write_init_reg2_burst(struct v4l2_subdev *sd)
-{
-	struct tw9992_state *state =
-		container_of(sd, struct tw9992_state, sd);
-	struct tw9992_regset *regset_table;
-	struct tw9992_regset *regset;
-	struct tw9992_regset *end_regset;
-	u8 *regset_data;
-	u8 *dst_ptr;
-	const u32 *end_src_ptr;
-	bool flag_copied;
-	int init_reg_2_array_size = state->regs->init_reg_2.array_size;
-	int init_reg_2_size = init_reg_2_array_size * sizeof(u32);
-	const u32 *src_ptr = state->regs->init_reg_2.reg;
-	u32 src_value;
-	int err;
-
-	pr_debug("%s : start\n", __func__);
-
-	regset_data = vmalloc(init_reg_2_size);
-	if (regset_data == NULL)
-		return -ENOMEM;
-	regset_table = vmalloc(sizeof(struct tw9992_regset) *
-			init_reg_2_size);
-	if (regset_table == NULL) {
-		kfree(regset_data);
-		return -ENOMEM;
-	}
-
-	dst_ptr = regset_data;
-	regset = regset_table;
-	end_src_ptr = &state->regs->init_reg_2.reg[init_reg_2_array_size];
-
-	src_value = *src_ptr++;
-	while (src_ptr <= end_src_ptr) {
-		/* initial value for a regset */
-		regset->data = dst_ptr;
-		flag_copied = false;
-		*dst_ptr++ = src_value >> 24;
-		*dst_ptr++ = src_value >> 16;
-		*dst_ptr++ = src_value >> 8;
-		*dst_ptr++ = src_value;
-
-		/* check subsequent values for a data flag (starts with
-		   0x0F12) or something else */
-		do {
-			src_value = *src_ptr++;
-			if ((src_value & 0xFFFF0000) != 0x0F120000) {
-				/* src_value is start of next regset */
-				regset->size = dst_ptr - regset->data;
-				regset++;
-				break;
-			}
-			/* copy the 0x0F12 flag if not done already */
-			if (!flag_copied) {
-				*dst_ptr++ = src_value >> 24;
-				*dst_ptr++ = src_value >> 16;
-				flag_copied = true;
-			}
-			/* copy the data part */
-			*dst_ptr++ = src_value >> 8;
-			*dst_ptr++ = src_value;
-		} while (src_ptr < end_src_ptr);
-	}
-	pr_debug("%s : finished creating table\n", __func__);
-
-	end_regset = regset;
-	pr_debug("%s : first regset = %p, last regset = %p, count = %d\n",
-		__func__, regset_table, regset, end_regset - regset_table);
-	pr_debug("%s : regset_data = %p, end = %p, dst_ptr = %p\n", __func__,
-		regset_data, regset_data + (init_reg_2_size * sizeof(u32)),
-		dst_ptr);
-
-#ifdef CONFIG_VIDEO_TW9992_DEBUG
-	if (tw9992_debug_mask & TW9992_DEBUG_I2C_BURSTS) {
-		int last_regset_end_addr = 0;
-		regset = regset_table;
-		do {
-			tw9992_dump_regset(regset);
-			if (regset->size > 4) {
-				int regset_addr = (regset->data[2] << 8 |
-						regset->data[3]);
-				if (last_regset_end_addr == regset_addr)
-					pr_info("%s : this regset can be"
-						" combined with previous\n",
-						__func__);
-				last_regset_end_addr = (regset_addr
-							+ regset->size - 6);
-			}
-			regset++;
-		} while (regset < end_regset);
-	}
-#endif
-	regset = regset_table;
-	pr_debug("%s : start writing init reg 2 bursts\n", __func__);
-	do {
-		if (regset->size > 4) {
-			/* write the address packet */
-			err = tw9992_i2c_write_block(sd, regset->data, 4);
-			if (err)
-				break;
-			/* write the data in a burst */
-			err = tw9992_i2c_write_block(sd, regset->data+4,
-						regset->size-4);
-
-		} else
-			err = tw9992_i2c_write_block(sd, regset->data,
-						regset->size);
-		if (err)
-			break;
-		regset++;
-	} while (regset < end_regset);
-
-	pr_debug("%s : finished writing init reg 2 bursts\n", __func__);
-
-	vfree(regset_data);
-	vfree(regset_table);
-
-	return err;
-}
-
-static int tw9992_set_from_table(struct v4l2_subdev *sd,
+static int m10mo_set_from_table(struct v4l2_subdev *sd,
 				const char *setting_name,
-				const struct tw9992_regset_table *table,
+				const struct m10mo_regset_table *table,
 				int table_size, int index)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -949,14 +648,14 @@ static int tw9992_set_from_table(struct v4l2_subdev *sd,
 	table += index;
 	if (table->reg == NULL)
 		return -EINVAL;
-	return 0;//tw9992_write_regs(sd, table->reg, table->array_size);
+	return 0;//m10mo_write_regs(sd, table->reg, table->array_size);
 }
 
-static int tw9992_set_parameter(struct v4l2_subdev *sd,
+static int m10mo_set_parameter(struct v4l2_subdev *sd,
 				int *current_value_ptr,
 				int new_value,
 				const char *setting_name,
-				const struct tw9992_regset_table *table,
+				const struct m10mo_regset_table *table,
 				int table_size)
 {
 	int err;
@@ -965,7 +664,7 @@ static int tw9992_set_parameter(struct v4l2_subdev *sd,
 		return 0;
 		*/
 
-	err = tw9992_set_from_table(sd, setting_name, table,
+	err = m10mo_set_from_table(sd, setting_name, table,
 				table_size, new_value);
 
 	if (!err)
@@ -973,10 +672,10 @@ static int tw9992_set_parameter(struct v4l2_subdev *sd,
 	return err;
 }
 
-static void tw9992_init_parameters(struct v4l2_subdev *sd)
+static void m10mo_init_parameters(struct v4l2_subdev *sd)
 {
-	struct tw9992_state *state =
-		container_of(sd, struct tw9992_state, sd);
+	struct m10mo_state *state =
+		container_of(sd, struct m10mo_state, sd);
 	struct sec_cam_parm *parms =
 		(struct sec_cam_parm *)&state->strm.parm.raw_data;
 	struct sec_cam_parm *stored_parms =
@@ -1021,11 +720,11 @@ static void tw9992_init_parameters(struct v4l2_subdev *sd)
 	state->one_frame_delay_ms = NORMAL_MODE_MAX_ONE_FRAME_DELAY_MS;
 
     /* psw0523 block this */
-	/* tw9992_stop_auto_focus(sd); */
+	/* m10mo_stop_auto_focus(sd); */
 }
 
-static void tw9992_set_framesize(struct v4l2_subdev *sd,
-				const struct tw9992_framesize *frmsize,
+static void m10mo_set_framesize(struct v4l2_subdev *sd,
+				const struct m10mo_framesize *frmsize,
 				int frmsize_count, bool exact_match);
 
 
@@ -1044,14 +743,14 @@ static void tw9992_set_framesize(struct v4l2_subdev *sd,
  * In case of no perfect match, we set the last entry (which is supposed
  * to be the largest resolution supported.)
  */
-static void tw9992_set_framesize(struct v4l2_subdev *sd,
-				const struct tw9992_framesize *frmsize,
+static void m10mo_set_framesize(struct v4l2_subdev *sd,
+				const struct m10mo_framesize *frmsize,
 				int frmsize_count, bool preview)
 {
-	struct tw9992_state *state =
-		container_of(sd, struct tw9992_state, sd);
+	struct m10mo_state *state =
+		container_of(sd, struct m10mo_state, sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	const struct tw9992_framesize *last_frmsize =
+	const struct m10mo_framesize *last_frmsize =
 		&frmsize[frmsize_count - 1];
 	int err;
 
@@ -1099,7 +798,7 @@ static void tw9992_set_framesize(struct v4l2_subdev *sd,
 			__func__, state->pix.width, state->pix.height,
 			state->preview_framesize_index);
 
-		err = tw9992_set_from_table(sd, "set preview size",
+		err = m10mo_set_from_table(sd, "set preview size",
 					state->regs->preview_size,
 					ARRAY_SIZE(state->regs->preview_size),
 					state->preview_framesize_index);
@@ -1113,7 +812,7 @@ static void tw9992_set_framesize(struct v4l2_subdev *sd,
 			__func__, state->pix.width, state->pix.height,
 			state->capture_framesize_index);
 
-		err = tw9992_set_from_table(sd, "set capture size",
+		err = m10mo_set_from_table(sd, "set capture size",
 					state->regs->capture_size,
 					ARRAY_SIZE(state->regs->capture_size),
 					state->capture_framesize_index);
@@ -1126,66 +825,6 @@ static void tw9992_set_framesize(struct v4l2_subdev *sd,
 
 }
 
-static void tw9992_get_esd_int(struct v4l2_subdev *sd, struct v4l2_control *ctrl) __attribute__((unused));
-static void tw9992_get_esd_int(struct v4l2_subdev *sd,
-				struct v4l2_control *ctrl)
-{
-	struct tw9992_state *state =
-		container_of(sd, struct tw9992_state, sd);
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	u16 read_value;
-	int err;
-
-	if ((TW9992_RUNMODE_RUNNING == state->runmode) &&
-		(state->af_status != AF_START)) {
-		err = tw9992_set_from_table(sd, "get esd status",
-					&state->regs->get_esd_status,
-					1, 0);
-		//err |= tw9992_i2c_read_word(client, 0x0F12, &read_value);
-		dev_dbg(&client->dev,
-			"%s: read_value == 0x%x\n", __func__, read_value);
-		/* return to write mode */
-		//err |= tw9992_i2c_write_word(client, 0x0028, 0x7000);
-
-		if (err < 0) {
-			v4l_info(client,
-				"Failed I2C for getting ESD information\n");
-			ctrl->value = 0x01;
-		} else {
-			if (read_value != 0x0000) {
-				v4l_info(client, "ESD interrupt happened!!\n");
-				ctrl->value = 0x01;
-			} else {
-				dev_dbg(&client->dev,
-					"%s: No ESD interrupt!!\n", __func__);
-				ctrl->value = 0x00;
-			}
-		}
-	} else
-		ctrl->value = 0x00;
-}
-
-#ifdef CONFIG_VIDEO_TW9992_DEBUG
-static void tw9992_dump_regset(struct tw9992_regset *regset)
-{
-	if ((regset->data[0] == 0x00) && (regset->data[1] == 0x2A)) {
-		if (regset->size <= 6)
-			pr_err("odd regset size %d\n", regset->size);
-		pr_info("regset: addr = 0x%02X%02X, data[0,1] = 0x%02X%02X,"
-			" total data size = %d\n",
-			regset->data[2], regset->data[3],
-			regset->data[6], regset->data[7],
-			regset->size-6);
-	} else {
-		pr_info("regset: 0x%02X%02X%02X%02X\n",
-			regset->data[0], regset->data[1],
-			regset->data[2], regset->data[3]);
-		if (regset->size != 4)
-			pr_err("odd regset size %d\n", regset->size);
-	}
-}
-#endif
-
 /*
  * s_config subdev ops
  * With camera device, we need to re-initialize
@@ -1194,196 +833,104 @@ static void tw9992_dump_regset(struct tw9992_regset *regset)
  * except for version checking
  * NOTE: version checking is optional
  */
-static int tw9992_power(int flag)
-{
-    u32 reset = (PAD_GPIO_B + 23);
 
-	printk("%s: sensor is power %s\n", __func__, flag == 1 ?"on":"off");
-
-    if (flag) {
-        nxp_soc_gpio_set_out_value(reset, 1);
-        nxp_soc_gpio_set_io_dir(reset, 1);
-        nxp_soc_gpio_set_io_func(reset, nxp_soc_gpio_get_altnum(reset));
-        mdelay(1);
-
-        nxp_soc_gpio_set_out_value(reset, 0);
-        mdelay(10);
-
-        nxp_soc_gpio_set_out_value(reset, 1);
-        mdelay(10);
-    }
-	else
-	{
-        nxp_soc_gpio_set_out_value(reset, 0);
-	}
-	return 0;
-
-}
-
-static int tw9992_s_power(struct v4l2_subdev *sd, int on)
+static int m10mo_s_power(struct v4l2_subdev *sd, int on)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	struct tw9992_state *state = container_of(sd, struct tw9992_state, sd);
+	struct m10mo_state *state = container_of(sd, struct m10mo_state, sd);
 	int ret = 0;
 
 	dev_err(&client->dev, "%s() on:%d \n", __func__, on);
 
-    if (on)
-	{
-		tw9992_init_parameters(sd);
-
-		if(state->power_on == TW9992_HW_POWER_OFF)
-		{
-			//ret = tw9992_power(TW9992_HW_POWER_ON);
-
-			//ret = tw9992_reg_set_write(client, TW9992_DataSet);
-			if(ret < 0) {
-				dev_err(&client->dev, "\e[31mTW9992_DataSet0 error\e[0m, ret = %d\n", ret);
-				return ret;
-			}
-			state->power_on = TW9992_HW_POWER_ON;
-		}
-	}
-	else
-	{
-		//ret = tw9992_power(TW9992_HW_POWER_OFF);
-		state->power_on = TW9992_HW_POWER_OFF;
-        state->initialized = false;
-	}
-		return ret;
-}
-
-u8 tw9992_get_color_system(struct i2c_client *client)
-{
-	u8 reg_val;
-
-	mdelay(100);
-	tw9992_i2c_read_byte(client, 0x1C, &reg_val);
-
-	if((reg_val & 0x70) != 0x00)
-		return 1;	// PAL
-	else
-		return 0;	// NTSC
-}
-
-int tw9992_decoder_lock(struct i2c_client *client)
-{
-	u16	i;
-	u8	Status03, Status1C;
-
-    /*unsigned int video_loss = ((PAD_GPIO_C + 4) | PAD_FUNC_ALT1);*/
-    unsigned int video_det = ((PAD_GPIO_B + 12) | PAD_FUNC_ALT0);
-
-	//nxp_soc_gpio_set_io_func(video_loss, nxp_soc_gpio_get_altnum(video_loss));
-	//nxp_soc_gpio_set_io_dir(video_loss, 0);
-
-	nxp_soc_gpio_set_io_func(video_det, nxp_soc_gpio_get_altnum(video_det));
-	nxp_soc_gpio_set_io_dir(video_det, 0);
-
-	tw9992_i2c_write_byte(client, 0x1d, 0x83);		// start detect
-
-	for ( i=0; i<800; i++ ) {						// LOOP for 800ms
-
-		while(nxp_soc_gpio_get_out_value(video_det) == 1){;}
-
-		tw9992_i2c_read_byte(client, 0x03, &Status03);
-		tw9992_i2c_read_byte(client, 0x1C, &Status1C);
-
-		if ( Status1C & 0x80 ) 	continue;			// chwck end of detect
-		if ( Status03 & 0x80 )	continue;			// VDLOSS
-		if (( Status03 & 0x68 ) != 0x68) 	continue;		// VLOCK, SLOCK, HLOCK check
-
-		if ( Status03 & 0x10 )		continue;		// if ODD field wait until it goes to EVEN field
-		//if (( Status03 & 0x10 ) == 0)		continue;		// if EVEN field wait until it goes to ODD field
-		else {
-			mdelay(5);										// give some delay
-			tw9992_i2c_write_byte(client, 0x70, 0x01);		//			// MIPI out
-			break;			//
-		}
+    if (on) {
+		m10mo_init_parameters(sd);
+		if(state->power_on == M10MO_HW_POWER_OFF)
+			state->power_on = M10MO_HW_POWER_ON;
+	} else {
+		state->power_on = M10MO_HW_POWER_OFF;
+		state->initialized = false;
 	}
 
-	//printk("===== video_loss : 0x%x \n", nxp_soc_gpio_get_out_value(video_loss));
-	printk("===== video_det : 0x%x \n", nxp_soc_gpio_get_out_value(video_det));
-
-	tw9992_i2c_read_byte(client, 0x00, &Status03);
-	printk("===== Product ID code : 0x%x \n", Status03);
-
-	tw9992_i2c_read_byte(client, 0x03, &Status03);
-	printk("===== Reg 0x03 : 0x%x.\n", Status03);
-
-	if(Status03 & 0x80)	printk("===== Video not present.\n");
-	else				printk("===== Video Detected.\n");
-
-	if(Status03 & 0x40)	printk("===== Horizontal sync PLL is locked to the incoming video source.\n");
-	else				printk("===== Horizontal sync PLL is not locked.\n");
-
-	if(Status03 & 0x20)	printk("===== Sub-carrier PLL is locked to the incoming video source.\n");
-	else				printk("===== Sub-carrier PLL is not locked.\n");
-
-	if(Status03 & 0x10)	printk("===== Odd field is being decoded.\n");
-	else				printk("===== Even field is being decoded.\n");
-
-	if(Status03 & 0x8)	printk("===== Vertical logic is locked to the incoming video source.\n");
-	else				printk("===== Vertical logic is not locked.\n");
-
-	if(Status03 & 0x2)	printk("===== No color burst signal detected.\n");
-	else				printk("===== Color burst signal detected.\n");
-
-	if(Status03 & 0x1)	printk("===== 50Hz source detected.\n");
-	else				printk("===== 60Hz source detected.\n");
-
-	tw9992_i2c_read_byte(client, 0x1C, &Status1C);
-	printk("\n===== Reg 0x1C : 0x%x.\n", Status1C);
-	if(Status1C & 0x80)	printk("===== Detection in progress.\n");
-	else				printk("===== Idle.\n");
-
-
-	return 0;
+	return ret;
 }
 
-static int tw9992_init(struct v4l2_subdev *sd, u32 val)
+static int m10mo_init(struct v4l2_subdev *sd, u32 val)
 {
     struct i2c_client *client = v4l2_get_subdevdata(sd);
+	struct m10mo_state *state = container_of(sd, struct m10mo_state, sd);
 
     int ret = 0;
-    dev_err(&client->dev, "%s: start\n", __func__);
+	u8 buffer[16];
 
-//    mdelay(500);
-    ret = tw9992_reg_set_write(client, TW9992_DataSet);
-    if(ret < 0) {
-        dev_err(&client->dev, "\e[31mTW9992_DataSet0 error\e[0m, ret = %d\n", ret);
-        return ret;
-    }
+	if (!state->initialized) {
+		msleep(100);
 
-    if(ret < 0) {
-        dev_err(&client->dev, "\e[31mcolor_system() error\e[0m, ret = %d\n", ret);
-        return ret;
-    }
+	    dev_err(&client->dev, "%s: start\n", __func__);
 
-#if 0
-	u8 data = 0;
-	tw9992_i2c_read_byte(client, 0x02, &data);
-    data = data & 0x0f;
+		buffer[0] = 0x00;
+		buffer[1] = 0x04;
+		buffer[2] = 0x13;
+		buffer[3] = 0x00;
+		buffer[4] = 0x00;
+		buffer[5] = 0x05;
+		buffer[6] = 0x00;
+		buffer[7] = 0x01;
+		buffer[8] = 0x7F;
+		m10mo_i2c_write_block(client, buffer, 9);
 
-	printk("%s - data : %02X\n", __func__, data);
-    if (data == 0x4)
-		printk("%s - mux == 0\n", __func__);
-    else
-		printk("%s - mux == 1\n", __func__);
-#endif
+		buffer[0] = 0x05; // N+4
+		buffer[1] = 0x02;
+		buffer[2] = 0x0F; // category
+		buffer[3] = 0x12; // byte
+		buffer[4] = 0x01; // N : data1
+		m10mo_i2c_write_block(client, buffer, 5);
+
+		state->init_wait_q = false;
+		if (wait_event_interruptible_timeout(state->wait, state->init_wait_q, msecs_to_jiffies(1000)) == 0) {
+			printk(KERN_ERR "##[%s():%s:%d\t] time out!!! \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__);
+		}
+
+		buffer[0] = 0x05; // N+4
+		buffer[1] = 0x02;
+		buffer[2] = 0x01; // category
+		buffer[3] = 0x06; // byte
+		buffer[4] = 0x00; // N : data1
+		m10mo_i2c_write_block(client, buffer, 5);
+
+		buffer[0] = 0x05; // N+4
+		buffer[1] = 0x02;
+		buffer[2] = 0x01; // category
+		buffer[3] = 0x01; // byte
+		buffer[4] = 0x21; // N : data1
+		m10mo_i2c_write_block(client, buffer, 5);
+
+		buffer[0] = 0x05; // N+4
+		buffer[1] = 0x02;
+		buffer[2] = 0x00; // category
+		buffer[3] = 0x0B; // byte
+		buffer[4] = 0x02; // N : data1
+		m10mo_i2c_write_block(client, buffer, 5);
+
+		state->init_wait_q = false;
+		if (wait_event_interruptible_timeout(state->wait, state->init_wait_q, msecs_to_jiffies(1000)) == 0) {
+			printk(KERN_ERR "##[%s():%s:%d\t] time out!!! \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__);
+		}
+
+		state->initialized = true;
+	}
 
     return ret;
 }
 
-static const struct v4l2_subdev_core_ops tw9992_core_ops = {
-	.s_power		= tw9992_s_power,
-	.init 			= tw9992_init,/* initializing API */
+static const struct v4l2_subdev_core_ops m10mo_core_ops = {
+	.s_power		= m10mo_s_power,
+	.init 			= m10mo_init,/* initializing API */
 };
 
 
-static int tw9992_s_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *fmt)
+static int m10mo_s_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *fmt)
 {
-	struct tw9992_state *state = container_of(sd, struct tw9992_state, sd);
+	struct m10mo_state *state = container_of(sd, struct m10mo_state, sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 
 	dev_err(&client->dev, "%s() \n", __func__);
@@ -1399,25 +946,25 @@ static int tw9992_s_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *
 	state->pix.height = fmt->height;
 	//state->pix.pixelformat = fmt->fmt.pix.pixelformat;
 
-	if (state->oprmode == TW9992_OPRMODE_IMAGE) {
-		state->oprmode = TW9992_OPRMODE_IMAGE;
+	if (state->oprmode == M10MO_OPRMODE_IMAGE) {
+		state->oprmode = M10MO_OPRMODE_IMAGE;
 		/*
 		 * In case of image capture mode,
 		 * if the given image resolution is not supported,
 		 * use the next higher image resolution. */
-		tw9992_set_framesize(sd, tw9992_capture_framesize_list,
-				ARRAY_SIZE(tw9992_capture_framesize_list),
+		m10mo_set_framesize(sd, m10mo_capture_framesize_list,
+				ARRAY_SIZE(m10mo_capture_framesize_list),
 				false);
 
 	} else {
-		state->oprmode = TW9992_OPRMODE_VIDEO;
+		state->oprmode = M10MO_OPRMODE_VIDEO;
 		/*
 		 * In case of video mode,
 		 * if the given video resolution is not matching, use
-		 * the default rate (currently TW9992_PREVIEW_WVGA).
+		 * the default rate (currently M10MO_PREVIEW_WVGA).
 		 */
-		tw9992_set_framesize(sd, tw9992_preview_framesize_list,
-				ARRAY_SIZE(tw9992_preview_framesize_list),
+		m10mo_set_framesize(sd, m10mo_preview_framesize_list,
+				ARRAY_SIZE(m10mo_preview_framesize_list),
 				true);
 	}
 
@@ -1426,10 +973,10 @@ static int tw9992_s_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *
 	return 0;
 }
 
-static int tw9992_enum_framesizes(struct v4l2_subdev *sd,
+static int m10mo_enum_framesizes(struct v4l2_subdev *sd,
 				  struct v4l2_frmsizeenum *fsize)
 {
-	struct tw9992_state *state = container_of(sd, struct tw9992_state, sd);
+	struct m10mo_state *state = container_of(sd, struct m10mo_state, sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 
 	dev_err(&client->dev, "%s() wid=%d\t height=%d\n", __func__,state->pix.width,state->pix.height);
@@ -1441,11 +988,11 @@ static int tw9992_enum_framesizes(struct v4l2_subdev *sd,
 	return 0;
 }
 
-static int tw9992_g_parm(struct v4l2_subdev *sd,
+static int m10mo_g_parm(struct v4l2_subdev *sd,
 			struct v4l2_streamparm *param)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	struct tw9992_state *state = container_of(sd, struct tw9992_state, sd);
+	struct m10mo_state *state = container_of(sd, struct m10mo_state, sd);
 
 	dev_err(&client->dev, "%s() \n", __func__);
 
@@ -1453,12 +1000,12 @@ static int tw9992_g_parm(struct v4l2_subdev *sd,
 	return 0;
 }
 
-static int tw9992_s_parm(struct v4l2_subdev *sd,
+static int m10mo_s_parm(struct v4l2_subdev *sd,
 			struct v4l2_streamparm *param)
 {
 	int err = 0;
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	struct tw9992_state *state = container_of(sd, struct tw9992_state, sd);
+	struct m10mo_state *state = container_of(sd, struct m10mo_state, sd);
 	struct sec_cam_parm *new_parms = (struct sec_cam_parm *)&param->parm.raw_data;
 	struct sec_cam_parm *parms = (struct sec_cam_parm *)&state->strm.parm.raw_data;
 
@@ -1500,44 +1047,44 @@ static int tw9992_s_parm(struct v4l2_subdev *sd,
 	/* we return an error if one happened but don't stop trying to
 	 * set all parameters passed
 	 */
-	err = tw9992_set_parameter(sd, &parms->contrast, new_parms->contrast,
+	err = m10mo_set_parameter(sd, &parms->contrast, new_parms->contrast,
 				"contrast", state->regs->contrast,
 				ARRAY_SIZE(state->regs->contrast));
-	err |= tw9992_set_parameter(sd, &parms->effects, new_parms->effects,
+	err |= m10mo_set_parameter(sd, &parms->effects, new_parms->effects,
 				"effect", state->regs->effect,
 				ARRAY_SIZE(state->regs->effect));
-	err |= tw9992_set_parameter(sd, &parms->brightness,
+	err |= m10mo_set_parameter(sd, &parms->brightness,
 				new_parms->brightness, "brightness",
 				state->regs->ev, ARRAY_SIZE(state->regs->ev));
-///	err |= tw9992_set_flash_mode(sd, new_parms->flash_mode);
-///	err |= tw9992_set_focus_mode(sd, new_parms->focus_mode);
-	err |= tw9992_set_parameter(sd, &parms->iso, new_parms->iso,
+///	err |= m10mo_set_flash_mode(sd, new_parms->flash_mode);
+///	err |= m10mo_set_focus_mode(sd, new_parms->focus_mode);
+	err |= m10mo_set_parameter(sd, &parms->iso, new_parms->iso,
 				"iso", state->regs->iso,
 				ARRAY_SIZE(state->regs->iso));
-	err |= tw9992_set_parameter(sd, &parms->metering, new_parms->metering,
+	err |= m10mo_set_parameter(sd, &parms->metering, new_parms->metering,
 				"metering", state->regs->metering,
 				ARRAY_SIZE(state->regs->metering));
-	err |= tw9992_set_parameter(sd, &parms->saturation,
+	err |= m10mo_set_parameter(sd, &parms->saturation,
 				new_parms->saturation, "saturation",
 				state->regs->saturation,
 				ARRAY_SIZE(state->regs->saturation));
-	err |= tw9992_set_parameter(sd, &parms->scene_mode,
+	err |= m10mo_set_parameter(sd, &parms->scene_mode,
 				new_parms->scene_mode, "scene_mode",
 				state->regs->scene_mode,
 				ARRAY_SIZE(state->regs->scene_mode));
-	err |= tw9992_set_parameter(sd, &parms->sharpness,
+	err |= m10mo_set_parameter(sd, &parms->sharpness,
 				new_parms->sharpness, "sharpness",
 				state->regs->sharpness,
 				ARRAY_SIZE(state->regs->sharpness));
-	err |= tw9992_set_parameter(sd, &parms->aeawb_lockunlock,
+	err |= m10mo_set_parameter(sd, &parms->aeawb_lockunlock,
 				new_parms->aeawb_lockunlock, "aeawb_lockunlock",
 				state->regs->aeawb_lockunlock,
 				ARRAY_SIZE(state->regs->aeawb_lockunlock));
-	err |= tw9992_set_parameter(sd, &parms->white_balance,
+	err |= m10mo_set_parameter(sd, &parms->white_balance,
 				new_parms->white_balance, "white balance",
 				state->regs->white_balance,
 				ARRAY_SIZE(state->regs->white_balance));
-	err |= tw9992_set_parameter(sd, &parms->fps,
+	err |= m10mo_set_parameter(sd, &parms->fps,
 				new_parms->fps, "fps",
 				state->regs->fps,
 				ARRAY_SIZE(state->regs->fps));
@@ -1551,40 +1098,43 @@ static int tw9992_s_parm(struct v4l2_subdev *sd,
 	return err;
 }
 
-static int tw9992_s_stream(struct v4l2_subdev *sd, int enable)
+static int m10mo_s_stream(struct v4l2_subdev *sd, int enable)
 {
-    struct i2c_client *client = v4l2_get_subdevdata(sd);
-    struct tw9992_state *state = container_of(sd, struct tw9992_state, sd);
-    int ret = 0;
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	struct m10mo_state *state = container_of(sd, struct m10mo_state, sd);
+	int ret = 0;
 
-    dev_err(&client->dev, "%s() \n", __func__);
+	dev_err(&client->dev, "%s() \n", __func__);
 
-    if (enable && state->runmode != TW9992_RUNMODE_RUNNING) {
-        tw9992_init(sd, enable);
-        tw9992_i2c_write_byte(state->i2c_client, 0x10, state->brightness);
-        state->runmode = TW9992_RUNMODE_RUNNING;
-    }
-    return ret;
+	if (enable) {
+		//enable_irq(state->irq);
+		state->runmode = M10MO_RUNMODE_RUNNING;
+		m10mo_init(sd, enable);
+	} else {
+		state->runmode = M10MO_RUNMODE_NOTREADY;
+		//disable_irq(state->irq);
+	}
+	return ret;
 }
 
-static const struct v4l2_subdev_video_ops tw9992_video_ops = {
-	//.g_mbus_fmt 		= tw9992_g_mbus_fmt,
-	.s_mbus_fmt 		= tw9992_s_mbus_fmt,
-	.enum_framesizes 	= tw9992_enum_framesizes,
-	///.enum_fmt 		= tw9992_enum_fmt,
-	///.try_fmt 		= tw9992_try_fmt,
-	.g_parm 		= tw9992_g_parm,
-	.s_parm 		= tw9992_s_parm,
-	.s_stream 		= tw9992_s_stream,
+static const struct v4l2_subdev_video_ops m10mo_video_ops = {
+	//.g_mbus_fmt 		= m10mo_g_mbus_fmt,
+	.s_mbus_fmt 		= m10mo_s_mbus_fmt,
+	.enum_framesizes 	= m10mo_enum_framesizes,
+	///.enum_fmt 		= m10mo_enum_fmt,
+	///.try_fmt 		= m10mo_try_fmt,
+	.g_parm 		= m10mo_g_parm,
+	.s_parm 		= m10mo_s_parm,
+	.s_stream 		= m10mo_s_stream,
 };
 
 /**
- * __find_oprmode - Lookup TW9992 resolution type according to pixel code
+ * __find_oprmode - Lookup M10MO resolution type according to pixel code
  * @code: pixel code
  */
-static enum tw9992_oprmode __find_oprmode(enum v4l2_mbus_pixelcode code)
+static enum m10mo_oprmode __find_oprmode(enum v4l2_mbus_pixelcode code)
 {
-	enum tw9992_oprmode type = TW9992_OPRMODE_VIDEO;
+	enum m10mo_oprmode type = M10MO_OPRMODE_VIDEO;
 
 	do {
 		if (code == default_fmt[type].code)
@@ -1605,14 +1155,14 @@ static enum tw9992_oprmode __find_oprmode(enum v4l2_mbus_pixelcode code)
  */
 static int __find_resolution(struct v4l2_subdev *sd,
 			     struct v4l2_mbus_framefmt *mf,
-			     enum tw9992_oprmode *type,
+			     enum m10mo_oprmode *type,
 			     u32 *resolution)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	const struct tw9992_resolution *fsize = &tw9992_resolutions[0];
-	const struct tw9992_resolution *match = NULL;
-	enum tw9992_oprmode stype = __find_oprmode(mf->code);
-	int i = ARRAY_SIZE(tw9992_resolutions);
+	const struct m10mo_resolution *fsize = &m10mo_resolutions[0];
+	const struct m10mo_resolution *match = NULL;
+	enum m10mo_oprmode stype = __find_oprmode(mf->code);
+	int i = ARRAY_SIZE(m10mo_resolutions);
 	unsigned int min_err = ~0;
 	int err;
 
@@ -1646,10 +1196,10 @@ static int __find_resolution(struct v4l2_subdev *sd,
 	return -EINVAL;
 }
 
-static struct v4l2_mbus_framefmt *__find_format(struct tw9992_state *state,
+static struct v4l2_mbus_framefmt *__find_format(struct m10mo_state *state,
 				struct v4l2_subdev_fh *fh,
 				enum v4l2_subdev_format_whence which,
-				enum tw9992_oprmode type)
+				enum m10mo_oprmode type)
 {
 	if (which == V4L2_SUBDEV_FORMAT_TRY)
 		return fh ? v4l2_subdev_get_try_format(fh, 0) : NULL;
@@ -1658,7 +1208,7 @@ static struct v4l2_mbus_framefmt *__find_format(struct tw9992_state *state,
 }
 
 /* enum code by flite video device command */
-static int tw9992_enum_mbus_code(struct v4l2_subdev *sd,
+static int m10mo_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_fh *fh,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
@@ -1671,11 +1221,11 @@ static int tw9992_enum_mbus_code(struct v4l2_subdev *sd,
 }
 
 /* get format by flite video device command */
-static int tw9992_get_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
+static int m10mo_get_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 			  struct v4l2_subdev_format *fmt)
 {
-	struct tw9992_state *state =
-		container_of(sd, struct tw9992_state, sd);
+	struct m10mo_state *state =
+		container_of(sd, struct m10mo_state, sd);
 	struct v4l2_mbus_framefmt *format;
 
 	if (fmt->pad != 0)
@@ -1690,14 +1240,14 @@ static int tw9992_get_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 }
 
 /* set format by flite video device command */
-static int tw9992_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
+static int m10mo_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 			  struct v4l2_subdev_format *fmt)
 {
-	struct tw9992_state *state =
-		container_of(sd, struct tw9992_state, sd);
+	struct m10mo_state *state =
+		container_of(sd, struct m10mo_state, sd);
 	struct v4l2_mbus_framefmt *format = &fmt->format;
 	struct v4l2_mbus_framefmt *sfmt;
-	enum tw9992_oprmode type;
+	enum m10mo_oprmode type;
 	u32 resolution = 0;
 	int ret;
 
@@ -1721,7 +1271,7 @@ static int tw9992_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 		state->oprmode  		= type;
 		state->ffmt[type].width 	= format->width;
 		state->ffmt[type].height 	= format->height;
-#ifndef CONFIG_VIDEO_TW9992_SENSOR_JPEG
+#ifndef CONFIG_VIDEO_M10MO_SENSOR_JPEG
 		state->ffmt[type].code 		= V4L2_MBUS_FMT_YUYV8_2X8;
 #else
 		state->ffmt[type].code 		= format->code;
@@ -1729,7 +1279,7 @@ static int tw9992_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 
 		/* find adaptable resolution */
 		state->resolution 		= resolution;
-#ifndef CONFIG_VIDEO_TW9992_SENSOR_JPEG
+#ifndef CONFIG_VIDEO_M10MO_SENSOR_JPEG
 		state->code 			= V4L2_MBUS_FMT_YUYV8_2X8;
 #else
 		state->code 			= format->code;
@@ -1740,27 +1290,27 @@ static int tw9992_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 		state->pix.width 		= format->width;
 		state->pix.height 		= format->height;
 
-		if (state->power_on == TW9992_HW_POWER_ON)
-			tw9992_s_mbus_fmt(sd, sfmt);  /* set format */
+		if (state->power_on == M10MO_HW_POWER_ON)
+			m10mo_s_mbus_fmt(sd, sfmt);  /* set format */
 	}
 
 	return 0;
 }
 
 
-static struct v4l2_subdev_pad_ops tw9992_pad_ops = {
-	.enum_mbus_code	= tw9992_enum_mbus_code,
-	.get_fmt		= tw9992_get_fmt,
-	.set_fmt		= tw9992_set_fmt,
+static struct v4l2_subdev_pad_ops m10mo_pad_ops = {
+	.enum_mbus_code	= m10mo_enum_mbus_code,
+	.get_fmt		= m10mo_get_fmt,
+	.set_fmt		= m10mo_set_fmt,
 };
 
-static const struct v4l2_subdev_ops tw9992_ops = {
-	.core = &tw9992_core_ops,
-	.video = &tw9992_video_ops,
-	.pad	= &tw9992_pad_ops,
+static const struct v4l2_subdev_ops m10mo_ops = {
+	.core = &m10mo_core_ops,
+	.video = &m10mo_video_ops,
+	.pad	= &m10mo_pad_ops,
 };
 
-static int tw9992_link_setup(struct media_entity *entity,
+static int m10mo_link_setup(struct media_entity *entity,
 			    const struct media_pad *local,
 			    const struct media_pad *remote, u32 flags)
 {
@@ -1768,12 +1318,12 @@ static int tw9992_link_setup(struct media_entity *entity,
 	return 0;
 }
 
-static const struct media_entity_operations tw9992_media_ops = {
-	.link_setup = tw9992_link_setup,
+static const struct media_entity_operations m10mo_media_ops = {
+	.link_setup = m10mo_link_setup,
 };
 
 /* internal ops for media controller */
-static int tw9992_init_formats(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
+static int m10mo_init_formats(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 {
 	struct v4l2_subdev_format format;
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -1789,59 +1339,137 @@ static int tw9992_init_formats(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh
 	return 0;
 }
 
-static int tw9992_subdev_close(struct v4l2_subdev *sd,
+static int m10mo_subdev_close(struct v4l2_subdev *sd,
 			      struct v4l2_subdev_fh *fh)
 {
-	tw9992_debug(TW9992_DEBUG_I2C, "%s", __func__);
-	printk("%s", __func__);
 	return 0;
 }
 
-static int tw9992_subdev_registered(struct v4l2_subdev *sd)
+static int m10mo_subdev_registered(struct v4l2_subdev *sd)
 {
-	tw9992_debug(TW9992_DEBUG_I2C, "%s", __func__);
 	return 0;
 }
 
-static void tw9992_subdev_unregistered(struct v4l2_subdev *sd)
+static void m10mo_subdev_unregistered(struct v4l2_subdev *sd)
 {
-	tw9992_debug(TW9992_DEBUG_I2C, "%s", __func__);
 	return;
 }
 
-static const struct v4l2_subdev_internal_ops tw9992_v4l2_internal_ops = {
-	.open = tw9992_init_formats,
-	.close = tw9992_subdev_close,
-	.registered = tw9992_subdev_registered,
-	.unregistered = tw9992_subdev_unregistered,
+static const struct v4l2_subdev_internal_ops m10mo_v4l2_internal_ops = {
+	.open = m10mo_init_formats,
+	.close = m10mo_subdev_close,
+	.registered = m10mo_subdev_registered,
+	.unregistered = m10mo_subdev_unregistered,
 };
 
+static ssize_t m10mo_sys_fw_update(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct m10mo_state *info = i2c_get_clientdata(client);
+
+	int result = 0;
+	u8 data[255];
+	int ret = 0;
+
+	dev_dbg(&info->i2c_client->dev, "%s [START]\n", __func__);
+
+	//Update firmware
+	//ret = m10mo_fw_update_from_storage(info, info->fw_path_ext, true);
+
+	switch (ret) {
+	case 0:
+		sprintf(data, "F/W update success.\n");
+		break;
+
+	default:
+		sprintf(data, "F/W update failed.\n");
+		break;
+	}
+
+	dev_dbg(&info->i2c_client->dev, "%s [DONE]\n", __func__);
+
+	result = snprintf(buf, 255, "%s\n", data);
+	return result;
+}
+static DEVICE_ATTR(fw_update, S_IRUGO, m10mo_sys_fw_update, NULL);
+
+static struct attribute *m10mo_attrs[] = {
+	&dev_attr_fw_update.attr,
+	NULL,
+};
+
+static const struct attribute_group m10mo_attr_group = {
+	.attrs = m10mo_attrs,
+};
+
+static irqreturn_t m10mo_irq_isr(int irq, void *data)
+{
+	struct m10mo_state *state = data;
+	struct i2c_client *client = state->i2c_client;
+
+	u8 buffer[5] = {0,};
+	u8 read_buffer[128] = {0,};
+	u8 read_buf[32] = {0,};
+	int i;
+
+	if (state->runmode == M10MO_RUNMODE_NOTREADY)
+	{
+		buffer[0] = 0x05;
+		buffer[1] = 0x01;
+		buffer[2] = 0x0F; // category
+		buffer[3] = 0x0C; // byte
+		buffer[4] = 0x04; // N
+
+		m10mo_i2c_write_block(client, buffer, 5);
+		m10mo_i2c_read_block(client, read_buffer, 5);
+
+		for (i=0; i<5; i++)
+			printk(KERN_ERR "## [%s():%s:%d\t] read_buffer[%d]:0x%x \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__, i, read_buffer[i]);
+
+	} else if (state->runmode == M10MO_RUNMODE_RUNNING) {
+
+		buffer[0] = 0x05;
+		buffer[1] = 0x01;
+		buffer[2] = 0x00; // category
+		buffer[3] = 0x1C; // byte
+		buffer[4] = 0x01; // N
+
+		m10mo_i2c_write_block(client, buffer, 5);
+		m10mo_i2c_read_block(client, read_buf, 0x02);
+	}
+
+	state->init_wait_q = true;
+	wake_up_interruptible(&state->wait);
+
+    return IRQ_HANDLED;
+}
+
 /*
- * tw9992_probe
+ * m10mo_probe
  * Fetching platform data is being done with s_config subdev call.
  * In probe routine, we just register subdev device
  */
-static int tw9992_probe(struct i2c_client *client,
+static int m10mo_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
 {
 	struct v4l2_subdev *sd;
-	struct tw9992_state *state;
+	struct m10mo_state *state;
 	int ret = 0;
 
-	state = kzalloc(sizeof(struct tw9992_state), GFP_KERNEL);
+	state = kzalloc(sizeof(struct m10mo_state), GFP_KERNEL);
 	if (state == NULL)
 		return -ENOMEM;
 
 	mutex_init(&state->ctrl_lock);
 	init_completion(&state->af_complete);
 
-	state->power_on = TW9992_HW_POWER_OFF;
+	state->power_on = M10MO_HW_POWER_OFF;
 
-	state->runmode = TW9992_RUNMODE_NOTREADY;
+	state->runmode = M10MO_RUNMODE_NOTREADY;
 	sd = &state->sd;
-	strcpy(sd->name, TW9992_DRIVER_NAME);
+	strcpy(sd->name, M10MO_DRIVER_NAME);
 
-	v4l2_i2c_subdev_init(sd, client, &tw9992_ops);
+	v4l2_i2c_subdev_init(sd, client, &m10mo_ops);
 	state->pad.flags = MEDIA_PAD_FL_SOURCE;
 	ret = media_entity_init(&sd->entity, 1, &state->pad, 0);
 	if (ret < 0) {
@@ -1849,61 +1477,69 @@ static int tw9992_probe(struct i2c_client *client,
         return ret;
     }
 
-	//tw9992_init_formats(sd, NULL);
-
-	//tw9992_init_parameters(sd);
+	//m10mo_init_formats(sd, NULL);
+	//m10mo_init_parameters(sd);
 
 	sd->entity.type = MEDIA_ENT_T_V4L2_SUBDEV_SENSOR;
 	sd->flags = V4L2_SUBDEV_FL_HAS_DEVNODE;
-	sd->internal_ops = &tw9992_v4l2_internal_ops;
-	sd->entity.ops = &tw9992_media_ops;
+	sd->internal_ops = &m10mo_v4l2_internal_ops;
+	sd->entity.ops = &m10mo_media_ops;
 
-    // psw0523 add
-    ret = tw9992_initialize_ctrls(state);
+    ret = m10mo_initialize_ctrls(state);
     if (ret < 0) {
         printk(KERN_ERR "%s: failed to initialize controls\n", __func__);
         return ret;
     }
+
     state->i2c_client = client;
+	state->irq = gpio_to_irq(CFG_IO_ISP_SINT0);
 
-#if defined(CONFIG_SLSIAP_BACKWARD_CAMERA)
-    state->switch_dev.name = "rearcam_tw9992";
-    switch_dev_register(&state->switch_dev);
-    switch_set_state(&state->switch_dev, 0);
+    ret = request_threaded_irq(state->irq, NULL, m10mo_irq_isr,
+						/*IRQF_TRIGGER_FALLING |*/ IRQF_TRIGGER_RISING,
+						"m10mo", state);
+    if (ret<0) {
+        pr_err("%s: failed to request_irq(irqnum %d), ret : %d\n", __func__, CFG_IO_ISP_SINT0, ret);
+        return -1;
+    }
+	//disable_irq(state->irq);
 
-    INIT_DELAYED_WORK(&state->work, _work_handler);
+	state->init_wait_q = false;
+	init_waitqueue_head(&state->wait);
 
-    _state = state;
-#endif
-
+	//Create sysfs
+	if (sysfs_create_group(&client->dev.kobj, &m10mo_attr_group)) {
+		dev_err(&client->dev, "%s [ERROR] sysfs_create_group\n", __func__);
+	}
+	if (sysfs_create_link(NULL, &client->dev.kobj, "m10mo")) {
+		dev_err(&client->dev, "%s [ERROR] sysfs_create_link\n", __func__);
+	}
 
     return 0;
 }
 
-static int tw9992_remove(struct i2c_client *client)
+static int m10mo_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-	struct tw9992_state *state =
-		container_of(sd, struct tw9992_state, sd);
+	struct m10mo_state *state =
+		container_of(sd, struct m10mo_state, sd);
 
 	v4l2_device_unregister_subdev(sd);
 	mutex_destroy(&state->ctrl_lock);
 	kfree(state);
-	tw9992_power(0);
-	dev_dbg(&client->dev, "Unloaded camera sensor TW9992.\n");
+	dev_dbg(&client->dev, "Unloaded camera sensor M10MO.\n");
 
 	return 0;
 }
 
 #ifdef CONFIG_PM
-static int tw9992_suspend(struct i2c_client *client, pm_message_t state)
+static int m10mo_suspend(struct i2c_client *client, pm_message_t state)
 {
 	int ret = 0;
 
 	return ret;
 }
 
-static int tw9992_resume(struct i2c_client *client)
+static int m10mo_resume(struct i2c_client *client)
 {
 	int ret = 0;
 
@@ -1912,42 +1548,42 @@ static int tw9992_resume(struct i2c_client *client)
 
 #endif
 
-static const struct i2c_device_id tw9992_id[] = {
-	{ TW9992_DRIVER_NAME, 0 },
+static const struct i2c_device_id m10mo_id[] = {
+	{ M10MO_DRIVER_NAME, 0 },
 	{}
 };
 
-MODULE_DEVICE_TABLE(i2c, tw9992_id);
+MODULE_DEVICE_TABLE(i2c, m10mo_id);
 
-static struct i2c_driver tw9992_i2c_driver = {
-	.probe = tw9992_probe,
-	.remove = __devexit_p(tw9992_remove),
+static struct i2c_driver m10mo_i2c_driver = {
+	.probe = m10mo_probe,
+	.remove = __devexit_p(m10mo_remove),
 #ifdef CONFIG_PM
-	.suspend = tw9992_suspend,
-	.resume = tw9992_resume,
+	.suspend = m10mo_suspend,
+	.resume = m10mo_resume,
 #endif
 
 	.driver = {
-		.name = TW9992_DRIVER_NAME,
+		.name = M10MO_DRIVER_NAME,
 		.owner = THIS_MODULE,
 	},
-	.id_table = tw9992_id,
+	.id_table = m10mo_id,
 };
 
-static int __init tw9992_mod_init(void)
+static int __init m10mo_mod_init(void)
 {
-	return i2c_add_driver(&tw9992_i2c_driver);
+	return i2c_add_driver(&m10mo_i2c_driver);
 }
 
-static void __exit tw9992_mod_exit(void)
+static void __exit m10mo_mod_exit(void)
 {
-	i2c_del_driver(&tw9992_i2c_driver);
+	i2c_del_driver(&m10mo_i2c_driver);
 }
 
-module_init(tw9992_mod_init);
-module_exit(tw9992_mod_exit);
+module_init(m10mo_mod_init);
+module_exit(m10mo_mod_exit);
 
-MODULE_DESCRIPTION("TW9992 Video driver");
-MODULE_AUTHOR("<pjsin865@nexell.co.kr>");
+MODULE_DESCRIPTION("M10MO Video driver");
+MODULE_AUTHOR(" ");
 MODULE_LICENSE("GPL");
 

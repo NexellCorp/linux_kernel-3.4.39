@@ -95,7 +95,7 @@ static ssize_t alc5623_aud_vol_store(struct device *dev,
 		aud_vol_val = value;
 	}
 
-	vol_level = aud_vol_val / 15;	
+	vol_level = aud_vol_val / 15;
 	pr_debug("\033[33m\33[1m[%s] vol_level : %d \033[0m\r\n", __FUNCTION__, vol_level);
 
 	snd_soc_update_bits(codec, ALC5623_SPK_OUT_VOL,
@@ -843,31 +843,33 @@ static void init_codec(struct i2c_client *client)
 
     printk("%s .....%d.......\n",__func__,__LINE__);*/
 
+	ALC5625_write_IIC(client,0x3C,0x2000);
+	ALC5625_write_IIC(client,0x3E,0x8000);
+	ALC5625_write_IIC(client,0x1C,0x0740);
+	ALC5625_write_IIC(client,0x14,0x3F3F);
+	ALC5625_write_IIC(client,0x0C,0x0808);
+	ALC5625_write_IIC(client,0x04,0x8888);
+	ALC5625_write_IIC(client,0x02,0x8080);
+	ALC5625_write_IIC(client,0x34,0x8000);
+	ALC5625_write_IIC(client,0x36,0x066D);
+	ALC5625_write_IIC(client,0x40,0x5F00);
 
-    ALC5625_write_IIC(client,0x3C,0x2000);
-    ALC5625_write_IIC(client,0x3E,0x8000);
-    ALC5625_write_IIC(client,0x1C,0x0740);
-    ALC5625_write_IIC(client,0x14,0x3F3F);
-    ALC5625_write_IIC(client,0x0C,0x0808);
-    ALC5625_write_IIC(client,0x04,0x8888);
-    ALC5625_write_IIC(client,0x02,0x8080);
-    ALC5625_write_IIC(client,0x34,0x8000);
-    ALC5625_write_IIC(client,0x36,0x066D);
-    ALC5625_write_IIC(client,0x40,0x5F00);
+	ALC5625_write_IIC(client,0x3A,0x8830);
+	ALC5625_write_IIC(client,0x3C,0xFFFF); //6734 class d
+	ALC5625_write_IIC(client,0x3E,0x900A);
+	ALC5625_write_IIC(client,0x34,0x8000);
 
-    ALC5625_write_IIC(client,0x3A,0x8830);
-    ALC5625_write_IIC(client,0x3C,0xA7F7); //6734 class d
-    ALC5625_write_IIC(client,0x3E,0x960A);
-    ALC5625_write_IIC(client,0x34,0x8000);
-    ALC5625_write_IIC(client,0x0C,0x4808);
-    ALC5625_write_IIC(client,0x1C,0x9F00); //AF00 class d
-    ALC5625_write_IIC(client,0x02,0x0000);
-    ALC5625_write_IIC(client,0x04,0x0000);
-    ALC5625_write_IIC(client,0x10,0xF0E0);
-    ALC5625_write_IIC(client,0x22,0x0800); // mic1 boost +30db
-    ALC5625_write_IIC(client,0x14,0x3F3F);
-    ALC5625_write_IIC(client,0x12,0xF58B); //FF9F FB16 F58B
-    //ALC5625_write_IIC(client,0x5A,0x8880);
+	ALC5625_write_IIC(client,0x0C,0x8000);	//Stereo DAC Vol
+	ALC5625_write_IIC(client,0x1C,0xA8C0);	// Output Mixer Control
+
+	ALC5625_write_IIC(client,0x02,0x0808);	// Speaker Output Vol
+	ALC5625_write_IIC(client,0x04,0x0000);	// Headphone Output Vol
+
+	ALC5625_write_IIC(client,0x10,0xF0E0);
+	ALC5625_write_IIC(client,0x22,0x0800);	// mic1 boost +30db
+	ALC5625_write_IIC(client,0x14,0x3F3F);
+	ALC5625_write_IIC(client,0x12,0xF58B);	//FF9F FB16 F58B
+	//ALC5625_write_IIC(client,0x5A,0x8880);
 
 }
 
