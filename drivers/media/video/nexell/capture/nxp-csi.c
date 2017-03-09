@@ -146,7 +146,7 @@ static int _calc_clk(unsigned int index, char *clk_src, int width, int height, s
         div -= 2;
 
     printk("%s: want %ld ===> FOUND source %d, div %d\n", __func__, want, index, div);
-    calc->source = index; 
+	calc->source = index;
     calc->div = div;
 
 CLK_PUT_OUT:
@@ -160,7 +160,7 @@ static int _get_clk(int width, int height, struct clk_calc *calc)
     char exclude_pll[5] = {0, };
     int i;
     int ret;
-    
+
     _get_dvfs_clk(exclude_pll);
     printk("%s: exclude pll %s\n", __func__, exclude_pll);
 
@@ -219,9 +219,17 @@ static void _hw_run(struct nxp_csi *me)
 #if defined(CONFIG_VIDEO_TW9992)
 	#if defined(CONFIG_ARCH_S5P6818)
 		{
-		    volatile NX_MIPI_RegisterSet* pmipi;
-		    pmipi = (volatile NX_MIPI_RegisterSet*)IO_ADDRESS(NX_MIPI_GetPhysicalAddress(me->module));
-		    pmipi->CSIS_DPHYCTRL= (5 <<24);
+		    volatile NX_MIPI_RegisterSet *pmipi;
+		    pmipi = (volatile NX_MIPI_RegisterSet *)IO_ADDRESS(
+				    NX_MIPI_GetPhysicalAddress(me->module));
+		    pmipi->CSIS_DPHYCTRL = (5 << 24);
+		}
+	#else
+		{
+		    volatile NX_MIPI_RegisterSet *pmipi;
+		    pmipi = (volatile NX_MIPI_RegisterSet *)IO_ADDRESS(
+				    NX_MIPI_GetPhysicalAddress(me->module));
+		    pmipi->CSIS_DPHYCTRL = (12 << 24);
 		}
 	#endif
 #endif
@@ -273,9 +281,10 @@ static void _hw_run(struct nxp_csi *me)
     NX_MIPI_CSI_SetTimingControl(me->module, 1, 32, 16, 368);
     NX_MIPI_CSI_SetInterleaveChannel(me->module, 0, 1);
     NX_MIPI_CSI_SetInterleaveChannel(me->module, 1, 0);
-    vmsg("%s: width %d, height %d, lane:%d(%d,%d,%d,%d)\n", __func__, 
-				me->format.width, me->format.height, 
-				pdata->lanes, EnableDataLane0, EnableDataLane1, EnableDataLane2, EnableDataLane3);
+	vmsg("%s: width %d, height %d, lane:%d(%d,%d,%d,%d)\n", __func__,
+				me->format.width, me->format.height,
+				pdata->lanes, EnableDataLane0, EnableDataLane1,
+				EnableDataLane2, EnableDataLane3);
     NX_MIPI_CSI_SetSize(me->module, 1, me->format.width, me->format.height);
     NX_MIPI_CSI_SetVCLK(me->module, 1, NX_MIPI_CSI_VCLKSRC_EXTCLK);
     /* HACK!!! -> this is variation : confirm to camera sensor */
