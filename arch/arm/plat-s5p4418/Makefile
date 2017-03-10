@@ -23,6 +23,10 @@ ifeq ($(CONFIG_PLAT_S5P4418_EC),y)
 PLATBOARD :=ec
 endif
 
+ifeq ($(CONFIG_PLAT_S5P4418_HA),y)
+PLATBOARD :=ha
+endif
+
 #
 # Build options
 #

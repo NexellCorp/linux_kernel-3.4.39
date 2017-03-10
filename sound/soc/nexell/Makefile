@@ -16,6 +16,7 @@ nxp-snd-spdifrx-objs				:= nxp-spdifrx.o
 nxp-snd-pdm-objs					:= nxp-pdm.o
 
 obj-$(CONFIG_SND_CODEC_NULL) 		+= nxp-snd-null.o
+obj-$(CONFIG_SND_CODEC_TAS880021)   += nxp-snd-tas880021.o
 obj-$(CONFIG_SND_CODEC_RT5631)		+= nxp-snd-rt5631.o
 obj-$(CONFIG_SND_CODEC_ES8316)		+= nxp-snd-es8316.o
 obj-$(CONFIG_SND_CODEC_ALC5623)     += nxp-snd-rt5623.o
@@ -28,6 +29,7 @@ obj-$(CONFIG_SND_SPDIF_RECEIVER)	+= nxp-snd-spdif-receiver.o
 obj-$(CONFIG_SND_PDM_REC)			+= nxp-snd-pdm-record.o
 
 nxp-snd-null-objs 					:= nxp-null.o
+nxp-snd-tas880021-objs				:= nxp-tas880021.o
 nxp-snd-rt5631-objs 				:= nxp-rt5631.o
 nxp-snd-es8316-objs 				:= nxp-es8316.o
 nxp-snd-rt5623-objs                 := nxp-rt5623.o

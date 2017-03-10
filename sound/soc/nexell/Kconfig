@@ -87,6 +87,11 @@ config SND_CODEC_NULL
 	tristate "I2S audio null codec."
 	depends on SND_NXP_I2S
 
+config SND_CODEC_TAS880021
+	tristate "TAS880021 I2S audio DAC."
+	depends on SND_NXP_I2S
+	select SND_SOC_TAS880021
+
 config SND_CODEC_RT5631
 	tristate "rt5631 I2S audio codec."
 	depends on SND_NXP_I2S
@@ -133,6 +138,6 @@ config SND_NXP_EC_PDM_VIRT
 	default n
 
 config SND_NXP_EC_PDM_SPI
-	tristate "Micom SPI PDM device"
+	tristate "NXC100 SPI PDM device"
 	depends on SND_NXP_EC
 	default n

@@ -745,7 +745,7 @@ static int nxp_pcm_open(struct snd_pcm_substream *substream)
 
 	/* resampler  */
 	if (!strcmp(prtd->dma_param->dma_ch_name, DMA_PERIPHERAL_NAME_I2S0_RX) ||
-		!strcmp(prtd->dma_param->dma_ch_name, DMA_PERIPHERAL_NAME_I2S1_RX) || 
+		!strcmp(prtd->dma_param->dma_ch_name, DMA_PERIPHERAL_NAME_I2S1_RX) ||
 		!strcmp(prtd->dma_param->dma_ch_name, DMA_PERIPHERAL_NAME_I2S2_RX)) {
 		prtd->run_resampler = CFG_SND_PCM_CAPTURE_RESAMPLEER_ON;
 		pr_debug("***[DMA %d:%s resampler ON]***\n",
@@ -828,7 +828,7 @@ static int nxp_pcm_hw_params(struct snd_pcm_substream *substream,
 		prtd->rate_duration_us =
 			(1000000/params_rate(params))*params_period_size(params) + 1000; /* add 10ms */
 
-		if (!strcmp(prtd->dma_param->dma_ch_name, DMA_PERIPHERAL_NAME_I2S0_RX)) {
+		if (!strcmp(prtd->dma_param->dma_ch_name, DMA_PERIPHERAL_NAME_I2S2_RX)) {
 			struct hrtimer *hrtimer = &prtd->rate_timer;
 			INIT_WORK(&prtd->work, nxp_pcm_sample_rate_work);
 			hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);

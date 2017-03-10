@@ -86,7 +86,7 @@ static inline void __sync_capture_start(void)
 	val = __raw_readl(base + 0xC);
 	if (val & (1<<2))
 		printk("!!!!!!!!!!! fifo : spi rx not empty (0x%08x) !!!!!!!!!!!\n", val);
-
+#if 0
 	base = (void*)0xf0055000;
 	__raw_writel(1<<7, (base+0x08));	/* Clear the Rx Flush bit */
 	__raw_writel(   0, (base+0x08));	/* Clear the Flush bit */
@@ -94,6 +94,7 @@ static inline void __sync_capture_start(void)
 	val = __raw_readl(base + 0x08);
 	if (val & (0x1f))
 		printk("!!!!!!!!!!! fifo : i2s0 rx not empty (0x%08x) !!!!!!!!!!!\n", val);
+#endif
 
 	base = (void*)0xf0057000;	// 0xf0056000
 	__raw_writel(1<<7, (base+0x08));	/* Clear the Rx Flush bit */
@@ -127,7 +128,7 @@ static inline void __sync_capture_start(void)
 	  */
 	__raw_writel(run_val , IO_BASE(PDM_IO_ISRUN));
 	__raw_writel(lrck_val, IO_BASE(PDM_IO_LRCLK));
-
+#if 0
 	/* I2S 0 */
 	base = (void*)0xf0055000;
 	CON  =  __raw_readl(base + 0x00) | ((1 << 1)  | (1 << 0));
@@ -135,9 +136,13 @@ static inline void __sync_capture_start(void)
 
 	__raw_writel(CSR , (base+0x04));
 	__raw_writel(CON , (base+0x00));
+#endif
 
-	/* I2S 1 */
+	/* I2S 2 */
 	base = (void*)0xf0057000; // 0xf0056000
+	CON  =  __raw_readl(base + 0x00) | ((1 << 1)  | (1 << 0));
+	CSR  = (__raw_readl(base + 0x04) & ~(3 << 8)) | (1 << 8) | 0;
+
 	__raw_writel(CSR , (base+0x04));
 	__raw_writel(CON , (base+0x00));
 

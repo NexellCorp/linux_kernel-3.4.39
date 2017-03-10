@@ -7,7 +7,7 @@ comment "Board features"
 
 choice
     prompt "Platform board"
-    default PLAT_S5P4418_DRONE
+    default PLAT_S5P4418_HA
 
 	config PLAT_S5P4418_DRONE
 		bool "DRONE: Android drone board"
@@ -33,6 +33,11 @@ choice
 		bool "EC: Echo cancelation for VD"
 		help
    	 		Support for the echo cancellation board.
+
+	config PLAT_S5P4418_HA
+		bool "HA: Home Agent"
+		help
+   	 		Support for the Home Agent board.
 
 endchoice
 
