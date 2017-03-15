@@ -280,8 +280,8 @@
  */
 #define CFG_USB_DET_FROM_PMIC_INT				(0)
 
-#define CFG_GPIO_OTG_USBID_DET					(PAD_GPIO_B + 30)
-#define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_B + 28)
+#define CFG_GPIO_OTG_USBID_DET					(-1)
+#define CFG_GPIO_OTG_VBUS_DET					(PAD_GPIO_A + 14)
 #define CFG_GPIO_PMIC_VUSB_DET					(PAD_GPIO_ALV + 2)		/* Choice for SW_UBC or Wake-up*/
 #define CFG_GPIO_PMIC_LOWBAT_DET				(PAD_GPIO_ALV + 3)		/* Critical low battery detect */
 #define CFG_GPIO_PMIC_INTR						(PAD_GPIO_ALV + 4)
@@ -308,22 +308,22 @@
 /* Wakeup Source : ALIVE [0~7] */
 #define CFG_PWR_WAKEUP_SRC_ALIVE0				CTRUE					/* KEY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE0				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE1				CTRUE					/* EXT SD */
-#define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_BOTHEDGE
+#define CFG_PWR_WAKEUP_SRC_ALIVE1				CTRUE
+#define CFG_PWR_WAKEUP_MOD_ALIVE1				PWR_DECT_FALLINGEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE2				CTRUE					/* PMIC - VUSB*/
 #define CFG_PWR_WAKEUP_MOD_ALIVE2				PWR_DECT_BOTHEDGE
 #define CFG_PWR_WAKEUP_SRC_ALIVE3				CFALSE					/* PMIC - CRITICAL LOW BATTERY */
 #define CFG_PWR_WAKEUP_MOD_ALIVE3				PWR_DECT_ASYNC_LOWLEVEL
-#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR - LOW BATTERY */
+#define CFG_PWR_WAKEUP_SRC_ALIVE4				CTRUE					/* PMIC INTR */
 #define CFG_PWR_WAKEUP_MOD_ALIVE4				PWR_DECT_FALLINGEDGE
-#define CFG_PWR_WAKEUP_SRC_ALIVE5				CFALSE
+#define CFG_PWR_WAKEUP_SRC_ALIVE5				CTRUE
 #define CFG_PWR_WAKEUP_MOD_ALIVE5				PWR_DECT_FALLINGEDGE
 
 /*
  * Wakeup Source : RTC ALARM
  * ifndef Enable ALARM Wakeup
  */
-#define	CFG_PWR_WAKEUP_SRC_ALARM				CTRUE
+#define	CFG_PWR_WAKEUP_SRC_ALARM				CFALSE
 
 //------------------------------------------------------------------------------
 // Static Bus #0 ~ #9, NAND, IDE configuration

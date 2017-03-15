@@ -1126,9 +1126,7 @@ static struct nxe2000_pwrkey_platform_data nxe2000_pwrkey_data = {
 
 static struct nxe2000_battery_platform_data nxe2000_battery_data = {
 	.irq 				= NXE2000_IRQ_BASE,
-
-//	.input_power_type	= INPUT_POWER_TYPE_ADP_UBC_LINKED,
-	.input_power_type	= INPUT_POWER_TYPE_UBC,
+	.input_power_type	= INPUT_POWER_TYPE_ADP_UBC,
 
 	.gpio_otg_usbid		= CFG_GPIO_OTG_USBID_DET,
 	.gpio_otg_vbus		= CFG_GPIO_OTG_VBUS_DET,
