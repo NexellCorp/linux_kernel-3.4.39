@@ -133,8 +133,15 @@ static struct sg_table *ion_nxp_heap_map_dma(struct ion_heap *heap,
 static void ion_nxp_heap_unmap_dma(struct ion_heap *heap,
                     struct ion_buffer *buffer)
 {
-    if (buffer->sg_table) {
-        sg_free_table(buffer->sg_table);
+    struct sg_table *table = buffer->sg_table;
+    bool cached = ion_buffer_cached(buffer);
+
+    if (!cached)
+        ion_heap_buffer_zero(buffer);
+
+    if (table) {
+        sg_free_table(table);
+        kfree(table);
     }
 }
 
