@@ -1914,7 +1914,9 @@ EXPORT_SYMBOL(nxp_hsic_phy_pwr_on);
  */
 void nxp_otgvbus_pwr_set(int enable)
 {
-	nxp_soc_gpio_set_out_value(CFG_GPIO_OTG_VBUS_DET, enable);
+	int vbus_det = CFG_GPIO_OTG_VBUS_DET;
+	if (vbus_det > -1)
+		nxp_soc_gpio_set_out_value(CFG_GPIO_OTG_VBUS_DET, enable);
 }
 EXPORT_SYMBOL(nxp_otgvbus_pwr_set);
 #endif

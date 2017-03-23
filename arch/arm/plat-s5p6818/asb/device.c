@@ -1754,16 +1754,19 @@ int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on)
 }
 EXPORT_SYMBOL(nxp_hsic_phy_pwr_on);
 
-#ifdef CONFIG_BATTERY_NXE2000
+#ifdef CONFIG_MFD_NXE2000
 /*------------------------------------------------------------------------------
  * USB OTGVBUS power control.
  */
 void nxp_otgvbus_pwr_set(int enable)
 {
-	nxp_soc_gpio_set_out_value(CFG_GPIO_OTG_VBUS_DET, enable);
+	int vbus_det = CFG_GPIO_OTG_VBUS_DET;
+	if (vbus_det > -1)
+		nxp_soc_gpio_set_out_value(CFG_GPIO_OTG_VBUS_DET, enable);
 }
 EXPORT_SYMBOL(nxp_otgvbus_pwr_set);
 #endif
+
 /*------------------------------------------------------------------------------
  * HDMI CEC driver
  */
