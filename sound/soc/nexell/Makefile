@@ -7,6 +7,7 @@ obj-$(CONFIG_SND_NXP_I2S)	  		+= nxp-snd-i2s.o
 obj-$(CONFIG_SND_NXP_SPDIF_TX) 		+= nxp-snd-spdiftx.o
 obj-$(CONFIG_SND_NXP_SPDIF_RX) 		+= nxp-snd-spdifrx.o
 obj-$(CONFIG_SND_NXP_PDM)	 		+= nxp-snd-pdm.o
+obj-$(CONFIG_SND_NXP_EC)			+= ec/
 
 nxp-snd-pcm-objs					:= nxp-pcm.o
 nxp-snd-i2s-objs 					:= nxp-i2s.o
@@ -15,6 +16,7 @@ nxp-snd-spdifrx-objs				:= nxp-spdifrx.o
 nxp-snd-pdm-objs					:= nxp-pdm.o
 
 obj-$(CONFIG_SND_CODEC_NULL) 		+= nxp-snd-null.o
+obj-$(CONFIG_SND_CODEC_TLV320AIC32X4)   += nxp-snd-tlv320aic32x4.o
 obj-$(CONFIG_SND_CODEC_RT5631)		+= nxp-snd-rt5631.o
 obj-$(CONFIG_SND_CODEC_RT5640)		+= nxp-snd-rt5640.o
 obj-$(CONFIG_SND_CODEC_ES8316)		+= nxp-snd-es8316.o
@@ -28,6 +30,7 @@ obj-$(CONFIG_SND_SPDIF_RECEIVER)	+= nxp-snd-spdif-receiver.o
 obj-$(CONFIG_SND_PDM_REC)			+= nxp-snd-pdm-record.o
 
 nxp-snd-null-objs 					:= nxp-null.o
+nxp-snd-tlv320aic32x4-objs				:= nxp-tlv320aic32x4.o
 nxp-snd-rt5631-objs 				:= nxp-rt5631.o
 nxp-snd-rt5640-objs 				:= nxp-rt5640.o
 nxp-snd-es8316-objs 				:= nxp-es8316.o

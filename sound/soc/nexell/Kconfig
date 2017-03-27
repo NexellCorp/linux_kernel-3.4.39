@@ -91,6 +91,11 @@ config SND_CODEC_NULL
 	tristate "I2S audio null codec."
 	depends on SND_NXP_I2S
 
+config SND_CODEC_TLV320AIC32X4
+	tristate "TLV320AIC32X4 I2S audio DAC."
+	depends on SND_NXP_I2S
+	select SND_SOC_TLV320AIC32X4
+
 config SND_CODEC_RT5631
 	tristate "rt5631 I2S audio codec."
 	depends on SND_NXP_I2S
@@ -130,3 +135,17 @@ config SND_CODEC_WM8903
 	tristate "wm8903  I2S audio codec."
 	depends on SND_NXP_I2S
 	select SND_SOC_WM8903
+
+config SND_NXP_EC
+	tristate "PDM/I2S Echo Canceller"
+	default n
+
+config SND_NXP_EC_PDM_VIRT
+	tristate "Virtual PDM device"
+	depends on SND_NXP_EC
+	default n
+
+config SND_NXP_EC_PDM_SPI
+	tristate "NXC100 SPI PDM device"
+	depends on SND_NXP_EC
+	default n

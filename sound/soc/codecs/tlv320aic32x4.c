@@ -31,6 +31,10 @@
 #include <linux/i2c.h>
 #include <linux/cdev.h>
 #include <linux/slab.h>
+#include <linux/clk.h>
+#include <linux/gpio.h>
+
+#include <mach/platform.h>
 
 #include <sound/tlv320aic32x4.h>
 #include <sound/core.h>
@@ -143,6 +147,8 @@ static const struct aic32x4_rate_divs aic32x4_divs[] = {
 	{AIC32X4_FREQ_25000000, 44100, 2, 7, 2253, 128, 8, 2, 64, 8, 4, 4},
 	/* 48k rate */
 	{AIC32X4_FREQ_12000000, 48000, 1, 8, 1920, 128, 2, 8, 128, 2, 8, 4},
+	{AIC32X4_FREQ_12287880,	48000, 1, 7, 1920, 128, 1, 2, 128, 1, 2, 4},
+	{AIC32X4_FREQ_12288000,	48000, 1, 7, 1920, 128, 1, 2, 128, 1, 2, 4},
 	{AIC32X4_FREQ_24000000, 48000, 2, 8, 1920, 128, 8, 2, 64, 8, 4, 4},
 	{AIC32X4_FREQ_25000000, 48000, 2, 7, 8643, 128, 8, 2, 64, 8, 4, 4}
 };
@@ -356,6 +362,8 @@ static int aic32x4_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 
 	switch (freq) {
 	case AIC32X4_FREQ_12000000:
+	case AIC32X4_FREQ_12287880:
+	case AIC32X4_FREQ_12288000:
 	case AIC32X4_FREQ_24000000:
 	case AIC32X4_FREQ_25000000:
 		aic32x4->sysclk = freq;
@@ -516,6 +524,14 @@ static int aic32x4_mute(struct snd_soc_dai *dai, int mute)
 		snd_soc_write(codec, AIC32X4_DACMUTE, dac_reg | AIC32X4_MUTEON);
 	else
 		snd_soc_write(codec, AIC32X4_DACMUTE, dac_reg);
+
+#if defined (CFG_IO_AUDIO_AMP_EN)
+	if (mute)
+		gpio_set_value(CFG_IO_AUDIO_AMP_EN, 0);
+	else
+		gpio_set_value(CFG_IO_AUDIO_AMP_EN, 1);
+#endif
+
 	return 0;
 }
 
@@ -718,6 +734,10 @@ static __devinit int aic32x4_i2c_probe(struct i2c_client *i2c,
 		aic32x4->swapdacs = false;
 		aic32x4->micpga_routing = 0;
 	}
+
+#if defined (CFG_IO_AUDIO_AMP_EN)
+	gpio_request(CFG_IO_AUDIO_AMP_EN, "tlv320aic32x4_amp_en");
+#endif
 
 	ret = snd_soc_register_codec(&i2c->dev,
 			&soc_codec_dev_aic32x4, &aic32x4_dai, 1);

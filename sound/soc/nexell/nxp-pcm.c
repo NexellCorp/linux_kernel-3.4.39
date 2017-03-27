@@ -57,7 +57,7 @@
 /*
  * PCM INFO
  */
-#define	PERIOD_BYTES_MAX		8192
+#define	PERIOD_BYTES_MAX		65536 // 8192
 
 static struct snd_pcm_hardware nxp_pcm_hardware = {
 	.info				= 	SNDRV_PCM_INFO_MMAP |
@@ -73,7 +73,7 @@ static struct snd_pcm_hardware nxp_pcm_hardware = {
 	.rate_max			= 192000,
 	.channels_min		= 1,
 	.channels_max		= 2,
-	.buffer_bytes_max	= 64 * 1024 * 2,
+	.buffer_bytes_max	= 256 * 1024 * 2,
 	.period_bytes_min	= 32,
 	.period_bytes_max	= PERIOD_BYTES_MAX,
 	.periods_min		= 2,
@@ -177,7 +177,7 @@ static void nxp_pcm_dma_clear(struct snd_pcm_substream *substream)
 	offset  -= length;
 	src_addr = (void*)(runtime->dma_area + offset);
 
-	if ((prtd->dma_chan->chan_id >= DMA_PERIPHERAL_ID_I2S0_TX) 
+	if ((prtd->dma_chan->chan_id >= DMA_PERIPHERAL_ID_I2S0_TX)
 		&& (prtd->dma_chan->chan_id <= DMA_PERIPHERAL_ID_I2S2_RX)) {
 		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 			memset(src_addr, 0, length);
@@ -287,7 +287,7 @@ static int nxp_pcm_dma_slave_config(void *runtime_data, int stream)
 	struct dma_slave_config slave_config = { 0, };
 	dma_addr_t	peri_addr = dma_param->peri_addr;
 	int	bus_width = dma_param->bus_width_byte;
-	int	max_burst = dma_param->max_burst_byte/bus_width; 
+	int	max_burst = dma_param->max_burst_byte/bus_width;
 	int ret;
 
 	if (SNDRV_PCM_STREAM_PLAYBACK == stream) {
