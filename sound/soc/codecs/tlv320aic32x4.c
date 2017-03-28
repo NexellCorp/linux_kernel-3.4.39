@@ -686,6 +686,13 @@ static int aic32x4_probe(struct snd_soc_codec *codec)
 		snd_soc_write(codec, AIC32X4_RMICPGANIN, AIC32X4_RMICPGANIN_IN1L_10K);
 	}
 
+	/* HP L/R setting */
+	snd_soc_write(codec, AIC32X4_HPLROUTE, 0x08);
+	snd_soc_write(codec, AIC32X4_HPRROUTE, 0x08);
+
+	snd_soc_write(codec, AIC32X4_HPLGAIN, 0x00);
+	snd_soc_write(codec, AIC32X4_HPRGAIN, 0x00);
+
 	aic32x4_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 	snd_soc_add_codec_controls(codec, aic32x4_snd_controls,
 			     ARRAY_SIZE(aic32x4_snd_controls));
