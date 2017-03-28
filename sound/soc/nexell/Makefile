@@ -7,7 +7,6 @@ obj-$(CONFIG_SND_NXP_I2S)	  		+= nxp-snd-i2s.o
 obj-$(CONFIG_SND_NXP_SPDIF_TX) 		+= nxp-snd-spdiftx.o
 obj-$(CONFIG_SND_NXP_SPDIF_RX) 		+= nxp-snd-spdifrx.o
 obj-$(CONFIG_SND_NXP_PDM)	 		+= nxp-snd-pdm.o
-obj-$(CONFIG_SND_NXP_EC)			+= ec/
 
 nxp-snd-pcm-objs					:= nxp-pcm.o
 nxp-snd-i2s-objs 					:= nxp-i2s.o
@@ -28,6 +27,7 @@ obj-$(CONFIG_SND_CODEC_CS42L51_NX)	+= nxp-snd-cs42l51-nx.o
 obj-$(CONFIG_SND_SPDIF_TRANSCIEVER)	+= nxp-snd-spdif-transciever.o
 obj-$(CONFIG_SND_SPDIF_RECEIVER)	+= nxp-snd-spdif-receiver.o
 obj-$(CONFIG_SND_PDM_REC)			+= nxp-snd-pdm-record.o
+obj-$(CONFIG_SND_NXP_EC)			+= ec/
 
 nxp-snd-null-objs 					:= nxp-null.o
 nxp-snd-tlv320aic32x4-objs				:= nxp-tlv320aic32x4.o

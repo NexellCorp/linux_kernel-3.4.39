@@ -595,6 +595,7 @@ static struct platform_device spdif_recev_dai = {
 
 #if defined(CONFIG_SND_NXP_EC)
 
+#ifdef CFG_AUDIO_LOOPBACK_I2S0
 #ifndef CFG_AUDIO_I2S0_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S0_MASTER_CLOCK_IN		0
 #endif
@@ -619,7 +620,9 @@ static struct platform_device i2s_device_ch0 = {
 		.platform_data	= &i2s_data_ch0
 	},
 };
+#endif
 
+#ifdef CFG_AUDIO_LOOPBACK_I2S1
 #ifndef CFG_AUDIO_I2S1_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S1_MASTER_CLOCK_IN		0
 #endif
@@ -644,7 +647,9 @@ static struct platform_device i2s_device_ch1 = {
 		.platform_data	= &i2s_data_ch1
 	},
 };
+#endif
 
+#ifdef CFG_AUDIO_LOOPBACK_I2S2
 #ifndef CFG_AUDIO_I2S2_MASTER_CLOCK_IN
 #define CFG_AUDIO_I2S2_MASTER_CLOCK_IN		0
 #endif
@@ -669,6 +674,7 @@ static struct platform_device i2s_device_ch2 = {
 		.platform_data	= &i2s_data_ch2
 	},
 };
+#endif
 
 static struct platform_device *i2s_devices[] __initdata = {
 #ifdef CFG_AUDIO_LOOPBACK_I2S0
@@ -1689,29 +1695,6 @@ void __init nxp_board_devices_register(void)
 	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_i2c_boardinfo, ARRAY_SIZE(nxe2000_i2c_boardinfo));
 #endif
 
-#if defined(CONFIG_FCI_FC8300)
-	printk("plat: add device fc8300 I2C\n");
-	i2c_register_board_info(FC8300_I2C_BUS, &fc8300_i2c_bdi, 1);
-	platform_device_register(&fc8300_dai);
-#endif
-
-#if defined(CONFIG_SND_CODEC_NULL)
-	platform_device_register(&snd_null);
-	platform_device_register(&snd_null_dai);
-#endif
-
-#if defined(CONFIG_SND_CODEC_RT5640) || defined(CONFIG_SND_CODEC_RT5640_MODULE)
-	printk("plat: add device asoc-rt5640\n");
-	i2c_register_board_info(RT5640_I2C_BUS, &rt5640_i2c_bdi, 1);
-	platform_device_register(&rt5640_dai);
-#endif
-
-#if defined(CONFIG_SND_CODEC_ALC5623) || defined(CONFIG_SND_CODEC_ALC5623_MODULE)
-	printk("plat: add device asoc-alc5623\n");
-	i2c_register_board_info(ALC5623_I2C_BUS, &alc5623_i2c_bdi, 1);
-	platform_device_register(&alc5623_dai);
-#endif
-
 #if defined(CONFIG_SND_CODEC_TLV320AIC32X4) || defined(CONFIG_SND_CODEC_TLV320AIC32X4_MODULE)
 	printk("plat: add device asoc-tlv320aic32x4\n");
 	i2c_register_board_info(TLV320AIC32X4_I2C_BUS, &tlv320aic32x4_i2c_bdi, 1);
@@ -1739,7 +1722,6 @@ void __init nxp_board_devices_register(void)
 	platform_device_register(&pdm_spi_rec_dai);
 #endif
 #endif /* CONFIG_SND_NXP_EC */
-
 
 #if defined(CONFIG_SND_PDM_REC) || defined(CONFIG_SND_PDM_REC_MODULE)
 	printk("plat: add device pdm capture\n");
