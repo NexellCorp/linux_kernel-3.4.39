@@ -51,12 +51,12 @@
 #define pr_debug		printk
 */
 
+#ifndef CFG_SND_PCM_CAPTURE_INPUT_RATE
 #define	CFG_SND_PCM_CAPTURE_INPUT_RATE				16000	// 48000
+#endif
 #define	CFG_SND_PCM_CAPTURE_RESAMPLE_HZ				16000	// 16000
 #define	CFG_SND_PCM_CAPTURE_RESAMPLE_COPY			0
 #define	CFG_SND_PCM_CAPTURE_RESAMPLEER_ON			true
-
-#define	CFG_SND_PCM_CAPTURE_SAMPLE_DETECT
 
 /* Sample define */
 #define	SAMPLE_DETECT_COUNT							2	// 3

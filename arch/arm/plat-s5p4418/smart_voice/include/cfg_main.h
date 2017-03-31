@@ -190,8 +190,11 @@
 //#define CFG_AUDIO_LOOPBACK_I2S1
 #define CFG_AUDIO_LOOPBACK_I2S2
 
-#define	CFG_PDM_I2S_LRCLK						(PAD_GPIO_D + 12)	/* Audio codec LRCLK : H -> L */
+#define CFG_SND_PCM_CAPTURE_INPUT_RATE			48000
 
+// #define CFG_SND_PCM_CAPTURE_SAMPLE_DETECT
+
+#define	CFG_PDM_I2S_LRCLK						(PAD_GPIO_D + 12)	/* Audio codec LRCLK : H -> L */
 #define	CFG_PDM_IO_CSSEL						(PAD_GPIO_C + 16)	/* SPI CS : H -> L */
 #define	CFG_PDM_IO_ISRUN						(PAD_GPIO_E + 14)	/* ISRUN : B 27, D19, L -> H : H : RUN, 0: STOP */
 #define	CFG_PDM_IO_NOLRCLK						(PAD_GPIO_B + 26)	/* NOLRCLK : H -> L : H : No LR, 0: LR */
