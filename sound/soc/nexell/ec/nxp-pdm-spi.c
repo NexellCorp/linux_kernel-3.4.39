@@ -314,6 +314,14 @@ static int nxp_pdm_dai_suspend(struct snd_soc_dai *dai)
 
 static int nxp_pdm_dai_resume(struct snd_soc_dai *dai)
 {
+	struct nxp_pdm_snd_param *par = snd_soc_dai_get_drvdata(dai);
+
+	nxp_soc_pwm_set_frequency(1, 8000000, 50);
+
+	pdm_spi_init(par);
+
+	nxp_pdm_setup(dai);
+
 	return 0;
 }
 

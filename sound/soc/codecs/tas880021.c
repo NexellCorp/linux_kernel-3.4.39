@@ -34,9 +34,9 @@
 #define pr_debug	printk
 */
 
-static struct i2c_client *i2c;
 
 struct tas880021_priv {
+	struct i2c_client *i2c;
 	enum snd_soc_control_type control_type;
 	u8 id;
 	unsigned int sysclk;
@@ -238,6 +238,39 @@ static int tas880021_suspend(struct snd_soc_codec *codec)
 
 static int tas880021_resume(struct snd_soc_codec *codec)
 {
+	struct tas880021_priv *tas880021 = snd_soc_codec_get_drvdata(codec);
+	struct i2c_client *client = tas880021->i2c;
+
+	int i = 0;
+	char value = 0;
+	char data[32] = {0, };
+
+	// Soft Reset
+	tas880021_i2c_write(client, 0x00, 0x00);
+	tas880021_i2c_write(client, 0x7F, 0x00);
+	tas880021_i2c_write(client, 0x02, 0x10);
+	tas880021_i2c_write(client, 0x01, 0x11);
+	mdelay(5);
+
+	// Amp software wetting
+	tas880021_i2c_write(client, 0x00, 0x00);
+	tas880021_i2c_write(client, 0x7F, 0x00);
+	tas880021_i2c_write(client, 0x03, 0x00); // DSP unmute
+	tas880021_i2c_write(client, 0x2a, 0x11); // AMP unmute
+
+	tas880021_i2c_write(client, 0x25, 0x18);
+	tas880021_i2c_write(client, 0x0d, 0x10);
+	tas880021_i2c_write(client, 0x02, 0x00);
+
+	data[0] = 0x07;	data[1] = 0x00;	data[2] = 0x20;
+	tas880021_i2c_write_burst(client, data, 3);
+	mdelay(5);
+
+	tas880021_i2c_write(client, 0x00, 0x00);
+	tas880021_i2c_write(client, 0x7F, 0x00);
+	data[0] = 0x3d;	data[1] = 0x5f;	data[2] = 0x5f;
+	tas880021_i2c_write_burst(client, data, 3);
+
 	return 0;
 }
 
@@ -255,7 +288,7 @@ static int tas880021_probe(struct snd_soc_codec *codec)
 		return ret;
 	}
 
-    ret = init_codec(i2c);
+    ret = init_codec(tas880021->i2c);
 
 	if (ret < 0)
 		printk(KERN_ERR "## [%s():%s:%d\t] init_codec fail(ret:%d).\n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__, ret);
@@ -310,7 +343,7 @@ static __devinit int tas880021_i2c_probe(struct i2c_client *client,
 	tas880021->control_type = SND_SOC_I2C;
 
 	i2c_set_clientdata(client, tas880021);
-    i2c=client;
+    tas880021->i2c=client;
 
 	ret = snd_soc_register_codec(&client->dev,
 					&soc_codec_device_tas880021, &tas880021_dai, 1);

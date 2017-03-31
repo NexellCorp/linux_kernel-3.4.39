@@ -201,6 +201,76 @@ static void nxp_pcm_dma_mem_free(struct snd_pcm *pcm,
 		kfree(prtd->rs_buffer);
 }
 
+static irqreturn_t nxp_pcm_timer_handler(int irq, void *desc)
+{
+	struct pcm_timer_data *tm = desc;
+	int ch = tm->channel;
+	struct timespec *ts = &tm->ts;
+
+	spin_lock(&tm->lock);
+	ts->tv_sec++;
+	spin_unlock(&tm->lock);
+	timer_clear(ch);
+
+	return IRQ_HANDLED;
+}
+
+static int nxp_pcm_timer_stop(struct pcm_timer_data *pcm_timer)
+{
+	int ch = pcm_timer->channel;
+
+	timer_stop (ch, 1);
+
+	return 0;
+}
+
+static int nxp_pcm_timer_start(struct pcm_timer_data *pcm_timer)
+{
+	int ch = pcm_timer->channel;
+	int mux = pcm_timer->mux;
+	int prescale = pcm_timer->prescale;
+	unsigned long tcount = pcm_timer->tcount;
+	struct timespec *ts = &pcm_timer->ts;
+
+	pcm_timer->nsec = 1000000000/tcount;
+	ts->tv_sec = 0, ts->tv_nsec = 0;
+
+	timer_stop (ch, 1);
+	timer_clock(ch, mux, prescale);
+	timer_count(ch, tcount);
+	timer_start(ch, T_IRQ_ON);
+
+	return 0;
+}
+
+static int nxp_pcm_timer_init(struct pcm_timer_data *pcm_timer)
+{
+	int ch = pcm_timer->channel;
+	int irq = pcm_timer->irq;
+	int ret = 0;
+
+	ret = request_irq(irq, &nxp_pcm_timer_handler,
+				IRQF_DISABLED, "snd-pcm-lctimer", pcm_timer);
+	if (ret) {
+		printk("Error: pcm local timer.%d request irq %d \n", ch, irq);
+		return ret;
+	}
+
+	spin_lock_init(&pcm_timer->lock);
+
+	return 0;
+}
+
+static void nxp_pcm_timer_free(struct pcm_timer_data *pcm_timer)
+{
+	int ch = pcm_timer->channel;
+	int irq = IRQ_PHY_TIMER_INT0 + ch;
+
+	nxp_pcm_timer_stop(pcm_timer);
+
+	free_irq(irq, pcm_timer);
+}
+
 static int nxp_pcm_resample_submit(struct snd_pcm_substream *substream)
 {
 	struct nxp_pcm_runtime_data *prtd = substream_to_prtd(substream);
@@ -717,6 +787,9 @@ static int nxp_pcm_open(struct snd_pcm_substream *substream)
 	int ret = 0;
 
 	pr_debug("%s %s\n", __func__, STREAM_STR(substream->stream));
+
+	nxp_pcm_timer_start(tm);
+
 	prtd = kzalloc(sizeof(struct nxp_pcm_runtime_data), GFP_KERNEL);
 	if (prtd == NULL) {
 		printk("Error: %s %s dma runtime allocate %d\n",
@@ -775,11 +848,14 @@ static int nxp_pcm_close(struct snd_pcm_substream *substream)
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_pcm *pcm = rtd->pcm;
 	struct nxp_pcm_runtime_data *prtd = runtime->private_data;
+	struct pcm_timer_data *tm = &pcm_timer;
 
 	pcm_sample_rate_hz = CFG_SND_PCM_CAPTURE_INPUT_RATE;
 	nxp_pcm_dma_release_channel(prtd);
 	nxp_pcm_dma_mem_free(pcm, substream);
 	kfree(prtd);
+	nxp_pcm_timer_stop(tm);
+
 	pr_debug("%s %s\n", __func__, STREAM_STR(substream->stream));
 	return 0;
 }
@@ -991,58 +1067,6 @@ static struct snd_soc_platform_driver pcm_platform = {
 	.pcm_free	= nxp_pcm_free,
 };
 
-static irqreturn_t nxp_pcm_timer_handler(int irq, void *desc)
-{
-	struct pcm_timer_data *tm = desc;
-	int ch = tm->channel;
-	struct timespec *ts = &tm->ts;
-
-	spin_lock(&tm->lock);
-	ts->tv_sec++;
-	spin_unlock(&tm->lock);
-	timer_clear(ch);
-
-	return IRQ_HANDLED;
-}
-
-static int nxp_pcm_timer_setup(struct pcm_timer_data *pcm_timer)
-{
-	int ch = pcm_timer->channel;
-	int mux = pcm_timer->mux;
-	int prescale = pcm_timer->prescale;
-	unsigned long tcount = pcm_timer->tcount;
-	int irq = pcm_timer->irq;
-	struct timespec *ts = &pcm_timer->ts;
-	int ret = 0;
-
-	ret = request_irq(irq, &nxp_pcm_timer_handler,
-				IRQF_DISABLED, "snd-pcm-lctimer", pcm_timer);
-	if (ret) {
-		printk("Error: pcm local timer.%d request irq %d \n", ch, irq);
-		return ret;
-	}
-
-	pcm_timer->nsec = 1000000000/tcount;
-	ts->tv_sec = 0, ts->tv_nsec = 0;
-	spin_lock_init(&pcm_timer->lock);
-
-	timer_stop (ch, 1);
-	timer_clock(ch, mux, prescale);
-	timer_count(ch, tcount);
-	timer_start(ch, T_IRQ_ON);
-
-	return 0;
-}
-
-static void nxp_pcm_timer_free(struct pcm_timer_data *pcm_timer)
-{
-	int ch = pcm_timer->channel;
-	int irq = IRQ_PHY_TIMER_INT0 + ch;
-
-	timer_stop(ch, 1);
-	free_irq(irq, pcm_timer);
-}
-
 static int __devinit nxp_pcm_probe(struct platform_device *pdev)
 {
 	struct pcm_timer_data *tm = &pcm_timer;
@@ -1056,7 +1080,7 @@ static int __devinit nxp_pcm_probe(struct platform_device *pdev)
 
 	ret = snd_soc_register_platform(&pdev->dev, &pcm_platform);
 	if (!ret)
-		ret = nxp_pcm_timer_setup(tm);
+		ret = nxp_pcm_timer_init(tm);
 
 	printk("SND PCM: %s sound platform '%s'\n", ret?"fail":"register", pdev->name);
 	return ret;
