@@ -172,6 +172,28 @@ static struct platform_device adc_temp_plat_device = {
 };
 #endif //SENSORS_NXP_ADC_TEMP
 
+/*-----------------------------------------------------------------------------
+ * ISO7816
+ */
+#ifdef CONFIG_NXP_ISO7816
+#define ISO7816_PWM_CLK 3571200
+
+static struct nxp_iso7816_platdata nxp_iso7816_data = {
+	.use_pwm	= 1,
+	.pwm_ch		= 1,
+	.pwm_period	= 1000000000/ISO7816_PWM_CLK,
+	.rst_gpio	= PAD_GPIO_B + 26,
+	.uart_ch	= 4,
+};
+
+static struct platform_device iso7816_plat_device = {
+	.name			= "bcasif",
+	.dev			= {
+		.platform_data	= &nxp_iso7816_data,
+	}
+};
+#endif
+
 /*------------------------------------------------------------------------------
  * Network DM9000
  */
@@ -2222,6 +2244,10 @@ void __init nxp_board_devices_register(void)
 #ifdef CONFIG_SENSORS_NXP_ADC_TEMP
 	printk("plat: add device adc temp\n");
 	platform_device_register(&adc_temp_plat_device);
+#endif
+
+#ifdef CONFIG_NXP_ISO7816
+	platform_device_register(&iso7816_plat_device);
 #endif
 
 #if defined (CONFIG_FB_NXP)
