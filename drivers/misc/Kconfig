@@ -581,4 +581,11 @@ config FCI_FC8300
     default n
     help
 		support fci fc8300 isdbt.
+
+config NXP_ISO7816
+    bool "Support nxp ISO7816"
+    depends on (ARCH_S5P4418)
+    default n
+    help
+		support s5p4418 iso7816 driver.
 endmenu

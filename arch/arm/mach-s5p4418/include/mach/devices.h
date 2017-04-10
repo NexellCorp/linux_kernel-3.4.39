@@ -349,4 +349,13 @@ struct nxp_adc_tmp_platdata {
 	void (*callback)(int ch, int value, int temp, bool run);
 };
 
+struct nxp_iso7816_platdata {
+	int pwm_ch;
+	int pwm_period;
+	int use_pwm;
+	int rst_gpio;
+	int uart_ch;
+};
+
+
 #endif    /* __DEVICES_H__ */

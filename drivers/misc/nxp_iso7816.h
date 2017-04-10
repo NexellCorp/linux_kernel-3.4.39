@@ -1,0 +1,13 @@
+#ifndef __NXP_ISO_IOCTH_H__
+#define __NXP_ISO_IOCTH_H__
+
+enum {
+	SCR_IO_REINIT		= 0xAAA1,
+	SCR_IO_GET_CARD_STATUS,
+	SCR_IO_GET_ATR,
+	SCR_IO_SET_ETU,
+	SCR_IO_READ,
+	SCR_IO_WRITE,
+};
+
+#endif
