@@ -1066,7 +1066,7 @@ void otg_phy_init(void)
 
     PM_DBGOUT("+%s\n", __func__);
 
-    writel(readl(SOC_VA_RSTCON + 0x3C) & ~0xF800, SOC_VA_RSTCON + 0x3C);
+    writel(readl(SOC_VA_TIEOFF + 0x3C) & ~0xF800, SOC_VA_TIEOFF + 0x3C);
 
     // 1. Release otg common reset
     writel(readl(SOC_VA_RSTCON + 0x04) & ~(1<<25), SOC_VA_RSTCON + 0x04);     // reset on

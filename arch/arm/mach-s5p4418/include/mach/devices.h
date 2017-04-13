@@ -327,17 +327,17 @@ struct nxp_ehci_platdata {
 struct nxp_ohci_platdata {
 	int (*phy_init)(struct platform_device *pdev, int type);
 	int (*phy_exit)(struct platform_device *pdev, int type);
+	int resume_delay_time;	/* unit ms, more than 100 ms */
 };
 
 /*
  * ADC TMU
  */
 struct nxp_adc_tmp_trigger {
-    int     temp;
-	long    freq;
-	long    period;
+	int 	temp;
+	long	freq;
+	long	period;
 };
-
 struct nxp_adc_tmp_platdata {
 	int channel;
 	int tmp_offset;
