@@ -202,12 +202,15 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 		goto fail;
 	}
 
+	if (pdata && pdata->phy_init)
+		pdata->phy_init(pdev, NXP_USB_PHY_EHCI);
+
 #if defined( CONFIG_USB_HSIC_SYNOPSYS)
 	if (pdata && pdata->phy_init)
 		pdata->phy_init(pdev, NXP_USB_PHY_HSIC);
-#else
-	if (pdata && pdata->phy_init)
-		pdata->phy_init(pdev, NXP_USB_PHY_EHCI);
+
+	if (pdata && pdata->hsic_phy_pwr_on)
+		pdata->hsic_phy_pwr_on(pdev, TRUE);
 #endif
 
 	ehci = hcd_to_ehci(hcd);
@@ -257,7 +260,7 @@ static int __devinit nxp_ehci_probe(struct platform_device *pdev)
 		goto fail;
 
 	INIT_DELAYED_WORK(&nxp_ehci->resume_work, nxp_ehci_resume_work);
- 	wake_lock_init(&nxp_ehci->resume_lock, WAKE_LOCK_SUSPEND, "nxp-ehci");
+	wake_lock_init(&nxp_ehci->resume_lock, WAKE_LOCK_SUSPEND, "nxp-ehci");
 #endif
 	return 0;
 
@@ -280,15 +283,15 @@ static int __devexit nxp_ehci_remove(struct platform_device *pdev)
 
 	usb_remove_hcd(hcd);
 
+	if (pdata && pdata->phy_exit)
+		pdata->phy_exit(pdev, NXP_USB_PHY_EHCI);
+
 #if defined( CONFIG_USB_HSIC_SYNOPSYS )
 	if (pdata && pdata->phy_exit)
 		pdata->phy_exit(pdev, NXP_USB_PHY_HSIC);
 
 	if (pdata && pdata->hsic_phy_pwr_on)
 		pdata->hsic_phy_pwr_on(pdev, FALSE);
-#else
-	if (pdata && pdata->phy_exit)
-		pdata->phy_exit(pdev, NXP_USB_PHY_EHCI);
 #endif
 
 #ifdef CONFIG_USB_EHCI_SYNOPSYS_RESUME_WORK
@@ -350,15 +353,15 @@ static int nxp_ehci_suspend(struct device *dev)
 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
 	spin_unlock_irqrestore(&ehci->lock, flags);
 
+	if (pdata && pdata->phy_exit)
+		pdata->phy_exit(pdev, NXP_USB_PHY_EHCI);
+
 #if defined( CONFIG_USB_HSIC_SYNOPSYS )
 	if (pdata && pdata->phy_exit)
 		pdata->phy_exit(pdev, NXP_USB_PHY_HSIC);
 
 	if (pdata && pdata->hsic_phy_pwr_on)
 		pdata->hsic_phy_pwr_on(pdev, FALSE);
-#else
-	if (pdata && pdata->phy_exit)
-		pdata->phy_exit(pdev, NXP_USB_PHY_EHCI);
 #endif
 
 	return rc;
@@ -379,16 +382,15 @@ static void nxp_ehci_resume_work(struct work_struct *work)
 		return;
 	}
 
+	if (pdata && pdata->phy_init)
+		pdata->phy_init(pdev, NXP_USB_PHY_EHCI);
+
 #if defined( CONFIG_USB_HSIC_SYNOPSYS )
 	if (pdata && pdata->phy_init)
 		pdata->phy_init(pdev, NXP_USB_PHY_HSIC);
 
 	if (pdata && pdata->hsic_phy_pwr_on)
 		pdata->hsic_phy_pwr_on(pdev, TRUE);
-#else
-
-	if (pdata && pdata->phy_init)
-		pdata->phy_init(pdev, NXP_USB_PHY_EHCI);
 #endif
 
 	/* DMA burst Enable */
@@ -458,16 +460,15 @@ static int nxp_ehci_resume(struct device *dev)
 	if (nxp_ehci->phy)
 		return 0;
 
+	if (pdata && pdata->phy_init)
+		pdata->phy_init(pdev, NXP_USB_PHY_EHCI);
+
 #if defined( CONFIG_USB_HSIC_SYNOPSYS)
 	if (pdata && pdata->phy_init)
 		pdata->phy_init(pdev, NXP_USB_PHY_HSIC);
 
 	if (pdata && pdata->hsic_phy_pwr_on)
 		pdata->hsic_phy_pwr_on(pdev, TRUE);
-#else
-
-	if (pdata && pdata->phy_init)
-		pdata->phy_init(pdev, NXP_USB_PHY_EHCI);
 #endif
 
 	/* DMA burst Enable */
