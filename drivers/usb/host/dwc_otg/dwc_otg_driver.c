@@ -1154,6 +1154,11 @@ static int dwc_otg_driver_probe(
 #endif
 #endif /*IRQF_TRIGGER_LOW*/
 
+	if (dwc_param_dma_desc_enable_default) {
+		dwc_otg_set_param_dma_enable(dwc_otg_device->core_if,1);
+		if(!dwc_otg_is_host_mode(dwc_otg_device->core_if))
+			dwc_otg_set_param_dma_desc_enable(dwc_otg_device->core_if,0);
+	}
 	/*
 	 * Initialize the DWC_otg core.
 	 */
@@ -1334,11 +1339,7 @@ static int __init dwc_otg_driver_init(void)
 	return retval;
 }
 
-//#ifdef CONFIG_DEFERRED_INIT_CALL 
-//deferred_module_init(dwc_otg_driver_init);
-//#else
 module_init(dwc_otg_driver_init);
-//#endif
 
 /**
  * This function is called when the driver is removed from the kernel

@@ -385,10 +385,10 @@ static struct hc_driver dwc_otg_hc_driver = {
 
 	.flags = HCD_MEMORY | HCD_USB2,
 
-	//.reset =              
+	//.reset =
 	.start = hcd_start,
-	//.suspend =            
-	//.resume =             
+	//.suspend =
+	//.resume =
 	.stop = hcd_stop,
 
 	.urb_enqueue = dwc_otg_urb_enqueue,
@@ -682,7 +682,7 @@ int hcd_init(dwc_bus_dev_t *_dev)
         dmamask = DMA_BIT_MASK(32);
     else
         dmamask = 0;
-              
+
 #if    defined(LM_INTERFACE) || defined(PLATFORM_INTERFACE)
     dma_set_mask(&_dev->dev, dmamask);
     dma_set_coherent_mask(&_dev->dev, dmamask);
@@ -782,7 +782,7 @@ int hcd_init(dwc_bus_dev_t *_dev)
 #ifdef PLATFORM_INTERFACE
         retval = usb_add_hcd(hcd, platform_get_irq(_dev, 0), IRQF_SHARED | IRQF_DISABLED);
 #else
-        retval = usb_add_hcd(hcd, _dev->irq, IRQF_SHARED | IRQF_DISABLED);	
+        retval = usb_add_hcd(hcd, _dev->irq, IRQF_SHARED | IRQF_DISABLED);
 #endif
 	if (retval < 0) {
 		goto error2;
@@ -1133,7 +1133,7 @@ static int dwc_otg_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
                 DWC_DEBUGPL(DBG_HCD, "DWC OTG HCD URB Dequeue failed - rc %d\n",
                             rc);
         }
-           
+
 	return rc;
 }
 
@@ -1153,7 +1153,7 @@ static void endpoint_disable(struct usb_hcd *hcd, struct usb_host_endpoint *ep)
 }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
-/* Resets endpoint specific parameter values, in current version used to reset 
+/* Resets endpoint specific parameter values, in current version used to reset
  * the data toggle(as a WA). This function can be called from usb_clear_halt routine */
 static void endpoint_reset(struct usb_hcd *hcd, struct usb_host_endpoint *ep)
 {

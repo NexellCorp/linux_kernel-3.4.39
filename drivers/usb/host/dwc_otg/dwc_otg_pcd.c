@@ -2139,9 +2139,9 @@ int dwc_otg_pcd_ep_queue(dwc_otg_pcd_t * pcd, void *ep_handle,
 	if ((dma_buf & 0x3) && GET_CORE_IF(pcd)->dma_enable
 #endif
 			&& !GET_CORE_IF(pcd)->dma_desc_enable) {
-		req->dw_align_buf = DWC_DMA_ALLOC(buflen,
+		req->dw_align_buf = DWC_DMA_ALLOC_ATOMIC(buflen,
 				 &req->dw_align_buf_dma);
-		DWC_WARN( "%s: DWC_DMA_ALLOC (req %p) %p:%d dma %x (align %p:%x)\n",
+		DWC_DEBUGPL(DBG_PCD, "%s: DWC_DMA_ALLOC_ATOMIC (req %p) %p:%d dma %x (align %p:%x)\n",
         	__func__, req_handle, req->buf, req->length, req->dma,
         	req->dw_align_buf, req->dw_align_buf_dma);
 	}

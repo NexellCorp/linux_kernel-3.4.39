@@ -2522,8 +2522,19 @@ static void complete_ep(dwc_otg_pcd_ep_t * ep)
 #ifdef CFG_USE_FREE_LIST
 			add_free_list(ep, req->dw_align_buf, req->dw_align_buf_dma, req->length);
 #else
+#if defined(CONFIG_ARCH_CPU_SLSI)
+			int irqoff = irqs_disabled();
+			if (irqoff) {
+				local_irq_enable();
+			}
+#endif
 			DWC_DMA_FREE(req->length, req->dw_align_buf,
 					req->dw_align_buf_dma);
+#if defined(CONFIG_ARCH_CPU_SLSI)
+			if (irqoff) {
+				local_irq_disable();
+			}
+#endif
 #endif
 			req->dw_align_buf = NULL;
 		}

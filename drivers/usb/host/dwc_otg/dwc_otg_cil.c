@@ -1406,8 +1406,8 @@ void dwc_otg_core_init(dwc_otg_core_if_t * core_if)
 #if defined(CONFIG_ARCH_CPU_SLSI)
 		//ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_SINGLE;
 		//ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR;
-		ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR4;
-		//ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR16;
+		//ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR4;
+		ahbcfg.b.hburstlen = DWC_GAHBCFG_INT_DMA_BURST_INCR16;
 #else
 		/* Broadcom had altered to (1<<3)|(0<<0) - WRESP=1, max 4 beats */
 		ahbcfg.b.hburstlen = (1<<3)|(0<<0);//DWC_GAHBCFG_INT_DMA_BURST_INCR4;
@@ -2632,7 +2632,7 @@ void dwc_otg_hc_cleanup(dwc_otg_core_if_t * core_if, dwc_hc_t * hc)
 	 */
 	hc_regs = core_if->host_if->hc_regs[hc->hc_num];
 	DWC_WRITE_REG32(&hc_regs->hcintmsk, 0);
-	DWC_WRITE_REG32(&hc_regs->hcint, 0xFFFFFFFF);
+	DWC_WRITE_REG32(&hc_regs->hcint, 0xFFFFFFFF & ~(0x3ffff << 14));
 #ifdef DEBUG
 	DWC_TIMER_CANCEL(core_if->hc_xfer_timer[hc->hc_num]);
 #endif
@@ -5199,11 +5199,11 @@ void dwc_otg_core_reset(dwc_otg_core_if_t * core_if)
     gotgctl.d32 = DWC_READ_REG32(&global_regs->gotgctl);
 
 	if (core_if->host_flag) {
-		do {    
+		do {
 			gintsts.d32 = DWC_READ_REG32(&global_regs->gintsts);
-			if (++count > 100) 
+			if (++count > 100)
 			{
-				DWC_WARN("%s() ERROR! Force host mode GINTSTS=%0x\n", __func__, 
+				DWC_WARN("%s() ERROR! Force host mode GINTSTS=%0x\n", __func__,
 					gintsts.d32);
 				break;
 			}
@@ -5628,13 +5628,6 @@ int32_t dwc_otg_get_param_dma_enable(dwc_otg_core_if_t * core_if)
 int dwc_otg_set_param_dma_desc_enable(dwc_otg_core_if_t * core_if, int32_t val)
 {
 	int retval = 0;
-
-#if defined(CONFIG_ARCH_CPU_SLSI)
-	val = 0;
-#if defined(CONFIG_USB_VIDEO_CLASS)
-//	val = 1;
-#endif
-#endif
 
 	if (DWC_OTG_PARAM_TEST(val, 0, 1)) {
 		DWC_WARN("Wrong value for dma_enable\n");

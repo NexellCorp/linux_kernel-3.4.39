@@ -800,16 +800,16 @@ static int dwc_udc_start(struct usb_gadget_driver *driver,
 
 	DWC_DEBUGPL(DBG_PCD, "%s: %s\n", __func__, driver->driver.name);
 
-    /* check error */
-    if (!gadget_wrapper) {
-        printk(KERN_ERR "%s: No gadget_wrapper\n", __func__);
-        return -ENODEV;
-    }
+	/* check error */
+	if (!gadget_wrapper) {
+		printk(KERN_ERR "%s: No gadget_wrapper\n", __func__);
+		return -ENODEV;
+	}
 
-    if (!driver || !bind || !driver->setup) {
-        printk(KERN_ERR "%s: invalid args\n", __func__);
-        return -EINVAL;
-    }
+	if (!driver || !bind || !driver->setup) {
+		printk(KERN_ERR "%s: invalid args\n", __func__);
+		return -EINVAL;
+	}
 
 	if (gadget_wrapper->driver != 0) {
 		DWC_DEBUGPL(DBG_PCDV, "EBUSY (%p)\n", gadget_wrapper->driver);
@@ -911,8 +911,8 @@ static const struct usb_gadget_ops dwc_otg_pcd_ops = {
 	.pullup = dwc_udc_pullup,
 	.vbus_session = dwc_vbus_enable,
 	.vbus_draw = dwc_vbus_draw,
+	.start = dwc_udc_start,
 	.stop = dwc_udc_stop,
-    .start = dwc_udc_start,
 #endif
 };
 
@@ -1116,12 +1116,12 @@ static int _complete(dwc_otg_pcd_t * pcd, void *ep_handle,
 
 	ep = ep_from_handle(pcd, ep_handle);
 	if (GET_CORE_IF(pcd)->dma_enable) {
-    	if (req->length != 0) {
-        	dwc_otg_device_t *otg_dev = gadget_wrapper->pcd->otg_dev;
-            struct device *dev = NULL;
+	if (req->length != 0) {
+		dwc_otg_device_t *otg_dev = gadget_wrapper->pcd->otg_dev;
+		struct device *dev = NULL;
 
 			if (otg_dev != NULL)
-            	dev = DWC_OTG_OS_GETDEV(otg_dev->os_dep);
+				dev = DWC_OTG_OS_GETDEV(otg_dev->os_dep);
 
 			if (req->dma == DWC_DMA_ADDR_INVALID &&
 				dwc_otg_req->dma != DWC_DMA_ADDR_INVALID) {
@@ -1129,9 +1129,9 @@ static int _complete(dwc_otg_pcd_t * pcd, void *ep_handle,
 					__func__, req, req->buf, req->length, req->dma, dwc_otg_req->dma,
 					ep->dwc_ep.is_in?"in":"out");
 				dma_unmap_single(dev, dwc_otg_req->dma, dwc_otg_req->length,
-             			ep->dwc_ep.is_in ?
-                       DMA_TO_DEVICE: DMA_FROM_DEVICE);
-            	req->dma = DWC_DMA_ADDR_INVALID;
+						 ep->dwc_ep.is_in ?
+						 DMA_TO_DEVICE: DMA_FROM_DEVICE);
+				req->dma = DWC_DMA_ADDR_INVALID;
 			}
 #if 0
 			else {
