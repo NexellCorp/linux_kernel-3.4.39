@@ -93,14 +93,29 @@ static struct pll_pms pll2_3_pms [] =
 #define PLL_M_BITPOS    8
 #define PLL_P_BITPOS    18
 
+static DEFINE_SPINLOCK(_pll_lock);
+static unsigned long lock_flags;
+
+static inline void core_pll_change_lock(bool lock)
+{
+	if (lock) {
+		preempt_disable();
+		spin_lock_irqsave(&_pll_lock, lock_flags);
+	} else {
+		spin_unlock_irqrestore(&_pll_lock, lock_flags);
+		preempt_enable();
+	}
+}
+
 static void core_pll_change(int PLL, int P, int M, int S)
 {
 	struct NX_CLKPWR_RegisterSet *clkpwr =
 	(struct NX_CLKPWR_RegisterSet*)IO_ADDRESS(PHY_BASEADDR_CLKPWR_MODULE);
 
+	core_pll_change_lock(true);
 	// 1. change PLL0 clock to Oscillator Clock
 	clkpwr->PLLSETREG[PLL] &= ~(1 << 28); 	// pll bypass on, xtal clock use
-	clkpwr->CLKMODEREG0 = (1 << PLL); 			// update pll
+	clkpwr->CLKMODEREG0 = (1 << PLL); 	// update pll
 	while(clkpwr->CLKMODEREG0 & (1<<31)); 	// wait for change update pll
 
 	// 2. PLL Power Down & PMS value setting
@@ -124,23 +139,10 @@ static void core_pll_change(int PLL, int P, int M, int S)
 
 	// 4. Change to PLL clock
 	clkpwr->PLLSETREG[PLL] |= (1<<28); 			// pll bypass off, pll clock use
-	clkpwr->CLKMODEREG0 = (1<<PLL); 				// update pll
+	clkpwr->CLKMODEREG0 = (1<<PLL); 			// update pll
 
 	while(clkpwr->CLKMODEREG0 & (1<<31)); 		// wait for change update pll
-}
-
-static DEFINE_SPINLOCK(_pll_lock);
-static unsigned long lock_flags;
-
-static inline void core_pll_change_lock(bool lock)
-{
-	if (lock) {
-		preempt_disable();
-		spin_lock_irqsave(&_pll_lock, lock_flags);
-	} else {
-		spin_unlock_irqrestore(&_pll_lock, lock_flags);
-		preempt_enable();
-	}
+	core_pll_change_lock(false);
 }
 
 static unsigned long cpu_pll_round(int pllno, unsigned long rate, int *p, int *m, int *s)
