@@ -31,7 +31,7 @@
 #include "dmadev.h"
 
 /* cpu */
-#define DEV_NAME_UART           "nxp-uart"        // pl0115 (amba-pl011.c)
+#define DEV_NAME_UART           "nxp-uart"	/* pl0115 (amba-pl011.c) */
 #define DEV_NAME_FB             "nxp-fb"
 #define DEV_NAME_DISP           "nxp-disp"
 #define DEV_NAME_LCD            "nxp-lcd"
@@ -68,41 +68,42 @@
 #define DEV_NAME_CPUFREQ        "nxp-cpufreq"
 #define DEV_NAME_USBOTG         "nxp-otg"
 #define DEV_NAME_RFKILL         "nxp-rfkill"
-#define DEV_NAME_WDT    	"nxp-wdt"
+#define DEV_NAME_WDT		"nxp-wdt"
 
 /*
  *  Frame buffer platform data and display controller
  */
 struct nxp_fb_plat_data {
-    int             module;         /* 0: primary, 1: secondary */
-    int             layer;          /* RGB 0, 1, 2 */
-    unsigned int    format;         /* RGB format */
-    unsigned int    bgcolor;
-    int             bitperpixel;    /* bit per pixel */
-    int             x_resol_max;    /* x resolution for change resolution */
-    int             y_resol_max;    /* y resolution for change resolution  */
-    int             x_resol;        /* x resolution */
-    int             y_resol;        /* y resolution */
-    int             buffers;        /* set 2 when support pan, default 1 */
-    /* for direct fb region */
-    unsigned int    fb_mem_base;
-    unsigned int    fb_mem_end;
-    /* for lcd dpi (default 0) */
-    long            lcd_with_mm;    /* with (mm), default 0 */
-    long            lcd_height_mm;  /* height (mm), default 0 */
-    int             skip_pan_vsync;
+	int module; /* 0: primary, 1: secondary */
+	int layer; /* RGB 0, 1, 2 */
+	unsigned int format; /* RGB format */
+	unsigned int bgcolor;
+	int bitperpixel;	/* bit per pixel */
+	int x_resol_max;	/* x resolution for change resolution */
+	int y_resol_max;	/* y resolution for change resolution  */
+	int x_resol;	/* x resolution */
+	int y_resol;	/* y resolution */
+	int buffers;	/* set 2 when support pan, default 1 */
+	/* for direct fb region */
+	unsigned int fb_mem_base;
+	unsigned int fb_mem_end;
+	/* for lcd dpi (default 0) */
+	long lcd_with_mm;	/* with (mm), default 0 */
+	long lcd_height_mm;	/* height (mm), default 0 */
+	int skip_pan_vsync;
 };
 
 struct nxp_lcd_plat_data {
-    enum   disp_dev_type 	 display_in;						/* DISP_DEVICE_SYNCGEN0 / DISP_DEVICE_SYNCGEN1 */
-    enum   disp_dev_type	 display_dev;					/* LCD, LVDS, MiPi, HDMI, Refer to display.h */
-    struct disp_vsync_info 	*vsync;
-    struct disp_syncgen_par *sync_gen;
-    union  disp_dev_param 	*dev_param;		/* LCD, LVDS, MiPi, HDMI, Refer to display.h */
+	enum disp_dev_type display_in;
+	enum disp_dev_type display_dev;
+	struct disp_vsync_info *vsync;
+	struct disp_syncgen_par *sync_gen;
+	union  disp_dev_param *dev_param;
 };
 
 extern void nxp_platform_disp_device_data(enum disp_dev_type device,
-				struct disp_vsync_info *vsync, void *dev_par, struct disp_syncgen_par *vsgen);
+			struct disp_vsync_info *vsync,
+			void *dev_par, struct disp_syncgen_par *vsgen);
 
 /*
  *    Sound platform data
@@ -111,51 +112,81 @@ extern void nxp_platform_disp_device_data(enum disp_dev_type device,
 
 /* I2S */
 struct nxp_i2s_plat_data {
-    int     master_mode;
-    int     master_clock_in;
-    int     trans_mode;                 /* 0:I2S, 1:Left 2:Right justified */
-    int     sample_rate;
-    int     sample_bit;                 /* support only 8, 16, 24 */
-    int     frame_bit;                  /* support only 32, 48 */
-    int     LR_pol_inv;
-    int     pre_supply_mclk;            /* codec require mclk out, before codec initialize */
-	bool	(*ext_is_en)(void);
+	int master_mode;
+	int master_clock_in;
+	int trans_mode; /* 0:I2S, 1:Left 2:Right justified */
+	int sample_rate;
+	int sample_bit; /* support only 8, 16, 24 */
+	int frame_bit; /* support only 32, 48 */
+	int LR_pol_inv;
+	int pre_supply_mclk; /* codec mclk out,before codec initialize */
+	bool (*ext_is_en)(void);
 	unsigned long (*set_ext_mclk)(unsigned long clk, int ch);
-    bool    (*dma_filter)(struct dma_chan *chan, void *filter_param);
-    const char *dma_play_ch;
-    const char *dma_capt_ch;
+	bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
+	const char *dma_play_ch;
+	const char *dma_capt_ch;
 };
 
 /* SPDIF */
 struct nxp_spdif_plat_data {
-    int sample_rate;
-    int hdmi_out;
-    bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
-    const char *dma_ch;
+	int sample_rate;
+	int hdmi_out;
+	bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
+	const char *dma_ch;
 };
 
 /* PDM */
 struct nxp_pdm_plat_data {
-    int sample_rate;
+	int sample_rate;
 	int channel;
-    bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
-    const char *dma_ch;
+	bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
+	const char *dma_ch;
+};
+
+/* PDM:SPI, slave mode */
+struct nxp_pdm_spi_plat_data {
+	int clk_freq;
+	int clk_invert;
+	int clk_phase;
+	int data_bits;
+	bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
+	const char *dma_ch;
+};
+
+struct nxp_svoice_plat_data {
+	int spi_cs_gpio;
+	int pdm_isrun_gpio;
+	int pdm_lrck_gpio;
+	int i2s_lrck_gpio;
+	int cpu_dais_num;	/* sync device num */
+};
+
+enum cpu_dai_type {
+	SND_SVOICE_I2S,
+	SND_SVOICE_SPI,
+};
+
+struct nxp_snd_svoice_dai_plat_data {
+	enum cpu_dai_type cpu_dai;
+	int ch;
+	unsigned int sample_rate;
+	unsigned int pcm_format;
 };
 
 /* sound DAI (I2S/SPDIF and codec interface) */
 struct nxp_snd_jack_pin {
-    int    support;
-    int    detect_level;
-    int detect_io;
-    int debounce_time;
+	int support;
+	int detect_level;
+	int detect_io;
+	int debounce_time;
 };
 
 struct nxp_snd_dai_plat_data {
-    int i2s_ch;
-    unsigned int sample_rate;
-    unsigned int pcm_format;        /* SNDRV_PCM_FMTBIT_S16_LE, SNDRV_PCM_FMTBIT_S24_LE, .. (include/sound/pcm.h) */
-    struct nxp_snd_jack_pin hp_jack;
-    struct nxp_snd_jack_pin mic_jack;
+	int i2s_ch;
+	unsigned int sample_rate;
+	unsigned int pcm_format; /* (include/sound/pcm.h) */
+	struct nxp_snd_jack_pin hp_jack;
+	struct nxp_snd_jack_pin mic_jack;
 };
 
 /*
@@ -164,48 +195,47 @@ struct nxp_snd_dai_plat_data {
 #include <cfg_type.h>
 
 enum nxp_i2c_pin_descript {
-    NXP_I2C0_MOD_SCL = PAD_GPIO_D + 2,
-    NXP_I2C0_MOD_SDA = PAD_GPIO_D + 3,
-    NXP_I2C1_MOD_SCL = PAD_GPIO_D + 4,
-    NXP_I2C1_MOD_SDA = PAD_GPIO_D + 5,
-    NXP_I2C2_MOD_SCL = PAD_GPIO_D + 6,
-    NXP_I2C2_MOD_SDA = PAD_GPIO_D + 7
+	NXP_I2C0_MOD_SCL = PAD_GPIO_D + 2,
+	NXP_I2C0_MOD_SDA = PAD_GPIO_D + 3,
+	NXP_I2C1_MOD_SCL = PAD_GPIO_D + 4,
+	NXP_I2C1_MOD_SDA = PAD_GPIO_D + 5,
+	NXP_I2C2_MOD_SCL = PAD_GPIO_D + 6,
+	NXP_I2C2_MOD_SDA = PAD_GPIO_D + 7
 };
 
 struct nxp_i2c_plat_data {
-    int  port;
-    int  irq;
+	int port;
+	int irq;
 	int retry_cnt;
 	int retry_delay;
-    long rate;
-    unsigned int base_addr;
-    struct i2c_gpio_platform_data *gpio;
-
+	long rate;
+	unsigned int base_addr;
+	struct i2c_gpio_platform_data *gpio;
 };
 
 /*
  *  Touch calibration platform data
  */
 struct nxp_ts_cali_plat_data {
-    int touch_points;    /* support touch points num when multi touch */
-    int x_resol;
-    int y_resol;
-    int rotate;          /* 0, 90, 180, 270 */
-    long pointercal[10];     /* calibration value (tslib) */
+	int touch_points; /* support touch points num when multi touch */
+	int x_resol;
+	int y_resol;
+	int rotate; /* 0, 90, 180, 270 */
+	long pointercal[10]; /* calibration value (tslib) */
 };
 
 /*
  *    CPU Freq platform data
  */
 struct nxp_cpufreq_plat_data {
-    int pll_dev;                    /* core pll : 0, 1, 2, 3 */
-    unsigned long (*freq_table)[2]; /* [freq KHz].[u volt] */
-    int    table_size;
-    long max_cpufreq;       /* unit Khz */
-    long max_retention;     /* unit msec */
-    long rest_cpufreq;      /* unit Khz */
-    long rest_retention;    /* unit msec */
-	char *supply_name;		/* voltage regulator name */
+	int pll_dev; /* core pll : 0, 1, 2, 3 */
+	unsigned long (*freq_table)[2]; /* [freq KHz].[u volt] */
+	int table_size;
+	long max_cpufreq; /* unit Khz */
+	long max_retention; /* unit msec */
+	long rest_cpufreq; /* unit Khz */
+	long rest_retention; /* unit msec */
+	char *supply_name; /* voltage regulator name */
 	long supply_delay_us;
 };
 
@@ -229,36 +259,36 @@ extern void __init nxp_mmc_add_device(int ch, struct dw_mci_board *mci);
  *  Keypad platform data
  */
 struct nxp_key_plat_data {
-    int  bt_count;
-    unsigned int *bt_io;
-    unsigned int *bt_code;
-    unsigned int *bt_detect_high;
-    unsigned int bt_repeat;       /* key repeat 1 = on , 0 = off */
-    struct input_dev *bt_device;
-    int	resume_delay_ms;
+	int bt_count;
+	unsigned int *bt_io;
+	unsigned int *bt_code;
+	unsigned int *bt_detect_high;
+	unsigned int bt_repeat; /* key repeat 1 = on , 0 = off */
+	struct input_dev *bt_device;
+	int resume_delay_ms;
 };
 
 /*
  * NAND platform data
  */
 struct nxp_nand_plat_data {
-    struct mtd_partition * parts;
-    int nr_parts;
-    int chip_delay;
+	struct mtd_partition *parts;
+	int nr_parts;
+	int chip_delay;
 };
 
 /*
  *  MPEGTSIF platform data
  */
 struct nxp_mp2ts_dev_info {
-    int demod_irq_num;
-    int demod_rst_num;
-    int tuner_rst_num;
+	int demod_irq_num;
+	int demod_rst_num;
+	int tuner_rst_num;
 };
 
 struct nxp_mp2ts_plat_data {
-    struct nxp_mp2ts_dev_info *dev_info;
-    int ts_dma_size[3];
+	struct nxp_mp2ts_dev_info *dev_info;
+	int ts_dma_size[3];
 };
 
 /*
@@ -272,25 +302,25 @@ struct nxp_mp2ts_plat_data {
 
 struct rfkill_dev_data {
 	/* rfkill config */
-	char *supply_name;		/* set regulator name */
-	char *module_name;		/* set module driver name */
-    int gpio;
-    unsigned int initval;
-    int invert;				/* 0: high active, 1: low active */
-    int delay_time_on;			/* ms */
-    int delay_time_off;			/* ms */
+	char *supply_name; /* set regulator name */
+	char *module_name; /* set module driver name */
+	int gpio;
+	unsigned int initval;
+	int invert; /* 0: high active, 1: low active */
+	int delay_time_on; /* ms */
+	int delay_time_off; /* ms */
 };
 
 struct nxp_rfkill_plat_data {
-    char *name;             /* the name for the rfkill switch */
-    enum rfkill_type type;  /* the type as specified in rfkill.h */
-    struct rfkill_dev_data *rf_dev;
-    int rf_dev_num;
-    int support_suspend;
-    int (*init)(void *data);
-    int (*set_block)(void *data, bool blocked);
-    int (*suspend)(struct platform_device *pdev, pm_message_t state);
-    int (*resume)(struct platform_device *pdev);
+	char *name; /* the name for the rfkill switch */
+	enum rfkill_type type; /* the type as specified in rfkill.h */
+	struct rfkill_dev_data *rf_dev;
+	int rf_dev_num;
+	int support_suspend;
+	int (*init)(void *data);
+	int (*set_block)(void *data, bool blocked);
+	int (*suspend)(struct platform_device *pdev, pm_message_t state);
+	int (*resume)(struct platform_device *pdev);
 };
 
 /*
@@ -302,18 +332,18 @@ extern int __init persistent_ram_console_reserve(void);
  *  cpufreq limit
  */
 struct nxp_cpufreq_limit_data {
-    char **limit_name;
-    int limit_num;
-    long aval_max_freq;     /* unit Khz */
-    long op_max_freq; 		/* unit Khz */
+	char **limit_name;
+	int limit_num;
+	long aval_max_freq; /* unit Khz */
+	long op_max_freq; /* unit Khz */
 #if defined(CONFIG_ARM_NXP_CPUFREQ_BY_RESOURCE)
-	long limit_level0_freq; 	/* unit Khz */
-	long limit_level1_freq; 	/* unit Khz */
-	long min_max_freq;			/* unit Khz */
-	long prev_max_freq;			/* unit Khz */
+	long limit_level0_freq; /* unit Khz */
+	long limit_level1_freq; /* unit Khz */
+	long min_max_freq; /* unit Khz */
+	long prev_max_freq; /* unit Khz */
 #endif
-    long sched_duration;	/* unit ms */
-    long sched_timeout;		/* unit ms */
+	long sched_duration; /* unit ms */
+	long sched_timeout; /* unit ms */
 };
 
 /*
@@ -336,9 +366,9 @@ struct nxp_ohci_platdata {
  * ADC TMU
  */
 struct nxp_adc_tmp_trigger {
-	int 	temp;
-	long	freq;
-	long	period;
+	int temp;
+	long freq;
+	long period;
 };
 struct nxp_adc_tmp_platdata {
 	int channel;

@@ -45,18 +45,18 @@
 #include <mach/s5p4418_bus.h>
 
 const u8 g_DrexBRB_RD[2] = {
-	0x4,            // Port0
-	0xF             // Port1
+	0x4,    /* Port0 */
+	0xF	/* Port1 */
 };
 
 const u8 g_DrexBRB_WR[2] = {
-	0x4,            // Port0
-	0xF             // Port1
+	0x4,    /* Port0 */
+	0xF     /* Port1 */
 };
 
 const u16 g_DrexQoS[2] = {
-	0x100,          // S0
-	0xFFF           // S1, Default value
+	0x100,  /* S0 */
+	0xFFF	/* S1, Default value */
 };
 
 
@@ -75,8 +75,8 @@ const u8 g_TopBusSI[8] = {
 
 #if (CFG_BUS_RECONFIG_TOPBUSQOS == 1)
 const u8 g_TopQoSSI[2] = {
-	1,      // Tidemark
-	(1<<TOPBUS_SI_SLOT_DMAC0) |     // Control
+	1,	/* Tidemark */
+	(1<<TOPBUS_SI_SLOT_DMAC0) |	/* Control */
 	(1<<TOPBUS_SI_SLOT_MP2TS) |
 	(1<<TOPBUS_SI_SLOT_DMAC1) |
 	(1<<TOPBUS_SI_SLOT_SDMMC) |
@@ -101,8 +101,8 @@ const u8 g_BottomBusSI[8] = {
 
 #if (CFG_BUS_RECONFIG_BOTTOMBUSQOS == 1)
 const u8 g_BottomQoSSI[2] = {
-	4,      // Tidemark
-	(1<<BOTBUS_SI_SLOT_1ST_ARM) |   // Control
+	4,	/* Tidemark */
+	(1<<BOTBUS_SI_SLOT_1ST_ARM) |	/* Control */
 		(1<<BOTBUS_SI_SLOT_2ND_ARM) |
 		(0<<BOTBUS_SI_SLOT_MALI) |
 		(1<<BOTBUS_SI_SLOT_TOP) |
@@ -115,35 +115,37 @@ const u8 g_BottomQoSSI[2] = {
 const u8 g_DispBusSI[3] = {
 	DISBUS_SI_SLOT_1ST_DISPLAY,
 	DISBUS_SI_SLOT_2ND_DISPLAY,
-	DISBUS_SI_SLOT_2ND_DISPLAY		// DISBUS_SI_SLOT_GMAC
+	DISBUS_SI_SLOT_2ND_DISPLAY	/* DISBUS_SI_SLOT_GMAC */
 };
 #endif
-#endif	/* #if (CFG_BUS_RECONFIG_ENB == 1) */
+#endif	/* CFG_BUS_RECONFIG_ENB */
 
 /*------------------------------------------------------------------------------
  * CPU Frequence
  */
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
 
-struct nxp_cpufreq_plat_data dfs_plat_data = {
+static struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	= CONFIG_NXP_CPUFREQ_PLLDEV,
-	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
-	//.max_cpufreq	= 1400*1000,
-	//.max_retention  =   20*1000,
-	//.rest_cpufreq   =  400*1000,
-	//.rest_retention =    1*1000,
+	.supply_name	= "vdd_arm_1.3V",
+	#if 0
+	.max_cpufreq	= 1400*1000,
+	.max_retention  =   20*1000,
+	.rest_cpufreq   =  400*1000,
+	.rest_retention =    1*1000,
+	#endif
 };
 
 static struct platform_device dfs_plat_device = {
-	.name			= DEV_NAME_CPUFREQ,
-	.dev			= {
-		.platform_data	= &dfs_plat_data,
+	.name = DEV_NAME_CPUFREQ,
+	.dev = {
+		.platform_data = &dfs_plat_data,
 	}
 };
 #endif
 
 #if defined (CONFIG_SENSORS_NXP_ADC_TEMP)
-struct nxp_adc_tmp_trigger adc_tmp_event[] = {
+static struct nxp_adc_tmp_trigger adc_tmp_event[] = {
 	{
 		.temp  = 52,
 		.freq  = 1200000,
@@ -170,7 +172,7 @@ static struct platform_device adc_temp_plat_device = {
 		.platform_data	= &adc_tmp_plat_data,
 	}
 };
-#endif //SENSORS_NXP_ADC_TEMP
+#endif /* SENSORS_NXP_ADC_TEMP */
 
 /*------------------------------------------------------------------------------
  * Network DM9000
@@ -242,18 +244,18 @@ static struct nxp_mp2ts_dev_info mp2ts_dev_info[2] = {
 };
 
 static struct nxp_mp2ts_plat_data mpegts_plat_data = {
-    .dev_info       = mp2ts_dev_info,
-    .ts_dma_size[0] = -1,                   // TS ch 0 - Static alloc size.
-    .ts_dma_size[1] = NXP_TS_BUF_SIZE_1,    // TS ch 1 - Static alloc size.
-    .ts_dma_size[2] = -1,                   // TS core - Static alloc size.
+	.dev_info = mp2ts_dev_info,
+	.ts_dma_size[0] = -1, /* TS ch 0 - Static alloc size */
+	.ts_dma_size[1] = NXP_TS_BUF_SIZE_1, /* TS ch 1 - Static alloc size */
+	.ts_dma_size[2] = -1, /* TS core - Static alloc size */
 };
 
 static struct platform_device mpegts_plat_device = {
-    .name	= DEV_NAME_MPEGTSI,
-    .id		= 0,
-    .dev	= {
-        .platform_data = &mpegts_plat_data,
-    },
+	.name = DEV_NAME_MPEGTSI,
+	.id = 0,
+	.dev = {
+		.platform_data = &mpegts_plat_data,
+	},
 };
 #endif  /* CONFIG_NXP_MP2TS_IF */
 
@@ -324,7 +326,7 @@ static struct platform_device bl_plat_device = {
 
 #if defined(CONFIG_PPM_NXP)
 #include <mach/ppm.h>
-struct nxp_ppm_platform_data ppm_plat_data = {
+static struct nxp_ppm_platform_data ppm_plat_data = {
     .input_polarity = NX_PPM_INPUTPOL_INVERT,//NX_PPM_INPUTPOL_INVERT  or  NX_PPM_INPUTPOL_BYPASS
 };
 
@@ -433,7 +435,7 @@ static int tsc2007_get_pendown_state(struct device *dev){
 #define MIN_12BIT           (0)
 
 
-struct tsc2007_platform_data tsc2007_plat_data = {
+static struct tsc2007_platform_data tsc2007_plat_data = {
 		#if 1
         .x_plate_ohms   = 100,
 		.min_x = MIN_12BIT,
@@ -469,7 +471,7 @@ static struct i2c_board_info __initdata tsc2007_i2c_bdi = {
 static unsigned int  button_gpio[] = CFG_KEYPAD_KEY_BUTTON;
 static unsigned int  button_code[] = CFG_KEYPAD_KEY_CODE;
 
-struct nxp_key_plat_data key_plat_data = {
+static struct nxp_key_plat_data key_plat_data = {
 	.bt_count	= ARRAY_SIZE(button_gpio),
 	.bt_io		= button_gpio,
 	.bt_code	= button_code,
@@ -523,7 +525,7 @@ static struct i2c_board_info __initdata tlv320aic32x4_i2c_bdi = {
 };
 
 /* DAI */
-struct nxp_snd_dai_plat_data tlv320aic32x4_i2s_dai_data = {
+static struct nxp_snd_dai_plat_data tlv320aic32x4_i2s_dai_data = {
 	.i2s_ch	= 0,
 	.sample_rate	= 48000,
 	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
@@ -551,7 +553,7 @@ static struct platform_device spdif_transciever = {
 	.id		= -1,
 };
 
-struct nxp_snd_dai_plat_data spdif_trans_dai_data = {
+static struct nxp_snd_dai_plat_data spdif_trans_dai_data = {
 	.sample_rate = 48000,
 	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
 };
@@ -571,7 +573,7 @@ static struct platform_device spdif_receiver = {
 	.id		= -1,
 };
 
-struct nxp_snd_dai_plat_data spdif_recev_dai_data = {
+static struct nxp_snd_dai_plat_data spdif_recev_dai_data = {
 	.sample_rate = 48000,
 	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
 };
@@ -585,208 +587,75 @@ static struct platform_device spdif_recev_dai = {
 };
 #endif
 
-
 /*
- * Alsa sound platform device (I2S-resmple)
+ * SMART-VOICE Alsa sound
  */
-#define I2S_0ST_CH	0
-#define I2S_1ST_CH	1
-#define I2S_2ST_CH	2
+#if defined(CONFIG_SND_CODEC_SMARTVOICE)
 
-#if defined(CONFIG_SND_NXP_EC)
-
-#ifdef CFG_AUDIO_LOOPBACK_I2S0
-#ifndef CFG_AUDIO_I2S0_MASTER_CLOCK_IN
-#define CFG_AUDIO_I2S0_MASTER_CLOCK_IN		0
-#endif
-
-static struct nxp_i2s_plat_data i2s_data_ch0 = {
-	.master_mode		= CFG_AUDIO_I2S0_MASTER_MODE,
-	.master_clock_in	= CFG_AUDIO_I2S0_MASTER_CLOCK_IN,
-	.trans_mode			= CFG_AUDIO_I2S0_TRANS_MODE,
-	.frame_bit			= CFG_AUDIO_I2S0_FRAME_BIT,
-	.sample_rate		= CFG_AUDIO_I2S0_SAMPLE_RATE,
-	.pre_supply_mclk 	= CFG_AUDIO_I2S0_PRE_SUPPLY_MCLK,
-	/* DMA */
-	.dma_filter			= pl08x_filter_id,
-	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S0_TX,
-	.dma_capt_ch		= DMA_PERIPHERAL_NAME_I2S0_RX,
+/* snd smart-voice codec device */
+static struct nxp_svoice_plat_data svoice_data = {
+	.spi_cs_gpio = (PAD_GPIO_C + 16),
+	.pdm_isrun_gpio = (PAD_GPIO_E + 14),
+	.pdm_lrck_gpio = (PAD_GPIO_B + 26),
+	.i2s_lrck_gpio = (PAD_GPIO_B + 4),
+	.cpu_dais_num = 2,
 };
 
-static struct platform_device i2s_device_ch0 = {
-	.name	= "nxp-i2s-ec",
-	.id		= I2S_0ST_CH,	/* channel */
-	.dev    = {
-		.platform_data	= &i2s_data_ch0
-	},
-};
-#endif
-
-#ifdef CFG_AUDIO_LOOPBACK_I2S1
-#ifndef CFG_AUDIO_I2S1_MASTER_CLOCK_IN
-#define CFG_AUDIO_I2S1_MASTER_CLOCK_IN		0
-#endif
-
-static struct nxp_i2s_plat_data i2s_data_ch1 = {
-	.master_mode		= CFG_AUDIO_I2S1_MASTER_MODE,
-	.master_clock_in	= CFG_AUDIO_I2S1_MASTER_CLOCK_IN,
-	.trans_mode			= CFG_AUDIO_I2S1_TRANS_MODE,
-	.frame_bit			= CFG_AUDIO_I2S1_FRAME_BIT,
-	.sample_rate		= CFG_AUDIO_I2S1_SAMPLE_RATE,
-	.pre_supply_mclk 	= CFG_AUDIO_I2S1_PRE_SUPPLY_MCLK,
-	/* DMA */
-	.dma_filter			= pl08x_filter_id,
-	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S1_TX,
-	.dma_capt_ch		= DMA_PERIPHERAL_NAME_I2S1_RX,
-};
-
-static struct platform_device i2s_device_ch1 = {
-	.name	= "nxp-i2s-ec",
-	.id		= I2S_1ST_CH,	/* channel */
-	.dev    = {
-		.platform_data	= &i2s_data_ch1
-	},
-};
-#endif
-
-#ifdef CFG_AUDIO_LOOPBACK_I2S2
-#ifndef CFG_AUDIO_I2S2_MASTER_CLOCK_IN
-#define CFG_AUDIO_I2S2_MASTER_CLOCK_IN		0
-#endif
-
-static struct nxp_i2s_plat_data i2s_data_ch2 = {
-	.master_mode		= CFG_AUDIO_I2S2_MASTER_MODE,
-	.master_clock_in	= CFG_AUDIO_I2S2_MASTER_CLOCK_IN,
-	.trans_mode			= CFG_AUDIO_I2S2_TRANS_MODE,
-	.frame_bit			= CFG_AUDIO_I2S2_FRAME_BIT,
-	.sample_rate		= CFG_AUDIO_I2S2_SAMPLE_RATE,
-	.pre_supply_mclk 	= CFG_AUDIO_I2S2_PRE_SUPPLY_MCLK,
-	/* DMA */
-	.dma_filter			= pl08x_filter_id,
-	.dma_play_ch		= DMA_PERIPHERAL_NAME_I2S2_TX,
-	.dma_capt_ch		= DMA_PERIPHERAL_NAME_I2S2_RX,
-};
-
-static struct platform_device i2s_device_ch2 = {
-	.name	= "nxp-i2s-ec",
-	.id		= I2S_2ST_CH,	/* channel */
-	.dev    = {
-		.platform_data	= &i2s_data_ch2
-	},
-};
-#endif
-
-static struct platform_device *i2s_devices[] __initdata = {
-#ifdef CFG_AUDIO_LOOPBACK_I2S0
-	&i2s_device_ch0,
-#endif
-#ifdef CFG_AUDIO_LOOPBACK_I2S1
-	&i2s_device_ch1,
-#endif
-#ifdef CFG_AUDIO_LOOPBACK_I2S2
-	&i2s_device_ch2,
-#endif
-};
-#endif
-
-/*
- * I2S/PCM : NULL CODEC
- */
-
-#if defined(CONFIG_SND_NXP_EC) || defined(CONFIG_SND_CODEC_NULL)
-static struct platform_device snd_null = {
-	.name = "snd-null",
-	.id = -1,	/* must be  -1 */
-};
-
-struct nxp_snd_dai_plat_data snd_null_dai_data = {
-	.i2s_ch = I2S_2ST_CH,
-#if (1)
-	.sample_rate = SNDRV_PCM_RATE_8000_192000,
-	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
-#else
-	.sample_rate = 48000,
-	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
-#endif
-};
-
-static struct platform_device snd_null_dai = {
-	.name = "snd-null-card",
+static struct platform_device snd_svoice_dac = {
+	.name = "nxp-smartvoice-codec",
 	.id = -1,
-	.dev = {
-		.platform_data = &snd_null_dai_data,
-	}
-};
-
-#endif
-
-/*
- * PDM
- */
-#if defined(CONFIG_SND_NXP_EC_PDM_VIRT)
-static struct nxp_pdm_plat_data pdm_virt_data = {
-	.sample_rate = CFG_AUDIO_PDM_SAMPLE_RATE,
-};
-
-static struct platform_device pdm_virt_device = {
-	.name	= "nxp-pdm-virt",
-	.id		= -1,
 	.dev    = {
-		.platform_data	= &pdm_virt_data
+		.platform_data = &svoice_data
 	},
 };
 
-static struct platform_device pdm_virt_recorder = {
-	.name	= "pdm-virt-dit-recorder",
-	.id		= -1,
+/* snd pdm-spi cpu device */
+static struct nxp_pdm_spi_plat_data snd_spi_data = {
+	.data_bits = 16,
+	.clk_freq = (100*1000*1000),
+	.clk_invert = 1,
+	.clk_phase = 1,
+	.dma_filter = pl08x_filter_id,
+	.dma_ch	= DMA_PERIPHERAL_NAME_SSP2_RX,
 };
 
-struct nxp_snd_dai_plat_data pdm_virt_rec_dai_data = {
-	.sample_rate = 16000,
-	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
-};
-
-static struct platform_device pdm_virt_rec_dai = {
-	.name	= "pdm-virt-recorder",
-	.id		= -1,
-	.dev	= {
-		.platform_data	= &pdm_virt_rec_dai_data,
-	}
-};
-#endif
-
-#if defined(CONFIG_SND_NXP_EC_PDM_SPI)
-static struct nxp_pdm_plat_data pdm_spi_data = {
-	.sample_rate = CFG_AUDIO_PDM_SAMPLE_RATE,
-	.channel = 2,
-/* DMA */
-	.dma_filter	= pl08x_filter_id,
-	.dma_ch		= DMA_PERIPHERAL_NAME_SSP2_RX, // change spi dma ch name
-};
-
-static struct platform_device pdm_spi_device = {
+static struct platform_device snd_spi_dev = {
 	.name	= "nxp-pdm-spi",
-	.id		= -1, // change spi ch
+	.id	= 2,	/* channel */
 	.dev    = {
-		.platform_data = &pdm_spi_data
+		.platform_data = &snd_spi_data
 	},
 };
 
-static struct platform_device pdm_spi_recorder = {
-	.name	= "pdm-spi-dit-recorder",
-	.id		= -1,
-};
-
-struct nxp_snd_dai_plat_data pdm_spi_rec_dai_data = {
+static struct nxp_snd_svoice_dai_plat_data snd_spi_svoice_card_data = {
+	.cpu_dai = SND_SVOICE_SPI,
+	.ch = 2, /* SPI channel */
 	.sample_rate = 16000,
-	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
 };
 
-static struct platform_device pdm_spi_rec_dai = {
-	.name	= "pdm-spi-recorder",
-	.id		= -1,
-	.dev	= {
-		.platform_data	= &pdm_spi_rec_dai_data,
+/* card : snd pdm-spi <-> snd smart-voice codec */
+static struct platform_device snd_spi_svoice_card = {
+	.name = "nxp-smartvoice-card",
+	.id = 0,
+	.dev = {
+		.platform_data = &snd_spi_svoice_card_data,
+	}
+};
+
+/* card : snd i2s <-> snd smart-voice codec */
+static struct nxp_snd_svoice_dai_plat_data snd_i2s_svoice_card_data = {
+	.cpu_dai = SND_SVOICE_I2S,
+	.ch = 2, /* I2S channel */
+	.sample_rate = 16000,
+	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
+};
+
+static struct platform_device snd_i2s_svoice_card = {
+	.name = "nxp-smartvoice-card",
+	.id = 1,
+	.dev = {
+		.platform_data = &snd_i2s_svoice_card_data,
 	}
 };
 #endif
@@ -822,9 +691,10 @@ void __init nxp_reserve_mem(void)
         "nx_vpu=ion;";
 
 #ifdef CONFIG_ION_NXP_CONTIGHEAP_SIZE
-    printk("%s: reserve CMA: size %d\n", __func__, CONFIG_ION_NXP_CONTIGHEAP_SIZE * SZ_1K);
+	pr_info("%s: reserve CMA: size %d\n",
+		__func__, CONFIG_ION_NXP_CONTIGHEAP_SIZE * SZ_1K);
 #endif
-    nxp_cma_region_reserve(regions, map);
+	nxp_cma_region_reserve(regions, map);
 }
 #endif
 
@@ -1091,89 +961,96 @@ static int camera_common_set_clock(ulong clk_rate)
 static bool is_camera_port_configured = false;
 static void camera_common_vin_setup_io(int module, bool force)
 {
-    if (!force && is_camera_port_configured)
-        return;
-    else {
-        u_int *pad;
-        int i, len;
-        u_int io, fn;
+	if (!force && is_camera_port_configured)
+		return;
+	else {
+		u_int *pad;
+		int i, len;
+		u_int io, fn;
 
 
-        /* VIP0:0 = VCLK, VID0 ~ 7 */
-        const u_int port[][2] = {
-            /* VCLK, HSYNC, VSYNC */
-            { PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  6, NX_GPIO_PADFUNC_1 },
-            /* DATA */
-            { PAD_GPIO_D + 28, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 29, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
-            { PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 }, { PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
-        };
+		/* VIP0:0 = VCLK, VID0 ~ 7 */
+		const u_int port[][2] = {
+		/* VCLK, HSYNC, VSYNC */
+		{ PAD_GPIO_E +  4, NX_GPIO_PADFUNC_1 },
+		{ PAD_GPIO_E +  5, NX_GPIO_PADFUNC_1 },
+		{ PAD_GPIO_E +  6, NX_GPIO_PADFUNC_1 },
+		/* DATA */
+		{ PAD_GPIO_D + 28, NX_GPIO_PADFUNC_1 },
+		{ PAD_GPIO_D + 29, NX_GPIO_PADFUNC_1 },
+		{ PAD_GPIO_D + 30, NX_GPIO_PADFUNC_1 },
+		{ PAD_GPIO_D + 31, NX_GPIO_PADFUNC_1 },
+		{ PAD_GPIO_E +  0, NX_GPIO_PADFUNC_1 },
+		{ PAD_GPIO_E +  1, NX_GPIO_PADFUNC_1 },
+		{ PAD_GPIO_E +  2, NX_GPIO_PADFUNC_1 },
+		{ PAD_GPIO_E +  3, NX_GPIO_PADFUNC_1 },
+		};
 
-        printk("%s\n", __func__);
+		pr_info("%s\n", __func__);
 
-        pad = (u_int *)port;
-        len = sizeof(port)/sizeof(port[0]);
+		pad = (u_int *)port;
+		len = sizeof(port)/sizeof(port[0]);
 
-        for (i = 0; i < len; i++) {
-            io = *pad++;
-            fn = *pad++;
-            nxp_soc_gpio_set_io_dir(io, 0);
-            nxp_soc_gpio_set_io_func(io, fn);
-        }
+		for (i = 0; i < len; i++) {
+			io = *pad++;
+			fn = *pad++;
+			nxp_soc_gpio_set_io_dir(io, 0);
+			nxp_soc_gpio_set_io_func(io, fn);
+		}
 
-        is_camera_port_configured = true;
-    }
+		is_camera_port_configured = true;
+	}
 }
 
 static bool camera_power_enabled = false;
 static void camera_power_control(int enable)
 {
-    struct regulator *cam_io_28V = NULL;
-    struct regulator *cam_core_18V = NULL;
-    struct regulator *cam_io_33V = NULL;
+	struct regulator *cam_io_28V = NULL;
+	struct regulator *cam_core_18V = NULL;
+	struct regulator *cam_io_33V = NULL;
 
-    if (enable && camera_power_enabled)
-        return;
-    if (!enable && !camera_power_enabled)
-        return;
+	if (enable && camera_power_enabled)
+		return;
+	if (!enable && !camera_power_enabled)
+		return;
 
-    cam_core_18V = regulator_get(NULL, "vcam1_1.8V");
-    if (IS_ERR(cam_core_18V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for vcam1_1.8V", __func__);
-        return;
-    }
+	cam_core_18V = regulator_get(NULL, "vcam1_1.8V");
+	if (IS_ERR(cam_core_18V)) {
+		pr_err("%s: failed to regulator_get() for vcam1_1.8V",
+			__func__);
+		return;
+	}
 
-    cam_io_28V = regulator_get(NULL, "vcam_2.8V");
-    if (IS_ERR(cam_io_28V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for vcam_2.8V", __func__);
-        return;
-    }
+	cam_io_28V = regulator_get(NULL, "vcam_2.8V");
+	if (IS_ERR(cam_io_28V)) {
+		pr_err("%s: failed to regulator_get() for vcam_2.8V",
+			__func__);
+		return;
+	}
 
-    cam_io_33V = regulator_get(NULL, "vcam_3.3V");
-    if (IS_ERR(cam_io_33V)) {
-        printk(KERN_ERR "%s: failed to regulator_get() for vcam_3.3V", __func__);
-        return;
-    }
+	cam_io_33V = regulator_get(NULL, "vcam_3.3V");
+	if (IS_ERR(cam_io_33V)) {
+		pr_err("%s: failed to regulator_get() for vcam_3.3V",
+			__func__);
+		return;
+	}
 
-    printk("%s: %d\n", __func__, enable);
-    if (enable) {
-        regulator_enable(cam_core_18V);
-        regulator_enable(cam_io_28V);
-        regulator_enable(cam_io_33V);
-    } else {
-        regulator_disable(cam_io_33V);
-        regulator_disable(cam_io_28V);
-        regulator_disable(cam_core_18V);
-    }
+	pr_info("%s: %d\n", __func__, enable);
+	if (enable) {
+		regulator_enable(cam_core_18V);
+		regulator_enable(cam_io_28V);
+		regulator_enable(cam_io_33V);
+	} else {
+		regulator_disable(cam_io_33V);
+		regulator_disable(cam_io_28V);
+		regulator_disable(cam_core_18V);
+	}
 
-    regulator_put(cam_io_28V);
-    regulator_put(cam_core_18V);
-    regulator_put(cam_io_33V);
+	regulator_put(cam_io_28V);
+	regulator_put(cam_core_18V);
+	regulator_put(cam_io_33V);
 
-    camera_power_enabled = enable ? true : false;
+	camera_power_enabled = enable ? true : false;
 }
 
 static bool is_back_camera_enabled = false;
@@ -1387,77 +1264,78 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
             .set_clock      = camera_common_set_clock,
             .setup_io       = camera_common_vin_setup_io,
         },
-        .deci = {
-            .start_delay_ms = 0,
-            .stop_delay_ms  = 0,
-        },
-    },
-    { 0, NULL, 0, },
+	.deci = {
+			.start_delay_ms = 0,
+			.stop_delay_ms  = 0,
+		},
+	},
+	{ 0, NULL, 0, },
 };
+
 /* out platformdata */
 static struct i2c_board_info hdmi_edid_i2c_boardinfo = {
-    I2C_BOARD_INFO("nxp_edid", 0xA0>>1),
+	I2C_BOARD_INFO("nxp_edid", 0xA0>>1),
 };
 
 static struct nxp_v4l2_i2c_board_info edid = {
-    .board_info = &hdmi_edid_i2c_boardinfo,
-    .i2c_adapter_id = 0,
+	.board_info = &hdmi_edid_i2c_boardinfo,
+	.i2c_adapter_id = 0,
 };
 
 static struct i2c_board_info hdmi_hdcp_i2c_boardinfo = {
-    I2C_BOARD_INFO("nxp_hdcp", 0x74>>1),
+	I2C_BOARD_INFO("nxp_hdcp", 0x74>>1),
 };
 
 static struct nxp_v4l2_i2c_board_info hdcp = {
-    .board_info = &hdmi_hdcp_i2c_boardinfo,
-    .i2c_adapter_id = 0,
+	.board_info = &hdmi_hdcp_i2c_boardinfo,
+	.i2c_adapter_id = 0,
 };
 
 
 static void hdmi_set_int_external(int gpio)
 {
-    nxp_soc_gpio_set_int_enable(gpio, 0);
-    nxp_soc_gpio_set_int_mode(gpio, 1); /* high level */
-    nxp_soc_gpio_set_int_enable(gpio, 1);
-    nxp_soc_gpio_clr_int_pend(gpio);
+	nxp_soc_gpio_set_int_enable(gpio, 0);
+	nxp_soc_gpio_set_int_mode(gpio, 1); /* high level */
+	nxp_soc_gpio_set_int_enable(gpio, 1);
+	nxp_soc_gpio_clr_int_pend(gpio);
 }
 
 static void hdmi_set_int_internal(int gpio)
 {
-    nxp_soc_gpio_set_int_enable(gpio, 0);
-    nxp_soc_gpio_set_int_mode(gpio, 0); /* low level */
-    nxp_soc_gpio_set_int_enable(gpio, 1);
-    nxp_soc_gpio_clr_int_pend(gpio);
+	nxp_soc_gpio_set_int_enable(gpio, 0);
+	nxp_soc_gpio_set_int_mode(gpio, 0); /* low level */
+	nxp_soc_gpio_set_int_enable(gpio, 1);
+	nxp_soc_gpio_clr_int_pend(gpio);
 }
 
 static int hdmi_read_hpd_gpio(int gpio)
 {
-    return nxp_soc_gpio_get_in_value(gpio);
+	return nxp_soc_gpio_get_in_value(gpio);
 }
 
 static struct nxp_out_platformdata out_plat_data = {
-    .hdmi = {
-        .internal_irq = 0,
-        .external_irq = 0,//PAD_GPIO_A + 19,
-        .set_int_external = hdmi_set_int_external,
-        .set_int_internal = hdmi_set_int_internal,
-        .read_hpd_gpio = hdmi_read_hpd_gpio,
-        .edid = &edid,
-        .hdcp = &hdcp,
-    },
+	.hdmi = {
+	.internal_irq = 0,
+	.external_irq = 0, /* PAD_GPIO_A + 19, */
+	.set_int_external = hdmi_set_int_external,
+	.set_int_internal = hdmi_set_int_internal,
+	.read_hpd_gpio = hdmi_read_hpd_gpio,
+	.edid = &edid,
+	.hdcp = &hdcp,
+	},
 };
 
 static struct nxp_v4l2_platformdata v4l2_plat_data = {
-    .captures = &capture_plat_data[0],
-    .out = &out_plat_data,
+	.captures = &capture_plat_data[0],
+	.out = &out_plat_data,
 };
 
 static struct platform_device nxp_v4l2_dev = {
-    .name       = NXP_V4L2_DEV_NAME,
-    .id         = 0,
-    .dev        = {
-        .platform_data = &v4l2_plat_data,
-    },
+	.name = NXP_V4L2_DEV_NAME,
+	.id = 0,
+	.dev = {
+		.platform_data = &v4l2_plat_data,
+	},
 };
 #endif /* CONFIG_V4L2_NXP || CONFIG_V4L2_NXP_MODULE */
 
@@ -1469,48 +1347,48 @@ static struct platform_device nxp_v4l2_dev = {
 static void spi0_cs(u32 chipselect)
 {
 #if (CFG_SPI0_CS_GPIO_MODE)
-	if(nxp_soc_gpio_get_io_func( CFG_SPI0_CS )!= nxp_soc_gpio_get_altnum( CFG_SPI0_CS))
-		nxp_soc_gpio_set_io_func( CFG_SPI0_CS, nxp_soc_gpio_get_altnum( CFG_SPI0_CS));
+	if (nxp_soc_gpio_get_io_func(CFG_SPI0_CS) !=
+	nxp_soc_gpio_get_altnum(CFG_SPI0_CS))
+		nxp_soc_gpio_set_io_func(CFG_SPI0_CS,
+			nxp_soc_gpio_get_altnum(CFG_SPI0_CS));
 
-	nxp_soc_gpio_set_io_dir( CFG_SPI0_CS,1);
-	nxp_soc_gpio_set_out_value(	 CFG_SPI0_CS , chipselect);
-#else
-	;
+	nxp_soc_gpio_set_io_dir(CFG_SPI0_CS, 1);
+	nxp_soc_gpio_set_out_value(CFG_SPI0_CS , chipselect);
 #endif
 }
-struct pl022_config_chip spi0_info = {
-    /* available POLLING_TRANSFER, INTERRUPT_TRANSFER, DMA_TRANSFER */
-    .com_mode = CFG_SPI0_COM_MODE,
-    .iface = SSP_INTERFACE_MOTOROLA_SPI,
-    /* We can only act as master but SSP_SLAVE is possible in theory */
-    .hierarchy = SSP_MASTER,
-    /* 0 = drive TX even as slave, 1 = do not drive TX as slave */
-    .slave_tx_disable = 1,
-    .rx_lev_trig = SSP_RX_4_OR_MORE_ELEM,
-    .tx_lev_trig = SSP_TX_4_OR_MORE_EMPTY_LOC,
-    .ctrl_len = SSP_BITS_8,
-    .wait_state = SSP_MWIRE_WAIT_ZERO,
-    .duplex = SSP_MICROWIRE_CHANNEL_FULL_DUPLEX,
-    /*
-     * This is where you insert a call to a function to enable CS
-     * (usually GPIO) for a certain chip.
-     */
+static struct pl022_config_chip spi0_info = {
+	/* available POLLING_TRANSFER, INTERRUPT_TRANSFER, DMA_TRANSFER */
+	.com_mode = CFG_SPI0_COM_MODE,
+	.iface = SSP_INTERFACE_MOTOROLA_SPI,
+	/* We can only act as master but SSP_SLAVE is possible in theory */
+	.hierarchy = SSP_MASTER,
+	/* 0 = drive TX even as slave, 1 = do not drive TX as slave */
+	.slave_tx_disable = 1,
+	.rx_lev_trig = SSP_RX_4_OR_MORE_ELEM,
+	.tx_lev_trig = SSP_TX_4_OR_MORE_EMPTY_LOC,
+	.ctrl_len = SSP_BITS_8,
+	.wait_state = SSP_MWIRE_WAIT_ZERO,
+	.duplex = SSP_MICROWIRE_CHANNEL_FULL_DUPLEX,
+	/*
+	 * This is where you insert a call to a function to enable CS
+	 * (usually GPIO) for a certain chip.
+	 */
 #if (CFG_SPI0_CS_GPIO_MODE)
-    .cs_control = spi0_cs,
+	.cs_control = spi0_cs,
 #endif
 	.clkdelay = SSP_FEEDBACK_CLK_DELAY_1T,
 
 };
 
 static struct spi_board_info spi_plat_board[] __initdata = {
-    [0] = {
-        .modalias        = "spidev",    /* fixup */
-        .max_speed_hz    = 3125000,     /* max spi clock (SCK) speed in HZ */
-        .bus_num         = 0,           /* Note> set bus num, must be smaller than ARRAY_SIZE(spi_plat_device) */
-        .chip_select     = 0,           /* Note> set chip select num, must be smaller than spi cs_num */
-        .controller_data = &spi0_info,
-        .mode            = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
-    },
+	[0] = {
+	.modalias = "spidev", /* fixup */
+	.max_speed_hz = 3125000, /* max spi clock (SCK) speed in HZ */
+	.bus_num = 0,
+	.chip_select = 0,
+	.controller_data = &spi0_info,
+	.mode = SPI_MODE_3 | SPI_CPOL | SPI_CPHA,
+	},
 };
 
 #endif
@@ -1519,12 +1397,14 @@ static struct spi_board_info spi_plat_board[] __initdata = {
  * DW MMC board config
  */
 #if defined(CONFIG_MMC_DW)
-static int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *, int state))
+static int _dwmci_ext_cd_init(void (*notify_func)(struct platform_device *,
+			int state))
 {
 	return 0;
 }
 
-static int _dwmci_ext_cd_cleanup(void (*notify_func)(struct platform_device *, int state))
+static int _dwmci_ext_cd_cleanup(void (*notify_func)(struct platform_device *,
+			int state))
 {
 	return 0;
 }
@@ -1542,37 +1422,42 @@ static int _dwmci2_init(u32 slot_id, irq_handler_t handler, void *data)
 	int irq = IRQ_GPIO_START + io;
 	int id  = 0, ret = 0;
 
-	printk("dw_mmc dw_mmc.%d: Using external card detect irq %3d (io %2d)\n", id, irq, io);
+	pr_info("dw_mmc.%d: Using external card detect irq %3d (io %2d)\n",
+			id, irq, io);
 
-	ret  = request_irq(irq, handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
-				DEV_NAME_SDHC "2", (void*)host->slot[slot_id]);
+	ret  = request_irq(irq, handler,
+			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+			DEV_NAME_SDHC "2", (void *)host->slot[slot_id]);
 	if (0 > ret)
-		pr_err("dw_mmc dw_mmc.%d: fail request interrupt %d ...\n", id, irq);
+		pr_err("dw_mmc dw_mmc.%d: fail request interrupt %d ...\n",
+			id, irq);
 	return 0;
 }
 
 static int _dwmci2_get_cd(u32 slot_id)
 {
 	int io = CFG_SDMMC2_DETECT_IO;
+
 	return nxp_soc_gpio_get_in_value(io);
 }
 
 static struct dw_mci_board _dwmci2_data = {
-    .quirks         = DW_MCI_QUIRK_HIGHSPEED,
-    .bus_hz         = 100 * 1000 * 1000,
-    .caps           = MMC_CAP_CMD23,
-    .detect_delay_ms= 200,
-    .cd_type        = DW_MCI_CD_EXTERNAL,
-    .clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
-    .init           = _dwmci2_init,
-    .get_ro         = _dwmci_get_ro,
-    .get_cd         = _dwmci2_get_cd,
-    .ext_cd_init    = _dwmci_ext_cd_init,
-    .ext_cd_cleanup = _dwmci_ext_cd_cleanup,
-#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH2_USE_DMA)
-    .mode           = DMA_MODE,
+	.quirks = DW_MCI_QUIRK_HIGHSPEED,
+	.bus_hz = 100 * 1000 * 1000,
+	.caps = MMC_CAP_CMD23,
+	.detect_delay_ms = 200,
+	.cd_type = DW_MCI_CD_EXTERNAL,
+	.clk_dly = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) |
+		DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+	.init = _dwmci2_init,
+	.get_ro = _dwmci_get_ro,
+	.get_cd = _dwmci2_get_cd,
+	.ext_cd_init = _dwmci_ext_cd_init,
+	.ext_cd_cleanup = _dwmci_ext_cd_cleanup,
+#if defined(CONFIG_MMC_DW_IDMAC) && defined(CONFIG_MMC_NXP_CH2_USE_DMA)
+	.mode = DMA_MODE,
 #else
-    .mode           = PIO_MODE,
+	.mode = PIO_MODE,
 #endif
 
 };
@@ -1580,23 +1465,24 @@ static struct dw_mci_board _dwmci2_data = {
 
 #ifdef CONFIG_MMC_NXP_CH0
 static struct dw_mci_board _dwmci0_data = {
-	.quirks			= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
-						DW_MCI_QUIRK_HIGHSPEED |
-						DW_MMC_QUIRK_HW_RESET_PW |
-						DW_MCI_QUIRK_NO_DETECT_EBIT,
-	.bus_hz		= 100 * 1000 * 1000,
-	.hs_over_clk	= 50 * 1000 * 1000,
-	.caps			= MMC_CAP_UHS_DDR50 |
-						MMC_CAP_NONREMOVABLE |
-						MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
-						MMC_CAP_ERASE | MMC_CAP_HW_RESET,
-	.desc_sz		= 4,
-	.detect_delay_ms= 200,
-	.clk_dly		= DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
-#if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH0_USE_DMA)
-	.mode			= DMA_MODE,
+	.quirks	= DW_MCI_QUIRK_BROKEN_CARD_DETECTION |
+			DW_MCI_QUIRK_HIGHSPEED |
+			DW_MMC_QUIRK_HW_RESET_PW |
+			DW_MCI_QUIRK_NO_DETECT_EBIT,
+	.bus_hz	= 100 * 1000 * 1000,
+	.hs_over_clk = 50 * 1000 * 1000,
+	.caps = MMC_CAP_UHS_DDR50 |
+		MMC_CAP_NONREMOVABLE |
+		MMC_CAP_4_BIT_DATA | MMC_CAP_CMD23 |
+		MMC_CAP_ERASE | MMC_CAP_HW_RESET,
+	.desc_sz = 4,
+	.detect_delay_ms = 200,
+	.clk_dly = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) |
+			DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+#if defined(CONFIG_MMC_DW_IDMAC) && defined(CONFIG_MMC_NXP_CH0_USE_DMA)
+	.mode = DMA_MODE,
 #else
-	.mode			= PIO_MODE,
+	.mode = PIO_MODE,
 #endif
 };
 #endif
@@ -1610,7 +1496,7 @@ static struct dw_mci_board _dwmci0_data = {
  */
 int nxp_hsic_phy_pwr_on(struct platform_device *pdev, bool on)
 {
-    return 0;
+	return 0;
 }
 EXPORT_SYMBOL(nxp_hsic_phy_pwr_on);
 
@@ -1638,20 +1524,21 @@ static struct platform_device hdmi_cec_device = {
  */
 void __init nxp_board_devices_register(void)
 {
-	printk("[Register board platform devices]\n");
+	pr_info("[Register board platform devices]\n");
 
 #if defined(CONFIG_ARM_NXP_CPUFREQ)
-	printk("plat: add dynamic frequency (pll.%d)\n", dfs_plat_data.pll_dev);
+	pr_info("plat: add dynamic frequency (pll.%d)\n",
+			dfs_plat_data.pll_dev);
 	platform_device_register(&dfs_plat_device);
 #endif
 
 #ifdef CONFIG_SENSORS_NXP_ADC_TEMP
-	printk("plat: add device adc temp\n");
+	pr_info("plat: add device adc temp\n");
 	platform_device_register(&adc_temp_plat_device);
 #endif
 
-#if defined (CONFIG_FB_NXP)
-	printk("plat: add framebuffer\n");
+#if defined(CONFIG_FB_NXP)
+	pr_info("plat: add framebuffer\n");
 	platform_add_devices(fb_devices, ARRAY_SIZE(fb_devices));
 #endif
 
@@ -1660,7 +1547,7 @@ void __init nxp_board_devices_register(void)
 	nxp_mmc_add_device(0, &_dwmci0_data);
 	#endif
 
-	#if 0//def CONFIG_MMC_NXP_CH1
+	#if 0 /* def CONFIG_MMC_NXP_CH1 */
 	nxp_mmc_add_device(1, &_dwmci1_data);
 	#endif
 
@@ -1670,100 +1557,88 @@ void __init nxp_board_devices_register(void)
 #endif
 
 #if defined(CONFIG_DM9000) || defined(CONFIG_DM9000_MODULE)
-	printk("plat: add device dm9000 net\n");
+	pr_info("plat: add device dm9000 net\n");
 	platform_device_register(&dm9000_plat_device);
 #endif
 
 #if defined(CONFIG_BACKLIGHT_PWM)
-	printk("plat: add backlight pwm device\n");
+	pr_info("plat: add backlight pwm device\n");
 	platform_device_register(&bl_plat_device);
 #endif
 
 
 #if defined(CONFIG_KEYBOARD_NXP_KEY) || defined(CONFIG_KEYBOARD_NXP_KEY_MODULE)
-	printk("plat: add device keypad\n");
+	pr_info("plat: add device keypad\n");
 	platform_device_register(&key_plat_device);
 #endif
 
 #if defined(CONFIG_I2C_NXP)
-	printk("plat: add device i2c bus(array:%d)\n", ARRAY_SIZE(i2c_devices));
-    platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
+	pr_info("plat: add device i2c bus(array:%d)\n",
+			ARRAY_SIZE(i2c_devices));
+	platform_add_devices(i2c_devices, ARRAY_SIZE(i2c_devices));
 #endif
 
 #if defined(CONFIG_REGULATOR_NXE2000)
-	printk("plat: add device nxe2000 pmic\n");
-	i2c_register_board_info(NXE2000_I2C_BUS, nxe2000_i2c_boardinfo, ARRAY_SIZE(nxe2000_i2c_boardinfo));
+	pr_info("plat: add device nxe2000 pmic\n");
+	i2c_register_board_info(NXE2000_I2C_BUS,
+		nxe2000_i2c_boardinfo, ARRAY_SIZE(nxe2000_i2c_boardinfo));
 #endif
 
-#if defined(CONFIG_SND_CODEC_TLV320AIC32X4) || defined(CONFIG_SND_CODEC_TLV320AIC32X4_MODULE)
-	printk("plat: add device asoc-tlv320aic32x4\n");
-	i2c_register_board_info(TLV320AIC32X4_I2C_BUS, &tlv320aic32x4_i2c_bdi, 1);
+#if defined(CONFIG_SND_CODEC_TLV320AIC32X4) ||	\
+defined(CONFIG_SND_CODEC_TLV320AIC32X4_MODULE)
+	pr_info("plat: add device asoc-tlv320aic32x4\n");
+	i2c_register_board_info(TLV320AIC32X4_I2C_BUS,
+			&tlv320aic32x4_i2c_bdi, 1);
 	platform_device_register(&tlv320aic32x4_dai);
 #endif
 
-#if defined(CONFIG_SND_NXP_EC)
-	printk("plat: add device i2s (array:%d) \n", ARRAY_SIZE(i2s_devices));
-	platform_add_devices(i2s_devices, ARRAY_SIZE(i2s_devices));
-	printk("plat: add device null codec\n");
+#if defined(CONFIG_SND_CODEC_SMARTVOICE)
+	pr_info("plat: add device SPI smart-voice capture\n");
+	platform_device_register(&snd_svoice_dac);
+	platform_device_register(&snd_spi_dev);
+	platform_device_register(&snd_spi_svoice_card);
 
-	platform_device_register(&snd_null);
-	platform_device_register(&snd_null_dai);
+	pr_info("plat: add device I2S smart-voice card\n");
+	platform_device_register(&snd_i2s_svoice_card);
+#endif
 
-#if defined(CONFIG_SND_NXP_EC_PDM_VIRT)
-	printk("plat: add device pdm-virt capture\n");
-	platform_device_register(&pdm_virt_device);
-	platform_device_register(&pdm_virt_recorder);
-	platform_device_register(&pdm_virt_rec_dai);
-#endif
-#if defined(CONFIG_SND_NXP_EC_PDM_SPI)
-	printk("plat: add device pdm-spi capture\n");
-	platform_device_register(&pdm_spi_device);
-	platform_device_register(&pdm_spi_recorder);
-	platform_device_register(&pdm_spi_rec_dai);
-#endif
-#endif /* CONFIG_SND_NXP_EC */
-
-#if defined(CONFIG_SND_PDM_REC) || defined(CONFIG_SND_PDM_REC_MODULE)
-	printk("plat: add device pdm capture\n");
-	platform_device_register(&pdm_recorder);
-	platform_device_register(&pdm_rec_dai);
-#endif
-#if defined(CONFIG_SND_SPDIF_TRANSCIEVER) || defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)
-	printk("plat: add device spdif playback\n");
+#if defined(CONFIG_SND_SPDIF_TRANSCIEVER) ||	\
+defined(CONFIG_SND_SPDIF_TRANSCIEVER_MODULE)
+	pr_info("plat: add device spdif playback\n");
 	platform_device_register(&spdif_transciever);
 	platform_device_register(&spdif_trans_dai);
 #endif
 
 #if defined(CONFIG_V4L2_NXP) || defined(CONFIG_V4L2_NXP_MODULE)
-    printk("plat: add device nxp-v4l2\n");
-    platform_device_register(&nxp_v4l2_dev);
+	pr_info("plat: add device nxp-v4l2\n");
+	platform_device_register(&nxp_v4l2_dev);
 #endif
 
 #if defined(CONFIG_NXP_MP2TS_IF)
-	printk("plat: add device misc mpegts\n");
+	pr_info("plat: add device misc mpegts\n");
 	platform_device_register(&mpegts_plat_device);
 #endif
 
 #if defined(CONFIG_SPI_SPIDEV) || defined(CONFIG_SPI_SPIDEV_MODULE)
-    spi_register_board_info(spi_plat_board, ARRAY_SIZE(spi_plat_board));
-    printk("plat: register spidev\n");
+	spi_register_board_info(spi_plat_board, ARRAY_SIZE(spi_plat_board));
+	pr_info("plat: register spidev\n");
 #endif
 
 #if defined(CONFIG_NXP_HDMI_CEC)
-    printk("plat: add device hdmi-cec\n");
-    platform_device_register(&hdmi_cec_device);
+	pr_info("plat: add device hdmi-cec\n");
+	platform_device_register(&hdmi_cec_device);
 #endif
 
 #if defined(CONFIG_TOUCHSCREEN_TSC2007)
-    printk("plat: add touch(tsc2007) device\n");
-    i2c_register_board_info(TSC2007_I2C_BUS, &tsc2007_i2c_bdi, 1);
+	pr_info("plat: add touch(tsc2007) device\n");
+	i2c_register_board_info(TSC2007_I2C_BUS, &tsc2007_i2c_bdi, 1);
 #endif
 
 #if defined(CONFIG_PPM_NXP)
-    printk("plat: add device ppm\n");
-    platform_device_register(&ppm_device);
+	pr_info("plat: add device ppm\n");
+	platform_device_register(&ppm_device);
 #endif
 
 	/* END */
-	printk("\n");
+	pr_info("\n");
 }

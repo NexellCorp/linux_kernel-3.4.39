@@ -71,5 +71,3 @@ obj-$(CONFIG_PPM_NXP)					+=  $(PROTOTYPE)/$(MODULES)/nx_ppm.o
 obj-$(CONFIG_SND_NXP_PDM) 				+=  $(PROTOTYPE)/$(MODULES)/nx_pdm.o
 
 obj-$(CONFIG_NXP_M2M_DEINTERLACER)      +=  $(PROTOTYPE)/$(MODULES)/nx_deinterlace.o
-
-obj-$(CONFIG_SND_NXP_EC_PDM_SPI) 		+=  $(PROTOTYPE)/$(MODULES)/nx_ssp.o

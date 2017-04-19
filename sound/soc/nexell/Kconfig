@@ -31,10 +31,10 @@ config SND_NXP_PLL_3
 endchoice
 
 config SND_NXP_PLLDEV
-    int 
+    int
     default 2 if SND_NXP_PLL_2
     default 3 if SND_NXP_PLL_3
-										
+
 config SND_NXP_I2S
 	tristate
 
@@ -74,14 +74,21 @@ config SND_SPDIF_RECEIVER
 	select SND_NXP_SPDIF_RX
 	select SND_SOC_SPDIF
 
-config SND_NXP_PDM
-	tristate
-
-config SND_PDM_REC
-	tristate "PDM record (PCM)"
+config SND_NXP_SPI
+	tristate "SPI receiver (PCM)"
 	depends on SND_NXP_SOC
-	select SND_NXP_PDM
-	default n
+
+choice
+	prompt "SPI device"
+	depends on SND_NXP_SPI
+
+	config SND_NXP_SPI_PL022
+		bool "ARM AMBA PL022 SSP controller"
+		help
+	  	  This selects the ARM(R) AMBA(R) PrimeCell PL022 SSP
+	  	  controller. If you have an embedded system with an AMBA(R)
+	  	  bus and a PL022 controller, say Y here.
+endchoice
 
 config NOUSE_SND_DAPM
 	bool "nouse dapm control for codec"
@@ -136,16 +143,12 @@ config SND_CODEC_WM8903
 	depends on SND_NXP_I2S
 	select SND_SOC_WM8903
 
-config SND_NXP_EC
-	tristate "PDM/I2S Echo Canceller"
-	default n
+config SND_CODEC_SMARTVOICE
+	tristate "Smart voice synchronization codec for spi and i2s."
+	depends on SND_NXP_SPI
 
-config SND_NXP_EC_PDM_VIRT
-	tristate "Virtual PDM device"
-	depends on SND_NXP_EC
-	default n
-
-config SND_NXP_EC_PDM_SPI
-	tristate "NXC100 SPI PDM device"
-	depends on SND_NXP_EC
-	default n
+config SND_NXP_PCM_RATE_DETECTOR
+	bool "I2S PCM Sample Rate Detector for Smart Voice"
+	depends on SND_CODEC_SMARTVOICE
+	help
+	  Say Y if you want to use PCM sample rate detector for Smart Voice.
