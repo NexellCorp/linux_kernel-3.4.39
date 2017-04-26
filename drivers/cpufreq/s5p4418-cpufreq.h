@@ -23,6 +23,8 @@ extern void nxp_cpu_id_ecid(u32 ecid[4]);
 extern void nxp_cpu_id_string(u32 string[12]);
 
 #define	CPU_ID_S5P4418		(0xE4418000)
+#define	CPU_ID_NXP4330_NEW	(0x0)
+
 #define	VOLTAGE_STEP_UV		(12500)	/* 12.5 mV */
 #define	ASV_DEFAULT_LEVEL	(0)		/* for 4330 */
 
@@ -150,6 +152,15 @@ static int s5p4418_asv_setup_table(unsigned long (*freq_tables)[2])
 	unsigned int string[12] = { 0, };
 	int i, ids = 0, ro = 0;
 	int idslv, rolv, asvlv;
+	
+	nxp_cpu_id_string(string);
+	nxp_cpu_id_ecid(ecid);
+
+	if ((string[0] != CPU_ID_S5P4418) &&
+			(string[0] != CPU_ID_NXP4330_NEW)) {
+		asvlv = ASV_DEFAULT_LEVEL;
+		goto asv_find;
+	}
 
 	nxp_cpu_id_string(string);
 	nxp_cpu_id_ecid(ecid);
