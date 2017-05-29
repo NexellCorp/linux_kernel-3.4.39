@@ -23,6 +23,8 @@
 #include <linux/io.h>
 #include <linux/of_gpio.h>
 #include <linux/of_address.h>
+#include <linux/pwm.h>
+#include <linux/delay.h>
 #include <sound/soc.h>
 
 #include <mach/platform.h>
@@ -34,6 +36,7 @@
 
 #define	SVI_IOBASE_MAX		5
 #define	DEF_SYNC_DEV_NUM	2 /* spi, i2sn */
+#define	SVI_PDM_PLL		8000000	/* 8Mhz */
 
 static const dma_addr_t gpio_base_address[] = {
 	PHY_BASEADDR_GPIOA, PHY_BASEADDR_GPIOB, PHY_BASEADDR_GPIOC,
@@ -57,6 +60,7 @@ enum svoice_pin_type {
 	SVI_PIN_SPI_CS,
 	SVI_PIN_PDM_LCRCK,
 	SVI_PIN_PDM_ISRUN,
+	SVI_PIN_PDM_NRST,
 	SVI_PIN_I2S_LRCK,
 };
 
@@ -76,6 +80,7 @@ static struct svoice_pin svoice_pins[] = {
 	[SVI_PIN_SPI_CS] = { "spi-cs-gpio", 1, -1, },		/* output */
 	[SVI_PIN_PDM_LCRCK] = { "pdm-lrck-gpio", 1, -1, },	/* output */
 	[SVI_PIN_PDM_ISRUN] = { "pdm-isrun-gpio", 1, -1, },	/* output */
+	[SVI_PIN_PDM_NRST] = { "pdm-nrst-gpio", 1, -1, },	/* output */
 	[SVI_PIN_I2S_LRCK] = { "i2s-lrck-gpio", 0, -1, },	/* status */
 };
 #define	SVI_PIN_NUM	ARRAY_SIZE(svoice_pins)
@@ -93,6 +98,9 @@ struct svoice_dev {
 
 struct svoice_snd {
 	struct device *dev;
+#ifdef CONFIG_HAVE_PWM
+	struct pwm_device *pwm;
+#endif
 	struct list_head list;
 	spinlock_t lock;
 	int num_require_dev;
@@ -285,6 +293,31 @@ static void __pin_nolrck(void *data)
 
 	pr_debug("%s [gpio_%c.%02d] %s\n", __func__,
 		('A' + pin->group), pin->offset, pin->property);
+}
+
+static void __pin_prepare(void)
+{
+	struct svoice_pin *pin = &svoice_pins[SVI_PIN_PDM_NRST];
+	u32 val;
+
+	/*
+	 * set nreset after pll insert
+	 * to run with external pll
+	 */
+	if (pin->nr != -1) {
+		pr_debug("%s [gpio_%c.%02d] %s\n", __func__,
+			('A' + pin->group), pin->offset, pin->property);
+
+		val = readl(pin->base) & ~(1 << pin->offset);
+		writel(val, pin->base);
+
+		msleep(100);
+
+		val = readl(pin->base) | (1 << pin->offset);
+		writel(val, pin->base);
+	}
+
+	__pin_stop();
 }
 
 static int svoice_start(struct svoice_snd *snd)
@@ -595,6 +628,33 @@ static int svoice_setup(struct platform_device *pdev,
 		return -EINVAL;
 	}
 
+	/* for PDM PLL */
+#ifdef CONFIG_HAVE_PWM
+	snd->pwm = pwm_request(plat->pwm_id, plat->pwm_label);
+	if (snd->pwm) {
+		unsigned int period_ns = 1000000000 / SVI_PDM_PLL;
+		unsigned int duty_ns = period_ns / 2;
+		int ret;
+
+		ret = pwm_config(snd->pwm, duty_ns, period_ns);
+		if (!ret) {
+			ret = pwm_enable(snd->pwm);
+			if (ret) {
+				dev_err(dev,
+					"can't enable PWM.%d\n",
+					plat->pwm_id);
+				return ret;
+			}
+			dev_info(dev,
+				"Smart Voice - pwm.%d %d (%d)\n",
+				plat->pwm_id, period_ns, duty_ns);
+		} else {
+			pwm_free(snd->pwm);
+			snd->pwm = NULL;
+		}
+	}
+#endif
+
 	for (i = 0; i < ARRAY_SIZE(gpio_base_address); i++) {
 		u32 addr = gpio_base_address[i];
 
@@ -616,6 +676,8 @@ static int svoice_setup(struct platform_device *pdev,
 			val = plat->pdm_isrun_gpio;
 		else if (!strcmp(pin->property, "pdm-lrck-gpio"))
 			val = plat->pdm_lrck_gpio;
+		else if (!strcmp(pin->property, "pdm-nrst-gpio"))
+			val = plat->pdm_nrst_gpio;
 		else if (!strcmp(pin->property, "i2s-lrck-gpio"))
 			val = plat->i2s_lrck_gpio;
 		else
@@ -651,8 +713,8 @@ static int svoice_setup(struct platform_device *pdev,
 	INIT_LIST_HEAD(&snd->list);
 	spin_lock_init(&snd->lock);
 
-	/* stop pdm in */
-	__pin_stop();
+	/* pdm prepare */
+	__pin_prepare();
 
 	dev_set_drvdata(&pdev->dev, snd);
 
@@ -707,6 +769,13 @@ static int svoice_remove(struct platform_device *pdev)
 			iounmap(snd->io_bases[i]);
 		snd->io_bases[i] = NULL;
 	}
+
+#ifdef CONFIG_HAVE_PWM
+	if (snd->pwm) {
+		pwm_disable(snd->pwm);
+		pwm_free(snd->pwm);
+	}
+#endif
 
 	kfree(snd);
 	return 0;

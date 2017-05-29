@@ -594,10 +594,12 @@ static struct platform_device spdif_recev_dai = {
 
 /* snd smart-voice codec device */
 static struct nxp_svoice_plat_data svoice_data = {
+	.pwm_id = 1,
 	.spi_cs_gpio = (PAD_GPIO_C + 16),
 	.pdm_isrun_gpio = (PAD_GPIO_E + 14),
 	.pdm_lrck_gpio = (PAD_GPIO_B + 26),
 	.i2s_lrck_gpio = (PAD_GPIO_B + 4),
+	.pdm_nrst_gpio = (PAD_GPIO_E + 15),
 	.cpu_dais_num = 2,
 };
 

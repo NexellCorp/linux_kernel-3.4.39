@@ -154,10 +154,13 @@ struct nxp_pdm_spi_plat_data {
 };
 
 struct nxp_svoice_plat_data {
+	int pwm_id;
+	char *pwm_label;
 	int spi_cs_gpio;
 	int pdm_isrun_gpio;
 	int pdm_lrck_gpio;
 	int i2s_lrck_gpio;
+	int pdm_nrst_gpio;
 	int cpu_dais_num;	/* sync device num */
 };
 
