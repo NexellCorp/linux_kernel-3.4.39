@@ -2317,11 +2317,8 @@ static int32_t handle_hc_xacterr_intr(dwc_otg_hcd_t * hcd,
 	}
 handle_xacterr_done:
 	disable_hc_int(hc_regs, xacterr);
-#if 0
-	/* stop all operation of usb when d+/d- is shorted. */
-	dwc_otg_disable_host_interrupts(hcd->core_if);
-	dwc_otg_disable_global_interrupts(hcd->core_if);
-#endif
+	/* disconnect connected usb device when d+/d- is shorted. */
+	cil_hcd_disconnect(hcd->core_if);
 	return 1;
 }
 
