@@ -649,7 +649,7 @@ static struct platform_device snd_spi_svoice_card = {
 static struct nxp_snd_svoice_dai_plat_data snd_i2s_svoice_card_data = {
 	.cpu_dai = SND_SVOICE_I2S,
 	.ch = 2, /* I2S channel */
-	.sample_rate = 16000,
+	.sample_rate = 48000,
 	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
 };
 
