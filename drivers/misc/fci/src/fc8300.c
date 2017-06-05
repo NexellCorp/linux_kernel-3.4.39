@@ -659,6 +659,8 @@ long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		{
 			u32 f_rf;
 			u8 subch;
+			u8 data = 0;
+
 			err = copy_from_user((void *)&info, (void *)arg, size);
 
 			f_rf = (u32)info.buff[0];
@@ -673,6 +675,15 @@ long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		print_log(hInit
 		, "[FC8300] IOCTL_ISDBT_TUNER_SET_FREQ [0x%x][%d][0x%x]\n"
 		, (u16)info.buff[2], f_rf, subch);
+#if 1
+		res = bbm_com_byte_read(hInit, (u16)info.buff[2]
+			, 0x11, (u8 *)(&data));
+		if (res)
+			pr_err("valide polarity read error. return : %d\n",
+					res);
+		else
+			pr_err("valid polarity : 0x%x\n", data);
+#endif
 #endif
 #ifndef BBM_I2C_TSIF
 			mutex_lock(&ringbuffer_lock);

@@ -44,7 +44,7 @@ int tsif_init(u8 ch_num)
 	/*      configuration   */
 	config_descr.ch_num                 = ch_num;
 	config_descr.un.bits.clock_pol      = 1;
-	config_descr.un.bits.valid_pol      = 0;
+	config_descr.un.bits.valid_pol      = 1;
 	config_descr.un.bits.sync_pol       = 1;
 	config_descr.un.bits.err_pol        = 1;
 	config_descr.un.bits.data_width1    = 1; /* Serial Setting */
