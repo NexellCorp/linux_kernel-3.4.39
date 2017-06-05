@@ -40,9 +40,13 @@
 #include <linux/gpio.h>
 #include <linux/syscalls.h>
 
+#include <linux/time.h>
+#include <linux/workqueue.h>
+
 #include <mach/platform.h>
 #include <mach/nxp_mp2ts.h>
 
+#include "nxp-mp2ts-discontinuity-check.h"
 
 #define MP2TS_DBG_HEADER "[NXP-TS]"
 
@@ -53,6 +57,8 @@
 #else
 #define MP2TS_DBG(args...) do{}while(0)
 #endif
+
+#define DEFAULT_WAIT_READ_TIME	14 /* mili sec */
 
 #define ALLOC_ALIGN(size)   ALIGN(size, 16)
 
@@ -84,64 +90,82 @@ static int _prepare_dma_submit(
 	struct ts_drv_context *ctx
 	);
 
+enum time_type {
+	TYPE_MILLI,
+	TYPE_MICRO,
+};
+
+static inline long long get_clock(enum time_type t_type)
+{
+	struct timeval tv;
+	long long time_val;
+
+	do_gettimeofday(&tv);
+
+	switch (t_type) {
+	case TYPE_MICRO:
+	     time_val = ((tv.tv_sec * 1000000) + tv.tv_usec);
+	     break;
+	case TYPE_MILLI:
+	     time_val = ((tv.tv_sec) * 1000 + (tv.tv_usec) / 1000);
+	     break;
+
+	}
+
+	return time_val;
+}
 
 static inline int _w_able(struct ts_channel_info *buf)
 {
-    if(buf->cnt < buf->page_num)
-    {
-        return 1;
-    }
-    return 0;
+	if (atomic_read(&buf->cnt) < buf->page_num)
+		return 1;
+
+	return 0;
 }
 
 static inline int _r_able(struct ts_channel_info *buf)
 {
-    if(buf->cnt)
-    {
-        return 1;
-    }
-    return 0;
+	if (atomic_read(&buf->cnt))
+		return 1;
+
+	return 0;
 }
 
 static inline int _rw_able(struct ts_channel_info *buf)
 {
-    if( buf->is_first )
-    {
-        return 1;
-    }
-    else
-    {
-        if( buf->r_pos && (buf->w_pos == (buf->r_pos-1)) )
-        {
-            return 0;
-        }
-        else if( !buf->r_pos && (buf->w_pos == (buf->page_num-1)) )
-        {
-            return 0;
-        }
+	if (buf->is_first)
+		return 1;
+	else {
+		if (atomic_read(&buf->r_pos) && (atomic_read(&buf->w_pos)
+					== (atomic_read(&buf->r_pos) - 1)))
+			return 0;
+		else if (!atomic_read(&buf->r_pos) && (atomic_read(&buf->w_pos)
+					== (buf->page_num - 1)))
+			return 0;
 
-        return 1;
-    }
+		return 1;
+	}
 
-    return 0;
+	return 0;
 }
 
 static inline void _w_buf(struct ts_channel_info *buf)
 {
-    if(buf->cnt < buf->page_num)
-    {
-        buf->cnt++;
-        buf->w_pos = (buf->w_pos + 1) % buf->page_num;
-    }
+	if (atomic_read(&buf->cnt) < buf->page_num) {
+		atomic_inc(&buf->cnt);
+		atomic_set(&buf->w_pos, (atomic_read(&buf->w_pos) + 1)
+				% buf->page_num);
+	}
 }
 
 static inline void _r_buf(struct ts_channel_info *buf)
 {
-    if(buf->cnt)
-    {
-        buf->cnt--;
-        buf->r_pos = (buf->r_pos + 1) % buf->page_num;
-    }
+	if (atomic_read(&buf->cnt)) {
+		atomic_dec(&buf->cnt);
+		atomic_set(&buf->r_pos, (atomic_read(&buf->r_pos) + 1)
+				% buf->page_num);
+	}
+
 }
 
 static inline int _init_dma(u8 ch_num, struct ts_drv_context *ctx)
@@ -217,7 +241,7 @@ static inline void _deinit_dma(u8 ch_num, struct ts_drv_context *ctx)
 	}
 #endif
 
-	ctx->ch_info[ch_num].cnt = 0;
+	atomic_set(&ctx->ch_info[ch_num].cnt, 0);
 }
 
 static inline void _start_dma(u8 ch_num, struct ts_drv_context *ctx)
@@ -226,7 +250,7 @@ static inline void _start_dma(u8 ch_num, struct ts_drv_context *ctx)
 
 	MP2TS_DBG("%s ++\n", __func__);
 
-	tx_mode = ctx->ch_info[ch_num].tx_mode; 
+	tx_mode = ctx->ch_info[ch_num].tx_mode;
 
 	tmp_chnum = ch_num;
 repeat_set_dma:
@@ -281,7 +305,7 @@ static inline void _stop_dma(u8 ch_num, struct ts_drv_context *ctx)
 	tmp_chnum = ch_num;
 
 repeat_stop_dma:
-	
+
 #if (CFG_MPEGTS_IDMA_MODE == 1)
 	NX_MPEGTSI_SetIDMAIntMaskClear(tmp_chnum, CFALSE);
 	NX_MPEGTSI_StopIDMA(tmp_chnum);
@@ -294,7 +318,7 @@ repeat_stop_dma:
 		dmaengine_terminate_all(ctx->ch_info[tmp_chnum].dma_chan);
 	}
 #endif
-	ctx->ch_info[tmp_chnum].cnt = 0;
+	atomic_set(&ctx->ch_info[tmp_chnum].cnt, 0);
 
 	if( tmp_chnum == NXP_MP2TS_ID_CORE )
 	{
@@ -313,15 +337,14 @@ static inline int _init_buf(struct ts_drv_context *ctx, struct ts_buf_init_info 
     ctx->dev->coherent_dma_mask = 0xffffffff;
 
 onemore_alloc:
-    ctx->ch_info[ch_num].cnt    = 0;
-    ctx->ch_info[ch_num].w_pos  = 0;
-    ctx->ch_info[ch_num].r_pos  = 0;
+	atomic_set(&ctx->ch_info[ch_num].cnt, 0);
+	atomic_set(&ctx->ch_info[ch_num].w_pos, 0);
+	atomic_set(&ctx->ch_info[ch_num].r_pos, 0);
 
     ctx->ch_info[ch_num].page_size      = init_info->page_size;
     ctx->ch_info[ch_num].page_num       = init_info->page_num;
     ctx->ch_info[ch_num].alloc_align    = init_info->page_size;
     ctx->ch_info[ch_num].alloc_size     = (ctx->ch_info[ch_num].alloc_align * init_info->page_num);
-
 
     ctx->ch_info[ch_num].dma_virt = (unsigned int)dma_alloc_writecombine(ctx->dev, ctx->ch_info[ch_num].alloc_size, &ctx->ch_info[ch_num].dma_phy, GFP_ATOMIC);
     if (!ctx->ch_info[ch_num].dma_virt)
@@ -802,7 +825,7 @@ static int _enable_device(struct ts_op_mode *ts_op)
     u8  ch_num, tx_mode;
 
     ch_num  = ts_op->ch_num;
-    tx_mode = s_ctx->ch_info[ch_num].tx_mode; 
+	tx_mode = s_ctx->ch_info[ch_num].tx_mode;
 
     if (!s_ctx->ch_info[ch_num].dma_phy)
     {
@@ -988,11 +1011,14 @@ static ssize_t mpegts_read_buf(u8 ch_num, struct ts_param_descr *param_descr)
 		}
 	}
 
-	temp_size = (s_ctx->ch_info[ch_num].cnt * s_ctx->ch_info[ch_num].alloc_align);
+	temp_size = (atomic_read(&s_ctx->ch_info[ch_num].cnt)
+			* s_ctx->ch_info[ch_num].alloc_align);
 	if (want_size > temp_size)
 		want_size = temp_size;
 
-	src_addr = s_ctx->ch_info[ch_num].dma_virt + (s_ctx->ch_info[ch_num].alloc_align * s_ctx->ch_info[ch_num].r_pos);
+	src_addr = s_ctx->ch_info[ch_num].dma_virt +
+		(s_ctx->ch_info[ch_num].alloc_align
+		 * atomic_read(&s_ctx->ch_info[ch_num].r_pos));
 	if (copy_to_user((void *)buf, (const void *)src_addr, want_size))
 	{
 		return -ETS_FAULT;
@@ -1000,7 +1026,8 @@ static ssize_t mpegts_read_buf(u8 ch_num, struct ts_param_descr *param_descr)
 
 	_r_buf(&s_ctx->ch_info[ch_num]);
 
-	MP2TS_DBG("read_buf : cnt = %d\n", s_ctx->ch_info[ch_num].cnt);
+	MP2TS_DBG("read_buf : cnt = %d\n",
+			atomic_read(&s_ctx->ch_info[ch_num].cnt));
 
 	return want_size;
 }
@@ -1021,7 +1048,8 @@ static ssize_t mpegts_write_buf(u8 ch_num, struct ts_param_descr *param_descr)
 			ret = interruptible_sleep_on_timeout(&s_ctx->ch_info[ch_num].wait, wait_time);
 			if (ret == 0)
 			{
-				MP2TS_DBG("time out : cnt = %d\n", s_ctx->ch_info[ch_num].cnt);
+				MP2TS_DBG("time out : cnt = %d\n",
+				atomic_read(&s_ctx->ch_info[ch_num].cnt));
 			}
 
 			if( !_w_able(&s_ctx->ch_info[ch_num]) )
@@ -1033,11 +1061,14 @@ static ssize_t mpegts_write_buf(u8 ch_num, struct ts_param_descr *param_descr)
 		}
 	}
 
-	temp_size = (s_ctx->ch_info[ch_num].cnt * s_ctx->ch_info[ch_num].alloc_align);
+	temp_size = (atomic_read(&s_ctx->ch_info[ch_num].cnt)
+			* s_ctx->ch_info[ch_num].alloc_align);
 	if (want_size > temp_size)
 		want_size = temp_size;
 
-	dst_addr = s_ctx->ch_info[ch_num].dma_virt + (s_ctx->ch_info[ch_num].alloc_align * s_ctx->ch_info[ch_num].w_pos);
+	dst_addr = s_ctx->ch_info[ch_num].dma_virt +
+		(s_ctx->ch_info[ch_num].alloc_align *
+		 atomic_read(&s_ctx->ch_info[ch_num].w_pos));
 	if (copy_from_user((void *)dst_addr, (const void *)buf, want_size))
 	{
 		return -ETS_FAULT;
@@ -1102,9 +1133,9 @@ static long mpegts_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             temp_chnum = ch_num;
 repeat_init:
 //            s_ctx->ch_info[temp_chnum].tx_mode  = ts_op.tx_mode;
-            s_ctx->ch_info[temp_chnum].cnt      = 0;
-            s_ctx->ch_info[temp_chnum].w_pos    = 0;
-            s_ctx->ch_info[temp_chnum].r_pos    = 0;
+	    atomic_set(&s_ctx->ch_info[temp_chnum].cnt, 0);
+	    atomic_set(&s_ctx->ch_info[temp_chnum].w_pos, 0);
+	    atomic_set(&s_ctx->ch_info[temp_chnum].r_pos, 0);
 
             if (temp_chnum == NXP_MP2TS_ID_CORE)
             {
@@ -1202,7 +1233,7 @@ repeat_init:
                 _deinit_buf(ch_num, s_ctx);
 
                 s_ctx->ch_info[ch_num].is_malloced  = 0;
-                
+
                 ret = 0;
             }
             break;
@@ -1521,7 +1552,8 @@ static irqreturn_t mpegts_irq(int irq, void *param)
             }
 
             _w_buf(&ctx->ch_info[NXP_IDMA_DST]);
-            temp = (ctx->ch_info[NXP_IDMA_DST].alloc_align * ctx->ch_info[NXP_IDMA_DST].w_pos);
+	    temp = (ctx->ch_info[NXP_IDMA_DST].alloc_align *
+			   atomic_read(&ctx->ch_info[NXP_IDMA_DST].w_pos));
             NX_MPEGTSI_SetIDMABaseAddr(NXP_IDMA_DST, (u32)(ctx->ch_info[NXP_IDMA_DST].dma_phy + temp) );
             NX_MPEGTSI_SetIDMALength(NXP_IDMA_DST, ctx->ch_info[NXP_IDMA_DST].page_size);
 
@@ -1540,7 +1572,8 @@ static irqreturn_t mpegts_irq(int irq, void *param)
 
             ctx->ch_info[NXP_IDMA_SRC].is_first = 0;
 
-            temp = (ctx->ch_info[NXP_IDMA_SRC].alloc_align * ctx->ch_info[NXP_IDMA_SRC].r_pos);
+	    temp = (ctx->ch_info[NXP_IDMA_SRC].alloc_align *
+			    atomc_read(&ctx->ch_info[NXP_IDMA_SRC].r_pos));
             _r_buf(&ctx->ch_info[NXP_IDMA_SRC]);
 
             NX_MPEGTSI_SetIDMABaseAddr(NXP_IDMA_SRC, (u32)(ctx->ch_info[NXP_IDMA_SRC].dma_phy + temp) );
@@ -1568,7 +1601,8 @@ static irqreturn_t mpegts_irq(int irq, void *param)
         ctx->ch_info[NXP_IDMA_CH0].is_first = 0;
 
         _w_buf(&ctx->ch_info[NXP_IDMA_CH0]);
-        temp = (ctx->ch_info[NXP_IDMA_CH0].alloc_align * ctx->ch_info[NXP_IDMA_CH0].w_pos);
+	temp = (ctx->ch_info[NXP_IDMA_CH0].alloc_align *
+		atomic_read(&ctx->ch_info[NXP_IDMA_CH0].w_pos));
 
         NX_MPEGTSI_SetIDMABaseAddr(NXP_IDMA_CH0, (u32)(ctx->ch_info[NXP_IDMA_CH0].dma_phy + temp) );
         NX_MPEGTSI_SetIDMALength(NXP_IDMA_CH0, ctx->ch_info[NXP_IDMA_CH0].page_size);
@@ -1590,7 +1624,8 @@ static irqreturn_t mpegts_irq(int irq, void *param)
                 goto exit_mpegts_irq;
             }
 
-            temp = (ctx->ch_info[NXP_IDMA_CH1].alloc_align * ctx->ch_info[NXP_IDMA_CH1].r_pos);
+	    temp = (ctx->ch_info[NXP_IDMA_CH1].alloc_align
+			    * atomic_read(&ctx->ch_info[NXP_IDMA_CH1].r_pos));
             _r_buf(&ctx->ch_info[NXP_IDMA_CH1]);
         }
         else
@@ -1603,7 +1638,8 @@ static irqreturn_t mpegts_irq(int irq, void *param)
             }
 
             _w_buf(&ctx->ch_info[NXP_IDMA_CH1]);
-            temp = (ctx->ch_info[NXP_IDMA_CH1].alloc_align * ctx->ch_info[NXP_IDMA_CH1].w_pos);
+		temp = (ctx->ch_info[NXP_IDMA_CH1].alloc_align *
+			    atomic_read(&ctx->ch_info[NXP_IDMA_CH1].w_pos));
         }
 
         ctx->ch_info[NXP_IDMA_CH1].is_first = 0;
@@ -1629,9 +1665,38 @@ static void mpegts_capture0_dma_irq(void *arg)
 		wake_up(&ctx->ch_info[NXP_IDMA_CH0].wait);
 }
 
+#if defined(CONFIG_NXP_MP2TS_WRITE_LOG)
+static u64 write_time_msec;
+#endif
 static void mpegts_capture1_dma_irq(void *arg)
 {
 	struct ts_drv_context *ctx = arg;
+
+#if defined(CONFIG_NXP_MP2TS_WRITE_LOG)
+	u64 s_time, e_time;
+	u32 a_time;
+	u64 event_time;
+	u64 *isr_time = NULL;
+	u32 arising_time;
+
+	long long t, dt;
+
+	t = get_clock(TYPE_MICRO);
+
+	s_time = get_jiffies_64();
+
+	if (write_time_msec == 0)
+		write_time_msec = s_time;
+
+	event_time = get_clock(TYPE_MILLI);
+
+	isr_time = &ctx->ch_info[NXP_IDMA_CH1].write_isr_event_last_time;
+
+	if (*isr_time == 0)
+		*isr_time = event_time;
+
+#endif
+
 
 	if (ctx->ch_info[NXP_IDMA_CH1].tx_mode)
 		_r_buf(&ctx->ch_info[NXP_IDMA_CH1]);
@@ -1640,6 +1705,45 @@ static void mpegts_capture1_dma_irq(void *arg)
 
 	if (ctx->ch_info[NXP_IDMA_CH1].wait_time)
 		wake_up(&ctx->ch_info[NXP_IDMA_CH1].wait);
+
+
+#if defined(CONFIG_NXP_MP2TS_WRITE_LOG)
+	int index = 0;
+	u32 src_addr = (ctx->ch_info[NXP_IDMA_CH1].dma_virt +
+			(ctx->ch_info[NXP_IDMA_CH1].alloc_align *
+			 atomic_read(&ctx->ch_info[NXP_IDMA_CH1].w_pos)));
+	index = check_ts((unsigned char *)src_addr,
+				ctx->ch_info[NXP_IDMA_CH1].page_size,
+				TS_PACKET_SIZE);
+	if (index) {
+		pr_err("[WRITE] w_pos : %d, buf count : %d\n",
+			atomic_read(&ctx->ch_info[NXP_IDMA_CH1].w_pos),
+			atomic_read(&ctx->ch_info[NXP_IDMA_CH1].cnt));
+	}
+
+	arising_time = event_time - *isr_time;
+		ctx->ch_info[NXP_IDMA_CH1].write_isr_event_time = arising_time;
+
+	if (ctx->ch_info[NXP_IDMA_CH1].write_isr_event_time >=
+			DEFAULT_WAIT_READ_TIME) {
+		pr_debug("[WRITE] - isr event time : %d\n",
+			ctx->ch_info[NXP_IDMA_CH1].write_isr_event_time);
+		pr_debug("[WRITE] w_pos : %d\n", atomic_read(
+					&ctx->ch_info[NXP_IDMA_CH1].w_pos));
+	}
+
+	*isr_time = event_time;
+
+	e_time = get_jiffies_64();
+	dt = get_clock(TYPE_MICRO) - t;
+
+	a_time = s_time - write_time_msec;
+
+	pr_debug("arising time: %d mili, processing time : %lld micro\n",
+			a_time, dt);
+
+	write_time_msec = s_time;
+#endif
 }
 
 static void mpegts_core_input_dma_irq(void *arg)
@@ -1802,6 +1906,8 @@ int ts_initialize(
 		return -1;
 	}
 
+	check_ts_reset();
+
 	return ret;
 }
 EXPORT_SYMBOL(ts_initialize);
@@ -1838,9 +1944,9 @@ int ts_start(struct ts_op_mode *ts_op)
 
 	temp_chnum = ch_num;
 re_init:
-	s_ctx->ch_info[temp_chnum].cnt      = 0;
-	s_ctx->ch_info[temp_chnum].w_pos    = 0;
-	s_ctx->ch_info[temp_chnum].r_pos    = 0;
+	atomic_set(&s_ctx->ch_info[temp_chnum].cnt, 0);
+	atomic_set(&s_ctx->ch_info[temp_chnum].w_pos, 0);
+	atomic_set(&s_ctx->ch_info[temp_chnum].r_pos, 0);
 
 	if (temp_chnum == NXP_MP2TS_ID_CORE) {
 		temp_chnum++;
@@ -1873,7 +1979,6 @@ void ts_stop(U8 ch_num)
 	}
 }
 EXPORT_SYMBOL(ts_stop);
-
 
 int ts_read(struct ts_param_descr *param_desc)
 {

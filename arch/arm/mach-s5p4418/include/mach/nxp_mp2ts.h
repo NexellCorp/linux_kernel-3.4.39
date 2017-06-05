@@ -96,7 +96,6 @@ enum {
     NXP_MP2TS_PARAM_TYPE_BUF,   /* Read Buffer only */
 };
 
-
 /*------------------------------------------------------------------------------
  * MPEG TS Structs
  */
@@ -172,6 +171,7 @@ struct ts_channel_info {
     int                 is_running;
     int                 is_malloced;
     int                 is_first;
+
     int                 do_continue;
 
     int                 wait_time;
@@ -182,11 +182,16 @@ struct ts_channel_info {
     dma_addr_t          dma_phy;
     unsigned int        alloc_size;
     unsigned int        alloc_align;
-    int                 cnt;
-    int                 w_pos;
-    int                 r_pos;
+
     int                 page_size;
     int                 page_num;
+
+	atomic_t cnt;
+	atomic_t w_pos;
+	atomic_t r_pos;
+
+	u64 write_isr_event_last_time;
+	u32 write_isr_event_time;
 
     wait_queue_head_t   wait; // read, write wait
 };

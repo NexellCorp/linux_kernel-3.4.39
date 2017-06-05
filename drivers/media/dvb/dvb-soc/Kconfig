@@ -5,6 +5,16 @@ menuconfig NXP_MP2TS_IF
 	---help---
       	  Say Y to select nxp mp2ts driver
 
+config NXP_MP2TS_WRITE_LOG
+	tristate "Enable logging for the write buffer"
+	depends on NXP_MP2TS_IF
+	help
+	  Supports logging of write buffer of MP2TS driver.
+          This option is a log that checks the time interval at which
+          the mp2ts interrupt occurs.
+
+	  Say Y if you want to use it.
+
 config NXP_MP2TS_IF_FCI
 	tristate "Select fc8300 sensor of FCI"
 	depends on NXP_MP2TS_IF
