@@ -131,7 +131,7 @@ int tsif_read(u8 ch_num, void *buf, int count)
 	param_desc.info.un.bits.type    = NXP_MP2TS_PARAM_TYPE_BUF;
 	param_desc.buf_size             = alloc_size;
 	param_desc.read_count           = read_count;
-	param_desc.wait_time            = 0;
+	param_desc.wait_time            = 15;
 	param_desc.buf                  = (void *)buf;
 
 	if (ts_read(&param_desc) < 0) {

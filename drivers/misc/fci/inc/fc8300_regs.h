@@ -63,8 +63,8 @@ extern "C" {
 
 /* #define BBM_TSIF_CLK_ARBITRARY */
 #define BBM_TSIF_CLK                48000 /* Up to 48M */
-//#define BBM_TSIF_CLK                32000
-/* #define BBM_TSIF_CLK                26000 */
+/*	#define BBM_TSIF_CLK                32000	*/
+/*	#define BBM_TSIF_CLK                26000	*/
 
 #if (BBM_BAND_WIDTH == 6)
 #define BBM_TARGET_CLK  97523
@@ -402,7 +402,12 @@ extern "C" {
 
 	/*  BUFFER CONFIGURATION */
 #define TS0_BUF_START               (0x0000)
+
+#if !defined(CONFIG_NXP_MP2TS_IF)
 #define TS0_BUF_LENGTH              (188 * 320) /* 188 x 640 */
+#else
+#define TS0_BUF_LENGTH              (188 * 160) /* 188 x 640 */
+#endif
 #define TS0_BUF_END                 (TS0_BUF_START + TS0_BUF_LENGTH - 1)
 #define TS0_BUF_THR                 (TS0_BUF_LENGTH / 2 - 1)
 
