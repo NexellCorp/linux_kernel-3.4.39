@@ -58,7 +58,17 @@
 #define MP2TS_DBG(args...) do{}while(0)
 #endif
 
+#define ENABLE_OVERRUN		0
+#define CHECK_OVERRUN_LOG	1
+#define CHECK_UNDERRUN_LOG	1
+
+#define CHECK_READ_WRITE_LOG	0
+
 #define DEFAULT_WAIT_READ_TIME	14 /* mili sec */
+
+#if ENABLE_OVERRUN
+#define CHECK_OVERRUN_COUNT	3000
+#endif
 
 #define ALLOC_ALIGN(size)   ALIGN(size, 16)
 
@@ -149,23 +159,109 @@ static inline int _rw_able(struct ts_channel_info *buf)
 	return 0;
 }
 
+
+#if CHECK_OVERRUN_LOG
+static bool b_overrun;
+static bool b_restore_overrun_log;
+#endif
 static inline void _w_buf(struct ts_channel_info *buf)
 {
+
+#if CHECK_READ_WRITE_LOG
+	pr_info("%s - w_pos : %d, buf count : %d\n", __func__,
+			atomic_read(&buf->w_pos),
+			atomic_read(&buf->cnt));
+#endif
+
 	if (atomic_read(&buf->cnt) < buf->page_num) {
+		atomic_set(&buf->w_pos, (atomic_read(&buf->w_pos) + 1)
+				% buf->page_num);
 		atomic_inc(&buf->cnt);
+
+
+#if CHECK_OVERRUN_LOG
+		if (b_overrun) {
+			b_overrun = false;
+			b_restore_overrun_log = true;
+			pr_info("%s - Overrun has been restored!\n", __func__);
+		}
+
+#endif
+	} else {
+#if CHECK_OVERRUN_LOG
+		/*	OVERRUN CHECK	*/
+		b_overrun = true;
+		pr_info("%s : arised overrun!!. w pos : %d, count : %d\n",
+				__func__,
+				atomic_read(&buf->w_pos),
+				atomic_read(&buf->cnt));
+#endif
+		atomic_set(&buf->cnt, 1);
+		atomic_set(&buf->r_pos, atomic_read(&buf->w_pos));
 		atomic_set(&buf->w_pos, (atomic_read(&buf->w_pos) + 1)
 				% buf->page_num);
 	}
 }
 
-static inline void _r_buf(struct ts_channel_info *buf)
+static inline int _r_buf(struct ts_channel_info *buf)
 {
-	if (atomic_read(&buf->cnt)) {
+	int ret;
+	atomic_t r_pos;
+
+#if ENABLE_OVERRUN
+	static uint32_t e_count;
+#endif
+
+#if CHECK_READ_WRITE_LOG
+	pr_info("%s - r_pos : %d, count : %d\n\n",
+			__func__,
+			atomic_read(&buf->r_pos),
+			atomic_read(&buf->cnt));
+#endif
+
+#if CHECK_OVERRUN_LOG
+	if (b_restore_overrun_log) {
+		b_restore_overrun_log = false;
+		pr_info("%s - r_pos : %d, count : %d\n\n",
+			__func__,
+			atomic_read(&buf->r_pos),
+			atomic_read(&buf->cnt));
+	}
+#endif
+
+#if ENABLE_OVERRUN
+	if (!(e_count++ % CHECK_OVERRUN_COUNT)) {
+		pr_info("%s - read delay to generate overrun!!\n", __func__);
+		mdelay(200);
+	}
+#endif
+	atomic_set(&r_pos, -1);
+
+	if (atomic_read(&buf->cnt) > 0) {
+		atomic_set(&r_pos, atomic_read(&buf->r_pos));
+
 		atomic_dec(&buf->cnt);
 		atomic_set(&buf->r_pos, (atomic_read(&buf->r_pos) + 1)
 				% buf->page_num);
+	} else {
+
+#if CHECK_UNDERRUN_LOG
+		/*	UNDERRUN CHECK	*/
+		pr_info("%s : arised underrun!!. r pos : %d, count : %d\n",
+				__func__,
+				atomic_read(&buf->r_pos),
+				atomic_read(&buf->cnt));
+#endif
+		ret = interruptible_sleep_on_timeout(
+				&buf->wait, DEFAULT_WAIT_READ_TIME);
+		if (ret == 0)
+			pr_err("read time out!!\n");
+
+		if (!_r_able(buf))
+			return -ETS_READBUF;
 	}
 
+	return (int)atomic_read(&r_pos);
 }
 
 static inline int _init_dma(u8 ch_num, struct ts_drv_context *ctx)
@@ -1694,9 +1790,7 @@ static void mpegts_capture1_dma_irq(void *arg)
 
 	if (*isr_time == 0)
 		*isr_time = event_time;
-
 #endif
-
 
 	if (ctx->ch_info[NXP_IDMA_CH1].tx_mode)
 		_r_buf(&ctx->ch_info[NXP_IDMA_CH1]);
@@ -1726,9 +1820,9 @@ static void mpegts_capture1_dma_irq(void *arg)
 
 	if (ctx->ch_info[NXP_IDMA_CH1].write_isr_event_time >=
 			DEFAULT_WAIT_READ_TIME) {
-		pr_debug("[WRITE] - isr event time : %d\n",
+		pr_info("[WRITE] - isr event time : %d\n",
 			ctx->ch_info[NXP_IDMA_CH1].write_isr_event_time);
-		pr_debug("[WRITE] w_pos : %d\n", atomic_read(
+		pr_info("[WRITE] w_pos : %d\n", atomic_read(
 					&ctx->ch_info[NXP_IDMA_CH1].w_pos));
 	}
 
@@ -1739,7 +1833,7 @@ static void mpegts_capture1_dma_irq(void *arg)
 
 	a_time = s_time - write_time_msec;
 
-	pr_debug("arising time: %d mili, processing time : %lld micro\n",
+	pr_info("arising time: %d mili, processing time : %lld micro\n",
 			a_time, dt);
 
 	write_time_msec = s_time;
