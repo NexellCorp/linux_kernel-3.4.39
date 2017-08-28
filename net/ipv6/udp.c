@@ -103,7 +103,7 @@ int udp_v6_get_port(struct sock *sk, unsigned short snum)
 {
 	unsigned int hash2_nulladdr =
 		udp6_portaddr_hash(sock_net(sk), &in6addr_any, snum);
-	unsigned int hash2_partial = 
+	unsigned int hash2_partial =
 		udp6_portaddr_hash(sock_net(sk), &inet6_sk(sk)->rcv_saddr, 0);
 
 	/* precompute partial secondary hash */
@@ -1087,6 +1087,7 @@ do_udp_sendmsg:
 		fl6.flowi6_oif = np->sticky_pktinfo.ipi6_ifindex;
 
 	fl6.flowi6_mark = sk->sk_mark;
+	fl6.flowi6_uid = sock_i_uid(sk);
 
 	if (msg->msg_controllen) {
 		opt = &opt_space;
