@@ -748,6 +748,24 @@ static struct platform_device i2c_device_ch7 = {
     },
 };
 
+/* gpio i2c 8 */
+#define I2C8_SCL	(PAD_GPIO_C + 29)
+#define I2C8_SDA	(PAD_GPIO_C + 30)
+static struct i2c_gpio_platform_data nxp_i2c_gpio_port8 = {
+	.sda_pin	= I2C8_SDA,
+	.scl_pin	= I2C8_SCL,
+    .udelay     = I2CUDELAY(CFG_I2C8_CLK),              /* Gpio_mode CLK Rate = 1/(udelay*2) * 1000000 */
+	.timeout	= 10,
+};
+
+static struct platform_device i2c_device_ch8 = {
+	.name	= "i2c-gpio",
+	.id		= 8,
+	.dev	= {
+		.platform_data = &nxp_i2c_gpio_port8,
+	},
+};
+
 static struct platform_device *i2c_devices[] = {
 	&i2c_device_ch3,
 #if defined (CONFIG_PLAT_S5P4418_DC_NAP)	
@@ -755,6 +773,7 @@ static struct platform_device *i2c_devices[] = {
 	&i2c_device_ch5,
 	&i2c_device_ch6,
 	&i2c_device_ch7,
+	&i2c_device_ch8,
 #endif
 };
 #endif /* CONFIG_I2C_NXP */
