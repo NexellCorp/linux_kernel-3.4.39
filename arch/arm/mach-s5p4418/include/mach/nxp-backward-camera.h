@@ -69,6 +69,11 @@ struct nxp_backward_camera_platform_data {
 	u32 height;
 	u32 rgb_addr;
 
+	u32 crop_left;
+	u32 crop_top;
+	u32 crop_width;
+	u32 crop_height;
+
 	void (*draw_rgb_overlay)(struct nxp_backward_camera_platform_data *,
 				 void *, void *);
 };

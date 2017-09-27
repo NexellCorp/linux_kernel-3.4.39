@@ -2209,6 +2209,11 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
 	.height             = 600,
 	.rgb_addr           = 0,
 
+	.crop_left	= 0,
+	.crop_top	= 0,
+	.crop_width	= 1280,
+	.crop_height	= 720,
+
 	.draw_rgb_overlay   = _draw_rgb_overlay,
 };
 #endif

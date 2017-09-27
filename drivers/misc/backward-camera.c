@@ -815,10 +815,39 @@ static void _mlc_video_set_param(int module,
 	int srcw = param->h_active;
 	int srch = param->v_active;
 	int dstw, dsth, hf, vf;
+	int c_w = 0, c_h = 0;
 
 	NX_MLC_GetScreenSize(module, &dstw, &dsth);
 
 	hf = 1, vf = 1;
+
+	pr_debug("%s - srcw : %d, srch : %d, dstw : %d, dsth : %d\n",
+			__func__, srcw, srch, dstw, dsth);
+	pr_debug("%s - crop_left : %d, crop_top : %d\n",
+			__func__, param->crop_left, param->crop_top);
+	pr_debug("%s - crop_width : %d, crop_height : %d\n",
+			__func__, param->crop_width, param->crop_height);
+
+	if (param->crop_width > 0) {
+		c_w = srcw - param->crop_width;
+		if (c_w > 0)
+			srcw -= c_w;
+	}
+
+	if (param->crop_left > 0)
+		srcw -= param->crop_left;
+
+	if (param->crop_height > 0) {
+		c_h = srch - param->crop_height;
+		if (c_h > 0)
+			srch -= c_h;
+	}
+
+	if (param->crop_top > 0)
+		srch -= param->crop_top;
+
+	pr_debug("%s - srcw : %d, srch : %d\n",
+			__func__, srcw, srch);
 
 	if (srcw == dstw && srch == dsth)
 		hf = 0, vf = 0;
@@ -837,8 +866,17 @@ static void _mlc_video_set_param(int module,
 }
 
 static void _mlc_video_set_addr(int module, u32 lu_a, u32 cb_a, u32 cr_a,
-				u32 lu_s, u32 cb_s, u32 cr_s)
+				u32 lu_s, u32 cb_s, u32 cr_s, u32 crop_left,
+				u32 crop_top)
 {
+	debug_msg("%s - crop_left : %d\n", __func__, crop_left);
+
+	if (crop_left > 0 || crop_top > 0) {
+		lu_a += (crop_top * lu_s) + (crop_left);
+		cb_a += ((crop_top >> 1) * cb_s) + (crop_left >> 1);
+		cr_a += ((crop_top >> 1) * cr_s) + (crop_left >> 1);
+	}
+
 	NX_MLC_SetVideoLayerStride(module, lu_s, cb_s, cr_s);
 	NX_MLC_SetVideoLayerAddress(module, lu_a, cb_a, cr_a);
 	NX_MLC_SetVideoLayerLineBufferPowerMode(module, CTRUE);
@@ -993,6 +1031,7 @@ static void _turn_on(struct nxp_backward_camera_context *me)
 	if (me->is_first == true) {
 		if (!me->plat_data->use_deinterlacer &&
 				 !me->plat_data->multi_buffer) {
+
 			_mlc_video_set_param(me->plat_data->mlc_module_num,
 					     me->plat_data);
 			_mlc_video_set_addr(me->plat_data->mlc_module_num,
@@ -1001,7 +1040,10 @@ static void _turn_on(struct nxp_backward_camera_context *me)
 					    me->plat_data->cr_addr,
 					    me->plat_data->lu_stride,
 					    me->plat_data->cb_stride,
-					    me->plat_data->cr_stride);
+					    me->plat_data->cr_stride,
+					    me->plat_data->crop_left,
+					    me->plat_data->crop_top
+					    );
 
 			_mlc_rgb_overlay_set_param(
 				me->plat_data->mlc_module_num, me->plat_data);
@@ -1728,7 +1770,10 @@ static void _display_callback(void *data)
 				    buf->cr_addr,
 				    buf->lu_stride,
 				    buf->cb_stride,
-				    buf->cr_stride);
+				    buf->cr_stride,
+					me->plat_data->crop_left,
+					me->plat_data->crop_top
+				    );
 
 		if (!me->mlc_on_first) {
 			_mlc_rgb_overlay_set_param(
@@ -1784,10 +1829,23 @@ static void _display_callback(void *data)
 				    buf->cr_addr,
 				    buf->lu_stride,
 				    buf->cb_stride,
-				    buf->cr_stride);
+				    buf->cr_stride,
+					me->plat_data->crop_left,
+					me->plat_data->crop_top
+				    );
+
+		if (!me->mlc_on_first) {
+			_mlc_rgb_overlay_set_param(
+				me->plat_data->mlc_module_num, me->plat_data);
+			_mlc_rgb_overlay_draw(
+				me->plat_data->mlc_module_num, me->plat_data,
+				me->virt_rgb);
+			me->mlc_on_first = true;
+		}
 
 		if (!me->is_mlc_on) {
 			_mlc_video_run(me->plat_data->mlc_module_num);
+			_mlc_overlay_run(me->plat_data->mlc_module_num);
 			me->is_mlc_on = true;
 		}
 
@@ -2766,7 +2824,10 @@ static void _resume_work(struct work_struct *work)
 				 cb_addr, cr_addr);
 		_mlc_video_set_param(mlc_module_num, me->plat_data);
 		_mlc_video_set_addr(mlc_module_num, lu_addr, cb_addr, cr_addr,
-				    lu_stride, cb_stride, cr_stride);
+				    lu_stride, cb_stride, cr_stride,
+					me->plat_data->crop_left,
+					me->plat_data->crop_top
+				    );
 
 		_mlc_rgb_overlay_set_param(mlc_module_num, me->plat_data);
 		_mlc_rgb_overlay_draw(mlc_module_num, me->plat_data,
