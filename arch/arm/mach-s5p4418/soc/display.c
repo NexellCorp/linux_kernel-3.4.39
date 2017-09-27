@@ -1605,11 +1605,11 @@ void nxp_soc_disp_video_set_address(int module, unsigned int lu_a,
 			lu_a += (pvid->src_crop_top * lu_s) +
 				(pvid->src_crop_left << 1);
 		} else {
-			lu_a += (pvid->src_crop_top * lu_s) +
+			lu_a += (pvid->src_crop_top  * lu_s) +
 				pvid->src_crop_left;
-			cb_a += (pvid->src_crop_top * cb_s) +
+			cb_a += ((pvid->src_crop_top >> 1) * cb_s) +
 				(pvid->src_crop_left >> 1);
-			cr_a += (pvid->src_crop_top * cr_s) +
+			cr_a += ((pvid->src_crop_top >> 1) * cr_s) +
 				(pvid->src_crop_left >> 1);
 		}
 	}
@@ -1722,15 +1722,24 @@ void nxp_soc_disp_video_set_crop(int module, bool enable, int left, int top,
 		int dsth = pvid->bottom - pvid->top;
 		int hf = 1, vf = 1;
 
-		if (dstw == 0)
-			dstw = pvid->width;
-		if (dsth == 0)
-			dsth = pvid->height;
+		dstw = pvid->width;
+		dsth = pvid->height;
 
 		pr_info("%s: %s, L=%d, T=%d, W=%d, H=%d,",
 			__func__, pvid->name, left, top, width, height);
 		pr_info(" dstw=%d, dsth=%d, wait=%d\n",
 			dstw, dsth, waitvsync);
+
+		pvid->src_crop_left  = left;
+		pvid->src_crop_top   = top;
+		pvid->src_crop_width = width;
+		pvid->src_crop_height = height;
+
+		if (left > 0)
+			srcw -= left;
+
+		if (top > 0)
+			srch -= top;
 
 		if (srcw == dstw && srch == dsth)
 			hf = 0, vf = 0;
