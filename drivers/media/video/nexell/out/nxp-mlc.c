@@ -229,12 +229,16 @@ static void _hw_configure_rgb(struct nxp_mlc *me)
 
 static void _hw_configure_video(struct nxp_mlc *me)
 {
+    unsigned int f;
+    int d_w, d_h, px_byte;
     int id = me->id;
     struct nxp_mlc_vid_attr *attr = &me->vid_attr;
 
-    nxp_soc_disp_video_set_format(id,
-            _convert_v4l2_to_nxp_format(attr->format.code),
-            attr->format.width, attr->format.height);
+    nxp_soc_disp_rgb_get_format(id, nxp_soc_disp_rgb_get_fblayer(id), &f,
+            &d_w, &d_h, &px_byte);
+    if (d_w == 0 && d_h == 0)
+        nxp_soc_disp_video_set_format(id,
+                _convert_v4l2_to_nxp_format(attr->format.code), d_w, d_h);
 
     // psw0523 debugging
     printk("%s %d: fw(%d), fh(%d), crop(%d:%d:%d:%d), priority(%d), format(0x%x)\n",
@@ -1076,8 +1080,13 @@ static int nxp_mlc_get_crop(struct v4l2_subdev *sd,
 static int nxp_mlc_set_crop(struct v4l2_subdev *sd,
         struct v4l2_subdev_fh *fh, struct v4l2_subdev_crop *crop)
 {
+    unsigned int f;
+    int d_w, d_h, px_byte;
     struct nxp_mlc *me = v4l2_get_subdevdata(sd);
     struct v4l2_rect *_crop = _get_pad_crop(me, fh, crop->pad, crop->which);
+    int id = me->id;
+    struct nxp_mlc_vid_attr *attr = &me->vid_attr;
+
     if (!_crop) {
         pr_err("%s: can't get pad crop\n", __func__);
         return -EINVAL;
@@ -1087,6 +1096,11 @@ static int nxp_mlc_set_crop(struct v4l2_subdev *sd,
             crop->rect.left, crop->rect.top, crop->rect.width, crop->rect.height);
     *_crop = crop->rect;
 
+    nxp_soc_disp_rgb_get_format(id, nxp_soc_disp_rgb_get_fblayer(id), &f,
+        &d_w, &d_h, &px_byte);
+    nxp_soc_disp_video_set_format(id,
+        _convert_v4l2_to_nxp_format(attr->format.code), d_w, d_h);
+
     /* psw0523 add for runtime video layer config */
     if (crop->pad == NXP_MLC_PAD_SINK_VIDEO && me->vid_enabled) {
         if (_crop->width > 0 && _crop->height > 0)
@@ -1095,7 +1109,12 @@ static int nxp_mlc_set_crop(struct v4l2_subdev *sd,
                     _crop->left + _crop->width, /* right */
                     _crop->top + _crop->height, /* bottom */
                     true); /* waitsync */
-    } else if (crop->pad == NXP_MLC_PAD_SOURCE && me->vid_enabled) {
+    } else if (crop->pad == NXP_MLC_PAD_SOURCE) {
+        attr->source_crop.left	= crop->rect.left;
+        attr->source_crop.top	= crop->rect.top;
+        attr->source_crop.width = crop->rect.width;
+        attr->source_crop.height = crop->rect.height;
+
         if (_crop->width > 0 && _crop->height > 0) {
             printk("%s: source crop(%d:%d-%d:%d)\n", __func__, _crop->left, _crop->top, _crop->width, _crop->height);
             nxp_soc_disp_video_set_crop(me->id, true, _crop->left, _crop->top, _crop->width, _crop->height, true);
