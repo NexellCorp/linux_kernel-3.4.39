@@ -1401,10 +1401,11 @@ void nxp_soc_disp_rgb_set_address(int module, int layer, unsigned int phyaddr,
 	if (prgb->clipped) {
 		int xoff = prgb->left * pixelbyte;
 		int yoff = prgb->top * (prgb->width * prgb->pixelbyte);
+
 		phyaddr += (xoff + yoff);
-		stride = (prgb->width - prgb->left) * prgb->pixelbyte;
+
 		NX_MLC_SetPosition(module, layer,
-		prgb->pos_x, prgb->pos_x, prgb->right-1, prgb->bottom-1);
+		prgb->pos_x, prgb->pos_y, prgb->right-1, prgb->bottom-1);
 	}
 
 	prgb->address = phyaddr;
