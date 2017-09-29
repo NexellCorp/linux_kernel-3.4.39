@@ -216,12 +216,23 @@ static void _hw_configure_rgb(struct nxp_mlc *me)
             _get_pixel_byte(attr->format.code));
 
     nxp_soc_disp_set_bg_color(id, 0x00000000);
-    nxp_soc_disp_rgb_set_position(id, layer, 0, 0, false);
+	nxp_soc_disp_rgb_set_position(
+		   id,
+		   layer,
+		   attr->crop.left,
+		   attr->crop.top,
+		   false);
 
     // psw0523 debugging
     printk("%s %d crop(%d:%d:%d:%d)\n",
             __func__, id, attr->crop.left, attr->crop.top, attr->crop.width, attr->crop.height);
-    nxp_soc_disp_rgb_set_clipping(id, layer, attr->crop.left, attr->crop.top, attr->crop.width, attr->crop.height);
+	nxp_soc_disp_rgb_set_clipping(
+		   id,
+		   layer,
+		   0,
+		   0,
+		   attr->crop.width,
+		   attr->crop.height);
 
     /* layer enable */
     _hw_rgb_enable(me, true);
@@ -1123,6 +1134,7 @@ static int nxp_mlc_set_crop(struct v4l2_subdev *sd,
             nxp_soc_disp_video_set_crop(me->id, false, 0, 0, 0, 0, true);
         }
     }
+
     return 0;
 }
 
