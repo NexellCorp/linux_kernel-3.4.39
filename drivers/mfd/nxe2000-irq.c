@@ -317,81 +317,6 @@ static int nxe2000_irq_set_wake(struct irq_data *irq_data, unsigned int on)
 #define nxe2000_irq_set_wake NULL
 #endif
 
-static void nxe2000_dcdc_int_work(struct work_struct *work)
-{
-	struct nxe2000 *nxe2000 = container_of(work, struct nxe2000, dcdc_int_work.work);
-	int ret = 0;
-
-	printk(KERN_ERR "## DCDC Interrupt Flag Register(0x%x) clear. \n", NXE2000_INT_IR_DCDC);
-	ret = nxe2000_write(nxe2000->dev, NXE2000_INT_IR_DCDC, 0x00);
-	if (ret < 0) {
-		dev_err(nxe2000->dev, "Error in write reg 0x%02x error: %d\n", NXE2000_INT_IR_DCDC, ret);
-	}
-	ret = nxe2000_write(nxe2000->dev,NXE2000_INT_EN_DCDC, 0x03);
-
-	return;
-}
-
-static irqreturn_t nxe2000_dcdc2_lim_isr(int irq, void *data)
-{
-	struct nxe2000 *nxe2000 = data;
-	u8 value;
-	int ret;
-
-	ret = nxe2000_read(nxe2000->dev, NXE2000_REG_DC2CTL2, &value);
-	value =	0x3 & (value >> NXE2000_POS_DCxCTL2_DCxLIM);
-
-	switch(value)
-	{
-		case 0: 
-			printk(KERN_ERR "##\e[31m The current limit detection of DCDC2(No Limit). \e[0m \n");
-			break;
-		
-		case 1: 
-			printk(KERN_ERR "##\e[31m The current limit detection of DCDC2(3.2A). \e[0m \n");
-			break;
-
-		case 2: 
-			printk(KERN_ERR "##\e[31m The current limit detection of DCDC2(3.7A). \e[0m \n");
-			break;
-
-		case 3: 
-			printk(KERN_ERR "##\e[31m The current limit detection of DCDC2(4A). \e[0m \n");
-			break;
-	}
-	return IRQ_HANDLED;
-}
-static irqreturn_t nxe2000_dcdc1_lim_isr(int irq, void *data)
-{
-	struct nxe2000 *nxe2000 = data;
-	u8 value;
-	int ret;
-
-	ret = nxe2000_read(nxe2000->dev, NXE2000_REG_DC1CTL2, &value);
-	value =	0x3 & (value >> NXE2000_POS_DCxCTL2_DCxLIM);
-
-	switch(value)
-	{
-		case 0: 
-			printk(KERN_ERR "##\e[31m The current limit detection of DCDC1(No Limit). \e[0m \n");
-			break;
-		
-		case 1: 
-			printk(KERN_ERR "##\e[31m The current limit detection of DCDC1(3.2A). \e[0m \n");
-			break;
-
-		case 2: 
-			printk(KERN_ERR "##\e[31m The current limit detection of DCDC1(3.7A). \e[0m \n");
-			break;
-
-		case 3: 
-			printk(KERN_ERR "##\e[31m The current limit detection of DCDC1(4A). \e[0m \n");
-			break;
-	}
-
-	return IRQ_HANDLED;
-}
-
 static irqreturn_t nxe2000_irq_isr(int irq, void *data)
 {
 	struct nxe2000 *nxe2000 = data;
@@ -460,16 +385,6 @@ static irqreturn_t nxe2000_irq_isr(int irq, void *data)
 			printk(KERN_ERR "## \e[31m%s\e[0m() WDG_INT \n", __func__);
 		}
 #endif
-		else if (main_int_type[i] & DCDC_INT) { /* Mask DCDC Interrupt */
-			// printk(KERN_ERR "## \e[31m %s\e[0m() DCDC_INT \n", __func__);
-			ret = nxe2000_write(nxe2000->dev, NXE2000_INT_EN_DCDC, 0x0);
-			if (ret < 0) {
-				dev_err(nxe2000->dev, "Error in writing reg 0x%02x "
-									"error: %d\n", NXE2000_INT_EN_DCDC, ret);
-			}
-			queue_delayed_work(nxe2000->workqueue, &nxe2000->dcdc_int_work, 
-							msecs_to_jiffies(1000));
-		}
 		else 
 		{
 			ret = nxe2000_write(nxe2000->dev, irq_clr_add[i], ~int_sts[i]);
@@ -639,18 +554,6 @@ int nxe2000_irq_init(struct nxe2000 *nxe2000)
 	ret = request_threaded_irq(nxe2000->chip_irq, NULL, nxe2000_irq_isr,
 			nxe2000->chip_irq_type|IRQF_DISABLED|IRQF_ONESHOT,
 						"nxe2000", nxe2000);
-
-	nxe2000->workqueue = create_singlethread_workqueue("nxe2000_dcdc_irq");
-	INIT_DELAYED_WORK_DEFERRABLE(&nxe2000->dcdc_int_work, nxe2000_dcdc_int_work);
-
-	ret = nxe2000_update(nxe2000->dev, NXE2000_REG_DC1CTL2, 0x06, 0x07);
-	ret = request_threaded_irq(nxe2000->irq_base + NXE2000_IRQ_DC1LIM,
-					NULL, nxe2000_dcdc1_lim_isr, IRQF_ONESHOT, "nxe2000_dc1lim", nxe2000);
-
-	ret = nxe2000_update(nxe2000->dev, NXE2000_REG_DC2CTL2, 0x06, 0x07);
-	ret = request_threaded_irq(nxe2000->irq_base + NXE2000_IRQ_DC2LIM,
-					NULL, nxe2000_dcdc2_lim_isr, IRQF_ONESHOT, "nxe2000_dc2lim", nxe2000);
-
 	if (ret < 0)
 		dev_err(nxe2000->dev, "Error in registering interrupt "
 				"error: %d\n", ret);

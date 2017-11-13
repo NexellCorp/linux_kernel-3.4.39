@@ -855,7 +855,6 @@ static int  __devexit nxe2000_i2c_remove(struct i2c_client *client)
 
 	nxe2000_remove_subdevs(nxe2000);
 
-	cancel_delayed_work(&nxe2000->dcdc_int_work);
 	flush_workqueue(nxe2000->workqueue);
 	destroy_workqueue(nxe2000->workqueue);
 
