@@ -686,8 +686,10 @@ static int nxp_mlc_s_power(struct v4l2_subdev *sd, int on)
                  me->vid_streaming = false;
                  _hw_video_enable(me, false);
                  pr_debug("%s: unregister irq callback\n", __func__);
-                 nxp_soc_disp_unregister_irq_callback(me->id, me->callback);
-                 me->callback = NULL;
+				 if(me->callback){
+                 	nxp_soc_disp_unregister_irq_callback(me->id, me->callback);
+                 	me->callback = NULL;
+				 }
                  me->vid_enabled = false;
                  spin_lock_irqsave(&me->vlock, flags);
                  if (me->old_vid_buf) {
@@ -971,8 +973,10 @@ static int nxp_mlc_s_stream(struct v4l2_subdev *sd, int enable)
             me->vid_streaming = false;
             _hw_video_enable(me, false);
             pr_debug("%s: unregister irq callback\n", __func__);
-            nxp_soc_disp_unregister_irq_callback(me->id, me->callback);
-            me->callback = NULL;
+			if(me->callback){
+            	nxp_soc_disp_unregister_irq_callback(me->id, me->callback);
+            	me->callback = NULL;
+			}
             me->vid_enabled = false;
             spin_lock_irqsave(&me->vlock, flags);
             if (me->old_vid_buf) {

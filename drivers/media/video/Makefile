@@ -89,6 +89,7 @@ obj-$(CONFIG_VIDEO_TW9900)	+= tw/
 obj-$(CONFIG_VIDEO_DS90UB914Q)	+= ds90ub914q.o
 #obj-$(CONFIG_VIDEO_NVP6114A) += nvp6114a.o
 obj-$(CONFIG_VIDEO_NVP6114A) += nvp/
+obj-$(CONFIG_VIDEO_MAX9286)	+= maxim/
 
 obj-$(CONFIG_VIDEO_S5K5CAGX)    += s5k5cagx.o
 obj-$(CONFIG_VIDEO_S5K4ECGX)	+= s5k4ecgx.o

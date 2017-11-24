@@ -960,4 +960,6 @@ config GT9XX_10_VW
           To compile this driver as a module, choose M here: the
           module will be called gt80x.
 
+source "drivers/input/touchscreen/semisens/Kconfig"
+
 endif

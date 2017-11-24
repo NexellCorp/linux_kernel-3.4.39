@@ -198,6 +198,24 @@ static void _hw_run(struct nxp_csi *me)
 		if(NumberOfDataLanes >= 1) EnableDataLane1=CTRUE;
 		if(NumberOfDataLanes >= 2) EnableDataLane2=CTRUE;
 		if(NumberOfDataLanes >= 3) EnableDataLane3=CTRUE;
+#elif defined(CONFIG_VIDEO_MAX9286)
+#if defined(CONFIG_ARCH_S5P4418)
+		U32 ClkSrc = 2;
+		U32 Divisor = 2;
+#elif defined(CONFIG_ARCH_S5P6818)
+		U32 ClkSrc = 0;
+		U32 Divisor = 8;
+#endif
+		struct nxp_mipi_csi_platformdata *pdata = me->platdata;
+		CBOOL EnableDataLane0 = CFALSE;
+		CBOOL EnableDataLane1 = CFALSE;
+		CBOOL EnableDataLane2 = CFALSE;
+		CBOOL EnableDataLane3 = CFALSE;
+		U32   NumberOfDataLanes = (pdata->lanes-1);
+		if(NumberOfDataLanes >= 0) EnableDataLane0=CTRUE;
+		if(NumberOfDataLanes >= 1) EnableDataLane1=CTRUE;
+		if(NumberOfDataLanes >= 2) EnableDataLane2=CTRUE;
+		if(NumberOfDataLanes >= 3) EnableDataLane3=CTRUE;
 #endif
 
     NX_MIPI_Initialize();
@@ -232,6 +250,22 @@ static void _hw_run(struct nxp_csi *me)
 		    pmipi->CSIS_DPHYCTRL = (12 << 24);
 		}
 	#endif
+#elif defined(CONFIG_VIDEO_MAX9286)
+#if defined(CONFIG_ARCH_S5P6818)
+	{
+		volatile NX_MIPI_RegisterSet *pmipi;
+		pmipi = (volatile NX_MIPI_RegisterSet *)IO_ADDRESS(
+				NX_MIPI_GetPhysicalAddress(me->module));
+		pmipi->CSIS_DPHYCTRL = (5 << 24);
+	}
+#else
+	{
+		volatile NX_MIPI_RegisterSet *pmipi;
+		pmipi = (volatile NX_MIPI_RegisterSet *)IO_ADDRESS(
+				NX_MIPI_GetPhysicalAddress(me->module));
+		pmipi->CSIS_DPHYCTRL = (3 << 24); // pooyi setting need.
+	}
+#endif
 #endif
     NX_MIPI_SetInterruptEnableAll(me->module, CFALSE);
     NX_MIPI_ClearInterruptPendingAll(me->module);
@@ -264,6 +298,9 @@ static void _hw_run(struct nxp_csi *me)
 #if defined(CONFIG_VIDEO_TW9992)
     NX_CLKGEN_SetClockSource(NX_MIPI_GetClockNumber(me->module), 0, ClkSrc); // use pll2 -> current 295MHz
     NX_CLKGEN_SetClockDivisor(NX_MIPI_GetClockNumber(me->module), 0, Divisor);
+#elif defined(CONFIG_VIDEO_MAX9286)
+	NX_CLKGEN_SetClockSource(NX_MIPI_GetClockNumber(me->module), 0, ClkSrc); // use pll2 -> current 295MHz
+	NX_CLKGEN_SetClockDivisor(NX_MIPI_GetClockNumber(me->module), 0, Divisor);
 #else
     NX_CLKGEN_SetClockSource(NX_MIPI_GetClockNumber(me->module), 0, 2); // use pll2 -> current 295MHz
     NX_CLKGEN_SetClockDivisor(NX_MIPI_GetClockNumber(me->module), 0, 2);
@@ -298,6 +335,15 @@ static void _hw_run(struct nxp_csi *me)
             EnableDataLane3,  	// CBOOL EnableDataLane3
             0,  					// CBOOL SwapClockLane
             0   					// CBOOL SwapDataLane
+#elif defined(CONFIG_VIDEO_MAX9286)
+			NumberOfDataLanes,	// U32	 NumberOfDataLanes (0~3)
+			1,						// CBOOL EnableClockLane
+			EnableDataLane0,	// CBOOL EnableDataLane0
+			EnableDataLane1,	// CBOOL EnableDataLane1
+			EnableDataLane2,	// CBOOL EnableDataLane2
+			EnableDataLane3,	// CBOOL EnableDataLane3
+			0,						// CBOOL SwapClockLane
+			0						// CBOOL SwapDataLane
 #else
             1,  // U32   NumberOfDataLanes (0~3)
             1,  // CBOOL EnableClockLane
@@ -338,6 +384,14 @@ static void _hw_run(struct nxp_csi *me)
                         0x33E8,      // 19'h033E8: 1Ghz  19'h043E8: 750Mhz // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
                         0xF,         // 4'hF: 1Ghz  4'hC: 750Mhz           // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
 	#endif
+#elif defined(CONFIG_VIDEO_MAX9286)
+#if defined(CONFIG_ARCH_S5P4418)
+						0x43E8, 	 // 19'h033E8: 1Ghz  19'h043E8: 750Mhz // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
+						0xC,		 // 4'hF: 1Ghz	4'hC: 750Mhz		   // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
+#elif defined(CONFIG_ARCH_S5P6818)
+						0x33E8, 	 // 19'h033E8: 1Ghz  19'h043E8: 750Mhz // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
+						0xF,		 // 4'hF: 1Ghz	4'hC: 750Mhz		   // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
+#endif
 #else
                         0x43E8,      // 19'h033E8: 1Ghz  19'h043E8: 750Mhz // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
                         0xC,         // 4'hF: 1Ghz  4'hC: 750Mhz           // Use LN28LPP_MipiDphyCore1p5Gbps_Supplement.
@@ -594,6 +648,18 @@ static int nxp_csi_s_stream(struct v4l2_subdev *sd, int enable)
 
         ret = v4l2_subdev_call(remote_source, video, s_stream, enable);
 	#endif
+#elif defined(CONFIG_VIDEO_MAX9286)
+#if defined(CONFIG_ARCH_S5P4418)
+		/* _hw_start_stream(me); */
+		_hw_run(me);
+		ret = v4l2_subdev_call(remote_source, video, s_stream, enable);
+
+#elif defined(CONFIG_ARCH_S5P6818)
+		/* _hw_start_stream(me); */
+		_hw_run(me);
+
+		ret = v4l2_subdev_call(remote_source, video, s_stream, enable);
+#endif
 #else
  	ret = v4l2_subdev_call(remote_source, video, s_stream, enable);
     /* _hw_start_stream(me); */

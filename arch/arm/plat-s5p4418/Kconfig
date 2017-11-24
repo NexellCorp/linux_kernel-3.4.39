@@ -29,6 +29,11 @@ choice
 		help
    	 		Support for the NAVI reference board.
 
+	config PLAT_S5P4418_SVM_REF
+		bool "SVM: Android SVM reference board"
+		help
+   	 		Support for the SVM reference board.
+
 endchoice
 
 #

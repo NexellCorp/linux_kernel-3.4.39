@@ -233,6 +233,17 @@ static int _hw_set_clock(struct nxp_vin_clipper *me, bool on)
             vmsg("%s: apply mipi csi clock!!!\n", __func__);
             NX_CLKGEN_SetClockSource(NX_VIP_GetClockNumber(module), 0, ClkSrc); /* external PCLK */
             NX_CLKGEN_SetClockDivisor(NX_VIP_GetClockNumber(module), 0, Divisor);
+#elif defined(CONFIG_VIDEO_MAX9286)
+#if defined(CONFIG_ARCH_S5P4418)
+			U32 ClkSrc = 2;
+			U32 Divisor = 2;
+#elif defined(CONFIG_ARCH_S5P6818)
+			U32 ClkSrc = 0;
+			U32 Divisor = 8;
+#endif
+			vmsg("%s: apply mipi csi clock!!!\n", __func__);
+			NX_CLKGEN_SetClockSource(NX_VIP_GetClockNumber(module), 0, ClkSrc); /* external PCLK */
+			NX_CLKGEN_SetClockDivisor(NX_VIP_GetClockNumber(module), 0, Divisor);
 #else
 			NX_CLKGEN_SetClockSource(NX_VIP_GetClockNumber(module), 0, 2); /* external PCLK */
             NX_CLKGEN_SetClockDivisor(NX_VIP_GetClockNumber(module), 0, 2);

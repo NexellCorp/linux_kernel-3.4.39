@@ -78,4 +78,5 @@ obj-$(CONFIG_TOUCHSCREEN_HC8600)	+= hc8600.o
 obj-$(CONFIG_TOUCHSCREEN_ATMEL_MXT640T)	+= mxts.o mxts_patch.o
 obj-$(CONFIG_TOUCHSCREEN_GOODIX)	+= gt9xx.o gt9xx_update.o goodix_tool.o
 obj-$(CONFIG_MS_GT80X_MSD)	+= gt70x.o
+obj-$(CONFIG_TOUCHSCREEN_SEMISENS)	+= semisens/ 
 obj-$(CONFIG_GT9XX_10_VW)	+= gt9xx_10_vw.o

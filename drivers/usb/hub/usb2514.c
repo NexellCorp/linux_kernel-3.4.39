@@ -26,7 +26,11 @@
 #include <linux/file.h>
 #include <asm/uaccess.h>
 
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF)
+#define	USB_HUB_RESET_PIN			(PAD_GPIO_D+31)
+#else
 #define	USB_HUB_RESET_PIN			(PAD_GPIO_E+7)
+#endif
 #define	USB_HUB_PORT1_PWR_EN		(PAD_GPIO_E+14)
 #define	USB_HUB_PORT2_PWR_EN		(PAD_GPIO_E+15)
 #define	USB_HUB_PORT3_PWR_EN		(PAD_GPIO_E+19)
@@ -84,12 +88,14 @@ static int __devinit usb2514_probe(struct i2c_client *client,
    if (!i2c_check_functionality(client->adapter,
 					I2C_FUNC_SMBUS_READ_WORD_DATA))
 	   return -EIO;
-
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF)
+	// SVM not use port power
+#else
    // Enable Power of Hub Port
    nxp_soc_gpio_set_out_value(USB_HUB_PORT1_PWR_EN, 1);
    nxp_soc_gpio_set_out_value(USB_HUB_PORT2_PWR_EN, 1);
    nxp_soc_gpio_set_out_value(USB_HUB_PORT3_PWR_EN, 1);
-
+#endif
    // reset the hub chip
    nxp_soc_gpio_set_io_dir(USB_HUB_RESET_PIN, 1);
    nxp_soc_gpio_set_out_value(USB_HUB_RESET_PIN, 1);

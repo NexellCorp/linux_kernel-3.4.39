@@ -607,6 +607,7 @@ config NVP6114A_BACKWARD
 endchoice
 
 source "drivers/media/video/thine/Kconfig"
+source "drivers/media/video/maxim/Kconfig"
 
 config VIDEO_TCM825X
 	tristate "TCM825x camera sensor support"
