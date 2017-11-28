@@ -690,7 +690,7 @@ static struct i2c_board_info __initdata alc5623_i2c_bdi = {
 
 /* DAI */
 struct nxp_snd_dai_plat_data alc5623_i2s_dai_data = {
-	.i2s_ch	= 1,
+	.i2s_ch	= 0,
 	.sample_rate	= 48000,
 	.pcm_format	 = SNDRV_PCM_FMTBIT_S16_LE,
 #if 0
@@ -704,7 +704,7 @@ struct nxp_snd_dai_plat_data alc5623_i2s_dai_data = {
 
 static struct platform_device alc5623_dai = {
 	.name			= "alc5623-audio",
-	.id				= 1,
+	.id				= 0,
 	.dev			= {
 		.platform_data	= &alc5623_i2s_dai_data,
 	}
