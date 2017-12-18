@@ -556,6 +556,18 @@ typedef struct {
 	u32 job_id;                         /**< [in] id for soft job */
 } _vr_uk_soft_job_signal_s;
 
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF)
+#define NEXELL_FEATURE_IOCTL_PERFORMANCE
+
+#if 1 /* NEXELL_FEATURE_IOCTL_PERFORMANCE */
+typedef struct {
+	void *ctx;                          /**< [in,out] user-kernel context (trashed on output) */
+	u32 time_val_gp;                         /**< [in] id for soft job */
+	u32 time_val_pp;                         /**< [in] id for soft job */
+} _vr_uk_test_job_get_time_s;
+#endif
+#endif
+
 /** @} */ /* end group _vr_uk_soft_job */
 
 /** @addtogroup _vr_uk_core U/K Core

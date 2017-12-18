@@ -191,7 +191,9 @@ _vr_osk_errcode_t vr_gp_reset(struct vr_gp_core *core)
 	vr_gp_reset_async(core);
 	return vr_gp_reset_wait(core);
 }
-
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF) && defined(NEXELL_FEATURE_IOCTL_PERFORMANCE)
+	extern void TestIntTimeStartGP(void);
+#endif
 void vr_gp_job_start(struct vr_gp_core *core, struct vr_gp_job *job)
 {
 	u32 startcmd = 0;
@@ -224,6 +226,9 @@ void vr_gp_job_start(struct vr_gp_core *core, struct vr_gp_job *job)
 
 	VR_DEBUG_PRINT(3, ("Vr GP: Starting job (0x%08x) on core %s with command 0x%08X\n", job, core->hw_core.description, startcmd));
 
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF) && defined(NEXELL_FEATURE_IOCTL_PERFORMANCE)
+	TestIntTimeStartGP();
+#endif
 	vr_hw_core_register_write_relaxed(&core->hw_core, VRGP2_REG_ADDR_MGMT_CMD, VRGP2_REG_VAL_CMD_UPDATE_PLBU_ALLOC);
 
 	/* Barrier to make sure the previous register write is finished */

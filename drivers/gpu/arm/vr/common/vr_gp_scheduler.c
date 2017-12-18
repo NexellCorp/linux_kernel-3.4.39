@@ -241,6 +241,9 @@ static void vr_gp_scheduler_return_job_to_user(struct vr_gp_job *job, vr_bool su
 	vr_gp_scheduler_job_completed();
 }
 
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF) && defined(NEXELL_FEATURE_IOCTL_PERFORMANCE)
+extern void TestIntStateUpadteGP(void);
+#endif
 /* Group must be locked when entering this function.  Will be unlocked before exiting. */
 void vr_gp_scheduler_job_done(struct vr_group *group, struct vr_gp_job *job, vr_bool success)
 {
@@ -254,6 +257,9 @@ void vr_gp_scheduler_job_done(struct vr_group *group, struct vr_gp_job *job, vr_
 
 	VR_DEBUG_PRINT(3, ("Vr GP scheduler: Job %u (0x%08X) completed (%s)\n", vr_gp_job_get_id(job), job, success ? "success" : "failure"));
 
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF) && defined(NEXELL_FEATURE_IOCTL_PERFORMANCE)
+	TestIntStateUpadteGP();
+#endif
 	/* Release tracker. */
 	schedule_mask |= vr_timeline_tracker_release(&job->tracker);
 

@@ -41,6 +41,9 @@ int timeline_create_sync_fence_wrapper(struct vr_session_data *session, _vr_uk_t
 int soft_job_start_wrapper(struct vr_session_data *session, _vr_uk_soft_job_start_s __user *uargs);
 int soft_job_signal_wrapper(struct vr_session_data *session, _vr_uk_soft_job_signal_s __user *uargs);
 
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF) && defined(NEXELL_FEATURE_IOCTL_PERFORMANCE)
+int test_job_get_time(struct vr_session_data *session, _vr_uk_test_job_get_time_s __user *uargs);
+#endif
 #if defined(CONFIG_VR400_UMP)
 int mem_attach_ump_wrapper(struct vr_session_data *session_data, _vr_uk_attach_ump_mem_s __user * argument);
 int mem_release_ump_wrapper(struct vr_session_data *session_data, _vr_uk_release_ump_mem_s __user * argument);

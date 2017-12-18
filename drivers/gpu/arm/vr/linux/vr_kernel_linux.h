@@ -21,6 +21,16 @@ extern "C" {
 
 extern struct platform_device *vr_platform_device;
 
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF) && defined(NEXELL_FEATURE_IOCTL_PERFORMANCE)
+void TestIntTimeEn(int enable);
+unsigned int TestGetTimeTotalValGP(void);
+void TestIntTimeStartGP(void);
+void TestIntStateUpadteGP(void);
+unsigned int TestGetTimeTotalValPP(void);
+void TestIntTimeStartPP(void);
+void TestIntStateUpadtePP(void);
+#endif
+
 #if VR_LICENSE_IS_GPL
 /* Defined in vr_osk_irq.h */
 extern struct workqueue_struct * vr_wq_normal;

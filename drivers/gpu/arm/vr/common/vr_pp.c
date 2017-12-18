@@ -364,6 +364,9 @@ void vr_pp_job_dma_cmd_prepare(struct vr_pp_core *core, struct vr_pp_job *job, u
 	vr_dma_write(buf, &core->hw_core, VR200_REG_ADDR_MGMT_CTRL_MGMT, VR200_REG_VAL_CTRL_MGMT_START_RENDERING);
 }
 
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF) && defined(NEXELL_FEATURE_IOCTL_PERFORMANCE)
+extern void TestIntTimeStartPP(void);
+#endif
 void vr_pp_job_start(struct vr_pp_core *core, struct vr_pp_job *job, u32 sub_job, vr_bool restart_virtual)
 {
 	u32 relative_address;
@@ -451,6 +454,9 @@ void vr_pp_job_start(struct vr_pp_core *core, struct vr_pp_job *job, u32 sub_job
 
 	VR_DEBUG_PRINT(3, ("Vr PP: Starting job 0x%08X part %u/%u on PP core %s\n", job, sub_job + 1, vr_pp_job_get_sub_job_count(job), core->hw_core.description));
 
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF) && defined(NEXELL_FEATURE_IOCTL_PERFORMANCE)
+	if (0 == sub_job){ TestIntTimeStartPP(); }
+#endif
 	/* Adding barrier to make sure all rester writes are finished */
 	_vr_osk_write_mem_barrier();
 

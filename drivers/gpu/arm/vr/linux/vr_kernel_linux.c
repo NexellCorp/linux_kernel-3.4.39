@@ -1983,6 +1983,171 @@ int map_errcode( _vr_osk_errcode_t err )
 	}
 }
 
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF) && defined(NEXELL_FEATURE_IOCTL_PERFORMANCE)
+static unsigned int gTestTimeEn;
+static unsigned int gTestTimeStartGP;
+static unsigned int gTestTimeEndGP;
+static unsigned int gTestTimeTotalGP;
+static unsigned int gTestTimeDiffGP;
+static int gTestTimeRefCntGP = 0;
+static int gTestTimeGetFlagGP = 0;
+static struct timeval gTestTimeValGP;
+static unsigned int gTestTimeStartPP;
+static unsigned int gTestTimeEndPP;
+static unsigned int gTestTimeTotalPP;
+static unsigned int gTestTimeDiffPP;
+static struct timeval gTestTimeValPP;
+static int gTestTimeRefCntPP = 0;
+static int gTestTimeGetFlagPP = 0;
+
+/*
+case  1
+[   32.743000] [drv] PP Start(621451)
+[   32.746000] [drv] GP End(624953), diff(7067), Total(117152)
+[   32.754000] [drv] PP Start(632949) (穿利_cnt == 2)
+[   32.758000] [drv] PP End(636505), diff(3556), Total(381335)
+[   32.789000] [drv] PP End(667129), diff(34180), Total(415515) (穿利_cnt == 0, 667129 - 621451)
+
+case 2
+[   32.915000] [drv] PP Start(793223)  --1-->
+[   32.918000] [drv] GP End(796829), diff(7585), Total(14905)
+[   32.924000] [drv] GP Start(802478)
+[   32.926000] [drv] PP Start(804737)  --2--> (穿利_cnt == 2)
+[   32.926000] [drv] PP End(804835), diff(98), Total(233) <--1-- (穿利_cnt == 1)
+[   32.936000] [drv] GP End(814843), diff(12365), Total(27270)
+[   32.951000] [drv] PP Start(829742) --3--> (穿利_cnt == 2)
+[   32.954000] [drv] PP End(833230), diff(3488), Total(3721) <--2-- (穿利_cnt == 1)
+[   32.960000] [drv] PP End(838838), diff(9096), Total(12817) <--3-- (穿利_cnt == 0, 838838 - 793223)
+*/
+void TestIntTimeEn(int enable)
+{
+	gTestTimeEn = enable;
+	if (gTestTimeEn)
+	
+{
+		gTestTimeRefCntGP = gTestTimeRefCntPP = 0;
+		printk("[drv] VR timechecking On.\n");
+	}
+	else
+		printk("[drv] VR timechecking Off.\n");
+}
+
+void TestIntTimeStartGP(void)
+{
+	if (gTestTimeEn)
+	{ 
+		if (0 == gTestTimeRefCntGP)
+		{			
+			do_gettimeofday(&gTestTimeValGP);
+			gTestTimeStartGP = gTestTimeValGP.tv_usec;
+			//printk("[drv] GP Start(%d)\n", gTestTimeStartGP);
+			++gTestTimeRefCntGP;
+		}
+		else if(!gTestTimeGetFlagGP)
+		{
+			++gTestTimeRefCntGP;
+		}
+	}
+	//printk("[drv] GP Start done\n");
+}
+
+void TestIntStateUpadteGP(void)
+{
+	if (gTestTimeEn && gTestTimeRefCntGP)
+	{ 
+		--gTestTimeRefCntGP;
+		if (0 == gTestTimeRefCntGP)
+		{
+			if(gTestTimeGetFlagGP)
+			{
+				gTestTimeTotalGP = 0;
+				gTestTimeGetFlagGP = 0;
+				//printk("[drv] GP Clear\n");
+			}
+			do_gettimeofday(&gTestTimeValGP);
+			gTestTimeEndGP = gTestTimeValGP.tv_usec;
+			if (gTestTimeEndGP > gTestTimeStartGP)
+			{
+				gTestTimeDiffGP = (gTestTimeEndGP - gTestTimeStartGP);
+				gTestTimeTotalGP += gTestTimeDiffGP;
+			}
+			else if (gTestTimeEndGP < gTestTimeStartGP)
+			{
+				gTestTimeTotalGP += gTestTimeDiffGP;
+			}
+			//printk("[drv] GP End(%d), diff(%d), Total(%d)\n", gTestTimeEndGP, gTestTimeDiffGP, gTestTimeTotalGP);
+		}
+	}
+	//printk("[drv] GP Update done\n");
+}
+
+unsigned int TestGetTimeTotalValGP(void)
+{
+	gTestTimeGetFlagGP = 1;
+	return gTestTimeTotalGP;
+}
+
+void TestIntTimeStartPP(void)
+{
+	if (gTestTimeEn)
+	{ 	
+		if (0 == gTestTimeRefCntPP)
+		{			
+			do_gettimeofday(&gTestTimeValPP);
+			gTestTimeStartPP = gTestTimeValPP.tv_usec;
+			//printk("[drv] PP Start(%d)\n", gTestTimeStartPP);
+			++gTestTimeRefCntPP;
+		}
+		else if(!gTestTimeGetFlagPP)
+		{
+			++gTestTimeRefCntPP;
+			//printk("[drv] PP Inc Ref(%d)\n", gTestTimeRefCntPP);
+		}
+	}
+	//printk("[drv] PP Start done\n");
+}
+
+void TestIntStateUpadtePP(void)
+{
+	if (gTestTimeEn && gTestTimeRefCntPP)
+	{ 
+		--gTestTimeRefCntPP;
+		if (0 == gTestTimeRefCntPP)
+		{
+			if(gTestTimeGetFlagPP)
+			{
+				gTestTimeTotalPP = 0;
+				gTestTimeGetFlagPP = 0;				
+				//printk("[drv] PP Clear\n");
+			}
+			do_gettimeofday(&gTestTimeValPP);
+			gTestTimeEndPP = gTestTimeValPP.tv_usec;
+			if (gTestTimeEndPP > gTestTimeStartPP)
+			{
+				gTestTimeDiffPP = (gTestTimeEndPP - gTestTimeStartPP);
+				gTestTimeTotalPP += gTestTimeDiffPP;
+			}
+			else if (gTestTimeEndPP < gTestTimeStartPP)
+			{
+				gTestTimeTotalPP += gTestTimeDiffPP;
+			}
+			//printk("[drv] PP End(%d), diff(%d), Total(%d)\n", gTestTimeEndPP, gTestTimeDiffPP, gTestTimeTotalPP);
+		}
+		else
+		{
+			//printk("[drv] PP Dec Ref(%d)\n", gTestTimeRefCntPP);
+		}
+	}
+	//printk("[drv] PP Update done\n");
+}
+
+unsigned int TestGetTimeTotalValPP(void)
+{
+	gTestTimeGetFlagPP = 1;
+	return gTestTimeTotalPP;
+}
+#endif
+
 #ifdef HAVE_UNLOCKED_IOCTL
 static long vr_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #else
@@ -2195,8 +2360,12 @@ static int vr_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, un
 
 	case VR_IOC_MEM_INIT: /* Fallthrough */
 	case VR_IOC_MEM_TERM: /* Fallthrough */
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF) && defined(NEXELL_FEATURE_IOCTL_PERFORMANCE)
+		err = test_job_get_time(session_data, (_vr_uk_test_job_get_time_s __user *)arg);
+#else /* org */
 		VR_DEBUG_PRINT(2, ("Deprecated ioctls called\n"));
 		err = -ENOTTY;
+#endif
 		break;
 
 	case VR_IOC_MEM_GET_BIG_BLOCK: /* Fallthrough */

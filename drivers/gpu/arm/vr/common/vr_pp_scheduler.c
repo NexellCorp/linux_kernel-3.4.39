@@ -976,6 +976,9 @@ static void vr_pp_scheduler_schedule_on_group_and_unlock(struct vr_group *group)
 	}
 }
 
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF) && defined(NEXELL_FEATURE_IOCTL_PERFORMANCE)
+extern void TestIntStateUpadtePP(void);
+#endif
 void vr_pp_scheduler_job_done(struct vr_group *group, struct vr_pp_job *job, u32 sub_job, vr_bool success, vr_bool in_upper_half)
 {
 	vr_bool job_is_done = VR_FALSE;
@@ -1018,6 +1021,10 @@ void vr_pp_scheduler_job_done(struct vr_group *group, struct vr_pp_job *job, u32
 		schedule_mask = vr_timeline_tracker_release(&job->tracker);
 
 		vr_pp_scheduler_lock();
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF) && defined(NEXELL_FEATURE_IOCTL_PERFORMANCE)
+		/* temp test */
+		TestIntStateUpadtePP();
+#endif
 	}
 
 	if (vr_group_is_virtual(group)) {

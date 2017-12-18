@@ -84,3 +84,42 @@ int soft_job_signal_wrapper(struct vr_session_data *session, _vr_uk_soft_job_sig
 
 	return map_errcode(err);
 }
+#if defined(CONFIG_PLAT_S5P4418_SVM_REF) && defined(NEXELL_FEATURE_IOCTL_PERFORMANCE)
+extern void TestIntTimeEn(int enable);
+extern unsigned int TestGetTimeTotalValGP(void);
+extern unsigned int TestGetTimeTotalValPP(void);
+
+int test_job_get_time(struct vr_session_data *session, _vr_uk_test_job_get_time_s __user *uargs)
+{
+	u32 time_val_gp, time_val_pp;
+	_vr_osk_errcode_t err;
+
+	VR_DEBUG_ASSERT_POINTER(session);
+
+	if (0 != get_user(time_val_gp, &uargs->time_val_gp)) return -EFAULT;
+
+	if (1 == time_val_gp)
+	{
+		TestIntTimeEn(1);
+	}
+	else if (0xFFFFFFFF == time_val_gp) 
+	{
+		TestIntTimeEn(0);
+	}
+
+	time_val_gp = TestGetTimeTotalValGP();
+	time_val_pp = TestGetTimeTotalValPP();
+
+	if (0 != put_user(time_val_gp, &uargs->time_val_gp)) {
+		/* Let user space know that something failed after the job was started. */
+		return -ENOENT;
+	}
+
+	if (0 != put_user(time_val_pp, &uargs->time_val_pp)) {
+		/* Let user space know that something failed after the job was started. */
+		return -ENOENT;
+	}
+
+	return map_errcode(err);
+}
+#endif
