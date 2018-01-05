@@ -73,6 +73,8 @@ struct nxp_vin_clipper {
 
     /* for serialization s_stream() */
     struct semaphore s_stream_sem;
+
+    bool buffer_underrun;
 };
 
 int  nxp_vin_clipper_init(struct nxp_vin_clipper *, struct nxp_vin_platformdata *);
