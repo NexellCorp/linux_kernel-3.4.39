@@ -135,6 +135,8 @@ static void ion_nxp_heap_unmap_dma(struct ion_heap *heap,
 {
     if (buffer->sg_table) {
         sg_free_table(buffer->sg_table);
+	kfree(buffer->sg_table);
+	buffer->sg_table = NULL;
     }
 }
 
