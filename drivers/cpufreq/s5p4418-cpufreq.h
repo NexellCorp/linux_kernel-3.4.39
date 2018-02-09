@@ -54,7 +54,7 @@ extern void nxp_cpu_id_string(u32 string[12]);
  *	-----------------------------------------------------------------------------
  * 	|  7: 700 MHZ	|	1,100 mV|	1,050 mV|	1,000 mV|	1,000 mV|	1,000 mV|
  *	-----------------------------------------------------------------------------
- * 	|  8: 6500 MHZ	|	1,075 mV|	1,025 mV|	1,000 mV|	1,000 mV|	1,000 mV|
+ * 	|  8: 650 MHZ	|	1,075 mV|	1,025 mV|	1,000 mV|	1,000 mV|	1,000 mV|
  *	-----------------------------------------------------------------------------
  * 	|  9: 500 MHZ	|	1,075 mV|	1,025 mV|	1,000 mV|	1,000 mV|	1,000 mV|
  *	-----------------------------------------------------------------------------
@@ -151,13 +151,14 @@ static int s5p4418_asv_setup_table(unsigned long (*freq_tables)[2])
 	int i, ids = 0, ro = 0;
 	int idslv, rolv, asvlv;
 
-	if (2 > nxp_cpu_version()) {
+	nxp_cpu_id_string(string);
+	nxp_cpu_id_ecid(ecid);
+
+	/* Check Sample date */
+	if(((ecid[1] >> 10) & 0x1F) != 0x0) {
 		asvlv = ASV_DEFAULT_LEVEL;
 		goto asv_find;
 	}
-
-	nxp_cpu_id_string(string);
-	nxp_cpu_id_ecid(ecid);
 
 	/* Use Fusing Flags */
 	if ((ecid[2] & (1<<0))) {
