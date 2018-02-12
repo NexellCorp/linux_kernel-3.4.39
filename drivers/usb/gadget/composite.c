@@ -575,15 +575,6 @@ static void device_qual(struct usb_composite_dev *cdev)
 }
 
 /*-------------------------------------------------------------------------*/
-#if defined(CONFIG_ARCH_CPU_SLSI)
-void nxp_wake_lock_timeout(void)
-{
-	if (usb_config_wake_lock_held == true) {
-		wake_lock_timeout(&usb_config_wake_lock, 1*HZ);
-	}
-}
-EXPORT_SYMBOL(nxp_wake_lock_timeout);
-#endif
 
 static void reset_config(struct usb_composite_dev *cdev)
 {
@@ -1331,8 +1322,21 @@ unknown:
 			struct usb_configuration	*c;
 
 			c = cdev->config;
-			if (c && c->setup)
+			if (!c)
+				goto done;
+
+			/* try current config's setup */
+			if (c->setup)
 				value = c->setup(c, ctrl);
+				goto done;
+
+			/* try the only function in the current config */
+			if (!list_is_singular(&c->functions))
+				goto done;
+			f = list_first_entry(&c->functions, struct usb_function,
+					     list);
+			if (f->setup)
+				value = f->setup(f, ctrl);
 		}
 
 		goto done;
@@ -1408,6 +1412,7 @@ composite_unbind(struct usb_gadget *gadget)
 
 #if defined(CONFIG_ARCH_CPU_SLSI)
 	if (usb_config_wake_lock_held == true) {
+		wake_unlock(&usb_config_wake_lock);
 		wake_lock_destroy(&usb_config_wake_lock);
 		usb_config_wake_lock_held = false;
 	}

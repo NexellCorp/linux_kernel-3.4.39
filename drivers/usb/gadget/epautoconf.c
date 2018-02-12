@@ -313,6 +313,15 @@ struct usb_ep *usb_ep_autoconfig_ss(
 		if (ep && ep_matches(gadget, ep, desc, ep_comp))
 			goto found_ep;
 #endif
+	} else if (gadget_is_dwcotg(gadget)) {
+		if (USB_ENDPOINT_XFER_ISOC == type) {
+			if (USB_DIR_IN & desc->bEndpointAddress)
+				ep = find_ep(gadget, "ep3in");
+			else
+				ep = find_ep(gadget, "ep3out");
+		}
+		if (ep && ep_matches(gadget, ep, desc, ep_comp))
+			goto found_ep;
 	}
 
 	/* Second, look at endpoints until an unclaimed one looks usable */

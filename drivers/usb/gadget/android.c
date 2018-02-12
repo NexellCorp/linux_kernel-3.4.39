@@ -31,7 +31,7 @@
 #include "gadget_chips.h"
 
 #define USE_FFS		(0)
-
+#define USE_AUDIOSINK	(0)
 
 /*
  * Kbuild is not very cooperative with respect to linking separately
@@ -48,7 +48,13 @@
 #if (USE_FFS == 1)
 #include "f_fs.c"
 #endif
+#if (USE_AUDIOSINK == 1)
+#include "u_audio_sink.h"
+#include "u_audio_sink.c"
+#include "f_audio_sink.c"
+#else
 #include "f_audio_source.c"
+#endif
 #include "f_mass_storage.c"
 #include "u_serial.c"
 #include "f_acm.c"
@@ -843,6 +849,8 @@ static int mass_storage_function_init(struct android_usb_function *f,
 
 static void mass_storage_function_cleanup(struct android_usb_function *f)
 {
+	struct mass_storage_function_config *config = f->config;
+	fsg_common_put(config->common);
 	kfree(f->config);
 	f->config = NULL;
 }
@@ -924,6 +932,7 @@ static struct android_usb_function accessory_function = {
 	.ctrlrequest	= accessory_function_ctrlrequest,
 };
 
+#if (USE_AUDIOSINK == 0)
 static int audio_source_function_init(struct android_usb_function *f,
 			struct usb_composite_dev *cdev)
 {
@@ -985,6 +994,71 @@ static struct android_usb_function audio_source_function = {
 	.unbind_config	= audio_source_function_unbind_config,
 	.attributes	= audio_source_function_attributes,
 };
+#else
+
+/* audio_sink */
+static int audio_sink_function_init(struct android_usb_function *f,
+			struct usb_composite_dev *cdev)
+{
+	struct audio_sink_config *config;
+
+	config = kzalloc(sizeof(struct audio_sink_config), GFP_KERNEL);
+	if (!config)
+		return -ENOMEM;
+	config->card = -1;
+	config->device = -1;
+	f->config = config;
+	return 0;
+}
+
+static void audio_sink_function_cleanup(struct android_usb_function *f)
+{
+	kfree(f->config);
+}
+
+static int audio_sink_function_bind_config(struct android_usb_function *f,
+						struct usb_configuration *c)
+{
+	struct audio_sink_config *config = f->config;
+
+	return audio_sink_bind_config(c, config);
+}
+
+static void audio_sink_function_unbind_config(struct android_usb_function *f,
+						struct usb_configuration *c)
+{
+	struct audio_sink_config *config = f->config;
+
+	config->card = -1;
+	config->device = -1;
+}
+
+static ssize_t audio_sink_pcm_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct android_usb_function *f = dev_get_drvdata(dev);
+	struct audio_sink_config *config = f->config;
+
+	/* print PCM card and device numbers */
+	return sprintf(buf, "%d %d\n", config->card, config->device);
+}
+
+static DEVICE_ATTR(pcm, S_IRUGO | S_IWUSR, audio_sink_pcm_show, NULL);
+
+static struct device_attribute *audio_sink_function_attributes[] = {
+	&dev_attr_pcm,
+	NULL
+};
+
+static struct android_usb_function audio_sink_function = {
+	.name		= "audio_sink",
+	.init		= audio_sink_function_init,
+	.cleanup	= audio_sink_function_cleanup,
+	.bind_config	= audio_sink_function_bind_config,
+	.unbind_config	= audio_sink_function_unbind_config,
+	.attributes	= audio_sink_function_attributes,
+};
+#endif
 
 static struct android_usb_function *supported_functions[] = {
 #if (USE_FFS == 1)
@@ -997,7 +1071,11 @@ static struct android_usb_function *supported_functions[] = {
 	&rndis_function,
 	&mass_storage_function,
 	&accessory_function,
+#if (USE_AUDIOSINK == 0)
 	&audio_source_function,
+#else
+	&audio_sink_function,
+#endif
 	NULL
 };
 
@@ -1055,9 +1133,18 @@ err_create:
 static void android_cleanup_functions(struct android_usb_function **functions)
 {
 	struct android_usb_function *f;
+	struct device_attribute **attrs;
+	struct device_attribute *attr;
+	int err = 0;
 
 	while (*functions) {
 		f = *functions++;
+
+		attrs = f->attributes;
+		if (attrs) {
+			while ((attr = *attrs++) && !err)
+				device_remove_file(f->dev, attr);
+		}
 
 		if (f->dev) {
 			device_destroy(android_class, f->dev->devt);
