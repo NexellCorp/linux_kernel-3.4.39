@@ -3228,10 +3228,10 @@ uint32_t calc_frame_interval(dwc_otg_core_if_t * core_if)
 		clock = 48;
 	if (hprt0.b.prtspd == 0)
 		/* High speed case */
-		return 125 * clock;
+		return 125 * clock - 1;
 	else
 		/* FS/LS case */
-		return 1000 * clock;
+		return 1000 * clock - 1;
 }
 
 /**
@@ -4016,6 +4016,9 @@ void dwc_otg_ep_start_transfer(dwc_otg_core_if_t * core_if, dwc_ep_t * ep)
 				} else {
 					depctl.b.setd0pid = 1;
 				}
+			} else {
+				depctl.b.setd0pid = 1;
+				depctl.b.setd1pid = 0;
 			}
 		}
 

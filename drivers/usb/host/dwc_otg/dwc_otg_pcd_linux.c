@@ -59,17 +59,8 @@
 #include "dwc_otg_driver.h"
 #include "dwc_otg_dbg.h"
 
-static struct gadget_wrapper {
-	dwc_otg_pcd_t *pcd;
-
-	struct usb_gadget gadget;
-	struct usb_gadget_driver *driver;
-
-	struct usb_ep ep0;
-	struct usb_ep in_ep[16];
-	struct usb_ep out_ep[16];
-
-} *gadget_wrapper;
+struct gadget_wrapper *gadget_wrapper;
+EXPORT_SYMBOL(gadget_wrapper);
 
 /* Display the contents of the buffer */
 extern void dump_msg(const u8 * buf, unsigned int length);
@@ -806,7 +797,7 @@ static int dwc_udc_start(struct usb_gadget_driver *driver,
 		return -ENODEV;
 	}
 
-	if (!driver || !bind || !driver->setup) {
+	if (!driver || !driver->setup) {
 		printk(KERN_ERR "%s: invalid args\n", __func__);
 		return -EINVAL;
 	}
@@ -874,15 +865,15 @@ static int dwc_udc_stop(struct usb_gadget_driver *driver)
 	DWC_DEBUGPL(DBG_PCD, "dwc_pcd [%d] %s\n", __LINE__, __func__);
 #if defined(CONFIG_ARCH_CPU_SLSI)
 	/* check error */
-    if (!gadget_wrapper) {
-        printk(KERN_ERR "%s: No gadget_wrapper\n", __func__);
-        return -ENODEV;
-    }
+	if (!gadget_wrapper) {
+		printk(KERN_ERR "%s: No gadget_wrapper\n", __func__);
+		return -ENODEV;
+	}
 
-    if (!driver || driver != gadget_wrapper->driver || !driver->unbind) {
-        printk(KERN_ERR "%s: invalid args\n", __func__);
-        return -EINVAL;
-    }
+	if (!driver || driver != gadget_wrapper->driver || !driver->unbind) {
+		printk(KERN_ERR "%s: invalid args\n", __func__);
+		return -EINVAL;
+	}
 
 	/* report disconnect */
 	if (driver->disconnect)
@@ -890,8 +881,8 @@ static int dwc_udc_stop(struct usb_gadget_driver *driver)
 
 	driver->unbind(&gadget_wrapper->gadget);
 
-	device_del(&gadget_wrapper->gadget.dev);
 	gadget_wrapper->driver = NULL;
+	gadget_wrapper->gadget.dev.driver = NULL;
 
 	/* Disable udc */
 	dwc_udc_disable(gadget_wrapper);
@@ -1116,12 +1107,13 @@ static int _complete(dwc_otg_pcd_t * pcd, void *ep_handle,
 
 	ep = ep_from_handle(pcd, ep_handle);
 	if (GET_CORE_IF(pcd)->dma_enable) {
-    	if (req->length != 0) {
-        	dwc_otg_device_t *otg_dev = gadget_wrapper->pcd->otg_dev;
-            struct device *dev = NULL;
+		if (req->length != 0) {
+			dwc_otg_device_t *otg_dev =
+				gadget_wrapper->pcd->otg_dev;
+			struct device *dev = NULL;
 
 			if (otg_dev != NULL)
-            	dev = DWC_OTG_OS_GETDEV(otg_dev->os_dep);
+				dev = DWC_OTG_OS_GETDEV(otg_dev->os_dep);
 
 			if (req->dma == DWC_DMA_ADDR_INVALID &&
 				dwc_otg_req->dma != DWC_DMA_ADDR_INVALID) {
@@ -1129,9 +1121,9 @@ static int _complete(dwc_otg_pcd_t * pcd, void *ep_handle,
 					__func__, req, req->buf, req->length, req->dma, dwc_otg_req->dma,
 					ep->dwc_ep.is_in?"in":"out");
 				dma_unmap_single(dev, dwc_otg_req->dma, dwc_otg_req->length,
-             			ep->dwc_ep.is_in ?
-                       DMA_TO_DEVICE: DMA_FROM_DEVICE);
-            	req->dma = DWC_DMA_ADDR_INVALID;
+					ep->dwc_ep.is_in ?
+					DMA_TO_DEVICE : DMA_FROM_DEVICE);
+				req->dma = DWC_DMA_ADDR_INVALID;
 			}
 #if 0
 			else {

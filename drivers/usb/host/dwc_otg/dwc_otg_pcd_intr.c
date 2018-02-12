@@ -1704,7 +1704,6 @@ static inline void do_set_feature(dwc_otg_pcd_t * pcd)
 		break;
 
 	case UT_INTERFACE:
-		do_gadget_setup(pcd, &ctrl);
 		break;
 
 	case UT_ENDPOINT:
@@ -1878,17 +1877,15 @@ static inline void pcd_setup(dwc_otg_pcd_t * pcd)
 	dwc_otg_request_nuke(ep0);
 	ep0->stopped = 0;
 
-	if (ctrl.bmRequestType & UE_DIR_IN) {
+	if (UGETW(ctrl.wLength) == 0) {
+		ep0->dwc_ep.is_in = 1;
+		pcd->ep0state = EP0_IN_STATUS_PHASE;
+	} else if (ctrl.bmRequestType & UE_DIR_IN) {
 		ep0->dwc_ep.is_in = 1;
 		pcd->ep0state = EP0_IN_DATA_PHASE;
 	} else {
 		ep0->dwc_ep.is_in = 0;
 		pcd->ep0state = EP0_OUT_DATA_PHASE;
-	}
-
-	if (UGETW(ctrl.wLength) == 0) {
-		ep0->dwc_ep.is_in = 1;
-		pcd->ep0state = EP0_IN_STATUS_PHASE;
 	}
 
 	if (UT_GET_TYPE(ctrl.bmRequestType) != UT_STANDARD) {
@@ -1927,9 +1924,6 @@ static inline void pcd_setup(dwc_otg_pcd_t * pcd)
 		}
 #endif
 
-		/* handle non-standard (class/vendor) requests in the gadget driver */
-		do_gadget_setup(pcd, &ctrl);
-		return;
 	}
 
 	/** @todo NGS: Handle bad setup packet? */
@@ -1937,38 +1931,29 @@ static inline void pcd_setup(dwc_otg_pcd_t * pcd)
 ///////////////////////////////////////////
 //// --- Standard Request handling --- ////
 
-	switch (ctrl.bRequest) {
-	case UR_GET_STATUS:
-		do_get_status(pcd);
-		break;
+	if (UT_GET_TYPE(ctrl.bmRequestType) == UT_STANDARD) {
+		switch (ctrl.bRequest) {
+		case UR_GET_STATUS:
+			do_get_status(pcd);
+			break;
 
-	case UR_CLEAR_FEATURE:
-		do_clear_feature(pcd);
-		break;
+		case UR_CLEAR_FEATURE:
+			do_clear_feature(pcd);
+			break;
 
-	case UR_SET_FEATURE:
-		do_set_feature(pcd);
-		break;
+		case UR_SET_FEATURE:
+			do_set_feature(pcd);
+			break;
 
-	case UR_SET_ADDRESS:
-		do_set_address(pcd);
-		break;
+		case UR_SET_ADDRESS:
+			do_set_address(pcd);
+			return;
 
-	case UR_SET_INTERFACE:
-	case UR_SET_CONFIG:
-//              _pcd->request_config = 1;       /* Configuration changed */
-		do_gadget_setup(pcd, &ctrl);
-		break;
-
-	case UR_SYNCH_FRAME:
-		do_gadget_setup(pcd, &ctrl);
-		break;
-
-	default:
-		/* Call the Gadget Driver's setup functions */
-		do_gadget_setup(pcd, &ctrl);
-		break;
+		}
 	}
+
+	if (gadget_wrapper->driver)
+		do_gadget_setup(pcd, &ctrl);
 }
 
 /**
@@ -3982,6 +3967,7 @@ do { \
 
 				/* Complete the transfer */
 				if (epnum == 0) {
+					mdelay(1);
 					handle_ep0(pcd);
 				}
 #ifdef DWC_EN_ISOC
@@ -4282,11 +4268,13 @@ do { \
 									 dwc_memcpy(&pcd->setup_pkt->req, pcd->backup_buf, 8);
 								}
 								if (status.b.sr) {
+									pcd->ep0state = EP0_IDLE;
 									if (doepint.b.setup) {
 										DWC_DEBUGPL(DBG_PCDV, "DMA DESC EP0_IDLE SR=1 setup=1\n");
 										/* Already started data stage, clear setup */
 										CLEAR_OUT_EP_INTR(core_if, epnum, setup);
 										doepint.b.setup = 0;
+										mdelay(1);
 										handle_ep0(pcd);
 										/* Prepare for more setup packets */
 										if (pcd->ep0state == EP0_IN_STATUS_PHASE ||
@@ -4354,6 +4342,7 @@ do { \
 										/* Data stage started, clear setup */
 										CLEAR_OUT_EP_INTR(core_if, epnum, setup);
 										doepint.b.setup = 0;
+										mdelay(1);
 										handle_ep0(pcd);
 										/* Prepare for setup packets if ep0in was enabled*/
 										if (pcd->ep0state == EP0_IN_STATUS_PHASE) {
@@ -4393,6 +4382,7 @@ retry:
 									/* Already started data stage, clear setup */
 									CLEAR_OUT_EP_INTR(core_if, epnum, setup);
 									doepint.b.setup = 0;
+									mdelay(1);
 									handle_ep0(pcd);
 									ep->dwc_ep.stp_rollover = 0;
 									/* Prepare for more setup packets */
@@ -4481,6 +4471,7 @@ retry:
 										/* Data stage started, clear setup */
 										CLEAR_OUT_EP_INTR(core_if, epnum, setup);
 										doepint.b.setup = 0;
+										mdelay(1);
 										handle_ep0(pcd);
 										/* Prepare for setup packets if ep0in was enabled*/
 										if (pcd->ep0state == EP0_IN_STATUS_PHASE) {
@@ -4612,7 +4603,8 @@ exit_xfercompl:
 				DWC_DEBUGPL(DBG_PCD, "EP%d SETUP Done\n", epnum);
 #endif
 				CLEAR_OUT_EP_INTR(core_if, epnum, setup);
-
+				doepint.b.setup = 0;
+				mdelay(1);
 				handle_ep0(pcd);
 			}
 
