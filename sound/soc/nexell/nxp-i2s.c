@@ -178,6 +178,47 @@ struct nxp_i2s_snd_param {
 #define	SND_I2S_LOCK(x, f)		spin_lock_irqsave(x, f);
 #define	SND_I2S_UNLOCK(x, f)		spin_unlock_irqrestore(x, f);
 
+#if defined (CONFIG_SND_CODEC_SMARTVOICE)
+static int playback_status = 0;
+static ssize_t status_show(struct device *dev,
+		            struct device_attribute *attr, char *buf)
+{
+    char *s = buf;
+
+    s += sprintf(s, "%d\n", playback_status);
+    if (s != buf)
+        *(s-1) = '\n';
+
+	return (s - buf);
+}
+
+static struct device_attribute status_attr = __ATTR(status, S_IRUGO, status_show, NULL);
+
+static char playback_config[10] = {};
+static ssize_t config_show(struct device *dev,
+		            struct device_attribute *attr, char *buf)
+{
+    char *s = buf;
+
+    s += sprintf(s, "%s\n", playback_config);
+    if (s != buf)
+        *(s-1) = '\n';
+
+	return (s - buf);
+}
+
+static struct device_attribute config_attr = __ATTR(config, S_IRUGO, config_show, NULL);
+
+/* sys attribte group */
+static struct attribute *attrs[] = {
+	    &status_attr.attr, &config_attr.attr, NULL,
+};
+
+static struct attribute_group attr_group = {
+	        .attrs = (struct attribute **)attrs,
+};
+#endif
+
 #if !defined(CONFIG_SND_NXP_DFS)
 /*
  * return 0 = clkgen, 1 = peripheral clock
@@ -321,6 +362,10 @@ static int i2s_start(struct nxp_i2s_snd_param *par, int stream)
 
 	SND_I2S_UNLOCK(&par->lock, par->flags);
 
+#if defined (CONFIG_SND_CODEC_SMARTVOICE)
+	if (SNDRV_PCM_STREAM_PLAYBACK == stream)
+		playback_status = 1;
+#endif
 	return 0;
 }
 
@@ -330,6 +375,11 @@ static void i2s_stop(struct nxp_i2s_snd_param *par, int stream)
 	unsigned int base = par->base_addr;
 
 	pr_debug("%s %d\n", __func__, par->channel);
+
+#if defined (CONFIG_SND_CODEC_SMARTVOICE)
+	if (SNDRV_PCM_STREAM_PLAYBACK == stream)
+		playback_status = 0;
+#endif
 
 	SND_I2S_LOCK(&par->lock, par->flags);
 
@@ -450,18 +500,19 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 			RFS = RATIO_256;
 		}
 		rate_hz = request;
-
-		cutoff_master_clock(par);
-		clk_disable(par->clk);
-		nxp_cpu_pll_change_frequency(SND_NXP_DFS_PLLNO, request);
+		if (par->pre_supply_mclk) {
+			cutoff_master_clock(par);
+			clk_disable(par->clk);
+			nxp_cpu_pll_change_frequency(SND_NXP_DFS_PLLNO, request);
 #if defined(CONFIG_ARCH_S5P4418)
-		nxp_cpu_clock_update_rate(CONFIG_SND_NXP_PLLDEV);
+			nxp_cpu_clock_update_rate(CONFIG_SND_NXP_PLLDEV);
 #elif defined(CONFIG_ARCH_S5P6818)
-		nxp_cpu_clock_update_pll(CONFIG_SND_NXP_PLLDEV);
+			nxp_cpu_clock_update_pll(CONFIG_SND_NXP_PLLDEV);
 #endif
-		clk_set_rate(par->clk, request);
-		clk_enable(par->clk);
-		supply_master_clock(par);
+			clk_set_rate(par->clk, request);
+			clk_enable(par->clk);
+			supply_master_clock(par);
+		}
 	}
 	par->in_clkgen = 1;
 	IMS |= IMS_BIT_EXTCLK;
@@ -720,7 +771,7 @@ static void nxp_i2s_shutdown(struct snd_pcm_substream *substream,
 	i2s_stop(par, substream->stream);
 }
 
-static int nxp_i2s_trigger(struct snd_pcm_substream *substream,
+int nxp_i2s_trigger(struct snd_pcm_substream *substream,
 				int cmd, struct snd_soc_dai *dai)
 {
 	struct nxp_i2s_snd_param *par = snd_soc_dai_get_drvdata(dai);
@@ -751,6 +802,7 @@ static int nxp_i2s_trigger(struct snd_pcm_substream *substream,
 	}
 	return 0;
 }
+EXPORT_SYMBOL(nxp_i2s_trigger);
 
 #if defined(CONFIG_SND_NXP_DFS)
 static int nxp_i2s_set_dai_sysclk(struct snd_soc_dai *cpu_dai,
@@ -874,7 +926,6 @@ done:
 				(RFS << CSR_RFS_POS) |
 				(BFS << CSR_BFS_POS);
 
-	i2s_reset(par);
 
 	if (par->pre_supply_mclk) {
 		if (par->ext_is_en)
@@ -1023,7 +1074,11 @@ static int nxp_i2s_hw_params(struct snd_pcm_substream *substream,
 #if defined(CONFIG_SND_NXP_DFS)
 	nxp_i2s_set_dfs_sysclk(par);
 #endif
-
+#if defined (CONFIG_SND_CODEC_SMARTVOICE)
+	sprintf(playback_config, "%d,%d\n",
+				par->sample_rate,
+				(par->frame_bit == 32)? 16 : 24);
+#endif
 	return ret;
 }
 
@@ -1173,6 +1228,23 @@ static struct platform_driver i2s_driver = {
 
 static int __init nxp_i2s_init(void)
 {
+	int ret = 0;
+
+#if defined (CONFIG_SND_CODEC_SMARTVOICE)
+	struct kobject *kobj = NULL;
+
+	kobj = kobject_create_and_add("svoice", &platform_bus.kobj);
+	if (! kobj) {
+		printk(KERN_ERR "Fail, create kobject for svoice\n");
+		return -ret;
+	}
+	ret = sysfs_create_group(kobj, &attr_group);
+	if (ret) {
+		printk(KERN_ERR "Fail, create sysfs group for svoice\n");
+		kobject_del(kobj);
+		return -ret;
+	}
+#endif
 	return platform_driver_register(&i2s_driver);
 }
 

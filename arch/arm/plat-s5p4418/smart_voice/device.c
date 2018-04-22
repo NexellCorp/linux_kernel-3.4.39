@@ -594,13 +594,24 @@ static struct platform_device spdif_recev_dai = {
 
 /* snd smart-voice codec device */
 static struct nxp_svoice_plat_data svoice_data = {
+	.ref_info = {.type = SVI_DEV_I2S, .ch = 2},
+	.mic_info = {
+		{.type = SVI_DEV_SPI, .ch = 2},
+	},
+
 	.pwm_id = 1,
+	.pwm_label = NULL,
 	.spi_cs_gpio = (PAD_GPIO_C + 16),
 	.pdm_isrun_gpio = (PAD_GPIO_E + 14),
 	.pdm_lrck_gpio = (PAD_GPIO_B + 26),
 	.i2s_lrck_gpio = (PAD_GPIO_B + 4),
 	.pdm_nrst_gpio = (PAD_GPIO_E + 15),
-	.cpu_dais_num = 2,
+
+	.ref_mode = -1,
+	.ref_mclk_ext = false,
+	.ref_switch_clkgen = {-1, -1, -1, -1},
+	.mic_mclk_ext = false,
+	.mic_switch_clkgen = {-1, -1, -1, -1},
 };
 
 static struct platform_device snd_svoice_dac = {
@@ -630,7 +641,7 @@ static struct platform_device snd_spi_dev = {
 };
 
 static struct nxp_snd_svoice_dai_plat_data snd_spi_svoice_card_data = {
-	.cpu_dai = SND_SVOICE_SPI,
+	.cpu_dai = SVI_DEV_SPI,
 	.ch = 2, /* SPI channel */
 	.sample_rate = 16000,
 	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,
@@ -647,7 +658,7 @@ static struct platform_device snd_spi_svoice_card = {
 
 /* card : snd i2s <-> snd smart-voice codec */
 static struct nxp_snd_svoice_dai_plat_data snd_i2s_svoice_card_data = {
-	.cpu_dai = SND_SVOICE_I2S,
+	.cpu_dai = SVI_DEV_I2S,
 	.ch = 2, /* I2S channel */
 	.sample_rate = 48000,
 	.pcm_format = SNDRV_PCM_FMTBIT_S16_LE,

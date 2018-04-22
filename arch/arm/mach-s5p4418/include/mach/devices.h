@@ -153,7 +153,23 @@ struct nxp_pdm_spi_plat_data {
 	const char *dma_ch;
 };
 
+enum svoice_dev_type {
+	SVI_DEV_SPI,
+	SVI_DEV_I2S,
+	SVI_DEV_NONE,
+};
+
+struct svoice_dev_info {
+	enum svoice_dev_type type;
+	int ch;
+};
+
+/* svoice codec */
 struct nxp_svoice_plat_data {
+	struct svoice_dev_info ref_info;
+	struct svoice_dev_info mic_info[2];
+
+	/* spi interface */
 	int pwm_id;
 	char *pwm_label;
 	int spi_cs_gpio;
@@ -161,16 +177,18 @@ struct nxp_svoice_plat_data {
 	int pdm_lrck_gpio;
 	int i2s_lrck_gpio;
 	int pdm_nrst_gpio;
-	int cpu_dais_num;	/* sync device num */
+
+	/* i2s interface */
+	int ref_mode;
+	bool ref_mclk_ext;
+	int ref_switch_clkgen[4];
+	bool mic_mclk_ext;
+	int mic_switch_clkgen[4];
 };
 
-enum cpu_dai_type {
-	SND_SVOICE_I2S,
-	SND_SVOICE_SPI,
-};
-
+/* svoice sound card */
 struct nxp_snd_svoice_dai_plat_data {
-	enum cpu_dai_type cpu_dai;
+	enum svoice_dev_type cpu_dai;
 	int ch;
 	unsigned int sample_rate;
 	unsigned int pcm_format;

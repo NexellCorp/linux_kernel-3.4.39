@@ -48,7 +48,7 @@
 /*
  * PCM INFO
  */
-#define	PERIOD_BYTES_MAX		8192
+#define	PERIOD_BYTES_MAX		131072
 
 static struct snd_pcm_hardware nxp_pcm_hardware = {
 	/*  | SNDRV_PCM_INFO_BLOCK_TRANSFER */
@@ -62,7 +62,7 @@ static struct snd_pcm_hardware nxp_pcm_hardware = {
 	.rate_max		= 192000,
 	.channels_min		= 1,
 	.channels_max		= 2,
-	.buffer_bytes_max	= 64 * 1024 * 2,
+	.buffer_bytes_max	= 64 * 1024 * 4,
 	.period_bytes_min	= 32,
 	.period_bytes_max	= PERIOD_BYTES_MAX,
 	.periods_min		= 2,

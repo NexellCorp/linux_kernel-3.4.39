@@ -52,7 +52,7 @@ static struct snd_soc_dai_link i2s_svoice_dai_link = {
 	 */
 };
 
-static struct snd_soc_card spi_svoice_card_card[] = {
+static struct snd_soc_card svoice_card_card[] = {
 	{
 	.name = "SmartVoice.0",
 	.num_links = 1,
@@ -65,26 +65,30 @@ static struct snd_soc_card spi_svoice_card_card[] = {
 	.name = "SmartVoice.2",
 	.num_links = 1,
 	},
+	{
+	.name = "SmartVoice.3",
+	.num_links = 1,
+	},
 };
 
-static int spi_svoice_card_probe(struct platform_device *pdev)
+static int svoice_card_probe(struct platform_device *pdev)
 {
 	struct nxp_snd_svoice_dai_plat_data *plat = pdev->dev.platform_data;
-	struct snd_soc_card *card = &spi_svoice_card_card[0];
+	struct snd_soc_card *card = &svoice_card_card[0];
 	char *buf;
 	int ret;
 
 	if (pdev->id != -1) {
-		if (pdev->id >= ARRAY_SIZE(spi_svoice_card_card)) {
+		if (pdev->id >= ARRAY_SIZE(svoice_card_card)) {
 			dev_err(&pdev->dev,
 				"Error, not support card id %d\n",
 				pdev->id);
 			return -EINVAL;
 		}
-		card = &spi_svoice_card_card[pdev->id];
+		card = &svoice_card_card[pdev->id];
 	}
 
-	if (plat->cpu_dai == SND_SVOICE_I2S) {
+	if (plat->cpu_dai == SVI_DEV_I2S) {
 		buf = kzalloc(strlen("nxp-pdm-i2s") + 4, GFP_KERNEL);
 		if (!buf)
 			return -ENOMEM;
@@ -113,14 +117,14 @@ static int spi_svoice_card_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	dev_info(card->dev, "%s smartvoice: card %s -> %s\n",
-		plat->cpu_dai == SND_SVOICE_I2S ? "spi" : "i2s",
+	dev_dbg(card->dev, "%s smartvoice: card %s -> %s\n",
+		plat->cpu_dai == SVI_DEV_I2S ? "i2s" : "spi",
 		card->dai_link->codec_dai_name, card->dai_link->cpu_dai_name);
 
 	return ret;
 }
 
-static int spi_svoice_card_remove(struct platform_device *pdev)
+static int svoice_card_remove(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = platform_get_drvdata(pdev);
 	const char *buf = card->dai_link->cpu_dai_name;
@@ -131,18 +135,18 @@ static int spi_svoice_card_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static struct platform_driver spi_svoice_card_driver = {
+static struct platform_driver svoice_card_driver = {
 	.driver = {
 		.name = "nxp-smartvoice-card",
 		.owner = THIS_MODULE,
 		.pm = &snd_soc_pm_ops,
 	},
-	.probe = spi_svoice_card_probe,
-	.remove = spi_svoice_card_remove,
+	.probe = svoice_card_probe,
+	.remove = svoice_card_remove,
 };
-module_platform_driver(spi_svoice_card_driver);
+module_platform_driver(svoice_card_driver);
 
 MODULE_AUTHOR("jhkim <jhkim@nexell.co.kr>");
-MODULE_DESCRIPTION("Sound SPI Smart Voice Card driver for the SLSI");
+MODULE_DESCRIPTION("Sound PDM/I2S or SPI/I2S Smart Voice Card driver for the SLSI");
 MODULE_LICENSE("GPL");
 

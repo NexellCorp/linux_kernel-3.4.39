@@ -11,5 +11,7 @@
 
 #define SND_SOC_I2S_RATES	SNDRV_PCM_RATE_8000_192000
 
+extern int nxp_i2s_trigger(struct snd_pcm_substream *substream,
+				int cmd, struct snd_soc_dai *dai);
 #endif /* __NXP_I2S_H__ */
 
