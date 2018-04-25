@@ -172,6 +172,7 @@ struct nxp_i2s_snd_param {
 	unsigned int base_addr;
 	struct i2s_register i2s;
 	struct snd_soc_dai_driver dai_drv;
+	long dfs_freq;
 };
 
 #define	SND_I2S_LOCK_INIT(x)		spin_lock_init(x)
@@ -512,6 +513,7 @@ static int nxp_i2s_check_param(struct nxp_i2s_snd_param *par)
 			clk_set_rate(par->clk, request);
 			clk_enable(par->clk);
 			supply_master_clock(par);
+			par->dfs_freq = request;
 		}
 	}
 	par->in_clkgen = 1;
@@ -902,17 +904,20 @@ static int nxp_i2s_set_dfs_sysclk(struct nxp_i2s_snd_param *par)
 		}
 		rate_hz = request;
 
-		cutoff_master_clock(par);
-		clk_disable(par->clk);
-		nxp_cpu_pll_change_frequency(SND_NXP_DFS_PLLNO, request);
+		if (par->dfs_freq != request) {
+			cutoff_master_clock(par);
+			clk_disable(par->clk);
+			nxp_cpu_pll_change_frequency(SND_NXP_DFS_PLLNO, request);
 #if defined(CONFIG_ARCH_S5P4418)
-		nxp_cpu_clock_update_rate(CONFIG_SND_NXP_PLLDEV);
+			nxp_cpu_clock_update_rate(CONFIG_SND_NXP_PLLDEV);
 #elif defined(CONFIG_ARCH_S5P6818)
-		nxp_cpu_clock_update_pll(CONFIG_SND_NXP_PLLDEV);
+			nxp_cpu_clock_update_pll(CONFIG_SND_NXP_PLLDEV);
 #endif
-		clk_set_rate(par->clk, request);
-		clk_enable(par->clk);
-		supply_master_clock(par);
+			clk_set_rate(par->clk, request);
+			clk_enable(par->clk);
+			supply_master_clock(par);
+			par->dfs_freq = request;
+		}
 	}
 	par->in_clkgen = 1;
 	IMS |= IMS_BIT_EXTCLK;
@@ -1075,9 +1080,10 @@ static int nxp_i2s_hw_params(struct snd_pcm_substream *substream,
 	nxp_i2s_set_dfs_sysclk(par);
 #endif
 #if defined (CONFIG_SND_CODEC_SMARTVOICE)
-	sprintf(playback_config, "%d,%d\n",
-				par->sample_rate,
-				(par->frame_bit == 32)? 16 : 24);
+	if (SNDRV_PCM_STREAM_PLAYBACK == substream->stream)
+		sprintf(playback_config, "%d,%d\n",
+			par->sample_rate,
+			(par->frame_bit == 32)? 16 : 24);
 #endif
 	return ret;
 }
@@ -1098,7 +1104,10 @@ static struct snd_soc_dai_ops nxp_i2s_ops = {
  */
 static int nxp_i2s_dai_suspend(struct snd_soc_dai *dai)
 {
+	struct nxp_i2s_snd_param *par = snd_soc_dai_get_drvdata(dai);
+
 	PM_DBGOUT("%s\n", __func__);
+	par->dfs_freq = 0;
 	return 0;
 }
 
