@@ -821,7 +821,7 @@ static int  disp_syncgen_prepare(struct disp_control_info *info)
 				psync->v_active_len, psync->v_sync_width,
 				psync->v_front_porch, psync->v_back_porch);
 		NX_DPC_SetVSyncOffset(module, 0, 0, 0, 0);
-		NX_DPC_SetDelay(module, 12, 12, 12, 12);
+		NX_DPC_SetDelay(module, 0, 12, 12, 12);
 		NX_DPC_SetDither(module, RDither, GDither, BDither);
 	} else {
 		/* LCD out */
