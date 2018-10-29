@@ -535,7 +535,7 @@ struct nxp_snd_dai_plat_data rt5640_i2s_dai_data = {
 		.detect_io		= PAD_GPIO_E + 8,
 		.detect_level	= 1,
 	},
-#endif	
+#endif
 };
 
 static struct platform_device rt5640_dai = {
@@ -1075,10 +1075,10 @@ static int tw9900_power_enable(bool on)
 	if( on )
 	{
 		unsigned int pwn	= 0;
-		unsigned int nMUX	= 0; 
-		unsigned int disMUX	= 0; 
+		unsigned int nMUX	= 0;
+		unsigned int disMUX	= 0;
 
-		//printk("%s: on %d\n", __func__, on); 
+		//printk("%s: on %d\n", __func__, on);
 
 		/* Disable MUX */
 		disMUX = (PAD_GPIO_C + 9);
@@ -1096,7 +1096,7 @@ static int tw9900_power_enable(bool on)
 		nxp_soc_gpio_set_out_value(nMUX, 0);
 		mdelay(10);
 
-		/* Power Down LOW Active */ 
+		/* Power Down LOW Active */
 		pwn = (PAD_GPIO_E + 12);
 		nxp_soc_gpio_set_out_value(pwn, 0);
 		nxp_soc_gpio_set_io_dir(pwn, 1);
@@ -1135,7 +1135,7 @@ static int front_camera_power_enable(bool on)
 		} else {
 			is_front_camera_power_state_changed	= false;
 		}
-   } 
+   }
 #endif
 
     return 0;
@@ -1169,7 +1169,7 @@ static int ds90ub914q_power_enable(bool on)
 		mdelay(10);
 	}
 
-	return 0;	
+	return 0;
 }
 
 static int nvp6114a_power_enable(bool on)
@@ -1299,8 +1299,8 @@ static struct nxp_v4l2_i2c_board_info sensor[] = {
 
 static struct nxp_capture_platformdata capture_plat_data[] = {
 #if defined(CONFIG_VIDEO_NVP6114A)
-  { 
-	/* camera 656 interface */ 
+  {
+	/* camera 656 interface */
 	.module = 2,
 	.sensor = &sensor[3],
 	.type = NXP_CAPTURE_INF_PARALLEL,
@@ -1336,8 +1336,8 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
   },
 #endif
 #if defined(CONFIG_VIDEO_DS90UB914Q)
-  { 
-	/* camera 656 interface */ 
+  {
+	/* camera 656 interface */
 	.module = 2,
 	.sensor = &sensor[2],
 	.type = NXP_CAPTURE_INF_PARALLEL,
@@ -1371,8 +1371,8 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
   },
 #endif
 #if defined(CONFIG_VIDEO_TW9900)
-	 { 
-		/* back_camera 656 interface */ 
+	 {
+		/* back_camera 656 interface */
         //.module = 0,
         .module = 2,
         .sensor = &sensor[0],
@@ -1524,7 +1524,7 @@ static struct reg_val _sensor_init_data[] = {
 	{0x07, 0x02},
 	{0x08, 0x12},
 	{0x09, 0xf0},
-	{0x0a, 0x1c}, 	
+	{0x0a, 0x1c},
 	//{0x0b, 0xd0},	// 720
 	{0x0b, 0xc0},	// 704
 	{0x1b, 0x00},
@@ -1565,7 +1565,7 @@ static int _sensor_power_enable(bool enable)
 {
 	u32 pwn		=	CAMERA_POWER_DOWN;
 	u32 mux		=	CAMERA_MUX;
-	u32 disMux 	= 	DIS_MUX; 
+	u32 disMux 	= 	DIS_MUX;
 
 	if( enable ) {
 
@@ -1588,7 +1588,7 @@ static int _sensor_power_enable(bool enable)
 
 		mdelay(10);
 	}
-	
+
 	return 0;
 }
 #endif
@@ -1600,10 +1600,10 @@ static int _sensor_power_enable(bool enable)
 
 static int _sensor_power_enable(bool enable)
 {
-	u32 reset   =   CAMERA_RESET; 
-	u32 dis_mux =   DISABLE_MUX; 
-	u32 en_mux  =   ENABLE_MUX; 
-	u32 sel_in  =   SELECT_IN; 
+	u32 reset   =   CAMERA_RESET;
+	u32 dis_mux =   DISABLE_MUX;
+	u32 en_mux  =   ENABLE_MUX;
+	u32 sel_in  =   SELECT_IN;
 
 	if( enable ) {
 		/* Disable MUX */
@@ -1681,7 +1681,7 @@ static void _sensor_setup_io(void)
 #endif
 	};
 
-//	printk("%s\n", __func__); 
+//	printk("%s\n", __func__);
 
     pad = (u_int *)port;
     len = sizeof(port)/sizeof(port[0]);
@@ -1690,8 +1690,8 @@ static void _sensor_setup_io(void)
         io = *pad++;
         fn = *pad++;
         nxp_soc_gpio_set_io_dir(io, 0);
-        nxp_soc_gpio_set_io_func(io, fn); 
-    }    
+        nxp_soc_gpio_set_io_func(io, fn);
+    }
 }
 
 #if defined(CONFIG_NVP6114A_BACKWARD)
@@ -1705,7 +1705,7 @@ static struct nxp_vendor_context _nxp_vendor_context;
 
 static bool _alloc_vendor_context(void *ctx)
 {
-    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx;
 
     printk(KERN_ERR "+++ %s ---\n", __func__);
 
@@ -1714,7 +1714,7 @@ static bool _alloc_vendor_context(void *ctx)
 
 static bool _pre_turn_on(void *ctx)
 {
-    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx;
 
     printk(KERN_ERR "+++ %s ---\n", __func__);
 
@@ -1723,29 +1723,29 @@ static bool _pre_turn_on(void *ctx)
 
 static void _post_turn_off(void *ctx)
 {
-    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx;
 
     printk(KERN_ERR "+++ %s ---\n", __func__);
 }
 
 static void _free_vendor_context(void *ctx)
 {
-    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx;
 
     printk(KERN_ERR "+++ %s ---\n", __func__);
 }
 
 static bool _decide(void *ctx)
 {
-    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx; 
+    struct nxp_vendor_context *_ctx = (struct nxp_vendor_context *)ctx;
 
     printk(KERN_ERR "+++ %s ---\n", __func__);
 
     return true;
 }
 
-static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data, void *ctx, void *mem) 
-{ 
+static void _draw_rgb_overlay(struct nxp_backward_camera_platform_data *plat_data, void *ctx, void *mem)
+{
     //printk("%s\n", __func__);
 
     memset(mem, 0, plat_data->width*plat_data->height*4);
@@ -1773,7 +1773,7 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     //.vip_module_num       = 0,
     .vip_module_num         = 2,
     .mlc_module_num         = 0,
-    
+
     //vendor context
     .vendor_context         = &_nxp_vendor_context,
     .alloc_vendor_context   = _alloc_vendor_context,
@@ -1813,7 +1813,7 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     // deinterlace
     .use_deinterlacer       = false,
     //.use_deinterlacer       = true,
-    .devide_frame           = false, // Data Sequence : TW9900 : (odd-even-odd ~ even) per frame = false, TW9992 : (odd-even) = odd(width*(height/2)) - even(width*(height/2)) per frame = true, frame(9900 vs 9992) 
+    .devide_frame           = false, // Data Sequence : TW9900 : (odd-even-odd ~ even) per frame = false, TW9992 : (odd-even) = odd(width*(height/2)) - even(width*(height/2)) per frame = true, frame(9900 vs 9992)
     .is_odd_first           = true,
 
     .lu_addr                = 0,
@@ -1936,7 +1936,7 @@ static struct reg_val _tw9992_sensor_init_data[] =
 	{0x0a, 0x14},
 	{0x0b, 0xd0},
 	{0x06, 0x80},
-   
+
     END_MARKER
 };
 
@@ -1969,8 +1969,8 @@ static int _tw9992_sensor_power_enable(bool enable)
 static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .backgear_gpio_num  = CFG_BACKWARD_GEAR,
     .active_high        = false,
-    .vip_module_num     = 0, 
-    .mlc_module_num     = 0, 
+    .vip_module_num     = 0,
+    .mlc_module_num     = 0,
 
     //vendor context
     .vendor_context         = &_nxp_vendor_context,
@@ -2010,20 +2010,20 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     // deinterlace
     //.use_deinterlacer       = false,
     .use_deinterlacer       = true,
-    .devide_frame           = true, // even/odd, frame(9900 vs 9992) 
+    .devide_frame           = true, // even/odd, frame(9900 vs 9992)
     .is_odd_first           = false,
 
     .lu_addr            = 0,
     .cb_addr            = 0,
     .cr_addr            = 0,
 
-    .lu_stride          = 0, 
-    .cb_stride          = 0, 
-    .cr_stride          = 0, 
+    .lu_stride          = 0,
+    .cb_stride          = 0,
+    .cr_stride          = 0,
 
     .rgb_format         = MLC_RGBFMT_A8R8G8B8,
     .width              = 1024,
-    .height             = 600, 
+    .height             = 600,
     .rgb_addr           = 0,
     .draw_rgb_overlay   = _draw_rgb_overlay,
 };
@@ -2049,7 +2049,7 @@ static struct nxp_backward_camera_platform_data backward_camera_plat_data = {
     .decide                 = _decide,
 
     //activation
-    .turn_on_delay_ms       = 700, 
+    .turn_on_delay_ms       = 700,
 
     // sensor
     .i2c_bus                = MDEC_HDCAM_HMRX_AUDIO2_I2CBUS,
@@ -2179,7 +2179,7 @@ static struct dw_mci_board _dwmci1_data = {
 	.detect_delay_ms= 200,
 	.cd_type = DW_MCI_CD_NONE,
 	.pm_caps        = MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY,
-	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(0) | DW_MMC_SAMPLE_PHASE(0),
+	.clk_dly        = DW_MMC_DRIVE_DELAY(0) | DW_MMC_SAMPLE_DELAY(0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(2),
 #if defined (CONFIG_MMC_DW_IDMAC) && defined (CONFIG_MMC_NXP_CH1_USE_DMA)
     .mode           = DMA_MODE,
 #else
@@ -2196,11 +2196,11 @@ static struct dw_mci_board _dwmci2_data = {
                       DW_MMC_QUIRK_HW_RESET_PW |
                       DW_MCI_QUIRK_NO_DETECT_EBIT,
     .bus_hz         = 200 * 1000 * 1000, /*200*/
-    .caps           = MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
+    .caps           = MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR | MMC_CAP_SET_XPC_330 |
                       MMC_CAP_NONREMOVABLE |
                       MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23 |
                       MMC_CAP_HW_RESET,
-    .clk_dly        = DW_MMC_DRIVE_DELAY(0x0) | DW_MMC_SAMPLE_DELAY(0x0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(1),
+    .clk_dly        = DW_MMC_DRIVE_DELAY(0x0) | DW_MMC_SAMPLE_DELAY(0x0) | DW_MMC_DRIVE_PHASE(2) | DW_MMC_SAMPLE_PHASE(2),
 
     .desc_sz        = 4,
     .detect_delay_ms= 200,
