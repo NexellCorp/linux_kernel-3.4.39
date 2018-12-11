@@ -97,7 +97,8 @@ int usb_choose_configuration(struct usb_device *udev)
 		 */
 
 		/* Rule out configs that draw too much bus current */
-		if (c->desc.bMaxPower * 2 > udev->bus_mA) {
+		//if (c->desc.bMaxPower * 2 > udev->bus_mA) {
+		if (c->desc.bMaxPower * 2 > 500) { // usb 1.1 & usb 2.0 use 500mA at Max.
 			insufficient_power++;
 			continue;
 		}
