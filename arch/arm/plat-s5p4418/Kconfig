@@ -29,9 +29,15 @@ choice
 		help
    	 		Support for the drone board.
 	config PLAT_S5P4418_GENERAL
-        bool "GENERAL: Android general board"
-        help
+	        bool "GENERAL: Android general board"
+		        help
             Support for the general board.
+	
+        config PLAT_S5P4418_SLT
+	        bool "SLT: Linux slt board"
+        help
+            Support for the slt board.
+
 
 endchoice
 

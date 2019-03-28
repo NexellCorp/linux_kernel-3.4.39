@@ -23,6 +23,11 @@ ifeq ($(CONFIG_PLAT_S5P4418_GENERAL),y)
 PLATBOARD :=general
 endif
 
+ifeq ($(CONFIG_PLAT_S5P4418_SLT),y)
+PLATBOARD :=slt
+endif
+
+
 #
 # Build options
 #
