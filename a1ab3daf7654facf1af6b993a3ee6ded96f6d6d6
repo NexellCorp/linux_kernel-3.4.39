@@ -1,0 +1,44 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "14d84526_896a380e",
+        "filename": "kernel/panic.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 433,
+      "author": {
+        "id": 1015645
+      },
+      "writtenOn": "2019-03-28T08:41:29Z",
+      "side": 1,
+      "message": "remove empty tap",
+      "range": {
+        "startLine": 433,
+        "startChar": 0,
+        "endLine": 433,
+        "endChar": 1
+      },
+      "revId": "a1ab3daf7654facf1af6b993a3ee6ded96f6d6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4c8fd954_60dedf9d",
+        "filename": "kernel/panic.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 433,
+      "author": {
+        "id": 1015645
+      },
+      "writtenOn": "2019-03-28T08:41:29Z",
+      "side": 1,
+      "message": "remove empty tap",
+      "revId": "a1ab3daf7654facf1af6b993a3ee6ded96f6d6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
