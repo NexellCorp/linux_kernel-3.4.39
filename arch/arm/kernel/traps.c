@@ -35,6 +35,8 @@
 #include <asm/tls.h>
 #include <asm/system_misc.h>
 
+#include <mach/platform.h>
+
 #include "signal.h"
 
 static const char *handler[]= { "prefetch abort", "data abort", "address exception", "interrupt" };
@@ -201,6 +203,8 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 
 	if (ok)
 		c_backtrace(fp, mode);
+
+	nxp_cpu_shutdown();
 }
 #endif
 
@@ -418,6 +422,7 @@ die_sig:
 	info.si_code  = ILL_ILLOPC;
 	info.si_addr  = pc;
 
+	nxp_cpu_shutdown();
 	arm_notify_die("Oops - undefined instruction", regs, &info, 0, 6);
 }
 

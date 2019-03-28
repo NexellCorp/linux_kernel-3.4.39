@@ -26,6 +26,8 @@
 #include <asm/system_info.h>
 #include <asm/tlbflush.h>
 
+#include <mach/platform.h>
+
 #include "fault.h"
 
 #ifdef CONFIG_MMU
@@ -146,6 +148,8 @@ __do_kernel_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
 		"Unable to handle kernel %s at virtual address %08lx\n",
 		(addr < PAGE_SIZE) ? "NULL pointer dereference" :
 		"paging request", addr);
+
+	nxp_cpu_shutdown();
 
 	show_pte(mm, addr);
 	die("Oops", regs, fsr);
