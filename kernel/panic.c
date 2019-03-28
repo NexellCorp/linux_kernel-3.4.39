@@ -24,6 +24,8 @@
 #include <linux/nmi.h>
 #include <linux/dmi.h>
 
+#include <mach/platform.h>
+
 #define PANIC_TIMER_STEP 100
 #define PANIC_BLINK_SPD 18
 
@@ -388,6 +390,7 @@ void print_oops_end_marker(void)
 
 	printk(KERN_WARNING "---[ end trace %016llx ]---\n",
 		(unsigned long long)oops_id);
+	nxp_cpu_shutdown();
 }
 
 /*
@@ -399,6 +402,8 @@ void oops_exit(void)
 	do_oops_enter_exit();
 	print_oops_end_marker();
 	kmsg_dump(KMSG_DUMP_OOPS);
+
+	nxp_cpu_shutdown();
 }
 
 #ifdef WANT_WARN_ON_SLOWPATH
@@ -425,6 +430,8 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
 	dump_stack();
 	print_oops_end_marker();
 	add_taint(taint);
+
+	nxp_cpu_shutdown();
 }
 
 void warn_slowpath_fmt(const char *file, int line, const char *fmt, ...)
