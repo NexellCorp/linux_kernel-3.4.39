@@ -128,7 +128,6 @@ const u8 g_DispBusSI[3] = {
 struct nxp_cpufreq_plat_data dfs_plat_data = {
 	.pll_dev	= CONFIG_NXP_CPUFREQ_PLLDEV,
 #if defined(CONFIG_REGULATOR_NXE2000)
-	.supply_name	= "vdd_arm_1.3V",	//refer to CONFIG_REGULATOR_NXE2000
 #endif
 	//.max_cpufreq	= 1100*1000,
 	//.max_retention  =   20*1000,
