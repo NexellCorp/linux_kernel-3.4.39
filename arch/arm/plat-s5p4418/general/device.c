@@ -1352,8 +1352,13 @@ static struct i2c_board_info tw9900_i2c_boardinfo[] = {
     },
 };
 
+#if defined(CONFIG_VIDEO_TW9992)
+#define FRONT_CAM_WIDTH		720
+#define FRONT_CAM_HEIGHT	480
+#else
 #define FRONT_CAM_WIDTH		704
 #define FRONT_CAM_HEIGHT	480
+#endif
 
 static void front_vin_setup_io(int module, bool force)
 {
@@ -1538,14 +1543,14 @@ static struct nxp_capture_platformdata capture_plat_data[] = {
         .type = NXP_CAPTURE_INF_CSI,
         .parallel = {
             .is_mipi        = true,
-            .external_sync  = true,
+            .external_sync  = false,
             .h_active       = FRONT_CAM_WIDTH,
-            .h_frontporch   = 4,
-            .h_syncwidth    = 4,
-            .h_backporch    = 4,
+            .h_frontporch   = 8,
+            .h_syncwidth    = 7,
+            .h_backporch    = 7,
             .v_active       = FRONT_CAM_HEIGHT,
             .v_frontporch   = 1,
-            .v_syncwidth    = 1,
+            .v_syncwidth    = 8,
             .v_backporch    = 1,
             .clock_invert   = false,
             .port           = NX_VIP_INPUTPORT_B,
