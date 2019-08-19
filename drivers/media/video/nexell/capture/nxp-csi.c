@@ -217,13 +217,9 @@ static void _hw_run(struct nxp_csi *me)
 
     NX_MIPI_OpenModule(me->module);
 #if defined(CONFIG_VIDEO_TW9992)
-	#if defined(CONFIG_ARCH_S5P6818)
-		{
-		    volatile NX_MIPI_RegisterSet* pmipi;
-		    pmipi = (volatile NX_MIPI_RegisterSet*)IO_ADDRESS(NX_MIPI_GetPhysicalAddress(me->module));
-		    pmipi->CSIS_DPHYCTRL= (5 <<24);
-		}
-	#endif
+    volatile NX_MIPI_RegisterSet* pmipi;
+    pmipi = (volatile NX_MIPI_RegisterSet*)IO_ADDRESS(NX_MIPI_GetPhysicalAddress(me->module));
+    pmipi->CSIS_DPHYCTRL= (5 <<24);
 #endif
     NX_MIPI_SetInterruptEnableAll(me->module, CFALSE);
     NX_MIPI_ClearInterruptPendingAll(me->module);
@@ -514,6 +510,8 @@ static int nxp_csi_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
         format->height = me->platdata->height;
         format->field = V4L2_FIELD_NONE;
         format->colorspace = V4L2_COLORSPACE_SRGB;
+	me->format.width = format->width;
+	me->format.height = format->height;
     }
 
     return 0;
