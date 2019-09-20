@@ -41,6 +41,10 @@
 
 extern bool microframe_schedule;
 
+static void desc_list_free(dwc_otg_qh_t * qh);
+
+void dump_frame_list(dwc_otg_hcd_t * hcd);
+
 static inline uint8_t frame_list_idx(uint16_t frame)
 {
 	return (frame & (MAX_FRLIST_EN_NUM - 1));
@@ -80,28 +84,33 @@ static int desc_list_alloc(dwc_otg_qh_t * qh)
 	int retval = 0;
 
 	qh->desc_list = (dwc_otg_host_dma_desc_t *)
-	    DWC_DMA_ALLOC(sizeof(dwc_otg_host_dma_desc_t) * max_desc_num(qh),
+	    DWC_DMA_ALLOC_ATOMIC(sizeof(dwc_otg_host_dma_desc_t) * max_desc_num(qh),
 			  &qh->desc_list_dma);
 
 	if (!qh->desc_list) {
 		retval = -DWC_E_NO_MEMORY;
 		DWC_ERROR("%s: DMA descriptor list allocation failed\n", __func__);
-		
+		goto exit_cleanup;
 	}
 
 	dwc_memset(qh->desc_list, 0x00,
 		   sizeof(dwc_otg_host_dma_desc_t) * max_desc_num(qh));
 
 	qh->n_bytes =
-	    (uint32_t *) DWC_ALLOC(sizeof(uint32_t) * max_desc_num(qh));
+	    (uint32_t *) DWC_ALLOC_ATOMIC(sizeof(uint32_t) * max_desc_num(qh));
 
 	if (!qh->n_bytes) {
 		retval = -DWC_E_NO_MEMORY;
 		DWC_ERROR
 		    ("%s: Failed to allocate array for descriptors' size actual values\n",
 		     __func__);
-
+		goto exit_cleanup;
 	}
+	return 0;
+
+exit_cleanup:
+	desc_list_free(qh);
+
 	return retval;
 
 }
@@ -126,25 +135,37 @@ static int frame_list_alloc(dwc_otg_hcd_t * hcd)
 	if (hcd->frame_list)
 		return 0;
 
-	hcd->frame_list = DWC_DMA_ALLOC(4 * MAX_FRLIST_EN_NUM,
+	hcd->frame_list = DWC_DMA_ALLOC_ATOMIC(4 * MAX_FRLIST_EN_NUM,
 					&hcd->frame_list_dma);
 	if (!hcd->frame_list) {
 		retval = -DWC_E_NO_MEMORY;
 		DWC_ERROR("%s: Frame List allocation failed\n", __func__);
+		goto error0;
 	}
 
 	dwc_memset(hcd->frame_list, 0x00, 4 * MAX_FRLIST_EN_NUM);
 
+error0:
 	return retval;
 }
 
 static void frame_list_free(dwc_otg_hcd_t * hcd)
 {
-	if (!hcd->frame_list)
+	uint32_t *frame_list;
+	dma_addr_t frame_list_dma;
+	dwc_irqflags_t flags;
+
+	DWC_SPINLOCK_IRQSAVE(hcd->lock, &flags);
+	if (!hcd->frame_list) {
+		DWC_SPINUNLOCK_IRQRESTORE(hcd->lock, flags);
 		return;
-	
-	DWC_DMA_FREE(4 * MAX_FRLIST_EN_NUM, hcd->frame_list, hcd->frame_list_dma);
+	}
+
+	frame_list = hcd->frame_list;
+	frame_list_dma = hcd->frame_list_dma;
 	hcd->frame_list = NULL;
+	DWC_SPINUNLOCK_IRQRESTORE(hcd->lock, flags);
+	DWC_DMA_FREE(4 * MAX_FRLIST_EN_NUM, frame_list, frame_list_dma);
 }
 
 static void per_sched_enable(dwc_otg_hcd_t * hcd, uint16_t fr_list_en)
@@ -273,7 +294,7 @@ void dump_frame_list(dwc_otg_hcd_t * hcd)
 }
 #endif
 
-static void release_channel_ddma(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
+void release_channel_ddma(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 {
 	dwc_irqflags_t flags;
 	dwc_spinlock_t *channel_lock = hcd->channel_lock;
@@ -286,10 +307,14 @@ static void release_channel_ddma(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 		else
 			hcd->available_host_channels++;
 		DWC_SPINUNLOCK_IRQRESTORE(channel_lock, flags);
-	} else
+	} else {
+		DWC_SPINLOCK_IRQSAVE(channel_lock, &flags);
 		update_frame_list(hcd, qh, 0);
+		hcd->available_host_channels++;
+		DWC_SPINUNLOCK_IRQRESTORE(channel_lock, flags);
+	}
 
-	/* 
+	/*
 	 * The condition is added to prevent double cleanup try in case of device
 	 * disconnect. See channel cleanup in dwc_otg_hcd_disconnect_cb().
 	 */
@@ -307,11 +332,12 @@ static void release_channel_ddma(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 			   sizeof(dwc_otg_host_dma_desc_t) * max_desc_num(qh));
 	}
 }
+EXPORT_SYMBOL(release_channel_ddma);
 
-/** 
+/**
  * Initializes a QH structure's Descriptor DMA related members.
  * Allocates memory for descriptor list.
- * On first periodic QH, allocates memory for FrameList 
+ * On first periodic QH, allocates memory for FrameList
  * and enables periodic scheduling.
  *
  * @param hcd The HCD state structure for the DWC OTG controller.
@@ -345,27 +371,32 @@ int dwc_otg_hcd_qh_init_ddma(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 	return retval;
 }
 
-/** 
- * Frees descriptor list memory associated with the QH. 
- * If QH is periodic and the last, frees FrameList memory 
- * and disables periodic scheduling. 
+/**
+ * Frees descriptor list memory associated with the QH.
+ * If QH is periodic and the last, frees FrameList memory
+ * and disables periodic scheduling.
  *
  * @param hcd The HCD state structure for the DWC OTG controller.
  * @param qh The QH to init.
  */
 void dwc_otg_hcd_qh_free_ddma(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 {
+	dwc_irqflags_t flags;
+
 	desc_list_free(qh);
 
-	/* 
-	 * Channel still assigned due to some reasons. 
+	/*
+	 * Channel still assigned due to some reasons.
 	 * Seen on Isoc URB dequeue. Channel halted but no subsequent
 	 * ChHalted interrupt to release the channel. Afterwards
 	 * when it comes here from endpoint disable routine
 	 * channel remains assigned.
 	 */
-	if (qh->channel)
+	DWC_SPINLOCK_IRQSAVE(hcd->lock, &flags);
+	if (qh->channel) {
 		release_channel_ddma(hcd, qh);
+	}
+	DWC_SPINUNLOCK_IRQRESTORE(hcd->lock, flags);
 
 	if ((qh->ep_type == UE_ISOCHRONOUS || qh->ep_type == UE_INTERRUPT)
 	    && (microframe_schedule || !hcd->periodic_channels) && hcd->frame_list) {
@@ -700,8 +731,8 @@ static void init_non_isoc_dma_desc(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
  * then updates FrameList, marking appropriate entries as active.
  * In case of Isochronous, the starting descriptor index is calculated based
  * on the scheduled frame, but only on the first transfer descriptor within a session.
- * Then starts the transfer via enabling the channel. 
- * For Isochronous endpoint the channel is not halted on XferComplete 
+ * Then starts the transfer via enabling the channel.
+ * For Isochronous endpoint the channel is not halted on XferComplete
  * interrupt so remains assigned to the endpoint(QH) until session is done.
  *
  * @param hcd The HCD state structure for the DWC OTG controller.
@@ -709,11 +740,23 @@ static void init_non_isoc_dma_desc(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
  *
  * @return 0 if successful, negative error code otherwise.
  */
-void dwc_otg_hcd_start_xfer_ddma(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
+void dwc_otg_hcd_start_xfer_ddma(dwc_otg_hcd_t * p_hcd, dwc_otg_qh_t * p_qh)
 {
 	/* Channel is already assigned */
-	dwc_hc_t *hc = qh->channel;
+	dwc_hc_t *hc;
+	dwc_otg_qh_t * qh;
+	dwc_otg_hcd_t * hcd;
 	uint8_t skip_frames = 0;
+
+	if(p_hcd == NULL || p_qh == NULL)
+		return;
+
+	qh = p_qh;
+	hcd = p_hcd;
+
+	hc = qh->channel;
+	if(hc == NULL)
+		return;
 
 	switch (hc->ep_type) {
 	case DWC_OTG_EP_TYPE_CONTROL:

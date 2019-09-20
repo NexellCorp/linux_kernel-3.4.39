@@ -1641,6 +1641,9 @@ static int32_t handle_hc_xfercomp_intr(dwc_otg_hcd_t * hcd,
 	DWC_DEBUGPL(DBG_HCDI, "--Host Channel %d Interrupt: "
 		    "Transfer Complete--\n", hc->hc_num);
 
+	if (!urb)
+		goto handle_xfercomp_done;
+
 	if (hcd->core_if->dma_desc_enable) {
 		dwc_otg_hcd_complete_xfer_ddma(hcd, hc, hc_regs, halt_status);
 		if (pipe_type == UE_ISOCHRONOUS) {
@@ -1777,6 +1780,9 @@ static int32_t handle_hc_stall_intr(dwc_otg_hcd_t * hcd,
 		dwc_otg_hcd_complete_xfer_ddma(hcd, hc, hc_regs, DWC_OTG_HC_XFER_STALL);
 		goto handle_stall_done;
 	}
+
+	if (!urb)
+		goto handle_stall_done;
 
 	if (pipe_type == UE_CONTROL) {
 		hcd->fops->complete(hcd, urb->priv, urb, -DWC_E_PIPE);
@@ -2317,7 +2323,8 @@ static int32_t handle_hc_xacterr_intr(dwc_otg_hcd_t * hcd,
 	}
 handle_xacterr_done:
 	disable_hc_int(hc_regs, xacterr);
-
+	/* disconnect connected usb device when d+/d- is shorted. */
+	cil_hcd_disconnect(hcd->core_if);
 	return 1;
 }
 

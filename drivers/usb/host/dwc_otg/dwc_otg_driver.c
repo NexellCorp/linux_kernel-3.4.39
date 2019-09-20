@@ -138,6 +138,7 @@ struct dwc_otg_driver_module_params {
 	int32_t otg_cap;
 	int32_t dma_enable;
 	int32_t dma_desc_enable;
+	int32_t g_dma_desc_enable;
 	int32_t dma_burst_size;
 	int32_t speed;
 	int32_t host_support_fs_ls_low_power;
@@ -186,8 +187,10 @@ static struct dwc_otg_driver_module_params dwc_otg_module_params = {
 	.dma_enable = -1,
 #ifdef CONFIG_ARCH_CPU_SLSI
 	.dma_desc_enable = -1,
+	.g_dma_desc_enable = 0,
 #else
 	.dma_desc_enable = -1,
+	.g_dma_desc_enable = 0,
 #endif
 	.dma_burst_size = -1,
 	.speed = -1,
@@ -399,9 +402,8 @@ static int dwc_otg_driver_suspend(struct platform_device *_dev , pm_message_t st
 #ifdef CONFIG_BATTERY_NXE2000
 		nxp_otgvbus_pwr_set(0);
 #endif
-    	return 0;
+    	//J18 fixed host mode return 0;
     }
-
 	dwc_otg_driver_suspend_regs(core_if, 1);
 
     /* Clear any pending interrupts */
@@ -432,9 +434,8 @@ static int dwc_otg_driver_resume(struct platform_device *_dev )
 
     if(core_if->op_state == A_HOST) {
     	DWC_PRINTF("%s,A_HOST mode\n", __func__);
-    	return 0;
+    	//J18 fixed host mode return 0;
     }
-
 	dwc_otg_driver_suspend_regs(core_if, 0);
 
 #if 0
@@ -1156,8 +1157,6 @@ static int dwc_otg_driver_probe(
 
 	if (dwc_param_dma_desc_enable_default) {
 		dwc_otg_set_param_dma_enable(dwc_otg_device->core_if,1);
-		if(!dwc_otg_is_host_mode(dwc_otg_device->core_if))
-			dwc_otg_set_param_dma_desc_enable(dwc_otg_device->core_if,0);
 	}
 	/*
 	 * Initialize the DWC_otg core.
@@ -1302,7 +1301,7 @@ static int __init dwc_otg_driver_init(void)
 {
 	int retval = 0;
 	int error;
-    struct device_driver *drv;
+        struct device_driver *drv;
 
 	if(fiq_split_enable && !fiq_fix_enable) {
 		printk(KERN_WARNING "dwc_otg: fiq_split_enable was set without fiq_fix_enable! Correcting.\n");
@@ -1382,6 +1381,8 @@ module_param_named(dma_enable, dwc_otg_module_params.dma_enable, int, 0444);
 MODULE_PARM_DESC(dma_enable, "DMA Mode 0=Slave 1=DMA enabled");
 
 module_param_named(dma_desc_enable, dwc_otg_module_params.dma_desc_enable, int,
+		   0444);
+module_param_named(g_dma_desc_enable, dwc_otg_module_params.g_dma_desc_enable, int,
 		   0444);
 MODULE_PARM_DESC(dma_desc_enable,
 		 "DMA Desc Mode 0=Address DMA 1=DMA Descriptor enabled");
@@ -1861,6 +1862,15 @@ MODULE_PARM_DESC(fiq_split_enable, "Enable the FIQ fix on split transactions");
 <tr>
  <td>dma_desc_enable</td>
  <td>Specifies whether to enable Descriptor DMA mode.
+ The driver will automatically detect the value for this parameter if none is
+ specified.
+ - 0: Descriptor DMA disabled
+ - 1: Descriptor DMA (default, if available)
+ </td></tr>
+
+ <tr>
+ <td>g_dma_desc_enable</td>
+ <td>Specifies whether to enable gadget Descriptor DMA mode.
  The driver will automatically detect the value for this parameter if none is
  specified.
  - 0: Descriptor DMA disabled

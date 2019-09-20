@@ -556,7 +556,7 @@ void dwc_otg_iso_ep_start_buf_transfer(dwc_otg_core_if_t * core_if,
 		addr = &core_if->dev_if->out_ep_regs[ep->num]->doepctl;
 	}
 
-	if (core_if->dma_enable == 0 || core_if->dma_desc_enable != 0) {
+	if (core_if->dma_enable == 0 || core_if->g_dma_desc_enable != 0) {
 		return;
 	} else {
 		deptsiz_data_t deptsiz = {.d32 = 0 };
@@ -627,7 +627,7 @@ static void dwc_otg_iso_ep_start_transfer(dwc_otg_core_if_t * core_if,
 					  dwc_ep_t * ep)
 {
 	if (core_if->dma_enable) {
-		if (core_if->dma_desc_enable) {
+		if (core_if->g_dma_desc_enable) {
 			if (ep->is_in) {
 				ep->desc_cnt = ep->pkt_cnt / ep->pkt_per_frm;
 			} else {
@@ -683,7 +683,7 @@ void dwc_otg_iso_ep_stop_transfer(dwc_otg_core_if_t * core_if, dwc_ep_t * ep)
 
 	DWC_WRITE_REG32(addr, depctl.d32);
 
-	if (core_if->dma_desc_enable &&
+	if (core_if->g_dma_desc_enable &&
 	    ep->iso_desc_addr && ep->iso_dma_desc_addr) {
 		dwc_otg_ep_free_desc_chain(ep->iso_desc_addr,
 					   ep->iso_dma_desc_addr,
@@ -787,7 +787,7 @@ int dwc_otg_pcd_iso_ep_start(dwc_otg_pcd_t * pcd, void *ep_handle,
 		     - 1 + dwc_ep->maxpacket) / dwc_ep->maxpacket;
 	}
 
-	if (core_if->dma_desc_enable) {
+	if (core_if->g_dma_desc_enable) {
 		dwc_ep->desc_cnt =
 		    dwc_ep->buf_proc_intrvl * dwc_ep->pkt_per_frm /
 		    dwc_ep->bInterval;
@@ -1183,7 +1183,7 @@ dwc_otg_pcd_t *dwc_otg_pcd_init(dwc_otg_core_if_t * core_if)
 			return NULL;
 		}
 
-		if (GET_CORE_IF(pcd)->dma_desc_enable) {
+		if (GET_CORE_IF(pcd)->g_dma_desc_enable) {
 			dev_if->setup_desc_addr[0] =
 			    dwc_otg_ep_alloc_desc_chain
 			    (&dev_if->dma_setup_desc_addr[0], 1);
@@ -1318,7 +1318,7 @@ void dwc_otg_pcd_remove(dwc_otg_pcd_t * pcd)
 			     pcd->setup_pkt_dma_handle);
 		DWC_DMA_FREE(sizeof(uint16_t), pcd->status_buf,
 			     pcd->status_buf_dma_handle);
-		if (GET_CORE_IF(pcd)->dma_desc_enable) {
+		if (GET_CORE_IF(pcd)->g_dma_desc_enable) {
 			dwc_otg_ep_free_desc_chain(dev_if->setup_desc_addr[0],
 						   dev_if->dma_setup_desc_addr
 						   [0], 1);
@@ -1569,7 +1569,7 @@ int dwc_otg_pcd_ep_enable(dwc_otg_pcd_t * pcd,
 	}
 
 	/* Alloc DMA Descriptors */
-	if (GET_CORE_IF(pcd)->dma_desc_enable) {
+	if (GET_CORE_IF(pcd)->g_dma_desc_enable) {
 #ifndef DWC_UTE_PER_IO
 		if (ep->dwc_ep.type != UE_ISOCHRONOUS) {
 #endif
@@ -1674,7 +1674,7 @@ int dwc_otg_pcd_ep_disable(dwc_otg_pcd_t * pcd, void *ep_handle)
 	}
 
 	/* Free DMA Descriptors */
-	if (GET_CORE_IF(pcd)->dma_desc_enable) {
+	if (GET_CORE_IF(pcd)->g_dma_desc_enable) {
 		if (ep->dwc_ep.type != UE_ISOCHRONOUS) {
 #ifdef CONFIG_ARCH_CPU_SLSI
 			int irqoff = irqs_disabled();
@@ -2020,7 +2020,7 @@ int dwc_otg_pcd_xiso_ep_queue(dwc_otg_pcd_t * pcd, void *ep_handle,
 
 	/* We support this extension only for DDMA mode */
 	if (ep->dwc_ep.type == DWC_OTG_EP_TYPE_ISOC)
-		if (!GET_CORE_IF(pcd)->dma_desc_enable)
+		if (!GET_CORE_IF(pcd)->g_dma_desc_enable)
 			return -DWC_E_INVALID;
 
 	/* Create a dwc_otg_pcd_request_t object */
@@ -2138,10 +2138,10 @@ int dwc_otg_pcd_ep_queue(dwc_otg_pcd_t * pcd, void *ep_handle,
 #else
 	if ((dma_buf & 0x3) && GET_CORE_IF(pcd)->dma_enable
 #endif
-			&& !GET_CORE_IF(pcd)->dma_desc_enable) {
-		req->dw_align_buf = DWC_DMA_ALLOC(buflen,
+			&& !GET_CORE_IF(pcd)->g_dma_desc_enable) {
+		req->dw_align_buf = DWC_DMA_ALLOC_ATOMIC(buflen,
 				 &req->dw_align_buf_dma);
-		DWC_WARN( "%s: DWC_DMA_ALLOC (req %p) %p:%d dma %x (align %p:%x)\n",
+		DWC_DEBUGPL(DBG_PCD, "%s: DWC_DMA_ALLOC_ATOMIC (req %p) %p:%d dma %x (align %p:%x)\n",
         	__func__, req_handle, req->buf, req->length, req->dma,
         	req->dw_align_buf, req->dw_align_buf_dma);
 	}
@@ -2274,7 +2274,7 @@ int dwc_otg_pcd_ep_queue(dwc_otg_pcd_t * pcd, void *ep_handle,
 				ep->dwc_ep.total_len = buflen;
 
 				ep->dwc_ep.maxxfer = max_transfer;
-				if (GET_CORE_IF(pcd)->dma_desc_enable) {
+				if (GET_CORE_IF(pcd)->g_dma_desc_enable) {
 					uint32_t out_max_xfer =
 					    DDMA_MAX_TRANSFER_SIZE -
 					    (DDMA_MAX_TRANSFER_SIZE % 4);
@@ -2408,7 +2408,7 @@ int dwc_otg_pcd_ep_wedge(dwc_otg_pcd_t * pcd, void *ep_handle)
 		retval = -DWC_E_AGAIN;
 	} else {
                 /* This code needs to be reviewed */
-		if (ep->dwc_ep.is_in == 1 && GET_CORE_IF(pcd)->dma_desc_enable) {
+		if (ep->dwc_ep.is_in == 1 && GET_CORE_IF(pcd)->g_dma_desc_enable) {
 			dtxfsts_data_t txstatus;
 			fifosize_data_t txfifosize;
 
@@ -2470,7 +2470,7 @@ int dwc_otg_pcd_ep_halt(dwc_otg_pcd_t * pcd, void *ep_handle, int value)
 	} else if (value == 0) {
 		dwc_otg_ep_clear_stall(GET_CORE_IF(pcd), &ep->dwc_ep);
 	} else if (value == 1) {
-		if (ep->dwc_ep.is_in == 1 && GET_CORE_IF(pcd)->dma_desc_enable) {
+		if (ep->dwc_ep.is_in == 1 && GET_CORE_IF(pcd)->g_dma_desc_enable) {
 			dtxfsts_data_t txstatus;
 			fifosize_data_t txfifosize;
 

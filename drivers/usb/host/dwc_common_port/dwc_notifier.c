@@ -59,7 +59,6 @@ static void free_manager(void)
 	DWC_ASSERT(DWC_CIRCLEQ_EMPTY(&manager->notifiers),
 		   "Notification manager being freed before all notifiers have been removed");
 	dwc_free(manager->mem_ctx, manager);
-	manager = NULL;
 }
 
 #ifdef DEBUG
@@ -102,7 +101,6 @@ static observer_t *alloc_observer(void *mem_ctx, void *observer, char *notificat
 static void free_observer(void *mem_ctx, observer_t *observer)
 {
 	dwc_free(mem_ctx, observer);
-	observer = NULL;
 }
 
 static notifier_t *alloc_notifier(void *mem_ctx, void *object)
@@ -135,7 +133,6 @@ static void free_notifier(notifier_t *notifier)
 	}
 
 	dwc_free(notifier->mem_ctx, notifier);
-	notifier = NULL;
 }
 
 static notifier_t *find_notifier(void *object)
