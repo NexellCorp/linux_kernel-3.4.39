@@ -263,4 +263,17 @@ void dwc_otg_iso_buffer_done(dwc_otg_pcd_t * pcd, dwc_otg_pcd_ep_t * ep,
 
 extern void do_test_mode(void *data);
 #endif
+
+struct gadget_wrapper {
+	dwc_otg_pcd_t *pcd;
+
+	struct usb_gadget gadget;
+	struct usb_gadget_driver *driver;
+
+	struct usb_ep ep0;
+	struct usb_ep in_ep[16];
+	struct usb_ep out_ep[16];
+
+};
+
 #endif /* DWC_HOST_ONLY */

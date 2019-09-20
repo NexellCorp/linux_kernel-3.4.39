@@ -48,6 +48,7 @@
 #include "dwc_otg_mphi_fix.h"
 
 extern bool microframe_schedule, nak_holdoff_enable;
+extern void release_channel_ddma(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh);
 
 //#define DEBUG_HOST_CHANNELS
 #ifdef DEBUG_HOST_CHANNELS
@@ -645,7 +646,18 @@ int dwc_otg_hcd_urb_dequeue(dwc_otg_hcd_t * hcd,
 			dwc_otg_hcd_qh_remove(hcd, qh);
 		}
 	} else {
+		uint8_t b = urb_qtd->in_process;
 		dwc_otg_hcd_qtd_remove_and_free(hcd, urb_qtd, qh);
+		if (!qh->channel)
+			return 0;
+		if (dwc_qh_is_non_per(qh)) {
+			if (b) {
+				dwc_otg_hcd_qh_deactivate(hcd, qh, 0);
+			} else if (qh->channel) {
+				dwc_otg_hcd_qh_remove(hcd, qh);
+				release_channel_ddma(hcd, qh);
+			}
+	        }
 	}
 	return 0;
 }
@@ -1094,27 +1106,36 @@ static void dwc_otg_hcd_reinit(dwc_otg_hcd_t * hcd)
  * @param qh Transactions from the first QTD for this QH are selected and
  * assigned to a free host channel.
  */
-static void assign_and_init_hc(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
+static int assign_and_init_hc(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 {
 	dwc_hc_t *hc;
 	dwc_otg_qtd_t *qtd;
 	dwc_otg_hcd_urb_t *urb;
 	void* ptr = NULL;
 
+	if (DWC_CIRCLEQ_EMPTY(&qh->qtd_list)) {
+		DWC_WARN("No QTDs in QH list\n");
+		return -ENOMEM;
+	}
+
+	if (DWC_CIRCLEQ_EMPTY(&hcd->free_hc_list)) {
+		DWC_WARN("No free channel to assign 1\n");
+		return -ENOMEM;
+	}
+
+	hc = DWC_CIRCLEQ_FIRST(&hcd->free_hc_list);
+
+	/* Remove the host channel from the free list. */
+	DWC_CIRCLEQ_REMOVE_INIT(&hcd->free_hc_list, hc, hc_list_entry);
+
 	qtd = DWC_CIRCLEQ_FIRST(&qh->qtd_list);
-	
+
 	urb = qtd->urb;
 
 	DWC_DEBUGPL(DBG_HCDV, "%s(%p,%p) - urb %x, actual_length %d\n", __func__, hcd, qh, (unsigned int)urb, urb->actual_length);
 
 	if (((urb->actual_length < 0) || (urb->actual_length > urb->length)) && !dwc_otg_hcd_is_pipe_in(&urb->pipe_info))
 		urb->actual_length = urb->length;
-
-
-	hc = DWC_CIRCLEQ_FIRST(&hcd->free_hc_list);
-
-	/* Remove the host channel from the free list. */
-	DWC_CIRCLEQ_REMOVE_INIT(&hcd->free_hc_list, hc, hc_list_entry);
 
 	qh->channel = hc;
 
@@ -1300,7 +1321,7 @@ static void assign_and_init_hc(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 				    ("%s: Failed to allocate memory to handle "
 				     "non-dword aligned buffer case\n",
 				     __func__);
-				return;
+				return -ENOMEM;
 			}
 		}
 		if (!hc->ep_is_in) {
@@ -1325,6 +1346,8 @@ static void assign_and_init_hc(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
 
 	dwc_otg_hc_init(hcd->core_if, hc);
 	hc->qh = qh;
+
+	return 0;
 }
 
 /*
@@ -1452,7 +1475,8 @@ dwc_otg_transaction_type_e dwc_otg_hcd_select_transactions(dwc_otg_hcd_t * hcd)
 #endif /* DEBUG_HOST_CHANNELS */
 		}
 		qh = DWC_LIST_ENTRY(qh_ptr, dwc_otg_qh_t, qh_list_entry);
-		assign_and_init_hc(hcd, qh);
+		if (assign_and_init_hc(hcd, qh))
+			break;
 
 		/*
 		 * Move the QH from the periodic ready schedule to the
@@ -1463,6 +1487,7 @@ dwc_otg_transaction_type_e dwc_otg_hcd_select_transactions(dwc_otg_hcd_t * hcd)
 		DWC_LIST_MOVE_HEAD(&hcd->periodic_sched_assigned,
 				   &qh->qh_list_entry);
 		DWC_SPINUNLOCK_IRQRESTORE(channel_lock, flags);
+		ret_val = DWC_OTG_TRANSACTION_PERIODIC;
 	}
 
 	/*
@@ -1515,7 +1540,8 @@ dwc_otg_transaction_type_e dwc_otg_hcd_select_transactions(dwc_otg_hcd_t * hcd)
 #endif /* DEBUG_HOST_CHANNELS */
 		}
 
-		assign_and_init_hc(hcd, qh);
+		if (assign_and_init_hc(hcd, qh))
+			break;
 
 		/*
 		 * Move the QH from the non-periodic inactive schedule to the
@@ -1529,16 +1555,14 @@ dwc_otg_transaction_type_e dwc_otg_hcd_select_transactions(dwc_otg_hcd_t * hcd)
 
 		g_np_sent++;
 
+		if (ret_val == DWC_OTG_TRANSACTION_NONE)
+			ret_val = DWC_OTG_TRANSACTION_NON_PERIODIC;
+		else
+			ret_val = DWC_OTG_TRANSACTION_ALL;
+
 		if (!microframe_schedule)
 			hcd->non_periodic_channels++;
 	}
-
-	if(!DWC_LIST_EMPTY(&hcd->periodic_sched_assigned))
-		ret_val |= DWC_OTG_TRANSACTION_PERIODIC;
-
-	if(!DWC_LIST_EMPTY(&hcd->non_periodic_sched_active))
-		ret_val |= DWC_OTG_TRANSACTION_NON_PERIODIC;
-
 
 #ifdef DEBUG_HOST_CHANNELS
 	last_sel_trans_num_avail_hc_at_end = hcd->available_host_channels;

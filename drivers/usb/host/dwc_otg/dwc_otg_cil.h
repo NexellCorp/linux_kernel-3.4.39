@@ -454,6 +454,8 @@ typedef struct dwc_otg_core_params {
 	 * 1 - DMA Descriptor(default, if available)
 	 */
 	int32_t dma_desc_enable;
+
+	int32_t g_dma_desc_enable;
 	/** The DMA Burst size (applicable only for External DMA
 	 * Mode). 1, 4, 8 16, 32, 64, 128, 256 (default 32)
 	 */
@@ -855,6 +857,8 @@ struct dwc_otg_core_if {
 
 	/** 1 if DMA descriptor is enabled, 0 otherwise. */
 	uint8_t dma_desc_enable;
+
+	uint8_t g_dma_desc_enable;
 
 	/** 1 if PTI Enhancement mode is enabled, 0 otherwise. */
 	uint8_t pti_enh_enable;

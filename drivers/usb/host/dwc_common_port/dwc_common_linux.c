@@ -622,7 +622,6 @@ void DWC_SPINLOCK_FREE(dwc_spinlock_t *lock)
 {
 #if defined(CONFIG_PREEMPT) || defined(CONFIG_SMP)
 	DWC_FREE(lock);
-	lock = NULL;
 #endif
 }
 
@@ -636,10 +635,6 @@ void DWC_SPINLOCK(dwc_spinlock_t *lock)
 void DWC_SPINUNLOCK(dwc_spinlock_t *lock)
 {
 #if defined(CONFIG_PREEMPT) || defined(CONFIG_SMP)
-	if ((lock == NULL) || !spin_is_locked((spinlock_t *)lock)) {
-		printk("WARN: %s lock %p unlocked\n", __func__, lock);
-		return;
-	}
 	spin_unlock((spinlock_t *)lock);
 #endif
 }
@@ -659,10 +654,6 @@ void DWC_SPINLOCK_IRQSAVE(dwc_spinlock_t *lock, dwc_irqflags_t *flags)
 void DWC_SPINUNLOCK_IRQRESTORE(dwc_spinlock_t *lock, dwc_irqflags_t flags)
 {
 #if defined(CONFIG_PREEMPT) || defined(CONFIG_SMP)
-	if ((lock == NULL) || !spin_is_locked((spinlock_t *)lock)) {
-		printk("WARN: %s lock %p unlocked\n", __func__, lock);
-		return;
-	}
 	spin_unlock_irqrestore((spinlock_t *)lock, flags);
 #else
 	local_irq_restore(flags);
@@ -690,7 +681,6 @@ void DWC_MUTEX_FREE(dwc_mutex_t *mutex)
 {
 	mutex_destroy((struct mutex *)mutex);
 	DWC_FREE(mutex);
-	mutex = NULL;
 }
 #endif
 
@@ -819,11 +809,8 @@ void DWC_TIMER_FREE(dwc_timer_t *timer)
 	DWC_SPINUNLOCK_IRQRESTORE(timer->lock, flags);
 	DWC_SPINLOCK_FREE(timer->lock);
 	DWC_FREE(timer->t);
-	timer->t = NULL;
 	DWC_FREE(timer->name);
-	timer->name = NULL;
 	DWC_FREE(timer);
-	timer = NULL;
 }
 
 void DWC_TIMER_SCHEDULE(dwc_timer_t *timer, uint32_t time)
@@ -875,7 +862,6 @@ dwc_waitq_t *DWC_WAITQ_ALLOC(void)
 void DWC_WAITQ_FREE(dwc_waitq_t *wq)
 {
 	DWC_FREE(wq);
-	wq = NULL;
 }
 
 int32_t DWC_WAITQ_WAIT(dwc_waitq_t *wq, dwc_waitq_condition_t cond, void *data)
@@ -1008,7 +994,6 @@ dwc_tasklet_t *DWC_TASK_ALLOC(char *name, dwc_tasklet_callback_t cb, void *data)
 void DWC_TASK_FREE(dwc_tasklet_t *task)
 {
 	DWC_FREE(task);
-	task = NULL;
 }
 
 void DWC_TASK_SCHEDULE(dwc_tasklet_t *task)
@@ -1067,10 +1052,8 @@ static void do_work(struct work_struct *work)
 	DWC_DEBUGC("Work done: %s, container=%p", container->name, container);
 	if (container->name) {
 		DWC_FREE(container->name);
-		container->name = NULL;
 	}
 	DWC_FREE(container);
-	container = NULL;
 
 	DWC_SPINLOCK_IRQSAVE(wq->lock, &flags);
 	wq->pending--;
@@ -1144,7 +1127,6 @@ void DWC_WORKQ_FREE(dwc_workq_t *wq)
 	DWC_SPINLOCK_FREE(wq->lock);
 	DWC_WAITQ_FREE(wq->waitq);
 	DWC_FREE(wq);
-	wq = NULL;
 }
 
 void DWC_WORKQ_SCHEDULE(dwc_workq_t *wq, dwc_work_callback_t cb, void *data,
@@ -1174,7 +1156,6 @@ void DWC_WORKQ_SCHEDULE(dwc_workq_t *wq, dwc_work_callback_t cb, void *data,
 	if (!container->name) {
 		DWC_ERROR("Cannot allocate memory for container->name\n");
 		DWC_FREE(container);
-		container = NULL;
 		return;
 	}
 
@@ -1217,7 +1198,6 @@ void DWC_WORKQ_SCHEDULE_DELAYED(dwc_workq_t *wq, dwc_work_callback_t cb,
 	if (!container->name) {
 		DWC_ERROR("Cannot allocate memory for container->name\n");
 		DWC_FREE(container);
-		container = NULL;
 		return;
 	}
 
