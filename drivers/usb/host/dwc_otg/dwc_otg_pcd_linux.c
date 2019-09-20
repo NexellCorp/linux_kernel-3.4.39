@@ -59,17 +59,8 @@
 #include "dwc_otg_driver.h"
 #include "dwc_otg_dbg.h"
 
-static struct gadget_wrapper {
-	dwc_otg_pcd_t *pcd;
-
-	struct usb_gadget gadget;
-	struct usb_gadget_driver *driver;
-
-	struct usb_ep ep0;
-	struct usb_ep in_ep[16];
-	struct usb_ep out_ep[16];
-
-} *gadget_wrapper;
+struct gadget_wrapper *gadget_wrapper;
+EXPORT_SYMBOL(gadget_wrapper);
 
 /* Display the contents of the buffer */
 extern void dump_msg(const u8 * buf, unsigned int length);
@@ -806,10 +797,10 @@ static int dwc_udc_start(struct usb_gadget_driver *driver,
         return -ENODEV;
     }
 
-    if (!driver || !bind || !driver->setup) {
-        printk(KERN_ERR "%s: invalid args\n", __func__);
-        return -EINVAL;
-    }
+	if (!driver || !driver->setup) {
+		printk(KERN_ERR "%s: invalid args\n", __func__);
+		return -EINVAL;
+	}
 
 	if (gadget_wrapper->driver != 0) {
 		DWC_DEBUGPL(DBG_PCDV, "EBUSY (%p)\n", gadget_wrapper->driver);
@@ -890,8 +881,8 @@ static int dwc_udc_stop(struct usb_gadget_driver *driver)
 
 	driver->unbind(&gadget_wrapper->gadget);
 
-	device_del(&gadget_wrapper->gadget.dev);
 	gadget_wrapper->driver = NULL;
+	gadget_wrapper->gadget.dev.driver = NULL;
 
 	/* Disable udc */
 	dwc_udc_disable(gadget_wrapper);
@@ -911,8 +902,8 @@ static const struct usb_gadget_ops dwc_otg_pcd_ops = {
 	.pullup = dwc_udc_pullup,
 	.vbus_session = dwc_vbus_enable,
 	.vbus_draw = dwc_vbus_draw,
+	.start = dwc_udc_start,
 	.stop = dwc_udc_stop,
-    .start = dwc_udc_start,
 #endif
 };
 

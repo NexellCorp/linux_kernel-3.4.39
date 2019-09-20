@@ -292,8 +292,6 @@ void w_conn_id_status_change(void *p)
 		DWC_ASSERT(++count < 10000,
 			   "Connection id status change timed out");
 		core_if->op_state = B_PERIPHERAL;
-		if (dwc_param_dma_desc_enable_default)
-			dwc_otg_set_param_dma_desc_enable(core_if,0);
 #if defined(CONFIG_BATTERY_NXE2000)
 		otgid_power_control_by_dwc(0);
 #elif defined(CONFIG_KP_AXP22)
@@ -320,8 +318,6 @@ void w_conn_id_status_change(void *p)
 		/*
 		 * Initialize the Core for Host mode.
 		 */
-		if (dwc_param_dma_desc_enable_default)
-			dwc_otg_set_param_dma_desc_enable(core_if,1);
 		core_if->host_flag = 1;
 		dwc_otg_core_init(core_if);
 		dwc_otg_enable_global_interrupts(core_if);
@@ -584,8 +580,6 @@ static int32_t dwc_otg_handle_pwrdn_disconnect_intr(dwc_otg_core_if_t *core_if)
 
 	if (gpwrdn_temp.b.idsts) {
 		core_if->op_state = B_PERIPHERAL;
-		if (dwc_param_dma_desc_enable_default)
-			dwc_otg_set_param_dma_desc_enable(core_if,0);
 		dwc_otg_core_init(core_if);
 		dwc_otg_enable_global_interrupts(core_if);
 		cil_pcd_start(core_if);

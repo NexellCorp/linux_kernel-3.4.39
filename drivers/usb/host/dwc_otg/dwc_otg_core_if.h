@@ -241,7 +241,7 @@ extern int dwc_otg_set_param_host_nperio_tx_fifo_size(dwc_otg_core_if_t *
 extern int32_t dwc_otg_get_param_host_nperio_tx_fifo_size(dwc_otg_core_if_t *
 							  core_if);
 //#define dwc_param_host_nperio_tx_fifo_size_default 1024
-#define dwc_param_host_nperio_tx_fifo_size_default 0x100 // Broadcom BCM2708
+#define dwc_param_host_nperio_tx_fifo_size_default 512 // Broadcom BCM2708
 
 /** Number of 4-byte words in the host periodic Tx FIFO when dynamic
  * FIFO sizing is enabled.
@@ -268,7 +268,7 @@ extern int32_t dwc_otg_get_param_max_transfer_size(dwc_otg_core_if_t * core_if);
 extern int dwc_otg_set_param_max_packet_count(dwc_otg_core_if_t * core_if,
 					      int32_t val);
 extern int32_t dwc_otg_get_param_max_packet_count(dwc_otg_core_if_t * core_if);
-#define dwc_param_max_packet_count_default 511
+#define dwc_param_max_packet_count_default 1023
 
 /** The number of host channel registers to use.
  * 1 to 16 (default 12)

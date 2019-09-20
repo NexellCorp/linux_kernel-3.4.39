@@ -49,6 +49,11 @@
 
 #define DRIVER_VERSION		"22-Aug-2005"
 
+#if defined(CONFIG_ARCH_CPU_SLSI)
+#define my_usb_submit_urb(urb, flags) \
+	({urb->transfer_flags |= 0x80000000; \
+	usb_submit_urb (urb, flags);})
+#endif
 
 /*-------------------------------------------------------------------------*/
 
@@ -367,7 +372,11 @@ static int rx_submit (struct usbnet *dev, struct urb *urb, gfp_t flags)
 	    netif_device_present (dev->net) &&
 	    !test_bit (EVENT_RX_HALT, &dev->flags) &&
 	    !test_bit (EVENT_DEV_ASLEEP, &dev->flags)) {
+#if defined(CONFIG_ARCH_CPU_SLSI)
+		switch (retval = my_usb_submit_urb (urb, GFP_ATOMIC)) {
+#else
 		switch (retval = usb_submit_urb (urb, GFP_ATOMIC)) {
+#endif
 		case -EPIPE:
 			usbnet_defer_kevent (dev, EVENT_RX_HALT);
 			break;
@@ -549,7 +558,11 @@ static void intr_complete (struct urb *urb)
 		return;
 
 	memset(urb->transfer_buffer, 0, urb->transfer_buffer_length);
+#if defined(CONFIG_ARCH_CPU_SLSI)
+	status = my_usb_submit_urb (urb, GFP_ATOMIC);
+#else
 	status = usb_submit_urb (urb, GFP_ATOMIC);
+#endif
 	if (status != 0)
 		netif_err(dev, timer, dev->net,
 			  "intr resubmit --> %d\n", status);
@@ -770,7 +783,11 @@ int usbnet_open (struct net_device *net)
 
 	/* start any status interrupt transfer */
 	if (dev->interrupt) {
+#if defined(CONFIG_ARCH_CPU_SLSI)
+		retval = my_usb_submit_urb (dev->interrupt, GFP_KERNEL);
+#else
 		retval = usb_submit_urb (dev->interrupt, GFP_KERNEL);
+#endif
 		if (retval < 0) {
 			netif_err(dev, ifup, dev->net,
 				  "intr submit %d\n", retval);
@@ -1165,7 +1182,11 @@ netdev_tx_t usbnet_start_xmit (struct sk_buff *skb,
 	}
 #endif
 
+#if defined(CONFIG_ARCH_CPU_SLSI)
+	switch ((retval = my_usb_submit_urb (urb, GFP_ATOMIC))) {
+#else
 	switch ((retval = usb_submit_urb (urb, GFP_ATOMIC))) {
+#endif
 	case -EPIPE:
 		netif_stop_queue (net);
 		usbnet_defer_kevent (dev, EVENT_TX_HALT);
@@ -1549,13 +1570,21 @@ int usbnet_resume (struct usb_interface *intf)
 	if (!--dev->suspend_count) {
 		/* resume interrupt URBs */
 		if (dev->interrupt && test_bit(EVENT_DEV_OPEN, &dev->flags))
+#if defined(CONFIG_ARCH_CPU_SLSI)
+			my_usb_submit_urb(dev->interrupt, GFP_NOIO);
+#else
 			usb_submit_urb(dev->interrupt, GFP_NOIO);
+#endif
 
 		spin_lock_irq(&dev->txq.lock);
 		while ((res = usb_get_from_anchor(&dev->deferred))) {
 
 			skb = (struct sk_buff *)res->context;
+#if defined(CONFIG_ARCH_CPU_SLSI)
+			retval = my_usb_submit_urb(res, GFP_ATOMIC);
+#else
 			retval = usb_submit_urb(res, GFP_ATOMIC);
+#endif
 			if (retval < 0) {
 				dev_kfree_skb_any(skb);
 				usb_free_urb(res);

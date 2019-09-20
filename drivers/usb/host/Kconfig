@@ -652,8 +652,8 @@ config USB_DWCOTG
 
 config USB_USE_DESCRIPTOR_DMA
 	bool "SlsiAP use USB Descriptor DMA"
-	depends on USB_DWCOTG && USB_VIDEO_CLASS
-	default n
+	depends on USB_DWCOTG
+	default y
 
 config USB_CONNECT_NXP_DRV
 	bool "SLsiAP USB connect driver for UBC & OTG"

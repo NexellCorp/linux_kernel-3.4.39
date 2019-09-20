@@ -103,10 +103,8 @@ static void free_cc(void *mem_ctx, dwc_cc_t *cc)
 {
 	if (cc->name) {
 		dwc_free(mem_ctx, cc->name);
-		cc->name = NULL;
 	}
 	dwc_free(mem_ctx, cc);
-	cc = NULL;
 }
 
 static uint32_t next_uid(dwc_cc_if_t *cc_if)
@@ -258,7 +256,6 @@ void dwc_cc_if_free(void *mem_ctx, void *mtx_ctx, dwc_cc_if_t *cc_if)
 #endif
 	cc_clear(mem_ctx, cc_if);
 	dwc_free(mem_ctx, cc_if);
-	cc_if = NULL;
 }
 
 static void cc_changed(dwc_cc_if_t *cc_if)
@@ -317,7 +314,6 @@ void dwc_cc_change(void *mem_ctx, dwc_cc_if_t *cc_if, int32_t id, uint8_t *chid,
 	if (name) {
 		if (cc->name) {
 			dwc_free(mem_ctx, cc->name);
-			cc->name = NULL;
 		}
 		cc->name = dwc_alloc(mem_ctx, length);
 		if (!cc->name) {
